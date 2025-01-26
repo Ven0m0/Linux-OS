@@ -18,6 +18,7 @@ Gaming:
 [Nobara](https://nobaraproject.org/)
 
 [Drauger](https://draugeros.org/)
+
 [Cachy os](https://cachyos.org/)
 
 Privacy:

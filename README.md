@@ -15,13 +15,9 @@ https://ubuntu.com/
 
 Gaming:
 
-Nobara:
-https://nobaraproject.org/
+[Nobara](https://nobaraproject.org/)
 
-Drauger:
-https://draugeros.org/
-
-Cachy os
+[Drauger](https://draugeros.org/)
 [Cachy os](https://cachyos.org/)
 
 Privacy:

@@ -22,7 +22,7 @@ Drauger:
 https://draugeros.org/
 
 Cachy os
-https://cachyos.org/
+[Cachy os](https://cachyos.org/)
 
 Privacy:
 

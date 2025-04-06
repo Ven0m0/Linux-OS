@@ -3,14 +3,10 @@ List of Linux operating systems
 
 Desktop:
 
-Manjaro:
-https://manjaro.org/
+Linux Mint:
+https://linuxmint.com/
 
-Fedora:
-https://getfedora.org/
-
-Ubuntu:
-https://ubuntu.com/
+[Cachy os](https://cachyos.org/)
 
 
 Gaming:
@@ -19,9 +15,10 @@ Gaming:
 
 [Drauger](https://draugeros.org/)
 
-[Cachy os](https://cachyos.org/)
 
-Privacy:
+Other:
+Raspberry Pi OS
+https://www.raspberrypi.com/software/
 
 Tails
 https://tails.boum.org/

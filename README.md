@@ -11,8 +11,8 @@ Gaming:
 
 [Nobara](https://nobaraproject.org/)
 
-[SteamOS](https://store.steampowered.com/steamos/buildyourown)
-[SteamOS download](https://store.steampowered.com/steamos/download/?ver=steamdeck&snr=)
+[SteamOS](https://store.steampowered.com/steamos/buildyourown) 
+[Download](https://store.steampowered.com/steamos/download/?ver=steamdeck&snr=)
 
 
 Other:

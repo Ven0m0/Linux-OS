@@ -3,11 +3,9 @@ List of Linux operating systems
 
 Desktop:
 
-Linux Mint:
-https://linuxmint.com/
+[Linux Mint](https://linuxmint.com/)
 
 [Cachy os](https://cachyos.org/)
-
 
 Gaming:
 
@@ -17,8 +15,7 @@ Gaming:
 
 
 Other:
-Raspberry Pi OS
-https://www.raspberrypi.com/software/
+[Raspberry Pi OS](https://www.raspberrypi.com/software/)
 
-Tails
-https://tails.boum.org/
+[Tails](https://tails.boum.org/)
+

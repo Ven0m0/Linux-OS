@@ -16,6 +16,8 @@ Gaming:
 [SteamOS](https://store.steampowered.com/steamos/buildyourown) | 
 [Download](https://store.steampowered.com/steamos/download/?ver=steamdeck&snr=)
 
+[Bazzite](https://bazzite.gg/)
+
 
 Other:
 

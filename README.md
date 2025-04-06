@@ -5,9 +5,11 @@ Desktop:
 
 [Linux Mint](https://linuxmint.com/)
 
-[Cachy os](https://cachyos.org/)
+
 
 Gaming:
+
+[Cachy os](https://cachyos.org/)
 
 [Nobara](https://nobaraproject.org/)
 

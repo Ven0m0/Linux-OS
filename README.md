@@ -36,8 +36,9 @@ https://github.com/graysky2/kernel_compiler_patch/blob/master/more-ISA-levels-an
 
 https://gitlab.com/xanmod/linux-patches/-/blob/master/linux-6.14.y-xanmod/xanmod/0001-XANMOD-x86-build-Add-more-CFLAGS-optimizations.patch
 
-https://github.com/sirlucjan/kernel-patches/blob/master/6.14/clang-patches/0001-clang-patches.patch
+sirlucjan:
 
+https://github.com/sirlucjan/kernel-patches/blob/master/6.14/clang-patches/0001-clang-patches.patch
 
 https://github.com/sirlucjan/kernel-patches/blob/master/6.14/crypto-patches-sep/0007-nvme-tcp-switch-to-using-the-crc32c-library.patch
 
@@ -49,11 +50,11 @@ https://github.com/sirlucjan/kernel-patches/blob/master/6.14/crypto-patches-sep/
 
 https://github.com/sirlucjan/kernel-patches/blob/master/6.14/crypto-patches-sep/0010-x86-crc32-improve-crc32c_arch-code-generation-with-c.patch
 
-
 https://github.com/sirlucjan/kernel-patches/blob/master/6.14/mm-patches-all/0001-mm-patches.patch
 
 https://github.com/sirlucjan/kernel-patches/blob/master/6.14/x86-patches-all/0001-x86-patches.patch
 
+Clearlinux:
 
 https://github.com/clearlinux-pkgs/linux/blob/main/0169-mm-mincore-improve-performance-by-adding-an-unlikely.patch
 

@@ -3,3 +3,15 @@ https://github.com/sirlucjan/kernel-patches/blob/master/6.14/crypto-next-patches
 https://github.com/clearlinux-pkgs/linux/blob/main/0169-mm-mincore-improve-performance-by-adding-an-unlikely.patch
 https://github.com/clearlinux-pkgs/linux/blob/main/0171-kcmp-improve-performance-adding-an-unlikely-hint-to-.patch
 https://github.com/clearlinux-pkgs/linux/blob/main/0161-ACPI-align-slab-buffers-for-improved-memory-performa.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/clearlinux/0001-sched-wait-Do-accept-in-LIFO-order-for-cache-efficie.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0001-XANMOD-x86-build-Add-more-CFLAGS-optimizations.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0002-ZEN-dm-crypt-Disable-workqueues-for-crypto-ops.patch
+BRR3
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0016-net-tcp_bbr-v3-update-TCP-bbr-congestion-control-mod.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0017-net-tcp_bbr-v3-ensure-ECN-enabled-BBR-flows-set-ECT-.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0010-net-tcp-re-generalize-TSO-sizing-in-TCP-CC-module-AP.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0011-net-tcp-add-fast_ack_mode-1-skip-rwin-check-in-tcp_f.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0002-net-tcp_bbr-v2-shrink-delivered_mstamp-first_tx_msta.patch
+Other
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/netfilter/0002-netfilter-add-xt_FLOWOFFLOAD-target.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch

@@ -1,1 +1,5 @@
-
+https://github.com/Frogging-Family/linux-tkg/blob/master/linux-tkg-patches/6.14/0013-optimize_harder_O3.patch
+https://github.com/sirlucjan/kernel-patches/blob/master/6.14/crypto-next-patches-sep/0001-crypto-x86-aes-xts-make-the-fast-path-64-bit-specifi.patch
+https://github.com/clearlinux-pkgs/linux/blob/main/0169-mm-mincore-improve-performance-by-adding-an-unlikely.patch
+https://github.com/clearlinux-pkgs/linux/blob/main/0171-kcmp-improve-performance-adding-an-unlikely-hint-to-.patch
+https://github.com/clearlinux-pkgs/linux/blob/main/0161-ACPI-align-slab-buffers-for-improved-memory-performa.patch

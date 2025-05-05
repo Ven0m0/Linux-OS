@@ -1,3 +1,7 @@
+6.14
+pwclient
+
+
 https://github.com/Frogging-Family/linux-tkg/blob/master/linux-tkg-patches/6.14/0013-optimize_harder_O3.patch
 https://github.com/sirlucjan/kernel-patches/blob/master/6.14/crypto-next-patches-sep/0001-crypto-x86-aes-xts-make-the-fast-path-64-bit-specifi.patch
 https://github.com/clearlinux-pkgs/linux/blob/main/0169-mm-mincore-improve-performance-by-adding-an-unlikely.patch
@@ -15,3 +19,17 @@ https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp
 Other
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/netfilter/0002-netfilter-add-xt_FLOWOFFLOAD-target.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
+
+
+https://lore.kernel.org/lkml/20250430082651.3152444-1-qun-wei.lin@mediatek.com/
+https://patchwork.kernel.org/project/linux-modules/patch/20250313143002.9118-1-petr.pavlu@suse.com/
+zblock:
+https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=6c1525631b659530d9199ed4b67422a270d328fe
+https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/commit/?h=mm-new&id=c596563e905175c63aac5dcf8cbc26f2677e33b1
+https://lore.kernel.org/all/20250502080156.1672957-1-vitaly.wool@konsulko.se/T/#u
+
+
+https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=cd91df8178156c07c68a5360e6400b22d82439e9
+
+https://patchwork.kernel.org/project/linux-mm/patch/fbe1e0c7d91bf3fa9a64ff5d84b53ded1d0d5ac7.1745852397.git.donettom@linux.ibm.com/
+https://patchwork.kernel.org/project/linux-mm/patch/273649393600cb33ac3eec0e9a523c2d1853a47c.1745852397.git.donettom@linux.ibm.com/

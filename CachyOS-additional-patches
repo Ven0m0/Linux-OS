@@ -33,3 +33,8 @@ https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=cd91df8178
 
 https://patchwork.kernel.org/project/linux-mm/patch/fbe1e0c7d91bf3fa9a64ff5d84b53ded1d0d5ac7.1745852397.git.donettom@linux.ibm.com/
 https://patchwork.kernel.org/project/linux-mm/patch/273649393600cb33ac3eec0e9a523c2d1853a47c.1745852397.git.donettom@linux.ibm.com/
+
+Extra patches
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
+https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.14/clang-patches/0001-clang-patches.patch
+https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0002-ZEN-dm-crypt-Disable-workqueues-for-crypto-ops.patch

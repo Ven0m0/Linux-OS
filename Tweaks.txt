@@ -1,0 +1,5 @@
+https://github.com/sn99/Optimizing-linux
+
+
+sudo nano /etc/fstab
+noatime,space_cache=v2,ssd,discard=async,lazytime,commit=120,nobarrier

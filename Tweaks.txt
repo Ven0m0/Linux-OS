@@ -16,7 +16,7 @@ kernel.core_pattern=false
 
 Bootloader
 sudo nano /etc/default/limine
-quiet nowatchdog mitigations=off split_lock_detect=off ec_sys.write_support=1
+quiet nowatchdog mitigations=off split_lock_detect=off
 
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 

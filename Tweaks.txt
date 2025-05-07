@@ -3,10 +3,10 @@ https://github.com/sn99/Optimizing-linux
 
 sudo nano /etc/fstab
 btrfs:
-noatime,space_cache=v2,ssd,discard=async,commit=120,barrier=0
+noatime,space_cache=v2,ssd,discard=async,commit=120
 
 Ext4:
-noatime,space_cache=v2,ssd,discard=async,commit=120,barrier=0,data=writeback,nobh
+noatime,discard=async,commit=120,barrier=0,data=writeback
 tune2fs -O fast_commit /dev/drivepartition
 tune2fs -O casefold /dev/path/to/disk
 

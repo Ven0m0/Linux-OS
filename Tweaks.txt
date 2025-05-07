@@ -6,7 +6,7 @@ btrfs:
 noatime,space_cache=v2,ssd,discard=async,commit=120
 
 Ext4:
-noatime,discard=async,commit=120,data=writeback
+noatime,discard=async,commit=120,data=writeback,nobh
 tune2fs -O fast_commit /dev/drivepartition
 tune2fs -O casefold /dev/path/to/disk
 

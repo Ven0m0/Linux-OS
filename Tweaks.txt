@@ -11,7 +11,7 @@ tune2fs -O fast_commit /dev/drivepartition
 tune2fs -O casefold /dev/path/to/disk
 
 Disable core dumps:
-sudo nano/etc/sysctl.d/50-coredump.conf
+sudo nano /etc/sysctl.d/50-coredump.conf
 kernel.core_pattern=false
 
 Bootloader

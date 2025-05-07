@@ -7,8 +7,8 @@ noatime,space_cache=v2,ssd,discard=async,commit=120
 
 Ext4:
 noatime,discard=async,commit=120,data=writeback,nobh,nobarrier
-tune2fs -O fast_commit /dev/drivepartition
-tune2fs -O casefold /dev/path/to/disk
+sudo tune2fs -O fast_commit /dev/nvme0n1p2
+sudo tune2fs -O casefold /dev/nvme0n1p2
 
 Disable core dumps:
 sudo nano /etc/sysctl.d/50-coredump.conf

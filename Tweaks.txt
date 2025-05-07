@@ -5,7 +5,6 @@ sudo nano /etc/fstab
 btrfs:
 noatime,space_cache=v2,ssd,discard=async,commit=120,barrier=0
 
-
 Ext4:
 noatime,space_cache=v2,ssd,discard=async,commit=120,barrier=0,data=writeback,nobh
 tune2fs -O fast_commit /dev/drivepartition

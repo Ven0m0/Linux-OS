@@ -1,22 +1,26 @@
 https://github.com/sn99/Optimizing-linux
 
 
-sudo nano /etc/fstab
+# sudo nano /etc/fstab
 btrfs:
 noatime,space_cache=v2,ssd,discard=async,commit=120
 
-Ext4:
+# Ext4:
 noatime,discard=async,commit=120,data=writeback,nobh,nobarrier
 sudo tune2fs -O fast_commit /dev/nvme0n1p2
 sudo tune2fs -O casefold /dev/nvme0n1p2
 
-Disable core dumps:
+# Disable core dumps:
 sudo nano /etc/sysctl.d/50-coredump.conf
 kernel.core_pattern=false
 
+# https://wiki.cachyos.org/configuration/general_system_tweaks
+sudo nano /etc/sysctl.d/99-splitlock.conf
+kernel.split_lock_mitigate=0
+
 Bootloader
 sudo nano /etc/default/limine
-quiet nowatchdog mitigations=off split_lock_detect=off
+quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performance
 
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 

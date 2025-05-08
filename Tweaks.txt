@@ -52,3 +52,14 @@ net.ipv4.udp_rmem_min = 8192
 net.ipv4.udp_wmem_min = 8192
 # Symlink build fix
 fs.protected_symlinks = 0
+
+
+sudo nano /etc/pacman.conf
+
+NoExtract   = usr/share/doc/*
+
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+
+[repo-ck]
+Server = http://repo-ck.com/$arch

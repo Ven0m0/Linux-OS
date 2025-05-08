@@ -56,7 +56,9 @@ fs.protected_symlinks = 0
 
 sudo nano /etc/pacman.conf
 
-NoExtract   = usr/share/doc/*
+NoExtract    = usr/share/doc/*
+NoExtract    = /usr/share/help/*
+NoExtract    = /usr/share/gtk-doc/*
 
 [chaotic-aur]
 Include = /etc/pacman.d/chaotic-mirrorlist

@@ -56,9 +56,23 @@ fs.protected_symlinks = 0
 
 sudo nano /etc/pacman.conf
 
-NoExtract    = usr/share/doc/*
-NoExtract    = /usr/share/help/*
-NoExtract    = /usr/share/gtk-doc/*
+# https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Installing_only_content_in_required_languages
+NoExtract = usr/share/doc/*
+NoExtract = /usr/share/help/*
+NoExtract = /usr/share/gtk-doc/*
+NoExtract = usr/share/locale/* usr/share/X11/locale/*/* usr/share/i18n/locales/* opt/google/chrome/locales/* !usr/share/X11/locale/C/* !usr/share/X11/locale/en_US.UTF-8/*
+NoExtract = !usr/share/X11/locale/compose.dir !usr/share/X11/locale/iso8859-1/*
+NoExtract = !*locale*/en*/* !usr/share/*locale*/locale.*
+NoExtract = !usr/share/*locales/en_?? !usr/share/*locales/i18n* !usr/share/*locales/iso*
+NoExtract = usr/share/i18n/charmaps/* !usr/share/i18n/charmaps/UTF-8.gz !usr/share/i18n/charmaps/ANSI_X3.4-1968.gz
+NoExtract = !usr/share/*locales/trans*
+NoExtract = !usr/share/*locales/C !usr/share/*locales/POSIX
+NoExtract = usr/share/man/* !usr/share/man/man*
+NoExtract = usr/share/vim/vim*/lang/*
+NoExtract = usr/share/*/translations/*.qm !usr/share/*/translations/*en.qm usr/share/*/nls/*.qm usr/share/qt/phrasebooks/*.qph usr/share/qt/translations/*.pak !*/en-US.pak
+NoExtract = usr/share/*/locales/*.pak opt/*/locales/*.pak usr/lib/*/locales/*.pak !*/en-US.pak
+NoExtract = usr/lib/libreoffice/help/en-US/*
+NoExtract = usr/share/ibus/dicts/emoji-*.dict !usr/share/ibus/dicts/emoji-en.dict
 
 [chaotic-aur]
 Include = /etc/pacman.d/chaotic-mirrorlist

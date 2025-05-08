@@ -63,7 +63,7 @@ sudo rm -rf /usr/share/gtk-doc/*
 
 # pacman -S profile-cleaner
 paccache -ruk0
-pacman -Scc
+sudo pacman -Scc
 sudo pacman -Qdtq | pacman -Rns -
 flatpak uninstall --unused
 

@@ -28,6 +28,8 @@ quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performa
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 
 # https://wiki.archlinux.org/title/Sysctl#Networking
+modprobe tcp_bbr
+
 sudo nano /usr/lib/sysctl.d/99-cachyos-settings.conf
 net.ipv4.tcp_fastopen = 3
 net.ipv4.tcp_mtu_probing = 1

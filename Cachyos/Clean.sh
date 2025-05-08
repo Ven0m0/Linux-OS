@@ -56,16 +56,15 @@ rm -rf ~/.wine/drive_c/windows/temp/*
 rm -rf ~/.cache/wine/
 rm -rf ~/.cache/winetricks/
 # My stuff
-# Do " NoExtract = usr/share/doc/* " in /etc/pacman.conf to prevent packages from filling it up again. Wasted space
+# https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Installing_only_content_in_required_languages
 sudo rm -rf /usr/share/doc/*
-# 
-pacman -S profile-cleaner
-profile-cleaner f
+sudo rm -rf /usr/share/help/*
+sudo rm -rf /usr/share/gtk-doc/*
+
+# pacman -S profile-cleaner
 paccache -ruk0
 pacman -Scc
 sudo pacman -Qdtq | pacman -Rns -
-# Might remove dependencies, manually check 
-# pacman -Qqd | pacman -Rsu --print -
 flatpak uninstall --unused
 
 sudo fstrim -a --quiet-unsupported

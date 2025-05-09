@@ -23,7 +23,7 @@ Bootloader:
 sudo nano /boot/limine.conf
 Kernel:
 sudo nano /etc/default/limine
-quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performance
+quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performance nowatchdog
 
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 
@@ -31,6 +31,7 @@ echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governo
 modprobe tcp_bbr
 
 sudo nano /usr/lib/sysctl.d/99-cachyos-settings.conf
+net.ipv4.tcp_ecn = 1
 net.ipv4.tcp_fastopen = 3
 net.ipv4.tcp_mtu_probing = 1
 net.ipv4.tcp_timestamps = 0
@@ -39,7 +40,7 @@ net.ipv4.tcp_sack = 1
 net.ipv4.tcp_tw_reuse = 1
 net.ipv4.tcp_fin_timeout = 10
 net.ipv4.tcp_slow_start_after_idle = 0
-net.core.default_qdisc = fq
+net.core.default_qdisc = cake
 net.ipv4.tcp_congestion_control = bbr
 net.core.rmem_default = 1048576
 net.core.rmem_max = 16777216
@@ -52,7 +53,12 @@ net.ipv4.udp_rmem_min = 8192
 net.ipv4.udp_wmem_min = 8192
 # Symlink build fix
 fs.protected_symlinks = 0
-
+net.ipv4.tcp_dsack = 1
+net.ipv4.tcp_rfc1337 = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+net.ipv4.tcp_shrink_window = 1
+net.ipv4.udp_early_demux = 1
+vm.zone_reclaim_mode = 0
 
 sudo nano /etc/pacman.conf
 
@@ -77,5 +83,33 @@ NoExtract = usr/share/ibus/dicts/emoji-*.dict !usr/share/ibus/dicts/emoji-en.dic
 [chaotic-aur]
 Include = /etc/pacman.d/chaotic-mirrorlist
 
-[repo-ck]
-Server = http://repo-ck.com/$arch
+
+
+/etc/modprobe.d/nvidia.conf
+/usr/lib/modprobe.d//nvidia.conf
+
+options nvidia NVreg_EnableGpuFirmware=1
+options nvidia NVreg_EnableMSI=1
+options nvidia NVreg_EnablePCIeGen3=1
+options nvidia NVreg_RegistryDwords="PerfLevelSrc=0x2222"
+
+options nvidia NVreg_UsePageAttributeTable=1
+options NVreg_InitializeSystemMemoryAllocations=0
+options nvidia_drm modeset=1
+options nvidia NVreg_RegistryDwords=RMIntrLockingMode=1
+
+# Environment
+# https://gist.github.com/denji/52b9b0980ef3dadde0ff3d3ccf74a2a6
+export __GL_SYNC_TO_VBLANK=0
+export _GL_THREADED_OPTIMIZATIONS=1
+export __GL_YIELD=1
+export MESA_NO_ERROR=1
+export __GL_ALLOW_UNOFFICIAL_PROTOCOL=1
+export __GL_SHADER_DISK_CACHE=1
+export __GL_SHADER_DISK_CACHE_PATH=/tmp/shader
+export __GL_SORT_FBCONFIGS=1
+export KWIN_TRIPLE_BUFFER=0
+
+# Steam
+~/.steam/steam/steam_dev.cfg
+unShaderBackgroundProcessingThreads 8

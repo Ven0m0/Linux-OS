@@ -96,6 +96,7 @@ options nvidia NVreg_RegistryDwords="PerfLevelSrc=0x2222"
 options nvidia NVreg_UsePageAttributeTable=1
 options NVreg_InitializeSystemMemoryAllocations=0
 options nvidia_drm modeset=1
+optionsnvidia_drm.fbdev=1
 options nvidia NVreg_RegistryDwords=RMIntrLockingMode=1
 
 # Environment
@@ -106,9 +107,7 @@ export __GL_YIELD=1
 export MESA_NO_ERROR=1
 export __GL_ALLOW_UNOFFICIAL_PROTOCOL=1
 export __GL_SHADER_DISK_CACHE=1
-export __GL_SHADER_DISK_CACHE_PATH=/tmp/shader
 export __GL_SORT_FBCONFIGS=1
-export KWIN_TRIPLE_BUFFER=0
 
 # Steam
 ~/.steam/steam/steam_dev.cfg

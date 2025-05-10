@@ -65,6 +65,7 @@ sudo rm -rf /usr/share/gtk-doc/*
 sudo paccache -rk0 -q
 sudo pacman -Scc
 sudo pacman -Qdtq | pacman -Rns -
+sudo pacman -Rns $(pacman -Qtdq)
 flatpak uninstall --unused
 
 sudo fstrim -av --quiet-unsupported

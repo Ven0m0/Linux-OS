@@ -24,6 +24,8 @@ sudo nano /boot/limine.conf
 Kernel:
 sudo nano /etc/default/limine
 quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performance nowatchdog
+# Powersave
+rcutree.enable_rcu_lazy=1
 
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 

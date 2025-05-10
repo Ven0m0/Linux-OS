@@ -62,9 +62,15 @@ sudo rm -rf /usr/share/help/*
 sudo rm -rf /usr/share/gtk-doc/*
 
 # pacman -S profile-cleaner
-paccache -ruk0
+sudo paccache -rk0 -q
 sudo pacman -Scc
 sudo pacman -Qdtq | pacman -Rns -
 flatpak uninstall --unused
 
-sudo fstrim -a --quiet-unsupported
+sudo fstrim -av --quiet-unsupported
+
+# Use Bleachbit if available
+if which bleachbit >/dev/null 2>&1; then
+    bleachbit -c --preset
+    sudo bleachbit -c --preset
+fi

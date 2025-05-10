@@ -114,3 +114,7 @@ export __GL_SORT_FBCONFIGS=1
 # Steam
 ~/.steam/steam/steam_dev.cfg
 unShaderBackgroundProcessingThreads 8
+
+
+sudo nano /etc/ananicy.d/00-types.types
+{"name": "java", "nice": -10, "latency_nice": -10, "ioclass": "best-effort"}

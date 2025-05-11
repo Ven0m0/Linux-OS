@@ -60,14 +60,14 @@ rm -rf ~/.cache/winetricks/
 sudo rm -rf /usr/share/doc/*
 sudo rm -rf /usr/share/help/*
 sudo rm -rf /usr/share/gtk-doc/*
+sudo find /var/log -type f -name *.old -print0 | xargs -0 sudo rm -- >/dev/null 2>&1
 
 # pacman -S profile-cleaner
 sudo paccache -rk0 -q
-sudo pacman -Scc
-sudo pacman -Qdtq | pacman -Rns -
+sudo pacman -Scc --noconfirm
+# sudo pacman -Qdtq | pacman -Rns -
 sudo pacman -Rns $(pacman -Qtdq)
 flatpak uninstall --unused
-
 sudo fstrim -av --quiet-unsupported
 
 # Use Bleachbit if available

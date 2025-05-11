@@ -73,5 +73,5 @@ sudo fstrim -av --quiet-unsupported
 # Use Bleachbit if available
 if which bleachbit >/dev/null 2>&1; then
     bleachbit -c --preset
-    sudo bleachbit -c --preset
+    sudo -E bleachbit -c --preset
 fi

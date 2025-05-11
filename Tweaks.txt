@@ -23,7 +23,7 @@ Bootloader:
 sudo nano /boot/limine.conf
 Kernel:
 sudo nano /etc/default/limine
-quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performance nowatchdog
+quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performance
 # Powersave
 rcutree.enable_rcu_lazy=1
 

@@ -3,13 +3,14 @@ List of Linux operating systems
 
 Desktop:
 
+[CachyOS](https://https://cachyos.org//)
+
 [Linux Mint](https://linuxmint.com/)
 
 
 
-Gaming:
 
-[Cachy os](https://cachyos.org/)
+Gaming:
 
 [Nobara](https://nobaraproject.org/)
 
@@ -18,6 +19,7 @@ Gaming:
 
 [Bazzite](https://bazzite.gg/)
 
+[EndeavourOS](https://endeavouros.com/)
 
 Other:
 

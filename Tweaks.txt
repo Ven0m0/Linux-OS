@@ -24,6 +24,8 @@ sudo nano /boot/limine.conf
 Kernel:
 sudo nano /etc/default/limine
 quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performance
+# Fast Timer
+tsc=reliable clocksource=tsc
 # Powersave
 rcutree.enable_rcu_lazy=1
 
@@ -61,6 +63,7 @@ net.ipv4.tcp_moderate_rcvbuf = 1
 net.ipv4.tcp_shrink_window = 1
 net.ipv4.udp_early_demux = 1
 vm.zone_reclaim_mode = 0
+watermark_boost_factor = 1
 
 sudo nano /etc/pacman.conf
 

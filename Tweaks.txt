@@ -14,8 +14,9 @@ sudo tune2fs -l /dev/nvme0n1p2
 
 sudo tune2fs -O fast_commit /dev/nvme0n1p2
 sudo tune2fs -O '^casefold' /dev/nvme0n1p2
-# Might be deprecated
+# needs to be set during formatting
 sudo tune2fs -E lazy_itable_init=1 /dev/nvme0n1p2
+sudo mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 /dev/sdX1
 
 
 # Disable core dumps:

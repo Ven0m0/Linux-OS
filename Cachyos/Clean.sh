@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Clear system-wide cache
 rm -rf /var/cache/*
 sudo rm -rf /tmp/*

@@ -116,7 +116,7 @@ export __GL_SHADER_DISK_CACHE=1
 export __GL_SORT_FBCONFIGS=1
 
 # Steam
-~/.steam/steam/steam_dev.cfg
+sudo nano ~/.steam/steam/steam_dev.cfg
 unShaderBackgroundProcessingThreads 8
 
 

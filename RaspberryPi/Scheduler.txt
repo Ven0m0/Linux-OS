@@ -1,0 +1,9 @@
+
+cat /sys/block/mmcblk0/queue/scheduler
+
+Temporary:
+echo mq-deadline | sudo tee /sys/block/mmcblk0/queue/scheduler
+
+Permanent
+sudo nano /boot/cmdline.txt
+elevator=mq-deadline

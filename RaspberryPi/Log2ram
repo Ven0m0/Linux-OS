@@ -1,0 +1,26 @@
+https://github.com/azlux/log2ram
+
+echo "deb [signed-by=/usr/share/keyrings/azlux-archive-keyring.gpg] http://packages.azlux.fr/debian/ bookworm main" | sudo tee /etc/apt/sources.list.d/azlux.list
+sudo wget -O /usr/share/keyrings/azlux-archive-keyring.gpg  https://azlux.fr/repo.gpg
+sudo apt update
+sudo apt install log2ram
+
+
+sudo apt install rsync
+systemctl status log2ram
+
+
+sudo nano /etc/log2ram.conf
+USE_RSYNC=true
+COMP_ALG=lz4
+#COMP_ALG=zstd
+
+# ram
+# ZL2R=true
+
+
+sudo apt install zram-tools
+
+
+
+busybox-syslogd

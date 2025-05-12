@@ -21,6 +21,10 @@ COMP_ALG=lz4
 
 sudo apt install zram-tools
 
+# Check ram:
+
+free -m
 
 
+# Alternative log:
 busybox-syslogd

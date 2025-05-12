@@ -1,0 +1,35 @@
+https://www.raspberrypi.com/documentation/computers/configuration.html
+
+sudo raspi-config
+
+Check Kernel ver:
+uname -a
+hostnamectl
+
+Firmware update:
+# Update check
+sudo JUST_CHECK=1 rpi-update next
+
+sudo rpi-update next
+sudo reboot
+
+sudo raspi-config nonint do_update
+sudo apt-get dist-upgrade
+sudo apt-get update --allow-releaseinfo-change
+
+sudo nano /boot/firmware/cmdline.txt
+sudo nano /boot/firmware/config.txt
+
+disable_touchscreen=1
+disable_camera_led=1
+smsc95xx.turbo_mode
+dtoverlay=disable-wifi
+dtoverlay=disable-bt
+quiet
+
+
+https://github.com/DavidM42/rpi-cpu.gov
+cpu.gov
+cpu.gov -s
+cpu.gov -g performance
+cpu.gov -g ondemand

@@ -1,0 +1,102 @@
+ip a ls |grep fded
+ip address | grep "inet6 fd"
+
+Editor:
+sudo nano 
+
+sudo nano /boot/firmware/config.txt
+
+sudo nano /etc/pihole/setupVars.conf
+Settings:
+
+IPV6_ADDRESS=fded:3158:c026:8d40:390:45a7:ddaf:10c
+AAAA_QUERY_ANALYSIS=no
+
+
+
+
+sudo nano /etc/pihole/pihole-FTL.conf
+Settings:
+MOZILLA_CANARY=true
+BLOCK_ICLOUD_PR=true
+BLOCKINGMODE=NULL
+CNAME_DEEP_INSPECT=false
+SHOW_DNSSEC=false
+BLOCK_ESNI=true
+
+
+sudo nano /etc/dnsmasq.d/01-pihole.conf
+sudo nano /etc/dnsmasq.d/02-Tweak.conf
+
+ls /etc/dnsmasq.d/
+sudo nano /etc/pihole/dnsmasq.conf
+
+timedatectl status
+sudo nano /etc/systemd/timesyncd.conf
+sudo timedatectl set-ntp false
+
+time.cloudflare.com
+de.pool.ntp.org
+pool.ntp.org
+
+sudo service pihole-FTL reload
+
+
+cat /proc/sys/vm/swappiness
+Performance:
+sudo systemctl disable bluetooth
+
+
+sudo nano /etc/sysctl.conf
+
+# Tweaks
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_window_scaling=1
+# Disable TCP slow start on idle connections
+net.ipv4.tcp_slow_start_after_idle = 0
+net.ipv4.tcp_timestamps = 0
+net.ipv4.tcp_sack = 0
+
+# BRR
+# net.core.default_qdisc=fq
+net.core.default_qdisc=cake
+net.ipv4.tcp_congestion_control=bbr
+
+192.168.178.86
+
+
+net.ipv4.tcp_netdma 1
+net.ipv4.tcp_dca 1
+net.ipv4.tcp_mtu_probing 2
+net.ipv4.min_pmtu 1280
+
+
+Paths:
+sudo nano /etc/pihole/pihole.toml
+
+
+Database files:
+/etc/pihole/pihole-FTL.db
+/etc/pihole/gravity.db
+/etc/pihole/macvendor.db
+sqlite3 /etc/pihole/macvendor.db "VACUUM;"
+sqlite3 /etc/pihole/macvendor.db "pragma optimize;"
+
+Delete logs:
+find . -name "*.log" -type f
+find . -name "*.log" -type f -delete
+
+
+sudo nano /etc/dhcpcd.conf
+interface eth0
+static ip_address=192.168.178.86/24
+static ip6_address=fded:3158:c026:8d40:702a:9c3a:f8bb:a6dc/64
+
+
+
+Dev branch:
+pihole checkout dev
+sudo pihole checkout web development
+sudo pihole setpassword Password123

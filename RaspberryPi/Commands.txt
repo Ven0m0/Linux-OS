@@ -1,0 +1,74 @@
+sudo apt update && sudo apt-get dist-upgrade -y && sudo apt full-upgrade -y
+sudo pihole -up
+sudo apt clean && sudo apt autoclean && sudo apt-get -y autoremove --purge && sudo pip cache purge && localepurge
+sudo pihole -g -o
+sqlite3 /etc/pihole/gravity.db "VACUUM;"
+sqlite3 /etc/pihole/gravity.db "pragma optimize;"
+sqlite3 /etc/pihole/pihole-FTL.db "VACUUM;"
+sqlite3 /etc/pihole/pihole-FTL.db "pragma optimize;"
+sqlite3 /etc/pihole/macvendor.db "VACUUM;"
+sqlite3 /etc/pihole/macvendor.db "pragma optimize;"
+sudo reboot
+
+
+sudo find /var/log -name "*.log" -type f -delete
+
+
+sudo pihole -r
+sudo service pihole-FTL reload
+
+sudo JUST_CHECK=1 rpi-update next
+sudo rpi-update next
+
+sudo apt-get update --allow-releaseinfo-change
+sudo apt list --upgradable
+
+
+sudo apt clean
+sudo apt autoclean
+sudo apt autoremove
+sudo pip cache purge
+
+cpu.gov -s
+cpu.gov -g performance
+
+sysctl net.ipv4.tcp_congestion_control
+
+Uninstall:
+sudo apt-get remove --purge --auto-remove package
+
+Logging:
+sudo pihole logging off
+sudo pihole logging on
+
+SSH:
+ssh pihole@192.168.178.86
+
+
+Speed up HTTPS filtering:
+
+sudo apt-get install iptables-persistent
+
+sudo iptables -A INPUT -p tcp --destination-port 443 -j REJECT --reject-with tcp-reset
+sudo iptables -A INPUT -p udp --destination-port 80 -j REJECT --reject-with icmp-port-unreachable
+sudo iptables -A INPUT -p udp --destination-port 443 -j REJECT --reject-with icmp-port-unreachable
+
+sudo ip6tables -A INPUT -p tcp --destination-port 443 -j REJECT --reject-with tcp-reset
+sudo ip6tables -A INPUT -p udp --destination-port 80 -j REJECT --reject-with icmp6-port-unreachable
+sudo ip6tables -A INPUT -p udp --destination-port 443 -j REJECT --reject-with icmp6-port-unreachable
+
+sudo iptables -L
+mkdir /etc/iptables
+sudo -i
+sudo iptables-save > /etc/iptables/rules.v4
+sudo ip6tables-save > /etc/iptables/rules.v6
+su - pihole
+
+sudo nano /etc/iptables/rules.v4
+sudo nano /etc/iptables/rules.v6
+
+sudo iptables-restore < /etc/iptables/rules.v4
+sudo iptables-restore < /etc/iptables/rules.v6
+
+
+sudo apt install --reinstall ca-certificates

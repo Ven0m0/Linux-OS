@@ -1,4 +1,4 @@
-#!/usr/bin/fish
+#!/usr/bin/env bash
 
 adb start-server
 adb shell setprop debug.enabletr 1

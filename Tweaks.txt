@@ -7,9 +7,10 @@ noatime,space_cache=v2,ssd,discard=async,commit=120
 
 # Ext4:
 journal_async_commit
-noatime,discard=async,commit=120,data=writeback,journal_async_commit,nobh,nobarrier
+noatime,lazytime,discard=async,commit=120,data=writeback,journal_async_commit,nobh,nobarrier
 sudo tune2fs -O fast_commit /dev/nvme0n1p2
-sudo tune2fs -O casefold /dev/nvme0n1p2
+sudo tune2fs -O '^casefold' /dev/nvme0n1p2
+
 
 # Disable core dumps:
 sudo nano /etc/sysctl.d/50-coredump.conf

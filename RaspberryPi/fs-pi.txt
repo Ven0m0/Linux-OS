@@ -27,9 +27,11 @@ rest for zswap (28gb in my case)
 # Zram tweaks:
 sudo nano /etc/sysctl.conf
 vm.dirty_ratio=50
+vm.dirty_background_ratio = 5
 vm.page-cluster = 0
 vm.swappiness=80
 vm.watermark_boost_factor=0
+vfs_cache_pressure = 200
 
 # External journal:
 sudo mke2fs -O journal_dev /dev/sda

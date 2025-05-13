@@ -9,11 +9,11 @@ sudo rm -rf /var/lib/systemd/coredump/
 # Empty global trash
 rm -rf ~/.local/share/Trash/*
 sudo rm -rf /root/.local/share/Trash/*
-echo '--- Clear user-specific cache'
+# Clear user-specific cache
 rm -rf ~/.cache/*
 sudo rm -rf root/.cache/*
 rm -f ~/.mozilla/firefox/Crash\ Reports/*
-echo '--- Clear Flatpak cache'
+# Clear Flatpak cache
 rm -rf ~/.var/app/*/cache/*
 sudo rm -rf /var/tmp/flatpak-cache-*
 rm -rf ~/.cache/flatpak/system-cache/*
@@ -23,7 +23,7 @@ echo '--- Clear Snap cache'
 rm -f ~/snap/*/*/.cache/*
 sudo rm -rf /var/lib/snapd/cache/*
 rm -rf ~/snap/*/*/.local/share/Trash/*
-echo '--- Clear thumbnails (icon cache)'
+# Clear thumbnails
 rm -rf ~/.thumbnails/*
 rm -rf ~/.cache/thumbnails/*
 # Clear system logs

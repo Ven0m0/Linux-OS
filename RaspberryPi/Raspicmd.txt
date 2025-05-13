@@ -36,3 +36,6 @@ cpu.gov -g ondemand
 
 Raspberry pi connect
 https://www.raspberrypi.com/documentation/services/connect.html
+sudo apt update
+sudo apt upgrade
+sudo apt install rpi-connect

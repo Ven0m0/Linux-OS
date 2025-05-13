@@ -25,7 +25,7 @@ sudo nano /boot/firmware/config.txt
 
 disable_touchscreen=1
 disable_camera_led=1
-smsc95xx.turbo_mode
+smsc95xx.turbo_mode=y
 dtoverlay=disable-wifi
 dtoverlay=disable-bt
 quiet

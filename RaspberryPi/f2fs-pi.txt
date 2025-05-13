@@ -1,3 +1,20 @@
 https://wiki.psuter.ch/doku.php?id=install_raspbian_on_f2fs_root
 
 
+
+
+sudo nano /etc/udev/rules.d/60-ioschedulers.rules
+
+# SSD
+ACTION=="add|change", KERNEL=="sd[a-z]*|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"
+
+# 4. USB flash sticks (external, non-rotational)
+ACTION=="add|change", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", ATTR{queue/scheduler}="none"
+
+# HDD
+ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+
+# NVMe SSD
+ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
+
+

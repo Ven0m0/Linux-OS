@@ -92,7 +92,7 @@ find . -name "*.log" -type f -delete
 sudo nano /etc/dhcpcd.conf
 interface eth0
 static ip_address=192.168.178.86/24
-static ip6_address=fded:3158:c026:8d40:702a:9c3a:f8bb:a6dc/64
+static ipv6_adress=fded:3158:c026:8d40:23fc:8fb1:b32c:d379/64
 
 
 

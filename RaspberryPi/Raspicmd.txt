@@ -33,3 +33,6 @@ cpu.gov
 cpu.gov -s
 cpu.gov -g performance
 cpu.gov -g ondemand
+
+Raspberry pi connect
+https://www.raspberrypi.com/documentation/services/connect.html

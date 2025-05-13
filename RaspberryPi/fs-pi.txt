@@ -1,8 +1,6 @@
 https://wiki.psuter.ch/doku.php?id=install_raspbian_on_f2fs_root
 
 
-
-
 sudo nano /etc/udev/rules.d/60-ioschedulers.rules
 
 # SSD
@@ -17,4 +15,12 @@ ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queu
 # NVMe SSD
 ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
 
+look into:
+systemd-oomd
 
+https://github.com/garyexplains/examples/blob/master/how_to_enable_ZRAM_Raspberry_Pi.md
+Zswap and external jounal:
+
+lsblk
+4gb for external journal
+rest for zswap (28gb in my case)

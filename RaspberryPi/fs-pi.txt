@@ -19,14 +19,28 @@ look into:
 systemd-oomd
 
 https://github.com/garyexplains/examples/blob/master/how_to_enable_ZRAM_Raspberry_Pi.md
-Zswap and external jounal:
 
 lsblk
-4gb for external journal
+# 4gb for external journal
 rest for zswap (28gb in my case)
 
+# Zram tweaks:
 sudo nano /etc/sysctl.conf
 vm.dirty_ratio=50
 vm.page-cluster = 0
 vm.swappiness=80
 vm.watermark_boost_factor=0
+
+# External journal:
+sudo mke2fs -O journal_dev /dev/sda
+tune2fs -J device=/dev/sda /dev/mmcblk0p2
+
+sudo nano /etc/fstab
+x-systemd.requires=/dev/sda,journal_path=/dev/sda
+
+echo "deb [signed-by=/usr/share/keyrings/azlux-archive-keyring.gpg] http://packages.azlux.fr/debian/ bookworm main" | sudo tee /etc/apt/sources.list.d/azlux.list
+sudo wget -O /usr/share/keyrings/azlux-archive-keyring.gpg  https://azlux.fr/repo.gpg
+sudo apt update
+sudo apt install log2ram
+systemctl status log2ram
+sudo nano /etc/log2ram.conf

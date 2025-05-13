@@ -34,8 +34,16 @@ cpu.gov -s
 cpu.gov -g performance
 cpu.gov -g ondemand
 
+Check disk & ram
+df -h
+free -h
+
+
 Raspberry pi connect
 https://www.raspberrypi.com/documentation/services/connect.html
+
 sudo apt update
-sudo apt upgrade
-sudo apt install rpi-connect
+sudo apt full-upgrade
+sudo apt install rpi-connect-lite
+loginctl enable-linger
+rpi-connect on

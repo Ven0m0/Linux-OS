@@ -10,6 +10,9 @@ Firmware update:
 # Update check
 sudo JUST_CHECK=1 rpi-update next
 
+sudo PRUNE_MODULES=1 rpi-update
+# Next branch is currently dormant (14.05.2025)
+sudo PRUNE_MODULES=1 rpi-update next
 sudo rpi-update next
 sudo reboot
 

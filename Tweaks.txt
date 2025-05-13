@@ -70,7 +70,7 @@ net.ipv4.tcp_moderate_rcvbuf = 1
 net.ipv4.tcp_shrink_window = 1
 net.ipv4.udp_early_demux = 1
 vm.zone_reclaim_mode = 0
-watermark_boost_factor = 1
+watermark_boost_factor = 0
 
 sudo nano /etc/pacman.conf
 

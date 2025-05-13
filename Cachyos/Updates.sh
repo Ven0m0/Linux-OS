@@ -1,2 +1,2 @@
 sudo pacman -Syu
-topgrade
+sudo topgrade

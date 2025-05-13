@@ -1,0 +1,8 @@
+mkfs.ext4 /dev/nvme0n1p2
+sudo mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 /dev/sdX1
+
+
+sudo mkfs.ext4 -E lazy_itable_init=1,lazy_journal_init=1 /dev/sda1
+
+sudo tune2fs -E lazy_itable_init=1 lazy_journal_init=1 -o journal_data_writeback nobarrier -O fast_commit /dev/nvme0n1p2
+

@@ -1,0 +1,17 @@
+/*
+ * Prevent Tab Overflow
+ */
+.tabbrowser-tab {
+  min-width: 1em !important;
+  clip-width: 1em !important;
+}
+
+/*
+ * Remove "Send Page to Device", "Send Link to Device", 
+ * "Send Tab to Device" from context menu.
+ */
+#context-sendpagetodevice, #context-sep-sendpagetodevice,
+#context-sendlinktodevice, #context-sep-sendlinktodevice,
+#context_sendTabToDevice, #context_sendTabToDevice_separator {
+  display: none !important;
+}

@@ -19,7 +19,7 @@ sudo rm -rf /var/tmp/flatpak-cache-*
 rm -rf ~/.cache/flatpak/system-cache/*
 rm -rf ~/.local/share/flatpak/system-cache/*
 rm -rf ~/.var/app/*/data/Trash/*
-echo '--- Clear Snap cache'
+# Clear Snap cache
 rm -f ~/snap/*/*/.cache/*
 sudo rm -rf /var/lib/snapd/cache/*
 rm -rf ~/snap/*/*/.local/share/Trash/*

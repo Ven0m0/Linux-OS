@@ -53,6 +53,214 @@ rm -rf ~/.var/app/com.valvesoftware.Steam/data/Steam/appcache/*
 # Python
 rm -f ~/.python_history
 sudo rm -f /root/.python_history
+# Clear Firefox crash reports
+echo '--- Clear Firefox crash reports'
+# Global installation
+rm -fv ~/.mozilla/firefox/Crash\ Reports/*
+# Flatpak installation
+rm -rfv ~/.var/app/org.mozilla.firefox/.mozilla/firefox/Crash\ Reports/*
+# Snap installation
+rm -rfv ~/snap/firefox/common/.mozilla/firefox/Crash\ Reports/*
+# Delete files matching pattern: "~/.mozilla/firefox/*/crashes/*"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/.mozilla/firefox/*/crashes/*'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Delete files matching pattern: "~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/crashes/*"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/crashes/*'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Delete files matching pattern: "~/snap/firefox/common/.mozilla/firefox/*/crashes/*"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/snap/firefox/common/.mozilla/firefox/*/crashes/*'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Delete files matching pattern: "~/.mozilla/firefox/*/crashes/events/*"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/.mozilla/firefox/*/crashes/events/*'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Delete files matching pattern: "~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/crashes/events/*"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/crashes/events/*'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Delete files matching pattern: "~/snap/firefox/common/.mozilla/firefox/*/crashes/events/*"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/snap/firefox/common/.mozilla/firefox/*/crashes/events/*'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Clear Firefox "Multi-Account Containers" data
+echo '--- Clear Firefox "Multi-Account Containers" data'
+# Delete files matching pattern: "~/.mozilla/firefox/*/containers.json"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/.mozilla/firefox/*/containers.json'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Delete files matching pattern: "~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/containers.json"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/containers.json'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Delete files matching pattern: "~/snap/firefox/common/.mozilla/firefox/*/containers.json"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/snap/firefox/common/.mozilla/firefox/*/containers.json'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
 # Wine
 rm -rf ~/.wine/drive_c/windows/temp/*
 rm -rf ~/.cache/wine/
@@ -63,12 +271,10 @@ sudo rm -rf /usr/share/doc/*
 sudo rm -rf /usr/share/help/*
 sudo rm -rf /usr/share/gtk-doc/*
 sudo find /var/log -type f -name *.old -print0 | xargs -0 sudo rm -- >/dev/null 2>&1
-
-# pacman -S profile-cleaner
 sudo paccache -rk0 -q
 sudo pacman -Scc --noconfirm
 # sudo pacman -Qdtq | pacman -Rns -
-sudo pacman -Rns $(pacman -Qtdq)
+yes | sudo pacman -Rns $(pacman -Qtdq)
 flatpak uninstall --unused
 sudo fstrim -av --quiet-unsupported
 

@@ -1,0 +1,62 @@
+{
+  "timeStamp": 1747197599953,
+  "version": "1.63.2",
+  "userSettings": {
+    "advancedUserEnabled": true,
+    "cloudStorageEnabled": true,
+    "uiTheme": "dark",
+    "externalLists": "https://filters.adtidy.org/extension/ublock/filters/101_optimized.txt\nhttps://filters.adtidy.org/extension/ublock/filters/118_optimized.txt\nhttps://filters.adtidy.org/extension/ublock/filters/122_optimized.txt\nhttps://filters.adtidy.org/extension/ublock/filters/3_optimized.txt\nhttps://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt\nhttps://raw.githubusercontent.com/Ven0m0/Ven0m0-Adblock/refs/heads/main/Combination.txt\nhttps://raw.githubusercontent.com/liamengland1/miscfilters/refs/heads/master/antipaywall.txt\nhttps://raw.githubusercontent.com/yokoffing/filterlists/refs/heads/main/antipaywall_filters_without_element_hiding.txt\nhttps://raw.githubusercontent.com/yokoffing/filterlists/refs/heads/main/privacy_essentials.txt",
+    "importedLists": [
+      "https://filters.adtidy.org/extension/ublock/filters/101_optimized.txt",
+      "https://filters.adtidy.org/extension/ublock/filters/118_optimized.txt",
+      "https://filters.adtidy.org/extension/ublock/filters/122_optimized.txt",
+      "https://filters.adtidy.org/extension/ublock/filters/3_optimized.txt",
+      "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt",
+      "https://raw.githubusercontent.com/Ven0m0/Ven0m0-Adblock/refs/heads/main/Combination.txt",
+      "https://raw.githubusercontent.com/liamengland1/miscfilters/refs/heads/master/antipaywall.txt",
+      "https://raw.githubusercontent.com/yokoffing/filterlists/refs/heads/main/antipaywall_filters_without_element_hiding.txt",
+      "https://raw.githubusercontent.com/yokoffing/filterlists/refs/heads/main/privacy_essentials.txt"
+    ],
+    "popupPanelSections": 63,
+    "tooltipsDisabled": true,
+    "userFiltersTrusted": true
+  },
+  "selectedFilterLists": [
+    "user-filters",
+    "ublock-filters",
+    "ublock-badware",
+    "ublock-privacy",
+    "ublock-quick-fixes",
+    "ublock-unbreak",
+    "adguard-spyware-url",
+    "plowe-0",
+    "fanboy-cookiemonster",
+    "ublock-cookies-easylist",
+    "adguard-cookies",
+    "fanboy-social",
+    "easylist-newsletters",
+    "easylist-notifications",
+    "adguard-other-annoyances",
+    "adguard-popup-overlays",
+    "adguard-widgets",
+    "ublock-annoyances",
+    "DEU-0",
+    "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt",
+    "https://raw.githubusercontent.com/yokoffing/filterlists/refs/heads/main/antipaywall_filters_without_element_hiding.txt",
+    "https://filters.adtidy.org/extension/ublock/filters/3_optimized.txt",
+    "https://raw.githubusercontent.com/liamengland1/miscfilters/refs/heads/master/antipaywall.txt",
+    "https://filters.adtidy.org/extension/ublock/filters/101_optimized.txt",
+    "https://filters.adtidy.org/extension/ublock/filters/118_optimized.txt",
+    "https://filters.adtidy.org/extension/ublock/filters/122_optimized.txt",
+    "https://raw.githubusercontent.com/Ven0m0/Ven0m0-Adblock/refs/heads/main/Combination.txt"
+  ],
+  "hiddenSettings": {
+    "filterAuthorMode": true,
+    "userResourcesLocation": "https://raw.githubusercontent.com/pixeltris/TwitchAdSolutions/master/vaft/vaft-ublock-origin.js"
+  },
+  "whitelist": [],
+  "dynamicFilteringString": "behind-the-scene * * noop\nbehind-the-scene * inline-script noop\nbehind-the-scene * 1p-script noop\nbehind-the-scene * 3p-script noop\nbehind-the-scene * 3p-frame noop\nbehind-the-scene * image noop\nbehind-the-scene * 3p noop\n* * 3p-script block\n* * 3p-frame block",
+  "urlFilteringString": "",
+  "hostnameSwitchesString": "no-csp-reports: * true",
+  "userFilters": "! Twitch adblock: https://github.com/pixeltris/TwitchAdSolutions\ntwitch.tv##+js(twitch-videoad)"
+}

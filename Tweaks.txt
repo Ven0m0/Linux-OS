@@ -15,9 +15,6 @@ noatime,lazytime,discard=async,commit=120,data=writeback,journal_async_commit,no
 sudo tune2fs -l /dev/nvme0n1p2
 
 sudo tune2fs -O fast_commit /dev/nvme0n1p2
-sudo tune2fs -O '^casefold' /dev/nvme0n1p2
-# needs to be set during formatting
-sudo mkfs.ext4 -E lazy_itable_init=1,lazy_journal_init=1 /dev/sdX1
 
 
 # Disable core dumps:
@@ -76,6 +73,8 @@ net.ipv4.udp_early_demux = 1
 vm.zone_reclaim_mode = 0
 watermark_boost_factor = 0
 
+
+
 sudo nano /etc/pacman.conf
 
 # https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Installing_only_content_in_required_languages
@@ -98,6 +97,9 @@ NoExtract = usr/share/ibus/dicts/emoji-*.dict !usr/share/ibus/dicts/emoji-en.dic
 
 [chaotic-aur]
 Include = /etc/pacman.d/chaotic-mirrorlist
+
+[artafinde]
+Server = https://pkgbuild.com/~artafinde/repo
 
 
 

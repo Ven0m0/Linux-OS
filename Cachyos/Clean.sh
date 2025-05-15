@@ -284,7 +284,7 @@ sudo find /var/log -type f -name *.old -print0 | xargs -0 sudo rm -- >/dev/null 
 sudo paccache -rk0 -q
 sudo pacman -Scc --noconfirm
 # sudo pacman -Qdtq | pacman -Rns -
-yes | sudo pacman -Rns $(pacman -Qtdq)
+sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm > /dev/null || true
 flatpak uninstall --unused
 sudo fstrim -av --quiet-unsupported
 

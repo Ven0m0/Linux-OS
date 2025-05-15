@@ -285,6 +285,7 @@ sudo paccache -rk0 -q
 sudo pacman -Scc --noconfirm
 # sudo pacman -Qdtq | pacman -Rns -
 sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm > /dev/null || true
+# yes | sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm
 flatpak uninstall --unused
 sudo fstrim -av --quiet-unsupported
 

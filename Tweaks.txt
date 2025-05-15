@@ -1,5 +1,7 @@
 https://github.com/sn99/Optimizing-linux
 
+curl -fsSL https://christitus.com/linuxdev | sh
+
 
 # sudo nano /etc/fstab
 btrfs:

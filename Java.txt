@@ -1,1 +1,5 @@
 https://github.com/oracle/graal/blob/master/compiler/src/jdk.graal.compiler/src/jdk/graal/compiler/core/phases/CEOptimization.java
+
+
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled
+

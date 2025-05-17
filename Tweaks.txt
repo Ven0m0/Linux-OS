@@ -141,6 +141,8 @@ sudo nano /etc/ananicy.d/00-types.types
 lsblk -d -o NAME,SCHED
 none mq-deadline kyber adios bfq
 
+cat /sys/block/nvme0n1/queue/scheduler
+echo none | sudo tee /sys/block/nvme0n1/queue/scheduler
 
 sudo nano /etc/udev/rules.d/60-ioschedulers.rules
 

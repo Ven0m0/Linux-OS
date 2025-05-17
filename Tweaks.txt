@@ -5,7 +5,7 @@ curl -fsSL https://christitus.com/linuxdev | sh
 
 # sudo nano /etc/fstab
 btrfs:
-noatime,space_cache=v2,ssd,discard=async,commit=120
+noatime,lazytime,space_cache=v2,ssd,discard=async,commit=120
 
 # Ext4:
 journal_async_commit

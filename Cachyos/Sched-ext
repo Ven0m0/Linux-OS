@@ -1,0 +1,15 @@
+sudo nano /etc/scx_loader.toml
+
+scx_bpfland:
+-m performance -f -k -p
+
+[scheds.scx_bpfland]
+gaming_mode = ["-m", "performance", "-p", "-k", "-f"]
+
+scx_rusty:
+-k --perf 1024 
+
+[scheds.scx_rusty]
+gaming_mode = [-k --perf 1024 ]
+
+

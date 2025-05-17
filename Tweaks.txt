@@ -138,6 +138,8 @@ sudo nano /etc/ananicy.d/00-types.types
 {"name": "java", "nice": -10, "latency_nice": -10, "ioclass": "best-effort"}
 
 
+lsblk -d -o NAME,SCHED
+
 sudo nano /etc/udev/rules.d/60-ioschedulers.rules
 
 # HDD

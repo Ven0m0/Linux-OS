@@ -23,7 +23,7 @@ sudo rpi-update next
 sudo apt-get update --allow-releaseinfo-change
 sudo apt list --upgradable
 
-
+apt list --installed
 sudo apt clean
 sudo apt autoclean
 sudo apt autoremove

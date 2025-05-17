@@ -23,6 +23,6 @@ Gaming:
 
 Other:
 
-[Raspberry Pi OS](https://www.raspberrypi.com/software/)
+[DietPi](https://dietpi.com/)
 
-[Tails](https://tails.boum.org/)
+[Raspberry Pi OS](https://www.raspberrypi.com/software/)

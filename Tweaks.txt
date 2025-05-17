@@ -139,6 +139,8 @@ sudo nano /etc/ananicy.d/00-types.types
 
 
 lsblk -d -o NAME,SCHED
+none mq-deadline kyber adios bfq
+
 
 sudo nano /etc/udev/rules.d/60-ioschedulers.rules
 

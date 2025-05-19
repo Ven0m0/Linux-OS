@@ -2,6 +2,8 @@ https://youtu.be/_jV2n_fbRxU?si=QwY-dkPeYbrp3T-B
 
 https://casaos.zimaspace.com/
 
+curl -fsSL https://get.casaos.io | sudo bash
+
 
 https://www.reddit.com/r/CasaOS/comments/109are9/pihole_tutorial/
 https://www.linuxuprising.com/2020/07/ubuntu-how-to-free-up-port-53-used-by.html

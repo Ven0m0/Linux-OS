@@ -5,6 +5,7 @@ curl -fsSL https://christitus.com/linuxdev | sh
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | sudo bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | sudo bash
 
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/RaspberryPi/privacy-script.sh | sudo bash
 
 # sudo nano /etc/fstab
 btrfs:

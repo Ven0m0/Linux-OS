@@ -34,7 +34,7 @@ quiet
 
 
 sudo nano /etc/fstab
-commit=120,data=writeback,journal_async_commit,barrier=0
+commit=120,data=writeback,journal_async_commit,barrier=0,nobh
 
 sudo tune2fs -O fast_commit
 

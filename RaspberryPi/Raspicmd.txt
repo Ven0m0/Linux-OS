@@ -25,14 +25,18 @@ smsc95xx.turbo_mode=y quiet
 
 sudo nano /boot/firmware/config.txt
 
+arm_boost=1
 disable_touchscreen=1
 disable_camera_led=1
 dtoverlay=disable-wifi
 dtoverlay=disable-bt
 quiet
-arm_boost=1
 
 
+sudo nano /etc/fstab
+commit=120,data=writeback,journal_async_commit,barrier=0
+
+sudo tune2fs -O fast_commit
 
 https://github.com/DavidM42/rpi-cpu.gov
 cpu.gov

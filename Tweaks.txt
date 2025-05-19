@@ -13,7 +13,7 @@ noatime,lazytime,space_cache=v2,ssd,discard=async,commit=120
 
 # Ext4:
 journal_async_commit
-noatime,lazytime,discard=async,commit=120,data=writeback,journal_async_commit,nobh,nobarrier
+noatime,lazytime,discard=async,commit=120,data=writeback,journal_async_commit,nobh,barrier=0
 
 # Check
 sudo tune2fs -l /dev/nvme0n1p2

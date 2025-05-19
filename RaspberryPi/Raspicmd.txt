@@ -21,14 +21,17 @@ sudo apt-get dist-upgrade
 sudo apt-get update --allow-releaseinfo-change
 
 sudo nano /boot/firmware/cmdline.txt
+smsc95xx.turbo_mode=y quiet
+
 sudo nano /boot/firmware/config.txt
 
 disable_touchscreen=1
 disable_camera_led=1
-smsc95xx.turbo_mode=y
 dtoverlay=disable-wifi
 dtoverlay=disable-bt
 quiet
+arm_boost=1
+
 
 
 https://github.com/DavidM42/rpi-cpu.gov

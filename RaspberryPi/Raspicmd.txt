@@ -36,7 +36,7 @@ quiet
 sudo nano /etc/fstab
 commit=120,data=writeback,journal_async_commit,barrier=0,nobh
 
-sudo tune2fs -O fast_commit
+sudo tune2fs -O fast_commit /dev/
 
 https://github.com/DavidM42/rpi-cpu.gov
 cpu.gov

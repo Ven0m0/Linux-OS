@@ -2,6 +2,9 @@ https://github.com/sn99/Optimizing-linux
 
 curl -fsSL https://christitus.com/linuxdev | sh
 
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash
+
 
 # sudo nano /etc/fstab
 btrfs:

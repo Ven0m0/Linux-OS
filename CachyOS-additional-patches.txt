@@ -34,6 +34,8 @@ https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=d3c198c20b
 
 Branch hintrs:
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0002-sched-core-add-some-branch-hints-based-on-gcov-analy.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0149-select-do_pollfd-add-unlikely-branch-hint-return-pat.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0150-select-core_sys_select-add-unlikely-branch-hint-on-r.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0169-mm-mincore-improve-performance-by-adding-an-unlikely.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0170-sched-Add-unlikey-branch-hints-to-several-system-cal.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0171-kcmp-improve-performance-adding-an-unlikely-hint-to-.patch

@@ -26,8 +26,4 @@ fi
 sudo rm -rfv /run/log/journal/*
 sudo rm -rfv /var/log/journal/*
 sudo fstrim -av --quiet-unsupported
-if ! command -v 'localepurge' &> /dev/null; then
-  echo 'Skipping because "localepurge" is not found.'
-else
-  sudo localepurge
-fi
+sudo dietpi-logclear

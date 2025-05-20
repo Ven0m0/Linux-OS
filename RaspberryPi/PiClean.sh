@@ -26,4 +26,4 @@ fi
 sudo rm -rfv /run/log/journal/*
 sudo rm -rfv /var/log/journal/*
 sudo fstrim -av --quiet-unsupported
-sudo dietpi-logclear
+sudo dietpi-logclear 2

@@ -22,21 +22,28 @@ Other
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/netfilter/0002-netfilter-add-xt_FLOWOFFLOAD-target.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
 
-
-https://lore.kernel.org/lkml/20250430082651.3152444-1-qun-wei.lin@mediatek.com/
-https://patchwork.kernel.org/project/linux-modules/patch/20250313143002.9118-1-petr.pavlu@suse.com/
+Kcompressd:
+https://lore.kernel.org/lkml/20250430082651.3152444-1-qun-wei.lin@mediatek.com/raw
 zblock:
-https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=6c1525631b659530d9199ed4b67422a270d328fe
-https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/commit/?h=mm-new&id=c596563e905175c63aac5dcf8cbc26f2677e33b1
-https://lore.kernel.org/all/20250502080156.1672957-1-vitaly.wool@konsulko.se/T/#u
+https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=45a901ed17242dc91d42402760dbea657746c5bf
+https://lore.kernel.org/all/20250502080156.1672957-1-vitaly.wool@konsulko.se/raw
+Zblock fix:
+https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=583eb713a53c0a0241559ee32f5419c1cceaf65a
+https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=9bbcc39d98b642f3ce46efa9a2fc6b1cc5ee8bf7
+https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=d3c198c20bde67d7ae69053598c5e16a787b49b5
 
+Branch hintrs:
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0002-sched-core-add-some-branch-hints-based-on-gcov-analy.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0169-mm-mincore-improve-performance-by-adding-an-unlikely.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0170-sched-Add-unlikey-branch-hints-to-several-system-cal.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0171-kcmp-improve-performance-adding-an-unlikely-hint-to-.patch
 
-https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=cd91df8178156c07c68a5360e6400b22d82439e9
-
-https://patchwork.kernel.org/project/linux-mm/patch/fbe1e0c7d91bf3fa9a64ff5d84b53ded1d0d5ac7.1745852397.git.donettom@linux.ibm.com/
-https://patchwork.kernel.org/project/linux-mm/patch/273649393600cb33ac3eec0e9a523c2d1853a47c.1745852397.git.donettom@linux.ibm.com/
+Clearlinux:
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0129-mm-wakeups-remove-a-wakeup.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0106-intel_idle-tweak-cpuidle-cstates.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0173-cpuidle-psd-add-power-sleep-demotion-prevention-for-.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0102-increase-the-ext4-default-commit-age.patch
 
 Extra patches
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
-https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.14/clang-patches/0001-clang-patches.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0002-ZEN-dm-crypt-Disable-workqueues-for-crypto-ops.patch

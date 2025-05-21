@@ -93,9 +93,7 @@ https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0130-itm
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0167-net-sock-increase-default-number-of-_SK_MEM_PACKETS-.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0158-clocksource-only-perform-extended-clocksource-checks.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0173-cpuidle-psd-add-power-sleep-demotion-prevention-for-.patch
-https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0004-sched-numa-Adjust-imb_numa_nr-to-a-better-approximat.patch
-https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/cpuidle-patches/0001-cpuidle-Prefer-teo-over-menu-governor.patch
-
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/mmput_async.patch
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/cpuidle-patches/0001-cpuidle-Prefer-teo-over-menu-governor.patch
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/futex-patches/0001-futex-6.15-Add-entry-point-for-FUTEX_WAIT_MULTIPLE-o.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0017-XANMOD-lib-kconfig.debug-disable-default-SYMBOLIC_ER.patch
@@ -103,7 +101,6 @@ https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0013-XANMOD-mm-Raise-max_map_count-default-value.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0010-XANMOD-blk-wbt-Set-wbt_default_latency_nsec-to-2msec.patch
 https://raw.githubusercontent.com/Frogging-Family/linux-tkg/refs/heads/master/linux-tkg-patches/6.15/0014-OpenRGB.patch
-
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/0001-mm-Add-Kcompressd-for-accelerated-memory-compression.patch
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/mm-zblock-patches/0001-mm-add-zblock-allocator.patch
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/mm-add-zblock-allocator-fix.patch

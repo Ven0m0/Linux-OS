@@ -14,6 +14,15 @@ packages=(
 topgrade
 bauh
 partitionmanager
+plasma-wayland-protocols
+polkit-kde-agent
+vkd3d
+vkbasalt
+jre-openjdk
+legcord
+prismlauncher
+obs-studio
+#Dev
 modprobed-db
 rustup
 llvm-bolt
@@ -22,22 +31,15 @@ polly
 autofdo-bin
 svgo
 optipng
-plasma-wayland-protocols
-polkit-kde-agent
-xorg-xhost
+#Tweak
 profile-sync-daemon
 bleachbit
 irqbalance
 aria2
-legcord
-vkd3d
-vkbasalt
-obs-studio
-mkinitcpio-firmware
-prismlauncher
-jre-openjdk
-appmenu-gtk-module
+mkinitcpio-firmware #Fix warning
+xorg-xhost #Fixes sudo bash
 libappindicator-gtk3  #Fixes blurry icons in Electron programs
+appmenu-gtk-module #Fixes for GTK3 menus
 xdg-desktop-portal #Kde file picker
 )
 

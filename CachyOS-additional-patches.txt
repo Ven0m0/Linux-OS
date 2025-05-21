@@ -23,7 +23,6 @@ https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=45a901ed17
 https://lore.kernel.org/all/20250502080156.1672957-1-vitaly.wool@konsulko.se/raw
 Zblock fix:
 https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=583eb713a53c0a0241559ee32f5419c1cceaf65a
-https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=9bbcc39d98b642f3ce46efa9a2fc6b1cc5ee8bf7
 https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=d3c198c20bde67d7ae69053598c5e16a787b49b5
 
 Branch hintrs:

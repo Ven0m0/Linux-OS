@@ -33,6 +33,7 @@ vkd3d
 vkbasalt
 obs-studio
 mkinitcpio-firmware
+prismlauncher
 )
 
 echo -e "\nInstalling packages: ${packages[*]}"

@@ -12,12 +12,6 @@ https://github.com/clearlinux-pkgs/linux/blob/main/0161-ACPI-align-slab-buffers-
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/clearlinux/0001-sched-wait-Do-accept-in-LIFO-order-for-cache-efficie.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0001-XANMOD-x86-build-Add-more-CFLAGS-optimizations.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0002-ZEN-dm-crypt-Disable-workqueues-for-crypto-ops.patch
-BRR3
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0016-net-tcp_bbr-v3-update-TCP-bbr-congestion-control-mod.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0017-net-tcp_bbr-v3-ensure-ECN-enabled-BBR-flows-set-ECT-.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0010-net-tcp-re-generalize-TSO-sizing-in-TCP-CC-module-AP.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0011-net-tcp-add-fast_ack_mode-1-skip-rwin-check-in-tcp_f.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/bbr3/0002-net-tcp_bbr-v2-shrink-delivered_mstamp-first_tx_msta.patch
 Other
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/netfilter/0002-netfilter-add-xt_FLOWOFFLOAD-target.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
@@ -61,6 +55,9 @@ https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0173-cpu
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/iommu.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/ratelimit-sched-yield.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/backport-ioboost.patch
+
+Cachyos:
+https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.14/crypto-patches-all/0001-crypto-patches.patch
 
 Extra patches
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch

@@ -66,5 +66,40 @@ sudo pacman -Rns cachy-browser
 
 
 sudo systemctl enable fstrim.timer
-sudo pacman -Syyu --noconfirm
+
+sudo pacman -Syu --noconfirm
 sudo topgrade -c --disable config_update --skip-notify -y
+sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm > /dev/null || true
+flatpak uninstall --unused
+sudo pacman -Scc --noconfirm && sudo paccache -rk0 -q
+sudo fstrim -av --quiet-unsupported
+# Use Bleachbit if available
+if command -v bleachbit >/dev/null 2>&1; then
+    bleachbit -c --preset
+    sudo -E bleachbit -c --preset
+else
+    echo "bleachbit is not installed, skipping."
+fi
+rm -rf /var/cache/*
+sudo rm -rf /tmp/*
+sudo rm -rf /var/tmp/*
+sudo rm -rf /var/crash/*
+sudo rm -rf /var/lib/systemd/coredump/
+# Empty global trash
+rm -rf ~/.local/share/Trash/*
+sudo rm -rf /root/.local/share/Trash/*
+# Clear user-specific cache
+rm -rf ~/.cache/*
+sudo rm -rf root/.cache/*
+rm -f ~/.mozilla/firefox/Crash\ Reports/*
+# Clear Flatpak cache
+rm -rf ~/.var/app/*/cache/*
+sudo rm -rf /var/tmp/flatpak-cache-*
+rm -rf ~/.cache/flatpak/system-cache/*
+rm -rf ~/.local/share/flatpak/system-cache/*
+rm -rf ~/.var/app/*/data/Trash/*
+# Clear system logs
+sudo rm -f /var/log/pacman.log
+sudo journalctl --vacuum-time=1s
+sudo rm -rf /run/log/journal/*
+sudo rm -rf /var/log/journal/*

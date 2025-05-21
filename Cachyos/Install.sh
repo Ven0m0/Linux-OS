@@ -73,13 +73,6 @@ sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm > /dev/null || true
 flatpak uninstall --unused
 sudo pacman -Scc --noconfirm && sudo paccache -rk0 -q
 sudo fstrim -av --quiet-unsupported
-# Use Bleachbit if available
-if command -v bleachbit >/dev/null 2>&1; then
-    bleachbit -c --preset
-    sudo -E bleachbit -c --preset
-else
-    echo "bleachbit is not installed, skipping."
-fi
 rm -rf /var/cache/*
 sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*

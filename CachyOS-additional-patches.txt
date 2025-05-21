@@ -64,6 +64,9 @@ Extra patches
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0002-ZEN-dm-crypt-Disable-workqueues-for-crypto-ops.patch
 
+# test
+https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/clearlinux/0012-kernel-time-reduce-ntp-wakeups.patch
+
 
 6.15
 https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/6.15/misc/0001-acpi-call.patch
@@ -71,6 +74,7 @@ https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/6.15/
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/clang-patches/0001-clang-patches.patch
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/bore-smt-cores-patches-sep/0002-sched-fair-Prefer-full-idle-SMT-cores.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
+https://raw.githubusercontent.com/cloudflare/linux/refs/heads/master/patches/0020-Add-a-sysctl-to-allow-TCP-window-shrinking-in-order-.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0007-XANMOD-block-mq-deadline-Increase-write-priority-to-.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0008-XANMOD-block-mq-deadline-Disable-front_merges-by-def.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0001-XANMOD-x86-build-Add-more-CFLAGS-optimizations.patch

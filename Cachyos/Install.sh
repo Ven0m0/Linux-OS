@@ -30,6 +30,7 @@ aria2
 winesync-udev-rule
 legcord
 vkd3d
+vkbasalt
 obs-studio
 mkinitcpio-firmware
 )

@@ -93,6 +93,7 @@ https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0130-itm
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0167-net-sock-increase-default-number-of-_SK_MEM_PACKETS-.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0158-clocksource-only-perform-extended-clocksource-checks.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0173-cpuidle-psd-add-power-sleep-demotion-prevention-for-.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0004-sched-numa-Adjust-imb_numa_nr-to-a-better-approximat.patch
 
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/cpuidle-patches/0001-cpuidle-Prefer-teo-over-menu-governor.patch
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/futex-patches/0001-futex-6.15-Add-entry-point-for-FUTEX_WAIT_MULTIPLE-o.patch

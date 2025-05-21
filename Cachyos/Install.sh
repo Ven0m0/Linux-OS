@@ -36,6 +36,9 @@ obs-studio
 mkinitcpio-firmware
 prismlauncher
 jre-openjdk
+appmenu-gtk-module
+libappindicator-gtk3  #Fixes blurry icons in Electron programs
+xdg-desktop-portal #Kde file picker
 )
 
 echo -e "\nInstalling packages: ${packages[*]}"
@@ -61,12 +64,14 @@ precached
 konsave
 )
 
-for pkg in "${packages1[@]}"; do
-  paru -S --noconfirm "$pkg"
+for aur_pkg in "${packages1[@]}"; do
+  paru -S --noconfirm "$aur_pkg"
 done
 
+# Install Rust nightly toolchain with minimal profile
 rustup toolchain install nightly --profile minimal
 
+# Add Rust components
 rust=(
 rust-src
 llvm-tools-x86_64-unknown-linux-gnu
@@ -75,11 +80,11 @@ rustfmt-x86_64-unknown-linux-gnu
 rustc-dev-x86_64-unknown-linux-gnu
 )
 
-for pkg in "${rust[@]}"; do
-  rustup component add  "$pkg"
+for rust_pkg in "${rust[@]}"; do
+  rustup component add  "$rust_pkg"
 done
 
-
+# Debloat and fixup
 sudo pacman -Rns cachyos-v4-mirrorlist
 sudo pacman -Rns cachy-browser
 

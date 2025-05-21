@@ -22,6 +22,7 @@ for repo in "${!LIST[@]}"; do
 sudo rate-mirrors \
     --save="$tmp" \
     "$repo" \
+    --fetch-mirrors-timeout=300000 \
     --max-delay=21600 \
     --entry-country=DE \
     --allow-root

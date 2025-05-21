@@ -32,3 +32,7 @@ sudo rate-mirrors \
 
   echo "✔ $repo → updated mirrorlist at $dest"
 done
+
+rankmirrors /etc/pacman.d/alhp-mirrorlist
+rankmirrors -r artafinde https://pkgbuild.com/~artafinde/repo
+rankmirrors -r kde-unstable /etc/pacman.d/mirrorlist

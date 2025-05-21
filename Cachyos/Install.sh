@@ -34,6 +34,7 @@ vkbasalt
 obs-studio
 mkinitcpio-firmware
 prismlauncher
+jre-openjdk
 )
 
 echo -e "\nInstalling packages: ${packages[*]}"
@@ -54,7 +55,10 @@ cleanerml-git
 alhp-keyring
 alhp-mirrorlist
 makepkg-optimize
-
+preload
+prelockd
+jdk24-graalvm-ee-bin
+precached
 
 rustup toolchain install nightly --profile minimal
 rustup component add rust-src

@@ -19,6 +19,7 @@ https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp
 
 Kcompressd:
 https://lore.kernel.org/lkml/20250430082651.3152444-1-qun-wei.lin@mediatek.com/raw
+https://lore.kernel.org/lkml/20250430082651.3152444-1-qun-wei.lin@mediatek.com/t.mbox.gz
 zblock:
 https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=45a901ed17242dc91d42402760dbea657746c5bf
 https://lore.kernel.org/all/20250502080156.1672957-1-vitaly.wool@konsulko.se/raw
@@ -68,6 +69,7 @@ https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/000
 https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/6.15/misc/0001-acpi-call.patch
 https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/6.15/misc/0001-aufs-6.15-merge-v20250519.patch
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/clang-patches/0001-clang-patches.patch
+https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/bore-smt-cores-patches-sep/0002-sched-fair-Prefer-full-idle-SMT-cores.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0007-XANMOD-block-mq-deadline-Increase-write-priority-to-.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0008-XANMOD-block-mq-deadline-Disable-front_merges-by-def.patch
@@ -77,6 +79,20 @@ https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/net
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/netfilter/0002-netfilter-add-xt_FLOWOFFLOAD-target.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0002-ZEN-dm-crypt-Disable-workqueues-for-crypto-ops.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0001-ZEN-input-evdev-Use-call_rcu-when-detaching-client.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0106-intel_idle-tweak-cpuidle-cstates.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/ratelimit-sched-yield.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/libsgrowdown.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/epp-retune.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/scale-net-alloc.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0102-increase-the-ext4-default-commit-age.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0108-smpboot-reuse-timer-calibration.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0111-ipv4-tcp-allow-the-memory-tuning-for-tcp-to-go-a-lit.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0125-nvme-workaround.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0128-itmt_epb-use-epb-to-scale-itmt.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0130-itmt2-ADL-fixes.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0167-net-sock-increase-default-number-of-_SK_MEM_PACKETS-.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0158-clocksource-only-perform-extended-clocksource-checks.patch
+https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0173-cpuidle-psd-add-power-sleep-demotion-prevention-for-.patch
 
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/cpuidle-patches/0001-cpuidle-Prefer-teo-over-menu-governor.patch
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/futex-patches/0001-futex-6.15-Add-entry-point-for-FUTEX_WAIT_MULTIPLE-o.patch
@@ -85,3 +101,6 @@ https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0013-XANMOD-mm-Raise-max_map_count-default-value.patch
 https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0010-XANMOD-blk-wbt-Set-wbt_default_latency_nsec-to-2msec.patch
 https://raw.githubusercontent.com/Frogging-Family/linux-tkg/refs/heads/master/linux-tkg-patches/6.15/0014-OpenRGB.patch
+
+https://lore.kernel.org/lkml/20250430082651.3152444-1-qun-wei.lin@mediatek.com/t.mbox.gz
+https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/mm-zblock-patches/0001-mm-add-zblock-allocator.patch

@@ -3,8 +3,8 @@
 sudo -v
 
 sudo cachyos-rate-mirrors
-sudo pacman -S keyserver-rank-cachy
-sudo keyserver-rank --yes
+sudo pacman -S keyserver-rank-cachy && sudo keyserver-rank --yes
+sudo pacman -Syu --noconfirm
 
 sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com && sudo pacman-key --lsign-key 3056513887B78AEB
 sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' && sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
@@ -29,7 +29,6 @@ profile-sync-daemon
 bleachbit
 irqbalance
 aria2
-winesync-udev-rule
 legcord
 vkd3d
 vkbasalt
@@ -49,8 +48,8 @@ for pkg in "${packages[@]}"; do
   fi
 done
 
-paru -S 
 
+packages1=(
 cleanerml-git
 alhp-keyring
 alhp-mirrorlist
@@ -60,13 +59,26 @@ prelockd
 jdk24-graalvm-ee-bin
 precached
 konsave
+)
+
+for pkg in "${packages1[@]}"; do
+  paru -S --noconfirm "$pkg"
+done
 
 rustup toolchain install nightly --profile minimal
-rustup component add rust-src
-rustup component add llvm-tools-x86_64-unknown-linux-gnu
-rustup component add rust-std-x86_64-unknown-linux-musl
-rustup component add rustfmt-x86_64-unknown-linux-gnu
-rustup component add rustc-dev-x86_64-unknown-linux-gnu
+
+rust=(
+rust-src
+llvm-tools-x86_64-unknown-linux-gnu
+rust-std-x86_64-unknown-linux-musl
+rustfmt-x86_64-unknown-linux-gnu
+rustc-dev-x86_64-unknown-linux-gnu
+)
+
+for pkg in "${rust[@]}"; do
+  rustup component add  "$pkg"
+done
+
 
 sudo pacman -Rns cachyos-v4-mirrorlist
 sudo pacman -Rns cachy-browser

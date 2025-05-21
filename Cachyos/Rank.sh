@@ -23,7 +23,6 @@ sudo rate-mirrors \
     --save="$tmp" \
     "$repo" \
     --fetch-mirrors-timeout=300000 \
-    --completion=1 \
     --max-delay=10000 \
     --entry-country=DE \
     --allow-root

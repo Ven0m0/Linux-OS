@@ -16,9 +16,6 @@ bauh
 partitionmanager
 plasma-wayland-protocols
 polkit-kde-agent
-vkd3d
-vkbasalt
-jre-openjdk
 legcord
 prismlauncher
 obs-studio
@@ -43,6 +40,7 @@ xorg-xhost #Fixes sudo bash
 libappindicator-gtk3  #Fixes blurry icons in Electron programs
 appmenu-gtk-module #Fixes for GTK3 menus
 xdg-desktop-portal #Kde file picker
+cachyos-ksm-settings
 )
 
 echo -e "\nInstalling packages: ${packages[*]}"

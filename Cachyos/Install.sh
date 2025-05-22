@@ -31,11 +31,13 @@ polly
 autofdo-bin
 svgo
 optipng
+pigz
+pbzip2
+aria2
 #Tweak
 profile-sync-daemon
 bleachbit
 irqbalance
-aria2
 mkinitcpio-firmware #Fix warning
 xorg-xhost #Fixes sudo bash
 libappindicator-gtk3  #Fixes blurry icons in Electron programs
@@ -64,6 +66,7 @@ prelockd
 jdk24-graalvm-ee-bin
 precached
 konsave
+plzip
 )
 
 for aur_pkg in "${packages1[@]}"; do

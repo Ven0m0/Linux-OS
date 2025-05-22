@@ -143,9 +143,6 @@ export __GL_SORT_FBCONFIGS=1
 sudo nano ~/.steam/steam/steam_dev.cfg
 unShaderBackgroundProcessingThreads 8
 
-DNS:
-sudo nano /etc/NetworkManager/system-connections/ObenPoint5.nmconnection
-
 sudo nano /etc/ananicy.d/00-types.types
 {"name": "java", "nice": -10, "latency_nice": -10, "ioclass": "best-effort"}
 
@@ -158,14 +155,20 @@ echo none | sudo tee /sys/block/nvme0n1/queue/scheduler
 
 sudo nano /etc/udev/rules.d/60-ioschedulers.rules
 
-# HDD
-ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+# NVMe SSD
+ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
 
 # SSD
 ACTION=="add|change", KERNEL=="sd[a-z]*|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="bfq"
 
-# NVMe SSD
-ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
+# HDD
+ACTION=="add|change", KERNEL=="sd[a-z]*", ATTR{queue/rotational}=="1", ATTR{queue/scheduler}="bfq"
+
+# USB flash drives
+ACTION=="add|change", KERNEL=="sd[a-z]", SUBSYSTEM=="block", ATTR{removable}=="1", ATTR{queue/scheduler}="none"
+
+# SD cards
+ACTION=="add|change", KERNEL=="mmcblk[0-9]*", SUBSYSTEM=="block", ATTR{queue/scheduler}="none"
 
 
 

@@ -63,8 +63,9 @@ alhp-mirrorlist
 makepkg-optimize
 preload
 prelockd
-jdk24-graalvm-ee-bin
 precached
+memavaild
+jdk24-graalvm-ee-bin
 konsave
 plzip
 )
@@ -93,8 +94,9 @@ done
 sudo pacman -Rns cachyos-v4-mirrorlist
 sudo pacman -Rns cachy-browser
 
-
-sudo systemctl enable fstrim.timer
+sudo systemctl enable --now pci-latency.service
+sudo systemctl enable --now fstrim.timer
+sudo systemctl enable --now memavaild.service
 
 sudo pacman -Syu --noconfirm
 sudo topgrade -c --disable config_update --skip-notify -y

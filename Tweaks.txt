@@ -39,16 +39,14 @@ Bootloader:
 sudo nano /boot/limine.conf
 Kernel:
 sudo nano /etc/default/limine
-quiet nowatchdog mitigations=off split_lock_detect=off pcie_aspm.policy=performance clearcpuid=514 systemd.unified_cgroup_hierarchy=1
-# Fast Timer
-tsc=reliable clocksource=tsc
+nowatchdog quiet mitigations=off split_lock_detect=off pcie_aspm.policy=performance clearcpuid=514 systemd.unified_cgroup_hierarchy=1 tsc=reliable clocksource=tsc
 # Powersave
 rcutree.enable_rcu_lazy=1
 
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 
 # https://wiki.archlinux.org/title/Sysctl#Networking
-modprobe tcp_bbr
+sudo modprobe tcp_bbr
 
 sudo nano /usr/lib/sysctl.d/99-cachyos-settings.conf
 net.ipv4.tcp_ecn = 1

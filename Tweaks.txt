@@ -26,15 +26,6 @@ sudo tune2fs -O fast_commit /dev/nvme0n1p2
 F2FS:
 noatime,lazytime,compress_algorithm=zstd,compress_chksum,atgc,gc_merge
 
-
-# Disable core dumps:
-sudo nano /etc/sysctl.d/50-coredump.conf
-kernel.core_pattern=false
-
-# https://wiki.cachyos.org/configuration/general_system_tweaks
-sudo nano /etc/sysctl.d/99-splitlock.conf
-kernel.split_lock_mitigate=0
-
 Bootloader:
 sudo nano /boot/limine.conf
 Kernel:
@@ -83,8 +74,8 @@ vm.zone_reclaim_mode = 0
 vm.swappiness = 180
 watermark_boost_factor = 0
 vm.watermark_scale_factor = 125
-
-
+kernel.core_pattern = false
+kernel.split_lock_mitigate = 0
 
 sudo nano /etc/pacman.conf
 

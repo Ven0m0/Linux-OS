@@ -91,8 +91,8 @@ for rust_pkg in "${rust[@]}"; do
 done
 
 # Debloat and fixup
-sudo pacman -Rns cachyos-v4-mirrorlist
-sudo pacman -Rns cachy-browser
+sudo pacman -Rns cachyos-v4-mirrorlist --noconfirm
+sudo pacman -Rns cachy-browser --noconfirm
 
 sudo systemctl enable pci-latency.service
 sudo systemctl enable fstrim.timer

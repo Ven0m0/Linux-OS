@@ -171,3 +171,6 @@ ACTION=="add|change", KERNEL=="nvme[0-9]*", ATTR{queue/rotational}=="0", ATTR{qu
 
 sudo systemctl enable --now pci-latency.service
 
+paru -S memavaild
+systemd.unified_cgroup_hierarchy=1 > cmdline
+sudo systemctl enable --now memavaild.service

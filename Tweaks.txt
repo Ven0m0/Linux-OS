@@ -8,6 +8,9 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/RaspberryPi/privacy-script.sh | sudo bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/RaspberryPi/PiClean.sh | sudo bash
 
+curl -fsSL hhttps://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Rank.sh | sudo bash
+curl -fsSL hhttps://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/AutoSetup.sh | sudo bash
+curl -fsSL hhttps://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Install.sh | sudo bash
 
 # sudo nano /etc/fstab
 btrfs:

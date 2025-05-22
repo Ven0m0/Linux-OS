@@ -17,8 +17,10 @@ btrfs:
 noatime,lazytime,space_cache=v2,ssd,discard=async,commit=120
 
 # Ext4:
-journal_async_commit
 noatime,commit=120,lazytime,discard=async,data=writeback,journal_async_commit,nobh,barrier=0
+
+F2FS:
+noatime,lazytime,compress_algorithm=zstd,compress_chksum,atgc,gc_merge
 
 # Check
 sudo tune2fs -l /dev/nvme0n1p2

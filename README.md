@@ -3,7 +3,7 @@ List of Linux operating systems
 
 Desktop:
 
-[CachyOS](https://https://cachyos.org//)
+[CachyOS](https://cachyos.org//)
 
 [Linux Mint](https://linuxmint.com/)
 

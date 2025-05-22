@@ -65,6 +65,8 @@ preload
 prelockd
 precached
 memavaild
+uresourced
+nohang
 jdk24-graalvm-ee-bin
 konsave
 plzip
@@ -94,9 +96,17 @@ done
 sudo pacman -Rns cachyos-v4-mirrorlist
 sudo pacman -Rns cachy-browser
 
-sudo systemctl enable --now pci-latency.service
-sudo systemctl enable --now fstrim.timer
-sudo systemctl enable --now memavaild.service
+sudo systemctl enable pci-latency.service
+sudo systemctl enable fstrim.timer
+# https://gist.github.com/dante-robinson/cd620c7283a6cc1fcdd97b2d139b72fa
+sudo systemctl disable systemd-oomd
+sudo systemctl enable irqbalance
+sudo systemctl enable memavaild
+sudo systemctl enable nohang
+sudo systemctl enable preload
+sudo systemctl enable prelockd
+sudo systemctl enable uresourced
+sudo sed -i 's|zram_checking_enabled = False|zram_checking_enabled = True|g' /etc/nohang/nohang.conf
 
 sudo pacman -Syu --noconfirm
 sudo topgrade -c --disable config_update --skip-notify -y

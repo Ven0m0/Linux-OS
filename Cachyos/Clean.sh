@@ -56,7 +56,6 @@ rm -rf ~/.var/app/com.valvesoftware.Steam/data/Steam/appcache/*
 rm -f ~/.python_history
 sudo rm -f /root/.python_history
 # Clear Firefox crash reports
-echo '--- Clear Firefox crash reports'
 # Global installation
 rm -fv ~/.mozilla/firefox/Crash\ Reports/*
 # Flatpak installation

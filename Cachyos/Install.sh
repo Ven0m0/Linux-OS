@@ -56,8 +56,8 @@ done
 
 packages1=(
 cleanerml-git
-alhp-keyring
-alhp-mirrorlist
+#alhp-keyring
+#alhp-mirrorlist
 makepkg-optimize
 preload
 prelockd
@@ -75,20 +75,23 @@ for aur_pkg in "${packages1[@]}"; do
 done
 
 # Install Rust nightly toolchain with minimal profile
+rustup toolchain uninstall nightly-x86_64-unknown-linux-gnu
 rustup toolchain install nightly --profile minimal
+rustup toolchain uninstall stable-x86_64-unknown-linux-gnu
 
 # Add Rust components
 rust=(
 rust-src
 llvm-tools-x86_64-unknown-linux-gnu
-rust-std-x86_64-unknown-linux-musl
+clippy-x86_64-unknown-linux-gnu
 rustfmt-x86_64-unknown-linux-gnu
-rustc-dev-x86_64-unknown-linux-gnu
 )
 
 for rust_pkg in "${rust[@]}"; do
   rustup component add  "$rust_pkg"
 done
+
+rustup default nightly
 
 # Debloat and fixup
 sudo pacman -Rns cachyos-v4-mirrorlist --noconfirm

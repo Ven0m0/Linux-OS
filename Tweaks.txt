@@ -28,6 +28,7 @@ noatime,lazytime,compress_algorithm=zstd,compress_chksum,atgc,gc_merge
 
 Bootloader:
 sudo nano /boot/limine.conf
+sudo nano /boot/loader/entries/linux-cachyos.conf
 Kernel:
 sudo nano /etc/default/limine
 nowatchdog quiet mitigations=off split_lock_detect=off pcie_aspm.policy=performance clearcpuid=514 systemd.unified_cgroup_hierarchy=1 tsc=reliable clocksource=tsc
@@ -116,7 +117,7 @@ options nvidia NVreg_RegistryDwords="PerfLevelSrc=0x2222"
 options nvidia NVreg_UsePageAttributeTable=1
 options NVreg_InitializeSystemMemoryAllocations=0
 options nvidia_drm modeset=1
-optionsnvidia_drm.fbdev=1
+options nvidia_drm.fbdev=1
 options nvidia NVreg_RegistryDwords=RMIntrLockingMode=1
 
 # Environment

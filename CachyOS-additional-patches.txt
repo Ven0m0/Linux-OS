@@ -4,6 +4,7 @@ https://gitlab.com/xanmod/linux-patches
 https://github.com/Frogging-Family/linux-tkg
 https://github.com/clearlinux-pkgs/linux
 https://github.com/sirlucjan/kernel-patches
+https://github.com/CachyOS/kernel-patches
 
 https://github.com/Frogging-Family/linux-tkg/blob/master/linux-tkg-patches/6.14/0013-optimize_harder_O3.patch
 https://github.com/sirlucjan/kernel-patches/blob/master/6.14/crypto-next-patches-sep/0001-crypto-x86-aes-xts-make-the-fast-path-64-bit-specifi.patch

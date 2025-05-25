@@ -1,0 +1,115 @@
+From de9f3e3de645f52928537e28678dd1f58b9c685c Mon Sep 17 00:00:00 2001
+From: torvic9 <torvic9@mailbox.org>
+Date: Thu, 25 Mar 2021 14:13:11 +0100
+Subject: [PATCH] remove UI tour
+
+Signed-off-by: torvic9 <torvic9@mailbox.org>
+---
+ browser/base/content/browser.css | 65 --------------------------------
+ browser/base/content/browser.js  |  1 -
+ browser/components/moz.build     |  1 -
+ 3 files changed, 67 deletions(-)
+
+diff --git a/browser/base/content/browser.css b/browser/base/content/browser.css
+index 7b68594ef1..5998f0725f 100644
+--- a/browser/base/content/browser.css
++++ b/browser/base/content/browser.css
+@@ -1263,71 +1263,6 @@ toolbarpaletteitem > toolbaritem {
+   display: none;
+ }
+ 
+-/* UI Tour */
+-
+-@keyframes uitour-wobble {
+-  from {
+-    transform: rotate(0deg) translateX(3px) rotate(0deg);
+-  }
+-  50% {
+-    transform: rotate(360deg) translateX(3px) rotate(-360deg);
+-  }
+-  to {
+-    transform: rotate(720deg) translateX(0px) rotate(-720deg);
+-  }
+-}
+-
+-@keyframes uitour-zoom {
+-  from {
+-    transform: scale(0.8);
+-  }
+-  50% {
+-    transform: scale(1.0);
+-  }
+-  to {
+-    transform: scale(0.8);
+-  }
+-}
+-
+-@keyframes uitour-color {
+-  from {
+-    border-color: #5B9CD9;
+-  }
+-  50% {
+-    border-color: #FF0000;
+-  }
+-  to {
+-    border-color: #5B9CD9;
+-  }
+-}
+-
+-#UITourHighlightContainer,
+-#UITourHighlight {
+-  pointer-events: none;
+-}
+-
+-#UITourHighlight[active] {
+-  animation-delay: 2s;
+-  animation-fill-mode: forwards;
+-  animation-iteration-count: infinite;
+-  animation-timing-function: linear;
+-}
+-
+-#UITourHighlight[active="wobble"] {
+-  animation-name: uitour-wobble;
+-  animation-delay: 0s;
+-  animation-duration: 1.5s;
+-  animation-iteration-count: 1;
+-}
+-#UITourHighlight[active="zoom"] {
+-  animation-name: uitour-zoom;
+-  animation-duration: 1s;
+-}
+-#UITourHighlight[active="color"] {
+-  animation-name: uitour-color;
+-  animation-duration: 2s;
+-}
+-
+ /* Combined context-menu items */
+ #context-navigation > .menuitem-iconic > .menu-iconic-text,
+ #context-navigation > .menuitem-iconic > .menu-accel-container {
+diff --git a/browser/base/content/browser.js b/browser/base/content/browser.js
+index 27d8911d61..9598a13849 100644
+--- a/browser/base/content/browser.js
++++ b/browser/base/content/browser.js
+@@ -80,7 +80,6 @@ XPCOMUtils.defineLazyModuleGetters(this, {
+   TabCrashHandler: "resource:///modules/ContentCrashHandlers.jsm",
+   TelemetryEnvironment: "resource://gre/modules/TelemetryEnvironment.jsm",
+   Translation: "resource:///modules/translation/TranslationParent.jsm",
+-  UITour: "resource:///modules/UITour.jsm",
+   UpdateUtils: "resource://gre/modules/UpdateUtils.jsm",
+   UrlbarInput: "resource:///modules/UrlbarInput.jsm",
+   UrlbarPrefs: "resource:///modules/UrlbarPrefs.jsm",
+diff --git a/browser/components/moz.build b/browser/components/moz.build
+index d16b27b1ea..80aed84a5a 100644
+--- a/browser/components/moz.build
++++ b/browser/components/moz.build
+@@ -53,7 +53,6 @@ DIRS += [
+     "sessionstore",
+     "shell",
+     "syncedtabs",
+-    "uitour",
+     "urlbar",
+     "translation",
+ ]
+-- 
+2.31.0
+

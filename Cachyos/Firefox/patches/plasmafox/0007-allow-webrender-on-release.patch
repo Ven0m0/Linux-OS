@@ -1,0 +1,55 @@
+From e633b690ac65754303b3a481da796c0b561bcc59 Mon Sep 17 00:00:00 2001
+From: torvic9 <torvic9@mailbox.org>
+Date: Tue, 20 Apr 2021 13:38:16 +0200
+Subject: [PATCH] allow webrender on release
+
+Signed-off-by: torvic9 <torvic9@mailbox.org>
+---
+ gfx/thebes/gfxPlatform.cpp |  5 -----
+ widget/GfxDriverInfo.cpp   |  4 ++--
+ 2 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/gfx/thebes/gfxPlatform.cpp b/gfx/thebes/gfxPlatform.cpp
+index 2492b73c25..b701f56e30 100644
+--- a/gfx/thebes/gfxPlatform.cpp
++++ b/gfx/thebes/gfxPlatform.cpp
+@@ -2823,11 +2823,6 @@ void gfxPlatform::InitWebGLConfig() {
+ void gfxPlatform::InitWebGPUConfig() {
+   FeatureState& feature = gfxConfig::GetFeature(Feature::WEBGPU);
+   feature.SetDefaultFromPref("dom.webgpu.enabled", true, false);
+-#ifndef NIGHTLY_BUILD
+-  feature.ForceDisable(FeatureStatus::Blocked,
+-                       "WebGPU can only be enabled in nightly",
+-                       "WEBGPU_DISABLE_NON_NIGHTLY"_ns);
+-#endif
+   if (!UseWebRender()) {
+     feature.ForceDisable(FeatureStatus::UnavailableNoWebRender,
+                          "WebGPU can't present without WebRender",
+diff --git a/widget/GfxDriverInfo.cpp b/widget/GfxDriverInfo.cpp
+index 3fdfa736c0..c3565075fb 100644
+--- a/widget/GfxDriverInfo.cpp
++++ b/widget/GfxDriverInfo.cpp
+@@ -506,14 +506,12 @@ const GfxDeviceFamily* GfxDriverInfo::GetDeviceFamily(DeviceFamily id) {
+       APPEND_RANGE(0x06c0, INT32_MAX);
+       break;
+     case DeviceFamily::IntelRolloutWebRender:
+-#ifdef EARLY_BETA_OR_EARLIER
+       // gen4.5 - G45
+       APPEND_DEVICE(0x2e22);
+ 
+       // gen5 (ironlake)
+       APPEND_DEVICE(0x0042);
+       APPEND_DEVICE(0x0046);
+-#endif
+ 
+       // cherryview
+       APPEND_DEVICE(0x22b0);
+@@ -762,6 +760,8 @@ const GfxDeviceFamily* GfxDriverInfo::GetDeviceFamily(DeviceFamily id) {
+       APPEND_DEVICE(0x15d8);
+       // Renoir
+       APPEND_DEVICE(0x1636);
++      // Navi10
++      APPEND_DEVICE(0x731f);
+ 
+       // Evergreen
+       APPEND_RANGE(0x6840, 0x684b);

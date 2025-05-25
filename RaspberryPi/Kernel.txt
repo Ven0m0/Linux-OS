@@ -8,4 +8,23 @@ Menuconfig:
 sudo apt install libncurses5-dev
 make localmodconfig
 
-git clone --depth=1 https://github.com/raspberrypi/linux
+git clone --depth=1 https://github.com/raspberrypi/linux && cd linux
+KERNEL=kernel8
+make bcm2711_defconfig
+
+
+CONFIG_LOCALVERSION="-v7l-MY_CUSTOM_KERNEL"
+make menuconfig
+make nconfig
+
+
+Cross compile on arch:
+sudo pacman -S --needed git base-devel bc bison flex ncurses libelf openssl
+sudo pacman -S aarch64-linux-gnu-gcc  
+git clone --depth 1 --single-branch --branch rpi-6.15.y https://github.com/raspberrypi/linux.git && cd linux
+patch -p1 <
+
+make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- xconfig
+
+make LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- xconfig
+make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- Image modules dtbs

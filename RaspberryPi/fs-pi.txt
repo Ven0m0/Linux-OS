@@ -4,7 +4,8 @@ https://wiki.psuter.ch/doku.php?id=install_raspbian_on_f2fs_root
 
 f2fs:
 sudo nano /etc/fstab
-noatime,lazytime,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,inline_dentry,whint_mode=fs-based
+noatime,lazytime,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,inline_dentry,whint_mode=fs-based,gc_merge
+atgc
 
 sudo nano /boot/firmware/cmdline.txt
 rootflags=atgc rw

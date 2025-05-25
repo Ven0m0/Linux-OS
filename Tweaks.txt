@@ -73,7 +73,7 @@ net.ipv4.udp_early_demux = 1
 vm.zone_reclaim_mode = 0
 # Zram tweaks
 vm.swappiness = 180
-watermark_boost_factor = 0
+vm.watermark_boost_factor = 0
 vm.watermark_scale_factor = 125
 kernel.core_pattern = false
 kernel.split_lock_mitigate = 0

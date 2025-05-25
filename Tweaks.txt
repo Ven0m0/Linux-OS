@@ -25,9 +25,7 @@ sudo tune2fs -l /dev/nvme0n1p2
 sudo tune2fs -O fast_commit /dev/nvme0n1p2
 
 F2FS:
-noatime,lazytime,compress_algorithm=zstd,compress_chksum,atgc,gc_merge,inline_xattr,inline_data,inline_dentry,nobarrier,whint_mode=fs-based,alloc_mode=reuse
-
-no alloc_mode for sd card!
+noatime,lazytime,compress_algorithm=zstd,compress_chksum,atgc,gc_merge,discard,inline_xattr,inline_data,inline_dentry,nobarrier,whint_mode=fs-based
 
 Bootloader:
 sudo nano /boot/limine.conf

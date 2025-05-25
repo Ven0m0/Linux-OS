@@ -29,7 +29,6 @@ rm -rf ~/.var/app/*/data/Trash/*
 rm -f ~/snap/*/*/.cache/*
 sudo rm -rf /var/lib/snapd/cache/*
 rm -rf ~/snap/*/*/.local/share/Trash/*
-echo '--- Remove old Snap packages'
 if ! command -v 'snap' &> /dev/null; then
   echo 'Skipping because "snap" is not found.'
 else

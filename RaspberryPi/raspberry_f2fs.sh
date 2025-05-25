@@ -76,10 +76,10 @@ else
 fi
 
 echo "format boot partition"
-mkfs.vfat ${partbase}1
+mkfs.vfat -F 32 ${partbase}1
 
 echo "format os partition with f2fs"
-mkfs.f2fs -f ${partbase}2
+mkfs.f2fs -m -f -i -a -O extra_attr,compression ${partbase}2
 
 echo "create mountpoints and mount boot partition"
 mkdir -p /tmp/{sd,img}

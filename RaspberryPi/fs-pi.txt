@@ -6,11 +6,13 @@ f2fs:
 sudo nano /etc/fstab
 noatime,lazytime,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,inline_dentry,whint_mode=fs-based,gc_merge
 atgc
+background_gc=on,fsync_mode=nobarrier,discard
 
 sudo nano /boot/firmware/cmdline.txt
 rootflags=atgc rw
 
 sudo nano /etc/udev/rules.d/60-ioschedulers.rules
+sudo nano /etc/udev/rules.d/99-dietpi-io_schedulers.rules
 
 # SSD
 ACTION=="add|change", KERNEL=="sd[a-z]*|mmcblk[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="mq-deadline"

@@ -60,11 +60,10 @@ cleanerml-git
 #alhp-mirrorlist
 makepkg-optimize
 preload
-prelockd
+#prelockd
 precached
 memavaild
 uresourced
-nohang
 jdk24-graalvm-ee-bin
 konsave
 plzip
@@ -102,9 +101,8 @@ sudo systemctl enable fstrim.timer
 # https://gist.github.com/dante-robinson/cd620c7283a6cc1fcdd97b2d139b72fa
 sudo systemctl enable irqbalance
 sudo systemctl enable memavaild
-sudo systemctl enable nohang
 sudo systemctl enable preload
-sudo systemctl enable prelockd
+#sudo systemctl enable prelockd
 sudo systemctl enable uresourced
 
 sudo pacman -Syu --noconfirm

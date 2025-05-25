@@ -8,3 +8,4 @@ Menuconfig:
 sudo apt install libncurses5-dev
 make localmodconfig
 
+git clone --depth=1 https://github.com/raspberrypi/linux

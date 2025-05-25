@@ -96,9 +96,7 @@ rm -fv ~/snap/*/*/.local/share/*.desktop
 rm -rfv ~/.var/app/*/data/*.desktop
 # My stuff
 # https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Installing_only_content_in_required_languages
-# sudo pacman -Qdtq | pacman -Rns -
-sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm > /dev/null || true
-# pacman -Qqd | sudo pacman -Rsu -
+sudo pacman -Rns $(pacman -Qdtq) --noconfirm
 sudo pacman -Scc --noconfirm && sudo paccache -rk0 -q
 sudo fstrim -av --quiet-unsupported
 # Use Bleachbit if available

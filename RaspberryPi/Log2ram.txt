@@ -20,6 +20,7 @@ COMP_ALG=lz4
 
 
 sudo apt install zram-tools
+sudo nano /etc/default/zramswap
 
 # Check ram:
 

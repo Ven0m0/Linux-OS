@@ -1,5 +1,5 @@
 alias ssh='dbclient'
-alias dietpi='dblient root@192.168.178.81'
-alias pihole='dblient root@192.168.178.86'
+alias dietpi='dbclient root@192.168.178.81'
+alias pihole='dbclient root@192.168.178.86'
 alias clean='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | sudo bash'
 alias update='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | sudo bash'

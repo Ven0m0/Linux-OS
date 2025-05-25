@@ -57,3 +57,9 @@ sudo apt full-upgrade
 sudo apt install rpi-connect-lite
 loginctl enable-linger
 rpi-connect on
+
+
+
+Kernel building:
+sudo apt install bc bison flex libssl-dev make
+

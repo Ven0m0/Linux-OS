@@ -57,3 +57,48 @@ sudo apt full-upgrade
 sudo apt install rpi-connect-lite
 loginctl enable-linger
 rpi-connect on
+
+
+
+
+sudo nano /etc/sysctl.d/97-dietpi.conf
+
+net.ipv4.tcp_ecn = 1
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_timestamps = 0
+net.ipv4.tcp_low_latency = 1
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_fack = 1
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 10
+net.ipv4.tcp_slow_start_after_idle = 0
+net.ipv4.tcp_dsack = 1
+net.ipv4.tcp_rfc1337 = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+net.ipv4.tcp_shrink_window = 1
+net.ipv4.udp_early_demux = 1
+kernel.core_pattern = false
+kernel.split_lock_mitigate = 0
+kernel.shmmax = 0xffffffffffffffff
+kernel.shmall = 0x0fffffffffffff00
+kernel.msgmax = 65536
+kernel.msgmnb = 65536
+kernel.hung_task_timeout_secs = 0
+kernel.nmi_watchdog = 0
+kernel.unprivileged_userns_clone = 1
+kernel.kexec_load_disabled = 1
+net.core.netdev_max_backlog = 4096
+fs.file-max = 2097152
+fs.xfs.xfssyncd_centisecs = 10000
+# Zram tweaks
+#vm.swappiness = 180
+#vm.zone_reclaim_mode = 0
+#vm.watermark_boost_factor = 0
+#vm.watermark_scale_factor = 125
+#vm.page-cluster = 0
+vm.vfs_cache_pressure = 50
+vm.dirty_writeback_centisecs = 6000
+# BBR
+net.core.default_qdisc = fq_codel
+#net.ipv4.tcp_congestion_control = bbr

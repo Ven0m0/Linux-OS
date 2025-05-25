@@ -86,6 +86,10 @@ kernel.hung_task_timeout_secs = 0
 
 sudo nano /etc/pacman.conf
 
+# Faster downloads https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#aria2 https://bbs.archlinux.org/viewtopic.php?id=192072
+XferCommand = /usr/bin/aria2c --allow-overwrite=true --continue=true --file-allocation=falloc --log-level=error --max-tries=5 --max-connection-per-server=10 --max-concurrent-downloads=8 --enable-http-pipelining=true --max-file-not-found=5 --min-split-size=1M --no-conf --remote-time=true --summary-interval=120 --timeout=5 --dir=/ --out %o %u
+CleanMethod = KeepCurrent
+
 # https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#Installing_only_content_in_required_languages
 NoExtract = usr/share/doc/*
 NoExtract = /usr/share/help/*

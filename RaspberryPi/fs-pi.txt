@@ -41,9 +41,11 @@ sudo nano /etc/sysctl.conf
 vm.dirty_ratio=50
 vm.dirty_background_ratio = 5
 vm.page-cluster = 0
-vm.swappiness=80
+vm.swappiness=100
 vm.watermark_boost_factor=0
-vfs_cache_pressure = 200
+vfs_cache_pressure = 50
+vm.zone_reclaim_mode = 0
+
 
 # Fast commits:
 sudo tune2fs -l /dev/mmcblk0p2 | grep features

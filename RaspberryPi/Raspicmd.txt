@@ -87,6 +87,7 @@ kernel.split_lock_mitigate = 0
 kernel.nmi_watchdog = 0
 fs.file-max = 2097152
 fs.xfs.xfssyncd_centisecs = 10000
+vm.min_free_kbytes = 64000
 # Zram tweaks
 vm.dirty_ratio=50
 vm.dirty_background_ratio = 5

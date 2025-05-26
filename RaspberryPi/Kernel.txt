@@ -9,9 +9,13 @@ sudo apt install libncurses5-dev
 make localmodconfig
 
 git clone --depth=1 https://github.com/raspberrypi/linux && cd linux
-KERNEL=kernel8
-make bcm2711_defconfig
 
+nano .config 
+CONFIG_LOCALVERSION="-v7l-MY_CUSTOM_KERNEL"
+make bcm2711_defconfig
+make localmodconfig
+make menuconfig
+make -j$(nproc) Image.gz modules dtbs
 
 CONFIG_LOCALVERSION="-v7l-MY_CUSTOM_KERNEL"
 make menuconfig

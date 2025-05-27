@@ -35,7 +35,7 @@ else
   snap list --all | while read name version rev tracking publisher notes; do
   if [[ $notes = *disabled* ]]; then
     sudo snap remove "$name" --revision="$rev";
-  fi
+fi
 # Clear thumbnails
 rm -rf ~/.thumbnails/*
 rm -rf ~/.cache/thumbnails/*

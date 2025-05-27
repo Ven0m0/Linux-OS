@@ -25,17 +25,6 @@ sudo rm -rf /var/tmp/flatpak-cache-*
 rm -rf ~/.cache/flatpak/system-cache/*
 rm -rf ~/.local/share/flatpak/system-cache/*
 rm -rf ~/.var/app/*/data/Trash/*
-# Clear Snap cache
-rm -f ~/snap/*/*/.cache/*
-sudo rm -rf /var/lib/snapd/cache/*
-rm -rf ~/snap/*/*/.local/share/Trash/*
-if ! command -v 'snap' &> /dev/null; then
-  echo 'Skipping because "snap" is not found.'
-else
-  snap list --all | while read name version rev tracking publisher notes; do
-  if [[ $notes = *disabled* ]]; then
-    sudo snap remove "$name" --revision="$rev";
-fi
 # Clear thumbnails
 rm -rf ~/.thumbnails/*
 rm -rf ~/.cache/thumbnails/*

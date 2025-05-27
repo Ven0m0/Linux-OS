@@ -1,6 +1,6 @@
 sudo apt-get update --allow-releaseinfo-change && sudo apt-get dist-upgrade -y && sudo apt full-upgrade -y && sudo dietpi-update
 sudo pihole -up
-sudo apt clean && sudo apt autoclean && sudo apt-get -y autoremove --purge && sudo rm -rfv /var/lib/apt/lists/* && dpkg -l | grep '^rc' | awk '{print $2}' | xargs sudo apt purge -y
+sudo apt clean && sudo apt autoclean && sudo apt-get -y autoremove --purge && sudo rm -rfv /var/lib/apt/lists/* && dpkg -l | grep '^rc' | awk '{print $2}' | xargs sudo apt purge -y && sudo pip cache purge
 sudo pihole -g -o
 sqlite3 /etc/pihole/gravity.db "VACUUM;"
 sqlite3 /etc/pihole/gravity.db "pragma optimize;"

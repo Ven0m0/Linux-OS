@@ -36,7 +36,6 @@ else
   if [[ $notes = *disabled* ]]; then
     sudo snap remove "$name" --revision="$rev";
   fi
-fi
 # Clear thumbnails
 rm -rf ~/.thumbnails/*
 rm -rf ~/.cache/thumbnails/*

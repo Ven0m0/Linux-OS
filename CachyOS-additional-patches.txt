@@ -111,11 +111,14 @@ https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.
 https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.15-rc/mm-zblock-patches/0001-mm-add-zblock-allocator.patch
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/mm-add-zblock-allocator-fix.patch
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/mm-add-zblock-allocator-fix-3.patch
-# https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/0001-memcg-multi-memcg-percpu-charge-cache.patch
-# https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/0001-Re-PATCH-memcg-multi-memcg-percpu-charge-cache.patch
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/PTE-batching.patch
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/align-nr_vmalloc_pages-and-vmap_lazy_nr.patch
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/fix-mem-leaks-in-weighted-interleave-sysfs.patch
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/zram-writeback.patch
 https://raw.githubusercontent.com/GloriousEggroll/Linux-Pollrate-Patch/refs/heads/main/pollrate.patch
-https://raw.githubusercontent.com/openSUSE/kernel-source/refs/heads/master/patches.suse/readahead-request-tunables.patch
+https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/0001-block-io_uring.patch
+https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/0002-block-io_uring.patch
+https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/enable-background-reclaim-hugepages.patch
+https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/increase-default-writeback-thresholds.patch
+https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/force-irq-threads.patch
+https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/rsec_speedup.patch

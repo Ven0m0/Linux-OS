@@ -1,16 +1,39 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 sudo -v
 
-sudo pacman -Syu --noconfirm && sudo topgrade -c --disable config_update --skip-notify -y
+echo "🔄 Updating system..."
+sudo pacman -Syu --noconfirm
+sudo topgrade -c --disable config_update --skip-notify -y
+
+echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then
-    sudo bootctl update && sudo bootctl cleanup
+    echo "✅ systemd-boot is installed. Updating..."
+    sudo bootctl update
+    sudo bootctl cleanup
 else
-    echo "Not using systemd-boot; skipping bootctl update."
+    echo "❌ systemd-boot not detected; skipping bootctl update."
 fi
-if find /boot /boot/efi /mnt -name "limine.cfg" 2>/dev/null | grep -q limine; then
-    echo "Limine detected"
-    sudo limine-update && sudo limine-mkinitcpio
+
+echo "🔍 Checking for Limine..."
+if find /boot /boot/efi /mnt -type f -name "limine.cfg" 2>/dev/null | grep -q limine; then
+    echo "✅ Limine configuration detected."
+
+    # Check if `limine-update` is available
+    if command -v limine-update &>/dev/null; then
+        sudo limine-update
+    else
+        echo "⚠️ limine-update not found in PATH."
+    fi
+
+    # Optionally run mkinitcpio wrapper if present
+    if command -v limine-mkinitcpio &>/dev/null; then
+        sudo limine-mkinitcpio
+    else
+        echo "⚠️ limine-mkinitcpio not found in PATH."
+    fi
 else
-    echo "Limine not found"
+    echo "❌ Limine configuration not found; skipping Limine actions."
 fi

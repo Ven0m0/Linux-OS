@@ -22,6 +22,8 @@ adb shell setprop debug.hwui.use_buffer_age true
 adb shell pm art cleanup
 adb shell pm trim-caches 999999999999999999
 
+adb shell cmd package compile -a -f --full --secondary-dex -m speed-profile
+
 adb shell cmd package compile -f --full --secondary-dex -m speed com.feelingtouch.rtd
 adb shell cmd package compile -f --full --secondary-dex -m speed com.supercell.clashroyale
 adb shell cmd package compile -f --full --secondary-dex -m speed app.revanced.android.youtube
@@ -32,8 +34,8 @@ adb shell cmd package compile -f --full --secondary-dex -m speed app.revenge
 adb shell cmd package compile -f --full --secondary-dex -m speed com.instagram.android
 
 adb shell cmd package compile -f --full --secondary-dex -m everything com.nothing.launcher
-adb shell cmd package compile -f --full --secondary-dex -m everything com.google.android.webview.beta
-adb shell cmd package compile -f --full --secondary-dex -m everything com.google.android.inputmethod.latin
+adb shell cmd package compile -f --full --secondary-dex -m speed com.google.android.webview.beta
+adb shell cmd package compile -f --full --secondary-dex -m speed com.google.android.inputmethod.latin
 
 adb shell cmd package compile -f --full --secondary-dex -m everything com.android.systemui
 adb shell cmd package compile -f --full --secondary-dex -m everything com.android.internal.systemui.navbar.threebutton

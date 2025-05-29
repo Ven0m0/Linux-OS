@@ -84,9 +84,6 @@ kernel.split_lock_mitigate = 0
 # https://github.com/openSUSE/kernel-source/blob/master/sysctl/x86_64/arch-defaults
 kernel.shmmax = 0xffffffffffffffff
 kernel.shmall = 0x0fffffffffffff00
-kernel.msgmax = 65536
-kernel.msgmnb = 65536
-kernel.hung_task_timeout_secs = 0
 
 sudo nano /etc/pacman.conf
 

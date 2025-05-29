@@ -7,6 +7,7 @@ sudo -v
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm
 sudo topgrade -c --disable config_update --skip-notify -y
+rustup update
 
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then

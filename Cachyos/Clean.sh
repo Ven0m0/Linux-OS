@@ -87,7 +87,7 @@ rm -rf ~/.var/app/*/data/*.desktop
 # Pacman cleanup
 sudo pacman -Rns $(pacman -Qdtq) --noconfirm || true
 sudo pacman -Scc --noconfirm || true
-sudo paccache -rk0 -q || true
+# sudo paccache -rk0 -q || true
 
 # Trim disks
 sudo fstrim -av --quiet-unsupported

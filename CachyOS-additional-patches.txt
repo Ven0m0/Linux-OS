@@ -1,40 +1,10 @@
-6.14
-pwclient
+6.15
+
+https://github.com/CachyOS/kernel-patches
+https://github.com/sirlucjan/kernel-patches
 https://gitlab.com/xanmod/linux-patches
 https://github.com/Frogging-Family/linux-tkg
 https://github.com/clearlinux-pkgs/linux
-https://github.com/sirlucjan/kernel-patches
-https://github.com/CachyOS/kernel-patches
-
-https://github.com/Frogging-Family/linux-tkg/blob/master/linux-tkg-patches/6.14/0013-optimize_harder_O3.patch
-https://github.com/sirlucjan/kernel-patches/blob/master/6.14/crypto-next-patches-sep/0001-crypto-x86-aes-xts-make-the-fast-path-64-bit-specifi.patch
-https://github.com/clearlinux-pkgs/linux/blob/main/0169-mm-mincore-improve-performance-by-adding-an-unlikely.patch
-https://github.com/clearlinux-pkgs/linux/blob/main/0171-kcmp-improve-performance-adding-an-unlikely-hint-to-.patch
-https://github.com/clearlinux-pkgs/linux/blob/main/0161-ACPI-align-slab-buffers-for-improved-memory-performa.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/clearlinux/0001-sched-wait-Do-accept-in-LIFO-order-for-cache-efficie.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/xanmod/0001-XANMOD-x86-build-Add-more-CFLAGS-optimizations.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0002-ZEN-dm-crypt-Disable-workqueues-for-crypto-ops.patch
-Other
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/netfilter/0002-netfilter-add-xt_FLOWOFFLOAD-target.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
-
-Kcompressd:
-https://lore.kernel.org/lkml/20250430082651.3152444-1-qun-wei.lin@mediatek.com/raw
-https://lore.kernel.org/lkml/20250430082651.3152444-1-qun-wei.lin@mediatek.com/t.mbox.gz
-zblock:
-https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=45a901ed17242dc91d42402760dbea657746c5bf
-https://lore.kernel.org/all/20250502080156.1672957-1-vitaly.wool@konsulko.se/raw
-Zblock fix:
-https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=583eb713a53c0a0241559ee32f5419c1cceaf65a
-https://git.kernel.org/pub/scm/linux/kernel/git/akpm/mm.git/patch/?id=d3c198c20bde67d7ae69053598c5e16a787b49b5
-
-Branch hintrs:
-https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0002-sched-core-add-some-branch-hints-based-on-gcov-analy.patch
-https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0149-select-do_pollfd-add-unlikely-branch-hint-return-pat.patch
-https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0150-select-core_sys_select-add-unlikely-branch-hint-on-r.patch
-https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0169-mm-mincore-improve-performance-by-adding-an-unlikely.patch
-https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0170-sched-Add-unlikey-branch-hints-to-several-system-cal.patch
-https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0171-kcmp-improve-performance-adding-an-unlikely-hint-to-.patch
 
 Clearlinux:
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/libsgrowdown.patch
@@ -57,13 +27,6 @@ https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/0173-cpu
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/iommu.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/ratelimit-sched-yield.patch
 https://raw.githubusercontent.com/clearlinux-pkgs/linux/refs/heads/main/backport-ioboost.patch
-
-Cachyos:
-https://raw.githubusercontent.com/sirlucjan/kernel-patches/refs/heads/master/6.14/crypto-patches-all/0001-crypto-patches.patch
-
-Extra patches
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/net/tcp/cloudflare/0001-tcp-Add-a-sysctl-to-skip-tcp-collapse-processing-whe.patch
-https://gitlab.com/xanmod/linux-patches/-/raw/master/linux-6.14.y-xanmod/zen/0002-ZEN-dm-crypt-Disable-workqueues-for-crypto-ops.patch
 
 # test
 https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/clearlinux/0012-kernel-time-reduce-ntp-wakeups.patch
@@ -116,9 +79,3 @@ https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/fix-mem-leaks-in-weighted-interleave-sysfs.patch
 https://raw.githubusercontent.com/Ven0m0/Linux-Kernel-Patches/refs/heads/main/6.15/zram-writeback.patch
 https://raw.githubusercontent.com/GloriousEggroll/Linux-Pollrate-Patch/refs/heads/main/pollrate.patch
-https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/0001-block-io_uring.patch
-https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/0002-block-io_uring.patch
-https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/enable-background-reclaim-hugepages.patch
-https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/increase-default-writeback-thresholds.patch
-https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/force-irq-threads.patch
-https://raw.githubusercontent.com/arvin-foroutan/build-ubuntu-kernel/refs/heads/master/patches/tweaks/rsec_speedup.patch

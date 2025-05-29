@@ -10,7 +10,7 @@ else
 fi
 if find /boot /boot/efi /mnt -name "limine.cfg" 2>/dev/null | grep -q limine; then
     echo "Limine detected"
-    sudo limine-update
+    sudo limine-update && sudo limine-mkinitcpio
 else
     echo "Limine not found"
 fi

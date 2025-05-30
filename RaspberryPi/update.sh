@@ -10,3 +10,4 @@ else
     echo "Pi-hole is NOT installed"
 fi
 rpi-eeprom-update
+#sudo PRUNE_MODULES=1 rpi-update

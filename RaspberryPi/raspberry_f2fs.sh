@@ -64,8 +64,8 @@ echo "erase old partitions"
 wipefs -af $card
 echo "create new partitions"
 parted -s $card mklabel msdos
-parted -s $card mkpart primary fat32 0% 256MB
-parted -s $card mkpart primary 256MB 100%
+parted -s $card mkpart primary fat32 0% 512MB
+parted -s $card mkpart primary 512MB 100%
 partprobe $card
 sleep 2
 

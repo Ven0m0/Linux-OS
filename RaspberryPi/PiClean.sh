@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-sudo apt clean && sudo apt autoclean && sudo apt-get -y autoremove --purge
+sudo -v
+
+sudo apt clean
+sudo apt autoclean
+sudo apt-get -y autoremove --purge
 sudo rm -rfv /var/lib/apt/lists/*
 sudo pip cache purge
 rm -rf /var/cache/*

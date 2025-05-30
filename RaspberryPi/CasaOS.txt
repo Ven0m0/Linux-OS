@@ -4,6 +4,9 @@ https://casaos.zimaspace.com/
 
 curl -fsSL https://get.casaos.io | sudo bash
 
+bash -c "$(wget -qLO - https://raw.githubusercontent.com/bigbeartechworld/big-bear-scripts/master/casaos-add-lan-ip-to-nextcloud-config/run.sh)"
+
+sudo nano /DATA/AppData/big-bear-nextcloud/html/config/config.php
 
 https://www.reddit.com/r/CasaOS/comments/109are9/pihole_tutorial/
 https://www.linuxuprising.com/2020/07/ubuntu-how-to-free-up-port-53-used-by.html

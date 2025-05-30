@@ -19,6 +19,8 @@ COMP_ALG=lz4
 # ZL2R=true
 
 
+sudo apt install pigz pbzip2 plzip zstd
+
 sudo apt install zram-tools
 sudo nano /etc/default/zramswap
 

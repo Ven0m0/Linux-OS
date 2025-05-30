@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-
 sudo -v
-
-
 
 echo "Cleaning apt cache..."
 sudo apt clean

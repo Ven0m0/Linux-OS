@@ -13,7 +13,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/AutoSetup.sh | sudo bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Install.sh | sudo bash
 
-# sudo nano /etc/fstab
+sudo nano /etc/fstab
 btrfs:
 noatime,lazytime,space_cache=v2,ssd,discard=async,commit=120
 

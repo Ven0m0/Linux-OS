@@ -10,7 +10,7 @@ sudo apt-get -y autoremove --purge
 sudo rm -rfv /var/lib/apt/lists/*
 
 echo "Cleaning leftover config files"
-dpkg -l | grep '^rc' | awk '{print $2}' | xargs sudo apt purge -y
+dpkg -l | grep '^rc' | awk '{print $2}' | xargs sudo apt purge -y || true
 
 echo "Cleaning pip cache"
 if command -v pip &>/dev/null; then

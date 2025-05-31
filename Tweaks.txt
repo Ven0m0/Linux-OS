@@ -35,7 +35,9 @@ sudo nano /boot/limine.conf
 sudo nano /boot/loader/entries/linux-cachyos.conf
 Kernel:
 sudo nano /etc/default/limine
-nowatchdog quiet mitigations=off split_lock_detect=off pcie_aspm.policy=performance clearcpuid=514 systemd.unified_cgroup_hierarchy=1 tsc=reliable clocksource=tsc init_on_alloc=0
+nowatchdog quiet mitigations=off split_lock_detect=off pcie_aspm.policy=performance clearcpuid=514 systemd.unified_cgroup_hierarchy=1 tsc=reliable clocksource=tsc init_on_alloc=0 intel_pstate=disable nvme_core.default_ps_max_latency_us=0 intel_iommu=on iommu=pt pcie_aspm=off f2fs.flush_merge_segments=1
+# XFS
+xfs_mod.defaultcrc=0
 # Powersave
 rcutree.enable_rcu_lazy=1
 

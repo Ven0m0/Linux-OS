@@ -13,6 +13,8 @@ sudo rm -rf /var/lib/systemd/coredump/
 rm -rf ~/.cache/*
 sudo rm -rf /root/.cache/*
 rm -rf ~/.var/app/*/cache/*
+rm ~/.config/Trolltech.conf
+kbuildsycoca6 --noincremental || true
 
 # Empty global trash
 rm -rf ~/.local/share/Trash/*

@@ -1,0 +1,56 @@
+/etc/nvidia/nvidia-application-profiles-rc                                                                                                                                                                            
+{
+
+    "rules": [],
+
+    "profiles": [
+
+        {
+
+            "name": "Tweaks",
+
+            "settings": [
+
+                {
+
+                    "key": "GLGSYNCAllowed",
+
+                    "value": false
+
+                },
+
+                {  
+                    "key": "GLShaderDiskCache",
+
+                    "value": true
+
+                },
+
+                {  
+                    "key": "GLSyncToVblank",
+
+                    "value": false
+
+                },
+
+                {  
+                    "key": "GLAllowUnofficialProtocol",
+
+                    "value": true
+
+                },
+
+                {  
+                    "key": "GLThreadedOptimizations",
+
+                    "value": true
+
+                }
+
+            ]
+
+        }
+
+    ]
+
+}

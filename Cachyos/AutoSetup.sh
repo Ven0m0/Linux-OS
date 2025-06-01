@@ -17,3 +17,4 @@ else
 fi
 
 balooctl6 disable
+xprop -remove _KDE_NET_WM_SHADOW

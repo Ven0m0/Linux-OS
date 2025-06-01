@@ -91,6 +91,7 @@ kernel.shmall = 0x0fffffffffffff00
 kernel.msgmax = 65536
 kernel.msgmnb = 65536
 kernel.hung_task_timeout_secs = 0
+vm.hugetlb_optimize_vmemmap = 1
 
 
 sudo nano /etc/pacman.conf

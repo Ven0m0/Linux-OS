@@ -162,7 +162,7 @@ __GL_VRR_ALLOWED="1"
 XDG_SESSION_TYPE="wayland"
 CLUTTER_BACKEND="wayland"
 QT_QPA_PLATFORM="wayland"
-
+__GL_MaxFramesAllowed="1"
 
 
 # Steam

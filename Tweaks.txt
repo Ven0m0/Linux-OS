@@ -168,7 +168,7 @@ SDL_VIDEODRIVER=wayland  
 ELECTRON_OZONE_PLATFORM_HINT=wayland  
 ELECTRON_ENABLE_LOGGING=false
 ELECTRON_ENABLE_STACK_DUMPING=false
-
+_JAVA_AWT_WM_NONREPARENTING=1
 
 # Steam
 sudo nano ~/.steam/steam/steam_dev.cfg

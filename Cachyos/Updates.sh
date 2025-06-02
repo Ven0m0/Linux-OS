@@ -14,7 +14,7 @@ tldr -u && sudo tldr -u
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then
     echo "✅ systemd-boot is installed. Updating..."
-    sudo bootctl update
+    sudo bootctl update ||true
     sudo bootctl cleanup
 else
     echo "❌ systemd-boot not detected; skipping bootctl update."

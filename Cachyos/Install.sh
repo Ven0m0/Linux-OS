@@ -29,13 +29,13 @@ autofdo-bin
 svgo
 optipng
 pigz
-pbzip2
+lbzip2
 aria2
 #Tweak
 profile-sync-daemon
 bleachbit
 irqbalance
-mkinitcpio-firmware #Fix warning
+# mkinitcpio-firmware #Fix warning
 xorg-xhost #Fixes sudo bash
 libappindicator-gtk3  #Fixes blurry icons in Electron programs
 appmenu-gtk-module #Fixes for GTK3 menus

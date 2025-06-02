@@ -96,8 +96,8 @@ kernel.split_lock_mitigate = 0
 kernel.msgmax = 65536
 kernel.msgmnb = 65536
 kernel.hung_task_timeout_secs = 0
-# vm.hugetlb_optimize_vmemmap = 1
-
+# https://github.com/fiftydinar/gidro-os/blob/b172d940c85cfa7a988010e2598281138674d290/files/0-system/usr/bin/memory-tweaks-gidro
+vm.min_free_kbytes = 71680
 
 sudo nano /usr/lib/systemd/zram-generator.conf
 zram-size = ram / 2

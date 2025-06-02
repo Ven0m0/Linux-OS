@@ -2,8 +2,12 @@
 
 sudo -v
 
+echo "Applying Breeze Dark theme"
+kwriteconfig6 --file ~/.config/kdeglobals --group General --key ColorScheme "BreezeDark"
+
+echo "ranking mirrors"
 sudo cachyos-rate-mirrors
-sudo pacman -S keyserver-rank-cachy && sudo keyserver-rank --yes
+sudo pacman -S keyserver-rank-cachy --noconfirm && sudo keyserver-rank --yes
 sudo pacman -Syu --noconfirm
 
 sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com && sudo pacman-key --lsign-key 3056513887B78AEB
@@ -25,6 +29,7 @@ rustup
 llvm-bolt
 openmp
 polly
+mold
 autofdo-bin
 svgo
 optipng
@@ -59,7 +64,7 @@ packages1=(
 cleanerml-git
 #alhp-keyring
 #alhp-mirrorlist
-makepkg-optimize
+makepkg-optimize-mold
 preload
 #prelockd
 precached

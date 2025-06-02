@@ -7,8 +7,8 @@ sudo -v
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm
 sudo paru --cleanafter -Syu --devel --combinedupgrade -x
-sudo topgrade -c --disable config_update --skip-notify -y
-rustup update
+sudo topgrade -c --disable config_update --skip-notify -y || true
+rustup update || true
 tldr -u && sudo tldr -u
 
 echo "🔍 Checking for systemd-boot..."

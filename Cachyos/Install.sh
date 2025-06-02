@@ -46,13 +46,14 @@ cachyos-ksm-settings
 echo -e "\nInstalling packages: ${packages[*]}"
 for pkg in "${packages[@]}"; do
   if ! pacman -Qi "$pkg" &>/dev/null; then
-    sudo pacman -S --noconfirm --needed "$pkg"
+    sudo pacman -S --noconfirm "$pkg"
     echo "✔ Installed $pkg"
   else
     echo "✔ $pkg is already installed"
   fi
 done
 
+sudo pacman -S cpio bc --needed
 
 packages1=(
 cleanerml-git

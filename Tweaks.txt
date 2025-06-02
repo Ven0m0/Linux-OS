@@ -86,10 +86,7 @@ net.ipv4.tcp_moderate_rcvbuf = 1
 net.ipv4.tcp_shrink_window = 1
 net.ipv4.udp_early_demux = 1
 vm.zone_reclaim_mode = 0
-# Zram tweaks
-vm.swappiness = 180
-vm.watermark_boost_factor = 0
-vm.watermark_scale_factor = 125
+# vm.hugetlb_optimize_vmemmap = 1
 kernel.core_pattern = false
 kernel.split_lock_mitigate = 0
 # https://github.com/openSUSE/kernel-source/blob/master/sysctl/x86_64/arch-defaults
@@ -98,8 +95,15 @@ kernel.shmall = 0x0fffffffffffff00
 kernel.msgmax = 65536
 kernel.msgmnb = 65536
 kernel.hung_task_timeout_secs = 0
-vm.hugetlb_optimize_vmemmap = 1
 
+
+
+sudo nano /usr/lib/systemd/zram-generator.conf
+[zram0]
+compression-algorithm = zstd lz4 (type=huge)
+zram-size = ram / 2
+swap-priority = 100
+fs-type = swap
 
 sudo nano /etc/pacman.conf
 

@@ -86,6 +86,9 @@ rm -rf ~/.kde4/share/apps/RecentDocuments/*.desktop
 rm -f ~/snap/*/*/.local/share/*.desktop
 rm -rf ~/.var/app/*/data/*.desktop
 
+# TLDR cache
+tldr -c && sudo tldr -c
+
 # Pacman cleanup
 sudo pacman -Rns $(pacman -Qdtq) --noconfirm || true
 sudo pacman -Scc --noconfirm || true
@@ -93,6 +96,8 @@ sudo pacman -Scc --noconfirm || true
 
 # Trim disks
 sudo fstrim -av --quiet-unsupported
+
+
 
 # Cargo
 if command -v cargo-cache &>/dev/null; then

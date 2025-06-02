@@ -171,8 +171,7 @@ ELECTRON_ENABLE_STACK_DUMPING=false
 _JAVA_AWT_WM_NONREPARENTING=1
 
 # Steam
-sudo nano ~/.steam/steam/steam_dev.cfg
-unShaderBackgroundProcessingThreads 8
+mkdir -p ~/.steam/; mkdir -p ~/.steam/steam; echo 'unShaderBackgroundProcessingThreads 8' > ~/.steam/steam/steam_dev.cfg
 
 sudo nano /etc/ananicy.d/00-types.types
 {"name": "java", "nice": -10, "latency_nice": -10, "ioclass": "best-effort"}

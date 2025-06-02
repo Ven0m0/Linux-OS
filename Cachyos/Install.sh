@@ -26,6 +26,12 @@ obs-studio
 #Dev
 modprobed-db
 rustup
+curl-rustls
+rust-bindgen
+cargo-c
+cargo-cache
+cargo-machete
+cargo-pgo
 llvm-bolt
 openmp
 polly

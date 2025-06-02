@@ -4,6 +4,11 @@ set -euo pipefail
 
 sudo -v
 
+# Pacman cleanup
+sudo pacman -Rns $(pacman -Qdtq) --noconfirm || true
+sudo pacman -Scc --noconfirm || true
+sudo paccache -rk0 -q || true
+
 # Clear cache
 sudo rm -rf /var/cache/*
 sudo rm -rf /tmp/*
@@ -89,15 +94,8 @@ rm -rf ~/.var/app/*/data/*.desktop
 # TLDR cache
 tldr -c && sudo tldr -c
 
-# Pacman cleanup
-sudo pacman -Rns $(pacman -Qdtq) --noconfirm || true
-sudo pacman -Scc --noconfirm || true
-# sudo paccache -rk0 -q || true
-
 # Trim disks
 sudo fstrim -av --quiet-unsupported
-
-
 
 # Cargo
 if command -v cargo-cache &>/dev/null; then

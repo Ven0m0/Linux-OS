@@ -95,7 +95,7 @@ rm -rf ~/.var/app/*/data/*.desktop
 tldr -c && sudo tldr -c
 
 # Trim disks
-sudo fstrim -av --quiet-unsupported
+sudo fstrim -a --quiet-unsupported
 
 # Cargo
 if command -v cargo-cache &>/dev/null; then

@@ -78,6 +78,7 @@ net.ipv4.tcp_rmem = 4096 1048576 2097152
 net.ipv4.tcp_wmem = 4096 65536 16777216
 net.ipv4.udp_rmem_min = 8192
 net.ipv4.udp_wmem_min = 8192
+net.ipv4.ip_local_port_range = 30000 65535
 # Symlink build fix
 fs.protected_symlinks = 0
 net.ipv4.tcp_dsack = 1
@@ -99,12 +100,12 @@ kernel.hung_task_timeout_secs = 0
 
 
 sudo nano /usr/lib/systemd/zram-generator.conf
-[zram0]
-compression-algorithm = zstd lz4 (type=huge)
 zram-size = ram / 2
-swap-priority = 100
-fs-type = swap
 
+LZ4:
+compression-algorithm = zstd(level=1) lz4 (type=huge)
+
+ZSTD:
 compression-algorithm = lz4 zstd(level=1) (type=huge)
 
 sudo nano /etc/pacman.conf

@@ -4,7 +4,7 @@ set -euo pipefail
 
 sudo -v
 
-sync
+sudo sync
 
 # Pacman cleanup
 sudo pacman -Rns $(pacman -Qdtq) --noconfirm || true
@@ -111,4 +111,6 @@ else
     echo "bleachbit is not installed, skipping."
 fi
 
-sync
+sudo sync
+
+echo "System cleaned!"

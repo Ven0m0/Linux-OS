@@ -16,5 +16,9 @@ else
     echo "Root filesystem is not ext4 (detected: $FSTYPE). Skipping tune2fs."
 fi
 
-balooctl6 disable
+sudo balooctl6 disable && sudo balooctl6 purge
+
+echo "Applying Breeze Dark theme"
+kwriteconfig6 --file ~/.config/kdeglobals --group General --key ColorScheme "BreezeDark"
+
 xprop -remove _KDE_NET_WM_SHADOW

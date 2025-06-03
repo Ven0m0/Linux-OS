@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo -v
+
 arch=$(uname -m)
 maxMirrorForDownload=4
 pacmanCacheDir="$(pacman-conf CacheDir)"

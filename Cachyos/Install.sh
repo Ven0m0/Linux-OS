@@ -79,6 +79,7 @@ uresourced
 jdk24-graalvm-ee-bin
 konsave
 plzip
+usb-dirty-pages-udev
 )
 
 for aur_pkg in "${packages1[@]}"; do

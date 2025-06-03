@@ -49,7 +49,6 @@ patchutils
 vulkan-mesa-layers
 plasma-wayland-protocols
 libvdpau-va-gl
-dxvk-async-git
 vkd3d-proton-git
 protonup-qt
 protonplus
@@ -76,6 +75,7 @@ thefuck
 cpupower-gui
 openrgb
 dropbear
+optiimage
 )
 
 echo -e "\nInstalling packages: ${packages[*]}"
@@ -108,8 +108,8 @@ usb-dirty-pages-udev
 pacman-accel-git
 cleanlib32
 optipng-parallel
+dxvk-gplasync-bin
 #pacman-parallelizer
-
 )
 
 for aur_pkg in "${aur-pkgs[@]}"; do
@@ -142,6 +142,7 @@ echo "Installing rust aur packages"
 apprs=(
 rust-css-minifier-git
 rust-parallel
+async
 )
 
 for rs_pkg in "${apprs[@]}"; do

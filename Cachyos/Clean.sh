@@ -4,6 +4,8 @@ set -euo pipefail
 
 sudo -v
 
+sync
+
 # Pacman cleanup
 sudo pacman -Rns $(pacman -Qdtq) --noconfirm || true
 sudo pacman -Scc --noconfirm || true
@@ -108,3 +110,5 @@ if command -v bleachbit &>/dev/null; then
 else
     echo "bleachbit is not installed, skipping."
 fi
+
+sync

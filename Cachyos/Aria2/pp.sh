@@ -3,7 +3,8 @@
 sudo -v
 
 arch=$(uname -m)
-maxMirrorForDownload=4
+#maxMirrorForDownload=4
+maxMirrorForDownload="$(( ( $(nproc) / 2 ) - 1 ))"
 pacmanCacheDir="$(pacman-conf CacheDir)"
 
 if [[ $UID -ne 0 ]]; then

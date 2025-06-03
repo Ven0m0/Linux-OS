@@ -111,10 +111,8 @@ compression-algorithm = lz4 zstd(level=1) (type=huge)
 sudo nano /etc/pacman.conf
 
 # Faster downloads https://wiki.archlinux.org/title/Pacman/Tips_and_tricks#aria2 https://bbs.archlinux.org/viewtopic.php?id=192072
-XferCommand = /usr/bin/aria2c -x 8 -s 8 -k 1M -j 8 --file-allocation=none --async-dns=true --disk-cache=64 --dscp=46 --max-file-not-found=5 --max-tries=5 -t 15 --no-conf -R --allow-overwrite=true -c --summary-interval=120 -q -d %o -o %f %u
+XferCommand = /usr/bin/aria2c -q -x 3 -s 7 -j 7 -R --max-tries=5 -t 15 -allow-overwrite=true -c -d %o -o %f %u
 
-# Auto opt
-#XferCommand = /usr/bin/aria2c -x 8 -s 8 -k 1M -j 8 --optimize-concurrent-downloads=true --file-allocation=none --async-dns=true --disk-cache=64 --dscp=46 --max-file-not-found=5 --max-tries=5 -t 15 --no-conf -R --allow-overwrite=true -c --summary-interval=120 -q -d %o -o %f %u
 #XferCommand = /usr/bin/curl-rustls -L -C - -f -o %o %u
 CleanMethod = KeepCurrent
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 adb start-server
 adb shell setprop debug.enabletr 1

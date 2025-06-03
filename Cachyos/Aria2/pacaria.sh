@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo -v
+
 URL="$1"
 OUTDIR="$2"
 OUTFILE="$3"

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 if [ "$EUID" -ne 0 ]; then
   script_path=$([[ "$0" = /* ]] && echo "$0" || echo "$PWD/${0#./}")

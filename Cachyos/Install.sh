@@ -113,7 +113,7 @@ dxvk-gplasync-bin
 )
 
 for aur_pkg in "${aur-pkgs[@]}"; do
-  sudo paru -S --noconfirm "$aur_pkg" || true
+  paru -S --noconfirm "$aur_pkg" || true
 done
 
 # Install Rust nightly toolchain with minimal profile

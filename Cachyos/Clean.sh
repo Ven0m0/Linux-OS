@@ -101,7 +101,7 @@ sudo fstrim -a --quiet-unsupported
 
 # Cargo
 if command -v cargo-cache &>/dev/null; then
-    cargo-cache -e -g clean-unref
+    cargo-cache -e -g clean-unref || true
 fi
 
 # BleachBit if available

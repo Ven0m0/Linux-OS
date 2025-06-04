@@ -149,6 +149,18 @@ for rs_pkg in "${apprs[@]}"; do
   sudo paru -S --noconfirm "$rs_pkg"
 done
 
+
+# Better ssl
+sudo pacman -S wolfssl --noconfirm
+sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl
+sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so
+sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so
+
+# Image downloads
+curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp
+curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HOME/Pictures/PFP.web
+
+
 echo "Installing gaming applications"
 sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
 

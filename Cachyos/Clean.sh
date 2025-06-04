@@ -45,8 +45,8 @@ rm -rf ~/.cache/thumbnails/*
 # Clear system logs
 sudo rm -f /var/log/pacman.log || true
 sudo journalctl --vacuum-time=1s || true
-sudo rm -rf /run/log/journal/* /var/log/journal/* || true
-sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || true
+#sudo rm -rf /run/log/journal/* /var/log/journal/* || true
+#sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || true
 
 # Shell history
 rm -f ~/.local/share/fish/fish_history ~/.config/fish/fish_history ~/.zsh_history ~/.bash_history ~/.history

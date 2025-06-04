@@ -94,7 +94,7 @@ rm -f ~/snap/*/*/.local/share/*.desktop
 rm -rf ~/.var/app/*/data/*.desktop
 
 # TLDR cache
-tldr -c && sudo tldr -c
+tldr -c && sudo tldr -c || true
 
 # Trim disks
 sudo fstrim -a --quiet-unsupported

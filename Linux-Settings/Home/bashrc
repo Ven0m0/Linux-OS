@@ -1,5 +1,4 @@
-# dropbear
 alias ssh='dbclient'
-# scripts
-alias clean='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | sudo bash'
-alias update='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | sudo bash'
+alias ptch='patch -p1 <'
+alias cleansh='curl-rustls -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | sudo bash'
+alias updatesh='curl-rustls -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | sudo bash'

@@ -35,6 +35,7 @@ sudo tune2fs -l /dev/nvme0n1p2
 sudo tune2fs -O fast_commit /dev/nvme0n1p2
 
 sudo dmesg | grep clocksource
+dmesg | grep -i tsc
 
 dma_debug=off
 nompx nopku mem_encrypt=off no-steal-acc

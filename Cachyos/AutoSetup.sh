@@ -22,3 +22,5 @@ echo "Applying Breeze Dark theme"
 kwriteconfig6 --file ~/.config/kdeglobals --group General --key ColorScheme "BreezeDark"
 
 xprop -remove _KDE_NET_WM_SHADOW
+
+sudo curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Linux-Settings/etc/sysctl.d/99-tweak-settings.conf -o /etc/sysctl.d/99-tweak-settings.conf

@@ -9,6 +9,7 @@ sudo pacman -Syu --noconfirm
 sudo paru --cleanafter -Syu --devel --combinedupgrade -x
 sudo topgrade -c --disable config_update --skip-notify -y || true
 rustup update || true
+uv tool upgrade --all --compile-bytecode --native-tls
 tldr -u && sudo tldr -u
 
 echo "🔍 Checking for systemd-boot..."

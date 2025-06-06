@@ -20,7 +20,6 @@ polkit-kde-agent
 legcord
 prismlauncher
 obs-studio
-# Dev
 pigz
 lbzip2
 lzlib
@@ -37,7 +36,6 @@ openmp
 polly
 mold
 autofdo-bin
-rustup
 rust-bindgen
 cbindgen
 cargo-c
@@ -54,7 +52,6 @@ protonup-qt
 protonplus
 proton-ge-custom
 vkbasalt
-#Tweak
 aria2
 curl-rustls
 librustls
@@ -63,11 +60,10 @@ profile-sync-daemon
 profile-cleaner
 bleachbit-git
 irqbalance
-# mkinitcpio-firmware #Fix warning
-xorg-xhost #Fixes sudo bash
-libappindicator-gtk3  #Fixes blurry icons in Electron programs
-appmenu-gtk-module #Fixes for GTK3 menus
-xdg-desktop-portal #Kde file picker
+xorg-xhost
+libappindicator-gtk3
+appmenu-gtk-module
+xdg-desktop-portal
 sudo-rs
 modprobed-db
 cachyos-ksm-settings
@@ -77,6 +73,7 @@ openrgb
 dropbear
 optiimage
 )
+# rustup
 
 echo -e "\nInstalling packages: ${packages[*]}"
 for pkg in "${packages[@]}"; do

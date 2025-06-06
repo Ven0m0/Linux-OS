@@ -119,35 +119,35 @@ done
 # Install Rust nightly toolchain with minimal profile
 # rustup toolchain uninstall nightly-x86_64-unknown-linux-gnu
 # rustup toolchain install nightly --profile minimal
-rustup toolchain install stable --profile minimal
+#rustup toolchain install stable --profile minimal
 # rustup toolchain uninstall stable-x86_64-unknown-linux-gnu
 
 # Add Rust components
-rust=(
-rust-src
-llvm-tools-x86_64-unknown-linux-gnu
-clippy-x86_64-unknown-linux-gnu
-rustfmt-x86_64-unknown-linux-gnu
-)
+#rust=(
+#rust-src
+#llvm-tools-x86_64-unknown-linux-gnu
+#clippy-x86_64-unknown-linux-gnu
+#rustfmt-x86_64-unknown-linux-gnu
+#)
 
-for rust_pkg in "${rust[@]}"; do
-  rustup component add  "$rust_pkg"
-done
+#for rust_pkg in "${rust[@]}"; do
+#  rustup component add  "$rust_pkg"
+#done
 
 # rustup default nightly
-rustup default stable
+#rustup default stable
 
-echo "Installing rust aur packages"
+#echo "Installing rust aur packages"
 
-apprs=(
-rust-css-minifier-git
-rust-parallel
-async
-)
+#apprs=(
+#rust-css-minifier-git
+#rust-parallel
+#async
+#)
 
-for rs_pkg in "${apprs[@]}"; do
-  sudo paru -S --noconfirm "$rs_pkg"
-done
+#for rs_pkg in "${apprs[@]}"; do
+#  sudo paru -S --noconfirm "$rs_pkg"
+#done
 
 
 # Better ssl

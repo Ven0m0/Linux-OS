@@ -5,13 +5,13 @@ set -euo pipefail
 sudo -v
 
 echo "🔄 Updating system..."
-sudo pacman -Syu --noconfirm
-sudo paru --cleanafter -Syu --devel --combinedupgrade
+sudo pacman -Syu --noconfirm || true
+sudo paru --cleanafter -Syu --devel --combinedupgrade || true
 sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv || true
-uv tool upgrade --all --compile-bytecode --native-tls
+uv tool upgrade --all --compile-bytecode --native-tls || true
 rustup update || true
 
-tldr -u && sudo tldr -u
+tldr -u && sudo tldr -u || true
 
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then

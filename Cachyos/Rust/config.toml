@@ -1,0 +1,22 @@
+[build]
+rustflags = [
+    "-C", "relro=off",
+    "-C", "debuginfo=0",
+    "-C", "embed-bitcode=yes",
+    "-C", "opt-level=3",
+    "-C", "target-cpu=native",
+    "-C", "lto=on",
+    "-C", "codegen-units=1",
+    "-Z", "tune-cpu=native",
+]
+
+RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C strip=debuginfo -C target-feature=+avx2,+fma,+sse4.2,+aes -Z tune-cpu=native" 
+RUSTFLAGS="-C opt-level=3 -C target-cpu=native -Z tune-cpu=native -C codegen-units=1 -C debuginfo=0 -C lto -C embed-bitcode=yes -C relro=off -Z codegen-backend=cranelift -Z no-embed-metadata"
+-Zdefault-visibility=hidden
+-C target-feature=+avx2,+fma,+sse4.2,+aes,+prefetchi,+mmx,+branch-hint,+clflushopt,+
+-Zgc
+
+-C linker=rust-lld
+-C linker=lld
+
+rustup toolchain install nightly --component

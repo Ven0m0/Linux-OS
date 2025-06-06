@@ -15,6 +15,11 @@ use mimalloc_safe::MiMalloc;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
+https://crates.io/crates/rayon
+cargo add rayon
+foo.iter() ---> foo.par_iter()
+
+
 
 cargo install cargo-clean-all
 cargo clean-all -y

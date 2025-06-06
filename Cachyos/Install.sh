@@ -133,6 +133,8 @@ done
 
 # rustup default nightly
 #rustup default stable
+# rustup set profile minimal
+# rustup set default-host x86_64-unknown-linux-gnu 
 
 #echo "Installing rust aur packages"
 

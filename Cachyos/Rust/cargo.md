@@ -58,3 +58,6 @@ cargo install rustch
 # Fast, hardware-accelerated CRC calculation
 cargo install crc-fast
 cargo +nightly build --release --features=optimize_crc32_auto,vpclmulqdq
+
+# Better pigz
+cargo install crabz

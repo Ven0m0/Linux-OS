@@ -16,6 +16,7 @@ curl-rustls https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Ca
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/AutoSetup.sh | sudo bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Install.sh | sudo bash
 
+
 sudo nano /etc/fstab
 
 F2FS:

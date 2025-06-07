@@ -137,7 +137,7 @@ done
 
 
 # Better ssl
-# sudo pacman -S wolfssl --noconfirm
+sudo pacman -S wolfssl --noconfirm
 # sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl
 # sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so
 # sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so
@@ -202,20 +202,20 @@ sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*
 sudo rm -rf /var/crash/*
 sudo rm -rf /var/lib/systemd/coredump/
-# Empty global trash
+echo "Empty global trash"
 rm -rf ~/.local/share/Trash/*
 sudo rm -rf /root/.local/share/Trash/*
-# Clear user-specific cache
+echo "Clear user-specific cache"
 rm -rf ~/.cache/*
 sudo rm -rf root/.cache/*
 rm -f ~/.mozilla/firefox/Crash\ Reports/*
-# Clear Flatpak cache
+echo "Clear Flatpak cache"
 rm -rf ~/.var/app/*/cache/*
 sudo rm -rf /var/tmp/flatpak-cache-*
 rm -rf ~/.cache/flatpak/system-cache/*
 rm -rf ~/.local/share/flatpak/system-cache/*
 rm -rf ~/.var/app/*/data/Trash/*
-# Clear system logs
+echo "Clear system logs"
 sudo rm -f /var/log/pacman.log
 sudo journalctl --vacuum-time=1s || true
 sudo rm -rf /run/log/journal/*

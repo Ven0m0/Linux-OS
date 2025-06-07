@@ -11,6 +11,7 @@ sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=u
 uv tool upgrade --all --compile-bytecode --native-tls || true
 rustup update || true
 cargo-updater updater -u || true
+cargo-install-update install-update --all || true
 
 tldr -u && sudo tldr -u || true
 

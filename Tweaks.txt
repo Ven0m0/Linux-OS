@@ -205,6 +205,8 @@ ELECTRON_OZONE_PLATFORM_HINT=wayland
 ELECTRON_ENABLE_LOGGING=false
 ELECTRON_ENABLE_STACK_DUMPING=false
 _JAVA_AWT_WM_NONREPARENTING=1
+CARGO_HTTP_MULTIPLEXING=true
+RUSTC_WRAPPER=sccache
 
 # Steam
 mkdir -p ~/.steam/; mkdir -p ~/.steam/steam; echo 'unShaderBackgroundProcessingThreads 8' > ~/.steam/steam/steam_dev.cfg

@@ -52,11 +52,13 @@ openrgb
 dropbear
 optiimage
 multipath-tools
+libretls
 uutils-coreutils
 sudo-rs
 gitoxide
 curl-rustls
 librustls
+exa-git
 rust-bindgen
 cbindgen
 cargo-c

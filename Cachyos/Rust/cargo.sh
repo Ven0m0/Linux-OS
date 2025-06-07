@@ -108,3 +108,9 @@ cargo +nightly build --release --features=optimize_crc32_auto,vpclmulqdq
 
 # Better pigz
 cargo install crabz
+
+# Better sed
+https://crates.io/crates/sd
+cargo install sd
+
+

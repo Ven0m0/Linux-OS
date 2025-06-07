@@ -7,8 +7,8 @@ sudo cachyos-rate-mirrors
 sudo pacman -S keyserver-rank-cachy --noconfirm && sudo keyserver-rank --yes
 sudo pacman -Syu --noconfirm
 
-sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com && sudo pacman-key --lsign-key 3056513887B78AEB
-sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' && sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+#sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com && sudo pacman-key --lsign-key 3056513887B78AEB
+#sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' && sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
 
 # List of packages to install
 packages=(
@@ -73,7 +73,6 @@ openrgb
 dropbear
 optiimage
 )
-# rustup
 
 echo -e "\nInstalling packages: ${packages[*]}"
 for pkg in "${packages[@]}"; do
@@ -89,8 +88,6 @@ sudo pacman -S cpio bc --needed || true
 
 aur-pkgs=(
 cleanerml-git
-#alhp-keyring
-#alhp-mirrorlist
 makepkg-optimize-mold
 preload
 prelockd
@@ -106,7 +103,6 @@ pacman-accel-git
 cleanlib32
 optipng-parallel
 dxvk-gplasync-bin
-#pacman-parallelizer
 )
 
 for aur_pkg in "${aur-pkgs[@]}"; do
@@ -151,9 +147,9 @@ done
 
 # Better ssl
 sudo pacman -S wolfssl --noconfirm
-sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl
-#sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so
-#sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so
+# sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl
+# sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so
+# sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so
 
 # Image downloads
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp

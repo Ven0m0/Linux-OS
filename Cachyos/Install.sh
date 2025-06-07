@@ -27,14 +27,6 @@ openmp
 polly
 mold
 autofdo-bin
-rust-bindgen
-cbindgen
-cargo-c
-cargo-cache
-cargo-machete
-cargo-pgo
-cargo-update
-cargo-llvm-cov
 patchelf
 patchutils
 vulkan-mesa-layers
@@ -44,8 +36,6 @@ protonup-qt
 protonplus
 proton-ge-custom
 vkbasalt
-curl-rustls
-librustls
 menu-cache
 profile-sync-daemon
 profile-cleaner
@@ -55,7 +45,6 @@ xorg-xhost
 libappindicator-gtk3
 appmenu-gtk-module
 xdg-desktop-portal
-sudo-rs
 modprobed-db
 cachyos-ksm-settings
 cpupower-gui
@@ -64,6 +53,18 @@ dropbear
 optiimage
 multipath-tools
 uutils-coreutils
+sudo-rs
+gitoxide
+curl-rustls
+librustls
+rust-bindgen
+cbindgen
+cargo-c
+cargo-cache
+cargo-machete
+cargo-pgo
+cargo-update
+cargo-llvm-cov
 )
 
 echo -e "\nInstalling packages: ${packages[*]}"
@@ -174,7 +175,7 @@ curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HO
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
 
 echo "Installing Cargo crates"
-cargo install ohcrab
+
 
 
 

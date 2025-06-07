@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
 
+sudo -v
+
+# sudo pacman -S keyserver-rank-cachy --noconfirm
 sudo keyserver-rank --yes
 # sudo reflector -c Germany --sort rate --save /etc/pacman.d/mirrorlist
 # sudo reflector -c Germany --sort rate --save /etc/pacman.d/chaotic-mirrorlist

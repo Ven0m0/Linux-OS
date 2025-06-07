@@ -107,7 +107,7 @@ dxvk-gplasync-bin
 # precached
 
 for aur_pkg in "${aur-pkgs[@]}"; do
-  paru -S --noconfirm "$aur_pkg" || true
+  paru -S  "$aur_pkg" --removemake --cleanafter --skipreview || true
 done
 
 # Install Rust nightly toolchain with minimal profile

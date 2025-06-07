@@ -31,8 +31,6 @@ svgo
 yasm
 ccache
 sccache
-memcached
-llvm-bolt
 openmp
 polly
 mold
@@ -47,13 +45,11 @@ patchelf
 patchutils
 vulkan-mesa-layers
 plasma-wayland-protocols
-libvdpau-va-gl
 vkd3d-proton-git
 protonup-qt
 protonplus
 proton-ge-custom
 vkbasalt
-aria2
 curl-rustls
 librustls
 menu-cache
@@ -78,7 +74,7 @@ optiimage
 echo -e "\nInstalling packages: ${packages[*]}"
 for pkg in "${packages[@]}"; do
   if ! pacman -Qi "$pkg" &>/dev/null; then
-    sudo pacman -S --noconfirm "$pkg" || true
+    sudo pacman -S --noconfirm -q "$pkg" || true
     echo "✔ Installed $pkg"
   else
     echo "✔ $pkg is already installed"

@@ -105,11 +105,12 @@ if command -v cargo-cache &>/dev/null; then
 fi
 
 # BleachBit if available
-if command -v bleachbit &>/dev/null; then
-    bleachbit -c --preset && sudo -E bleachbit -c --preset
-else
-    echo "bleachbit is not installed, skipping."
-fi
+#if command -v bleachbit &>/dev/null; then
+#    bleachbit -c --preset && sudo -E bleachbit -c --preset
+#else
+#    echo "bleachbit is not installed, skipping."
+#fi
+bleachbit -c --preset && sudo -E bleachbit -c --preset
 
 sudo sync
 

@@ -91,19 +91,19 @@ cleanerml-git
 makepkg-optimize-mold
 preload
 prelockd
-precached
-memavaild
 uresourced
 jdk24-graalvm-ee-bin
 konsave
 plzip
 plzip-lzip-link
 usb-dirty-pages-udev
-pacman-accel-git
 cleanlib32
 optipng-parallel
 dxvk-gplasync-bin
 )
+
+# memavaild
+# precached
 
 for aur_pkg in "${aur-pkgs[@]}"; do
   paru -S --noconfirm "$aur_pkg" || true

@@ -24,3 +24,8 @@ kwriteconfig6 --file ~/.config/kdeglobals --group General --key ColorScheme "Bre
 sed -i 's/opacity = 0.8/opacity = 1.0/' "$HOME/.config/alacritty/alacritty.toml"
 
 sudo curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Linux-Settings/etc/sysctl.d/99-tweak-settings.conf -o /etc/sysctl.d/99-tweak-settings.conf
+
+
+echo "Debloat and fixup"
+sudo pacman -Rns cachyos-v4-mirrorlist --noconfirm || true
+sudo pacman -Rns cachy-browser --noconfirm || true

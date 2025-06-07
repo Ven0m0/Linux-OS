@@ -77,7 +77,7 @@ done
 
 sudo pacman -S cpio bc --needed || true
 
-aur-pkgs=(
+aurpkgs=(
 cleanerml-git
 makepkg-optimize-mold
 preload
@@ -92,13 +92,34 @@ optipng-parallel
 dxvk-gplasync-bin
 )
 
+while [ ${#aurpkgs[@]} -gt 0 ]; do
+    failed_pkgs=()
+    
+    # Try installing all remaining packages
+    paru -S "${aurpkgs[@]}" --removemake --cleanafter --skipreview || {
+        echo "Some packages failed to install."
+        
+        # Identify which package failed
+        for aur_pkg in "${aurpkgs[@]}"; do
+            paru -S "$aur_pkg" --noconfirm --skipreview || failed_pkgs+=("$aur_pkg")
+        fi
+
+        # Remove failed packages from the list
+        aurpkgs=($(echo "${aurpkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}")))
+        
+        echo "Retrying without: ${failed_pkgs[*]}"
+    }
+
+    [ ${#failed_pkgs[@]} -eq 0 ] && break  # If no failures, exit loop
+done
+
+echo "AUR package installation complete."
+
+
 # konsave
 # memavaild
 # precached
 
-for aur_pkg in "${aur-pkgs[@]}"; do
-  paru -S  "$aur_pkg" --removemake --cleanafter --skipreview || true
-done
 
 # Install Rust nightly toolchain with minimal profile
 # rustup toolchain uninstall nightly-x86_64-unknown-linux-gnu

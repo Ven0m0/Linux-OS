@@ -6,7 +6,7 @@ sudo -v
 
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm || true
-sudo paru --cleanafter -Syu --devel --combinedupgrade || true
+sudo paru --cleanafter -Syu --combinedupgrade || true
 sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv || true
 uv tool upgrade --all --compile-bytecode --native-tls || true
 rustup update || true

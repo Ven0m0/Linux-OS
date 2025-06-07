@@ -143,7 +143,7 @@ done
 
 
 # Better ssl
-sudo pacman -S wolfssl --noconfirm
+# sudo pacman -S wolfssl --noconfirm
 # sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl
 # sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so
 # sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so
@@ -153,26 +153,26 @@ curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HOME/Pictures/PFP.web
 
 
-echo "Installing gaming applications"
-sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
+# echo "Installing gaming applications"
+# sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
 
 
-echo "enabling services"
-sudo systemctl enable pci-latency.service
+# echo "enabling services"
+# sudo systemctl enable pci-latency.service
 # sudo systemctl enable fstrim.timer
 # https://gist.github.com/dante-robinson/cd620c7283a6cc1fcdd97b2d139b72fa
-sudo systemctl enable irqbalance
-sudo systemctl enable memavaild
-sudo systemctl enable preload
-sudo systemctl enable prelockd
-sudo systemctl enable uresourced
+# sudo systemctl enable irqbalance
+# sudo systemctl enable memavaild
+# sudo systemctl enable preload
+# sudo systemctl enable prelockd
+# sudo systemctl enable uresourced
 
 echo "Installing updates"
 sudo pacman -Syyu --noconfirm || true
-sudo paru --cleanafter -Syu --devel --combinedupgrade -x
-sudo topgrade -c --disable config_update --skip-notify -y || true
+sudo paru --cleanafter -Syu --combinedupgrade || true
+sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv || true
 rustup update || true
-tldr -u && sudo tldr -u
+tldr -u && sudo tldr -u || true
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then
     echo "✅ systemd-boot is installed. Updating..."
@@ -200,7 +200,8 @@ fi
 echo "Cleaning"
 sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm > /dev/null || true
 flatpak uninstall --unused || true
-sudo pacman -Scc --noconfirm && sudo paccache -rk0 -q
+sudo pacman -Scc --noconfirm || true
+sudo paccache -rk0 -q || true
 sudo fstrim -av --quiet-unsupported
 rm -rf /var/cache/*
 sudo rm -rf /tmp/*

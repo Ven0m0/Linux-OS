@@ -32,3 +32,5 @@ initrd /intel-ucode.img
 xfs_mod.defaultcrc=0
 # Powersave
 rcutree.enable_rcu_lazy=1
+
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor

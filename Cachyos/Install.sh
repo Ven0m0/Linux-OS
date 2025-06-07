@@ -62,6 +62,8 @@ cpupower-gui
 openrgb
 dropbear
 optiimage
+multipath-tools
+uutils-coreutils
 )
 
 echo -e "\nInstalling packages: ${packages[*]}"
@@ -170,6 +172,10 @@ curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HO
 
 # echo "Installing gaming applications"
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
+
+echo "Installing Cargo crates"
+cargo install ohcrab
+
 
 
 # echo "enabling services"

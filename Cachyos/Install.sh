@@ -58,7 +58,6 @@ xdg-desktop-portal
 sudo-rs
 modprobed-db
 cachyos-ksm-settings
-thefuck
 cpupower-gui
 openrgb
 dropbear
@@ -90,6 +89,7 @@ usb-dirty-pages-udev
 cleanlib32
 optipng-parallel
 dxvk-gplasync-bin
+pay-respects
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do

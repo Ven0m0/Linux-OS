@@ -7,5 +7,5 @@ cargo update --recursive
 cargo-shear --fix --expand
 cargo-diet diet
 cargo-cache -g -f -e clean-unref
-cargo install --profile release --path 'projectpath'
+cargo install --profile release --path .
 ```

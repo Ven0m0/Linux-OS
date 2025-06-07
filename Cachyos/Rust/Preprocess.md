@@ -1,5 +1,4 @@
-## Tools/commannds for preprocessing a crate before installing it
-
+# Tools/commannds for preprocessing a crate before installing it
 
 ### Rustflags:
 ```

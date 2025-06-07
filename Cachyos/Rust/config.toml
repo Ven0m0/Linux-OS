@@ -1,15 +1,3 @@
-[build]
-rustflags = [
-    "-C", "relro=off",
-    "-C", "debuginfo=0",
-    "-C", "embed-bitcode=yes",
-    "-C", "opt-level=3",
-    "-C", "target-cpu=native",
-    "-C", "lto=on",
-    "-C", "codegen-units=1",
-    "-Z", "tune-cpu=native",
-]
-
 # export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=debuginfo -C lto=on -C embed-bitcode=yes -Z dylib-lto"
 # export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -Z default-visibility=hidden -Z tune-cpu=native -C target-feature=+avx2,+fma,+sse4.2,+aes,+prefetchi,+branch-hint,+clflushopt"
 

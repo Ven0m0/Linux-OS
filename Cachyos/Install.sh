@@ -202,7 +202,7 @@ sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm > /dev/null || true
 flatpak uninstall --unused || true
 sudo pacman -Scc --noconfirm || true
 sudo paccache -rk0 -q || true
-sudo fstrim -av --quiet-unsupported
+sudo fstrim -av --quiet-unsupported || true
 rm -rf /var/cache/*
 sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*
@@ -223,6 +223,6 @@ rm -rf ~/.local/share/flatpak/system-cache/*
 rm -rf ~/.var/app/*/data/Trash/*
 # Clear system logs
 sudo rm -f /var/log/pacman.log
-sudo journalctl --vacuum-time=1s
+sudo journalctl --vacuum-time=1s || true
 sudo rm -rf /run/log/journal/*
 sudo rm -rf /var/log/journal/*

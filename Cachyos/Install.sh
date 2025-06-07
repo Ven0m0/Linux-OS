@@ -220,3 +220,5 @@ sudo rm -f /var/log/pacman.log
 sudo journalctl --vacuum-time=1s || true
 sudo rm -rf /run/log/journal/*
 sudo rm -rf /var/log/journal/*
+
+echo "done"

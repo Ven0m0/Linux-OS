@@ -12,7 +12,6 @@ uv tool upgrade --all --compile-bytecode --native-tls || true
 rustup update || true
 cargo-install-update install-update --all || true
 cargo-updater updater -u || true
-
 tldr -u && sudo tldr -u || true
 
 echo "🔍 Checking for systemd-boot..."

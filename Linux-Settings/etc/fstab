@@ -1,1 +1,18 @@
+sudo nano /etc/fstab
 
+F2FS:
+noatime,lazytime,compress_algorithm=zstd,compress_chksum,atgc,gc_merge,inline_xattr,inline_data,inline_dentry,nobarrier,whint_mode=fs-based
+discard
+
+XFS:
+noatime,lazytime,inode64,swalloc,largeio,logbufs=8,logbsize=256k
+
+btrfs:
+noatime,lazytime,space_cache=v2,ssd,discard=async,commit=120
+
+Ext4:
+noatime,commit=120,lazytime,discard=async,data=writeback,journal_async_commit,nobh,barrier=0
+
+# Check
+sudo tune2fs -l /dev/nvme0n1p2
+sudo tune2fs -O fast_commit /dev/nvme0n1p2

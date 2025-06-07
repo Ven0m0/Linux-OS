@@ -152,8 +152,8 @@ done
 # Better ssl
 sudo pacman -S wolfssl --noconfirm
 sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl
-sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so
-sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so
+#sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so
+#sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so
 
 # Image downloads
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp
@@ -163,11 +163,10 @@ curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HO
 echo "Installing gaming applications"
 sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
 
-echo "Debloat and fixup"
-sudo pacman -Rns cachyos-v4-mirrorlist --noconfirm || true
-sudo pacman -Rns cachy-browser --noconfirm || true
+
+echo "enabling services"
 sudo systemctl enable pci-latency.service
-sudo systemctl enable fstrim.timer
+# sudo systemctl enable fstrim.timer
 # https://gist.github.com/dante-robinson/cd620c7283a6cc1fcdd97b2d139b72fa
 sudo systemctl enable irqbalance
 sudo systemctl enable memavaild

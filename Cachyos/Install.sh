@@ -16,7 +16,6 @@ packages=(
 topgrade
 bauh
 partitionmanager
-plasma-wayland-protocols
 polkit-kde-agent
 legcord
 prismlauncher
@@ -28,6 +27,7 @@ lrzip
 minizip-ng
 optipng
 svgo
+nasm
 yasm
 ccache
 sccache

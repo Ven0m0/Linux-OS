@@ -1,0 +1,13 @@
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=debuginfo -C lto=on -C embed-bitcode=yes -Z dylib-lto"
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -Z default-visibility=hidden -Z tune-cpu=native -C target-feature=+avx2,+fma,+sse4.2,+aes,+prefetchi,+branch-hint,+clflushopt"
+
+RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C strip=debuginfo -C target-feature=+avx2,+fma,+sse4.2,+aes -Z tune-cpu=native -Z dylib-lto" 
+RUSTFLAGS="-C opt-level=3 -C target-cpu=native -Z tune-cpu=native -C codegen-units=1 -C debuginfo=0 -C lto -C embed-bitcode=yes -C relro=off -Z codegen-backend=cranelift -Z no-embed-metadata -Z dylib-lto"
+-Zdefault-visibility=hidden
+-C target-feature=+avx2,+fma,+sse4.2,+aes,+prefetchi,+branch-hint,+clflushopt
+
+-C linker=rust-lld
+-C linker=lld
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly
+rustup toolchain install nightly --profile minimal --component rust-src llvm-tools-x86_64-unknown-linux-gnu rustfmt-x86_64-unknown-linux-gnu 

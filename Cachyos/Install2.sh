@@ -70,41 +70,42 @@ cargo-update
 cargo-llvm-cov
 )
 
+
 echo -e "\nChecking installed packages..."
-pacpkgs=()
+missing_pkgs=()
 
 # Collect packages that are not installed
 for pkg in "${packages[@]}"; do
-  if pacman -Qi "$pkg" &>/dev/null; then
-    pacpkgs+=("$pkg")
+  if ! pacman -Qi "$pkg" &>/dev/null; then
+    missing_pkgs+=("$pkg")
   else
     echo "✔ $pkg is already installed"
   fi
 done
 
 # Proceed with installation only if there are missing packages
-if [ ${#pacpkgs[@]} -gt 0 ]; then
-  echo "➜ Installing: ${pacpkgs[*]}"
-
-  while [ ${#pacpkgs[@]} -gt 0 ]; do
-      failed_pacpkgs=()
+if [ ${#missing_pkgs[@]} -gt 0 ]; then
+  echo "➜ Installing: ${missing_pkgs[*]}"
+  
+  while [ ${#missing_pkgs[@]} -gt 0 ]; do
+      failed_pkgs=()
 
       # Try batch install
-      sudo pacman -S --noconfirm -q "${pacpkgs[@]}" || {
+      sudo pacman -S --noconfirm -q "${missing_pkgs[@]}" || {
           echo "Some packages failed to install."
-
+          
           # Identify failed packages
-          for aur_pkg in "${pacpkgs[@]}"; do
-              sudo pacman -S --noconfirm -q "$pac_pkg" || failed_pacpkgs+=("$pac_pkg")
+          for pkg in "${missing_pkgs[@]}"; do
+              sudo pacman -S --noconfirm -q "$pkg" || failed_pkgs+=("$pkg")
           done
 
           # Remove failed packages from retry list
-          pacpkgs=($(echo "${pacpkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pacpkgs[@]}")))
+          missing_pkgs=($(echo "${missing_pkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}")))
 
-          echo "Retrying without: ${failed_pacpkgs[*]}"
+          echo "Retrying without: ${failed_pkgs[*]}"
       }
 
-      [ ${#failed_pacpkgs[@]} -eq 0 ] && break  # Stop if all succeed
+      [ ${#failed_pkgs[@]} -eq 0 ] && break  # Stop if all succeed
   done
 
   echo "✔ All packages installed (or skipped if already present)."
@@ -112,7 +113,7 @@ else
   echo "✔ All packages were already installed—nothing to do."
 fi
 
-sudo pacman -S cpio bc --needed || true
+sudo pacman -S cpio bc --needed -q --noconfirm || true
 
 aurpkgs=(
 cleanerml-git
@@ -136,12 +137,12 @@ while [ ${#aurpkgs[@]} -gt 0 ]; do
     failed_pkgs=()
     
     # Try installing all remaining packages
-    paru -S "${aurpkgs[@]}" --removemake --cleanafter --skipreview || {
+    paru -S "${aurpkgs[@]}" --quiet --noconfirm --removemake --cleanafter --skipreview -q --nokeepsrc || {
         echo "Some packages failed to install."
         
         # Identify which package failed
         for aur_pkg in "${aurpkgs[@]}"; do
-            paru -S "$aur_pkg" --noconfirm --skipreview || failed_pkgs+=("$aur_pkg")
+            paru -S "$aur_pkg" --quiet --noconfirm --removemake --cleanafter --skipreview -q --nokeepsrc || failed_pkgs+=("$aur_pkg")
         fi
 
         # Remove failed packages from the list

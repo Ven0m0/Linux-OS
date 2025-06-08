@@ -137,12 +137,12 @@ while [ ${#aurpkgs[@]} -gt 0 ]; do
     failed_pkgs=()
     
     # Try installing all remaining packages
-    paru -S "${aurpkgs[@]}" --quiet --noconfirm --removemake --cleanafter --skipreview -q --nokeepsrc || {
+    paru -S "${aurpkgs[@]}" -q --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || {
         echo "Some packages failed to install."
         
         # Identify which package failed
         for aur_pkg in "${aurpkgs[@]}"; do
-            paru -S "$aur_pkg" --quiet --noconfirm --removemake --cleanafter --skipreview -q --nokeepsrc || failed_pkgs+=("$aur_pkg")
+            paru -S "$aur_pkg" -q --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || failed_pkgs+=("$aur_pkg")
         fi
 
         # Remove failed packages from the list

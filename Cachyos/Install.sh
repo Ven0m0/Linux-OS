@@ -129,17 +129,17 @@ echo "AUR package installation complete."
 # precached
 
 # Better ssl
-sudo pacman -S wolfssl --noconfirm
-# sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl
-# sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so
-# sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so
+sudo pacman -S wolfssl --noconfirm || true
+# sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl || true
+# sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so || true
+# sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so || true
 
 # Image downloads
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HOME/Pictures/PFP.web
 
 # echo "Installing gaming applications"
-# sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
+# sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm || true
 
 echo "Installing Cargo crates"
 # Faster copy and rm

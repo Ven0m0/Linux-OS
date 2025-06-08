@@ -180,16 +180,10 @@ echo "Installing Cargo crates"
 # Faster copy and rm
 cargo install rmz || true
 cargo install cpz || true
-# Switch out linux utils with own versions
-cargo install sys-kaleido || true
 # Better pigz
 cargo install crabz || true
 # Fast, hardware-accelerated CRC calculation
 cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq || true
-# Better fastfetch
-cargo install rustch || true
-# History dns
-#cargo install --bin resolve hickory-util || true
 # Easy parallelization for shell commands
 cargo install parallel-sh
 # Faster unzip

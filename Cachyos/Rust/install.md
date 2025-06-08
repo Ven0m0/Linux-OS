@@ -3,9 +3,14 @@
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly
 ```
 
-### Minimal nightly install
+### Minimal nightly
 ```
-rustup default nightly-x86_64-unknown-linux-gnu && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
+rustup default nightly && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
+```
+
+### Minimal stable
+```
+rustup default stable && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
 ```
 
 ### Some componements commonly required

@@ -1,0 +1,14 @@
+# Doas
+sudo nano /etc/doas.conf
+permit persist setenv {PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin} :wheel
+
+sudo chown -c root:root /etc/doas.conf
+sudo chmod -c 0400 /etc/doas.conf
+
+#fish env
+alias sudo='doas'
+alias sudoedit='doas rnano'
+
+# Sudo-rs
+alias sudo='sudo-rs'
+alias sudoedit='sudo-rs rnano'

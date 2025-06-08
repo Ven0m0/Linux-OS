@@ -12,9 +12,8 @@ legcord
 prismlauncher
 obs-studio
 pigz
-lbzip2
-lzlib
 lrzip
+pixz
 minizip-ng
 optipng
 svgo
@@ -57,7 +56,7 @@ sudo-rs
 gitoxide
 curl-rustls
 librustls
-exa-git
+eza
 dust
 sd
 rust-bindgen
@@ -68,6 +67,10 @@ cargo-machete
 cargo-pgo
 cargo-update
 cargo-llvm-cov
+preload
+wolfssl
+openssh-hpn
+openssh-hpn-shim
 )
 
 
@@ -118,12 +121,12 @@ sudo pacman -S cpio bc --needed -q --noconfirm || true
 aurpkgs=(
 cleanerml-git
 makepkg-optimize-mold
-preload
 prelockd
 uresourced
 jdk24-graalvm-ee-bin
 plzip
 plzip-lzip-link
+lbzip2
 usb-dirty-pages-udev
 cleanlib32
 optipng-parallel
@@ -189,6 +192,8 @@ cargo install rustch || true
 #cargo install --bin resolve hickory-util || true
 # Easy parallelization for shell commands
 cargo install parallel-sh
+# Faster unzip
+cargo install ripunzip
 
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service

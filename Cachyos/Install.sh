@@ -98,6 +98,7 @@ optipng-parallel
 dxvk-gplasync-bin
 pay-respects
 ssh3
+rust-parallel
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do
@@ -123,47 +124,9 @@ done
 
 echo "AUR package installation complete."
 
-
 # konsave
 # memavaild
 # precached
-
-
-# Install Rust nightly toolchain with minimal profile
-# rustup toolchain uninstall nightly-x86_64-unknown-linux-gnu
-# rustup toolchain install nightly --profile minimal
-#rustup toolchain install stable --profile minimal
-# rustup toolchain uninstall stable-x86_64-unknown-linux-gnu
-
-# Add Rust components
-#rust=(
-#rust-src
-#llvm-tools-x86_64-unknown-linux-gnu
-#clippy-x86_64-unknown-linux-gnu
-#rustfmt-x86_64-unknown-linux-gnu
-#)
-
-#for rust_pkg in "${rust[@]}"; do
-#  rustup component add  "$rust_pkg"
-#done
-
-# rustup default nightly
-#rustup default stable
-# rustup set profile minimal
-# rustup set default-host x86_64-unknown-linux-gnu 
-
-#echo "Installing rust aur packages"
-
-#apprs=(
-#rust-css-minifier-git
-#rust-parallel
-#async
-#)
-
-#for rs_pkg in "${apprs[@]}"; do
-#  sudo paru -S --noconfirm "$rs_pkg"
-#done
-
 
 # Better ssl
 sudo pacman -S wolfssl --noconfirm
@@ -175,16 +138,23 @@ sudo pacman -S wolfssl --noconfirm
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HOME/Pictures/PFP.web
 
-
 # echo "Installing gaming applications"
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
 
 echo "Installing Cargo crates"
 # Faster copy and rm
-cargo install rmz
-cargo install cpz
+cargo install rmz || true
+cargo install cpz || true
 # Switch out linux utils with own versions
-cargo install sys-kaleido
+cargo install sys-kaleido || true
+# Better pigz
+cargo install crabz || true
+# Fast, hardware-accelerated CRC calculation
+cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq || true
+# Better fastfetch
+cargo install rustch || true
+# History dns
+#cargo install --bin resolve hickory-util || true
 
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service

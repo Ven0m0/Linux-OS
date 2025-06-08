@@ -59,6 +59,8 @@ gitoxide
 curl-rustls
 librustls
 exa-git
+dust
+sd
 rust-bindgen
 cbindgen
 cargo-c
@@ -95,6 +97,7 @@ cleanlib32
 optipng-parallel
 dxvk-gplasync-bin
 pay-respects
+ssh3
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do
@@ -177,9 +180,11 @@ curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HO
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm
 
 echo "Installing Cargo crates"
-
-
-
+# Faster copy and rm
+cargo install rmz
+cargo install cpz
+# Switch out linux utils with own versions
+cargo install sys-kaleido
 
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service

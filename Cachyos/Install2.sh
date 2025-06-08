@@ -194,6 +194,8 @@ cargo install rustch || true
 cargo install parallel-sh
 # Faster unzip
 cargo install ripunzip
+# FFMPEG parallel
+cargo install ffzap
 
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service

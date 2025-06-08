@@ -12,3 +12,6 @@ alias sudoedit='doas rnano'
 # Sudo-rs
 alias sudo='sudo-rs'
 alias sudoedit='sudo-rs rnano'
+
+# Curl-rustls
+alias curl='curl-rustls'

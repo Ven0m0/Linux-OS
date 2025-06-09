@@ -297,3 +297,5 @@ user_pref("toolkit.telemetry.log.dump", "Fatal");
 user_pref("toolkit.telemetry.shutdownPingSender.enabledFirstSession", false);
 user_pref("toolkit.telemetry.prioping.enabled", false);
 user_pref("toolkit.telemetry.cachedClientID", "");
+// HTTP/3 fix
+user_pref("network.dns.httpssvc.http3_fast_fallback_timeout", 0);

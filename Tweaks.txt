@@ -189,7 +189,7 @@ sudo pacman -S mkinitcpio-systemd-tool
 sudo nano /etc/mkinitcpio.conf
 #HOOKS=(base udev autodetect microcode kms modconf block keyboard keymap consolefont plymouth filesystems fsck)
 HOOKS=(systemd systemd-tool autodetect microcode kms modconf block keyboard keymap consolefont plymouth filesystems fsck)
-
+COMPRESSION_OPTIONS=(-9)
 
 sudo systemctl enable --now pci-latency.service
 

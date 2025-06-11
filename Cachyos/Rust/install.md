@@ -1,17 +1,12 @@
-# Install rustup
-
+# Install rustup  
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly
-```
-
-### Minimal nightly
-
+```  
+### Minimal nightly  
 ```bash
 rustup default nightly && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
-```
-
-### Minimal stable
-
+```  
+### Minimal stable  
 ```bash
 rustup default stable && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
 ```

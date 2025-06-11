@@ -1,0 +1,11 @@
+aria2-unlimited
+jdk24-graalvm-ee-bin
+libwebp2-git
+makepkg-optimize-mold
+pay-respects
+rust-parallel
+ssh3
+uutils-diffutils
+uutils-findutils
+uutils-procps-git
+uutils-sed-git

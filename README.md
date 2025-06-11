@@ -3,10 +3,9 @@
 
 ### Updates
 
-<pre> curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | sudo bash </pre>
+``` curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | sudo bash ```
 
 
-<pre> ```bash pacman -Qen | awk '{print $1}' > explicit-repo.txt ``` </pre>
 
 ### Cleaning
 

@@ -1,7 +1,7 @@
 # Linux-OS
 
 
-### Updates
+- Updates
 
 ```
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | sudo bash

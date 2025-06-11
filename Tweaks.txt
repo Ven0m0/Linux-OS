@@ -109,7 +109,8 @@ Server = https://pkgbuild.com/~artafinde/repo
 
 
 Pacman backup:
-pacman -Qent > explicit-packages.txt
+pacman -Qen | awk '{print $1}' > explicit-repo.txt
+paru -Qem | awk '{print $1}' > explicit-aur.txt
 
 
 

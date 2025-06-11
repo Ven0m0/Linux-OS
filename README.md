@@ -4,7 +4,6 @@
 ### Updates
 
 
-```markdown
 <details><summary>Show command</summary>
 
 ```bash

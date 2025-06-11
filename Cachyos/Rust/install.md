@@ -1,4 +1,4 @@
-# Install rustup  
+### Install rustup  
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly
 ```  

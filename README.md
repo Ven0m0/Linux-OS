@@ -3,19 +3,11 @@
 
 ### Updates
 
-
-<details><summary>Show command</summary>
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | sudo bash
 ```
 
-</details>
-
-
 ### Cleaning
-
-
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | sudo bash

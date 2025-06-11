@@ -34,7 +34,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 -----
 
 
-# List of Linux operating systems
+## List of Linux operating systems
 
 ### Desktop:
 

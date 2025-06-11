@@ -14,28 +14,39 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 
 ### Cleaning
 
+```markdown
+<details><summary>Show command</summary>
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | sudo bash
-```
+
 
 ### Rank mirrors & keyrings
 
+```markdown
+<details><summary>Show command</summary>
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Rank.sh | sudo bash
-```
+
 
 ### Automated install
 
+```markdown
+<details><summary>Show command</summary>
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/Install.sh | sudo bash
-```
 
 
 ### Automated configuration
 
+```markdown
+<details><summary>Show command</summary>
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/AutoSetup.sh | sudo bash
-```
+
 
 -----
 

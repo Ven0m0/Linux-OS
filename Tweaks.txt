@@ -108,6 +108,10 @@ Include = /etc/pacman.d/chaotic-mirrorlist
 Server = https://pkgbuild.com/~artafinde/repo
 
 
+Pacman backup:
+pacman -Qent > explicit-packages.txt
+
+
 
 /etc/modprobe.d/nvidia.conf
 /usr/lib/modprobe.d//nvidia.conf

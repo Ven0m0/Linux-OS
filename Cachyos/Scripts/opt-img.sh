@@ -10,6 +10,7 @@ SAFE_DIRS=(
     "/usr/share/plasma/avatars"
     "/usr/share/plasma/look-and-feel"
     "/usr/share/sddm/flags"
+    "/usr/share/sddm/faces"
     "/usr/share/sddm/themes"
     "/usr/share/wallpapers"
 )

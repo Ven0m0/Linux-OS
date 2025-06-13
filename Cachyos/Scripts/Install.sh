@@ -202,6 +202,11 @@ cargo install ffzap
 # Scripting helper
 cargo install fuzip
 
+# fast compression multitool for zst, tgz, txz, zip, 7z
+cargo install zzz-arc
+# https://github.com/caydenlund/xz-rs.git
+
+
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service
 # sudo systemctl enable fstrim.timer

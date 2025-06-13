@@ -8,6 +8,11 @@ echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q || true
 paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc || true
 sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv || true
+if command -v plasma-discover-update >/dev/null 2>&1; then
+    plasma-discover-update
+else
+    echo "plasma-discover-update (Discover) is not installed."
+fi
 uv tool upgrade --all --compile-bytecode --native-tls || true
 rustup update || true
 cargo-install-update install-update --all || true
@@ -15,6 +20,8 @@ cargo-updater updater -u || true
 tldr -u && sudo tldr -u || true
 sudo sdboot-manage update || true
 sudo sdboot-manage remove || true
+
+
 
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then

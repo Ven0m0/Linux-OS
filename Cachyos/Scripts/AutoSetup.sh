@@ -20,6 +20,7 @@ sudo balooctl6 disable && sudo balooctl6 purge
 
 echo "Applying Breeze Dark theme"
 kwriteconfig6 --file ~/.config/kdeglobals --group General --key ColorScheme "BreezeDark"
+plasma-apply-desktoptheme breeze-dark
 
 sed -i 's/opacity = 0.8/opacity = 1.0/' "$HOME/.config/alacritty/alacritty.toml"
 

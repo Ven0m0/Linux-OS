@@ -6,7 +6,7 @@ DEST="$HOME/.config/bleachbit"
 
 git clone --depth 1 "$REPO_URL" bleachbitc \
   && mkdir -p "$DEST" \
-  && cp -r bleachbitc/Cachyos/cleaners "$DEST/" \
-  && rm -rf bleachbitc
+  && { cpz -r bleachbitc/Cachyos/cleaners "$DEST/" 2>/dev/null || cp -r bleachbitc/Cachyos/cleaners "$DEST/"; } \
+  && { rmz -rf bleachbitc 2>/dev/null || rm -rf bleachbitc; }
 
 echo "✅ Cleaners installed to $DEST/cleaners"

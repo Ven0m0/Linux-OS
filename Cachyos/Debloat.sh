@@ -1,23 +1,14 @@
 #!/bin/bash
 
-if [ "$EUID" -ne 0 ]; then
-  script_path=$([[ "$0" = /* ]] && echo "$0" || echo "$PWD/${0#./}")
-  sudo "$script_path" || (
-    echo 'Administrator privileges are required.'
-    exit 1
-  )
-  exit 0
-fi
-export HOME="/home/${SUDO_USER:-${USER}}"
-
+sudo -v 
 
 # Mostly useless
-pacman -Rns kcontacts
-pacman -Rns kdeconnect
-pacman -Rns kpeople
-pacman -Rns plasma-browser-integration
+sudo pacman -Rns kcontacts
+sudo pacman -Rns kdeconnect
+sudo pacman -Rns kpeople
 # Deprecated
-pacman -Rns cachy-browser
+sudo pacman -Rns cachy-browser
+sudo pacman -Rns cachyos-v4-mirrorlist
 
 # Services
 systemctl disable bluetooth.service 2>/dev/null

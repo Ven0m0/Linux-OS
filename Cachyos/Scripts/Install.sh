@@ -198,6 +198,10 @@ cargo install ripunzip
 # FFMPEG parallel
 cargo install ffzap
 
+# https://crates.io/crates/fuzip
+# Scripting helper
+cargo install fuzip
+
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service
 # sudo systemctl enable fstrim.timer

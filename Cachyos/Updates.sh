@@ -21,8 +21,6 @@ tldr -u && sudo tldr -u || true
 sudo sdboot-manage update || true
 sudo sdboot-manage remove || true
 
-
-
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then
     echo "✅ systemd-boot is installed. Updating..."

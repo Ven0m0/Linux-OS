@@ -2,8 +2,6 @@
 
 sudo -v
 
-
-
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q || true
 paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc || true

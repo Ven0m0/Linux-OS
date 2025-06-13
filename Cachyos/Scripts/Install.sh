@@ -2,6 +2,8 @@
 
 sudo -v
 
+sudo pacman -Rns openssh 
+
 packages=(
 topgrade
 bauh
@@ -71,6 +73,7 @@ preload
 wolfssl
 openssh-hpn
 openssh-hpn-shim
+sshpass
 )
 
 

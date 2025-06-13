@@ -136,6 +136,7 @@ ssh3
 rust-parallel
 fcp-bin
 unzrip-git
+adbr-git
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do

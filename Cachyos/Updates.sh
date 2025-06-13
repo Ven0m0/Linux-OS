@@ -4,7 +4,7 @@ sudo -v
 
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q || true
-sudo paru -Syu --combinedupgrade -q --removemake --cleanafter --skipreview --nokeepsrc || true
+paru -Syu --combinedupgrade -q --removemake --cleanafter --skipreview --nokeepsrc || true
 sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv || true
 uv tool upgrade --all --compile-bytecode --native-tls || true
 rustup update || true

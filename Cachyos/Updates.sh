@@ -41,3 +41,5 @@ if find /boot /boot/efi /mnt -type f -name "limine.cfg" 2>/dev/null | grep -q li
 else
     echo "❌ Limine configuration not found; skipping Limine actions."
 fi
+
+# sudo update-initramfs -u

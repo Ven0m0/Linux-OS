@@ -137,6 +137,7 @@ rust-parallel
 fcp-bin
 unzrip-git
 adbr-git
+luxtorpeda
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do

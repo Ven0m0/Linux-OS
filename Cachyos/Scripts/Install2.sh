@@ -134,6 +134,7 @@ dxvk-gplasync-bin
 pay-respects
 ssh3
 rust-parallel
+fcp-bin
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do

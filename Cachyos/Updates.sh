@@ -2,6 +2,8 @@
 
 sudo -v
 
+export rustup="$HOME/.cargo/bin/rustup"
+
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q || true
 paru -Syu --combinedupgrade --nouseask-q --removemake --cleanafter --skipreview --nokeepsrc || true

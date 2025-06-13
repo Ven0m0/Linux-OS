@@ -19,6 +19,16 @@ pacman -Rns plasma-browser-integration
 # Deprecated
 pacman -Rns cachy-browser
 
+# Services
+systemctl disable bluetooth.service 2>/dev/null
+systemctl disable avahi-daemon.service 2>/dev/null
+if systemctl list-unit-files | grep -q printer.service; then
+    systemctl disable printer.service
+    echo "Printer service disabled."
+else
+    echo "Printer service not found. Skipping."
+fi
+
 
 echo 'The script finished. Press any key to exit.'
 read -n 1 -s

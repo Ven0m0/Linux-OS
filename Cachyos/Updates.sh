@@ -9,6 +9,7 @@ sudo pacman -Syu --noconfirm -q || true
 paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc || true
 sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv || true
 if command -v plasma-discover-update >/dev/null 2>&1; then
+    export $(dbus-launch)
     plasma-discover-update
 else
     echo "plasma-discover-update (Discover) is not installed."

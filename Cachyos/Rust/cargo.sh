@@ -111,7 +111,3 @@ cargo install crabz
 # Better sed
 https://crates.io/crates/sd
 cargo install sd
-
-# History dns
-cargo install --bin resolve hickory-util
-

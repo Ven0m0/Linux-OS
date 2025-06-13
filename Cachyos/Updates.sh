@@ -6,7 +6,7 @@ export rustup="$HOME/.cargo/bin/rustup"
 
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q || true
-paru -Syu --combinedupgrade --nouseask-q --removemake --cleanafter --skipreview --nokeepsrc || true
+paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc || true
 sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv || true
 uv tool upgrade --all --compile-bytecode --native-tls || true
 rustup update || true

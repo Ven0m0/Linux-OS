@@ -6,3 +6,5 @@ for file in "$DIR"/*; do
     rust-strip -s "$file" && echo "stripped $file"
   fi
 done
+
+read -s -r -p "✅Stripping rust apps done. Press Enter to exit..."

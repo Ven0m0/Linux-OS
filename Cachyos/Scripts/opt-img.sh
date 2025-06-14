@@ -13,6 +13,7 @@ SAFE_DIRS=(
     "/usr/share/sddm/faces"
     "/usr/share/sddm/themes"
     "/usr/share/wallpapers"
+    "$HOME/.local/share/omf/docs"
 )
 
 BACKUP_DIR="$HOME/image_backups_$(date +%Y%m%d_%H%M%S)"

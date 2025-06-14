@@ -101,6 +101,7 @@ sudo fstrim -a --quiet-unsupported
 
 # Cargo
 if command -v cargo-cache &>/dev/null; then
+    cargo cache --autoclean || true
     cargo-cache -e -g clean-unref || true
 fi
 

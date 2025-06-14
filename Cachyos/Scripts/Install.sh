@@ -202,10 +202,15 @@ cargo install ffzap
 # Scripting helper
 cargo install fuzip
 
+# https://crates.io/crates/fd-find
+cargo install fd-find
+
 # fast compression multitool for zst, tgz, txz, zip, 7z
 cargo install zzz-arc
 # https://github.com/caydenlund/xz-rs.git
 
+#https://crates.io/crates/cargo-list
+cargo install cargo-list
 
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service

@@ -10,6 +10,7 @@ alias la='eza -a --color=always --group-directories-first --icons'  # all files 
 alias ll='eza -l --color=always --group-directories-first --icons'  # long format
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 alias l.="eza -a | grep -e '^\.'"                                   # show only dotfiles
+alias cat='bat --strip-ansi=auto'
 
 # Better sudo
 if command -v sudo-rs >/dev/null 2>&1; then

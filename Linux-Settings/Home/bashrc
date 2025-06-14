@@ -10,8 +10,8 @@ alias la='eza -a --color=always --group-directories-first --icons'  # all files 
 alias ll='eza -l --color=always --group-directories-first --icons'  # long format
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 alias l.="eza -a | grep -e '^\.'"                                   # show only dotfiles
-alias rg='rg --color=auto'
-alias grep='rg -uuu --color=auto'
-alias fgrep='rg -uuu -F --color=auto'
-alias egrep='rg -E --color=auto'
-alias sudo='doas'
+alias rg='rg --no-stats --color=auto'
+alias grep='rg -uuu --no-stats --color=auto'
+alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8'
+alias egrep='rg --no-stats --color=auto'
+alias sudo='sudo-rs'

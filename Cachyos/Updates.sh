@@ -16,10 +16,10 @@ uv tool upgrade --all
 export rustup="$HOME/.cargo/bin/rustup"
 rustup update || true
 # cargo-install-update install-update --all || true
-cargo-updater updater -u || true
-tldr -u && sudo tldr -u || true
-sudo sdboot-manage update || true
-sudo sdboot-manage remove || true
+cargo-updater updater -u
+tldr -u && sudo tldr -u
+sudo sdboot-manage update
+sudo sdboot-manage remove
 
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then

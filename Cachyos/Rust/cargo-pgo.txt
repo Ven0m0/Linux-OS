@@ -1,0 +1,14 @@
+# Build PGO instrumented binary
+cargo pgo build
+
+# Run binary to gather PGO profiles
+./target/.../<binary>
+
+# Build BOLT instrumented binary using PGO profiles
+cargo pgo bolt build --with-pgo
+
+# Run binary to gather BOLT profiles
+./target/.../<binary>-bolt-instrumented
+
+# Optimize a PGO-optimized binary with BOLT
+cargo pgo bolt optimize --with-pgo

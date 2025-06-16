@@ -303,7 +303,8 @@ rm -rf ~/.local/share/flatpak/system-cache/*
 rm -rf ~/.var/app/*/data/Trash/*
 echo "Clear system logs"
 sudo rm -f /var/log/pacman.log
-sudo journalctl --vacuum-time=1s || true
+sudo journalctl --rotate -q || true
+sudo journalctl --vacuum-time=1s -q || true
 sudo rm -rf /run/log/journal/*
 sudo rm -rf /var/log/journal/*
 

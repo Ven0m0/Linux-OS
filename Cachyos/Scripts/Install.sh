@@ -204,6 +204,9 @@ cargo install ffzap
 # Make your crate lean by computing size-optimal include directives for Cargo manifests
 cargo install cargo-diet
 
+# Better fastfetch
+cargo install crab-fetch
+
 # https://crates.io/crates/fd-find
 cargo install fd-find
 

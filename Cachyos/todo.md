@@ -112,3 +112,7 @@ https://crates.io/crates/hitdns
 https://crates.io/crates/cargo-unused-features
 
 https://crates.io/crates/binup
+
+https://crates.io/crates/lla
+
+https://crates.io/crates/mc-repack

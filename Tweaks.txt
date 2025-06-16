@@ -157,6 +157,10 @@ _JAVA_AWT_WM_NONREPARENTING=1
 CARGO_HTTP_MULTIPLEXING=true
 RUSTC_WRAPPER=sccache
 
+
+Env:
+export PATH="$HOME/.cargo/bin:$PATH"
+
 # Steam
 mkdir -p ~/.steam/; mkdir -p ~/.steam/steam; echo 'unShaderBackgroundProcessingThreads 8' > ~/.steam/steam/steam_dev.cfg
 

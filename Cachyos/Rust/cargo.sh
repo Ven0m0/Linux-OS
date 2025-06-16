@@ -91,7 +91,7 @@ rustup component add llvm-tools-preview
 cargo install xremap
 
 # Rust-curl
-https://crates.io/crates/rust-curl
+# https://crates.io/crates/rust-curl
 cargo install rust-curl
 #Compile Rusr-curl
 git clone https://github.com/arvid-berndtsson/rurl.git
@@ -109,5 +109,5 @@ cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq
 cargo install crabz
 
 # Better sed
-https://crates.io/crates/sd
+# https://crates.io/crates/sd
 cargo install sd

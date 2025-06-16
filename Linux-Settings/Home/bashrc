@@ -15,8 +15,8 @@ alias cat='bat --strip-ansi=auto'
 # Better sudo
 if command -v sudo-rs >/dev/null 2>&1; then
   alias sudo='sudo-rs'
-elif command -v doas >/dev/null 2>&1; then
-  alias sudo='doas'
+  alias su='su-rs'
+  alias visudo='visudo-rs'
 fi
 
 # Ripgrep

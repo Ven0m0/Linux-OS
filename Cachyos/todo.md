@@ -118,3 +118,6 @@ https://crates.io/crates/lla
 https://crates.io/crates/mc-repack
 
 https://crates.io/crates/touch-cli
+
+https://crates.io/crates/wl-clipboard-rs-tools
+

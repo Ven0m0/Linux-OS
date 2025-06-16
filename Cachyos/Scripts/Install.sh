@@ -74,6 +74,7 @@ wolfssl
 openssh-hpn
 openssh-hpn-shim
 sshpass
+graphicsmagick
 )
 
 

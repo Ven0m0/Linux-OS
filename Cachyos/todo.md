@@ -1,4 +1,4 @@
-cargo install quicssh-rs
+
 https://crates.io/crates/quicssh-rs
 
 https://github.com/MilesCranmer/rip2
@@ -104,3 +104,11 @@ https://wiki.archlinux.org/title/Domain_name_resolution
 https://github.com/jedisct1/EtchDNS
 
 https://github.com/Kobzol/cargo-pgo/blob/main/README.md
+
+https://crates.io/crates/rocketfetch
+
+https://crates.io/crates/hitdns
+
+https://crates.io/crates/cargo-unused-features
+
+https://crates.io/crates/binup

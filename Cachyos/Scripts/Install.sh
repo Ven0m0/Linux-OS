@@ -230,9 +230,9 @@ cargo install sd
 # https://crates.io/crates/rjrssync
 cargo install rjrssync
 
-# Rsync rust clone
-# https://crates.io/crates/syncfast
-cargo install syncfast
+# Scp drop-in replacement
+# https://crates.io/crates/qcp
+cargo install qcp
 
 # Tmux
 # https://crates.io/crates/rusmux

@@ -43,7 +43,8 @@ rm -rf ~/.cache/thumbnails/*
 
 # Clear system logs
 sudo rm -f /var/log/pacman.log || true
-sudo journalctl --vacuum-time=1s || true
+sudo journalctl --rotate -q || true
+sudo journalctl --vacuum-time=1s -q || true
 #sudo rm -rf /run/log/journal/* /var/log/journal/* || true
 #sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || true
 

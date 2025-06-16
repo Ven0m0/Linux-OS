@@ -188,6 +188,9 @@ echo "Installing Cargo crates"
 # Faster copy and rm
 cargo install rmz || true
 cargo install cpz || true
+# Modern cp
+# https://crates.io/crates/xcp
+cargo install xcp
 # Better pigz
 cargo install crabz || true
 # Fast, hardware-accelerated CRC calculation

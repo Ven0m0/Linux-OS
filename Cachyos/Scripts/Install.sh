@@ -197,6 +197,8 @@ cargo install parallel-sh
 cargo install ripunzip
 # FFMPEG parallel
 cargo install ffzap
+# Make your crate lean by computing size-optimal include directives for Cargo manifests
+cargo install cargo-diet
 
 # https://crates.io/crates/fuzip
 # Scripting helper

@@ -1,4 +1,7 @@
+
 export HISTCONTROL=ignoreboth
+export HISTSIZE=1000
+
 
 # alias ssh='dbclient'
 alias ptch='patch -p1 <'

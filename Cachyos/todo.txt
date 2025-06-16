@@ -1,0 +1,3 @@
+cargo install quicssh-rs
+https://crates.io/crates/quicssh-rs
+

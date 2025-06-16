@@ -2,6 +2,9 @@ https://crates.io/crates
 
 cargo +nightly build --release 
 
+# Cargo apps in path
+export PATH="$HOME/.cargo/bin:$PATH"
+
 
 cargo install cargo-shear
 cargo shear --fix

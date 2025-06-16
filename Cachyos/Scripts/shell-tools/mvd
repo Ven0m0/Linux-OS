@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Move with creating dirs
+# https://github.com/wilzbach/shell-tools
+
+mkdir -p "${!#}";
+mv "$@";

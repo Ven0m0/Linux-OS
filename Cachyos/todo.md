@@ -116,3 +116,5 @@ https://crates.io/crates/binup
 https://crates.io/crates/lla
 
 https://crates.io/crates/mc-repack
+
+https://crates.io/crates/touch-cli

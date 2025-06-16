@@ -5,7 +5,7 @@ cargo +nightly build --release
 # Cargo apps in path
 export PATH="$HOME/.cargo/bin:$PATH"
 
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto Z tune-cpu=native -Z default-visibility"
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -Z tune-cpu=native -Z default-visibility"
 cargo +nightly install app --target x86_64-unknown-linux-gnu -Z target-applies-to-host -Z unstable-options -Z no-embed-metadata
 
 cargo install cargo-shear

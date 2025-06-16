@@ -6,6 +6,7 @@ echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q 
 paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc 
 sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv
+pipx upgrade-all
 if command -v plasma-discover-update >/dev/null 2>&1; then
     export $(dbus-launch)
     plasma-discover-update

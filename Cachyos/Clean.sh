@@ -12,6 +12,7 @@ sudo pacman -Scc --noconfirm || true
 sudo paccache -rk0 -q || true
 
 # Clear cache
+sudo systemd-tmpfiles --clean 
 sudo rm -rf /var/cache/*
 sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*

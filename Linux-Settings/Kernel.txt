@@ -29,6 +29,9 @@ nowatchdog quiet mitigations=off split_lock_detect=off pcie_aspm.policy=performa
 
 initrd /intel-ucode.img
 
+Limine:
+module_path: boot():/intel-ucode.img
+
 # XFS
 xfs_mod.defaultcrc=0
 # Powersave

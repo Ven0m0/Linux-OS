@@ -358,3 +358,15 @@ user_pref("media.video_stats.enabled", false);
 user_pref("network.http.referer.trimmingPolicy", 2);
 user_pref("network.trr.mode", 5);
 user_pref("pdfjs.enableScripting", false);
+// https://github.com/AveYo/fox
+user_pref("browser.bookmarks.max_backups", 5);
+user_pref("browser.download.hide_plugins_without_extensions", false); // o Allow applications (mime types) without a plugin
+user_pref("dom.vibrator.enabled", false); // o Shaking the screen effect
+user_pref("extensions.screenshots.disabled", true);  // Disable Screenshots extension
+user_pref("extensions.screenshots.upload-disabled", true); // Disable Screenshots upload
+user_pref("extensions.webcompat-reporter.enabled", false); // Disable Web Compatibility Reporter
+user_pref("ui.prefersReducedMotion", 1);
+user_pref("ui.systemUsesDarkTheme", 1); 
+user_pref("layout.css.font-visibility.level", 2); // Expose only system fonts OR Resist Fingerprinting
+user_pref("webgl.enable-debug-renderer-info", false);
+user_pref("security.tls.enable_0rtt_data", true);

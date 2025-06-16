@@ -299,3 +299,12 @@ user_pref("toolkit.telemetry.prioping.enabled", false);
 user_pref("toolkit.telemetry.cachedClientID", "");
 // HTTP/3 fix
 user_pref("network.dns.httpssvc.http3_fast_fallback_timeout", 0);
+// Media tweaks
+user_pref("media.gmp.decoder.multithreaded", true);
+user_pref("media.gmp.encoder.multithreaded", true);
+user_pref("media.av1.new-thread-count-strategy", true);
+user_pref("media.webrtc.simulcast.av1.enabled", false);
+user_pref("image.decode-immediately.enabled", true);
+user_pref("media.gmp.decoder.decode_batch", true);
+user_pref("media.decoder.recycle.enabled", true);
+user_pref("media.peerconnection.video.vp9_preferred", true);

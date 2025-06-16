@@ -28,7 +28,7 @@ user_pref("gfx.webrender.wait-gpu-finished.disabled", true);
 user_pref("gfx.webrender.use-optimized-shaders", true);
 /** DISK CACHE ***/
 user_pref("browser.cache.memory.enable", true); // Default, but just in case
-user_pref("browser.cache.disk.enable", true); //More efficient to keep the browser cache instead of having to re-download objects for the websites you visit frequently
+// user_pref("browser.cache.disk.enable", true); //More efficient to keep the browser cache. Off because of https://wiki.archlinux.org/title/Firefox/Tweaks
 user_pref("browser.cache.jsbc_compression_level", 3); // PREF: compression level for cached JavaScript bytecode
 user_pref("dom.compression_streams.zstd.enabled", true); // ZSTD compression
 user_pref("browser.cache.disk.smart_size.enabled", true); // force a fixed max cache size on disk
@@ -62,6 +62,8 @@ user_pref("javascript.options.wasm_relaxed_simd", true);
 user_pref("javascript.options.wasm_tail_calls", true);
 user_pref("javascript.options.wasm_unroll_loops", true);
 user_pref("javascript.options.wasm_moz_intgemm", true);
+// Unsure
+user_pref("javascript.options.wasm_ionjit", true);
 /** IMAGE CACHE ***/
 user_pref("image.mem.decode_bytes_at_a_time", 32768); // image cache
 /** NETWORK ***/

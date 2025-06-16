@@ -27,5 +27,6 @@ benchmark "xcp-w4"   xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-times
 benchmark "xcp-w8"   xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w8
 benchmark "xcp-w0-2MB-block"   xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w 0 --block-size 2MB
 benchmark "uu-cp" uu-cp -f --no-preserve=all cachyos.iso cachyos-uu-cp.iso
+benchmark "cpui" cpui -f -y cachyos.iso cachyos-cpui.iso
 
 echo "✅ Benchmarks complete. Results in $LOG"

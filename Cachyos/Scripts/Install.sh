@@ -215,6 +215,25 @@ cargo install zzz-arc
 #https://crates.io/crates/cargo-list
 cargo install cargo-list
 
+# Rust-curl
+# https://crates.io/crates/rust-curl
+cargo install rust-curl
+
+# Better sed
+# https://crates.io/crates/sd
+cargo install sd
+
+# Rsync like tool
+# https://crates.io/crates/rjrssync
+cargo install rjrssync
+
+# Rsync rust clone
+# https://crates.io/crates/syncfast
+cargo install syncfast
+
+# Tmux
+# https://crates.io/crates/rusmux
+
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service
 # sudo systemctl enable fstrim.timer

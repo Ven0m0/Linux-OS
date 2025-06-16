@@ -16,7 +16,6 @@ rustup default stable && rustup set profile minimal && rustup set default-host x
 rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu rust-std-wasm32-unknown-unknown rust-std-wasm32-wasip2
 ```
 
-## [Crates.io rust projects](https://crates.io)
+### [Crates.io rust projects](https://crates.io)
 
-
-## [Lib.rs rust apps](https://lib.rs/)
+### [Lib.rs rust apps](https://lib.rs/)

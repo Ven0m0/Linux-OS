@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# set -euo pipefail
-
 sudo -v
 
 sudo sync

@@ -204,10 +204,6 @@ cargo install ffzap
 # Make your crate lean by computing size-optimal include directives for Cargo manifests
 cargo install cargo-diet
 
-# https://crates.io/crates/fuzip
-# Scripting helper
-cargo install fuzip
-
 # https://crates.io/crates/fd-find
 cargo install fd-find
 
@@ -225,10 +221,6 @@ cargo install rust-curl
 # Better sed
 # https://crates.io/crates/sd
 cargo install sd
-
-# Rsync like tool
-# https://crates.io/crates/rjrssync
-cargo install rjrssync
 
 # Scp drop-in replacement
 # https://crates.io/crates/qcp

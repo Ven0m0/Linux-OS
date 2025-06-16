@@ -138,6 +138,8 @@ user_pref("geo.provider.network.url", "");
 user_pref("geo.provider.network.logging.enabled", false); // [HIDDEN PREF]
 user_pref("permissions.default.desktop-notification", 0); // PREF: allow websites to ask you to receive site notifications
 user_pref("privacy.donottrackheader.enabled", true); // Enable the DNT (Do Not Track) HTTP header
+user_pref("privacy.donottrackheader.value", 1);
+user_pref("privacy.firstparty.isolate", true);
 user_pref("urlclassifier.trackingSkipURLs", "*.reddit.com, *.twitter.com, *.twimg.com, *.tiktok.com");
 user_pref("urlclassifier.features.socialtracking.skipURLs", "*.instagram.com, *.twitter.com, *.twimg.com");
 /** USABILITY ***/
@@ -203,6 +205,7 @@ user_pref("browser.newtabpage.activity-stream.default.sites", ""); // new tab pa
 user_pref("browser.newtab.preload", false);
 user_pref("browser.onboarding.enabled", false);        // Hide onboarding tour (uses Google Analytics)
 user_pref("datareporting.policy.dataSubmissionEnabled", false);
+user_pref("datareporting.healthreport.service.enabled", false);
 user_pref("datareporting.healthreport.uploadEnabled", false);
 user_pref("toolkit.telemetry.unified", false);
 user_pref("toolkit.telemetry.enabled", false);
@@ -290,6 +293,8 @@ user_pref("print.enabled", false);
 user_pref("privacy.query_stripping.enabled", true);
 user_pref("privacy.fingerprintingProtection", true);
 user_pref("privacy.trackingprotection.enabled", true);
+user_pref("privacy.trackingprotection.cryptomining.enabled", true);
+user_pref("privacy.trackingprotection.pbmode.enabled", true);
 user_pref("privacy.spoof_english", 0);
 user_pref("sidebar.animation.enabled", false);
 user_pref("extensions.webextensions.restrictedDomains", ""); // remove Mozilla domains so adblocker works on pages
@@ -336,3 +341,18 @@ user_pref("image.decode-immediately.enabled", true);
 user_pref("media.gmp.decoder.decode_batch", true);
 user_pref("media.decoder.recycle.enabled", true);
 user_pref("media.peerconnection.video.vp9_preferred", true);
+// https://ffprofile.com
+user_pref("browser.sessionstore.privacy_level", 0);
+user_pref("browser.startup.homepage_override.mstone", "ignore");
+user_pref("device.sensors.ambientLight.enabled", false);
+user_pref("device.sensors.enabled", false);
+user_pref("device.sensors.motion.enabled", false);
+user_pref("device.sensors.orientation.enabled", false);
+user_pref("device.sensors.proximity.enabled", false);
+user_pref("extensions.shield-recipe-client.api_url", "");
+user_pref("extensions.shield-recipe-client.enabled", false);
+user_pref("extensions.webservice.discoverURL", "");
+user_pref("media.video_stats.enabled", false);
+user_pref("network.http.referer.trimmingPolicy", 2);
+user_pref("network.trr.mode", 5);
+user_pref("pdfjs.enableScripting", false);

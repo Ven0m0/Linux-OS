@@ -234,6 +234,14 @@ cargo install rjrssync
 # https://crates.io/crates/qcp
 cargo install qcp
 
+# adaptable text editor (vim, kakoune, acme combined)
+# https://crates.io/crates/ad-editor
+cargo install ad-editor
+
+git clone https://github.com/sminez/ad.git && cd ad
+cargo install --path .
+make setup-dotfiles
+
 # Tmux
 # https://crates.io/crates/rusmux
 

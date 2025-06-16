@@ -10,7 +10,7 @@ user_pref("gfx.webrender.all", true); // enables WR + additional features
 user_pref("content.notify.interval", 100000);
 user_pref("layers.gpu-process.force-enabled", true); // enforce
 user_pref("media.hardware-video-decoding.force-enabled", true); // enforce
-user_pref("browser.sessionhistory.max_total_viewers", 2); //limits the maximum number of pages stored in memory
+user_pref("browser.sessionhistory.max_total_viewers", 5); //limits the maximum number of pages stored in memory
 /** GFX ***/
 user_pref("gfx.canvas.accelerated", true); // PREF: enable GPU-accelerated Canvas2D [WINDOWS]
 user_pref("gfx.canvas.accelerated.cache-items", 8192); // default=2048; Chrome=4096
@@ -19,9 +19,9 @@ user_pref("gfx.content.skia-font-cache-size", 20); // default=5; Chrome=20
 user_pref("gfx.webrender.precache-shaders", true); // longer initial startup time
 /** DISK CACHE ***/
 user_pref("browser.cache.disk.enable", true); //More efficient to keep the browser cache instead of having to re-download objects for the websites you visit frequently
-user_pref("browser.cache.jsbc_compression_level", 9); // PREF: compression level for cached JavaScript bytecode
+user_pref("browser.cache.jsbc_compression_level", 3); // PREF: compression level for cached JavaScript bytecode
 user_pref("browser.cache.disk.smart_size.enabled", true); // force a fixed max cache size on disk
-
+user_pref("browser.cache.disk_cache_ssl", true);
 user_pref("browser.cache.disk.capacity", 256000); // default=256000; size of disk cache; 1024000=1GB
 // Higher cache disabled incase of Profile-sync-daemon
 //user_pref("browser.cache.disk.capacity", 2097152); // default=256000; size of disk cache; 1024000=1GB
@@ -308,3 +308,4 @@ user_pref("image.decode-immediately.enabled", true);
 user_pref("media.gmp.decoder.decode_batch", true);
 user_pref("media.decoder.recycle.enabled", true);
 user_pref("media.peerconnection.video.vp9_preferred", true);
+image.jxl.enabled

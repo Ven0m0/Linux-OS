@@ -121,3 +121,4 @@ https://crates.io/crates/touch-cli
 
 https://crates.io/crates/wl-clipboard-rs-tools
 
+cargo install less

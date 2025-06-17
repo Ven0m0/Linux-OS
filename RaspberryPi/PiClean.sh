@@ -25,19 +25,19 @@ fi
 
 sudo rm -rf /var/lib/apt/lists/*
 echo "Removing common cache directories and trash"
-sudo rm -rfv /tmp/*
-sudo rm -rfv /var/tmp/*
+sudo rm -rf /tmp/*
+sudo rm -rf /var/tmp/*
 rm -rf /var/cache/*
-rm -rfv ~/.cache/*
-sudo rm -rfv root/.cache/*
-rm -rfv ~/.thumbnails/*
-rm -rfv ~/.cache/thumbnails/*
+rm -rf ~/.cache/*
+sudo rm -rf root/.cache/*
+rm -rf ~/.thumbnails/*
+rm -rf ~/.cache/thumbnails/*
 
 echo "Cleaning crash dumps and systemd coredumps"
 sudo rm -rf /var/crash/*
 sudo rm -rf /var/lib/systemd/coredump/
-rm -rfv ~/.local/share/Trash/*
-sudo rm -rfv /root/.local/share/Trash/*
+rm -rf ~/.local/share/Trash/*
+sudo rm -rf /root/.local/share/Trash/*
 
 echo "Clearing old history files..."
 rm -fv ~/.python_history
@@ -49,11 +49,11 @@ echo "Vacuuming journal logs"
 sudo journalctl --vacuum-time=1s
 
 echo "Running fstrim"
-sudo rm -rfv /run/log/journal/*
-sudo rm -rfv /var/log/journal/*
+sudo rm -rf /run/log/journal/*
+sudo rm -rf /var/log/journal/*
 sudo fstrim -av --quiet-unsupported || true
 
 echo "Clearing DietPi logs..."
-dietpi-logclear 2 || true
+sudo dietpi-logclear 2 || true
 
 echo "System clean-up complete."

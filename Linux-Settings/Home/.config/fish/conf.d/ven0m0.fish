@@ -1,3 +1,6 @@
+# https://github.com/iffse/pay-respects
+pay-respects fish --alias | source
+
 # alias ssh='dbclient'
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'

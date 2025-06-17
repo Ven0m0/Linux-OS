@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 
 sudo apt-get update --allow-releaseinfo-change
 sudo apt-get dist-upgrade -y

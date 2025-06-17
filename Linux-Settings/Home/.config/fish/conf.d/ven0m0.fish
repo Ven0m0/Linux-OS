@@ -8,6 +8,8 @@ alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/ref
 
 alias cat='bat --strip-ansi=auto'
 
+alias du='dust'
+
 # Better sudo
 if type -q sudo-rs
     alias sudo='sudo-rs'

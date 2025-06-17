@@ -1,0 +1,7 @@
+
+# Crabfetch instead of fastfetch
+
+sudo sed -i '/^function fish_greeting$/,/^end$/ {
+    /^ *fastfetch$/c\
+    \    crabfetch --config=preset:neofetch -d arch || fastfetch
+}' /usr/share/cachyos-fish-config/cachyos-config.fish

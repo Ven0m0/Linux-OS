@@ -15,4 +15,4 @@ fi
 
 
 rpi-eeprom-update
-#sudo PRUNE_MODULES=1 rpi-update
+# sudo PRUNE_MODULES=1 rpi-update

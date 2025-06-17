@@ -1,7 +1,9 @@
+# https://github.com/iffse/pay-respects
+eval "$(pay-respects bash --alias)"
 
 export HISTCONTROL=ignoreboth
 export HISTSIZE=1000
-
+export HISTFILESIZE=25000
 
 # alias ssh='dbclient'
 alias ptch='patch -p1 <'

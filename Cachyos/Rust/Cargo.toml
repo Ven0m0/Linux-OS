@@ -1,0 +1,35 @@
+[profile.release]
+
+panic = "abort"
+codegen-units = "1"
+lto = "true"
+opt-level = "3"
+strip = "true"
+incremental = "false"
+debuginfo= "0"
+split-debuginfo = "off"
+debug_assertions = "off"
+
+
+RUSTFLAGS="-Zlocation-detail=none"
+RUSTFLAGS="-Zfmt-debug=none"
+force-frame-pointers-no 
+force-unwind-tables=no
+ -C linkerr ld.lld
+ -C relro-level off
+
+
+
+cargo +nightly build -Zgc -Z feature-unification
+CARGO_HTTP_SSL_VERSION="tlsv1.3"
+CARGO_NET_GIT_FETCH_WITH_CLI=true
+CARGO_CFG_TARGET_ENV="gnu"
+CARGO_CFG_TARGET_ABI="llvm"
+
+
+cargo +nightly -Ztarget-applies-to-host build --target x86_64-unknown-linux-gnu
+
+
+
+rustup component add rust-src --toolchain nightly
+

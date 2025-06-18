@@ -1,0 +1,16 @@
+zipalign -P 4 -f -z -v 4 final2.apk output2.apk 
+
+aapt2 optimize -o output.apk  -c en,xxxhdpi TikTok.apk
+zipalign -P 4 -f -v 4 output2.apk final2.apk
+
+aapt2 optimize -o output.apk --enable-sparse-encoding input.apk
+
+aapt2 optimize -o output.apk  -c en,mdpi,xhdpi,xxhdpi TikTok-Copy.apk
+-c en,mdpi,xhdpi,xxxhdpi
+
+…
+
+aapt2 optimize --target-densities nodpi,anydpi,xxxhdpi -c en -o out.apk in.apk
+zipalign -P 4 -f -z -v 4 out.apk final.apk
+
+apksigner sign --key index.pk8 --cert index.pem --v4-signing-enabled false --out signed-final.apk final.apk

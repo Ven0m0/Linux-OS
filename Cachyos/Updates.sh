@@ -21,6 +21,12 @@ cargo-updater updater -u
 tldr -u && sudo tldr -u
 sudo sdboot-manage update
 sudo sdboot-manage remove
+fwupdmgr refresh
+fwupdmgr update
+sudo updatedb 
+sudo update-desktop-database 
+sudo update-pciids
+sudo update-smart-drivedb 
 
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then

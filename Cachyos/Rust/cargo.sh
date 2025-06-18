@@ -5,7 +5,7 @@ cargo +nightly built package --release -Z unstable-options -Z gc -Z feature-unif
 # Cargo apps in path
 export PATH="$HOME/.cargo/bin:$PATH"
 
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -Z tune-cpu=native -Z default-visibility=hidden -Z gc -Z fmt-debug=none -Z location-detail=none -C link-arg=-fomit-frame-pointer -C link-arg=-fno-unwind-tables -C relro-level=off"
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z tune-cpu=native -Z default-visibility=hidden -Z gc -Z fmt-debug=none -Z location-detail=none -C link-arg=-fomit-frame-pointer -C link-arg=-fno-unwind-tables -C relro-level=off"
 cargo +nightly install app -Z unstable-options -Z gc -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps
 
 cargo install cargo-shear

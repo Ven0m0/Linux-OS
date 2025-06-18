@@ -38,8 +38,6 @@ ELECTRON_OZONE_PLATFORM_HINT=wayland
 ELECTRON_ENABLE_LOGGING=false
 ELECTRON_ENABLE_STACK_DUMPING=false
 _JAVA_AWT_WM_NONREPARENTING=1
-CARGO_HTTP_MULTIPLEXING=true
-RUSTC_WRAPPER=sccache
 # https://github.com/microsoft/mimalloc/blob/main/docs/environment.html
 MIMALLOC_VERBOSE=0
 MIMALLOC_SHOW_ERRORS=0
@@ -53,3 +51,12 @@ XDG_DATA_HOME=$HOME/.local/share
 XDG_STATE_HOME=$HOME/.local/state
 #
 QSG_NO_VSYNC=1
+
+# Rust
+RUSTC_WRAPPER=sccache
+CARGO_HTTP_MULTIPLEXING=true
+CARGO_NET_GIT_FETCH_WITH_CLI=true
+CARGO_HTTP_SSL_VERSION="tlsv1.3"
+export CARGO_BUILD_JOBS="$(nproc)"
+export NINJAFLAGS="-j$(nproc)"
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C strip=symbols"

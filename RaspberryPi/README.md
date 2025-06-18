@@ -7,3 +7,22 @@
 - have raspberry_f2fs.sh and the image in the same path as the raspberry-fs.sh script
 - answer the prompts
 - success
+
+
+## [CasaOS](https://casaos.zimaspace.com)
+```
+sudo casaos-uninstall
+curl -fsSL https://get.casaos.io | sudo bash
+```
+
+### Update
+```
+curl -fsSL https://get.casaos.io/update | sudo bash
+```
+
+
+[Runtipi](https://runtipi.io)
+
+[cosmos](https://cosmos-cloud.io)
+
+[yunohost](https://yunohost.org)

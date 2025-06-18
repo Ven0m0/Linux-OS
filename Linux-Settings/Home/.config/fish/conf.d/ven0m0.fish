@@ -18,15 +18,3 @@ if type -q sudo-rs
 else if type -q doas
     alias sudo='doas'
 end
-
-# Ripgrep
-if type -q rg
-    alias rg='rg --no-stats --color=auto'
-    alias grep='rg -uuu --no-stats --color=auto'
-    alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8'
-    alias egrep='rg --no-stats --color=auto'
-else
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
-end

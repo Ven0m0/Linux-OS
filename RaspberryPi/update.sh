@@ -5,7 +5,7 @@ sudo -v
 sudo apt-get update --allow-releaseinfo-change -y -q
 sudo apt-get dist-upgrade -y -q
 sudo apt full-upgrade -y -q
-sudo dietpi-update
+sudo -E dietpi-update
 
 if command -v pihole > /dev/null; then
     sudo pihole -up

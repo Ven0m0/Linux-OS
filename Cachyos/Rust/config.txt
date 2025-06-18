@@ -21,6 +21,10 @@ cargo +nightly install package -Z unstable-options -Z gc -Z feature-unification 
 Build:
 cargo +nightly built package --release -Z unstable-options -Z gc -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps
 
-
+LLVM:
 CARGO_CFG_TARGET_ENV="gnu"
 CARGO_CFG_TARGET_ABI="llvm"
+
+export RUSTFLAGS="$RUSTFLAGS -C linker=clang -C link-arg=-fuse-ld=lld"
+export CC=clang
+export CXX=clang++

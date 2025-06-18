@@ -9,3 +9,7 @@ PRAGMA mmap_size = 268435456; --256MB
 PRAGMA page_size = 8192; --default 4096
 PRAGMA auto_vacuum = INCREMENTAL;
 PRAGMA foreign_keys = ON;
+
+
+sudo sqlite3 /etc/pihole/pihole-FTL.db "PRAGMA journal_mode=WAL;"
+sudo sqlite3 /etc/pihole/pihole-FTL.db "PRAGMA journal_mode;"

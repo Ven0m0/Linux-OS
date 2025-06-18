@@ -1,7 +1,4 @@
-# Raspberry pi related stuff
-<a style="text-decoration:none">
-    <img height="42" src="https://raw.githubusercontent.com/Ven0m0/Ven0m0/refs/heads/main/Images/raspride.avif" alt="Pi">
-</a>
+# <img height="30" src="https://raw.githubusercontent.com/Ven0m0/Ven0m0/refs/heads/main/Images/raspride.avif" alt="Pi"> Raspberry pi related stuff
 
 
 

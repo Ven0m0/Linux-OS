@@ -113,6 +113,5 @@ fi
 #fi
 bleachbit -c --preset && sudo -E bleachbit -c --preset
 
-sudo sync
-
+sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
 echo "System cleaned!"

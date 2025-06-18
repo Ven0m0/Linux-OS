@@ -7,3 +7,14 @@ sudo tune2fs -E lazy_itable_init=1 lazy_journal_init=1 -o journal_data_writeback
 echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler
 echo 2000000  | sudo tee /sys/block/nvme0n1/queue/iosched/read_lat_nsec
 echo 14000000 | sudo tee /sys/block/nvme0n1/queue/iosched/write_lat_nsec
+
+
+sudo nano /etc/udev/rules.d/60-kyber.rules
+
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]|nvme[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="kyber"
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sd[a-z]|nvme[0-9]*", ATTR{queue/scheduler}="kyber", RUN+="/bin/sh -c 'echo 2000000 > /sys/block/%k/queue/iosched/read_lat_nsec; echo 12000000 > /sys/block/%k/queue/iosched/write_lat_nsec'"
+
+
+sudo udevadm control --reload
+sudo udevadm trigger --subsystem-match=block
+

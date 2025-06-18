@@ -26,3 +26,5 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 [cosmos](https://cosmos-cloud.io)
 
 [yunohost](https://yunohost.org)
+
+[Homepage docker](https://github.com/gethomepage/homepage)

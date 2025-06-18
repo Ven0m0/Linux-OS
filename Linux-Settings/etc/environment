@@ -51,7 +51,8 @@ XDG_DATA_HOME=$HOME/.local/share
 XDG_STATE_HOME=$HOME/.local/state
 #
 QSG_NO_VSYNC=1
-
+# ZSTD multi-threading max
+ZSTD_NBTHREADS=0
 # Rust
 RUSTC_WRAPPER=sccache
 CARGO_HTTP_MULTIPLEXING=true

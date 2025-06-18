@@ -35,7 +35,17 @@ compress_image() {
             jpegoptim --strip-all --all-progressive --quiet "$file" >> "$LOGFILE" 2>&1
             ;;
         *.png)
-            optipng -o7 -strip all -quiet "$file" >> "$LOGFILE" 2>&1
+            tmpfile=$(mktemp --suffix=.png)
+
+            # Step 1: Lossy quantization
+            if pngquant --strip --quality=60-85 --speed 1 --output "$tmpfile" -- "$file" >> "$LOGFILE" 2>&1; then
+                # Step 2: Lossless final pass with oxipng
+                oxipng -o max --strip all -a -i 0 --force -Z --zi 20 --out "$file" "$tmpfile" >> "$LOGFILE" 2>&1
+                rm -f "$tmpfile"
+            else
+                echo "pngquant failed, using oxipng only on $file" >> "$LOGFILE"
+                oxipng -o max --strip all -a -i 0 --force -Z --zi 20 "$file" >> "$LOGFILE" 2>&1
+            fi
             ;;
         *.gif)
             gifsicle -O3 --batch --threads=16 "$file" >> "$LOGFILE" 2>&1
@@ -72,3 +82,4 @@ done
 echo "Compression finished at $(date)" >> "$LOGFILE"
 echo "Backups saved in: $BACKUP_DIR"
 echo "Done. See log: $LOGFILE"
+

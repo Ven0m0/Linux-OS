@@ -5,7 +5,7 @@ export HISTCONTROL=ignoreboth
 export HISTSIZE=1000
 export HISTFILESIZE=2000
 alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
-
+alias parallel='parallel -j 0 --load 75%'
 
 # alias ssh='dbclient'
 alias ptch='patch -p1 <'

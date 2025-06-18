@@ -57,6 +57,7 @@ RUSTC_WRAPPER=sccache
 CARGO_HTTP_MULTIPLEXING=true
 CARGO_NET_GIT_FETCH_WITH_CLI=true
 CARGO_HTTP_SSL_VERSION="tlsv1.3"
+export RAYON_NUM_THREADS="$(nproc)"
 export CARGO_BUILD_JOBS="$(nproc)"
 export NINJAFLAGS="-j$(nproc)"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C strip=symbols"

@@ -1,3 +1,9 @@
 sudo mkfs.ext4 -b 4096 -O uninit_bg,fast_commit -E lazy_itable_init=1,lazy_journal_init=1 /dev/nvme0n1p2
 
 sudo tune2fs -E lazy_itable_init=1 lazy_journal_init=1 -o journal_data_writeback nobarrier -O fast_commit /dev/nvme0n1p2
+
+
+
+echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler
+echo 2000000  | sudo tee /sys/block/nvme0n1/queue/iosched/read_lat_nsec
+echo 14000000 | sudo tee /sys/block/nvme0n1/queue/iosched/write_lat_nsec

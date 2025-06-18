@@ -1,7 +1,3 @@
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=debuginfo -C lto=on -C embed-bitcode=yes -Z dylib-lto"
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -Z tune-cpu=native -Z default-visibility=hidden -C lto=on -C embed-bitcode=yes -Z dylib-lto -C target-feature=+avx2,+fma,+sse4.2,+aes,+branch-hint"
-
-
 RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C strip=debuginfo -C target-feature=+avx2,+fma,+sse4.2,+aes -Z tune-cpu=native -Z dylib-lto -Zdefault-visibility=hidden" 
 
 -C target-feature=+avx2,+fma,+sse4.2,+aes,+prefetchi,+branch-hint,+clflushopt
@@ -9,10 +5,14 @@ RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C e
 -C linker=rust-lld
 -C linker=lld
 
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly
-rustup toolchain install nightly --profile minimal --component rust-src llvm-tools-x86_64-unknown-linux-gnu rustfmt-x86_64-unknown-linux-gnu 
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C relro-level=off -Z tune-cpu=native -Z default-visibility=hidden -Z gc"
 
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -Z tune-cpu=native -Z default-visibility=hidden -Z gc -Z fmt-debug=none -Z location-detail=none -C link-arg=-fomit-frame-pointer -C link-arg=-fno-unwind-tables -C relro-level=off"
 
+LTO test:
+-C embed-bitcode=yes -Z dylib-lto 
 
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -Z tune-cpu=native -Z default-visibility=hidden -Z gc"
-cargo +nightly install package -Z avoid-dev-deps -Z gc -Z no-embed-metadata -Z unstable-options
+Static library experimental:
+-C relocation-model=static
+
+cargo +nightly install package -Z unstable-options -Z gc -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps

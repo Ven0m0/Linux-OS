@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 sudo -v
+sync
 
 echo "Cleaning apt cache"
 sudo apt clean
@@ -46,14 +47,17 @@ rm -fv ~/.bash_history
 sudo rm -fv /root/.bash_history
 
 echo "Vacuuming journal logs"
-sudo journalctl --vacuum-time=1s
+sudo rm -f /var/log/pacman.log || true
+sudo journalctl --rotate -q || true
+sudo journalctl --vacuum-time=1s -q || true
 
 echo "Running fstrim"
 sudo rm -rf /run/log/journal/*
 sudo rm -rf /var/log/journal/*
-sudo fstrim -av --quiet-unsupported || true
+sudo fstrim -a --quiet-unsupported || true
 
 echo "Clearing DietPi logs..."
 sudo dietpi-logclear 2 || true
 
+sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
 echo "System clean-up complete."

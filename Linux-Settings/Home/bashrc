@@ -3,7 +3,9 @@ eval "$(pay-respects bash --alias)"
 
 export HISTCONTROL=ignoreboth
 export HISTSIZE=1000
-export HISTFILESIZE=25000
+export HISTFILESIZE=2000
+alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
+
 
 # alias ssh='dbclient'
 alias ptch='patch -p1 <'

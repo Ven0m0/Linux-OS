@@ -11,7 +11,7 @@ benchmark() {
 
   hyperfine \
     --warmup 5 \
-    --prepare "sudo fstrim -a --quiet-unsupported; sudo journalctl --vacuum-time=1s; sudo sync" \
+    --prepare "sudo fstrim -a --quiet-unsupported; sudo journalctl --vacuum-time=1s;sync; echo 3 | sudo tee /proc/sys/vm/drop_caches" \
     --export-json /tmp/hf-"$name".json \
     "$cmd"
 

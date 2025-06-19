@@ -14,7 +14,7 @@ dpkg -l | awk '/^rc/ { print $2 }' | xargs sudo apt purge -y
 
 echo "orphan removal"
 if command -v deborphan &>/dev/null; then
-  sudo deborphan | xargs sudo apt-get -y remove --purge
+  sudo deborphan | xargs sudo apt-get -y remove --purge --auto-remove
 else
   echo 'Skipping deborphan — not installed.'
 fi

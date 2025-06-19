@@ -18,11 +18,6 @@ else
   echo 'Skipping deborphan — not installed.'
 fi
 
-echo "Cleaning pip cache"
-if command -v pip &>/dev/null; then
-  sudo pip cache purge || true
-fi
-
 sudo rm -rf /var/lib/apt/lists/*
 echo "Removing common cache directories and trash"
 sudo rm -rf /tmp/*
@@ -46,17 +41,17 @@ rm -fv ~/.bash_history
 sudo rm -fv /root/.bash_history
 
 echo "Vacuuming journal logs"
-sudo rm -f /var/log/pacman.log || true
+sudo rm -f /var/log/pacman.log
 sudo journalctl --rotate -q || true
-sudo journalctl --vacuum-time=1s -q || true
+sudo journalctl --vacuum-time=1s -q
 
 echo "Running fstrim"
 sudo rm -rf /run/log/journal/*
 sudo rm -rf /var/log/journal/*
-sudo fstrim -a --quiet-unsupported || true
+sudo fstrim -a --quiet-unsupported
 
 echo "Clearing DietPi logs..."
-sudo dietpi-logclear 2 || true
+sudo dietpi-logclear 2
 
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
 echo "System clean-up complete."

@@ -27,7 +27,7 @@ sudo rm -rf /var/lib/apt/lists/*
 echo "Removing common cache directories and trash"
 sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*
-rm -rf /var/cache/*
+sudo rm -rf /var/cache/*
 rm -rf ~/.cache/*
 sudo rm -rf root/.cache/*
 rm -rf ~/.thumbnails/*

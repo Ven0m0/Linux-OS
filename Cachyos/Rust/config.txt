@@ -19,7 +19,7 @@ Install:
 cargo +nightly install package -Z unstable-options -Z gc -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps
 
 Build:
-cargo +nightly built package --release -Z unstable-options -Z gc -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps
+cargo +nightly built --release -Z unstable-options -Z gc -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps
 
 LLVM:
 CARGO_CFG_TARGET_ENV="gnu"

@@ -16,4 +16,5 @@ fi
 
 
 sudo rpi-eeprom-update
+sudo JUST_CHECK=1 rpi-update
 # sudo PRUNE_MODULES=1 rpi-update

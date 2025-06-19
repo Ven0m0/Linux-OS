@@ -9,7 +9,6 @@ sudo apt autoclean
 sudo apt-get autoremove --purge -y
 
 echo "Cleaning leftover config files"
-dpkg -l | grep '^rc' | awk '{print $2}' | xargs sudo apt purge -y || true
 dpkg -l | awk '/^rc/ { print $2 }' | xargs sudo apt purge -y
 
 echo "orphan removal"

@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 sudo -v
+sync
 
 sudo apt update -y
 sudo apt upgrade -y

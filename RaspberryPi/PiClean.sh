@@ -50,8 +50,8 @@ sudo rm -rf /run/log/journal/*
 sudo rm -rf /var/log/journal/*
 sudo fstrim -a --quiet-unsupported
 
-echo "Clearing DietPi logs..."
-sudo dietpi-logclear 2
-
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
 echo "System clean-up complete."
+
+echo "Clearing DietPi logs..."
+sudo -E dietpi-logclear 2

@@ -1,5 +1,6 @@
 # https://github.com/iffse/pay-respects
 eval "$(pay-respects bash --alias)"
+eval "$(fzf --bash)"
 
 export HISTCONTROL=ignoreboth
 export HISTSIZE=1000

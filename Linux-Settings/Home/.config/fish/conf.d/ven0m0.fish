@@ -1,5 +1,6 @@
 # https://github.com/iffse/pay-respects
 pay-respects fish --alias | source
+fzf --fish | source
 
 alias sshdb='dbclient'
 alias ptch='patch -p1 <'

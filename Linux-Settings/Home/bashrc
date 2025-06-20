@@ -2,6 +2,11 @@
 eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 
+# Disable unicode.
+LC_ALL=C
+LANG=C
+
+
 export HISTCONTROL=ignoreboth
 export HISTSIZE=1000
 export HISTFILESIZE=2000

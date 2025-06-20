@@ -1,3 +1,4 @@
+# sudo nano /etc/environment
 EDITOR=nano
 
 __GL_GSYNC_ALLOWED=0
@@ -58,7 +59,13 @@ RUSTC_WRAPPER=sccache
 CARGO_HTTP_MULTIPLEXING=true
 CARGO_NET_GIT_FETCH_WITH_CLI=true
 CARGO_HTTP_SSL_VERSION="tlsv1.3"
-export RAYON_NUM_THREADS="$(nproc)"
-export CARGO_BUILD_JOBS="$(nproc)"
-export NINJAFLAGS="-j$(nproc)"
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C strip=symbols"
+RAYON_NUM_THREADS="$(nproc)"
+CARGO_BUILD_JOBS="$(nproc)"
+NINJAFLAGS="-j$(nproc)"
+RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C strip=symbols"
+
+MALLOC_TCACHE_COUNT=16
+GLIBC_TUNABLES="glibc.malloc.tcache_count=16:glibc.cpu.x86_ibt=off:glibc.malloc.hugetlb=1:glibc.pthread.stack_hugetlb=1:glibc.malloc.mxfast=80"
+
+
+

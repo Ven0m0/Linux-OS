@@ -28,6 +28,9 @@ sudo update-desktop-database
 sudo update-pciids
 sudo update-smart-drivedb 
 
+fisher update
+
+
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then
     echo "✅ systemd-boot is installed. Updating..."

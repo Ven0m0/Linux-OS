@@ -6,7 +6,7 @@ export HISTCONTROL=ignoreboth
 export HISTSIZE=1000
 export HISTFILESIZE=2000
 alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
-alias parallel='parallel -j 0 --load 75% --fast --pipe-part'
+# alias parallel='parallel -j 0 --load 75% --fast --pipe-part'
 
 alias sshdb='dbclient'
 alias ptch='patch -p1 <'
@@ -19,7 +19,7 @@ alias ll='eza -l --color=always --group-directories-first --icons'  # long forma
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 alias l.="eza -a | grep -e '^\.'"                                   # show only dotfiles
 alias cat='bat --strip-ansi=auto'
-alias du='dust'
+# alias du='dust -T 16 -b -P'
 
 # Better sudo
 if command -v sudo-rs >/dev/null 2>&1; then

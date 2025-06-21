@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-IFS=$'\n\t'
+IFS=$'\n\t'  
 
 # Parse options
 git_update=false
@@ -28,17 +28,19 @@ cargo fix --workspace --all-targets --all-features -r --bins --allow-dirty
 cargo clippy --fix --workspace --all-targets --all-features --allow-dirty --allow-staged
 
 # Install missing tools if needed
-for tool in cargo-shear cargo-machete cargo-cache; do
+for tool in cargo-shear cargo-machete cargo-cache ; do
   command -v "$tool" >/dev/null || cargo install "$tool"
 done
 
 # Clean and debloat
+cargo +nightly udeps
 cargo-shear --fix
 cargo-machete --fix --with-metadata
 cargo-cache -g -f -e clean-unref
 
 # Set optimization flags and build
-export RUSTFLAGS='-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -Z tune-cpu=native -Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C link-arg=-fomit-frame-pointer -C link-arg=-fno-unwind-tables -C relro-level=off'
+export RUSTFLAGS='-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto \
+-Z tune-cpu=native -Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C link-arg=-fomit-frame-pointer -C link-arg=-fno-unwind-tables -C relro-level=off -Z threads=16'
 
 cargo +nightly build --release \
   -Z unstable-options \

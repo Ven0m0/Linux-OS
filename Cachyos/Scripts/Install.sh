@@ -231,6 +231,9 @@ cargo install sd
 # https://crates.io/crates/qcp
 cargo install qcp
 
+# GUI for fclones
+cargo install fclones-gui
+
 # Tmux
 # https://crates.io/crates/rusmux
 

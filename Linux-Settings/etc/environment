@@ -66,6 +66,8 @@ RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C strip=symbols"
 
 MALLOC_TCACHE_COUNT=16
 GLIBC_TUNABLES="glibc.malloc.tcache_count=16:glibc.cpu.x86_ibt=off:glibc.malloc.hugetlb=1:glibc.pthread.stack_hugetlb=1:glibc.malloc.mxfast=80"
+# Jemalloc
+MALLOC_CONF="background_thread:true,thp:auto,metadata_thp:auto,zero:false,tcache:true"
 
 
 

@@ -62,3 +62,4 @@ else
 fi
 
 # sudo update-initramfs -u
+sudo mkinitcpio -P

@@ -234,6 +234,9 @@ cargo install qcp
 # GUI for fclones
 cargo install fclones-gui
 
+# Search and replace
+cargo install fara
+
 # Tmux
 # https://crates.io/crates/rusmux
 

@@ -21,17 +21,19 @@ JOBS=${JOBS:-"$(nproc)"}
 # ─── FUNCTION ───────────────────────────────────────────────────────────────────
 compress_image() {
   local file="$1"
-  local lower="${file,,}"
+  local lower="${file##*.}"
+      lower="${lower,,}"     # extension in lowercase
   local backup="$BACKUP_DIR$file"
   mkdir -p "${backup%/*}"
   cp -p -- "$file" "$backup"
 
   local tmp
+
   case "$lower" in
-    *.jpg|*.jpeg)
+    jpg|jpeg)
       jpegoptim --strip-all --all-progressive --quiet -- "$file"
       ;;
-    *.png)
+    png)
       tmp=$(mktemp --suffix=.png)
       if pngquant --strip --quality=60-85 --speed=1 --output "$tmp" -- "$file"; then
         oxipng -o max --strip all -a -i 0 --force -Z --zi 20 --out "$file" "$tmp"
@@ -40,52 +42,54 @@ compress_image() {
       fi
       rm -f -- "${tmp:-}"
       ;;
-    *.gif)
+    gif)
       gifsicle -O3 --batch --threads=16 -- "$file"
       ;;
-    *.svg)
+    svg)
       svgo --multipass --quiet -- "$file"
       scour -i "$file" -o "$file.tmp" --enable-id-stripping --enable-comment-stripping
       mv -f -- "$file.tmp" "$file"
       ;;
-    *.webp)
+    webp)
       tmp=$(mktemp --suffix=.webp)
       if cwebp -lossless -q 100 -- "$file" -o "$tmp"; then
         mv -f -- "$tmp" "$file"
       fi
       rm -f -- "${tmp:-}"
       ;;
-    *.avif)
+    avif)
       tmp=$(mktemp --suffix=.avif)
       if avifenc --min 0 --max 0 --speed 8 -- "$file" "$tmp"; then
         mv -f -- "$tmp" "$file"
       fi
       rm -f -- "${tmp:-}"
       ;;
-    *.jxl)
+    jxl)
       tmp=$(mktemp --suffix=.jxl)
       if cjxl --lossless_jpeg=1 -- "$file" "$tmp"; then
         mv -f -- "$tmp" "$file"
       fi
       rm -f -- "${tmp:-}"
       ;;
-    *.html|*.htm)
+    html|htm)
       minhtml --in-place -- "$file"
       ;;
-    *.css)
+    css)
       minhtml --in-place --minify-css -- "$file"
       ;;
-    *.js)
+    js)
       minhtml --in-place --minify-js -- "$file"
       ;;
     *)
-      # skip
+      # unsupported extension
       return
       ;;
   esac
 
-  printf '[%s] Compressed %s\n' "$(date +'%Y-%m-%d %H:%M:%S')" "$file" >> "$LOGFILE"
+  printf '[%s] Compressed %s\n' "$(date +'%Y-%m-%d %H:%M:%S')" "$file" \
+    >> "$LOGFILE"
 }
+
 export -f compress_image
 export BACKUP_DIR LOGFILE
 
@@ -97,12 +101,14 @@ find "$TARGET_DIR" -type f \( \
 \) -print0 | {
 
   if command -v rust-parallel &>/dev/null; then
-    # rust-parallel: fastest startup & dispatch
-    rust-parallel --null-separator --jobs "$JOBS" -- bash -c 'compress_image "$@"' _ {}
+    # rust-parallel: fast, low-overhead
+    rust-parallel --null-separator --jobs "$JOBS" -- \
+      bash -c 'compress_image "$@"' _ {}
 
   elif command -v parallel &>/dev/null; then
-    # GNU Parallel: robust and widely available
-    parallel -0 -j "$JOBS" --no-notice --line-buffer bash -c 'compress_image "$@"' _ {}
+    # GNU Parallel: robust, supports --no-notice & --line-buffer
+    parallel -0 -j "$JOBS" --no-notice --line-buffer \
+      bash -c 'compress_image "$@"' _ {}
 
   else
     # Pure-bash fallback: manual job control
@@ -111,7 +117,8 @@ find "$TARGET_DIR" -type f \( \
         echo "Compressing: $file" >> "$LOGFILE"
         compress_image "$file"
       ) &
-      # throttle
+
+      # throttle background jobs
       while [ "$(jobs -pr | wc -l)" -ge "$JOBS" ]; do
         sleep 0.1
       done

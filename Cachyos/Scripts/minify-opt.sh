@@ -98,7 +98,7 @@ find "$TARGET_DIR" -type f \( \
 
   if command -v rust-parallel &>/dev/null; then
     # rust-parallel: fastest startup & dispatch
-    rust-parallel -0 -j "$JOBS" --no-notice --line-buffer -- bash -c 'compress_image "$@"' _ {}
+    rust-parallel --null-separator --jobs "$JOBS" -- bash -c 'compress_image "$@"' _ {}
 
   elif command -v parallel &>/dev/null; then
     # GNU Parallel: robust and widely available

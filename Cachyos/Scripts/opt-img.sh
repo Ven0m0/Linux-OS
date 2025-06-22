@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 SAFE_DIRS=(
     "/usr/share/icons"

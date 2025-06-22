@@ -38,7 +38,7 @@ compress_image() {
             ;;
         *.png)
             tmpfile=$(mktemp --suffix=.png)
-            if pngquant --strip --quality=60-85 --speed=1 --output "$tmpfile" -- "$file" >> "$LOGFILE" 2>&1; then
+            if pngquant --strip --force --quality=60-85 --speed=1 --output "$tmpfile" -- "$file" >> "$LOGFILE" 2>&1; then
                 oxipng -o max --strip all -a -i 0 --force -Z --zi 20 --out "$file" "$tmpfile" >> "$LOGFILE" 2>&1
                 rm -f -- "$tmpfile"
             else

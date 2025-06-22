@@ -1,4 +1,6 @@
- # Turn on warnings for unquoted variables with safe values
+ # shellcheck shell=bash
+
+# Turn on warnings for unquoted variables with safe values
  #enable=quote-safe-variables
 
  # Turn on warnings for unassigned uppercase variables

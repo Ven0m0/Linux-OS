@@ -105,7 +105,7 @@ for dir in "${SAFE_DIRS[@]}"; do
             -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o \
             -iname "*.svg" -o -iname "*.webp" -o -iname "*.avif" -o -iname "*.jxl" -o \
             -iname "*.html" -o -iname "*.htm" -o -iname "*.css" -o -iname "*.js" \
-        \) -print0 | xargs -0 -n1 -P "$JOBS" -I{} bash -c 'echo "Compressing: {}" >> "$LOGFILE"; compress_image "{}"'
+        \) -print0 | xargs -0 -P "$JOBS" -I{} bash -c 'echo "Compressing: {}" >> "$LOGFILE"; compress_image "{}"'
     else
         echo "Directory $dir does not exist, skipping." >> "$LOGFILE"
     fi

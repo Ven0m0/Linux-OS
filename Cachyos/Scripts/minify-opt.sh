@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Disable unicode
+# https://github.com/dylanaraps/pure-bash-bible?tab=readme-ov-file#performance
+export LC_ALL=C LANG=C
+
 # ─── USAGE ─────────────────────────────────────────────────────────────────────
 if [ $# -ne 1 ]; then
   echo "Usage: $0 /path/to/directory"
@@ -120,7 +124,7 @@ find "$TARGET_DIR" -type f \( \
 
       # throttle background jobs
       while [ "$(jobs -pr | wc -l)" -ge "$JOBS" ]; do
-        sleep 0.1
+        read -rt 0.1 <> <(:) || true
       done
     done
     wait

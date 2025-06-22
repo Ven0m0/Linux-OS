@@ -238,6 +238,7 @@ cargo install fclones-gui
 cargo install fara
 
 # Minify files
+# https://crates.io/crates/minhtml
 cargo +nightly install minhtml
 
 # Minify crate

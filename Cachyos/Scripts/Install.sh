@@ -240,6 +240,10 @@ cargo install fara
 # Minify files
 cargo +nightly install minhtml
 
+# Minify crate
+# https://crates.io/crates/cargo-minify
+cargo install cargo-minify
+
 # Tmux
 # https://crates.io/crates/rusmux
 

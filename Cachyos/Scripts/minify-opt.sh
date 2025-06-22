@@ -1,9 +1,5 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 set -euo pipefail
-
-# Disable unicode
-# https://github.com/dylanaraps/pure-bash-bible?tab=readme-ov-file#performance
-export LC_ALL=C LANG=C
 
 # ─── USAGE ─────────────────────────────────────────────────────────────────────
 if [ $# -ne 1 ]; then
@@ -14,26 +10,26 @@ TARGET_DIR="$1"
 [ -d "$TARGET_DIR" ] || { echo "Error: '$TARGET_DIR' is not a directory"; exit 1; }
 
 # ─── SETUP ──────────────────────────────────────────────────────────────────────
+export LC_ALL=C LANG=C
 BACKUP_DIR="$HOME/image_backups_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 LOGFILE="$HOME/image_compression_log.txt"
 echo "Image compression started at $(date)" > "$LOGFILE"
 
-# degree of parallelism; override by exporting JOBS in your env
+# degree of parallelism; override via JOBS env var
 JOBS=${JOBS:-"$(nproc)"}
 
-# ─── FUNCTION ───────────────────────────────────────────────────────────────────
+# ─── compress_image FUNCTION ──────────────────────────────────────────────────
 compress_image() {
   local file="$1"
-  local lower="${file##*.}"
-      lower="${lower,,}"     # extension in lowercase
+  local ext="${file##*.}"
+       ext="${ext,,}"                      # lowercase extension
   local backup="$BACKUP_DIR$file"
   mkdir -p "${backup%/*}"
   cp -p -- "$file" "$backup"
 
   local tmp
-
-  case "$lower" in
+  case "$ext" in
     jpg|jpeg)
       jpegoptim --strip-all --all-progressive --quiet -- "$file"
       ;;
@@ -85,7 +81,6 @@ compress_image() {
       minhtml --in-place --minify-js -- "$file"
       ;;
     *)
-      # unsupported extension
       return
       ;;
   esac
@@ -97,32 +92,40 @@ compress_image() {
 export -f compress_image
 export BACKUP_DIR LOGFILE
 
-# ─── FIND + DISPATCH ────────────────────────────────────────────────────────────
-find "$TARGET_DIR" -type f \( \
-    -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o \
-    -iname "*.svg" -o -iname "*.webp" -o -iname "*.avif" -o -iname "*.jxl" -o \
-    -iname "*.html" -o -iname "*.htm" -o -iname "*.css" -o -iname "*.js" \
-\) -print0 | {
+# ─── FILE DISCOVERY ────────────────────────────────────────────────────────────
+if command -v fd &>/dev/null; then
+  # fd: Rust-based, defaults to printing files only, recurse by default
+  FD_CMD=(fd --type f --extension jpg --extension jpeg --extension png \
+            --extension gif --extension svg --extension webp --extension avif \
+            --extension jxl --extension html --extension htm --extension css \
+            --extension js '' "$TARGET_DIR" --print0)
+else
+  # fallback to find
+  FD_CMD=(find "$TARGET_DIR" -type f \( \
+            -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o \
+            -iname "*.svg" -o -iname "*.webp" -o -iname "*.avif" -o -iname "*.jxl" -o \
+            -iname "*.html" -o -iname "*.htm" -o -iname "*.css" -o -iname "*.js" \
+          \) -print0)
+fi
 
+# ─── DISPATCH ─────────────────────────────────────────────────────────────────
+"${FD_CMD[@]}" | {
   if command -v rust-parallel &>/dev/null; then
-    # rust-parallel: fast, low-overhead
     rust-parallel --null-separator --jobs "$JOBS" -- \
       bash -c 'compress_image "$@"' _ {}
 
   elif command -v parallel &>/dev/null; then
-    # GNU Parallel: robust, supports --no-notice & --line-buffer
     parallel -0 -j "$JOBS" --no-notice --line-buffer \
       bash -c 'compress_image "$@"' _ {}
 
   else
-    # Pure-bash fallback: manual job control
+    # Pure-bash fallback
     while IFS= read -r -d '' file; do
       (
         echo "Compressing: $file" >> "$LOGFILE"
         compress_image "$file"
       ) &
-
-      # throttle background jobs
+      # throttle via read
       while [ "$(jobs -pr | wc -l)" -ge "$JOBS" ]; do
         read -rt 0.1 <> <(:) || true
       done

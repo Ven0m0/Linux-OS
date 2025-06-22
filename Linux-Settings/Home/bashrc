@@ -3,8 +3,12 @@ eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 
 # Disable unicode.
-LC_ALL=C
-LANG=C
+# export LC_ALL=C
+# export LANG=C
+
+export PAGER=less
+export LESS='-FRXn'
+export MANPAGER="less -sRn"
 
 
 export HISTCONTROL=ignoreboth

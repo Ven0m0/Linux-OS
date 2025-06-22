@@ -237,6 +237,9 @@ cargo install fclones-gui
 # Search and replace
 cargo install fara
 
+# Minify files
+cargo +nightly install minhtml
+
 # Tmux
 # https://crates.io/crates/rusmux
 

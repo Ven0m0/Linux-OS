@@ -100,7 +100,7 @@ find "$TARGET_DIR" -type f \( \
     -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o \
     -iname "*.svg" -o -iname "*.webp" -o -iname "*.avif" -o -iname "*.jxl" -o \
     -iname "*.html" -o -iname "*.htm" -o -iname "*.css" -o -iname "*.js" \
-\) -print0 | xargs -0 -n1 -P "$JOBS" -I{} bash -c 'echo "Compressing: {}" >> "$LOGFILE"; compress_image "{}"'
+\) -print0 | xargs -0 -P "$JOBS" -I{} bash -c 'echo "Compressing: {}" >> "$LOGFILE"; compress_image "{}"'
 
 echo "Compression finished at $(date)" >> "$LOGFILE"
 echo "Backups saved in: $BACKUP_DIR"

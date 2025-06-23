@@ -2,6 +2,9 @@
 eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 
+
+## GENERAL OPTIONS ##
+
 # Disable unicode.
 # export LC_ALL=C
 # export LANG=C
@@ -10,10 +13,16 @@ export PAGER=less
 export LESS='-FRXn'
 export MANPAGER="less -sRn"
 
+# Malloc tweak
+export MALLOC_CONF="thp:always,metadata_thp:always"
 
-export HISTCONTROL=ignoreboth
+# History tweaks
+export HISTCONTROL="erasedups:ignoreboth"
 export HISTSIZE=1000
 export HISTFILESIZE=2000
+# Don't record some commands
+export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
+
 alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
 # alias parallel='parallel -j 0 --load 75% --fast --pipe-part'
 

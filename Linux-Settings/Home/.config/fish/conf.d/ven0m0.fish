@@ -15,20 +15,20 @@ set -gx LESS '-RFX --no-init'
 if status --is-interactive
     # Fast prompt (truncate deep paths)
     set fish_prompt_pwd_dir_length 1
-    
+
     # https://github.com/iffse/pay-respects
     pay-respects fish --alias | source
     fzf --fish | source
 
     # Aliases: safe & efficient defaults
     alias cat='bat --strip-ansi=auto'
-    
+
     # My stuff
     alias sshdb='dbclient'
     alias ptch='patch -p1 <'
-    alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
-    alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
-    
+    alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
+    alias clearnsh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
+
     # Better sudo (if available)
     if type -q sudo-rs
         alias sudo='sudo-rs'

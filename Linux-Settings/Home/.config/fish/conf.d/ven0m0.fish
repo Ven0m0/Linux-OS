@@ -1,52 +1,58 @@
-# Only apply in interactive shells
-if status --is-interactive
+# ─── Locale (Fast & Unicode-Compatible) ─────────────────────────────────────────
+set -gx LC_ALL C.UTF-8
+set -gx LANG C.UTF-8
 
+# ─── Path Deduplication ─────────────────────────────────────────────────────────
+# Prevent PATH bloat across reloads
+set -gx PATH (string split ':' -- $PATH | sort -u | string join ':')
 
-# https://github.com/iffse/pay-respects
-pay-respects fish --alias | source
-fzf --fish | source
-
-alias sshdb='dbclient'
-alias ptch='patch -p1 <'
-alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
-alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
-
-alias cat='bat --strip-ansi=auto'
-# alias du='dust -T 16 -b -P'
-
-alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
-# alias parallel='parallel -j 0 --load 75% --fast --pipe-part'
-
-# Better sudo
-if type -q sudo-rs
-    alias sudo 'sudo-rs'
-end
-
-if type -q su-rs
-    alias su 'su-rs'
-end
-
-# Set language/locale for performance
-set -gx LC_ALL C
-set -gx LANG C
-
-# Use modern pager (if installed)
+# ─── Environment Tweaks ─────────────────────────────────────────────────────────
+set -gx EDITOR micro
 set -gx PAGER less
-set -gx LESS='-FRXn --no-init'
+set -gx LESS '-RFX --no-init'
 
+# ─── Only for Interactive Shells ────────────────────────────────────────────────
+if status --is-interactive
+    # Fast prompt (truncate deep paths)
+    set fish_prompt_pwd_dir_length 1
+    
+    # https://github.com/iffse/pay-respects
+    pay-respects fish --alias | source
+    fzf --fish | source
 
-# Truncate long paths in prompt
-set fish_prompt_pwd_dir_length 1
+    # Aliases: safe & efficient defaults
+    alias cat='bat --strip-ansi=auto'
+    
+    # My stuff
+    alias sshdb='dbclient'
+    alias ptch='patch -p1 <'
+    alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
+    alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
+    
+    # Better sudo (if available)
+    if type -q sudo-rs
+        alias sudo='sudo-rs'
+    end
+    if type -q su-rs
+        alias su='su-rs'
+    end
 
-# Avoid slowness from some completions
-set -g __fish_git_prompt_show_informative_status 0
-set -g __fish_git_prompt_showupstream none
+    # Git abbreviations
+    abbr --add g 'git'
+    abbr --add ga 'git add'
+    abbr --add gc 'git commit'
+    abbr --add gp 'git push'
+    abbr --add gl 'git pull'
 
-# Directory navigation shortcuts
-abbr --add .. 'cd ..'
-abbr --add ... 'cd ../..'
-abbr --add .... 'cd ../../..'
-abbr --add --global c 'clear'
+    # Navigation shortcuts
+    abbr --add .. 'cd ..'
+    abbr --add ... 'cd ../..'
+    abbr --add .... 'cd ../../..'
 
+    # Quick clear
+    abbr --add c 'clear'
+
+    # Avoid expensive VCS prompt delays
+    set -g __fish_git_prompt_show_informative_status 0
+    set -g __fish_git_prompt_showupstream none
 end
-

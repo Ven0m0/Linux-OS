@@ -4,6 +4,9 @@ cargo pgo build
 # Run binary to gather PGO profiles
 ./target/.../<binary>
 
+# Benchmark
+hyperfine --warmup 5 --min-runs 10 ''
+
 # Build BOLT instrumented binary using PGO profiles
 cargo pgo bolt build --with-pgo
 

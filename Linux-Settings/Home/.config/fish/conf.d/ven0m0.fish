@@ -1,3 +1,7 @@
+# Only apply in interactive shells
+if status --is-interactive
+
+
 # https://github.com/iffse/pay-respects
 pay-respects fish --alias | source
 fzf --fish | source
@@ -21,3 +25,28 @@ end
 if type -q su-rs
     alias su 'su-rs'
 end
+
+# Set language/locale for performance
+set -gx LC_ALL C
+set -gx LANG C
+
+# Use modern pager (if installed)
+set -gx PAGER less
+set -gx LESS='-FRXn --no-init'
+
+
+# Truncate long paths in prompt
+set fish_prompt_pwd_dir_length 1
+
+# Avoid slowness from some completions
+set -g __fish_git_prompt_show_informative_status 0
+set -g __fish_git_prompt_showupstream none
+
+# Directory navigation shortcuts
+abbr --add .. 'cd ..'
+abbr --add ... 'cd ../..'
+abbr --add .... 'cd ../../..'
+abbr --add --global c 'clear'
+
+end
+

@@ -14,7 +14,10 @@ alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
 # alias parallel='parallel -j 0 --load 75% --fast --pipe-part'
 
 # Better sudo
-if command -v sudo-rs >/dev/null 2>&1; then
-  alias sudo='sudo-rs'
-  alias su='su-rs'
-fi
+if type -q sudo-rs
+    alias sudo 'sudo-rs'
+end
+
+if type -q su-rs
+    alias su 'su-rs'
+end

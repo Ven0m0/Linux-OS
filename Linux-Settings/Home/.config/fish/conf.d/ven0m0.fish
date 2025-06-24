@@ -9,7 +9,11 @@ set -gx PATH (string split ':' -- $PATH | sort -u | string join ':')
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 set -gx PAGER less
-set -gx LESS '-RFX --no-init'
+set -gx LESS '-RFXns --mouse --use-color --no-init'
+set -gx LESSHISTFILE '-'
+
+git config --global core.pager "less"
+
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive

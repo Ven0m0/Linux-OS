@@ -30,3 +30,7 @@ sudo curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/mai
 echo "Debloat and fixup"
 sudo pacman -Rns cachyos-v4-mirrorlist --noconfirm || true
 sudo pacman -Rns cachy-browser --noconfirm || true
+
+
+echo "install basher from https://github.com/basherpm/basher"
+curl -s https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash

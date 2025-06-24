@@ -1,10 +1,21 @@
- # shellcheck shell=bash
-
-# Turn on warnings for unquoted variables with safe values
- #enable=quote-safe-variables
-
- # Turn on warnings for unassigned uppercase variables
-# enable=check-unassigned-uppercase
+# ShellCheck settings
 
 # All optional checks
 enable=all
+
+# shellcheck shell=bash
+
+# List of checks to disable
+#
+# Check ID          Symbolic name                   Type
+# SC2250            require-variable-braces         optional
+disable=SC2250
+
+# Add the script directory to the search path for source statements
+source-path=SCRIPTDIR
+
+# Turn on warnings for unquoted variables with safe values
+# enable=quote-safe-variables
+
+ # Turn on warnings for unassigned uppercase variables
+# enable=check-unassigned-uppercase

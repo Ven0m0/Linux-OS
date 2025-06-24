@@ -5,3 +5,4 @@
 --squeeze-blank
 --strip-ansi="auto"
 --style="auto"
+--paging="auto"

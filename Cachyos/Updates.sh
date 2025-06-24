@@ -29,7 +29,11 @@ sudo update-pciids
 sudo update-smart-drivedb 
 
 fisher update
-
+# [ -d ~/.basher ] && git -C ~/.basher pull
+if [ -d ~/.basher ]; then
+    echo "Updating ~/.basher..."
+    git -C ~/.basher pull || echo "Failed to pull from ~/.basher"
+fi
 
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then

@@ -45,7 +45,7 @@ else
 fi
 
 echo "🔍 Checking for Limine..."
-if find /boot /boot/efi /mnt -type f -name "limine.cfg" 2>/dev/null | grep -q limine; then
+if fd limine.cfg /boot /boot/efi /mnt > /dev/null 2>&1; then
     echo "✅ Limine configuration detected."
 
     # Check if `limine-update` is available

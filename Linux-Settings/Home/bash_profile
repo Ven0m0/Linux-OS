@@ -4,8 +4,3 @@
 
 [[ -f ~/.bashrc ]] && . ~/.bashrc
 . "$HOME/.cargo/env"
-
-# Source ~/.bashrc for login shells
-if [ -f ~/.bashrc ]; then
-    . ~/.bashrc
-fi

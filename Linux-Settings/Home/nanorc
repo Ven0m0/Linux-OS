@@ -1,0 +1,12 @@
+## ========== HISTORY CONTROL ==========
+unset historylog        # Don't save search/replace history or cursor position
+unset positionlog
+
+## ========== APPEARANCE ==========
+set linenumbers          # Show line numbers
+set softwrap             # Wrap long lines visually (no hard line breaks)
+
+## ========== BEHAVIOR ==========
+set autoindent           # Maintain indentation on new lines
+set smarthome            # Toggle between line start and first non-whitespace
+set trimblanks           # Strip trailing spaces/tabs on save

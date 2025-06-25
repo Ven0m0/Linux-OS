@@ -2,16 +2,11 @@
 set -gx LC_ALL C.UTF-8
 set -gx LANG C.UTF-8
 
-
-
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 set -gx PAGER less
 set -gx LESS '-RFXns --mouse --use-color --no-init'
 set -gx LESSHISTFILE '-'
-
-git config --global core.pager "less"
-
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive

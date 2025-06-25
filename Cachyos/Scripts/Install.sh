@@ -143,7 +143,8 @@ fcp-bin
 unzrip-git
 adbr-git
 luxtorpeda
-paru -S autoinstallpackages
+tuckr-git
+autoinstallpackages
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do

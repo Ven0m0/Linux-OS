@@ -18,18 +18,8 @@ if status --is-interactive
     pay-respects fish --alias | source
     # fzf --fish | source
 
-    function fzf
-      # Remove this function after first use
-      functions -e fzf
-      # Source fzf key bindings and completions (adjust path if needed)
-      fzf --fish | source
-      # Call the real fzf with all original arguments
-      fzf $argv
-    end
-
-
     # Aliases: safe & efficient defaults
-    alias cat='bat --strip-ansi=auto'
+    alias cat='bat --strip-ansi=auto --squeeze-blank --style=auto --paging=auto'
 
     # My stuff
     alias sshdb='dbclient'

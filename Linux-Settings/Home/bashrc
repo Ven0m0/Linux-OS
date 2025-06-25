@@ -1,6 +1,22 @@
 # Skip if not interactive shell
 [[ $- != *i* ]] && return
 
+# Deduplicate PATH (preserve order) — pure Bash (requires Bash 4+)
+if [[ ${BASH_VERSINFO[0]} -ge 4 ]]; then
+  IFS=: read -ra parts <<< "$PATH"
+  declare -A seen
+  newpath=()
+  for dir in "${parts[@]}"; do
+    [[ -n "$dir" && -z "${seen[$dir]}" ]] && newpath+=("$dir") && seen[$dir]=1
+  done
+  PATH="${newpath[*]}"
+  PATH="${PATH// /:}"
+  export PATH
+else
+  # Fallback: use awk one-liner if Bash <4
+  export PATH="$(awk -v RS=: '!(seen[$1]++) {paths[++count]=$1} END {for(i=1;i<=count;i++) printf "%s%s", paths[i], (i<count ? ":" : "\n")}' <<<"$PATH")"
+fi
+
 # https://github.com/iffse/pay-respects
 eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"

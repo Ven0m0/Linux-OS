@@ -5,7 +5,7 @@ sudo -v
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q 
 paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc 
-sudo -E topgrade -c --disable=config_update --skip-notify -y --no-retry --disable=uv --disable=pipx || true
+sudo bash -c "exec topgrade -c --disable=config_update --skip-notify -y --no-retry --disable=uv --disable=pipx" || true
 # pipx upgrade-all
 if command -v plasma-discover-update &>/dev/null; then
     export $(dbus-launch)
@@ -14,7 +14,7 @@ else
     echo "plasma-discover-update (Discover) is not installed."
 fi
 uv tool upgrade --all
-export rustup="$HOME/.cargo/bin/rustup"
+export rustup="$HOME/.cargo/bin/rustup"    
 rustup update || true
 # cargo-install-update install-update --all || true
 cargo updater -u -L || true

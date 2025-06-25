@@ -5,9 +5,14 @@ set -gx LANG C.UTF-8
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 alias editor='micro'
-set -gx PAGER less
+# set -gx PAGER less
+set -gx PAGER bat
 set -gx LESS '-FRXns --mouse --use-color --no-init'
 set -gx LESSHISTFILE '-'
+
+# Avoid expensive VCS prompt delays
+set -g __fish_git_prompt_show_informative_status 0
+set -g __fish_git_prompt_showupstream none
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
@@ -35,24 +40,20 @@ if status --is-interactive
         alias su='su-rs'
     end
 
-    # Git abbreviations
-    abbr --add g 'git'
-    abbr --add ga 'git add'
-    abbr --add gc 'git commit'
-    abbr --add gp 'git push'
-    abbr --add gl 'git pull'
-
-    # Navigation shortcuts
-    abbr --add .. 'cd ..'
-    abbr --add ... 'cd ../..'
-    abbr --add .... 'cd ../../..'
+    if type -q rg
+      alias rg='rg --no-stats --color=auto'
+      alias grep='rg -uuu --no-stats --color=auto'
+      alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8'
+      alias egrep='rg --no-stats --color=auto'
+    else
+      alias grep='grep --color=auto'
+      alias fgrep='fgrep --color=auto'
+      alias egrep='egrep --color=auto'
+    end
 
     # Quick clear
     abbr --add c 'clear'
-
-    # Avoid expensive VCS prompt delays
-    set -g __fish_git_prompt_show_informative_status 0
-    set -g __fish_git_prompt_showupstream none
+    abbr --add cls 'clear'
 end
 
 # ─── Path Deduplication ─────────────────────────────────────────────────────────
@@ -68,3 +69,4 @@ for dir in $PATH
 end
 
 set -gx PATH $newpath
+

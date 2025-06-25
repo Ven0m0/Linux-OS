@@ -6,7 +6,7 @@ set -gx LANG C.UTF-8
 set -gx EDITOR micro
 alias editor='micro'
 # set -gx PAGER less
-set -gx PAGER bat
+# set -gx PAGER bat
 set -gx LESS '-FRXns --mouse --use-color --no-init'
 set -gx LESSHISTFILE '-'
 

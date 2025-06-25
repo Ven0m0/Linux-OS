@@ -5,7 +5,7 @@ sudo -v
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q 
 paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc 
-sudo bash -c "exec topgrade -c --disable=config_update --skip-notify -y --no-retry --disable=uv --disable=pipx" || true
+sudo fisher_path="$fisher_path" bash -c "exec topgrade -c --disable=config_update --skip-notify -y --no-retry --disable=uv --disable=pipx" || true
 # pipx upgrade-all
 if command -v plasma-discover-update &>/dev/null; then
     export $(dbus-launch)

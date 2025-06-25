@@ -2,9 +2,7 @@
 set -gx LC_ALL C.UTF-8
 set -gx LANG C.UTF-8
 
-# ─── Path Deduplication ─────────────────────────────────────────────────────────
-# Prevent PATH bloat across reloads
-set -gx PATH (string split ':' -- $PATH | sort -u | string join ':')
+
 
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
@@ -60,3 +58,17 @@ if status --is-interactive
     set -g __fish_git_prompt_show_informative_status 0
     set -g __fish_git_prompt_showupstream none
 end
+
+# ─── Path Deduplication ─────────────────────────────────────────────────────────
+# Deduplicate PATH (preserve order) to prevent PATH bloat across reloads
+set -l seen
+set -l newpath
+
+for dir in $PATH
+  if not contains -- $dir $seen
+    set seen $seen $dir
+    set newpath $newpath $dir
+  end
+end
+
+set -gx PATH $newpath

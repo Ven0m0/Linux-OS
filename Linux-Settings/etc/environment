@@ -1,6 +1,7 @@
-# sudo nano /etc/environment
+# sudo micro /etc/environment
 EDITOR=micro
-
+LANG=C
+LC_ALL=C
 
 MESA_DEBUG=0
 # wiki.cachyos.org/configuration/gaming

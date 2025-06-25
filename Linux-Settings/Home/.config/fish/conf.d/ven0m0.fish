@@ -5,7 +5,7 @@ set -gx LANG C.UTF-8
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 set -gx PAGER less
-set -gx LESS '-RFXns --mouse --use-color --no-init'
+set -gx LESS '-FRXns --mouse --use-color --no-init'
 set -gx LESSHISTFILE '-'
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
@@ -15,7 +15,17 @@ if status --is-interactive
 
     # https://github.com/iffse/pay-respects
     pay-respects fish --alias | source
-    fzf --fish | source
+    # fzf --fish | source
+
+    function fzf
+      # Remove this function after first use
+      functions -e fzf
+      # Source fzf key bindings and completions (adjust path if needed)
+      fzf --fish | source
+      # Call the real fzf with all original arguments
+      fzf $argv
+    end
+
 
     # Aliases: safe & efficient defaults
     alias cat='bat --strip-ansi=auto'

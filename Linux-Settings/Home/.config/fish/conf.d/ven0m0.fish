@@ -16,7 +16,7 @@ if status --is-interactive
 
     # https://github.com/iffse/pay-respects
     pay-respects fish --alias | source
-    # fzf --fish | source
+    fzf --fish | source
 
     # Aliases: safe & efficient defaults
     alias cat='bat --strip-ansi=auto --squeeze-blank --style=auto --paging=auto'

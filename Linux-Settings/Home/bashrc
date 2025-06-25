@@ -1,7 +1,9 @@
+# Skip if not interactive shell
+[[ $- != *i* ]] && return
+
 # https://github.com/iffse/pay-respects
 eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
-
 
 ## GENERAL OPTIONS ##
 
@@ -18,8 +20,9 @@ export MALLOC_CONF="thp:always,metadata_thp:always"
 
 # History tweaks
 export HISTCONTROL="erasedups:ignoreboth"
-export HISTSIZE=1000
-export HISTFILESIZE=2000
+shopt -s histappend          # append to history, don't overwrite
+HISTSIZE=1000
+HISTFILESIZE=2000
 # Don't record some commands
 export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
 

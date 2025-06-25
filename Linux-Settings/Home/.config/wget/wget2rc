@@ -1,0 +1,5 @@
+http2 on
+max-threads 8
+dns-cache
+cache
+chunk-size=5M

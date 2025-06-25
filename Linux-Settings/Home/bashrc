@@ -1,66 +1,50 @@
-# Skip if not interactive shell
+#
+# ~/.bashrc
+#
+
+export LANG=C
+export LC_ALL=C
+
+# If not running interactively, don't do anything
 [[ $- != *i* ]] && return
+
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
+# alias ls='ls --color=auto'
+# alias grep='grep --color=auto'
+PS1='[\u@\h \W]\$ '
+. "$HOME/.cargo/env"
 
 # https://github.com/iffse/pay-respects
 eval "$(pay-respects bash --alias)"
-# eval "$(fzf --bash)"
-
-# fzf with lazy loading
-fzf() {
-  unset -f fzf
-  eval "$(fzf --bash)"
-  fzf "$@"
-}
-alias fzf=fzf
-
-## GENERAL OPTIONS ##
-
-# Disable unicode.
-# export LC_ALL=C
-# export LANG=C
-export LC_ALL=C.UTF-8
-export LANG=C.UTF-8
+eval "$(fzf --bash)"
 
 export EDITOR='micro'
 alias editor='micro'
-export PAGER=less
+# export PAGER=less
 export LESS '-FRXns --mouse --use-color --no-init'
 export LESSHISTFILE '-'
-export MANPAGER="less -sRn"
+# export MANPAGER="less -sRn"
 
-# Malloc tweak
-export MALLOC_CONF="thp:always,metadata_thp:always"
-
-# History tweaks
-export HISTCONTROL="erasedups:ignoreboth"
-shopt -s histappend          # append to history, don't overwrite
-HISTSIZE=1000
-HISTFILESIZE=2000
-# Don't record some commands
-export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
-
-# LS color caching
-export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43'
-alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
-# alias parallel='parallel -j 0 --load 75% --fast --pipe-part'
-
-alias sshdb='dbclient'
+## Useful aliases
+alias ssh='dbclient'
 alias ptch='patch -p1 <'
-alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
-alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
-
+alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
+alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
+# Replace ls with eza
 alias ls='eza -al --color=always --group-directories-first --icons' # preferred listing
 alias la='eza -a --color=always --group-directories-first --icons'  # all files and dirs
 alias ll='eza -l --color=always --group-directories-first --icons'  # long format
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 alias l.="eza -a | grep -e '^\.'"                                   # show only dotfiles
-alias cat='bat --strip-ansi=auto --squeeze-blank --style=auto --paging=auto'
-# alias du='dust -T 16 -b -P'
+alias cat='bat --strip-ansi=auto --style=auto -s'
 
 # Better sudo
 if command -v sudo-rs >/dev/null 2>&1; then
   alias sudo='sudo-rs'
-  alias su='su-rs'
+elif command -v doas >/dev/null 2>&1; then
+  alias sudo='doas'
 fi
 
 # Ripgrep
@@ -79,7 +63,16 @@ fi
 export FZF_DEFAULT_COMMAND='fd --type file'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
-## GENERAL OPTIONS ##
+# LS color caching
+export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43'
+
+# History tweaks
+export HISTCONTROL="erasedups:ignoreboth"
+shopt -s histappend          # append to history, don't overwrite
+HISTSIZE=1000
+HISTFILESIZE=2000
+# Don't record some commands
+export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
 
 # Prevent file overwrite on stdout redirection
 # Use `>|` to force redirection to an existing file
@@ -88,23 +81,15 @@ set -o noclobber
 # Automatically trim long paths in the prompt (requires Bash 4.x)
 export PROMPT_DIRTRIM=2
 
-## SANE HISTORY DEFAULTS ##
-
 # Save multi-line commands as one command
 shopt -s cmdhist
-
 # Avoid duplicate entries
 export HISTCONTROL="erasedups:ignoreboth"
-
 # Don't record some commands
 export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
 
 # Use standard ISO 8601 timestamp
-# %F equivalent to %Y-%m-%d
-# %T equivalent to %H:%M:%S (24-hours format)
 export HISTTIMEFORMAT='%F %T '
-
-## BETTER DIRECTORY NAVIGATION ##
 
 # Prepend cd to directory names automatically
 shopt -s autocd 2> /dev/null
@@ -112,21 +97,6 @@ shopt -s autocd 2> /dev/null
 shopt -s dirspell 2> /dev/null
 # Correct spelling errors in arguments supplied to cd
 shopt -s cdspell 2> /dev/null
-
-# This defines where cd looks for targets
-# Add the directories you want to have fast access to, separated by colon
-# Ex: CDPATH=".:~:~/projects" will look for targets in the current working directory, in home and in the ~/projects folder
-export CDPATH="."
-
-# This allows you to bookmark your favorite places across the file system
-# Define a variable containing a path and you will be able to cd into it regardless of the directory you're in
-shopt -s cdable_vars
-
-# Examples:
-# export dotfiles="$HOME/dotfiles"
-# export projects="$HOME/projects"
-# export documents="$HOME/Documents"
-# export dropbox="$HOME/Dropbox"
 
 # Add tab completion for SSH hostnames based on ~/.ssh/config, ignoring wildcards
 if [ -e "$HOME/.ssh/config" ]; then

@@ -105,11 +105,10 @@ shopt -s cdspell 2> /dev/null
 # Add tab completion for SSH hostnames based on ~/.ssh/config, ignoring wildcards
 if [ -e "$HOME/.ssh/config" ]; then
   if command -v rg >/dev/null 2>&1; then
-    hosts="$(rg --no-filename --no-heading -e '^Host\s+(?!.*[\?\*]).*' "$HOME/.ssh/config" | awk '{for(i=2;i<=NF;i++) print $i}')"
+    hosts="$(rg --no-filename --no-heading '^Host' "$HOME/.ssh/config" | grep -v '[?*]' | awk '{for(i=2;i<=NF;i++) print $i}')"
   else
     hosts="$(grep '^Host' "$HOME/.ssh/config" | grep -v '[?*]' | cut -d' ' -f2- | tr ' ' '\n')"
   fi
-
   complete -o default -o nospace -W "$hosts" ssh scp sftp
 fi
 

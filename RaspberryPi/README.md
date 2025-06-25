@@ -13,6 +13,12 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Ras
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/RaspberryPi/PiClean.sh | bash
 ```
 
+### Settings todo
+
+```markdown
+net.ipv4.ip_forward=1
+```
+
 
 
 **Raspberry pi os on f2fs:**

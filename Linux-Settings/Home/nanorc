@@ -10,3 +10,4 @@ set softwrap             # Wrap long lines visually (no hard line breaks)
 set autoindent           # Maintain indentation on new lines
 set smarthome            # Toggle between line start and first non-whitespace
 set trimblanks           # Strip trailing spaces/tabs on save
+set modernbindings       # Modern keybinds

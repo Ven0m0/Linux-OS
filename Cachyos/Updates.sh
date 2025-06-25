@@ -26,7 +26,7 @@ sudo updatedb
 sudo update-desktop-database 
 sudo update-pciids
 sudo update-smart-drivedb 
-
+omf update
 fisher update
 # [ -d ~/.basher ] && git -C ~/.basher pull
 if [ -d ~/.basher ]; then

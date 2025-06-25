@@ -5,7 +5,7 @@ sudo -v
 echo "🔄 Updating system..."
 sudo pacman -Syu --noconfirm -q 
 paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc 
-topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv
+topgrade -c --disable=config_update --skip-notify -y --no-retry --disable=uv --disable=pipx || true
 # pipx upgrade-all
 if command -v plasma-discover-update &>/dev/null; then
     export $(dbus-launch)
@@ -17,8 +17,8 @@ uv tool upgrade --all
 export rustup="$HOME/.cargo/bin/rustup"
 rustup update || true
 # cargo-install-update install-update --all || true
-cargo updater -u -L
-cargo list -u -a    
+cargo updater -u -L || true
+cargo list -u -a || true
 tldr -u &>/dev/null & sudo tldr -u &>/dev/null &
 sudo sdboot-manage update &>/dev/null & sudo sdboot-manage remove &
 fwupdmgr refresh && fwupdmgr update
@@ -27,7 +27,7 @@ sudo update-desktop-database
 sudo update-pciids
 sudo update-smart-drivedb 
 omf update
-#fisher update; or curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+#fisher update || true ; or curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 # [ -d ~/.basher ] && git -C ~/.basher pull
 if [ -d ~/.basher ]; then
     echo "Updating ~/.basher..."

@@ -21,6 +21,7 @@ eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 
 export EDITOR='micro'
+export VISUAL=$EDITOR
 alias editor='micro'
 # export PAGER=less
 export LESS='-FRXns --mouse --use-color --no-init'

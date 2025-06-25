@@ -1,0 +1,7 @@
+# ~/.bash_script
+
+# For non-interactive scripts
+# source ~/.bash_script
+
+export LANG=C
+export LC_ALL=C

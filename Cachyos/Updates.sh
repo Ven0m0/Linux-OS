@@ -17,12 +17,11 @@ uv tool upgrade --all
 export rustup="$HOME/.cargo/bin/rustup"
 rustup update || true
 # cargo-install-update install-update --all || true
-cargo-updater updater -u
-tldr -u && sudo tldr -u
-sudo sdboot-manage update
-sudo sdboot-manage remove
-fwupdmgr refresh
-fwupdmgr update
+cargo updater -u -L
+cargo list -u -a    
+tldr -u &>/dev/null & sudo tldr -u &>/dev/null &
+sudo sdboot-manage update &>/dev/null & sudo sdboot-manage remove &
+fwupdmgr refresh && fwupdmgr update
 sudo updatedb 
 sudo update-desktop-database 
 sudo update-pciids

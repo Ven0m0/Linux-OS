@@ -55,16 +55,6 @@ if status --is-interactive
     set -g __fish_git_prompt_showupstream none
 end
 
-if test -e $HOME/.ssh/config
-  if type -q rg
-    set hosts (rg --no-filename --no-heading -e '^Host\s+(?!.*[\?\*]).*' $HOME/.ssh/config | awk '{for(i=2;i<=NF;i++) print $i}')
-  else
-    set hosts (grep '^Host' $HOME/.ssh/config | grep -v '[?*]' | cut -d' ' -f2- | tr ' ' '\n')
-  end
-
-  complete -o default -o nospace -W "$hosts" ssh scp sftp
-end
-
 # ─── Path Deduplication ─────────────────────────────────────────────────────────
 # Deduplicate PATH (preserve order) to prevent PATH bloat across reloads
 set -l seen

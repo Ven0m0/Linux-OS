@@ -4,6 +4,7 @@ set -gx LANG C.UTF-8
 
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
+set -gx VISUAL $EDITOR
 alias editor='micro'
 # set -gx PAGER less
 # set -gx PAGER bat

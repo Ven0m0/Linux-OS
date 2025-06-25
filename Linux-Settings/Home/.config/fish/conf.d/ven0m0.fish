@@ -4,6 +4,7 @@ set -gx LANG C.UTF-8
 
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
+alias editor='micro'
 set -gx PAGER less
 set -gx LESS '-FRXns --mouse --use-color --no-init'
 set -gx LESSHISTFILE '-'

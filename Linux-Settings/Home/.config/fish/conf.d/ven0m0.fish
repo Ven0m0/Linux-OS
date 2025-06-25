@@ -1,6 +1,6 @@
 # ─── Locale (Fast) ─────────────────────────────────────────
-set -gx LC_ALL C
 set -gx LANG C
+set -gx LC_ALL C
 
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
@@ -18,8 +18,9 @@ set -g __fish_git_prompt_showupstream none
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
     # Locale (Fast& Unicode-Compatible)
-    set -gx LC_ALL C.UTF-8
     set -gx LANG C.UTF-8
+    set -gx LC_ALL C.UTF-8
+
     # Fast prompt (truncate deep paths)
     set fish_prompt_pwd_dir_length 1
 

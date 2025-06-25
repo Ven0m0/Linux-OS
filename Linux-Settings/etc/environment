@@ -1,7 +1,7 @@
 # sudo micro /etc/environment
 EDITOR=micro
-LANG=C
-LC_ALL=C
+LANG=C.UTF-8
+LC_ALL=C.UTF-8
 
 MESA_DEBUG=0
 # wiki.cachyos.org/configuration/gaming
@@ -17,7 +17,7 @@ PROTON_ENABLE_NGX_UPDATER=1
 # Experimental vulkan
 GSK_RENDERER=vulkan
 # GSK_RENDERER=ngl
-#
+
 MOZ_ENABLE_WAYLAND=1
 XDG_SESSION_TYPE=wayland
 CLUTTER_BACKEND=wayland
@@ -35,12 +35,6 @@ MIMALLOC_SHOW_ERRORS=0
 MIMALLOC_SHOW_STATS=0
 MIMALLOC_ALLOW_LARGE_OS_PAGES=1
 MIMALLOC_PURGE_DELAY=25
-# Paths
-XDG_CACHE_HOME=$HOME/.cache
-XDG_CONFIG_HOME=$HOME/.config
-XDG_DATA_HOME=$HOME/.local/share
-XDG_STATE_HOME=$HOME/.local/state
-#
 QSG_NO_VSYNC=1
 # ZSTD multi-threading max
 ZSTD_NBTHREADS=0
@@ -49,11 +43,3 @@ RUSTC_WRAPPER=sccache
 CARGO_HTTP_MULTIPLEXING=true
 CARGO_NET_GIT_FETCH_WITH_CLI=true
 CARGO_HTTP_SSL_VERSION="tlsv1.3"
-
-MALLOC_TCACHE_COUNT=16
-GLIBC_TUNABLES="glibc.malloc.tcache_count=16:glibc.cpu.x86_ibt=off:glibc.malloc.hugetlb=1:glibc.pthread.stack_hugetlb=1:glibc.malloc.mxfast=80"
-# Jemalloc
-MALLOC_CONF="background_thread:true,thp:auto,metadata_thp:auto,zero:false,tcache:true"
-
-
-

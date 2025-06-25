@@ -3,7 +3,15 @@
 
 # https://github.com/iffse/pay-respects
 eval "$(pay-respects bash --alias)"
-eval "$(fzf --bash)"
+# eval "$(fzf --bash)"
+
+# fzf with lazy loading
+fzf() {
+  unset -f fzf
+  eval "$(fzf --bash)"
+  fzf "$@"
+}
+alias fzf=fzf
 
 ## GENERAL OPTIONS ##
 
@@ -13,8 +21,11 @@ eval "$(fzf --bash)"
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
+export EDITOR='micro'
+alias editor='micro'
 export PAGER=less
-export LESS='-FRXn'
+export LESS '-FRXns --mouse --use-color --no-init'
+export LESSHISTFILE '-'
 export MANPAGER="less -sRn"
 
 # Malloc tweak
@@ -28,11 +39,10 @@ HISTFILESIZE=2000
 # Don't record some commands
 export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
 
+# LS color caching
+export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43'
 alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
 # alias parallel='parallel -j 0 --load 75% --fast --pipe-part'
-
-export EDITOR='micro'
-alias editor='micro'
 
 alias sshdb='dbclient'
 alias ptch='patch -p1 <'
@@ -44,7 +54,7 @@ alias la='eza -a --color=always --group-directories-first --icons'  # all files 
 alias ll='eza -l --color=always --group-directories-first --icons'  # long format
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 alias l.="eza -a | grep -e '^\.'"                                   # show only dotfiles
-alias cat='bat --strip-ansi=auto'
+alias cat='bat --strip-ansi=auto --squeeze-blank --style=auto --paging=auto'
 # alias du='dust -T 16 -b -P'
 
 # Better sudo

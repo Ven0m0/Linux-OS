@@ -29,6 +29,9 @@ export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
 alias cleanmem='sync; echo 3 | sudo tee /proc/sys/vm/drop_caches'
 # alias parallel='parallel -j 0 --load 75% --fast --pipe-part'
 
+export EDITOR='micro'
+alias editor='micro'
+
 alias sshdb='dbclient'
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'

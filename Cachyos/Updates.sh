@@ -26,7 +26,7 @@ sudo updatedb
 sudo update-desktop-database 
 sudo update-pciids
 sudo update-smart-drivedb 
-omf update
+omf update || true
 #fisher update || true ; or curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 # [ -d ~/.basher ] && git -C ~/.basher pull
 if [ -d ~/.basher ]; then

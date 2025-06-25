@@ -1,18 +1,7 @@
 # sudo nano /etc/environment
-EDITOR=nano
+EDITOR=micro
 
-__GL_GSYNC_ALLOWED=0
-__GL_SYNC_TO_VBLANK=0  
-_GL_THREADED_OPTIMIZATIONS=1
-# us.download.nvidia.com/XFree86/Linux-x86_64/575.51.02/README/openglenvvariables.html
-__GL_SHADER_DISK_CACHE=4
-__GL_SHADER_CACHE=1
-__GL_MaxFramesAllowed=1
-__GL_YIELD=USLEEP
-__GL_SORT_FBCONFIGS=1
-__GL_VRR_ALLOWED=1
-__NV_PRIME_RENDER_OFFLOAD=1
-__GL_WRITE_TEXT_SECTION=1
+
 MESA_DEBUG=0
 # wiki.cachyos.org/configuration/gaming
 PROTON_ENABLE_WAYLAND=1
@@ -59,10 +48,6 @@ RUSTC_WRAPPER=sccache
 CARGO_HTTP_MULTIPLEXING=true
 CARGO_NET_GIT_FETCH_WITH_CLI=true
 CARGO_HTTP_SSL_VERSION="tlsv1.3"
-RAYON_NUM_THREADS="$(nproc)"
-CARGO_BUILD_JOBS="$(nproc)"
-NINJAFLAGS="-j$(nproc)"
-RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C strip=symbols"
 
 MALLOC_TCACHE_COUNT=16
 GLIBC_TUNABLES="glibc.malloc.tcache_count=16:glibc.cpu.x86_ibt=off:glibc.malloc.hugetlb=1:glibc.pthread.stack_hugetlb=1:glibc.malloc.mxfast=80"

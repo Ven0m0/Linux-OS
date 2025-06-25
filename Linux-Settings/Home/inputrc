@@ -29,7 +29,6 @@ set completion-map-case on
 # some defaults / modifications for the emacs mode
 $if mode=emacs
 
-
 # allow the use of the Home/End keys
 # https://wiki.archlinux.org/index.php/Home_and_End_keys_not_working
 #"\e[1~": beginning-of-line
@@ -37,7 +36,6 @@ $if mode=emacs
 # those two are for rxvt
 "\e[7~":beginning-of-line
 "\e[8~":end-of-line
-
 
 # allow the use of the Delete/Insert keys
 "\e[3~": delete-char
@@ -51,7 +49,6 @@ $if mode=emacs
 # alternate mappings for "page up" and "page down" to search the history
 # "\e[5~": history-search-backward
 # "\e[6~": history-search-forward
-
 
 # Note to get rid of a line just Ctrl-C
 # Use the shell like in Octave/Matlab with up and down arrows
@@ -83,9 +80,5 @@ $endif
 # for non RH/Debian xterm, can't hurt for RH/Debian xterm
 # "\eOH": beginning-of-line
 # "\eOF": end-of-line
-
-# for freebsd console
-# "\e[H": beginning-of-line
-# "\e[F": end-of-line
 
 $endif

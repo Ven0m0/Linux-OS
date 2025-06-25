@@ -9,7 +9,3 @@
 if [ -f ~/.bashrc ]; then
     . ~/.bashrc
 fi
-
-# NON-INTERACTIVE OR LOGIN-ONLY SETTINGS BELOW
-export LANG=C
-export LC_ALL=C

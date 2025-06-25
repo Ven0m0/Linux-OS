@@ -1,4 +1,5 @@
 [core]
+	excludesfile = ~/.gitignore
 	pager = less
 	whitespace = fix,-indent-with-non-tab,trailing-space
 	editor = micro

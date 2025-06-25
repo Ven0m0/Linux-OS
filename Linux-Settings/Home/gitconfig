@@ -1,3 +1,21 @@
 [core]
 	pager = less
 	whitespace = fix,-indent-with-non-tab,trailing-space
+	editor = micro
+	autocrlf = input
+	preloadIndex = true
+	fscache = true
+[color]
+	ui = auto
+[push]
+	default = simple
+[pull]
+	rebase = true
+[pack]
+	threads = 16
+[diff]
+	algorithm = patience
+[merge]
+	conflictstyle = diff3
+[rerere]
+	enabled = true

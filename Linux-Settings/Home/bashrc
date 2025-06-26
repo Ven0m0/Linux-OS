@@ -44,11 +44,19 @@ alias cat='bat --strip-ansi=auto --style=auto -s'
 # Stops ping after sending 4 ECHO_REQUEST packets.
 alias ping='ping -c 4'
 
+# Makes `mount` command output pretty and with a human readable format.
+alias mount='mount | column -t'
+
+# Creates parent directories on demand.
+alias mkdir='mkdir -pv'
+
+alias edit='$EDITOR'
+
 # Better sudo
 if command -v sudo-rs >/dev/null 2>&1; then
-  alias sudo='sudo-rs'
+  alias sudo='sudo-rs '
 elif command -v doas >/dev/null 2>&1; then
-  alias sudo='doas'
+  alias sudo='doas '
 fi
 
 # Ripgrep

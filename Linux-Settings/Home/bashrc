@@ -23,6 +23,8 @@ eval "$(fzf --bash)"
 export EDITOR='micro'
 export VISUAL=$EDITOR
 alias editor='micro'
+# Nano modern keybinds
+alias nano='nano -/ '
 # export PAGER=less
 export LESS='-FRXns --mouse --use-color --no-init'
 export LESSHISTFILE='-'

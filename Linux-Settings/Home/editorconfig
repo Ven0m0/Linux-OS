@@ -8,7 +8,15 @@ root = true
 end_of_line = lf
 charset = utf-8
 trim_trailing_whitespace = true
+# Set width of soft tabs and number of columns used for indentation levels.
+indent_size = 4
+# Use soft tabs.
+indent_style = space
 
 [{Makefile,**.mk}]
 # Use tabs for indentation (Makefiles require tabs)
 indent_style = tab
+
+[*.md]
+# Keep trailing whitespaces as they have meaning on Markdown interpretation.
+trim_trailing_whitespace = false

@@ -41,6 +41,9 @@ alias lt='eza -aT --color=always --group-directories-first --icons' # tree listi
 alias l.="eza -a | grep -e '^\.'"                                   # show only dotfiles
 alias cat='bat --strip-ansi=auto --style=auto -s'
 
+# Stops ping after sending 4 ECHO_REQUEST packets.
+alias ping='ping -c 4'
+
 # Better sudo
 if command -v sudo-rs >/dev/null 2>&1; then
   alias sudo='sudo-rs'

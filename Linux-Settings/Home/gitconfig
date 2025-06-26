@@ -20,3 +20,5 @@
 	conflictstyle = diff3
 [rerere]
 	enabled = true
+[icdiff]
+    options = "--line-numbers"

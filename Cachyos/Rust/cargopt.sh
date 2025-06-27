@@ -24,6 +24,9 @@ LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
          -Wl,-z,pack-relative-relocs -Wl,-gc-sections \
          -Wl,--discard-locals"
 
+STRIP="llvm-strip -s --disable-deterministic-archives"
+STRIP="strip -s --disable-deterministic-archives"
+
 cargo +nightly build --release \
   -Z unstable-options \
   -Z gc \

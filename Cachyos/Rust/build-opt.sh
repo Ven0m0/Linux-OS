@@ -27,6 +27,7 @@ cargo update --recursive
 cargo upgrade --recursive true
 cargo fix --workspace --all-targets --all-features -r --bins --allow-dirty
 cargo clippy --fix --workspace --all-targets --all-features --allow-dirty --allow-staged
+cargo fmt --all
 
 # Install missing tools if needed
 for tool in cargo-shear cargo-machete cargo-cache ; do

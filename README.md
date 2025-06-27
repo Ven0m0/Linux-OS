@@ -40,6 +40,25 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Debloat.sh | bash
 ```
 
+### Script start:
+
+```bash
+#!/usr/bin/bash
+# shellcheck shell=bash
+set -euo pipefail
+IFS=$'\n\t'
+
+# Script Path Awareness
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+cd "$HOME"
+
+# Sleep replacement
+# Sleeps for 0.1 seconds (instead of doing "timeout 0.1", doesnt spawn subshells --> therefore faster)
+read -rt 0.1
+
+```
+
 ## List of Linux operating systems
 
 ### Desktop:

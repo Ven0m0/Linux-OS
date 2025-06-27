@@ -5,7 +5,8 @@ IFS=$'\n\t'
 
 cd "$HOME"
 
-# Update and fix code
+export RUST_BACKTRACE="full"
+
 
 # Set optimization flags and build
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \

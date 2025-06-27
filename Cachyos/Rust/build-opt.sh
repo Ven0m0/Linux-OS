@@ -24,6 +24,7 @@ fi
 
 # Update and fix code
 cargo update --recursive
+cargo upgrade --recursive true
 cargo fix --workspace --all-targets --all-features -r --bins --allow-dirty
 cargo clippy --fix --workspace --all-targets --all-features --allow-dirty --allow-staged
 

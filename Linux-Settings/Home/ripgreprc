@@ -6,3 +6,5 @@
 --trim
 --block-buffered
 --color=auto
+--mmap
+--no-line-number

@@ -16,7 +16,12 @@ indent_style = space
 [{Makefile,**.mk}]
 # Use tabs for indentation (Makefiles require tabs)
 indent_style = tab
+indent_size=4
 
 [*.md]
 # Keep trailing whitespaces as they have meaning on Markdown interpretation.
 trim_trailing_whitespace = false
+
+[*.{go,rs,zig,fish}]
+indent_size=4
+indent_style=tab

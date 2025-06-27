@@ -1,3 +1,8 @@
 --max-columns=150
 --max-columns-preview
 --smart-case
+--threads $(nproc)
+--one-file-system
+--trim
+--block-buffered
+--color=auto

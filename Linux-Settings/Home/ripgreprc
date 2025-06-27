@@ -2,6 +2,7 @@
 --max-columns-preview
 --smart-case
 --threads $(nproc)
+--max-depth 5
 --one-file-system
 --trim
 --block-buffered

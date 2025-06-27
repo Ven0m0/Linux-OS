@@ -1,0 +1,7 @@
+cargo install cargo-trim
+
+cd ~/.cargo && cargo trim init
+cargo trim -d ~/.cargo
+cargo trim -a -x -o -u -g aggressive-checkout 
+cargo trim -a -x -o -u -g aggressive-db   
+cargo trim -a -x -o -u -g aggressive-index 

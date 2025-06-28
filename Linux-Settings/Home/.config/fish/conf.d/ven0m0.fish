@@ -64,6 +64,8 @@ if status --is-interactive
     # Quick clear
     abbr --add c 'clear'
     abbr --add cls 'clear'
+
+    bind \e\e toggle_sudo
 end
 
 # ─── Path Deduplication ─────────────────────────────────────────────────────────

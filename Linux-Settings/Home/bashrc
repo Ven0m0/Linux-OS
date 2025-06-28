@@ -50,7 +50,7 @@ alias ping='ping -c 4'
 alias mount='mount | column -t'
 
 # Creates parent directories on demand.
-alias mkdir='mkdir -pv'
+alias mkdir='mkdir -p'
 
 alias edit='$EDITOR'
 
@@ -84,37 +84,26 @@ export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 # LS color caching
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43'
 
-# History tweaks
-export HISTCONTROL="erasedups:ignoreboth"
-shopt -s histappend          # append to history, don't overwrite
+# options
+shopt -s histappend
 HISTSIZE=1000
 HISTFILESIZE=2000
-# Don't record some commands
-export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
-
-# Prevent file overwrite on stdout redirection
-# Use `>|` to force redirection to an existing file
 set -o noclobber
-
-# Automatically trim long paths in the prompt (requires Bash 4.x)
 export PROMPT_DIRTRIM=2
-
-# Save multi-line commands as one command
 shopt -s cmdhist
-# Avoid duplicate entries
 export HISTCONTROL="erasedups:ignoreboth"
-# Don't record some commands
 export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
-
-# Use standard ISO 8601 timestamp
 export HISTTIMEFORMAT='%F %T '
-
-# Prepend cd to directory names automatically
 shopt -s autocd 2> /dev/null
-# Correct spelling errors during tab-completion
 shopt -s dirspell 2> /dev/null
-# Correct spelling errors in arguments supplied to cd
 shopt -s cdspell 2> /dev/null
+shopt -s checkwinsize
+bind "set completion-ignore-case on"
+bind "set completion-map-case on"
+bind "set show-all-if-ambiguous on"
+bind "set mark-symlinked-directories on"
+shopt -s globstar 2> /dev/null
+shopt -s nocaseglob;
 
 # Add tab completion for SSH hostnames based on ~/.ssh/config, ignoring wildcards
 if [ -e "$HOME/.ssh/config" ]; then

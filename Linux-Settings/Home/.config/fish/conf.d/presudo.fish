@@ -24,3 +24,25 @@ function toggle_sudo
     # Replace current command line with modified command
     commandline --replace -- "$line"
 end
+
+
+function toggle_sudo
+    set line (commandline)
+    if test -z "$line"
+        set line (history | head -n1 | string trim)
+        if string match -r '^sudo ' -- "$line"
+            set line (string replace -r '^sudo\s+' '' -- "$line")
+        else
+            set line "sudo $line"
+        end
+    else
+        if string match -r '^sudo ' -- "$line"
+            set line (string replace -r '^sudo\s+' '' -- "$line")
+        else
+            set line "sudo $line"
+        end
+    end
+    commandline --replace -- "$line"
+end
+
+bind \e\e toggle_sudo

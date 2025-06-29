@@ -62,9 +62,22 @@ if status --is-interactive
       alias egrep='egrep --color=auto'
     end
 
-    # Quick clear
-    abbr --add c 'clear'
-    abbr --add cls 'clear'
+   # Sudo edit
+   function suedit
+     if type -q sudo-rs
+       sudo-rs $EDITOR $argv[1]
+     else
+       sudo $EDITOR $argv[1]
+     end
+   end
+
+   # Reset
+   function cls
+     clear
+     crabfetch -d arch || fastfetch
+   end
+
+   abbr --add c cls
 
     # bind Esc Esc to toggle_sudo
     source ~/.config/fish/functions/presudo.fish

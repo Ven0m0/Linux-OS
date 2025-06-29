@@ -19,11 +19,11 @@ export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
 	-fomit-frame-pointer -fvisibility=hidden -fmerge-all-constants -finline-functions \
 	-fbasic-block-sections=all -fjump-tables \
 	-pthread -falign-functions=32 -falign-loops=32 -malign-branch-boundary=32 -malign-branch=jcc \
-	-fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols -fminimize-whitespace"
+	-fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols"
  export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers -fno-rtti -fno-exceptions -Wp,-D_GLIBCXX_ASSERTIONS"
 LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
          -Wl,-z,pack-relative-relocs -Wl,-gc-sections \
-         -Wl,--discard-locals"
+         -Wl,--discard-locals -Wl,--strip-all"
 
 STRIP="llvm-strip -s --disable-deterministic-archives"
 STRIP="strip -s --disable-deterministic-archives"

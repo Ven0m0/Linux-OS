@@ -1,6 +1,5 @@
 [core]
 	excludesfile = ~/.gitignore
-	#pager = less
 	pager = delta
 	whitespace = fix,-indent-with-non-tab,trailing-space
 	editor = micro
@@ -79,8 +78,7 @@
 	whitespace = "nowarn"
 [delta]
 	hyperlinks = true
-# faster git server communication.
-# like a LOT faster. https://opensource.googleblog.com/2018/05/introducing-git-protocol-version-2.html
+# faster git server communication https://opensource.googleblog.com/2018/05/introducing-git-protocol-version-2.html
 [protocol]
 	version = 2
 [feature]

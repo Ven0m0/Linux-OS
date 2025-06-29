@@ -1,6 +1,5 @@
 __GL_GSYNC_ALLOWED=0
 __GL_SYNC_TO_VBLANK=0  
-_GL_THREADED_OPTIMIZATIONS=1
 # us.download.nvidia.com/XFree86/Linux-x86_64/575.51.02/README/openglenvvariables.html
 __GL_SHADER_DISK_CACHE=4
 __GL_SHADER_CACHE=1

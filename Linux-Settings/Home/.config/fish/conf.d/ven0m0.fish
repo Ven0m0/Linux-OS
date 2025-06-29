@@ -30,10 +30,6 @@ if status --is-interactive
     # Fast prompt (truncate deep paths)
     set fish_prompt_pwd_dir_length 1
 
-    # https://github.com/iffse/pay-respects
-    pay-respects fish --alias | source
-    fzf --fish | source
-
     # Aliases: safe & efficient defaults
     alias cat='bat --strip-ansi=auto --squeeze-blank --style=auto --paging=auto'
 

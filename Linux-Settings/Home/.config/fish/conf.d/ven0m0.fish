@@ -10,7 +10,6 @@ set -gx LC_ALL C
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 set -gx VISUAL $EDITOR
-alias editor='micro'
 # set -gx PAGER less
 # set -gx PAGER bat
 set -gx LESS '-FRXns --mouse --use-color --no-init'

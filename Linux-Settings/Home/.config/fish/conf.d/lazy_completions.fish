@@ -1,30 +1,43 @@
-# ~/.config/fish/conf.d/lazy_completions.fish
-
-# ─── only in interactive sessions ─────────────────────────────────────────────
+# ─── Only run in interactive sessions ─────────────────────────────────────────
 if not status --is-interactive
     return
 end
 
-# ─── list of commands to lazy‑load completions for ─────────────────────────────
-set -l commands fisher procs rg
+# ─── Commands with disabled completions ───────────────────────────────────────
+set -l lazy_completion_cmds fisher procs rg
 
-for cmd in $commands
-    set -l compfile $HOME/.config/fish/completions/$cmd.fish
-    set -l disabled  $compfile.disabled
+for cmd in $lazy_completion_cmds
+    set -l compfile "$__fish_config_dir/completions/$cmd.fish"
+    set -l disabled "$compfile.disabled"
 
-    # ─── disable the real completion on first run ───────────────────────────────
     if test -f $compfile -a ! -f $disabled
         mv $compfile $disabled
     end
 
-    # ─── one‑shot loader function ──────────────────────────────────────────────
-    function __lazy_${cmd}_completions --description "lazy‑load $cmd completions"
-        complete -c $cmd -e                     # remove this stub
-        source $disabled                       # load the real completions
-        functions -e __lazy_${cmd}_completions # drop this loader
-        commandline -f repaint                 # retry the TAB immediately
+    # Define stub function to load real completions on demand
+    set -l fnname "__lazy_${cmd}_completions"
+    functions -q $fnname; or function $fnname --description "lazy‑load $cmd completions"
+        complete -c $cmd -e
+        source $disabled
+        functions -e $fnname
+        commandline -f repaint
     end
 
-    # ─── stub out the real options until first TAB ─────────────────────────────
-    complete -c $cmd -f -a "(__lazy_${cmd}_completions)"
+    complete -c $cmd -f -a "($fnname)"
+end
+
+# ─── Lazy-load fzf on first call ──────────────────────────────────────────────
+function fzf --description "lazy-load fzf"
+    functions -e fzf
+    fzf --fish | source
+    commandline -f repaint
+    fzf $argv
+end
+
+# ─── Lazy-load pay-respects on first use ──────────────────────────────────────
+function pay-respects --description "lazy-load pay-respects fish aliases"
+    functions -e pay-respects
+    pay-respects fish --alias | source
+    commandline -f repaint
+    pay-respects $argv
 end

@@ -1,24 +1,90 @@
 [core]
 	excludesfile = ~/.gitignore
-	pager = less
+	#pager = less
+	pager = delta
 	whitespace = fix,-indent-with-non-tab,trailing-space
 	editor = micro
 	autocrlf = input
 	preloadIndex = true
 	fscache = true
+	untrackedCache = true
+	eol = native
+	compression = -1
 [color]
+	branch = "auto"
+	diff = "auto"
+	status = "auto"
 	ui = auto
 [push]
 	default = simple
+	useBitmaps = true
 [pull]
+	ff = only
 	rebase = true
 [pack]
 	threads = 16
+	allowPackReuse = true
+	useBitmapBoundaryTraversal = true
+	useSparse = true
+	useBitmaps = true
 [diff]
-	algorithm = patience
+	algorithm = histogram
+	suppressBlankEmpty = true
+	renames = copies
+	colorMoved = plain
 [merge]
-	conflictstyle = diff3
+	conflictStyle = zdiff3
 [rerere]
 	enabled = true
+	autoupdate = true
 [icdiff]
     options = "--line-numbers"
+[gc]
+	auto = 1
+[checkout]
+	workers = 16
+[index]
+	skipHash = true
+	sparse = true
+	threads = 16
+[fetch]
+	prune = true
+	pruneTags = true
+	all = true
+	parallel = 4
+[help]
+	autoCorrect = prompt
+[rebase]
+	autoSquash = true
+	autoStash = true
+	updateRefs = true
+	backend = merge
+[gui]
+	fastCopyBlame = true
+[grep]
+	threads = 16
+[receive]
+	autogc = true
+	advertiseAtomic = true
+[http]
+	sslBackend = openssl
+	maxRequests = 10
+	sslVersion = tlsv1.3
+[ssh]
+	variant = auto
+[sequence]
+	editor = micro
+[fsck]
+	duplicateEntries = true
+[apply]
+	whitespace = "nowarn"
+[delta]
+	hyperlinks = true
+# faster git server communication.
+# like a LOT faster. https://opensource.googleblog.com/2018/05/introducing-git-protocol-version-2.html
+[protocol]
+	version = 2
+[feature]
+	manyFiles = true
+[status]
+	aheadBehind = true

@@ -70,7 +70,7 @@ if status --is-interactive
    # Reset
    function cls
      clear
-     crabfetch -d arch || fastfetch
+     fish_greeting
    end
 
    abbr --add c cls

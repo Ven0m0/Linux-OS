@@ -9,6 +9,7 @@ sudo sync
 sudo pacman -Rns $(pacman -Qdtq) --noconfirm || true
 sudo pacman -Scc --noconfirm || true
 sudo paccache -rk0 -q || true
+uv cache clean || true
 
 # Clear cache
 sudo systemd-tmpfiles --clean 

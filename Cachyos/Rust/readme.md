@@ -11,6 +11,7 @@ rustup default nightly && rustup set profile minimal && rustup set default-host 
 rustup default stable && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
 ```
 
+Flags:
 ```bash
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \
 -Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none"

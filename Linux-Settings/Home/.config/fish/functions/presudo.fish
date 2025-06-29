@@ -6,10 +6,9 @@ function toggle_sudo
     set -l buf (commandline)
     set -l pos (commandline -C)
 
-    # if empty, pull last command
+    # if empty, pull last command from history
     if test -z "$buf"
         set buf $history[1]
-        # reset cursor to end of that history entry
         set pos (string length -- "$buf")
     end
 
@@ -18,18 +17,16 @@ function toggle_sudo
     # the rest of the command (no leading ws)
     set -l rest (string replace -r '^\s*' '' -- $buf)
 
-    # decide add or remove
+    # toggle prefix
     if string match -r "^$prefix" -- "$rest"
         # remove prefix
         set rest2 (string replace -r "^$prefix" '' -- $rest)
-        # adjust cursor: if it was past the prefix, pull it back
         if test $pos -gt (string length -- "$ws")
             set pos (math "$pos - (string length -- \"$prefix\")")
         end
     else
         # add prefix
         set rest2 "$prefix$rest"
-        # if cursor was past the ws, push it forward
         if test $pos -ge (string length -- "$ws")
             set pos (math "$pos + (string length -- \"$prefix\")")
         end

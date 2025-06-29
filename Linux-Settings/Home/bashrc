@@ -61,8 +61,6 @@ alias sudo='\sudo '
   #alias sudo='\sudo-rs '
 #elif command -v doas >/dev/null 2>&1; then
   #alias sudo='\doas '
-#else
-  #alias sudo='\sudo '
 #fi
 
 # Ripgrep

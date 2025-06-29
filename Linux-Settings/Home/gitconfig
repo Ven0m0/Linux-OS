@@ -42,7 +42,7 @@
 [gc]
 	auto = 1
 [checkout]
-	workers = 16
+	workers = 8
 [index]
 	skipHash = true
 	sparse = true
@@ -88,3 +88,11 @@
 	manyFiles = true
 [status]
 	aheadBehind = true
+[submodule]
+	fetchJobs = 4
+[format]
+	thread = 16
+[repack]
+	cruftThreads = 16
+[sendemail]
+	thread = 16

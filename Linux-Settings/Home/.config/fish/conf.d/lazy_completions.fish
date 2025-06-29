@@ -6,7 +6,7 @@ if not status --is-interactive
 end
 
 # ─── list of commands to lazy‑load completions for ─────────────────────────────
-set -l commands fisher fzf_configure_bindings procs rg
+set -l commands fisher procs rg
 
 for cmd in $commands
     set -l compfile $HOME/.config/fish/completions/$cmd.fish

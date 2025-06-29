@@ -34,6 +34,7 @@ function fzf --description "lazy-load fzf"
     fzf $argv
 end
 
+# https://github.com/iffse/pay-respects
 # ─── Lazy-load pay-respects on first use ──────────────────────────────────────
 function pay-respects --description "lazy-load pay-respects fish aliases"
     functions -e pay-respects

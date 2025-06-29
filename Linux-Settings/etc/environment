@@ -1,6 +1,7 @@
 # sudo micro /etc/environment
 EDITOR=micro
 VISUAL=micro
+GIT_EDITOR=micro
 LANG=C.UTF-8
 LC_ALL=C.UTF-8
 

@@ -65,7 +65,9 @@ if status --is-interactive
     abbr --add c 'clear'
     abbr --add cls 'clear'
 
-    source ~/.config/fish/conf.d/presudo.fish
+    source ~/.config/fish/functions/presudo.fish
+    # bind Esc Esc to toggle_sudo
+    bind \e\e toggle_sudo
 end
 
 # ─── Path Deduplication ─────────────────────────────────────────────────────────

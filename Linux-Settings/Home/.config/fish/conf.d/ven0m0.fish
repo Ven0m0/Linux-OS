@@ -78,6 +78,10 @@ if status --is-interactive
     # bind Esc Esc to toggle_sudo
     source ~/.config/fish/functions/presudo.fish
     bind \e\e toggle_sudo
+
+    function which
+      type $argv
+    end
 end
 
 # ─── Path Deduplication ─────────────────────────────────────────────────────────

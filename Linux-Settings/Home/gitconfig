@@ -10,6 +10,7 @@
 	untrackedCache = true
 	eol = native
 	compression = -1
+	multiPackIndex = true
 [color]
 	branch = "auto"
 	diff = "auto"
@@ -47,6 +48,7 @@
 	skipHash = true
 	sparse = true
 	threads = 16
+	version = 4
 [fetch]
 	prune = true
 	pruneTags = true
@@ -69,9 +71,6 @@
 [http]
 	sslBackend = openssl
 	maxRequests = 10
-	sslVersion = tlsv1.3
-[ssh]
-	variant = auto
 [sequence]
 	editor = micro
 [fsck]

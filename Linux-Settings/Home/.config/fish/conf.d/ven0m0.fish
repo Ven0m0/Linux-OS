@@ -12,8 +12,10 @@ set -gx EDITOR micro
 set -gx VISUAL $EDITOR
 # set -gx PAGER less
 # set -gx PAGER bat
-set -gx LESS '-FRXns --mouse --use-color --no-init'
+set -gx LESS '-RFQXsn --no-histdups --mouse --wheel-lines=4'
+set -gx LESSOPEN "|/usr/bin/batpipe %s"
 set -gx LESSHISTFILE '-'
+set -gx BATPIPE "color"
 
 # Avoid expensive VCS prompt delays
 set -g __fish_git_prompt_show_informative_status 0
@@ -21,7 +23,7 @@ set -g __fish_git_prompt_showupstream none
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
-    # Locale (Fast& Unicode-Compatible)
+    # Locale (Fast & Unicode-Compatible)
     set -gx LANG C.UTF-8
     set -gx LC_ALL C.UTF-8
 
@@ -43,10 +45,10 @@ if status --is-interactive
 
     # Better sudo (if available)
     if type -q sudo-rs
-        alias sudo='sudo-rs'
+        alias sudo sudo-rs
     end
     if type -q su-rs
-        alias su='su-rs'
+        alias su su-rs
     end
 
     if type -q rg

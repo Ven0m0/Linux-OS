@@ -44,12 +44,12 @@ if status --is-interactive
     alias clearnsh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 
     # Better sudo (if available)
-    if type -q sudo-rs
-        alias sudo sudo-rs
-    end
-    if type -q su-rs
-        alias su su-rs
-    end
+    #if type -q sudo-rs
+        #alias sudo sudo-rs
+    #end
+    #if type -q su-rs
+        #alias su su-rs
+    #end
 
     if type -q rg
       alias rg='rg --no-stats --color=auto'

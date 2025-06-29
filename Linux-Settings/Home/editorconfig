@@ -10,7 +10,6 @@ charset = utf-8
 trim_trailing_whitespace = true
 # Set width of soft tabs and number of columns used for indentation levels.
 indent_size = 4
-# Use soft tabs.
 indent_style = space
 
 [{Makefile,**.mk}]
@@ -25,3 +24,15 @@ trim_trailing_whitespace = false
 [*.{go,rs,zig,fish}]
 indent_size=4
 indent_style=tab
+
+[*.js]
+charset = utf-8
+end_of_line = lf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+max_line_length = 80
+trim_trailing_whitespace = true
+
+[*.{yml,yaml}]
+indent_size = 2

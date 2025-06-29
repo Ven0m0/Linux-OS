@@ -65,8 +65,8 @@ if status --is-interactive
     abbr --add c 'clear'
     abbr --add cls 'clear'
 
-    source ~/.config/fish/functions/presudo.fish
     # bind Esc Esc to toggle_sudo
+    source ~/.config/fish/functions/presudo.fish
     bind \e\e toggle_sudo
 end
 

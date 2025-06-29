@@ -22,8 +22,7 @@ export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers -fno-rtti
 export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
          -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations \
          -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
-export STRIP="llvm-strip -s --disable-deterministic-archives"
-export STRIP="strip -s --disable-deterministic-archives"
+export STRIP="llvm-strip -s -U"
 
 cargo +nightly build --release \
   -Z unstable-options \

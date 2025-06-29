@@ -15,7 +15,6 @@ rustup default stable && rustup set profile minimal && rustup set default-host x
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \
 -Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none"
 ```
-C Flags:
 ```bash
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
   -fno-semantic-interposition -fdata-sections -ffunction-sections \
@@ -25,17 +24,14 @@ export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
   -falign-functions=32 -falign-loops=32 -malign-branch-boundary=32 -malign-branch=jcc \
 	-fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols"
 ```
-C++ Flags:
 ```bash
 export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers"
 ```
-
 ```bash
 export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
          -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations \
          -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
 ```
-
 ### Some componements commonly required  
 ```bash
 rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu rust-std-wasm32-unknown-unknown rust-std-wasm32-wasip2

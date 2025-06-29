@@ -55,13 +55,15 @@ alias mkdir='mkdir -p'
 alias edit='$EDITOR'
 
 # Better sudo
-if command -v sudo-rs >/dev/null 2>&1; then
-  alias sudo='\sudo-rs '
-elif command -v doas >/dev/null 2>&1; then
-  alias sudo='\doas '
-else
-  alias sudo='\sudo '
-fi
+alias sudo='\sudo '
+
+#if command -v sudo-rs >/dev/null 2>&1; then
+  #alias sudo='\sudo-rs '
+#elif command -v doas >/dev/null 2>&1; then
+  #alias sudo='\doas '
+#else
+  #alias sudo='\sudo '
+#fi
 
 # Ripgrep
 if command -v rg >/dev/null 2>&1; then

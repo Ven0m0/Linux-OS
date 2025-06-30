@@ -9,8 +9,8 @@ paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter 
 # sudo bash -c "exec topgrade -c --disable=config_update --skip-notify -y --no-retry --disable=uv --disable=pipx --disable=shell" || true
 topgrade -c --disable=config_update --skip-notify -y --no-retry --disable=uv --disable=pipx --disable=shell || true
 # pipx upgrade-all
-if command -v plasma-discover-update &>/dev/null; then
-    export $(dbus-launch)
+if command -v plasma-discover-update > /dev/null 2>&1; then
+    eval "$(dbus-launch)"
     plasma-discover-update
 else
     echo "plasma-discover-update (Discover) is not installed."
@@ -21,8 +21,8 @@ rustup update || true
 # cargo-install-update install-update --all || true
 cargo updater -u -L || true
 cargo list -u -a || true
-tldr -u &>/dev/null & sudo tldr -u &>/dev/null &
-sudo sdboot-manage update &>/dev/null & sudo sdboot-manage remove &
+tldr -u > /dev/null 2>&1 & sudo tldr -u > /dev/null 2>&1 &
+sudo sdboot-manage update > /dev/null 2>&1 & sudo sdboot-manage remove &
 fwupdmgr refresh && fwupdmgr update
 sudo updatedb 
 sudo update-desktop-database 
@@ -37,7 +37,7 @@ if [ -d ~/.basher ]; then
 fi
 
 echo "🔍 Checking for systemd-boot..."
-if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then
+if [ -d /sys/firmware/efi ] && bootctl is-installed > /dev/null 2>&1; then
     echo "✅ systemd-boot is installed. Updating..."
     sudo bootctl update || true
     sudo bootctl cleanup
@@ -50,14 +50,14 @@ if fd limine.cfg /boot /boot/efi /mnt > /dev/null 2>&1; then
     echo "✅ Limine configuration detected."
 
     # Check if `limine-update` is available
-    if command -v limine-update &>/dev/null; then
+    if command -v limine-update > /dev/null 2>&1; then
         sudo limine-update
     else
         echo "⚠️ limine-update not found in PATH."
     fi
 
     # Optionally run mkinitcpio wrapper if present
-    if command -v limine-mkinitcpio &>/dev/null; then
+    if command -v limine-mkinitcpio > /dev/null 2>&1; then
         sudo limine-mkinitcpio
     else
         echo "⚠️ limine-mkinitcpio not found in PATH."

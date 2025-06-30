@@ -1,0 +1,39 @@
+[net]
+git-fetch-with-cli = true
+retry = 2
+
+[http]
+debug = false
+ssl-version = "tlsv1.3"
+ssl-version.max = "tlsv1.3"
+ssl-version.min = "tlsv1.2"
+check-revoke = false
+multiplexing = true
+
+[cache]
+auto-clean-frequency = "1 day"
+
+[build]
+jobs = 16
+incremental = false
+rustc-wrapper = "sccache"
+
+[env]
+CARGO_HTTP_MULTIPLEXING = "true"
+CARGO_NET_GIT_FETCH_WITH_CLI = "true"
+CARGO_HTTP_SSL_VERSION = "tlsv1.3"
+
+[registries.crates-io]
+protocol = "sparse"
+
+[resolver]
+incompatible-rust-versions = "allow"
+
+#[profile.release.build-override]
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+panic = 'abort'
+codegen-units = 1
+strip = "symbols"

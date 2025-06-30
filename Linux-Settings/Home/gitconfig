@@ -10,6 +10,9 @@
 	eol = native
 	compression = -1
 	multiPackIndex = true
+	sparseCheckout = true
+	sparseCheckoutCone = true
+	fsyncMethod = batch
 [color]
 	branch = "auto"
 	diff = "auto"
@@ -22,11 +25,15 @@
 	ff = only
 	rebase = true
 [pack]
-	threads = 16
+	threads = 0
 	allowPackReuse = true
 	useBitmapBoundaryTraversal = true
 	useSparse = true
 	useBitmaps = true
+	indexVersion = 2
+	preferBitmapTips = true
+	writeBitmapHashCache = true
+	writeBitmapLookupTable = true
 [diff]
 	algorithm = histogram
 	suppressBlankEmpty = true
@@ -40,19 +47,27 @@
 [icdiff]
     options = "--line-numbers"
 [gc]
-	auto = 1
+	auto = 256
+	autoPackLimit = 25
+	autoDetach = true
+	packRefs = true
+	reflogExpireUnreachable = 7.days
+	reflogExpire = 14.days
+	aggressiveDepth = 250
+	aggressiveWindow = 250
+	repackFilter = blob:none
 [checkout]
 	workers = 8
 [index]
 	skipHash = true
 	sparse = true
-	threads = 16
+	threads = 0
 	version = 4
 [fetch]
 	prune = true
 	pruneTags = true
 	all = true
-	parallel = 4
+	parallel = 8
 [help]
 	autoCorrect = prompt
 [rebase]
@@ -62,14 +77,19 @@
 	backend = merge
 [gui]
 	fastCopyBlame = true
+	pruneDuringFetch = true
+	encoding = utf-8
 [grep]
-	threads = 16
+	threads = 0
 [receive]
 	autogc = true
 	advertiseAtomic = true
 [http]
 	sslBackend = openssl
 	maxRequests = 10
+	version = HTTP/2
+	sslVersion = tlsv1.3
+	postBuffer = 104857600
 [sequence]
 	editor = micro
 [fsck]
@@ -78,18 +98,20 @@
 	whitespace = "nowarn"
 [delta]
 	hyperlinks = true
-# faster git server communication https://opensource.googleblog.com/2018/05/introducing-git-protocol-version-2.html
 [protocol]
 	version = 2
 [feature]
 	manyFiles = true
+	experimental = true
 [status]
 	aheadBehind = true
 [submodule]
-	fetchJobs = 4
+	fetchJobs = 8
 [format]
 	thread = 16
 [repack]
 	cruftThreads = 16
 [sendemail]
 	thread = 16
+[maintenance]
+	strategy = incremental

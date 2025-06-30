@@ -4,6 +4,7 @@ source /usr/share/cachyos-fish-config/cachyos-config.fish
 function fish_greeting
         crabfetch -d arch || fastfetch
 end
+
 if test -d ~/.basher          ##basher5ea843
   set basher ~/.basher/bin    ##basher5ea843
 end                           ##basher5ea843

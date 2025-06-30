@@ -3,10 +3,6 @@
         #crabfetch -d arch || fastfetch
 #end
 
-# ─── Locale (Fast) ─────────────────────────────────────────
-set -gx LANG C
-set -gx LC_ALL C
-
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 set -gx VISUAL $EDITOR
@@ -20,6 +16,11 @@ set -gx BATPIPE "color"
 # Avoid expensive VCS prompt delays
 set -g __fish_git_prompt_show_informative_status 0
 set -g __fish_git_prompt_showupstream none
+
+if not status is-interactive
+    set -gx LANG C
+    set -gx LC_ALL C
+end
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive

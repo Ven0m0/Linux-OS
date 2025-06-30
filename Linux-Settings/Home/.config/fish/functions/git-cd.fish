@@ -1,3 +1,4 @@
+# Git clone and cd into the repo
 function gc
     if test (count $argv) -eq 0
         echo "Usage: gc <git-repo-url>"
@@ -14,7 +15,7 @@ function gc
 
     or return 1  # Abort if clone failed
 
-    # Strip trailing slash and .git suffix
-    set repo (basename (string trim --right --chars=/ $url) .git)
+    # Strip trailing slashes and .git suffix
+    set repo (basename (string replace --regex -- '(/|\.git)+$' '' $url))
     cd $repo
 end

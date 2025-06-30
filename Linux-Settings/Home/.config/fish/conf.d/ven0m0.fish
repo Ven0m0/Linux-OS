@@ -7,8 +7,8 @@
 set -gx EDITOR micro
 set -gx VISUAL $EDITOR
 # set -gx PAGER less
-# set -gx PAGER bat
-set -gx LESS '-RFQXsn --no-histdups --mouse --wheel-lines=4'
+set -x PAGER bat
+# set -gx LESS '-RFQXsn --no-histdups --mouse --wheel-lines=4'
 set -gx LESSOPEN "|/usr/bin/batpipe %s"
 set -gx LESSHISTFILE '-'
 set -gx BATPIPE "color"

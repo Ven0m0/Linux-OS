@@ -63,7 +63,7 @@ read -rt 0.1
 
 ### Desktop:
 
-[CachyOS](https://cachyos.org//)
+[CachyOS](https://cachyos.org/)
 
 
 ### Gaming:

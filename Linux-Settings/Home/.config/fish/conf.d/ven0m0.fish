@@ -1,7 +1,7 @@
 ## Run crabfetch/fastfetch as welcome message
-function fish_greeting
-        crabfetch -d arch || fastfetch
-end
+#function fish_greeting
+        #crabfetch -d arch || fastfetch
+#end
 
 # ─── Locale (Fast) ─────────────────────────────────────────
 set -gx LANG C

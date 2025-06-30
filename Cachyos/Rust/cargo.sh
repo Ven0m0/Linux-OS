@@ -12,6 +12,9 @@ cargo install cargo-shear
 cargo shear --fix
 cargo shear --expand --fix
 
+# https://crates.io/crates/auto-allocator
+# Auto allocator
+
 ##  Mimalloc
 cargo add mimalloc-safe
 # in main.rs
@@ -21,12 +24,12 @@ use mimalloc_safe::MiMalloc;
 static GLOBAL: MiMalloc = MiMalloc;
 
 # Rayon parallel
-https://crates.io/crates/rayon
+# https://crates.io/crates/rayon
 cargo add rayon
 foo.iter() ---> foo.par_iter()
 
 # Fastant tsc optimization
-https://crates.io/crates/fastant
+# https://crates.io/crates/fastant
 cargo add fastant
 #in main.rs
 fn main() {

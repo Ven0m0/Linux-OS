@@ -25,6 +25,12 @@ fi
 # Tracing
 export RUST_BACKTRACE="full"
 
+# Git
+git reflog expire --expire=now --all &&
+git gc --prune=now --aggressive &&
+git repack -a -d --depth=250 --window=250 --write-bitmap-index
+git clean -fdX
+
 # Update and fix code
 cargo update --recursive
 cargo upgrade --recursive true

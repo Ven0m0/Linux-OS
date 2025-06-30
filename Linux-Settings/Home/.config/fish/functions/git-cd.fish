@@ -1,7 +1,7 @@
 # Git clone and cd into the repo
-function gc
+function git-cd
     if test (count $argv) -eq 0
-        echo "Usage: gc <git-repo-url>"
+        echo "Usage: git-cd <git-repo-url>"
         return 1
     end
 

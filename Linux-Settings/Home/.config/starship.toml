@@ -1,0 +1,51 @@
+# Get editor completions based on the config schema
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Only show the current directory
+format = """$directory$character"""
+
+# Don’t add a blank line above the prompt
+add_newline = false
+
+# Customize the prompt symbol
+[character]
+success_symbol = '[➜](bold green)'
+
+# Optional: Disable all other modules completely
+[directory]
+style = "purple"
+#truncation_length = 0
+truncate_to_repo = true
+
+[username]
+disabled = true
+
+[hostname]
+disabled = true
+
+[git_status]
+disabled = true
+
+[rust]
+disabled = true
+
+[direnv]
+disabled = true
+
+[memory_usage]
+disabled = true
+
+[os]
+disabled = true
+
+[env_var]
+disabled = true
+
+[jobs]
+disabled = true
+
+[time]
+disabled = true
+
+[package]
+disabled = true

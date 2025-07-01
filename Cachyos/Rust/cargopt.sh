@@ -22,7 +22,7 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
          -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
 export STRIP="llvm-strip -s -U"
 
-cargo +nightly build --release \
+cargo +nightly install ${app} --locked \
   -Z unstable-options \
   -Z gc \
   -Z feature-unification \

@@ -20,7 +20,7 @@ PS1='[\u@\h \W]\$ '
 eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 
-export EDITOR='micro'
+export EDITOR=micro
 export VISUAL=$EDITOR
 alias editor='micro'
 # Nano modern keybinds

@@ -12,7 +12,7 @@ benchmark() {
 
   echo "▶ Running benchmark: $name"
   hyperfine \
-    --warmup 5 \
+    -w 5 \
     -i \
     --prepare "sync; echo 3 | sudo-rs tee /proc/sys/vm/drop_caches" \
     "$cmd"
@@ -20,9 +20,10 @@ benchmark() {
 
 # Template
 #benchmark "" ""
-
 benchmark "xargs" "seq 1000 | xargs -n1 -P$(nproc) echo"
 benchmark "parallel" "seq 1000 | parallel -j $(nproc) echo {}"
 benchmark "rust-parallel" "seq 1000 | rust-parallel -j $(nproc) echo {}"
+benchmark "parel" "parel -t $(nproc) 'seq 1000'"
+
 
 echo "✅ Benchmarks complete..."

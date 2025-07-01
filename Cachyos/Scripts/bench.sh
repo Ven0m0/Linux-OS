@@ -5,7 +5,7 @@ set -euo pipefail
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" >/dev/null 2>&1; }
 
-if command -v "sudo-rs" >/dev/null 2>&1; then
+if have "sudo-rs"; then
   suexec="sudo-rs"
   sudo-rs -v || true
 elif have "/usr/bin/sudo"; then

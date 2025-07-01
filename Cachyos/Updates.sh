@@ -22,12 +22,12 @@ rustup update || true
 cargo updater -u -L || true
 cargo list -u -a || true
 tldr -u > /dev/null 2>&1 & sudo tldr -u > /dev/null 2>&1 &
-sudo sdboot-manage update > /dev/null 2>&1 & sudo sdboot-manage remove &
-fwupdmgr refresh && fwupdmgr update
+sudo sdboot-manage update > /dev/null 2>&1 && sudo sdboot-manage remove
+fwupdmgr refresh  > /dev/null 2>&1 && fwupdmgr update
 sudo updatedb 
 sudo update-desktop-database 
-sudo update-pciids
-sudo update-smart-drivedb 
+sudo update-pciids > /dev/null 2>&1
+sudo update-smart-drivedb > /dev/null 2>&1
 omf update || true
 #fisher update || true ; or curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 # [ -d ~/.basher ] && git -C ~/.basher pull
@@ -39,8 +39,8 @@ fi
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && bootctl is-installed > /dev/null 2>&1; then
     echo "✅ systemd-boot is installed. Updating..."
-    sudo bootctl update || true
-    sudo bootctl cleanup
+    sudo bootctl update > /dev/null 2>&1 || true
+    sudo bootctl cleanup > /dev/null 2>&1
 else
     echo "❌ systemd-boot not detected; skipping bootctl update."
 fi
@@ -66,5 +66,5 @@ else
     echo "❌ Limine configuration not found; skipping Limine actions."
 fi
 
-# sudo update-initramfs -u
 # sudo mkinitcpio -P
+# sudo update-initramfs -u

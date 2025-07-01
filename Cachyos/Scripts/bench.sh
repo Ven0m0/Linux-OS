@@ -39,6 +39,6 @@ benchmark "xargs" "seq 1000 | xargs -n1 -P$(nproc) echo"
 benchmark "parallel" "seq 1000 | parallel -j $(nproc) echo {}"
 benchmark "rust-parallel" "seq 1000 | rust-parallel -j $(nproc) echo {}"
 benchmark "parel" "parel -t $(nproc) 'seq 1000'"
-
+benchmark "parallel-sh" "parallel-sh -j $(nproc) 'seq 1000'"
 
 echo "✅ Benchmarks complete..."

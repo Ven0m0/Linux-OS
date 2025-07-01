@@ -221,9 +221,6 @@ cargo install rust-curl
 # GUI for fclones
 cargo install fclones-gui
 
-# Search and replace
-cargo install fara
-
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service
 # sudo systemctl enable fstrim.timer

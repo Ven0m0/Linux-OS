@@ -5,9 +5,18 @@ IFS=$'\n\t'
 
 # usage check
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 <crate-name>"
+  echo "Usage: $0 <crate-name> [--locked]"
   exit 1
 fi
+
+# 2) Look for --locked among the rest
+locked_flag=""
+for arg in "$@"; do
+  if [ "$arg" = "--locked" ]; then
+    locked_flag="--locked"
+    break
+  fi
+done
 
 cd "$HOME"
 # Tracing
@@ -28,7 +37,7 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
          -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
 export STRIP="llvm-strip -s -U"
 
-cargo +nightly install "$1" --locked \
+cargo +nightly install "$1" $locked_flag \
   -Z unstable-options \
   -Z gc \
   -Z feature-unification \

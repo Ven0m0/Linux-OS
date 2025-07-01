@@ -55,7 +55,8 @@ alias mkdir='mkdir -p'
 alias edit='$EDITOR'
 
 # Better sudo
-alias sudo='\sudo '
+#alias sudo='\sudo '
+alias sudo='\sudo ';
 
 #if command -v sudo-rs >/dev/null 2>&1; then
   #alias sudo='\sudo-rs '

@@ -27,25 +27,18 @@ if have topgrade; then
            --no-retry --disable=uv --disable=pipx --disable=shell || true
 fi
 # pipx upgrade-all
-# 5) Discover updates
-if have plasma-discover-update; then
-  eval "$(dbus-launch)"
-  plasma-discover-update
-else
-  echo "ℹ️ plasma-discover-update not installed."
-fi
 
-# 6) UV tool upgrade (background)
+# 5) UV tool upgrade (background)
 if have uv; then
   uv tool upgrade --all &
 fi
 
-# 7) Rust toolchain
+# 6) Rust toolchain
 if have rustup; then
   rustup update || true
 fi
 
-# 8) Cargo‑based updaters
+# 7) Cargo‑based updaters
 if have cargo-updater; then
   cargo updater -u || true
 elif have cargo-list; then
@@ -54,18 +47,17 @@ else
   cargo install-update -a -g -j 16 || true
 fi
 
-# 9) Oh My Fish (background)
+# 8) Oh My Fish (background)
 if have omf; then
   omf update || true &
 fi
 
-#–– 10) Fisher (inside fish)
+# 9) Fisher (inside fish)
 if have fish; then
   fish -c 'fisher update' || true
 fi
-
-#fisher update || true ; or curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
-[ -d "$HOME/.basher" ] && git -C "$HOME/.basher" pull || echo "Failed to pull from $HOME/.basher"
+# Reinstall fisher
+#curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 
 # 10) basher (if present)
 if [ -d "$HOME/.basher" ]; then
@@ -106,6 +98,7 @@ else
     echo "❌ systemd‑boot not present, skipping."
 fi
 
+# 16) Limine
 echo "🔍 Checking for Limine…"
 if fd limine.cfg /boot /boot/efi /mnt >/dev/null 2>&1; then
   echo "✅ Limine config found."
@@ -115,6 +108,7 @@ else
   echo "❌ Limine config not found; skipping."
 fi
 
+# 17) Mkinitcpio
 # $suexec mkinitcpio -P
 # $suexec update-initramfs -u
 

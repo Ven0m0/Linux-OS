@@ -6,14 +6,17 @@ set -euo pipefail
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # 1) Detect and cache privilege executor
-if have doas; then
-  suexec="doas"
-elif have sudo-rs; then
+if have sudo-rs; then
   suexec="sudo-rs"
   sudo-rs -v || true
-else
+elif have "/usr/bin/sudo"; then
   suexec="/usr/bin/sudo"
   /usr/bin/sudo -v || true
+elif have "sudo"; then
+  suexec="sudo"
+  sudo -v || true
+elif have doas; then
+  suexec="doas"
 fi
 
 echo "🔄 Updating system..."

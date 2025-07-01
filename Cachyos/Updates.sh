@@ -50,7 +50,7 @@ else
 fi
 # 9) omf update
 if command -v omf >/dev/null 2>&1; then
-    omf update || true
+    omf update || true &
 fi
 #fisher update || true ; or curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 [ -d "$HOME/.basher" ] && git -C "$HOME/.basher" pull || echo "Failed to pull from $HOME/.basher"

@@ -29,6 +29,8 @@ alias nano='nano -/ '
 export LESS='-FRXns --mouse --use-color --no-init'
 export LESSHISTFILE='-'
 # export MANPAGER="less -sRn"
+# Faster Skim (fastest to slowest skim command)
+export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=never . || find . -type f'
 
 ## Useful aliases
 alias ssh='dbclient'

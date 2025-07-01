@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 set -euo pipefail
 sudo -v
+sudo-rs -v
 
 export LANG=C
 export LC_ALL=C
@@ -13,7 +14,7 @@ benchmark() {
   hyperfine \
     --warmup 5 \
     -i \
-    --prepare "sudo fstrim -a --quiet-unsupported; sudo journalctl --vacuum-time=1s; sync; echo 3 | sudo tee /proc/sys/vm/drop_caches" \
+    --prepare "sync; echo 3 | sudo-rs tee /proc/sys/vm/drop_caches" \
     "$cmd"
 }
 

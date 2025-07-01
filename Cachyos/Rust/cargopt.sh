@@ -3,8 +3,14 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-cd "$HOME"
+# usage check
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <crate-name>"
+  exit 1
+fi
 
+cd "$HOME"
+# Tracing
 export RUST_BACKTRACE="full"
 
 # Set optimization flags and build
@@ -22,7 +28,7 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
          -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
 export STRIP="llvm-strip -s -U"
 
-cargo +nightly install ${app} --locked \
+cargo +nightly install "$1" --locked \
   -Z unstable-options \
   -Z gc \
   -Z feature-unification \

@@ -189,66 +189,40 @@ curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HO
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm || true
 
 echo "Installing Cargo crates"
-# Faster copy and rm
-cargo install rmz || true
-cargo install cpz || true
-# Modern cp
-# https://crates.io/crates/xcp
-cargo install xcp
-# Better pigz
-cargo install crabz || true
+
+cargostall(
+rmz
+cpz
+xcp
+crabz
+parallel-sh
+parel
+ffzap
+cargo-diet
+crab-fetch
+cargo-list
+minhtml
+cargo-minify
+)
+
 # Fast, hardware-accelerated CRC calculation
 cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq || true
-# Easy parallelization for shell commands
-cargo install parallel-sh
 # Faster unzip
 cargo install ripunzip
-# FFMPEG parallel
-cargo install ffzap
-# Make your crate lean by computing size-optimal include directives for Cargo manifests
-cargo install cargo-diet
-
-# Better fastfetch
-cargo install crab-fetch
-
-# https://crates.io/crates/fd-find
-cargo install fd-find
 
 # fast compression multitool for zst, tgz, txz, zip, 7z
 cargo install zzz-arc
 # https://github.com/caydenlund/xz-rs.git
 
-#https://crates.io/crates/cargo-list
-cargo install cargo-list
-
 # Rust-curl
 # https://crates.io/crates/rust-curl
 cargo install rust-curl
-
-# Better sed
-# https://crates.io/crates/sd
-cargo install sd
-
-# Scp drop-in replacement
-# https://crates.io/crates/qcp
-cargo install qcp
 
 # GUI for fclones
 cargo install fclones-gui
 
 # Search and replace
 cargo install fara
-
-# Minify files
-# https://crates.io/crates/minhtml
-cargo +nightly install minhtml
-
-# Minify crate
-# https://crates.io/crates/cargo-minify
-cargo install cargo-minify
-
-# Tmux
-# https://crates.io/crates/rusmux
 
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service

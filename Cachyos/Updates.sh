@@ -18,9 +18,15 @@ fi
 uv tool upgrade --all
 export rustup="$HOME/.cargo/bin/rustup"    
 rustup update || true
-# cargo-install-update install-update --all || true
-cargo updater -u -L || true
-cargo list -u -a || true
+
+if command -v cargo-updater > /dev/null 2>&1; then
+    cargo updater -u -L || true
+elif command -v cargo-list > /dev/null 2>&1; then
+    cargo list -u -a || true
+else
+    cargo-install-update install-update -a -g -j 16 || true
+fi
+
 tldr -u > /dev/null 2>&1 & sudo tldr -u > /dev/null 2>&1 &
 sudo sdboot-manage update > /dev/null 2>&1 && sudo sdboot-manage remove
 fwupdmgr refresh  > /dev/null 2>&1 && fwupdmgr update

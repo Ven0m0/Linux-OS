@@ -2,6 +2,9 @@
 set -euo pipefail
 sudo -v
 
+export LANG=C
+export LC_ALL=C
+
 benchmark() {
   local name="$1"; shift
   local cmd="$*" # Join all remaining args into one string
@@ -14,7 +17,11 @@ benchmark() {
     "$cmd"
 }
 
-benchmark "du" "du -sh $HOME 2>/dev/null || true"
-benchmark "dust" "dust -c -b -P -T 16 --skip-total $HOME 2>/dev/null || true"
+# Template
+#benchmark "" ""
+
+benchmark "xargs" "seq 1000 | xargs -n1 -P$(nproc) echo"
+benchmark "parallel" "seq 1000 | parallel -j $(nproc) echo {}"
+benchmark "rust-parallel" "seq 1000 | rust-parallel -j $(nproc) echo {}"
 
 echo "✅ Benchmarks complete..."

@@ -25,6 +25,8 @@ export VISUAL=$EDITOR
 alias editor='micro'
 # Nano modern keybinds
 alias nano='nano -/ '
+#export GIT_PAGER=delta
+#export CARGO_TERM_PAGER=bat
 # export PAGER=less
 export LESS='-FRXns --mouse --use-color --no-init'
 export LESSHISTFILE='-'

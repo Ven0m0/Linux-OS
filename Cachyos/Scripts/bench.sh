@@ -1,7 +1,22 @@
 #!/usr/bin/bash
 set -euo pipefail
-sudo -v
-sudo-rs -v
+# shellcheck shell=bash
+
+#–– Helper to test for a binary in $PATH
+have() { command -v "$1" >/dev/null 2>&1; }
+
+if command -v "sudo-rs" >/dev/null 2>&1; then
+  suexec="sudo-rs"
+  sudo-rs -v || true
+elif have "/usr/bin/sudo"; then
+  suexec="/usr/bin/sudo"
+  /usr/bin/sudo -v || true
+elif have "sudo"; then
+  suexec="sudo"
+  sudo -v || true
+else
+  suexec="doas"
+fi
 
 export LANG=C
 export LC_ALL=C
@@ -14,7 +29,7 @@ benchmark() {
   hyperfine \
     -w 5 \
     -i \
-    --prepare "sync; echo 3 | sudo-rs tee /proc/sys/vm/drop_caches" \
+    --prepare "sync; echo 3 | $suexec tee /proc/sys/vm/drop_caches" \
     "$cmd"
 }
 

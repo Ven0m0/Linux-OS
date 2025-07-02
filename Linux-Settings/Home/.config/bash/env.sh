@@ -1,0 +1,14 @@
+#!/bin/bash
+# shellcheck shell=bash
+
+# Rust
+export RUSTC_WRAPPER=sccache
+export RUST_LOG=off
+export CARGO_HTTP_MULTIPLEXING=true
+export CARGO_NET_GIT_FETCH_WITH_CLI=true
+export CARGO_HTTP_SSL_VERSION=tlsv1.3
+export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+# Git
+export GITOXIDE_CORE_MULTIPACKINDEX=true
+export GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3
+export GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2

@@ -7,8 +7,7 @@ export LANG=C LC_ALL=C
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-#export LANG=C.UTF-8
-#export LC_ALL=C.UTF-8
+export LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 # alias ls='ls --color=auto'
 # alias grep='grep --color=auto'

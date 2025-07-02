@@ -8,7 +8,6 @@ set -gx XDG_STATE_HOME "$HOME/.local/state"
 
 # Qt 6
 set -gx QT_QPA_PLATFORMTHEME qt6ct
-set -gx QT_AUTO_SCREEN_SCALE_FACTOR 0
 
 # Fzf
 set -gx FZF_LEGACY_KEYBINDINGS 0
@@ -18,5 +17,17 @@ set -gx _JAVA_AWT_WM_NONREPARENTING 1
 set -gx _JAVA_OPTIONS '-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true'
 
 # Firefox
-set -gx MOZ_USE_XINPUT2 1
-set -gx MOZ_ENABLE_WAYLAND 1
+set -x MOZ_USE_XINPUT2 1
+set -x MOZ_ENABLE_WAYLAND 1
+
+# Rust
+set -x RUSTC_WRAPPER sccache
+set -x RUST_LOG off
+set -x CARGO_HTTP_MULTIPLEXING true
+set -x CARGO_NET_GIT_FETCH_WITH_CLI true
+set -x CARGO_HTTP_SSL_VERSION tlsv1.3
+set -x CARGO_REGISTRIES_CRATES_IO_PROTOCOL sparse
+# Git
+set -x GITOXIDE_CORE_MULTIPACKINDEX true
+set -x GITOXIDE_HTTP_SSLVERSIONMAX tls1.3
+set -x GITOXIDE_HTTP_SSLVERSIONMIN tls1.2

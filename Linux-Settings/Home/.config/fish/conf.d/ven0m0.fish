@@ -17,19 +17,12 @@ set -gx BATPIPE "color"
 set -g __fish_git_prompt_show_informative_status 0
 set -g __fish_git_prompt_showupstream none
 
-#if not status is-interactive
-    #set -gx LANG C
-    #set -gx LC_ALL C
-#end
-
-set -gx LANG C
-set -gx LC_ALL C
+set -x LANG C; set -x LC_ALL C
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
     # Locale (Fast & Unicode-Compatible)
-    set -gx LANG C.UTF-8
-    set -gx LC_ALL C.UTF-8
+    set -x LANG C.UTF-8; set -x LC_ALL C.UTF-8
 
     # Fast prompt (truncate deep paths)
     set fish_prompt_pwd_dir_length 1

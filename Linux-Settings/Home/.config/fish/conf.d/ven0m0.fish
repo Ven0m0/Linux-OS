@@ -52,13 +52,13 @@ if status --is-interactive
     #end
 
     if type -q rg
-      functions -e rg # reset due to cachyos-fish-config
+      functions -e rg 2>/dev/null # reset due to cachyos-fish-config
       alias rg='rg --no-unicode --no-stats --color=auto -S --engine=auto -j 16 --block-buffered'
-      functions -e grep
+      functions -e grep 2>/dev/null
       alias grep='rg -F --no-unicode -uuu --no-stats --color=auto --engine=default -j 16 --block-buffered'
-      functions -e fgrep
+      functions -e fgrep 2>/dev/null
       alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8 -j 16'
-      functions -e egrep
+      functions -e egrep 2>/dev/null
       alias egrep='rg --no-stats --color=auto'
     else
       alias grep='grep --color=auto'

@@ -17,10 +17,13 @@ set -gx BATPIPE "color"
 set -g __fish_git_prompt_show_informative_status 0
 set -g __fish_git_prompt_showupstream none
 
-if not status is-interactive
-    set -gx LANG C
-    set -gx LC_ALL C
-end
+#if not status is-interactive
+    #set -gx LANG C
+    #set -gx LC_ALL C
+#end
+
+set -gx LANG C
+set -gx LC_ALL C
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
@@ -49,9 +52,13 @@ if status --is-interactive
     #end
 
     if type -q rg
-      alias rg='rg --no-stats --color=auto'
-      alias grep='rg -uuu --no-stats --color=auto'
-      alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8'
+      functions -e rg # reset due to cachyos-fish-config
+      alias rg='rg --no-unicode --no-stats --color=auto -S --engine=auto -j 16 --block-buffered'
+      functions -e grep
+      alias grep='rg -F --no-unicode -uuu --no-stats --color=auto --engine=default -j 16 --block-buffered'
+      functions -e fgrep
+      alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8 -j 16'
+      functions -e egrep
       alias egrep='rg --no-stats --color=auto'
     else
       alias grep='grep --color=auto'

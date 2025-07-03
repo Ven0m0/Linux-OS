@@ -22,6 +22,14 @@ cd "$HOME"
 # Tracing
 export RUST_BACKTRACE="full"
 
+# Allow experimental features
+export RUSTC_BOOTSTRAP=1
+
+if command -v sccache >/dev/null 2>&1; then
+  export RUSTC_WRAPPER=sccache
+fi
+
+
 # Set optimization flags and build
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \
 -Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C debuginfo=0"

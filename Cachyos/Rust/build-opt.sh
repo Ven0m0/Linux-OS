@@ -3,12 +3,13 @@
 set -euo pipefail
 IFS=$'\n\t'  
 
+# Setup
 export RUSTUP_TOOLCHAIN=nightly # for nightly flags
 export RUSTC_BOOTSTRAP=1 # Allow experimental features
 export RUST_BACKTRACE="full" # Tracing
-
-# Append additional unstable and metadata flags
-export RUSTFLAGS="$RUSTFLAGS -Z unstable-options -Z gc -Z git -Z gitoxide -Z no-embed-metadata -Z avoid-dev-deps -Z feature-unification -Z trim-paths"
+export ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z feature-unification"
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C relro-level=off -Z tune-cpu=native -Z fmt-debug=none \
+	-Z location-detail=none -Z default-visibility=hidden $ZFLAGS"
 
 # Parse options
 git_update=false
@@ -60,12 +61,17 @@ cargo-shear --fix
 cargo-machete --fix --with-metadata
 cargo-cache -g -f -e clean-unref
 
+export RUSTFLAGS="$RUSTFLAGS -C lto=on -C embed-bitcode=yes -Z dylib-lto
+"
 # Set optimization flags and build
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \
 -Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none"
+# Append additional unstable flags
+export RUSTFLAGS="$RUSTFLAGS -Z no-embed-metadata -Z trim-paths"
+# General flags
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
-  -Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security -mharden-sls=none \
-  -fstack-clash-protection -fcf-protection=none -fno-semantic-interposition -fdata-sections -ffunction-sections \
+	-Wp,-D_FORTIFY_SOURCE=3 -Wformat -Werror=format-security -mharden-sls=none \
+	-fstack-clash-protection -fcf-protection=none -fno-semantic-interposition -fdata-sections -ffunction-sections \
 	-mprefer-vector-width=256 -ftree-vectorize -fslp-vectorize \
 	-fomit-frame-pointer -fvisibility=hidden -fmerge-all-constants -finline-functions \
 	-fbasic-block-sections=all -fjump-tables \
@@ -73,13 +79,14 @@ export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
 	-fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols"
 export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers -fno-rtti -fno-exceptions -Wp,-D_GLIBCXX_ASSERTIONS"
 export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
-         -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations -Wl,--strip-unneeded \
-         -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all -Wl,--disable-deterministic-archives" 
+	-Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations -Wl,--strip-unneeded \
+	-Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all -Wl,--disable-deterministic-archives" 
 export STRIP="llvm-strip"
 
-# Nightly flags
+# Default build
 export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps -Z trim-paths"
-
-# -Z bindeps
 cargo +nightly build --release "$NIGHTLYFLAGS"
+
+
+export LastBuild="-C strip=symbols"
 

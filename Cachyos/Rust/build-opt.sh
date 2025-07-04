@@ -23,8 +23,9 @@ if [ "$git_update" = true ]; then
   git pull --rebase
 fi
 
-# Tracing
-export RUST_BACKTRACE="full"
+export RUSTUP_TOOLCHAIN=nightly # for nightly flags
+export RUSTC_BOOTSTRAP=1 # Allow experimental features
+export RUST_BACKTRACE="full" # Tracing
 
 # Git
 git reflog expire --expire=now --all &&
@@ -68,9 +69,17 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
 export STRIP="llvm-strip -s --disable-deterministic-archives"
 export STRIP="strip -s --disable-deterministic-archives"
 
+# -Z bindeps
+
 cargo +nightly build --release \
   -Z unstable-options \
   -Z gc \
   -Z feature-unification \
   -Z no-embed-metadata \
-  -Z avoid-dev-deps
+  -Z avoid-dev-deps \
+  -Z git \
+  -Z gitoxide \
+  -Z trim-paths \
+  -Z msrv-policy \
+  -Z trim-paths \
+  -Z cargo-lints"

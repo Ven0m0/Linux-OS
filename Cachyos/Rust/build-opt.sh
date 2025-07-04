@@ -79,6 +79,4 @@ cargo +nightly build --release \
   -Z avoid-dev-deps \
   -Z git \
   -Z gitoxide \
-  -Z trim-paths \
-  -Z msrv-policy \
-  -Z cargo-lints"
+  -Z trim-paths"

@@ -58,6 +58,14 @@ if status --is-interactive
         #alias su su-rs
     #end
 
+    # Creates parent directories on demand.
+    alias mkdir='mkdir -p'
+    alias edit='$EDITOR'
+
+    # Stops ping after sending 4 ECHO_REQUEST packets.
+    alias ping='ping -c 4'
+    
+
     if type -q rg
       functions -e rg 2>/dev/null # reset due to cachyos-fish-config
       alias rg='rg --no-unicode --no-stats --color=auto -S --engine=auto -j 16 --block-buffered'

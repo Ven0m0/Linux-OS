@@ -41,7 +41,7 @@ fi
 # Set optimization flags and build
 export ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z no-embed-metadata -Z trim-paths -Z feature-unification"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \
--Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C debuginfo=0 "
+-Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no"
 export RUSTFLAGS="${RUSTFLAGS} ${ZFLAGS}"
 
 # -Z build-std=std,panic_abort
@@ -60,9 +60,4 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
 -Wl,--lto-basic-block-sections=  -Wl,--lto-emit-llvm -Wl,--lto-unique-basic-block-section-names
 export STRIP="llvm-strip -s -U"
 
-cargo +nightly ${ZFLAGS} install "$1" ${locked_flag} \
-  -Z unstable-options \
-  -Z gc \
-  -Z feature-unification \
-  -Z no-embed-metadata \
-  -Z avoid-dev-deps
+cargo +nightly -Zgc install "$1" ${locked_flag} --bins --j"$(nproc)"

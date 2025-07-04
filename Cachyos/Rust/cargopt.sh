@@ -50,14 +50,14 @@ export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
 	-mprefer-vector-width=256 -ftree-vectorize -fslp-vectorize \
 	-fomit-frame-pointer -fvisibility=hidden -fmerge-all-constants -finline-functions \
 	-fbasic-block-sections=all -fjump-tables -fshort-enums -fshort-wchar \
-	-pthread -falign-functions=32 -falign-loops=32 -malign-branch-boundary=32 -malign-branch=jcc"
+	-pthread -falign-functions=32 -falign-loops=32 -malign-branch-boundary=32 -malign-branch=jcc -std=c++23"
 export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers -fno-rtti -fno-exceptions -Wp,-D_GLIBCXX_ASSERTIONS"
 LTOFLAGS="-Wl,--lto=full -Wl,--lto-whole-program-visibility -Wl,--lto-partitions=1 -Wl,--lto-CGO3 -Wl,--lto-O3 -Wl,--fat-lto-objects"
 export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
          -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations \
-         -Wl,--discard-locals -Wl,-s -Wl,--icf=all  -Wl,--optimize-bb-jumps \
+         -Wl,--discard-locals -Wl,-s -Wl,--icf=all -Wl,--optimize-bb-jumps \
 	  ${LTOFLAGS}"
--Wl,--lto-basic-block-sections=  -Wl,--lto-emit-llvm -Wl,--lto-unique-basic-block-section-names
-export STRIP="llvm-strip -s -U"
+# -Wl,--lto-basic-block-sections=  -Wl,--lto-emit-llvm -Wl,--lto-unique-basic-block-section-names
+export STRIP="llvm-strip"
 
 cargo +nightly -Zgc install "$1" ${locked_flag} --bins --j"$(nproc)"

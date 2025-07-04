@@ -81,5 +81,4 @@ cargo +nightly build --release \
   -Z gitoxide \
   -Z trim-paths \
   -Z msrv-policy \
-  -Z trim-paths \
   -Z cargo-lints"

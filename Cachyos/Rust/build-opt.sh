@@ -3,18 +3,19 @@
 set -euo pipefail
 IFS=$'\n\t'  
 
-CC="clang"
-CXX="clang++"
-CPP="clang-cpp"
-AR="llvm-ar"
-NM="llvm-nm"
-RANLIB="llvm-ranlib"
+export CC="clang"
+export CXX="clang++"
+export CPP="clang-cpp"
+export AR="llvm-ar"
+export NM="llvm-nm"
+export RANLIB="llvm-ranlib"
+export STRIP="llvm-strip"
 
 # Setup
 export RUSTUP_TOOLCHAIN=nightly # for nightly flags
 export RUSTC_BOOTSTRAP=1 # Allow experimental features
 export RUST_BACKTRACE="full" # Tracing
-export ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z feature-unification"
+ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z feature-unification"
 LTOFLAGS="-C lto=on -C embed-bitcode=yes -Z dylib-lto"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C relro-level=off \
 	-Z tune-cpu=native -Z fmt-debug=none -Z location-detail=none -Z default-visibility=hidden $LTOFLAGS $ZFLAGS"
@@ -87,7 +88,6 @@ export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers -fno-rtti
 export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
 	-Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations -Wl,--strip-unneeded \
 	-Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all -Wl,--disable-deterministic-archives" 
-export STRIP="llvm-strip"
 
 # Default build
 export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps -Z trim-paths"

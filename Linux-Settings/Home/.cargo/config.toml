@@ -1,3 +1,6 @@
+[build]
+rustc-wrapper = "sccache"
+
 [net]
 git-fetch-with-cli = true
 retry = 2
@@ -22,6 +25,7 @@ rustc-wrapper = "sccache"
 CARGO_HTTP_MULTIPLEXING = "true"
 CARGO_NET_GIT_FETCH_WITH_CLI = "true"
 CARGO_HTTP_SSL_VERSION = "tlsv1.3"
+RUSTC_WRAPPER = "sccache"
 
 [registries.crates-io]
 protocol = "sparse"

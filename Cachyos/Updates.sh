@@ -41,7 +41,7 @@ if have rustup; then
   rustup update || true
 fi
 
-# 7) Cargo‑based updaters
+# Cargo‑based updaters
 if have cargo-updater; then
   cargo updater -u || true
 elif have cargo-list; then
@@ -50,10 +50,9 @@ else
   cargo install-update -a -g -j 16 || true
 fi
 
-# 8) Oh My Fish (background)
-if have omf; then
-  omf update || true &
-fi
+if have micro; then
+  micro -plugin update || true
+end
 
 # 9) Fisher (inside fish)
 if have fish; then
@@ -62,7 +61,7 @@ fi
 # Reinstall fisher
 #curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 
-# 10) basher (if present)
+# basher (if present)
 if [ -d "$HOME/.basher" ]; then
     echo "🔄 Updating $HOME/.basher…"
     git -C "$HOME/.basher" pull || echo "⚠️ basher pull failed"

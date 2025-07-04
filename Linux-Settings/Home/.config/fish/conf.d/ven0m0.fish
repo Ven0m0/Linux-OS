@@ -22,7 +22,7 @@ set -x LANG C; set -x LC_ALL C
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
     # Locale (Fast & Unicode-Compatible)
-    set -x LANG C.UTF-8; set -x LC_ALL C.UTF-8
+    #set -x LANG C.UTF-8; set -x LC_ALL C.UTF-8
 
     # Fast prompt (truncate deep paths)
     set fish_prompt_pwd_dir_length 1

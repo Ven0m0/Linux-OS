@@ -3,6 +3,16 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+export LANG=C LC_ALL=C
+
+# Toolchains
+export CC="clang" CXX="clang++" CPP="clang-cpp"
+export AR="llvm-ar" NM="llvm-nm" RANLIB="llvm-ranlib"
+export STRIP="llvm-strip"
+export RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly RUST_BACKTRACE=full
+export CARGO_INCREMENTAL=0 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
+export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
 # usage check
 if [ $# -lt 1 ]; then
   echo "Usage: $0 <crate-name> [--locked]"
@@ -29,9 +39,11 @@ if command -v sccache >/dev/null 2>&1; then
 fi
 
 # Set optimization flags and build
-export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps -Z trim-paths"
+export ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z no-embed-metadata -Z trim-paths -Z feature-unification"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \
--Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C debuginfo=0 ${NIGHTLYFLAGS}"
+-Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C debuginfo=0 "
+export RUSTFLAGS="${RUSTFLAGS} ${ZFLAGS}"
+
 # -Z build-std=std,panic_abort
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
    	-mharden-sls=none -fcf-protection=none -fno-semantic-interposition -fdata-sections -ffunction-sections \
@@ -48,11 +60,7 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
 -Wl,--lto-basic-block-sections=  -Wl,--lto-emit-llvm -Wl,--lto-unique-basic-block-section-names
 export STRIP="llvm-strip -s -U"
 
-# Z flags
-export RUSTFLAGS=+"-Z unstable-options -Z gc -Z git -Z gitoxide -Z no-embed-metadata \
-	-Z avoid-dev-deps -Z feature-unification -Z trim-paths"
-
-cargo +nightly install "$1" ${locked_flag} \
+cargo +nightly ${ZFLAGS} install "$1" ${locked_flag} \
   -Z unstable-options \
   -Z gc \
   -Z feature-unification \

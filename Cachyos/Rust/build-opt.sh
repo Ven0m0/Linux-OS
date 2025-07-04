@@ -96,7 +96,7 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
 
 # Default build
 export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps -Z trim-paths"
-cargo +nightly build --release ${NIGHTLYFLAGS}
+cargo +nightly ${NIGHTLYFLAGS} build --release
 
 ### Rustflags for pgo:
 ### in /.cargp/config.toml
@@ -120,7 +120,7 @@ perf record -e cycles:u -j any,u --call-graph dwarf -o pgo.data -- ./target/.../
 cargo pgo build
 # Run binary to gather PGO profiles
 #hyperfine "/target/.../binary"
-cargo +nightly run --bin "/target/.../binary" -r ${NIGHTLYFLAGS}
+cargo +nightly ${NIGHTLYFLAGS} run --bin "/target/.../binary" -r
 ./target/.../<binary>
 # Build BOLT instrumented binary using PGO profiles
 cargo pgo bolt build --with-pgo

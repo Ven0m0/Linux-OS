@@ -1,7 +1,7 @@
 {
     "sudoloop": true,
     "cleanAfter": true,
-    "removemake": true,
+    "removemake": "true",
     "devel": true,
     "batchinstall": true,
     "editor": "false",
@@ -9,5 +9,5 @@
     "bottomup": false,
     "combinedupgrade": true,
     "git": "git clone --depth 1 --single-branch --shallow-submodules --filter='blob:none'",
-    "doublelineresults" : true,
+    "doublelineresults": true
 }

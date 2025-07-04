@@ -1,23 +1,28 @@
-## Run crabfetch/fastfetch as welcome message
-#function fish_greeting
-        #crabfetch -d arch || fastfetch
-#end
+# Run crabfetch/fastfetch as welcome message
+function fish_greeting
+        crabfetch -d arch || fastfetch
+end
 
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 set -gx VISUAL $EDITOR
+set -gx SYSTEMD_EDITOR $EDITOR
 # set -gx PAGER less
 set -x PAGER bat
 # set -gx LESS '-RFQXsn --no-histdups --mouse --wheel-lines=4'
 set -gx LESSOPEN "|/usr/bin/batpipe %s"
 set -gx LESSHISTFILE '-'
+set -gx SYSTEMD_LESS $LESS
 set -gx BATPIPE "color"
 
 # Avoid expensive VCS prompt delays
 set -g __fish_git_prompt_show_informative_status 0
 set -g __fish_git_prompt_showupstream none
 
-set -x LANG C; set -x LC_ALL C
+# Faster locale in for scripts
+if not status --is-interactive
+  set -x LANG C; set -x LC_ALL C
+end
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
@@ -59,15 +64,6 @@ if status --is-interactive
       alias egrep='egrep --color=auto'
     end
 
-   # Sudo edit
-   function suedit
-     if type -q sudo-rs
-       sudo-rs $EDITOR $argv[1]
-     else
-       sudo $EDITOR $argv[1]
-     end
-   end
-
    # Reset
    function cls
      clear
@@ -81,7 +77,7 @@ if status --is-interactive
     bind \e\e toggle_sudo
 
     function which
-      type $argv
+      type $argv[1]
     end
 end
 

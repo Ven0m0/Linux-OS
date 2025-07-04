@@ -5,10 +5,10 @@ function suedit --description 'Edit a file as root using $EDITOR'
     end
 
     if type -q sudo-rs    
-        sudo-rs $EDITOR $argv[1]
+        sudo-rs $EDITOR $argv
     else if type -q doas
-        doas $EDITOR $argv[1]
+        doas $EDITOR $argv
     else
-        sudo $EDITOR $argv[1]
+        sudo $EDITOR $argv
     end
 end

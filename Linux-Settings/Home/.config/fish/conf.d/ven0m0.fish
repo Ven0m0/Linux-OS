@@ -4,7 +4,6 @@ function fish_greeting
 end
 
 # ─── Paths─────────────────────────────────────────────────────────
-
 set -x XDG_CONFIG_HOME $HOME/.config
 set -x XDG_CACHE_HOME  $HOME/.cache
 set -x XDG_DATA_HOME   $HOME/.local/share
@@ -47,6 +46,9 @@ if status --is-interactive
     alias ptch='patch -p1 <'
     alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
     alias clearnsh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
+
+    # Enable aliases to be sudo’ed
+    alias sudo='sudo '
 
     # Better sudo (if available)
     #if type -q sudo-rs

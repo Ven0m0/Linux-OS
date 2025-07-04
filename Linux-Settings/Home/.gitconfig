@@ -14,6 +14,8 @@
 	sparseCheckout = true
 	sparseCheckoutCone = true
 	fsyncMethod = batch
+[interactive]
+	diffFilter = delta --color-only
 [color]
 	branch = "auto"
 	diff = "auto"

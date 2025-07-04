@@ -19,11 +19,10 @@ for arg in "$@"; do
 done
 
 cd "$HOME"
-# Tracing
-export RUST_BACKTRACE="full"
 
-# Allow experimental features
-export RUSTC_BOOTSTRAP=1
+export RUSTUP_TOOLCHAIN=nightly # for nightly flags
+export RUSTC_BOOTSTRAP=1 # Allow experimental features
+export RUST_BACKTRACE="full" # Tracing
 
 if command -v sccache >/dev/null 2>&1; then
   export RUSTC_WRAPPER=sccache

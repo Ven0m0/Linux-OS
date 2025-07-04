@@ -20,6 +20,10 @@ ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z featur
 LTOFLAGS="-C lto=on -C embed-bitcode=yes -Z dylib-lto"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C relro-level=off \
 	-Z tune-cpu=native -Z fmt-debug=none -Z location-detail=none -Z default-visibility=hidden ${LTOFLAGS} ${ZFLAGS}"
+# Research further
+CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS=fallback
+CARGO_BUILD_TARGET=x86_64-unknown-linux-gnu
+CARGO_INCREMENTAL=0
 
 # Parse options
 git_update=false

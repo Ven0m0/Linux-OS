@@ -1,6 +1,6 @@
 function toggle_sudo
     # your custom “sudo” alias prefix
-    set -l prefix '\sudo-rs '
+    set -l prefix 'sudo-rs '
 
     # grab current buffer and cursor
     set -l buf (commandline)

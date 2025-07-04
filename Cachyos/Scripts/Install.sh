@@ -231,6 +231,9 @@ cargo install fclones-gui
 # sudo systemctl enable prelockd
 # sudo systemctl enable uresourced
 
+# Fisher fix
+fisher install jorgebucaran/fisher
+
 echo "Installing updates"
 sudo pacman -Syyu --noconfirm || true
 sudo paru --cleanafter -Syu --combinedupgrade || true

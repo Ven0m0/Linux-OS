@@ -21,7 +21,7 @@
 # # separated by equals signs.
 # font-family = Iosevka
 # window-padding-x = 2
-#
+#s
 # # Spacing around the equals sign does not matter.
 # # All of these are identical:
 # key=value
@@ -47,6 +47,7 @@ window-theme = "dark"
 clipboard-read = "allow"
 clipboard-paste-protection = false
 shell-integration = fish
+resize-overlay = never
 
 keybind = alt+k=new_tab
 keybind = alt+z=reload_config

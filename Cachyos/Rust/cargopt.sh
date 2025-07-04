@@ -46,6 +46,10 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
          -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
 export STRIP="llvm-strip -s -U"
 
+# Z flags
+export RUSTFLAGS=+"-Z unstable-options -Z gc -Z git -Z gitoxide -Z no-embed-metadata -Z avoid-dev-deps \
+	-Z feature-unification-Z trim-paths -Z msrv-policy -Z cargo-lints"
+
 cargo +nightly install "$1" $locked_flag \
   -Z unstable-options \
   -Z gc \

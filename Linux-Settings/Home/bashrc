@@ -32,9 +32,6 @@ export LESSHISTFILE='-'
 # Faster Skim (fastest to slowest skim command)
 export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=never . || find . -type f'
 
-# Enable aliases to be sudo’ed
-alias sudo='\sudo '
-
 ## Useful aliases
 alias ssh='dbclient'
 alias ptch='patch -p1 <'
@@ -59,9 +56,8 @@ alias mkdir='mkdir -p'
 
 alias edit='$EDITOR'
 
-# Better sudo
-#alias sudo='\sudo '
-alias sudo='\sudo ';
+# Enable aliases to be sudo’ed
+alias sudo='\sudo '
 
 #if command -v sudo-rs >/dev/null 2>&1; then
   #alias sudo='\sudo-rs '
@@ -86,10 +82,10 @@ alias cls='clear'
 alias c='clear'
 
 # FD https://github.com/sharkdp/fd
-export FZF_DEFAULT_COMMAND='fd --type file'
+export FZF_DEFAULT_COMMAND='fd -tf -F'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
-# LS color caching
+# LS color
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43'
 
 # options

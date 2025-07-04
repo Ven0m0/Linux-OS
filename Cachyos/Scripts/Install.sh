@@ -235,6 +235,7 @@ micro -plugin install cheat editorconfig fzf filemanager autofmt quoter misspell
 
 # Fisher fix
 fisher install jorgebucaran/fisher
+fisher install acomagu/fish-async-prompt
 
 echo "Installing updates"
 sudo pacman -Syyu --noconfirm || true

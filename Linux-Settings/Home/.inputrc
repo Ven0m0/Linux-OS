@@ -1,25 +1,23 @@
 # /etc/inputrc - global inputrc for libreadline
 # See readline(3readline) and 'info rluserman' for more information.
 
-# Be 8 bit clean.
+# Allow UTF-8 input and output
 set input-meta on
 set output-meta on
+# set convert-meta off # apparently makes meta key act weird
 
-# To allow the use of 8bit-characters like the german umlauts, uncomment
-# the line below. However this makes the meta key not work as a meta key,
-# which is annoying to those which don't need to type in 8-bit characters.
+# Be more intelligent when autocompleting
+set skip-completed-text on
 
-# set convert-meta off
+# Immediately add a trailing slash when autocompleting symlinks to directories
+set mark-symlinked-directories on
+
+# List all matches in case multiple possible completions are possible
+set show-all-if-ambiguous on
 
 # try to enable the application keypad when it is called.  Some systems
 # need this to enable the arrow keys.
 # set enable-keypad on
-
-# see /usr/share/doc/bash/inputrc.arrows for other codes of arrow keys
-
-# do not bell on tab-completion
-# set bell-style none
-# set bell-style visible
 
 # Very useful for the tab completion
 set completion-ignore-case On
@@ -70,15 +68,3 @@ $endif
 "\e[5D": backward-word
 "\e\e[C": forward-word
 "\e\e[D": backward-word
-
-$if term=rxvt
-"\e[8~": end-of-line
-"\eOc": forward-word
-"\eOd": backward-word
-$endif
-
-# for non RH/Debian xterm, can't hurt for RH/Debian xterm
-# "\eOH": beginning-of-line
-# "\eOF": end-of-line
-
-$endif

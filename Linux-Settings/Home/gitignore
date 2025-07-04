@@ -27,6 +27,7 @@ temp/
 .cache/
 node_modules/
 .pytest_cache/
+*.pyc
 
 # Result of compilation does not need to go to repository.
 /pkg/
@@ -42,14 +43,21 @@ node_modules/
 .rls.toml
 rls/**
 
+# Ignore lockfiles of test crates used in the integration tests
+tests/**/Cargo.lock
+
 # ignore fuzzing corpus
 fuzz/artifacts/**
 fuzz/corpus/**
 *~
 
+# KDE directory preferences
+.directory
+
+# VSCode Workspace files
+**.code-workspace
+
 # Remove Cargo.lock from gitignore if creating an executable, leave it for libraries.
 # More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
 # Cargo.lock
 
-# KDE directory preferences
-.directory

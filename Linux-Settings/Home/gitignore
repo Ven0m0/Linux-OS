@@ -28,6 +28,7 @@ temp/
 node_modules/
 .pytest_cache/
 *.pyc
+*.pyo
 
 # Result of compilation does not need to go to repository.
 /pkg/
@@ -61,3 +62,6 @@ fuzz/corpus/**
 # More information here https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
 # Cargo.lock
 
+# Other
+.git/
+*.orig

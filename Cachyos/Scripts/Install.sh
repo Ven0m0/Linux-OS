@@ -231,7 +231,7 @@ cargo install fclones-gui
 # sudo systemctl enable prelockd
 # sudo systemctl enable uresourced
 
-micro -plugin install cheat editorconfig fzf filemanager autofmt quoter
+micro -plugin install cheat editorconfig fzf filemanager autofmt quoter misspell
 
 # Fisher fix
 fisher install jorgebucaran/fisher

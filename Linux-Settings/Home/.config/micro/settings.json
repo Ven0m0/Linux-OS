@@ -1,1 +1,24 @@
-
+{
+    "colorscheme": "catppuccin-macchiato",
+    "autoindent": true,
+    "autosu": true,
+    "backup": true,
+    "detectlimit": 75,
+    "encoding": "utf-8",
+    "eofnewline": true,
+    "fastdirty": false,
+    "fileformat": "unix",
+    "filetype": "unknown",
+    "keymenu": true,
+    "mkparents": false,
+    "mouse": true,
+    "rmtrailingws": true,
+    "savecursor": false,
+    "savehistory": false,
+    "saveundo": true,
+    "scrollspeed": 4,
+    "smartpaste": true,
+    "statusline": true,
+    "sucmd": "sudo",
+    "syntax": true
+}

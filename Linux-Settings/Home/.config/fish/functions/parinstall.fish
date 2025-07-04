@@ -1,3 +1,3 @@
-function parinstall
-  paru -S "$argv[1]" --cleanafter --removemake --skipreview --mflags siCcr --sudo "/usr/bin/sudo"
+function parinstall --description 'install aur package with paru non-interactively'
+  paru -S "$argv[1]" --cleanafter --removemake --skipreview --sudo "/usr/bin/sudo"
 end

@@ -50,3 +50,6 @@ lto = true
 panic = 'abort'
 codegen-units = 1
 strip = "symbols"
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-cpu=native"]

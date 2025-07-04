@@ -3,6 +3,13 @@
 set -euo pipefail
 IFS=$'\n\t'  
 
+export RUSTUP_TOOLCHAIN=nightly # for nightly flags
+export RUSTC_BOOTSTRAP=1 # Allow experimental features
+export RUST_BACKTRACE="full" # Tracing
+
+# Append additional unstable and metadata flags
+export RUSTFLAGS="$RUSTFLAGS -Z unstable-options -Z gc -Z git -Z gitoxide -Z no-embed-metadata -Z avoid-dev-deps -Z feature-unification -Z trim-paths"
+
 # Parse options
 git_update=false
 opts=$(getopt -o g --long git -n 'cbuild.sh' -- "$@")
@@ -18,14 +25,16 @@ while true; do
   esac
 done
 
+# Ensure cargo-pgo is installed
+if ! command -v cargo-pgo >/dev/null; then
+  echo "cargo-pgo not found, installing..."
+  cargo install cargo-pgo
+fi
+
 # Optionally update repo
 if [ "$git_update" = true ]; then
   git pull --rebase
 fi
-
-export RUSTUP_TOOLCHAIN=nightly # for nightly flags
-export RUSTC_BOOTSTRAP=1 # Allow experimental features
-export RUST_BACKTRACE="full" # Tracing
 
 # Git
 git reflog expire --expire=now --all &&
@@ -64,19 +73,13 @@ export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
 	-fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols"
 export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers -fno-rtti -fno-exceptions -Wp,-D_GLIBCXX_ASSERTIONS"
 export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
-         -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations \
-         -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
-export STRIP="llvm-strip -s --disable-deterministic-archives"
-export STRIP="strip -s --disable-deterministic-archives"
+         -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations -Wl,--strip-unneeded \
+         -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all -Wl,--disable-deterministic-archives" 
+export STRIP="llvm-strip"
+
+# Nightly flags
+export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps -Z trim-paths"
 
 # -Z bindeps
+cargo +nightly build --release "$NIGHTLYFLAGS"
 
-cargo +nightly build --release \
-  -Z unstable-options \
-  -Z gc \
-  -Z feature-unification \
-  -Z no-embed-metadata \
-  -Z avoid-dev-deps \
-  -Z git \
-  -Z gitoxide \
-  -Z trim-paths"

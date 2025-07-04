@@ -32,6 +32,9 @@ export LESSHISTFILE='-'
 # Faster Skim (fastest to slowest skim command)
 export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=never . || find . -type f'
 
+# Enable aliases to be sudo’ed
+alias sudo='\sudo '
+
 ## Useful aliases
 alias ssh='dbclient'
 alias ptch='patch -p1 <'

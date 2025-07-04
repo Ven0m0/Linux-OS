@@ -116,3 +116,5 @@
 	thread = 16
 [maintenance]
 	strategy = incremental
+[include]
+	path = ~/.gitconfig.local

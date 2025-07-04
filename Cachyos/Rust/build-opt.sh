@@ -88,11 +88,11 @@ export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
 	-fomit-frame-pointer -fvisibility=hidden -fmerge-all-constants -finline-functions \
 	-fbasic-block-sections=all -fjump-tables \
 	-pthread -falign-functions=32 -falign-loops=32 -malign-branch-boundary=32 -malign-branch=jcc \
-	-fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols"
+	-fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols -std=c++23"
 export CXXFLAGS="${CFLAGS} -std=c++23 -fsized-deallocation -fstrict-vtable-pointers -fno-rtti -fno-exceptions -Wp,-D_GLIBCXX_ASSERTIONS"
 export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
 	-Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations -Wl,--strip-unneeded \
-	-Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all -Wl,--disable-deterministic-archives" 
+	-Wl,--discard-locals -Wl,--s -Wl,--icf=all-Wl,-U -Wl,--optimize-bb-jumps" 
 
 # Default build
 export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z feature-unification -Z no-embed-metadata -Z avoid-dev-deps -Z trim-paths"

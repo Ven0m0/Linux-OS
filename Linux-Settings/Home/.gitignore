@@ -1,3 +1,6 @@
+# git credential file
+.gitconfig.local
+
 # macOS
 ._*
 .DS_Store

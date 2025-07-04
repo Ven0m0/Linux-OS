@@ -1,5 +1,4 @@
-# Optimize the current Git repository
-function git-opt
+function git-opt --description 'Optimize the current Git repository'
     echo "🧹 Expiring reflogs..."
     git reflog expire --expire=now --all
     and echo "🧼 Running aggressive GC..."

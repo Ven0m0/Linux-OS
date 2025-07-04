@@ -4,6 +4,7 @@ VISUAL=micro
 GIT_EDITOR=micro
 
 # Optimized locale
+LANGUAGE=en_US
 LANG=C.UTF-8
 LC_ADDRESS=C
 LC_MEASUREMENT=C

@@ -53,6 +53,10 @@ if status --is-interactive
 
     # Enable aliases to be sudo’ed
     alias sudo='sudo '
+    alias su='su '
+    alias doas='doas '
+    alias sudo-rs='sudo-rs '
+    alias su='su-rs '
 
     # Better sudo (if available)
     #if type -q sudo-rs
@@ -69,7 +73,6 @@ if status --is-interactive
     # Stops ping after sending 4 ECHO_REQUEST packets.
     alias ping='ping -c 4'
     
-
     if type -q rg
       functions -e rg 2>/dev/null # reset due to cachyos-fish-config
       alias rg='rg --no-unicode --no-stats --color=auto -S --engine=auto -j 16 --block-buffered'
@@ -87,14 +90,9 @@ if status --is-interactive
 
     alias cat='bat --pager never'
 
+    # Reset
     alias cls="clear; fish_greeting"
     abbr --add c cls
-    
-    # Reset
-    function cls
-      clear
-      fish_greeting
-    end
 
    # bind Esc Esc to toggle_sudo
    source ~/.config/fish/functions/presudo.fish

@@ -85,6 +85,10 @@ if status --is-interactive
       alias egrep='egrep --color=auto'
     end
 
+    alias cat='bat --pager never'
+
+
+
    # Reset
    function cls
      clear
@@ -92,14 +96,17 @@ if status --is-interactive
    end
 
    abbr --add c cls
+   
+   
 
-    # bind Esc Esc to toggle_sudo
-    source ~/.config/fish/functions/presudo.fish
-    bind \e\e toggle_sudo
 
-    function which
-      type $argv[1]
-    end
+   # bind Esc Esc to toggle_sudo
+   source ~/.config/fish/functions/presudo.fish
+   bind \e\e toggle_sudo
+
+   function which
+     type $argv[1]
+   end
 end
 
 # ─── Path Deduplication ─────────────────────────────────────────────────────────

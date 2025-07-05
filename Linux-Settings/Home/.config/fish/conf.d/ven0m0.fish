@@ -23,6 +23,8 @@ set -gx LESSHISTFILE '-'
 set -gx SYSTEMD_LESS $LESS
 set -gx BATPIPE "color"
 
+set -gx DOTNET_CLI_TELEMETRY_OPTOUT 1
+
 # Avoid expensive VCS prompt delays
 set -g __fish_git_prompt_show_informative_status 0
 set -g __fish_git_prompt_showupstream none

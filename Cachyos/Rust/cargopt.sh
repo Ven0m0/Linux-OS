@@ -43,7 +43,8 @@ export ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \
 -Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no"
 export RUSTFLAGS="${RUSTFLAGS} ${ZFLAGS}"
-
+# Parallel codegen frontend (no perf loss)
+export RUSTFLAGS="${RUSTFLAGS} -Z threads=16"
 # -Z build-std=std,panic_abort
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
    	-mharden-sls=none -fcf-protection=none -fno-semantic-interposition -fdata-sections -ffunction-sections \

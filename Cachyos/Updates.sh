@@ -45,9 +45,9 @@ fi
 if have cargo-updater; then
   cargo updater -u || true
 elif have cargo-list; then
-  cargo list -u -a -I || true
+  cargo list -uaI || true
 else
-  cargo install-update -a -g -j 16 || true
+  cargo install-update -agj 16 || true
 fi
 
 if have micro; then

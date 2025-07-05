@@ -12,10 +12,12 @@ set -x XDG_STATE_HOME  $HOME/.local/state
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 set -gx VISUAL $EDITOR
+set -gx VIEWER $EDITOR
+set -gx GIT_EDITOR $EDITOR
 set -gx SYSTEMD_EDITOR $EDITOR
-# set -gx PAGER less
 set -x PAGER bat
-# set -gx LESS '-RFQXsn --no-histdups --mouse --wheel-lines=4'
+# -X -F disable mouse support
+set -gx LESS '-RQsn --no-histdups --mouse --wheel-lines=4'
 set -gx LESSOPEN "|/usr/bin/batpipe %s"
 set -gx LESSHISTFILE '-'
 set -gx SYSTEMD_LESS $LESS

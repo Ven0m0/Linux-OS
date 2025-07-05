@@ -87,18 +87,14 @@ if status --is-interactive
 
     alias cat='bat --pager never'
 
-
-
-   # Reset
-   function cls
-     clear
-     fish_greeting
-   end
-
-   abbr --add c cls
-   
-   
-
+    alias cls="clear; fish_greeting"
+    abbr --add c cls
+    
+    # Reset
+    function cls
+      clear
+      fish_greeting
+    end
 
    # bind Esc Esc to toggle_sudo
    source ~/.config/fish/functions/presudo.fish

@@ -3,30 +3,22 @@
 set -euo pipefail
 IFS=$'\n\t'  
 
-# Toolchains
-export CC="clang"
-export CXX="clang++"
-export CPP="clang-cpp"
-export AR="llvm-ar"
-export NM="llvm-nm"
-export RANLIB="llvm-ranlib"
-export STRIP="llvm-strip"
+export LANG=C LC_ALL=C
 
-# Setup
-export RUSTUP_TOOLCHAIN=nightly # for nightly flags
-export RUSTC_BOOTSTRAP=1 # Allow experimental features
-export RUST_BACKTRACE="full" # Tracing
+# Toolchains
+export CC="clang" CXX="clang++" CPP="clang-cpp"
+export AR="llvm-ar" NM="llvm-nm" RANLIB="llvm-ranlib"
+export STRIP="llvm-strip"
+export RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly RUST_BACKTRACE=full
+export CARGO_INCREMENTAL=0 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
+export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
 ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z feature-unification"
 LTOFLAGS="-C lto=on -C embed-bitcode=yes -Z dylib-lto"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C relro-level=off \
 	-Z tune-cpu=native -Z fmt-debug=none -Z location-detail=none -Z default-visibility=hidden ${LTOFLAGS} ${ZFLAGS}"
 # Parallel codegen frontend (no perf loss)
 export RUSTFLAGS="${RUSTFLAGS} -Z threads=16"
-# Research further
-CARGO_RESOLVER_INCOMPATIBLE_RUST_VERSIONS=fallback
-CARGO_BUILD_TARGET=x86_64-unknown-linux-gnu
-CARGO_INCREMENTAL=0
-
 # Parse options
 git_update=false
 opts=$(getopt -o g --long git -n 'cbuild.sh' -- "$@")

@@ -72,7 +72,7 @@ cargo-cache -g -f -e clean-unref
 # General flags
 # Default build
 export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide"
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C relro-level=off -C debuginfo=0 -C strip=symbols -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no \
+export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C relro-level=off -C debuginfo=0 -C strip=symbols -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no \
 -Z tune-cpu=native -Z default-visibility=hidden  -Z location-detail=none -Z function-sections"
 # -C embed-bitcode=yes -Z dylib-lto
 

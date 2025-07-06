@@ -15,7 +15,7 @@
 	sparseCheckoutCone = true
 	fsyncMethod = batch
 [interactive]
-	diffFilter = delta --color-only
+	diffFilter = delta --color-only --features=interactive
 [color]
 	branch = "auto"
 	diff = "auto"
@@ -101,6 +101,7 @@
 	whitespace = "nowarn"
 [delta]
 	hyperlinks = true
+	features = decorations
 [protocol]
 	version = 2
 [feature]
@@ -120,3 +121,8 @@
 	strategy = incremental
 [include]
 	path = ~/.gitconfig.local
+[pager]
+	log = delta
+	reflog = delta
+	show = delta
+	diff = delta

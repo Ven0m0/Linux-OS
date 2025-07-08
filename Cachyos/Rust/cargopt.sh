@@ -6,8 +6,8 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C
 shopt -s nullglob globstar
 
-# Clean up cargo cache on exit
-trap 'cargo-cache -efg' EXIT
+# Clean up cargo cache on error
+trap 'cargo-cache -efg' ERR
 
 # —————————————————————————————————————————————————————
 # Defaults & help
@@ -17,11 +17,12 @@ CRATE=""
 
 usage() {
   cat <<EOF >&2
-Usage: $0 [-mold] [--locked] <crate>
+Usage: $0 [-mold] [--locked] <crate> [-h|--help]
 
   -mold       use mold as the linker
   --locked    pass --locked to cargo install
   <crate>     name of the crate to install
+  -h,--help   display help
 EOF
   exit 1
 }

@@ -6,10 +6,16 @@ sudo -v
 sudo sync
 
 # Pacman cleanup
-sudo pacman -Rns $(pacman -Qdtq) --noconfirm || true
-sudo pacman -Scc --noconfirm || true
-sudo paccache -rk0 -q || true
-uv cache clean || true
+sudo pacman -Rns $(pacman -Qdtq) --noconfirm || :
+sudo pacman -Scc --noconfirm || :
+sudo paccache -rk0 -q || :
+uv cache clean || :
+# Cargo
+if command -v cargo-cache &>/dev/null; then
+    cargo cache -efg || :
+    cargo-cache -efg trim --limit 1B || :
+    cargo cache -efg clean-unref || :
+fi
 
 # Clear cache
 sudo systemd-tmpfiles --clean 
@@ -21,8 +27,8 @@ sudo rm -rf /var/lib/systemd/coredump/
 rm -rf ~/.cache/*
 sudo rm -rf /root/.cache/*
 rm -rf ~/.var/app/*/cache/*
-# rm ~/.config/Trolltech.conf || true
-kbuildsycoca6 --noincremental || true
+# rm ~/.config/Trolltech.conf || :
+kbuildsycoca6 --noincremental || :
 
 # Empty global trash
 rm -rf ~/.local/share/Trash/*
@@ -44,11 +50,11 @@ rm -rf ~/.thumbnails/*
 rm -rf ~/.cache/thumbnails/*
 
 # Clear system logs
-sudo rm -f /var/log/pacman.log || true
-sudo journalctl --rotate -q || true
-sudo journalctl --vacuum-time=1s -q || true
-#sudo rm -rf /run/log/journal/* /var/log/journal/* || true
-#sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || true
+sudo rm -f /var/log/pacman.log || :
+sudo journalctl --rotate -q || :
+sudo journalctl --vacuum-time=1s -q || :
+#sudo rm -rf /run/log/journal/* /var/log/journal/* || :
+#sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || :
 
 # Shell history
 rm -f ~/.local/share/fish/fish_history ~/.config/fish/fish_history ~/.zsh_history ~/.bash_history ~/.history
@@ -96,16 +102,12 @@ rm -f ~/snap/*/*/.local/share/*.desktop
 rm -rf ~/.var/app/*/data/*.desktop
 
 # TLDR cache
-tldr -c && sudo tldr -c || true
+tldr -c && sudo tldr -c || :
 
 # Trim disks
 sudo fstrim -a --quiet-unsupported
 
-# Cargo
-if command -v cargo-cache &>/dev/null; then
-    cargo cache -efg || true
-    cargo cache -efg clean-unref || true
-fi
+
 
 # BleachBit if available
 #if command -v bleachbit &>/dev/null; then

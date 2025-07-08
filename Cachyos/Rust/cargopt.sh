@@ -48,18 +48,11 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [ -z "$CRATE" ]; then
-  echo "Error: <crate> is required" >&2
-  usage
-fi
 [ -n "$CRATE" ] || {
   echo "Error: <crate> is required" >&2
   usage
 }
-[ -n "$CRATE" ] || {
-  echo "Error: <crate> is required" >&2
-  usage
-}
+
 # —————————————————————————————————————————————————————
 # Prepare environment
 jobs="$(nproc)"

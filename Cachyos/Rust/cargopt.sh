@@ -92,9 +92,9 @@ fi
 
 # —————————————————————————————————————————————————————
 # Core optimization flags
-CFLAGS=(-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -Wno-error) && export CFLAGS
-CXXFLAGS=("${CFLAGS[@]}") && export CXXFLAGS
-LDFLAGS=(-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-gc-sections -Wl,-s -Wl,--icf=all "${CLDFLAGS[@]}") && export CXXFLAGS
+CFLAGS=(-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -Wno-error)
+CXXFLAGS=("${CFLAGS[@]}")
+LDFLAGS=(-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-gc-sections -Wl,-s -Wl,--icf=all "${CLDFLAGS[@]}")
 RUSTFLAGS_BASE=(
   -C opt-level=3
   -C target-cpu=native
@@ -117,6 +117,7 @@ EXTRA=(
   -C link-arg=-Wl,--icf=all
   -C link-arg=-Wl,--gc-sections
 )
+
 # Combine all rustflags into one exported variable
 export RUSTFLAGS="${RUSTFLAGS_BASE[*]} ${LFLAGS[*]} ${ZFLAGS[*]} ${EXTRA[*]}"
 export CFLAGS="${CFLAGS[*]}"

@@ -19,7 +19,7 @@ usage() {
   cat <<EOF >&2
 Usage: $0 [-mold] [--locked] <crate>
 
-  -mold       use mold as the linker (clang -fuse-ld=mold)
+  -mold       use mold as the linker
   --locked    pass --locked to cargo install
   <crate>     name of the crate to install
 EOF
@@ -76,7 +76,7 @@ export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
 # ensure RUSTFLAGS is set
 : "${RUSTFLAGS:=}"
-
+if ((USE_MOLD)); then
 if (( USE_MOLD )); then
   if command -v mold >/dev/null 2>&1; then
     echo "→ using ld.mold via clang"

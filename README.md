@@ -40,7 +40,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 
 ### Misc
 
-```
+```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Rust/Strip-rust.sh | bash
 
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Debloat.sh | bash
@@ -83,7 +83,7 @@ sleepy() {
 [CachyOS](https://cachyos.org/)
 
 
-### Gaming:
+### Gaming/other:
 
 [Nobara](https://nobaraproject.org/)
 

@@ -109,9 +109,7 @@ rm -rf ~/.var/app/*/data/*.desktop
 tldr -c && sudo tldr -c || :
 
 # Trim disks
-sudo fstrim -a --quiet-unsupported
-
-
+sudo fstrim -a --quiet-unsupported || :
 
 # BleachBit if available
 #if command -v bleachbit &>/dev/null; then
@@ -119,7 +117,7 @@ sudo fstrim -a --quiet-unsupported
 #else
 #    echo "bleachbit is not installed, skipping."
 #fi
-bleachbit -c --preset && sudo -E bleachbit -c --preset
+bleachbit -c --preset && sudo -E bleachbit -c --preset || :
 
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
+sync; echo 3 | sudo tee /proc/sys/vm/drop_caches || :
 echo "System cleaned!"

@@ -1,11 +1,9 @@
 #!/bin/bash
 # shellcheck shell=bash
 set -euo pipefail
-set -uo pipefail
-
 IFS=$'\n\t'
-
-export LC_ALL=C. LANG=C.UTF-8
+export LC_ALL=C LANG=C.UTF-8
+shopt -s nullglob globstar
 
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" >/dev/null 2>&1; }

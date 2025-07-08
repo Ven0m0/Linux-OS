@@ -54,6 +54,15 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 set -euo pipefail
 IFS=$'\n\t'
 
+# Safer globbing
+shopt -s nullglob globstar
+
+# C for speed
+export LC_ALL=C LANG=C
+
+# C+UTF8 if emojis needed
+export LC_ALL=C LANG=C.UTF-8
+
 # Script Path Awareness
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -61,7 +70,9 @@ cd "$HOME"
 
 # Sleep replacement
 # Sleeps for 0.1 seconds (instead of doing "timeout 0.1", doesnt spawn subshells --> therefore faster)
-read -rt 0.1
+sleepy() {
+  read -rt 1 <> <(:) || :
+}
 
 ```
 

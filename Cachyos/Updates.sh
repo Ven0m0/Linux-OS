@@ -8,13 +8,13 @@ have() { command -v "$1" >/dev/null 2>&1; }
 # 1) Detect and cache privilege executor
 if have sudo-rs; then
   suexec="sudo-rs"
-  sudo-rs -v || true
+  sudo-rs -v || :
 elif have "/usr/bin/sudo"; then
   suexec="/usr/bin/sudo"
-  /usr/bin/sudo -v || true
+  /usr/bin/sudo -v || :
 elif have "sudo"; then
   suexec="sudo"
-  sudo -v || true
+  sudo -v || :
 elif have doas; then
   suexec="doas"
 fi
@@ -27,7 +27,7 @@ paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter 
 # 4) topgrade (ignore failures)
 if have topgrade; then
   topgrade -c --disable=config_update --skip-notify -y \
-           --no-retry --disable=uv --disable=pipx --disable=shell || true
+           --no-retry --disable=uv --disable=pipx --disable=shell || :
 fi
 # pipx upgrade-all
 
@@ -38,25 +38,25 @@ fi
 
 # 6) Rust toolchain
 if have rustup; then
-  rustup update || true
+  rustup update || :
 fi
 
 # Cargo‑based updaters
 if have cargo-updater; then
-  cargo updater -u || true
+  cargo updater -u || :
 elif have cargo-list; then
-  cargo list -uaI || true
+  cargo list -uaI || :
 else
-  cargo install-update -agj 16 || true
+  cargo install-update -agj 16 || :
 fi
 
 if have micro; then
-  micro -plugin update || true
+  micro -plugin update || :
 end
 
 # 9) Fisher (inside fish)
 if have fish; then
-  fish -c 'fisher update' || true
+  fish -c 'fisher update' || :
 fi
 # Reinstall fisher
 #curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
@@ -94,7 +94,7 @@ have update-smart-drivedb && $suexec update-smart-drivedb >/dev/null 2>&1
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && have bootctl && bootctl is-installed >/dev/null 2>&1; then
     echo "✅ systemd‑boot detected, updating…"
-    $suexec bootctl update >/dev/null 2>&1 || true
+    $suexec bootctl update >/dev/null 2>&1 || :
     $suexec bootctl cleanup >/dev/null 2>&1
 else
     echo "❌ systemd‑boot not present, skipping."

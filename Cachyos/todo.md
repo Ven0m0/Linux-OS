@@ -3,8 +3,6 @@ https://crates.io/crates/quicssh-rs
 
 https://github.com/vasi/pixz
 
-https://crates.io/crates/servicer
-
 https://crates.io/crates/protonup-rs
 
 https://crates.io/crates/bcmr
@@ -17,8 +15,6 @@ https://crates.io/crates/ised
 
 https://crates.io/crates/rsftch
 
-https://crates.io/crates/LinuxAppUninstaller
-
 https://crates.io/crates/fd-find
 
 https://crates.io/crates/ohcrab
@@ -27,11 +23,12 @@ https://crates.io/crates/brush-shell
 
 https://crates.io/crates/boltshell
 
+https://gitlab.redox-os.org/redox-os/ion/
+
 https://wiki.archlinux.org/title/List_of_applications/Documents#Console
 
 https://wiki.archlinux.org/title/List_of_applications/Internet#Firefox_spin-offs
 
-https://gitlab.redox-os.org/redox-os/ion/
 
 https://www.commandlinefu.com/commands/browse
 

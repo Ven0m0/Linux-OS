@@ -101,12 +101,12 @@ ZFLAGS="-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=ali
 EXTRA="-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections"
 export RUSTFLAGS="${RUSTFLAGS} ${LFLAGS} ${ZFLAGS} ${EXTRA}"
 
-# Additional flags for cargo install
-INSTALL_FLAGS="-Z unstable-options -Z git -Z gitoxide -Z no-embed-metadata"
+# Additional flags for cargo install, has to be an array -> string fails
+INSTALL_FLAGS=(-Z unstable-options -Z git -Z gitoxide -Z no-embed-metadata)
 
 # —————————————————————————————————————————————————————
 # Finally, install the crate
 echo "Installing '$CRATE' with optimized flags…"
-cargo +nightly "${INSTALL_FLAGS}" install "$CRATE" ${LOCKED_FLAG} --jobs ${jobs} &&
+cargo +nightly "${INSTALL_FLAGS[@]}" install "$CRATE" ${LOCKED_FLAG} --jobs ${jobs} &&
   LANG=C.UTF-8 echo "🎉 $CRATE successfully installed in '$HOME/.cargo/bin'"
 exit 0

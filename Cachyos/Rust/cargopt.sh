@@ -106,6 +106,6 @@ INSTALL_FLAGS="-Z unstable-options -Z git -Z gitoxide -Z no-embed-metadata"
 # —————————————————————————————————————————————————————
 # Finally, install the crate
 echo "Installing '$CRATE' with optimized flags…"
-cargo +nightly "${INSTALL_FLAGS}" install "$CRATE" ${LOCKED_FLAG} --jobs "${jobs}" &&
+cargo +nightly "${INSTALL_FLAGS}" install "$CRATE" ${LOCKED_FLAG} --jobs ${jobs} &&
   LANG=C.UTF-8 echo "🎉 $CRATE successfully installed in '$HOME/.cargo/bin'"
 exit 0

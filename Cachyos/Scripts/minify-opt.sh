@@ -14,7 +14,6 @@ TARGET_DIR="$1"
 [ -d "$TARGET_DIR" ] || { echo "Error: '$TARGET_DIR' is not a directory"; exit 1; }
 
 # ─── SETUP ──────────────────────────────────────────────────────────────────────
-export LC_ALL=C LANG=C
 BACKUP_DIR="$HOME/image_backups_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$BACKUP_DIR"
 LOGFILE="$HOME/image_compression_log.txt"

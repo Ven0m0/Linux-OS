@@ -1,6 +1,11 @@
 #!/bin/bash
-set -euo pipefail
 # shellcheck shell=bash
+set -euo pipefail
+set -uo pipefail
+
+IFS=$'\n\t'
+
+export LC_ALL=C. LANG=C.UTF-8
 
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -21,9 +26,9 @@ fi
 
 echo "🔄 Updating system..."
 # 2) System update
-$suexec pacman -Syu --noconfirm
+$suexec pacman -Syu --noconfirm || :
 # 3) AUR update
-paru -Syu --noconfirm --combinedupgrade --nouseask -q --removemake --cleanafter --skipreview --nokeepsrc
+paru -Syu --noconfirm --combinedupgrade --nouseask --removemake --cleanafter --skipreview --nokeepsrc --sudo "/usr/bin/sudo" || :
 # 4) topgrade (ignore failures)
 if have topgrade; then
   topgrade -c --disable=config_update --skip-notify -y \
@@ -33,7 +38,7 @@ fi
 
 # 5) UV tool upgrade (background)
 if have uv; then
-  uv tool upgrade --all &
+  uv tool upgrade --all & || :
 fi
 
 # 6) Rust toolchain

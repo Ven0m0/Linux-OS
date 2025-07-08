@@ -175,11 +175,7 @@ echo "AUR package installation complete."
 # memavaild
 # precached
 
-# Better ssl
-sudo pacman -S wolfssl --noconfirm || true
-# sudo ln -sf /usr/include/wolfssl/openssl /usr/include/openssl || true
-# sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libssl.so || true
-# sudo ln -sf /usr/lib/libwolfssl.so /usr/lib/libcrypto.so || true
+
 
 # Image downloads
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp
@@ -188,8 +184,11 @@ curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HO
 # echo "Installing gaming applications"
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm || true
 
-echo "Installing Cargo crates"
 
+echo "Installing rust toolchain"
+rustup install nightly --profile minimal -t x86_64-unknown-linux-gnu -c "rustc,rust-std,rust-src,rustfmt,rust-analyzer,rustc-dev,clippy,llvm-tools,llvm-bitcode-linker"
+
+echo "Installing Cargo crates"
 cargostall(
 rmz
 cpz

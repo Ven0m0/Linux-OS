@@ -115,10 +115,10 @@ ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=ali
 EXTRA=(-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections)
 
 # Combine all rustflags into one exported variable
-export RUSTFLAGS="${RUSTFLAGS_BASE[*]} ${LFLAGS[*]} ${ZFLAGS[*]} ${EXTRA[*]}"
-export CFLAGS="${CFLAGS[*]}"
-export CXXFLAGS="${CXXFLAGS[*]}"
-export LDFLAGS="${LDFLAGS[*]}"
+export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA[@]}"
+export CFLAGS="${CFLAGS[@]}"
+export CXXFLAGS="${CXXFLAGS[@]}"
+export LDFLAGS="${LDFLAGS[@]}"
 
 # Additional flags for cargo install
 INSTALL_FLAGS=(-Z unstable-options -Z git -Z gitoxide -Z no-embed-metadata)

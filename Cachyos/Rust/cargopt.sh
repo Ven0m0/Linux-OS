@@ -112,7 +112,7 @@ RUSTFLAGS_BASE=(
   -Z threads="${jobs}"
 )
 ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases)
-EXTRA=(-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections)
+EXTRA=(-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections -C link-arg=-flto)
 
 # Combine all rustflags into one exported variable
 export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA[@]}"

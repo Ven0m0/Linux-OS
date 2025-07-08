@@ -11,8 +11,6 @@ https://crates.io/crates/cargo-sleek
 
 https://crates.io/crates/du-dust
 
-https://crates.io/crates/ised
-
 https://crates.io/crates/rsftch
 
 https://crates.io/crates/fd-find

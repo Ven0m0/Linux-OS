@@ -77,7 +77,7 @@ export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 # ensure RUSTFLAGS is set
 : "${RUSTFLAGS:=}"
 
-if (( USE_MOLD )); then
+if ((USE_MOLD)); then
   if command -v mold >/dev/null 2>&1; then
     echo "→ using ld.mold via clang"
     LFLAGS=" -C linker=clang -C link-arg=-fuse-ld=mold"

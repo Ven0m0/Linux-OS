@@ -3,69 +3,116 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-export LANG=C LC_ALL=C
+export LC_ALL=C LANG=C
+shopt -s nullglob globstar
 
-# Toolchains
-export CC="clang" CXX="clang++" CPP="clang-cpp"
-export AR="llvm-ar" NM="llvm-nm" RANLIB="llvm-ranlib"
+# Clean up cargo cache on exit
+trap 'cargo-cache -efg' EXIT
+
+# —————————————————————————————————————————————————————
+# Defaults & help
+USE_MOLD=0
+LOCKED_FLAG=""
+CRATE=""
+
+usage() {
+  cat <<EOF >&2
+Usage: $0 [-mold] [--locked] <crate>
+
+  -mold       use mold as the linker (clang -fuse-ld=mold)
+  --locked    pass --locked to cargo install
+  <crate>     name of the crate to install
+EOF
+  exit 1
+}
+
+# —————————————————————————————————————————————————————
+# Simple argument parsing
+while [ $# -gt 0 ]; do
+  case "$1" in
+  -mold)
+    USE_MOLD=1
+    shift
+    ;;
+  --locked)
+    LOCKED_FLAG="--locked"
+    shift
+    ;;
+  -h | --help) usage ;;
+  *)
+    if [ -z "$CRATE" ]; then
+      CRATE="$1"
+    fi
+    shift
+    ;;
+  esac
+done
+
+if [ -z "$CRATE" ]; then
+  echo "Error: <crate> is required" >&2
+  usage
+fi
+[ -n "$CRATE" ] || {
+  echo "Error: <crate> is required" >&2
+  usage
+}
+[ -n "$CRATE" ] || {
+  echo "Error: <crate> is required" >&2
+  usage
+}
+# —————————————————————————————————————————————————————
+# Prepare environment
+jobs="$(nproc)"
+cd "$HOME"
+
+# Use sccache if installed
+if command -v sccache >/dev/null 2>&1; then
+  export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
+else
+  export CC="clang" CXX="clang++"
+  unset RUSTC_WRAPPER
+fi
+
 export STRIP="llvm-strip"
-export RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly RUST_BACKTRACE=full
+# Make sure rustflags arent being overwritten by cargo
+unset CARGO_ENCODED_RUSTFLAGS
+
+# Cargo settings/tweaks
 export CARGO_INCREMENTAL=0 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
-# usage check
-if [ $# -lt 1 ]; then
-  echo "Usage: $0 <crate-name> [--locked]"
-  exit 1
-fi
+# ensure RUSTFLAGS is set
+: "${RUSTFLAGS:=}"
 
-# 2) Look for --locked among the rest
-locked_flag=""
-for arg in "$@"; do
-  if [ "$arg" = "--locked" ]; then
-    locked_flag="--locked"
-    break
+if (( USE_MOLD )); then
+  if command -v mold >/dev/null 2>&1; then
+    echo "→ using ld.mold via clang"
+    LFLAGS=" -C linker=clang -C link-arg=-fuse-ld=mold"
+    CLDFLAGS="-fuse-ld=mold"
+  elif command -v clang >/dev/null 2>&1; then
+    echo "→ using ld.lld via clang"
+    LFLAGS=" -C linker=clang -C link-arg=-fuse-ld=lld"
+    CLDFLAGS="-fuse-ld=lld"
   fi
-done
-
-cd "$HOME"
-
-export RUSTUP_TOOLCHAIN=nightly # for nightly flags
-export RUSTC_BOOTSTRAP=1 # Allow experimental features
-export RUST_BACKTRACE="full" # Tracing
-
-if command -v sccache >/dev/null 2>&1; then
-  export RUSTC_WRAPPER=sccache
 fi
 
-RCLANG="-C linker=clang -C link-arg=-fuse-ld=lld -C linker-plugin-lto"
-# Mold doesnt support "-C linker-plugin-lto" yet
-RMOLD="-C linker=clang -C link-arg=-fuse-ld=mold"
+# —————————————————————————————————————————————————————
+# Core optimization flags
+export CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -Wno-error"
+export CXXFLAGS="${CFLAGS}"
+export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-gc-sections -Wl,-s -Wl,--icf=all ${CLDFLAGS}"
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode=yes -Ztune-cpu=native \
+-Cdebuginfo=0 -Crelro-level=off -Zdefault-visibility=hidden -Zdylib-lto -Cforce-frame-pointers=no -Zfunction-sections -Zthreads=${jobs}"
+ZFLAGS="-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases"
+EXTRA="-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections"
+export RUSTFLAGS="${RUSTFLAGS} ${LFLAGS} ${ZFLAGS} ${EXTRA}"
 
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C relro-level=off -C debuginfo=0 -C strip=symbols -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no \
--Z tune-cpu=native -Z default-visibility=hidden  -Z location-detail=none -Z function-sections ${RCLANG} "
+# Additional flags for cargo install
+INSTALL_FLAGS="-Z unstable-options -Z git -Z gitoxide -Z no-embed-metadata"
 
-# Set optimization flags and build
-export ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z no-embed-metadata -Z trim-paths -Z feature-unification"
-export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -Z dylib-lto -C relro-level=off -Z tune-cpu=native \
--Z default-visibility=hidden -Z fmt-debug=none -Z location-detail=none -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no"
-export RUSTFLAGS="${RUSTFLAGS} ${ZFLAGS}"
-# Parallel codegen frontend (no perf loss)
-export RUSTFLAGS="${RUSTFLAGS} -Z threads=16"
-# -Z build-std=std,panic_abort
-export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
-   	-mharden-sls=none -fcf-protection=none -fno-semantic-interposition -fdata-sections -ffunction-sections \
-	-mprefer-vector-width=256 -ftree-vectorize -fslp-vectorize \
-	-fomit-frame-pointer -fvisibility=hidden -fmerge-all-constants -finline-functions \
-	-fbasic-block-sections=all -fjump-tables -fshort-enums -fshort-wchar \
-	-pthread -falign-functions=32 -falign-loops=32 -malign-branch-boundary=32 -malign-branch=jcc -std=c++23"
-export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers -fno-rtti -fno-exceptions -Wp,-D_GLIBCXX_ASSERTIONS"
-LTOFLAGS="-Wl,--lto=full -Wl,--lto-whole-program-visibility -Wl,--lto-partitions=1 -Wl,--lto-CGO3 -Wl,--lto-O3 -Wl,--fat-lto-objects"
-export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
-         -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations \
-         -Wl,--discard-locals -Wl,-s -Wl,--icf=all -Wl,--optimize-bb-jumps \
-	  ${LTOFLAGS}"
-# -Wl,--lto-basic-block-sections=  -Wl,--lto-emit-llvm -Wl,--lto-unique-basic-block-section-names
-export STRIP="llvm-strip"
-
-cargo +nightly -Zgc install "$1" ${locked_flag} --bins --j"$(nproc)"
+# —————————————————————————————————————————————————————
+# Finally, install the crate
+echo "Installing '$CRATE' with optimized flags…"
+cargo +nightly "${INSTALL_FLAGS}" install "$CRATE" ${LOCKED_FLAG} --jobs "${jobs}" &&
+  LANG=C.UTF-8 echo "🎉 $CRATE successfully installed in '$HOME/.cargo/bin'"
+exit 0

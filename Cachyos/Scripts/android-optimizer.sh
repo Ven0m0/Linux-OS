@@ -1,4 +1,9 @@
 #!/bin/bash
+# shellcheck shell=bash
+set -euo pipefail
+IFS=$'\n\t'
+export LC_ALL=C LANG=C
+shopt -s nullglob globstar
 
 adb start-server
 adb shell setprop debug.enabletr 1

@@ -81,27 +81,49 @@ export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 if ((USE_MOLD)); then
   if command -v mold >/dev/null 2>&1; then
     echo "→ using ld.mold via clang"
-    LFLAGS=" -C linker=clang -C link-arg=-fuse-ld=mold"
-    CLDFLAGS="-fuse-ld=mold"
+    LFLAGS=(-C linker=clang -C link-arg=-fuse-ld=mold)
+    CLDFLAGS=(-fuse-ld=mold)
   elif command -v clang >/dev/null 2>&1; then
     echo "→ using ld.lld via clang"
-    LFLAGS=" -C linker=clang -C link-arg=-fuse-ld=lld"
-    CLDFLAGS="-fuse-ld=lld"
+    LFLAGS=(-C linker=clang -C link-arg=-fuse-ld=lld)
+    CLDFLAGS=(-fuse-ld=lld)
   fi
 fi
 
 # —————————————————————————————————————————————————————
 # Core optimization flags
-export CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -Wno-error"
-export CXXFLAGS="${CFLAGS}"
-export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-gc-sections -Wl,-s -Wl,--icf=all ${CLDFLAGS}"
-RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode=yes -Ztune-cpu=native \
--Cdebuginfo=0 -Crelro-level=off -Zdefault-visibility=hidden -Zdylib-lto -Cforce-frame-pointers=no -Zfunction-sections -Zthreads=${jobs}"
-ZFLAGS="-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases"
-EXTRA="-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections"
-export RUSTFLAGS="${RUSTFLAGS} ${LFLAGS} ${ZFLAGS} ${EXTRA}"
+CFLAGS=(-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -Wno-error) && export CFLAGS
+CXXFLAGS=("${CFLAGS[@]}") && export CXXFLAGS
+LDFLAGS=(-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-gc-sections -Wl,-s -Wl,--icf=all "${CLDFLAGS[@]}") && export CXXFLAGS
+RUSTFLAGS_BASE=(
+  -C opt-level=3
+  -C target-cpu=native
+  -C codegen-units=1
+  -C strip=symbols
+  -C lto=fat
+  -C embed-bitcode=yes
+  -Z tune-cpu=native
+  -C debuginfo=0
+  -C relro-level=off
+  -Z default-visibility=hidden
+  -Z dylib-lto
+  -C force-frame-pointers=no
+  -Z function-sections
+  -Z threads="${jobs}"
+)
+ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases)
+EXTRA=(
+  -C link-arg=-s
+  -C link-arg=-Wl,--icf=all
+  -C link-arg=-Wl,--gc-sections
+)
+# Combine all rustflags into one exported variable
+export RUSTFLAGS="${RUSTFLAGS_BASE[*]} ${LFLAGS[*]} ${ZFLAGS[*]} ${EXTRA[*]}"
+export CFLAGS="${CFLAGS[*]}"
+export CXXFLAGS="${CXXFLAGS[*]}"
+export LDFLAGS="${LDFLAGS[*]}"
 
-# Additional flags for cargo install, has to be an array -> string fails
+# Additional flags for cargo install
 INSTALL_FLAGS=(-Z unstable-options -Z git -Z gitoxide -Z no-embed-metadata)
 
 # —————————————————————————————————————————————————————

@@ -81,11 +81,19 @@ export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 if ((USE_MOLD)); then
   if command -v mold >/dev/null 2>&1; then
     echo "→ using ld.mold via clang"
-    LFLAGS=(-C linker=clang -C link-arg=-fuse-ld=mold)
-    CLDFLAGS=(-fuse-ld=mold)
+    LFLAGS=(
+      -C linker=clang
+      -C link-arg=-fuse-ld=mold
+      -C link-arg=-flto # only for mold
+    )
+    CLDFLAGS=(-fuse-ld=mold -flto)
   elif command -v clang >/dev/null 2>&1; then
     echo "→ using ld.lld via clang"
-    LFLAGS=(-C linker=clang -C link-arg=-fuse-ld=lld)
+    LFLAGS=(
+      -C linker=clang
+      -C link-arg=-fuse-ld=lld
+      -C link-arg=--lto-O3
+    )
     CLDFLAGS=(-fuse-ld=lld)
   fi
 fi
@@ -110,9 +118,12 @@ RUSTFLAGS_BASE=(
   -C force-frame-pointers=no
   -Z function-sections
   -Z threads="${jobs}"
+
+  -C link-arg=--lto-O3
+  -C link-arg=--lto-emit-llvm
 )
 ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases)
-EXTRA=(-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections -C link-arg=-flto)
+EXTRA=(-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections)
 
 # Combine all rustflags into one exported variable
 export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA[@]}"

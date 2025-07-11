@@ -55,5 +55,8 @@ debuginfo= "0"
 debug_assertions = "off"
 split-debuginfo = "off"
 
+[profile.dev]
+debug = false
+
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "target-cpu=native"]

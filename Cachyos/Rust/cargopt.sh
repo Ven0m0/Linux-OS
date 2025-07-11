@@ -151,11 +151,13 @@ RUSTFLAGS_BASE=(
   -C linker-plugin-lto
   -Z tune-cpu=native
   -C debuginfo=0
+  -C panic=abort
   -C relro-level=off
   -Z default-visibility=hidden
   -Z dylib-lto
   -C force-frame-pointers=no
   -Z function-sections
+  -Z location-detail=none
   # https://nnethercote.github.io/perf-book/build-configuration.html#experimental-parallel-front-end
   -Z threads=8
 )

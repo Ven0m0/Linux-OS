@@ -100,13 +100,14 @@ if ((USE_MOLD)); then
     LFLAGS=(
       -C linker=clang
       -C link-arg=-fuse-ld=lld
+      -C linker-features=lld
       -C link-arg=-Wl,--ignore-function-address-equality
       -C link-arg=--compact-branches
     )
     CLDFLAGS=(-fuse-ld=lld)
   else
     echo "→ falling back to ld.lld via linker-flavor"
-    LFLAGS=(-C linker-flavor=ld.lld)
+    LFLAGS=(-C linker-flavor=ld.lld -C linker-features=lld)
     CLDFLAGS=(-fuse-ld=lld)
   fi
 fi

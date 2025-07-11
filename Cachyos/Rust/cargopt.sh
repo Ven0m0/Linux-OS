@@ -25,7 +25,7 @@ if (( mem_gb > 16 )); then
   unset MIMALLOC_ALLOW_LARGE_OS_PAGES
 else
   mode=madvise
-  MIMALLOC_ALLOW_LARGE_OS_PAGES=1
+  export MIMALLOC_ALLOW_LARGE_OS_PAGES=1
   unset MIMALLOC_RESERVE_HUGE_OS_PAGES
 fi
 

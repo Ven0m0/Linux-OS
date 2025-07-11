@@ -12,13 +12,10 @@ have() { command -v "$1" >/dev/null 2>&1; }
 # 1) Detect and cache privilege executor
 if have sudo-rs; then
   suexec="sudo-rs"
-  sudo-rs -v || :
 elif have "/usr/bin/sudo"; then
   suexec="/usr/bin/sudo"
-  /usr/bin/sudo -v || :
 elif have "sudo"; then
   suexec="sudo"
-  sudo -v || :
 elif have doas; then
   suexec="doas"
 fi

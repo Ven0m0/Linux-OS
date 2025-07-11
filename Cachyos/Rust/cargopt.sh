@@ -138,16 +138,18 @@ LDFLAGS=(
   -flto
   "${CLDFLAGS[@]}"
 )
+# https://github.com/johnthagen/min-sized-rust
+# # https://doc.rust-lang.org/rustc/codegen-options/index.html#embed-bitcode
+# # "-C link-arg=-flto" needed for mold
+# "-Z threads=8" https://nnethercote.github.io/perf-book/build-configuration.html#experimental-parallel-front-end
 RUSTFLAGS_BASE=(
   -C opt-level=3
   -C target-cpu=native
   -C codegen-units=1
   -C strip=symbols
   -C lto=fat
-   # needed for mold
   -C link-arg=-flto
-  # https://doc.rust-lang.org/rustc/codegen-options/index.html#embed-bitcode
-  # -C embed-bitcode=yes
+  #-C embed-bitcode=y
   -C linker-plugin-lto
   -Z tune-cpu=native
   -C debuginfo=0
@@ -155,10 +157,12 @@ RUSTFLAGS_BASE=(
   -C relro-level=off
   -Z default-visibility=hidden
   -Z dylib-lto
-  -C force-frame-pointers=no
+  -C force-frame-pointers=n
+  #-C force-unwind-tables=n
+  -C link-dead-code=n
   -Z function-sections
   -Z location-detail=none
-  # https://nnethercote.github.io/perf-book/build-configuration.html#experimental-parallel-front-end
+  -Z fmt-debug=none
   -Z threads=8
 )
 EXTRA_LINK=(

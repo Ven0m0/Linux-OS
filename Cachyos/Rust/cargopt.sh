@@ -5,11 +5,32 @@ IFS=$'\n\t'
 
 export LC_ALL=C LANG=C
 shopt -s nullglob globstar
-
+sudo -v
+sudo cpupower frequency-set --governor performance # Speed
 # https://kobzol.github.io/rust/rustc/2023/10/21/make-rust-compiler-5percent-faster.html
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
-# tcache_max:4096
+# Mimalloc
+export MIMALLOC_ARENA_EAGER_COMMIT=1 MIMALLOC_PURGE_DELAY=25
+
+export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0
+
+# Enable THP for compile speed
+mem_gb=$(awk '/^MemTotal:/ {print int($2/1024/1024)}' /proc/meminfo)
+mode=always
+
+if (( mem_gb > 16 )); then
+  mode=always
+  export MIMALLOC_RESERVE_HUGE_OS_PAGES=2
+  unset MIMALLOC_ALLOW_LARGE_OS_PAGES
+else
+  mode=madvise
+  MIMALLOC_ALLOW_LARGE_OS_PAGES=1
+  unset MIMALLOC_RESERVE_HUGE_OS_PAGES
+fi
+
+echo "$mode" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
+echo "Set THP → $mode"
 
 # Clean up cargo cache on error
 cleanup() {

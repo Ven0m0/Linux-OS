@@ -62,3 +62,27 @@ cargo install hitdns
 
 # https://github.com/jedisct1/EtchDNS
 
+
+
+# Dotfiles
+
+```markdown
+https://github.com/milobanks/greatness
+https://github.com/SuperCuber/dotter
+https://github.com/oknozor/toml-bombadil
+https://github.com/volllly/rotz
+https://github.com/plamorg/ambit
+https://crates.io/crates/ldfm
+https://crates.io/crates/dfm
+https://github.com/Addvilz/dots
+https://github.com/comtrya/comtrya
+https://github.com/RaphGL/Tuckr
+https://github.com/elkowar/yolk
+
+
+https://github.com/644/compressimages
+https://github.com/jkool702/forkrun
+https://crates.io/crates/trees-rs
+fisher install meaningful-ooo/sponge
+fisher install acomagu/fish-async-prompt
+```

@@ -137,7 +137,9 @@ RUSTFLAGS_BASE=(
   -C lto=fat
    # needed for mold
   -C link-arg=-flto
-  -C embed-bitcode=yes
+  # https://doc.rust-lang.org/rustc/codegen-options/index.html#embed-bitcode
+  # -C embed-bitcode=yes
+  -C linker-plugin-lto
   -Z tune-cpu=native
   -C debuginfo=0
   -C relro-level=off
@@ -145,8 +147,8 @@ RUSTFLAGS_BASE=(
   -Z dylib-lto
   -C force-frame-pointers=no
   -Z function-sections
-  -Z threads="${jobs}"
-  -C linker-plugin-lto
+  # https://nnethercote.github.io/perf-book/build-configuration.html#experimental-parallel-front-end
+  -Z threads=8
 )
 EXTRA_LINK=(
   -C link-arg=-Wl,-O3

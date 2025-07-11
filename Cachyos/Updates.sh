@@ -22,10 +22,14 @@ elif have "sudo"; then
 elif have doas; then
   suexec="doas"
 fi
+# Only run `-v` if not doas
+if [[ "$suexec" != "doas" ]]; then
+  "${suexec}" -v || :
+fi
 
 echo "🔄 Updating system..."
 # 2) System update
-$suexec pacman -Syu --noconfirm || :
+${suexec} pacman -Syu --noconfirm || :
 # 3) AUR update
 paru -Syu --noconfirm --combinedupgrade --nouseask --removemake --cleanafter --skipreview --nokeepsrc --sudo "/usr/bin/sudo" || :
 # 4) topgrade (ignore failures)
@@ -78,13 +82,13 @@ fi
 # 11) tldr pages in background
 if have tldr; then
   tldr -u >/dev/null 2>&1 &
-  $suexec tldr -u >/dev/null 2>&1 &
+  ${suexec} tldr -u >/dev/null 2>&1 &
 fi
 
 # 12) sdboot-manage
 if have sdboot-manage; then
-    $suexec sdboot-manage update >/dev/null 2>&1
-    $suexec sdboot-manage remove
+    ${suexec} sdboot-manage update >/dev/null 2>&1
+    ${suexec} sdboot-manage remove
 fi
 
 # 13) fwupd
@@ -93,17 +97,17 @@ if have fwupdmgr; then
 fi
 
 # 14) misc updates in background
-have updatedb && $suexec updatedb
-have update-desktop-database && $suexec update-desktop-database
-have update-pciids && $suexec update-pciids >/dev/null 2>&1
-have update-smart-drivedb && $suexec update-smart-drivedb >/dev/null 2>&1
+have updatedb && ${suexec} updatedb
+have update-desktop-database && ${suexec} update-desktop-database
+have update-pciids && ${suexec} update-pciids >/dev/null 2>&1
+have update-smart-drivedb && ${suexec} update-smart-drivedb >/dev/null 2>&1
 
 # 15) systemd‑boot
 echo "🔍 Checking for systemd-boot..."
 if [ -d /sys/firmware/efi ] && have bootctl && bootctl is-installed >/dev/null 2>&1; then
     echo "✅ systemd‑boot detected, updating…"
-    $suexec bootctl update >/dev/null 2>&1 || :
-    $suexec bootctl cleanup >/dev/null 2>&1
+    ${suexec} bootctl update >/dev/null 2>&1 || :
+    ${suexec} bootctl cleanup >/dev/null 2>&1
 else
     echo "❌ systemd‑boot not present, skipping."
 fi
@@ -112,14 +116,14 @@ fi
 echo "🔍 Checking for Limine…"
 if fd limine.cfg /boot /boot/efi /mnt >/dev/null 2>&1; then
   echo "✅ Limine config found."
-  have limine-update && $suexec limine-update || echo "⚠️ limine-update missing"
-  have limine-mkinitcpio && $suexec limine-mkinitcpio || echo "⚠️ limine-mkinitcpio missing"
+  have limine-update && ${suexec} limine-update || echo "⚠️ limine-update missing"
+  have limine-mkinitcpio && ${suexec} limine-mkinitcpio || echo "⚠️ limine-mkinitcpio missing"
 else
   echo "❌ Limine config not found; skipping."
 fi
 
 # 17) Mkinitcpio
-# $suexec mkinitcpio -P
-# $suexec update-initramfs -u
+# ${suexec} mkinitcpio -P
+# ${suexec} update-initramfs -u
 
 echo "✅ All done."

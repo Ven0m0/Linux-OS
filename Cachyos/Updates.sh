@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-set -euo pipefail
+#set -euo pipefail
+set -uo pipefail
 IFS=$'\n\t'
 export LC_ALL=C LANG=C.UTF-8
 shopt -s nullglob globstar
@@ -30,7 +31,7 @@ paru -Syu --noconfirm --combinedupgrade --nouseask --removemake --cleanafter --s
 # 4) topgrade (ignore failures)
 if have topgrade; then
   topgrade -c --disable=config_update --skip-notify -y \
-           --no-retry --disable=uv --disable=pipx --disable=shell || :
+           --no-retry --disable=uv --disable=pipx --disable=shell --disable=yazi || :
 fi
 # pipx upgrade-all
 
@@ -55,7 +56,11 @@ fi
 
 if have micro; then
   micro -plugin update || :
-end
+fi
+
+if have yal then
+  ya pkg upgrade || :
+fi
 
 # 9) Fisher (inside fish)
 if have fish; then

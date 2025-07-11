@@ -45,12 +45,15 @@ incompatible-rust-versions = "allow"
 
 #[profile.release.build-override]
 [profile.release]
-opt-level = 3
-debug = false
-lto = true
-panic = 'abort'
-codegen-units = 1
+opt-level = "3"
+codegen-units = "1"
+lto = "true"
+panic = "abort"
 strip = "symbols"
+debug = "false"
+debuginfo= "0"
+debug_assertions = "off"
+split-debuginfo = "off"
 
 [target.x86_64-unknown-linux-gnu]
 rustflags = ["-C", "target-cpu=native"]

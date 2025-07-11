@@ -1,5 +1,5 @@
 NAME="CachyOS / Arch Linux"
-PRETTY_NAME="CachyOS (based on Arch Linux)"
+PRETTY_NAME="CachyOS (Arch)"
 ID=cachyos
 ID_LIKE=arch
 BUILD_ID=rolling

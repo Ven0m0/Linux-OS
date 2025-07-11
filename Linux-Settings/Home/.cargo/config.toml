@@ -4,10 +4,18 @@ feature-unification = true
 trim-paths = true
 no-embed-metadata = true
 gc = true
+panic-abort-tests = true
+dylib-lto = true
+parallel-tests = true # run tests in parallel
+doctest = false # let `cargo check` skip dev‑dependencies
+resolver = "3" # new dependency resolver
+# resolver = "2" default
 
 [net]
 git-fetch-with-cli = true
 retry = 2
+# offline = true # do not access the network
+offline = false
 
 [http]
 debug = false
@@ -18,7 +26,7 @@ check-revoke = false
 multiplexing = true
 
 [cache]
-auto-clean-frequency = "1 day"
+auto-clean-frequency = "always" # "1day" default
 
 [build]
 jobs = 16
@@ -58,5 +66,14 @@ split-debuginfo = "off"
 [profile.dev]
 debug = false
 
+[profile.release.build-override]
+opt-level = 0
+codegen-units = 16 # 256 when not incremental
+
 [target.x86_64-unknown-linux-gnu]
-rustflags = ["-C", "target-cpu=native"]
+linker = "clang"
+
+[term]
+unicode = false # ASCII is faster
+color = 'auto'
+progress.when = 'auto'

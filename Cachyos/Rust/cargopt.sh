@@ -7,8 +7,8 @@ export LC_ALL=C LANG=C
 shopt -s nullglob globstar
 
 # Clean up cargo cache on error
-trap 'cargo-cache -efg' ERR
-
+#trap 'cargo-cache -efg >/dev/null 2>&1' ERR
+trap 'cargo-cache -efg >/dev/null 2>&1' EXIT
 # —————————————————————————————————————————————————————
 # Defaults & help
 USE_MOLD=0
@@ -72,8 +72,11 @@ export STRIP="llvm-strip"
 unset CARGO_ENCODED_RUSTFLAGS
 
 # Cargo settings/tweaks
-export CARGO_INCREMENTAL=0 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
-export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+export CARGO_INCREMENTAL=0 CARGO_PROFILE_RELEASE_LTO=fat
+export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
+export RUSTC_BOOTSTRAP=1
+# export RUSTUP_TOOLCHAIN=nightly
+# RUST_LOG=trace
 
 # ensure RUSTFLAGS is set
 : "${RUSTFLAGS:=}"
@@ -114,8 +117,9 @@ LDFLAGS=(
   -Wl,--ignore-data-address-equality
   -Wl,--enable-new-dtags
   -Wl,--optimize-bb-jumps
-  -Wl,--compress-relocations
   -Wl,-z,pack-relative-relocs
+  -Wl,--compress-relocations
+  -Wl,--compress-sections=zstd:3
   -Wl,--compress-debug-sections=zstd
   -Wl,--lto-O3
   -Wl,--lto-partitions=1
@@ -125,19 +129,14 @@ LDFLAGS=(
   -flto
   "${CLDFLAGS[@]}"
 )
-LINKARGS=(
-  -C link-arg=--enable-new-dtags
-  -C link-arg=-Wl,--ignore-data-address-equality
-  -C link-arg=-Wl,-plugin-opt=--fat-lto-objects
-  -C link-arg=-Wl,-plugin-opt=--lto-aa-pipeline
-  -C link-arg=-Wl,-plugin-opt=--lto-newpm-passes
-)
 RUSTFLAGS_BASE=(
   -C opt-level=3
   -C target-cpu=native
   -C codegen-units=1
   -C strip=symbols
   -C lto=fat
+   # needed for mold
+  -C link-arg=-flto
   -C embed-bitcode=yes
   -Z tune-cpu=native
   -C debuginfo=0
@@ -147,15 +146,34 @@ RUSTFLAGS_BASE=(
   -C force-frame-pointers=no
   -Z function-sections
   -Z threads="${jobs}"
-  -C link-arg=-flto
-  -C link-arg=--lto-O3
-  -C link-arg=--lto-emit-llvm
+  -C linker-plugin-lto
+)
+EXTRA_LINK=(
+  -C link-arg=-Wl,-O3
+  -C link-arg=-Wl,-gc-sections
+  -C link-arg=-Wl,--icf=all
+  -C link-arg=-Wl,--sort-common
+  -C link-arg=-Wl,--as-needed
+  -C link-arg=-Wl,-z,relro
+  -C link-arg=-Wl,-z,now
+  -C link-arg=-Wl,--lto-O3
+  -C link-arg=-Wl,--optimize-bb-jumps
+  -C link-arg=-Wl,--strip-all
+  -C link-arg=-Wl,--compress-sections=zstd:3
+  -C link-arg=-Wl,--compress-relocations
+  -C link-arg=-Wl,--compress-debug-sections=zstd
+  -C link-arg=-Wl,-z,pack-relative-relocs
+  # -C link-arg=--lto-emit-llvm
+  -C link-arg=-Wl,-plugin-opt=--lto-aa-pipeline
+  -C link-arg=-Wl,-plugin-opt=--lto-newpm-passes
+  -C link-arg=-Wl,--lto-O3
+  -C link-arg=-Wl,--lto-partitions=1
+  -C link-arg=-Wl,-plugin-opt=--fat-lto-objects
 )
 ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases)
-EXTRA=(-C link-arg=-s -C link-arg=-Wl,--icf=all -C link-arg=-Wl,--gc-sections)
 
 # Combine all rustflags into one exported variable
-export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA[@]}"
+export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA_LINK[@]}"
 export CFLAGS="${CFLAGS[@]}"
 export CXXFLAGS="${CXXFLAGS[@]}"
 export LDFLAGS="${LDFLAGS[@]}"

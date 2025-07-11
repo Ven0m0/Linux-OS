@@ -1,7 +1,40 @@
-cargo install cargo-trim
+--lto-emit-llvm
+-Z build-std=std,panic_abort
+-Z build-std-features=panic_immediate_abort
+-Z panic-abort-tests
 
-cd ~/.cargo && cargo trim init
-cargo trim -d ~/.cargo
-cargo trim -a -x -o -u -g aggressive-checkout 
-cargo trim -a -x -o -u -g aggressive-db   
-cargo trim -a -x -o -u -g aggressive-index 
+-Z merge-functions
+-Z relax-elf-relocations
+-Z virtual-function-elimination
+RUSTFLAGS="-C passes=mem2reg,simplifycfg,instcombine,gvn,loop-unroll,licm"
+
+-C profile-correction
+-Cllvm-args=-pgo-warn-missing-function -Cprofile-use
+
+CARGO_PROFILE_RELEASE_LTO
+
+-Z tls-model=local-exec
+# -Z tls-model=initial-exec # smaller apps
+
+export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
+export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
+
+sudo sysctl -w kernel.randomize_va_space=0 || (echo 0 | sudo tee /proc/sys/kernel.randomize_va_space)
+sudo sysctl -w kernel.nmi_watchdog=0 || (echo 0 | sudo tee /proc/sys/kernel/nmi_watchdog)
+
+
+-C link-arg=--enable-new-dtags
+
+
+-C link-arg=--compact-branches -C link-arg=--icf=all 
+-C link-arg=-plugin-opt=--fat-lto-objects -C link-arg=-plugin-opt=--lto-aa-pipeline -C link-arg=-Wl,-plugin-opt=--lto-newpm-passes
+
+
+-C link-arg=-Wl,--ignore-data-address-equality
+-C link-arg=-Wl,--ignore-function-address-equality
+LDFLAGS=(
+-Wl,--ignore-data-address-equality
+-Wl,--ignore-function-address-equality
+)
+
+mold doesnt have: --ignore-function-address-equality

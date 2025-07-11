@@ -6,8 +6,13 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C
 shopt -s nullglob globstar
 
+# https://kobzol.github.io/rust/rustc/2023/10/21/make-rust-compiler-5percent-faster.html
+export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
+export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
+# tcache_max:4096
+
 # Clean up cargo cache on error
-#trap 'cargo-cache -efg >/dev/null 2>&1' ERR
+trap 'cargo-cache -efg >/dev/null 2>&1' ERR
 trap 'cargo-cache -efg >/dev/null 2>&1' EXIT
 # —————————————————————————————————————————————————————
 # Defaults & help

@@ -160,10 +160,12 @@ LD_PRELOAD=/usr/lib/libmimalloc.so
 -Z build-std-features=panic_immediate_abort
 -Z panic-abort-tests
 
-$ llvm-bolt <executable> -o <executable>.bolt -data=perf.fdata BOLT_OPTIONS
+llvm-bolt <executable> -o <executable>.bolt -data=perf.fdata BOLT_OPTIONS
 
 bolt -icf=1 vs -icf=all and -reorder-functions=hfsort vs -reorder-functions=hfsort+
-and what does this do for pgo? "-mllvm -pgo-temporal-instrumentation -mllvm-pgo-cold-func-opt=minsize -Wl,-mllvm,-enable-ext-tsp-block-placement=1"
+-mllvm -pgo-temporal-instrumentation 
+-mllvm-pgo-cold-func-opt=minsize 
+-Wl,-mllvm,-enable-ext-tsp-block-placement=1
 
 # CFLAG error prevention
 -Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date -Wno-backend-plugin

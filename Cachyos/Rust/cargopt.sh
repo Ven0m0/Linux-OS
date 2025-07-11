@@ -103,6 +103,10 @@ if ((USE_MOLD)); then
       -C link-arg=--compact-branches
     )
     CLDFLAGS=(-fuse-ld=lld)
+  else
+    echo "→ falling back to ld.lld via linker-flavor"
+    LFLAGS=(-C linker-flavor=ld.lld)
+    CLDFLAGS=(-fuse-ld=lld)
   fi
 fi
 

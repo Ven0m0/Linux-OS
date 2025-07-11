@@ -12,8 +12,12 @@ export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
 # tcache_max:4096
 
 # Clean up cargo cache on error
-trap 'cargo-cache -efg >/dev/null 2>&1' ERR
-trap 'cargo-cache -efg >/dev/null 2>&1' EXIT
+cleanup() {
+  cargo-cache -efg >/dev/null 2>&1 || true  
+  cargo clean >/dev/null 2>&1 || true
+}
+trap cleanup ERR EXIT
+
 # —————————————————————————————————————————————————————
 # Defaults & help
 USE_MOLD=0

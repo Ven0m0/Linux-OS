@@ -55,13 +55,16 @@ incompatible-rust-versions = "allow"
 [profile.release]
 opt-level = "3"
 codegen-units = "1"
-lto = "true"
+lto = "fat"
 panic = "abort"
 strip = "symbols"
 debug = "false"
 debuginfo= "0"
 debug_assertions = "off"
 split-debuginfo = "off"
+
+[profile.release.package."*"]
+inherits = "release"
 
 [profile.dev]
 debug = false

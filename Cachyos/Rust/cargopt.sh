@@ -213,7 +213,7 @@ EXTRA_LINK=(
   -C link-arg=-Wl,--lto-partitions=1
   -C link-arg=-Wl,-plugin-opt=--fat-lto-objects
 )
-ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases -Zno-embed-metadata)
+ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases -Zno-embed-metadata -Zmir-opt-level=3)
 
 # Combine all rustflags into one exported variable
 export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA_LINK[@]}"

@@ -3,7 +3,8 @@
 -Z build-std-features=panic_immediate_abort
 -Z panic-abort-tests
 
--Z merge-functions
+-Z unstable-options -Z fewer-names -Z combine-cgu
+-Z merge-functions=aliases
 -Z relax-elf-relocations
 -Z virtual-function-elimination
 RUSTFLAGS="-C passes=mem2reg,simplifycfg,instcombine,gvn,loop-unroll,licm"

@@ -216,7 +216,7 @@ EXTRA_LINK=(
   -C link-arg=-Wl,--lto-partitions=1
   -C link-arg=-Wl,-plugin-opt=--fat-lto-objects
 )
-ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases)
+ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases -Zno-embed-metadata)
 
 # Combine all rustflags into one exported variable
 export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA_LINK[@]}"
@@ -225,11 +225,12 @@ export CXXFLAGS="${CXXFLAGS[@]}"
 export LDFLAGS="${LDFLAGS[@]}"
 
 # Additional flags for cargo install
-INSTALL_FLAGS=(-Z unstable-options -Z git -Z gitoxide -Z no-embed-metadata)
+INSTALL_FLAGS=(-Zunstable-options -Zgit -Zgitoxide -Zno-embed-metadata)
+MISC_OPT=(--ignore-rust-version -f --bins -j"${jobs}")
 
 # —————————————————————————————————————————————————————
 # Finally, install the crate
 echo "Installing '$CRATE' with optimized flags…"
-cargo +nightly "${INSTALL_FLAGS[@]}" install "$CRATE" ${LOCKED_FLAG} --jobs ${jobs} &&
+cargo +nightly "${INSTALL_FLAGS[@]}" install "$CRATE" ${LOCKED_FLAG} "${MISC_OPT[@]}" &&
   LANG=C.UTF-8 echo "🎉 $CRATE successfully installed in '$HOME/.cargo/bin'"
 exit 0

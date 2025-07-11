@@ -14,22 +14,12 @@ RUSTFLAGS="-C passes=mem2reg,simplifycfg,instcombine,gvn,loop-unroll,licm"
 
 CARGO_PROFILE_RELEASE_LTO
 
+# Testing required:
 -Z tls-model=local-exec
 # -Z tls-model=initial-exec # smaller apps
-
-export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
-export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
-
-sudo sysctl -w kernel.randomize_va_space=0 || (echo 0 | sudo tee /proc/sys/kernel.randomize_va_space)
-sudo sysctl -w kernel.nmi_watchdog=0 || (echo 0 | sudo tee /proc/sys/kernel/nmi_watchdog)
-
-
 -C link-arg=--enable-new-dtags
-
-
 -C link-arg=--compact-branches -C link-arg=--icf=all 
 -C link-arg=-plugin-opt=--fat-lto-objects -C link-arg=-plugin-opt=--lto-aa-pipeline -C link-arg=-Wl,-plugin-opt=--lto-newpm-passes
-
 
 -C link-arg=-Wl,--ignore-data-address-equality
 -C link-arg=-Wl,--ignore-function-address-equality
@@ -37,5 +27,107 @@ LDFLAGS=(
 -Wl,--ignore-data-address-equality
 -Wl,--ignore-function-address-equality
 )
-
 mold doesnt have: --ignore-function-address-equality
+
+
+
+# Profile accuracy
+profileon () {
+    echo "Performance profiling on"
+    sudo bash -c "echo 0 > /proc/sys/kernel/randomize_va_space" || (sudo sysctl -w kernel.randomize_va_space=0)
+    sudo bash -c "echo 0 > /proc/sys/kernel/nmi_watchdog" || (sudo sysctl -w kernel.nmi_watchdog=0)
+    sudo bash -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+    sudo cpupower frequency-set --governor performance
+}
+
+profileoff () {
+    echo "Performance profiling off"
+    sudo bash -c "echo 1 > /proc/sys/kernel/randomize_va_space"
+    sudo bash -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+}
+
+
+
+
+# Git
+https://github.com/milobanks/greatness
+https://github.com/SuperCuber/dotter
+https://github.com/oknozor/toml-bombadil
+https://github.com/volllly/rotz
+https://github.com/plamorg/ambit
+https://crates.io/crates/ldfm
+https://crates.io/crates/dfm
+https://github.com/Addvilz/dots
+https://github.com/comtrya/comtrya
+https://github.com/RaphGL/Tuckr
+https://github.com/elkowar/yolk
+https://github.com/644/compressimages
+https://github.com/jkool702/forkrun
+https://crates.io/crates/trees-rs
+fisher install meaningful-ooo/sponge
+fisher install acomagu/fish-async-prompt
+
+shopt -u checkhash
+
+CCACHE_COMPRESS=true
+CCACHE_COMPRESSLEVEL=3
+CCACHE_INODECACHE=true
+
+
+
+RUSTFLAGS="-C link-args=-Wl,--emit-relocs" cargo build --release
+echo "Build a BOLT instrumented binary using the PGO profiles..."
+cargo pgo bolt build --with-pgo
+echo "Runing the binary to gather BOLT profiles..."
+./target/.../<binary>-bolt-instrumented
+echo "Optimizing binary with BOLT (and PGO) using the gathered profiles..."
+cargo pgo bolt optimize --with-pgo
+
+cargo pgo test || cargo pgo bench
+
+# https://kobzol.github.io/rust/cargo/2023/07/28/rust-cargo-pgo.html
+# trick to get 1 file for EACH perf record to prevent overrides
+LLVM_PROFILE_FILE=./target/pgo-profiles/%m_%p.profraw
+  ./target/release/x86_64-unknown-linux-gnu/foo
+
+PGO:
+-C passes=block-placement
+
+After bolt:
+-C passes=strip,adce
+
+-C profile-correction
+-Cllvm-args=-pgo-warn-missing-function -Cprofile-use
+
+cargo clean
+cargo-cache -efg >/dev/null 2>&1
+cargo update --recursive
+cargo-upgrade upgrade --recursive true --pinned allow
+cargo-fmt --all
+cargo clippy --fix
+cargo-sort -w --order package,dependencies,features
+cargo-udeps udeps --workspace --release --all-features --target x86_64-unknown-linux-gnu --keep-going
+cargo-udeps udeps --bins --lib --release
+cargo-machete --fix
+cargo-machete --fix --with-metadata
+cargo-minify --workspace --allow-dirty --allow-staged --allow-no-vcs
+cargo-minify --workspace --allow-dirty --allow-staged --allow-no-vcs --apply
+cargo fix --workspace --edition-idioms --allow-dirty --allow-staged --allow-no-vcs --bins --lib -r
+
+
+
+---------------------------------------
+Snippet:
+
+cargo-fast-install() {
+  RUSTUP_TOOLCHAIN=nightly \
+  RUSTC_BOOTSTRAP=1 \
+  RUSTFLAGS="-Z build-std=std,panic_abort -C target-cpu=native -C prefer-inline -Clto=thin -Ccodegen-units=1" \
+  cargo install "$@"
+}
+cargo-fast-install sd fd skim
+
+echo "🚀 Installing $CRATE with optimized flags..."
+
+---------------------------------------
+

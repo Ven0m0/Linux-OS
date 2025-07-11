@@ -84,15 +84,15 @@ if ((USE_MOLD)); then
     LFLAGS=(
       -C linker=clang
       -C link-arg=-fuse-ld=mold
-      -C link-arg=-flto # only for mold
     )
-    CLDFLAGS=(-fuse-ld=mold -flto)
+    CLDFLAGS=(-fuse-ld=mold)
   elif command -v clang >/dev/null 2>&1; then
     echo "→ using ld.lld via clang"
     LFLAGS=(
       -C linker=clang
       -C link-arg=-fuse-ld=lld
-      -C link-arg=--lto-O3
+      -C link-arg=-Wl,--ignore-function-address-equality
+      -C link-arg=--compact-branches
     )
     CLDFLAGS=(-fuse-ld=lld)
   fi
@@ -102,7 +102,36 @@ fi
 # Core optimization flags
 CFLAGS=(-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -Wno-error)
 CXXFLAGS=("${CFLAGS[@]}")
-LDFLAGS=(-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-gc-sections -Wl,-s -Wl,--icf=all "${CLDFLAGS[@]}")
+LDFLAGS=(
+  -Wl,-O3 
+  -Wl,--sort-common
+  -Wl,--as-needed
+  -Wl,-gc-sections
+  -Wl,-s
+  -Wl,-z,now
+  -Wl,-z,relro
+  -Wl,--icf=all
+  -Wl,--ignore-data-address-equality
+  -Wl,--enable-new-dtags
+  -Wl,--optimize-bb-jumps
+  -Wl,--compress-relocations
+  -Wl,-z,pack-relative-relocs
+  -Wl,--compress-debug-sections=zstd
+  -Wl,--lto-O3
+  -Wl,--lto-partitions=1
+  -Wl,-plugin-opt=--fat-lto-objects
+  -Wl,-plugin-opt=--lto-aa-pipeline
+  -Wl,-plugin-opt=--lto-newpm-passes
+  -flto
+  "${CLDFLAGS[@]}"
+)
+LINKARGS=(
+  -C link-arg=--enable-new-dtags
+  -C link-arg=-Wl,--ignore-data-address-equality
+  -C link-arg=-Wl,-plugin-opt=--fat-lto-objects
+  -C link-arg=-Wl,-plugin-opt=--lto-aa-pipeline
+  -C link-arg=-Wl,-plugin-opt=--lto-newpm-passes
+)
 RUSTFLAGS_BASE=(
   -C opt-level=3
   -C target-cpu=native
@@ -118,7 +147,7 @@ RUSTFLAGS_BASE=(
   -C force-frame-pointers=no
   -Z function-sections
   -Z threads="${jobs}"
-
+  -C link-arg=-flto
   -C link-arg=--lto-O3
   -C link-arg=--lto-emit-llvm
 )

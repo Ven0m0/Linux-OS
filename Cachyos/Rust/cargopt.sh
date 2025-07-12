@@ -31,10 +31,11 @@ echo "Set THP → $mode"
 
 # Clean up cargo cache on error
 cleanup() {
+  trap - ERR EXIT HUP QUIT TERM INT ABRT
   cargo-cache -efg >/dev/null 2>&1 || true  
   cargo clean >/dev/null 2>&1 || true
 }
-trap cleanup ERR EXIT  HUP QUIT TERM INT ABRT
+trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 
 # —————————————————————————————————————————————————————
 # Defaults & help
@@ -44,12 +45,12 @@ CRATE=""
 
 usage() {
   cat <<EOF >&2
-Usage: $0 [-mold] [--locked] <crate> [-h|--help]
+Usage: $0 [-m|-mold] [-l|--locked] <crate> [-h|--help]
 
-  -mold       use mold as the linker
-  --locked    pass --locked to cargo install
-  <crate>     name of the crate to install
-  -h,--help   display help
+  -m|-mold       use mold as the linker
+  -l|--locked    pass --locked to cargo install
+  <crate>        name of the crate to install
+  -h|--help      display help
 EOF
   exit 1
 }

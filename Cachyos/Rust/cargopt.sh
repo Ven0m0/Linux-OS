@@ -56,20 +56,31 @@ EOF
 
 # —————————————————————————————————————————————————————
 # Simple argument parsing
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
-  -mold)
+  -m|--mold)
     USE_MOLD=1
     shift
     ;;
-  --locked)
+  -l|--locked)
     LOCKED_FLAG="--locked"
     shift
     ;;
-  -h | --help) usage ;;
+  -h|--help)
+    usage
+    exit 0
+    ;;
+  --)
+    shift
+    break
+    ;;
   *)
-    if [ -z "$CRATE" ]; then
+    if [[ -z "$CRATE" ]]; then
       CRATE="$1"
+    else
+      echo "Error: unexpected argument '$1'" >&2
+      usage
+      exit 1
     fi
     shift
     ;;

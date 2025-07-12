@@ -71,7 +71,7 @@ if have fish; then
 fi
 if [[ ! -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
   echo "Reinstall fisher..."
-  curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+  curl -fsL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 fi  
 
 if [[ -d "$HOME/.basher" ]]; then

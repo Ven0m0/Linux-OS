@@ -34,7 +34,7 @@ cleanup() {
   cargo-cache -efg >/dev/null 2>&1 || true  
   cargo clean >/dev/null 2>&1 || true
 }
-trap cleanup ERR EXIT
+trap cleanup ERR EXIT  HUP QUIT TERM INT ABRT
 
 # —————————————————————————————————————————————————————
 # Defaults & help

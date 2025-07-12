@@ -17,16 +17,25 @@ export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0
 
 # Enable THP for compile speed
 mem_gb=$(awk '/^MemTotal:/ {print int($2/1024/1024)}' /proc/meminfo)
-mode=always
 if (( mem_gb > 16 )); then
-  mode=always
   export MIMALLOC_RESERVE_HUGE_OS_PAGES=2
   unset MIMALLOC_ALLOW_LARGE_OS_PAGES
+  mode=always
 else
-  mode=madvise
   export MIMALLOC_ALLOW_LARGE_OS_PAGES=1
   unset MIMALLOC_RESERVE_HUGE_OS_PAGES
+  mode=madvise
 fi
+if (( mem_gb > 16 )); then
+  export MIMALLOC_RESERVE_HUGE_OS_PAGES=2
+  unset  MIMALLOC_ALLOW_LARGE_OS_PAGES
+  mode=always
+else
+  export MIMALLOC_ALLOW_LARGE_OS_PAGES=1
+  unset  MIMALLOC_RESERVE_HUGE_OS_PAGES
+  mode=madvise
+fi
+
 echo "$mode" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
 echo "Set THP → $mode"
 
@@ -35,7 +44,7 @@ cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   cargo-cache -efg >/dev/null 2>&1 || true  
   cargo clean >/dev/null 2>&1 || true
-  rm -rf $HOME/.cache/sccache/* >/dev/null 2>&1 || true
+  rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || true
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 
@@ -241,7 +250,7 @@ MISC_OPT=(--ignore-rust-version -f --bins -j"${jobs}")
 
 # —————————————————————————————————————————————————————
 # Finally, install the crate
-echo "Installing '$CRATE' with optimized flags…"
-cargo +nightly "${INSTALL_FLAGS[@]}" install "$CRATE" ${LOCKED_FLAG} "${MISC_OPT[@]}" &&
+echo "Installing '$CRATE' with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
+cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATE" &&
   LANG=C.UTF-8 echo "🎉 $CRATE successfully installed in '$HOME/.cargo/bin'"
 exit 0

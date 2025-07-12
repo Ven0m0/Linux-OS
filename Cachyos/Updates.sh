@@ -31,7 +31,7 @@ ${suexec} pacman -Syu --noconfirm || :
 paru -Syu --noconfirm --combinedupgrade --nouseask --removemake --cleanafter --skipreview --nokeepsrc --sudo "/usr/bin/sudo" || :
 # 4) topgrade (ignore failures)
 if have topgrade; then
-  topgrade -c --disable=config_update --skip-notify -y \
+  topgrade --disable=config_update --skip-notify -y \
            --no-retry --disable=uv --disable=pipx --disable=shell --disable=yazi || :
 fi
 # pipx upgrade-all

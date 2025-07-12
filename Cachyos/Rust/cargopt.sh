@@ -2,16 +2,17 @@
 # shellcheck shell=bash
 set -euo pipefail
 IFS=$'\n\t'
-
 export LC_ALL=C LANG=C
 shopt -s nullglob globstar
+
+sync
 sudo -v
 sudo cpupower frequency-set --governor performance # Speed
 # https://kobzol.github.io/rust/rustc/2023/10/21/make-rust-compiler-5percent-faster.html
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
 # Mimalloc
-export MIMALLOC_ARENA_EAGER_COMMIT=1 MIMALLOC_PURGE_DELAY=25
+# export MIMALLOC_ARENA_EAGER_COMMIT=1 MIMALLOC_PURGE_DELAY=25
 export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0
 
 # Enable THP for compile speed
@@ -34,6 +35,7 @@ cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   cargo-cache -efg >/dev/null 2>&1 || true  
   cargo clean >/dev/null 2>&1 || true
+  rm -rf $HOME/.cache/sccache/*
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 

@@ -35,7 +35,7 @@ cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   cargo-cache -efg >/dev/null 2>&1 || true  
   cargo clean >/dev/null 2>&1 || true
-  rm -rf $HOME/.cache/sccache/*
+  rm -rf $HOME/.cache/sccache/* >/dev/null 2>&1 || true
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 

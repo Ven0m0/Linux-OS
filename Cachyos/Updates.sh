@@ -24,84 +24,86 @@ if [[ "$suexec" != "doas" ]]; then
   "${suexec}" -v || :
 fi
 
-echo "🔄 Updating system..."
-# 2) System update
+echo "🔄 System update using pacman..."
 ${suexec} pacman -Syu --noconfirm || :
-# 3) AUR update
+
+echo "AUR update..."
 paru -Syu --noconfirm --combinedupgrade --nouseask --removemake --cleanafter --skipreview --nokeepsrc --sudo "/usr/bin/sudo" || :
-# 4) topgrade (ignore failures)
+
 if have topgrade; then
-  topgrade --disable=config_update --skip-notify -y \
-           --no-retry --disable=uv --disable=pipx --disable=shell --disable=yazi || :
+  echo "update using topgrade..."
+  topno=(--disable={config_update,uv,pipx,shell,yazi,micro,system})
+  ${suexec} topgrade -y --skip-notify --no-retry "${topno[@]}" || :
 fi
 # pipx upgrade-all
-
-# 5) UV tool upgrade (background)
 if have uv; then
+  echo "UV tool upgrade..."
   uv tool upgrade --all & || :
 fi
 
-# 6) Rust toolchain
 if have rustup; then
+  echo "update Rust toolchain..."
   rustup update || :
 fi
 
-# Cargo‑based updaters
-if have cargo-updater; then
+echo "update cargo/rust binaries..."
+if have cargo-install-update; then
+  cargo install-update -agij"$(nproc)" || :
+elif have cargo-updater; then
   cargo updater -u || :
 elif have cargo-list; then
-  cargo list -uaI || :
-else
-  cargo install-update -agj 16 || :
+  cargo list -uaI || : 
 fi
 
 if have micro; then
+  echo "micro plugin update..."
   micro -plugin update || :
 fi
 
 if have yal then
+  echo "yazi update..."
   ya pkg upgrade || :
 fi
 
-# 9) Fisher (inside fish)
 if have fish; then
+  echo "update Fisher..."
   fish -c 'fisher update' || :
 fi
-# Reinstall fisher
-#curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+if [[ ! -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
+  echo "Reinstall fisher..."
+  curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+fi  
 
-# basher (if present)
-if [ -d "$HOME/.basher" ]; then
+if [[ -d "$HOME/.basher" ]]; then
     echo "🔄 Updating $HOME/.basher…"
     git -C "$HOME/.basher" pull || echo "⚠️ basher pull failed"
 fi
 
-# 11) tldr pages in background
 if have tldr; then
+  echo "update tldr pages..."
   tldr -u >/dev/null 2>&1 &
   ${suexec} tldr -u >/dev/null 2>&1 &
 fi
 
-# 12) sdboot-manage
 if have sdboot-manage; then
-    ${suexec} sdboot-manage update >/dev/null 2>&1
-    ${suexec} sdboot-manage remove
+  echo "update sdboot-manage..."
+  ${suexec} sdboot-manage update >/dev/null 2>&1
+  ${suexec} sdboot-manage remove
 fi
 
-# 13) fwupd
 if have fwupdmgr; then
+  echo "update with fwupd..."
   fwupdmgr refresh >/dev/null 2>&1 && fwupdmgr update &
 fi
 
-# 14) misc updates in background
+echo "misc updates in background..."
 have updatedb && ${suexec} updatedb
 have update-desktop-database && ${suexec} update-desktop-database
 have update-pciids && ${suexec} update-pciids >/dev/null 2>&1
 have update-smart-drivedb && ${suexec} update-smart-drivedb >/dev/null 2>&1
 
-# 15) systemd‑boot
 echo "🔍 Checking for systemd-boot..."
-if [ -d /sys/firmware/efi ] && have bootctl && bootctl is-installed >/dev/null 2>&1; then
+if [[ -d /sys/firmware/efi ]] && have bootctl && bootctl is-installed >/dev/null 2>&1; then
     echo "✅ systemd‑boot detected, updating…"
     ${suexec} bootctl update >/dev/null 2>&1 || :
     ${suexec} bootctl cleanup >/dev/null 2>&1
@@ -109,18 +111,17 @@ else
     echo "❌ systemd‑boot not present, skipping."
 fi
 
-# 16) Limine
-echo "🔍 Checking for Limine…"
-if fd limine.cfg /boot /boot/efi /mnt >/dev/null 2>&1; then
-  echo "✅ Limine config found."
-  have limine-update && ${suexec} limine-update || echo "⚠️ limine-update missing"
-  have limine-mkinitcpio && ${suexec} limine-mkinitcpio || echo "⚠️ limine-mkinitcpio missing"
+echo "Try to update kernel initcpio..."
+if have limine-mkinitcpio; then
+  ${suexec} limine-mkinitcpio
+elif have mkinitcpio; then
+  ${suexec} mkinitcpio -P
+elif have /usr/lib/booster/regenerate_images; then
+  ${suexec} /usr/lib/booster/regenerate_images
+elif have dracut-rebuild; then
+  ${suexec} dracut-rebuild
 else
-  echo "❌ Limine config not found; skipping."
+ echo "The initramfs generator was not found, please update initramfs manually..."
 fi
-
-# 17) Mkinitcpio
-# ${suexec} mkinitcpio -P
-# ${suexec} update-initramfs -u
 
 echo "✅ All done."

@@ -1,6 +1,6 @@
-# Run crabfetch/fastfetch as welcome message
+# Run welcome message
 function fish_greeting
-        crabfetch -d arch || fastfetch
+  crabfetch -d arch || fastfetch
 end
 
 # ─── Paths─────────────────────────────────────────────────────────
@@ -25,22 +25,19 @@ set -gx BATPIPE "color"
 
 set -gx DOTNET_CLI_TELEMETRY_OPTOUT 1
 
-# Avoid expensive VCS prompt delays
-set -g __fish_git_prompt_show_informative_status 0
-set -g __fish_git_prompt_showupstream none
-
-# Faster locale in for scripts
+# Faster locale
 if not status --is-interactive
   set -x LANG C; set -x LC_ALL C
+else
+  set -x LC_ALL C; set -x LANG C.UTF-8
 end
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
-    # Locale (Fast & Unicode-Compatible)
-    #set -x LANG C.UTF-8; set -x LC_ALL C.UTF-8
-
-    # Fast prompt (truncate deep paths)
-    set fish_prompt_pwd_dir_length 1
+    # Fast prompt
+    set -gx fish_prompt_pwd_dir_length 1
+    set -gx __fish_git_prompt_show_informative_status 0
+    set -gx __fish_git_prompt_showupstream none
 
     # Aliases: safe & efficient defaults
     alias cat='bat --strip-ansi=auto --squeeze-blank --style=auto --paging=auto'

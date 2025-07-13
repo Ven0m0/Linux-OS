@@ -13,9 +13,3 @@ disable=SC2250
 
 # Add the script directory to the search path for source statements
 source-path=SCRIPTDIR
-
-# Turn on warnings for unquoted variables with safe values
-# enable=quote-safe-variables
-
- # Turn on warnings for unassigned uppercase variables
-# enable=check-unassigned-uppercase

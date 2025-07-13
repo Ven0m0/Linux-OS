@@ -43,6 +43,10 @@ PROTON_ENABLE_NGX_UPDATER=1
 
 QT_LOGGING_RULES='*=false'
 _JAVA_AWT_WM_NONREPARENTING=1
+
+# Jemalloc
+MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
+_RJEM_MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 # https://github.com/microsoft/mimalloc/blob/main/docs/environment.html
 MIMALLOC_VERBOSE=0
 MIMALLOC_SHOW_ERRORS=0

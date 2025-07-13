@@ -14,6 +14,7 @@
 	sparseCheckout = true
 	sparseCheckoutCone = true
 	fsyncMethod = batch
+	fsmonitor = true
 [interactive]
 	diffFilter = delta --color-only --features=interactive
 [color]
@@ -42,8 +43,10 @@
 	suppressBlankEmpty = true
 	renames = copies
 	colorMoved = plain
+	tool = meld
 [merge]
 	conflictStyle = zdiff3
+	tool = meld
 [rerere]
 	enabled = true
 	autoupdate = true
@@ -109,6 +112,7 @@
 	experimental = true
 [status]
 	aheadBehind = true
+	showUntrackedFiles = no
 [submodule]
 	fetchJobs = 8
 [format]
@@ -126,3 +130,11 @@
 	reflog = delta
 	show = delta
 	diff = delta
+[advice]
+	statusUoption = false
+[mergetool "meld"]
+	useAutoMerge = true
+[mergetool]
+	prompt = false
+[difftool]
+	prompt = false

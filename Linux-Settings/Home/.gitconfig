@@ -101,7 +101,7 @@
 [fsck]
 	duplicateEntries = true
 [apply]
-	whitespace = "nowarn"
+	whitespace = "fix"
 [delta]
 	hyperlinks = true
 	features = decorations

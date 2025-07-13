@@ -9,3 +9,7 @@ status --is-interactive; and . (basher init - fish | psub)
 # Prompt
 starship init fish | source
 pay-respects fish --alias | source
+zoxide init fish | source
+# Async prompt
+set -g async_prompt_functions fish_prompt fish_right_prompt
+set -g async_prompt_enable 1

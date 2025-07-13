@@ -1,38 +1,40 @@
-# EditorConfig helps developers define and maintain consistent
-# coding styles between different editors and IDEs
-# editorconfig.org
+# EditorConfig
+# http://EditorConfig.org
 
+# Don't search any further up the directory tree
 root = true
 
+# Baseline
 [*]
 end_of_line = lf
 charset = utf-8
-trim_trailing_whitespace = true
-# Set width of soft tabs and number of columns used for indentation levels.
-indent_size = 4
 indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Shell scripts
+[*.sh]
+max_line_length = 79
+keep_padding = true
+space_redirects = true
+switch_case_indent = true
+
+# Markdown
+[*.md]
+# trailing whitespaces have meaning on Markdown interpretation
+trim_trailing_whitespace = false
 
 [{Makefile,**.mk}]
-# Use tabs for indentation (Makefiles require tabs)
+# Makefiles require tabs
 indent_style = tab
 indent_size=4
 
-[*.md]
-# Keep trailing whitespaces as they have meaning on Markdown interpretation.
-trim_trailing_whitespace = false
-
 [*.{go,rs,zig,fish}]
-indent_size=4
 indent_style=tab
+indent_size=4
 
-[*.js]
-charset = utf-8
-end_of_line = lf
-indent_size = 2
-indent_style = space
-insert_final_newline = true
-max_line_length = 80
-trim_trailing_whitespace = true
+
 
 [*.{yml,yaml}]
 indent_size = 2

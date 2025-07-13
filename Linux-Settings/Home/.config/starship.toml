@@ -6,7 +6,6 @@ $username\
 $hostname\
 $directory\
 $git_branch\
-$rust\
 $custom\
 $character"""
 
@@ -23,9 +22,6 @@ success_symbol = '[➜](bold green)'
 [directory]
 style = "purple"
 truncate_to_repo = true
-
-[rust]
-symbol = "󱘗 "
 
 [username]
 disabled = false

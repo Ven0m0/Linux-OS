@@ -1,4 +1,4 @@
-function touch --description "touch + mkdir -p"
+function touch -d "touch + mkdir -p" -w "touch"
   for f in $argv
     set dir (dirname "$f")
     set depth (count (string split '/' "$dir"))

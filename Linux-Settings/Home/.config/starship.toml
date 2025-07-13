@@ -1,22 +1,19 @@
 # Get editor completions based on the config schema
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# Only show the current directory
-#format = """$directory$character"""
-
 format = """
 $username\
 $hostname\
 $directory\
 $git_branch\
-$line_break$character"""
+$rust\
+$custom\
+$character"""
 
 right_format = ""
-# right_format = "$custom"
 
 # Don’t add a blank line above the prompt
 add_newline = false
-
 scan_timeout = 10
 
 # Customize the prompt symbol
@@ -26,7 +23,9 @@ success_symbol = '[➜](bold green)'
 [directory]
 style = "purple"
 truncate_to_repo = true
-truncation_symbol = '…/'
+
+[rust]
+symbol = "󱘗 "
 
 [username]
 disabled = false
@@ -42,6 +41,8 @@ disabled = false
 
 [git_branch]
 disabled = false
+truncation_length = 4
+truncation_symbol = ''
 
 # https://github.com/fwdekker/mommy
 [custom.mommy]

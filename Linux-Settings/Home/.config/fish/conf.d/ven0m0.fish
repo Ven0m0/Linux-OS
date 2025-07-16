@@ -17,12 +17,11 @@ set -gx GIT_EDITOR $EDITOR
 set -gx SYSTEMD_EDITOR $EDITOR
 set -x PAGER bat
 # -X -F disable mouse support
-set -gx LESS '-RQsn --no-histdups --mouse --wheel-lines=4'
-set -gx LESSOPEN "|/usr/bin/batpipe %s"
+# set -gx LESS '-RQsn --no-histdups --mouse --wheel-lines=4'
+# set -gx SYSTEMD_LESS $LESS
+# set -gx LESSOPEN "|/usr/bin/batpipe %s"
 set -gx LESSHISTFILE '-'
-set -gx SYSTEMD_LESS $LESS
 set -gx BATPIPE "color"
-
 set -gx DOTNET_CLI_TELEMETRY_OPTOUT 1
 
 # Faster locale
@@ -41,6 +40,7 @@ if status --is-interactive
 
     # Aliases: safe & efficient defaults
     alias cat='bat --strip-ansi=auto --squeeze-blank --style=auto --paging=auto'
+    #alias cat='bat --pager never'
 
     # My stuff
     alias sshdb='dbclient'
@@ -85,7 +85,9 @@ if status --is-interactive
       alias egrep='egrep --color=auto'
     end
 
-    alias cat='bat --pager never'
+    # you see nothing...
+    set -gx SHELL_MOMMYS_ONLY_NEGATIVE true
+    set -gx MOMMY_SWEETIE girl
 
     # Reset
     alias cls="clear; fish_greeting"

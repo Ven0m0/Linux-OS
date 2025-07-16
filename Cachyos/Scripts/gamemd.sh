@@ -1,5 +1,7 @@
 #!/bin/bash
 set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
 
 export LC_ALL=C LANG=C
 # export LC_ALL=C LANG=C.UTF-8

@@ -91,6 +91,7 @@ if status --is-interactive
 
     # Reset
     alias cls="clear; fish_greeting"
+    alias clear="clear; fish_greeting"
     abbr --add c cls
 
    # bind Esc Esc to toggle_sudo

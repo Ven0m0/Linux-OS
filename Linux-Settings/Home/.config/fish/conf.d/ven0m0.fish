@@ -1,7 +1,7 @@
 # Run welcome message
-function fish_greeting
-  crabfetch -d arch || fastfetch
-end
+#function fish_greeting
+  #crabfetch -d arch || fastfetch
+#end
 
 # ─── Paths─────────────────────────────────────────────────────────
 set -x XDG_CONFIG_HOME $HOME/.config
@@ -90,17 +90,16 @@ if status --is-interactive
     set -gx MOMMY_SWEETIE girl
 
     # Reset
-    alias cls="clear; fish_greeting"
-    alias clear="clear; fish_greeting"
-    abbr --add c cls
+    alias clear='command clear; and fish_greeting'
+    alias cls='command clear; and fish_greeting'
+    abbr --add c clear
 
    # bind Esc Esc to toggle_sudo
-   source ~/.config/fish/functions/presudo.fish
-   bind \e\e toggle_sudo
-
+   #source ~/.config/fish/functions/presudo.fish
+   #bind \e\e toggle_sudo
    function which
-     type $argv[1]
-   end
+    command -v $argv[1] 
+   end 
 end
 
 # ─── Path Deduplication ─────────────────────────────────────────────────────────
@@ -116,4 +115,3 @@ for dir in $PATH
 end
 
 set -gx PATH $newpath
-

@@ -14,5 +14,3 @@ fzf --fish | source
 # Async prompt
 set -U async_prompt_functions fish_prompt fish_right_prompt
 set -gx async_prompt_enable 1
-# you see nothing stranger...
-set -gx SHELL_MOMMYS_ONLY_NEGATIVE true

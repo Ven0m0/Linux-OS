@@ -73,7 +73,7 @@
 	prune = true
 	pruneTags = true
 	all = true
-	parallel = 8
+	parallel = 0
 [help]
 	autoCorrect = prompt
 [rebase]
@@ -105,6 +105,8 @@
 [delta]
 	hyperlinks = true
 	features = decorations
+	line-numbers = true
+	decorations = true
 [protocol]
 	version = 2
 [feature]
@@ -113,6 +115,7 @@
 [status]
 	aheadBehind = true
 	showUntrackedFiles = no
+    short = true
 [submodule]
 	fetchJobs = 8
 [format]
@@ -132,6 +135,8 @@
 	diff = delta
 [advice]
 	statusUoption = false
+[merge]
+  ff = only
 [mergetool "meld"]
 	useAutoMerge = true
 [mergetool]

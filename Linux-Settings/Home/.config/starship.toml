@@ -24,7 +24,8 @@ style = "purple"
 truncate_to_repo = true
 
 [username]
-disabled = false
+# disabled = true
+show_always = false
 
 [git_status]
 format = '([\[$all_status$ahead_behind\]]($style) )'
@@ -32,13 +33,22 @@ disabled = true
 use_git_executable = false
 ignore_submodules = false
 
-[line_break]
-disabled = false
-
 [git_branch]
 disabled = false
 truncation_length = 4
 truncation_symbol = ''
+
+[line_break]
+disabled = false
+
+[time]
+disabled = true
+use_12hr = false
+time_format = '%T'
+
+[package]
+format = 'via $version(208 bold) '
+disabled = false
 
 # https://github.com/fwdekker/mommy
 [custom.mommy]

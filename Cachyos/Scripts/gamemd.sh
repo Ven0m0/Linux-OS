@@ -1,8 +1,18 @@
 #!/bin/bash
+set -euo pipefail
 
-LC_ALL=C
-LANG=C
+export LC_ALL=C LANG=C
+# export LC_ALL=C LANG=C.UTF-8
 
+# Cache commands
+hash -r
+hash sudo
+hash grep rg fd find awk
+hash cp rm mv tee
+hash pacman paru cargo git
+hash clang rustc make
+hash ghostty konsole rio alacritty
+hash java
 sudo -v
 
 echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler

@@ -1,7 +1,16 @@
+# Don't let ripgrep vomit really long lines to my terminal, and show a preview.
 --max-columns=150
 --max-columns-preview
+
+# Using glob patterns to include/exclude files or folders
+--glob=!.git/*
+
+# Disable regular expression matching and treat the pattern as a literal string
+# Quicker and more grep like
+--fixed-strings
+
 --smart-case
---threads $(nproc)
+# --threads $(nproc)
 --max-depth 5
 --one-file-system
 --trim

@@ -62,7 +62,7 @@ cargo install hitdns
 
 # https://github.com/jedisct1/EtchDNS
 
-
+https://github.com/macp3o/linux-tweaks
 
 # Dotfiles
 

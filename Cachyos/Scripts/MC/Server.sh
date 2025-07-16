@@ -3,6 +3,11 @@ set -euo pipefail
 
 export LC_ALL=C
 export LANG=C
+
+hash -r
+hash sudo tee
+hash java playit konsole ghostty rio alacritty
+
 sudo -v
 
 # Set performance profiles

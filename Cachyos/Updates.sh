@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-#set -euo pipefail
-set -uo pipefail
+set -euo pipefail
+#set -uo pipefail
 IFS=$'\n\t'
 export LC_ALL=C LANG=C.UTF-8
 shopt -s nullglob globstar
@@ -10,15 +10,20 @@ shopt -s nullglob globstar
 have() { command -v "$1" >/dev/null 2>&1; }
 
 # 1) Detect and cache privilege executor
+hash -r
 if have sudo-rs; then
   suexec="sudo-rs"
-elif have "/usr/bin/sudo"; then
+elif [ -x /usr/bin/sudo ]; then
   suexec="/usr/bin/sudo"
 elif have "sudo"; then
   suexec="sudo"
 elif have doas; then
   suexec="doas"
 fi
+
+# Cache command path lookups
+hash "$suexec" cargo git curl pacman paru
+
 # Only run `-v` if not doas
 if [[ "$suexec" != "doas" ]]; then
   "${suexec}" -v || :

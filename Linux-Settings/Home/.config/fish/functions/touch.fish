@@ -1,6 +1,7 @@
-function touch --description "touch + mkdir -p"
+function touch2 --description "touch + mkdir -p, with tilde handling"
   for f in $argv
-    mkdir -p (dirname -- "$f")
-    command touch -- "$f"
+    set path (string replace -ra '^~' $HOME $f)
+    mkdir -p (dirname -- "$path")
+    command touch -- "$path"
   end
 end

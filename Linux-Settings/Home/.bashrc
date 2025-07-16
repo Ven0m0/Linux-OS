@@ -11,7 +11,8 @@ export LC_ALL=C LANG=C.UTF-8
 
 # alias ls='ls --color=auto'
 # alias grep='grep --color=auto'
-PS1='[\u@\h \W]\$ '
+#PS1='[\u@\h \W]\$ '
+PS1='[\u \W]\$ '
 . "$HOME/.cargo/env"
 
 # https://github.com/iffse/pay-respects

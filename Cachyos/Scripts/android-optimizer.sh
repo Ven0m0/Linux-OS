@@ -24,6 +24,9 @@ adb shell setprop debug.mdpcomp.enable 1
 adb shell setprop debug.enable_dmabuf 1
 adb shell setprop debug.sf.predict_hwc_composition_strategy 1
 adb shell setprop debug.hwui.use_buffer_age true
+
+adb shell setprop debug.atrace.tags.enableflags 0
+
 adb shell pm art cleanup
 adb shell pm trim-caches 999999999999999999
 

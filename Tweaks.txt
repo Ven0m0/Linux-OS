@@ -162,7 +162,7 @@ Env:
 export PATH="$HOME/.cargo/bin:$PATH"
 
 # Steam
-mkdir -p ~/.steam/; mkdir -p ~/.steam/steam; echo 'unShaderBackgroundProcessingThreads 8' > ~/.steam/steam/steam_dev.cfg
+mkdir -p $HOME/.steam/steam; echo 'unShaderBackgroundProcessingThreads 8' > ~/.steam/steam/steam_dev.cfg
 
 sudo $EDITOR /etc/ananicy.d/00-types.types
 {"name": "java", "nice": -10, "latency_nice": -10, "ioclass": "best-effort"}

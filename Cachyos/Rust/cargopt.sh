@@ -17,7 +17,7 @@ orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
 # —————————————————————————————————————————————————————
 sync; sudo -v
 rustup update
-# https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
+
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
@@ -83,6 +83,7 @@ done
 jobs="$(nproc)"
 cd "$HOME"
 
+# https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
 # Use sccache if installed
 if command -v sccache >/dev/null 2>&1; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache

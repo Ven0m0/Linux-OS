@@ -3,12 +3,21 @@
 set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
+# —————————————————————————————————————————————————————
+# Speed and caching
 export LC_ALL=C LANG=C
-
-sync
-sudo -v
+hash -r
+hash sudo cargo rustc lld mold clang nproc sccache cat
+# —————————————————————————————————————————————————————
+# Save originals
+orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)
+orig_perf=$(sysctl -n kernel.perf_event_paranoid)
+orig_turbo=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
+orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
+# —————————————————————————————————————————————————————
+sync; sudo -v
+rustup update
 # https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
-SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || true
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
@@ -77,6 +86,7 @@ cd "$HOME"
 # Use sccache if installed
 if command -v sccache >/dev/null 2>&1; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
+  SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || true
 else
   export CC="clang" CXX="clang++"
   unset RUSTC_WRAPPER

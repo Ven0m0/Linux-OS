@@ -2,9 +2,10 @@
 # shellcheck shell=bash
 set -euo pipefail
 IFS=$'\n\t'
+
 export LC_ALL=C LANG=C
 shopt -s nullglob globstar
-
+hash rm sudo
 sudo sync
 sudo -v
 
@@ -30,7 +31,7 @@ sudo rm -rf /var/lib/systemd/coredump/
 rm -rf ~/.cache/*
 sudo rm -rf /root/.cache/*
 rm -rf ~/.var/app/*/cache/*
-# rm ~/.config/Trolltech.conf || :
+rm ~/.config/Trolltech.conf || :
 kbuildsycoca6 --noincremental || :
 
 # Empty global trash
@@ -56,8 +57,8 @@ rm -rf ~/.cache/thumbnails/*
 sudo rm -f /var/log/pacman.log || :
 sudo journalctl --rotate -q || :
 sudo journalctl --vacuum-time=1s -q || :
-#sudo rm -rf /run/log/journal/* /var/log/journal/* || :
-#sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || :
+sudo rm -rf /run/log/journal/* /var/log/journal/* || :
+sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || :
 
 # Shell history
 rm -f ~/.local/share/fish/fish_history ~/.config/fish/fish_history ~/.zsh_history ~/.bash_history ~/.history
@@ -83,7 +84,7 @@ sudo rm -f /root/.python_history
 rm -rf ~/.cache/mozilla/*
 rm -rf ~/.var/app/org.mozilla.firefox/cache/*
 rm -rf ~/snap/firefox/common/.cache/*
-rm -f ~/.mozilla/firefox/Crash\ Reports/*
+rm -rf ~/.mozilla/firefox/Crash\ Reports/*
 rm -rf ~/.var/app/org.mozilla.firefox/.mozilla/firefox/Crash\ Reports/*
 rm -rf ~/snap/firefox/common/.mozilla/firefox/Crash\ Reports/**
 

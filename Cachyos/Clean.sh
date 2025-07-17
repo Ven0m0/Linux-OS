@@ -3,7 +3,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-export LC_ALL=C LANG=C
+§export LC_ALL=C LANG=C
 shopt -s nullglob globstar
 hash rm sudo
 sudo sync

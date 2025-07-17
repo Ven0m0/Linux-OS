@@ -2,42 +2,21 @@
 # shellcheck shell=bash
 set -euo pipefail
 IFS=$'\n\t'
-export LC_ALL=C LANG=C
 shopt -s nullglob globstar
+export LC_ALL=C LANG=C
 
 sync
 sudo -v
-sudo cpupower frequency-set --governor performance # Speed
-# https://kobzol.github.io/rust/rustc/2023/10/21/make-rust-compiler-5percent-faster.html
+# https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
+SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || true
+sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
-# Mimalloc
-# export MIMALLOC_ARENA_EAGER_COMMIT=1 MIMALLOC_PURGE_DELAY=25
 export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0
-
-# Enable THP for compile speed
-mem_gb=$(awk '/^MemTotal:/ {print int($2/1024/1024)}' /proc/meminfo)
-if (( mem_gb > 16 )); then
-  export MIMALLOC_RESERVE_HUGE_OS_PAGES=2
-  unset MIMALLOC_ALLOW_LARGE_OS_PAGES
-  mode=always
-else
-  export MIMALLOC_ALLOW_LARGE_OS_PAGES=1
-  unset MIMALLOC_RESERVE_HUGE_OS_PAGES
-  mode=madvise
-fi
-if (( mem_gb > 16 )); then
-  export MIMALLOC_RESERVE_HUGE_OS_PAGES=2
-  unset  MIMALLOC_ALLOW_LARGE_OS_PAGES
-  mode=always
-else
-  export MIMALLOC_ALLOW_LARGE_OS_PAGES=1
-  unset  MIMALLOC_RESERVE_HUGE_OS_PAGES
-  mode=madvise
-fi
-
-echo "$mode" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
-echo "Set THP → $mode"
+export MIMALLOC_ALLOW_LARGE_OS_PAGES=1
+unset MIMALLOC_RESERVE_HUGE_OS_PAGES
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
+echo "Set THP → always"
 
 # Clean up cargo cache on error
 cleanup() {
@@ -92,7 +71,6 @@ while [[ $# -gt 0 ]]; do
     else
       echo "Error: unexpected argument '$1'" >&2
       usage
-      exit 1
     fi
     shift
     ;;
@@ -250,6 +228,7 @@ MISC_OPT=(--ignore-rust-version -f --bins -j"${jobs}")
 
 # —————————————————————————————————————————————————————
 # Finally, install the crate
+sync
 echo "Installing '$CRATE' with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
 cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATE" &&
   LANG=C.UTF-8 echo "🎉 $CRATE successfully installed in '$HOME/.cargo/bin'"

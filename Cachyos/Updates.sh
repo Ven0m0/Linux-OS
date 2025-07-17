@@ -43,7 +43,7 @@ fi
 # pipx upgrade-all
 if have uv; then
   echo "UV tool upgrade..."
-  uv tool upgrade --all & || :
+  uv tool upgrade --all >/dev/null 2>&1 || :
 fi
 
 if have rustup; then

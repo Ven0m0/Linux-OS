@@ -8,6 +8,20 @@ compress_extension=.txt:.log
 # Experimental
 age_extent_cache
 
+f2fs
+compress_cache fsync_mode=posix 
+alloc_mode=reuse vs alloc_mode=default
+nat_bits
+
+compress_extension=txt
+
+pi3:
+memory=low
+
+
+
+
+
 XFS:
 noatime,lazytime,inode64,swalloc,largeio,logbufs=8,logbsize=256k
 

@@ -1,9 +1,11 @@
 /*
- * Prevent Tab Overflow
+ * Prevent Tab Overflow + Remove padding between tabs
  */
 .tabbrowser-tab {
   min-width: 1em !important;
   clip-width: 1em !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 /*
@@ -20,4 +22,25 @@
 #sidebar {
     max-width: none !important;
     min-width: 0px !important;
+}
+
+/* Adjust tab corner shape, optionally remove space below tabs */
+#tabbrowser-tabs {
+    --user-tab-rounding: 4px;
+}
+
+.tab-background {
+    border-radius: var(--user-tab-rounding) !important;
+}
+
+/* Inactive tabs: Separator line style */
+.tabbrowser-tab:not([selected=true]):not([multiselected=true]):not([beforeselected-visible="true"]) .tab-background {
+    border-right: 1px solid var(--lwt-background-tab-separator-color, rgba(0, 0, 0, .20)) !important;
+}
+/* For dark backgrounds */
+[brighttext="true"] .tabbrowser-tab:not([selected=true]):not([multiselected=true]):not([beforeselected-visible="true"]) .tab-background {
+    border-right: 1px solid var(--lwt-background-tab-separator-color, var(--lwt-selected-tab-background-color, rgba(255, 255, 255, .20))) !important;
+}
+.tabbrowser-tab:not([selected=true]):not([multiselected=true]) .tab-background {
+    border-radius: 0 !important;
 }

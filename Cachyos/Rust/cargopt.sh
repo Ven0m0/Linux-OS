@@ -50,30 +50,17 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
   -m|--mold)
-    USE_MOLD=1
-    shift
-    ;;
+    USE_MOLD=1; shift;;
   -l|--locked)
-    LOCKED_FLAG="--locked"
-    shift
-    ;;
+    LOCKED_FLAG="--locked"; shift;;
   -h|--help)
-    usage
-    exit 0
-    ;;
+    usage; exit 0;;
   --)
-    shift
-    break
-    ;;
+    shift; break;;
+  -*)
+    printf 'Error: invalid option: %s\n' "$1" >&2; usage; exit 1;;
   *)
-    if [[ -z "$CRATE" ]]; then
-      CRATE="$1"
-    else
-      echo "Error: unexpected argument '$1'" >&2
-      usage
-    fi
-    shift
-    ;;
+    CRATES+=( "$1" ); shift;;
   esac
 done
 

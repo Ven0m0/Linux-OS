@@ -7,26 +7,18 @@ shopt -s nullglob globstar
 # Speed and caching
 export LC_ALL=C LANG=C
 hash -r
-hash sudo cargo rustc lld mold clang nproc sccache cat
+hash  cargo rustc  nproc sccache cat sudo
 # —————————————————————————————————————————————————————
+# Preparation
+sync; sudo -v
+rustup update
 # Save originals
 orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)
 orig_perf=$(sysctl -n kernel.perf_event_paranoid)
 orig_turbo=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
 orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
+
 # —————————————————————————————————————————————————————
-sync; sudo -v
-rustup update
-
-sudo cpupower frequency-set --governor performance
-export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
-export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
-export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0
-export MIMALLOC_ALLOW_LARGE_OS_PAGES=1
-unset MIMALLOC_RESERVE_HUGE_OS_PAGES
-echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
-echo "Set THP → always"
-
 # Clean up cargo cache on error
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
@@ -35,7 +27,6 @@ cleanup() {
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || true
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
-
 # —————————————————————————————————————————————————————
 # Defaults & help
 USE_MOLD=0
@@ -106,6 +97,10 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 export CARGO_BUILD_JOBS="${jobs}"
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
+# Jemalloc tweaks (rust is build with jemalloc)
+export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
+export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
 
 # ensure RUSTFLAGS is set
 : "${RUSTFLAGS:=}"
@@ -118,6 +113,7 @@ if ((USE_MOLD)); then
       -C link-arg=-fuse-ld=mold
     )
     CLDFLAGS=(-fuse-ld=mold)
+    hash clang mold
   elif command -v clang >/dev/null 2>&1; then
     echo "→ using ld.lld via clang"
     LFLAGS=(
@@ -128,17 +124,19 @@ if ((USE_MOLD)); then
       -C link-arg=--compact-branches
     )
     CLDFLAGS=(-fuse-ld=lld)
+    
   else
     echo "→ falling back to ld.lld via linker-flavor"
     LFLAGS=(-C linker-flavor=ld.lld -C linker-features=lld)
     CLDFLAGS=(-fuse-ld=lld)
   fi
 fi
+hash clang lld
 
 # —————————————————————————————————————————————————————
 # Core optimization flags
-CFLAGS=(-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -Wno-error)
-CXXFLAGS=("${CFLAGS[@]}")
+CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections"
+CXXFLAGS="${CFLAGS}"
 LDFLAGS=(
   -Wl,-O3 
   -Wl,--sort-common
@@ -163,10 +161,12 @@ LDFLAGS=(
   -flto
   "${CLDFLAGS[@]}"
 )
-# https://github.com/johnthagen/min-sized-rust
-# # https://doc.rust-lang.org/rustc/codegen-options/index.html#embed-bitcode
-# # "-C link-arg=-flto" needed for mold
-# "-Z threads=8" https://nnethercote.github.io/perf-book/build-configuration.html#experimental-parallel-front-end
+
+# https://github.com/johnthagen/min-sized-rust / https://doc.rust-lang.org/rustc/codegen-options/index.html
+# https://nnethercote.github.io/perf-book/build-configuration.html
+# "-C link-arg=-flto" needed for mold
+# -C embed-bitcode=y  // maybe not needed with "-C linker-plugin-lto"
+
 RUSTFLAGS_BASE=(
   -C opt-level=3
   -C target-cpu=native
@@ -174,7 +174,6 @@ RUSTFLAGS_BASE=(
   -C strip=true
   -C lto=fat
   -C link-arg=-flto
-  #-C embed-bitcode=y
   -C linker-plugin-lto
   -Z tune-cpu=native
   -C debuginfo=0
@@ -183,7 +182,6 @@ RUSTFLAGS_BASE=(
   -Z default-visibility=hidden
   -Z dylib-lto
   -C force-frame-pointers=n
-  #-C force-unwind-tables=n
   -C link-dead-code=n
   -Z function-sections
   -Z location-detail=none
@@ -226,6 +224,7 @@ MISC_OPT=(--ignore-rust-version -f --bins -j"${jobs}")
 
 # —————————————————————————————————————————————————————
 # Finally, install the crate
+sudo cpupower frequency-set --governor performance
 sync
 echo "Installing '$CRATE' with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
 cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATE" &&

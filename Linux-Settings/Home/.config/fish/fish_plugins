@@ -1,5 +1,12 @@
 jorgebucaran/fisher
 meaningful-ooo/sponge
 acomagu/fish-async-prompt
-eth-p/fish-plugin-sudo
 archelaus/shell-mommy
+oh-my-fish/plugin-sudope
+oh-my-fish/plugin-xdg
+oh-my-fish/plugin-ssh
+patrickf1/fzf.fish
+gyakovlev/fish-fzy
+icezyclon/zoxide.fish
+kyohsuke/fish-evalcache
+kpbaks/ctrl-z.fish

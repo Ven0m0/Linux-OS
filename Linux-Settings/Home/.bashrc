@@ -103,12 +103,15 @@ shopt -s autocd 2> /dev/null
 shopt -s dirspell 2> /dev/null
 shopt -s cdspell 2> /dev/null
 shopt -s checkwinsize
+bind 'set completion-query-items 0'
+bind 'set page-completions off'
 bind "set completion-ignore-case on"
+bind 'set menu-complete-display-prefix on'
 bind "set completion-map-case on"
 bind "set show-all-if-ambiguous on"
 bind "set mark-symlinked-directories on"
-shopt -s globstar 2> /dev/null
-shopt -s nocaseglob;
+shopt -s globstar
+shopt -s nocaseglob
 
 # Add tab completion for SSH hostnames based on ~/.ssh/config, ignoring wildcards
 if [ -e "$HOME/.ssh/config" ]; then

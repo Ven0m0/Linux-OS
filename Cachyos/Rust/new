@@ -151,11 +151,6 @@ Backup:
 cargo install hbackup
 https://github.com/sourcefrog/conserve
 
-Minecraft:
-https://crates.io/crates/anvil-mc
-https://crates.io/crates/mc-repack cargo install mc-repack
-https://crates.io/crates/mcvcli cargo install mcvcli
-
 Editors:
 https://github.com/lapce/lapce https://lap.dev
 https://github.com/zed-industries/zed https://zed.dev

@@ -13,11 +13,11 @@ pre_sudo = true
 
 # Sudo command to be used
 # sudo_command = "sudo"
-sudo_command = "sudo-rs"
+sudo_command = "doas"
 
 # Disable specific steps - same options as the command line flag
 # disable = ["system", "emacs"]
-disable = ["config_update", "micro", "uv", "pipx", "shell", "yazi", "system"]
+disable = ["config_update", "micro", "uv", "pipx", "shell", "yazi", "system", "rustup"]
 
 # Ignore failures for these steps
 ignore_failures = ["system"]

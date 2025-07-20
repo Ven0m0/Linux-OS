@@ -8,17 +8,22 @@ root = true
 [*]
 end_of_line = lf
 charset = utf-8
-indent_style = space
-indent_size = 4
 trim_trailing_whitespace = true
 insert_final_newline = true
 
 # Shell scripts
-[*.sh]
-max_line_length = 79
+[*.{sh,bash}]
 keep_padding = true
 space_redirects = true
 switch_case_indent = true
+indent_style = space
+indent_size = 2
+tab_width = 2
+function_next_line = true
+binary_next_line = true
+
+[*.bash]
+shell_variant = bash
 
 # Markdown
 [*.md]

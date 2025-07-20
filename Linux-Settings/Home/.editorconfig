@@ -38,8 +38,3 @@ indent_size=4
 [*.{go,rs,zig,fish}]
 indent_style=tab
 indent_size=4
-
-
-
-[*.{yml,yaml}]
-indent_size = 2

@@ -11,16 +11,16 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 # 1) Detect and cache privilege executor
 hash -r
-if have sudo-rs; then
-  suexec="sudo-rs"
-elif [ -x /usr/bin/sudo ]; then
-  suexec="/usr/bin/sudo"
-elif have "sudo"; then
-  suexec="sudo"
-elif have doas; then
-  suexec="doas"
-fi
-
+#if have sudo-rs; then
+  #suexec="sudo-rs"
+#elif [ -x /usr/bin/sudo ]; then
+  #suexec="/usr/bin/sudo"
+#elif have "sudo"; then
+  #suexec="sudo"
+#elif have doas; then
+  #suexec="doas"
+#fi
+suexec="sudo"
 # Cache command path lookups
 hash "$suexec" cargo git curl pacman paru
 

@@ -13,7 +13,10 @@ PS1='[\u \W]\$ '
 . "$HOME/.cargo/env"
 
 # https://github.com/iffse/pay-respects
-eval "$(pay-respects bash --alias)"
+if command -v pay-respects >/dev/null 2>&1; then
+    eval "$(pay-respects bash --alias)"
+fi
+
 eval "$(fzf --bash)"
 eval "$(starship init bash)"
 export EDITOR=micro
@@ -30,7 +33,7 @@ export LESSHISTFILE='-'
 export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=never . || find . -type f'
 
 ## Useful aliases
-alias sshdb='dbclient'
+# alias sshdb='dbclient'
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
@@ -40,7 +43,7 @@ alias la='eza -a --color=always --group-directories-first --icons'  # all files 
 alias ll='eza -l --color=always --group-directories-first --icons'  # long format
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 alias l.="eza -a | grep -e '^\.'"                                   # show only dotfiles
-alias cat='bat --strip-ansi=auto --style=auto -s'
+# alias cat='bat --strip-ansi=auto --style=auto -s'
 
 # Stops ping after sending 4 ECHO_REQUEST packets.
 alias ping='ping -c 4'
@@ -50,7 +53,6 @@ alias mount='mount | column -t'
 
 # Creates parent directories on demand.
 alias mkdir='mkdir -p'
-
 alias edit='$EDITOR'
 
 # Enable aliases to be sudo’ed
@@ -77,7 +79,6 @@ export FZF_DEFAULT_COMMAND='fd -tf -F'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
 # options
-
 export HISTSIZE=1000
 export HISTFILESIZE=${HISTSIZE}
 export HISTCONTROL="erasedups:ignoreboth:ignorespace"

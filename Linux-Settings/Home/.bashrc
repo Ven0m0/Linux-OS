@@ -9,21 +9,17 @@ export LANG=C LC_ALL=C
 
 export LC_ALL=C LANG=C.UTF-8 
 
-# alias ls='ls --color=auto'
-# alias grep='grep --color=auto'
-#PS1='[\u@\h \W]\$ '
 PS1='[\u \W]\$ '
 . "$HOME/.cargo/env"
 
 # https://github.com/iffse/pay-respects
 eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
-
+eval "$(starship init bash)"
 export EDITOR=micro
 export VISUAL=$EDITOR
 alias editor='micro'
-# Nano modern keybinds
-alias nano='nano -/ '
+alias nano='nano -/ ' # Nano modern keybinds
 #export GIT_PAGER=delta
 #export CARGO_TERM_PAGER=bat
 # export PAGER=less
@@ -34,7 +30,7 @@ export LESSHISTFILE='-'
 export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=never . || find . -type f'
 
 ## Useful aliases
-alias ssh='dbclient'
+alias sshdb='dbclient'
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
@@ -60,12 +56,6 @@ alias edit='$EDITOR'
 # Enable aliases to be sudo’ed
 alias sudo='\sudo '
 
-#if command -v sudo-rs >/dev/null 2>&1; then
-  #alias sudo='\sudo-rs '
-#elif command -v doas >/dev/null 2>&1; then
-  #alias sudo='\doas '
-#fi
-
 # Ripgrep
 if command -v rg >/dev/null 2>&1; then
     alias rg='rg --no-stats --color=auto'
@@ -86,32 +76,37 @@ alias c='clear'
 export FZF_DEFAULT_COMMAND='fd -tf -F'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
-# LS color
-export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43'
-
 # options
-shopt -s histappend
-HISTSIZE=1000
-HISTFILESIZE=2000
-set -o noclobber
-export PROMPT_DIRTRIM=2
-shopt -s cmdhist
-export HISTCONTROL="erasedups:ignoreboth"
-export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
+
+export HISTSIZE=1000
+export HISTFILESIZE=${HISTSIZE}
+export HISTCONTROL="erasedups:ignoreboth:ignorespace"
+# export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
+export HISTIGNORE='&:[ ]*:ls:ll:la:bg:fg:cd:exit:clear:history:fish:bash'
 export HISTTIMEFORMAT='%F %T '
+
+export PROMPT_DIRTRIM=2
+shopt -s no_empty_cmd_completion
+shopt -s globstar
+shopt -s nocaseglob
+set -o noclobber
+shopt -s histappend
+shopt -s cmdhist
 shopt -s autocd 2> /dev/null
 shopt -s dirspell 2> /dev/null
 shopt -s cdspell 2> /dev/null
 shopt -s checkwinsize
+
+
+# Binds
 bind 'set completion-query-items 0'
 bind 'set page-completions off'
-bind "set completion-ignore-case on"
+bind 'set show-all-if-ambiguous on'
 bind 'set menu-complete-display-prefix on'
+bind "set completion-ignore-case on"
 bind "set completion-map-case on"
-bind "set show-all-if-ambiguous on"
 bind "set mark-symlinked-directories on"
-shopt -s globstar
-shopt -s nocaseglob
+
 
 # Add tab completion for SSH hostnames based on ~/.ssh/config, ignoring wildcards
 if [ -e "$HOME/.ssh/config" ]; then

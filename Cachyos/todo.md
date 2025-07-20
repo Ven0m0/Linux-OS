@@ -86,3 +86,10 @@ https://crates.io/crates/trees-rs
 fisher install meaningful-ooo/sponge
 fisher install acomagu/fish-async-prompt
 ```
+
+```
+ARCH="$(uname -m)"
+SHELL=/usr/bin/bash
+
+
+```

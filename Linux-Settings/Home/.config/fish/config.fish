@@ -7,10 +7,17 @@ set -gx PATH $basher $PATH
 status --is-interactive; and . (basher init - fish | psub)
 
 # Prompt
-starship init fish | source
-pay-respects fish --alias | source
-zoxide init fish | source
-fzf --fish | source
+#starship init fish | source
+#pay-respects fish --alias | source
+#zoxide init fish | source
+#fzf --fish | source
+
+_evalcache starship init fish
+_evalcache batman --export-env
+_evalcache pay-respects fish --alias
+_evalcache zoxide init fish
+_evalcache fzf --fish
+
 # Async prompt
 set -U async_prompt_functions fish_prompt fish_right_prompt
 set -gx async_prompt_enable 1

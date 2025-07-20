@@ -4,7 +4,7 @@
 # Allow UTF-8 input and output
 set input-meta on
 set output-meta on
-# set convert-meta off # apparently makes meta key act weird
+set convert-meta off
 
 # Be more intelligent when autocompleting
 set skip-completed-text on
@@ -23,9 +23,11 @@ set show-all-if-ambiguous on
 set completion-ignore-case On
 # It treats hyphens and underscores equally during the completion
 set completion-map-case on
+# turn off use of internal pager when returning long completion lists
+set page-completions off
+# don't match files starting with .
+set match-hidden-files off
 
-# some defaults / modifications for the emacs mode
-$if mode=emacs
 
 # allow the use of the Home/End keys
 # https://wiki.archlinux.org/index.php/Home_and_End_keys_not_working

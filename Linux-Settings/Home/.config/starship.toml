@@ -3,56 +3,95 @@
 
 format = """
 $username\
-$hostname\
 $directory\
-$git_branch\
-$custom\
+${custom.git_repo}\
+$hostname\
+$localip\
+$sudo\
+$shell\
 $character"""
 
-right_format = ""
+#right_format = ""
+right_format = "${custom.mommy}"
 
-# Don’t add a blank line above the prompt
+scan_timeout = 50
 add_newline = false
-scan_timeout = 10
+follow_symlinks = false
 
 # Customize the prompt symbol
 [character]
-success_symbol = '[➜](bold green)'
+success_symbol = '[>](bold green) '
+error_symbol = '[x](bold red) '
 
 [directory]
 style = "purple"
 truncate_to_repo = true
+fish_style_pwd_dir_length = 1
+format = '[$path]($style)[$read_only]($read_only_style)'
 
 [username]
-# disabled = true
+disabled = false
 show_always = false
+format = '[$user]($style)@'
 
-[git_status]
-format = '([\[$all_status$ahead_behind\]]($style) )'
+[hostname]
+ssh_only = true
+disabled = false
+trim_at = '.'
+
+[localip]
+ssh_only = true
+disabled = false
+
+[sudo]
 disabled = true
-use_git_executable = false
-ignore_submodules = false
-
-[git_branch]
-disabled = false
-truncation_length = 4
-truncation_symbol = ''
-
-[line_break]
-disabled = false
+style = 'bold red'
 
 [time]
 disabled = true
 use_12hr = false
 time_format = '%T'
 
+[git_branch]
+disabled = true
+truncation_length = 4
+truncation_symbol = ''
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )'
+disabled = true
+use_git_executable = false
+ignore_submodules = true
+
 [package]
 format = 'via $version(208 bold) '
+disabled = true
+
+[status]
 disabled = false
+symbol = "✖ "
+format = '[$symbol$status$custom]($style) '
+
+[shell]
+disabled = false
+format = '[$indicator]($style) '
+style = "cyan"
+bash_indicator = ' bsh'
+fish_indicator = ' fsh'
+ion_indicator = ' ion'
+unknown_indicator = ''
 
 # https://github.com/fwdekker/mommy
 [custom.mommy]
-disabled = true
-shell = ["fish", "-N"]
+disabled = false
+style = "red"
 command = "mommy -1 -s $status"
 when = "true"
+
+# Git repo name
+[custom.git_repo]
+command = "basename $(git rev-parse --show-toplevel 2>/dev/null || echo '')"
+#when = "git rev-parse --is-inside-work-tree >/dev/null 2>&1"
+require_repo = true
+style = "bold magenta"
+format = " [$output]($style)"

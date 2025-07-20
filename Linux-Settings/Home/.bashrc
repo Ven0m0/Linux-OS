@@ -108,17 +108,22 @@ bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
 
 # Deduplicate PATH (preserve order) — pure Bash (requires Bash 4+)
-if [[ ${BASH_VERSINFO[0]} -ge 4 ]]; then
-  IFS=: read -ra parts <<< "$PATH"
+dedupe_path() {
+  local IFS=':' i dir
   declare -A seen
-  newpath=()
+  local -a parts new_parts=()
+  # read into an array
+  read -r -a parts <<< "$PATH"
   for dir in "${parts[@]}"; do
-    [[ -n "$dir" && -z "${seen[$dir]}" ]] && newpath+=("$dir") && seen[$dir]=1
+    [[ -z $dir ]] && continue     # skip empty
+    if [[ -z ${seen[$dir]} ]]; then
+      seen[$dir]=1
+      new_parts+=("$dir")
+    fi
   done
-  PATH="${newpath[*]}"
-  PATH="${PATH// /:}"
+  # reassemble
+  PATH="${new_parts[*]}"
+  PATH="${PATH// /:}"               # replace spaces with colons
   export PATH
-else
-  # Fallback: use awk one-liner if Bash <4
-  export PATH="$(awk -v RS=: '!(seen[$1]++) {paths[++count]=$1} END {for(i=1;i<=count;i++) printf "%s%s", paths[i], (i<count ? ":" : "\n")}' <<<"$PATH")"
-fi
+}
+dedupe_path

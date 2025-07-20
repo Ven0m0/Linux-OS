@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 set -euo pipefail
-#set -uo pipefail
 IFS=$'\n\t'
 export LC_ALL=C LANG=C.UTF-8
 shopt -s nullglob globstar
@@ -11,19 +10,19 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 # 1) Detect and cache privilege executor
 hash -r
-#if have sudo-rs; then
-  #suexec="command sudo-rs"
-#elif have "sudo"; then
-  #suexec="command sudo"
-#elif have doas; then
-  #suexec="command doas"
-#fi
-export suexec="command sudo"
+if have sudo-rs; then
+  subin="command sudo-rs"
+elif have "sudo"; then
+  subin="command sudo"
+elif have doas; then
+  subin="command doas"
+fi
+export suexec="command ${subin}"
 # Cache command path lookups
-hash "$suexec" cargo git curl pacman paru
+hash "${subin}" cargo git curl pacman paru
 
 # Only run `-v` if not doas
-if [[ "$suexec" != "doas" ]]; then
+if [[ "$subin" != "doas" ]]; then
   "${suexec}" -v || :
 fi
 
@@ -31,11 +30,12 @@ echo "🔄 System update using pacman..."
 ${suexec} pacman -Syu --noconfirm || :
 
 echo "AUR update..."
-paru -Syu --noconfirm --combinedupgrade --nouseask --removemake --cleanafter --skipreview --nokeepsrc --sudo "/usr/bin/sudo" || :
+paru -Syu --noconfirm --combinedupgrade --nouseask --removemake \
+  --cleanafter --skipreview --nokeepsrc --sudo $(command -v sudo) || :
 
 if have topgrade; then
   echo "update using topgrade..."
-  topno=(--disable={config_update,uv,pipx,shell,yazi,micro,system})
+  topno=(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup})
   ${suexec} topgrade -y --skip-notify --no-retry "${topno[@]}" || :
 fi
 # pipx upgrade-all
@@ -46,7 +46,8 @@ fi
 
 if have rustup; then
   echo "update Rust toolchain..."
-  rustup update || :
+  # broken rn
+  #rustup update || :
 fi
 
 echo "update cargo/rust binaries..."

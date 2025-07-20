@@ -97,6 +97,8 @@ shopt -s autocd 2> /dev/null
 shopt -s dirspell 2> /dev/null
 shopt -s cdspell 2> /dev/null
 shopt -s checkwinsize
+shopt -u checkhash
+shopt -s hostcomplete
 
 # Binds
 bind 'set completion-query-items 0'

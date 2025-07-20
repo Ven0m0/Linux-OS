@@ -16,7 +16,6 @@ ehthumbs_vista.db
 # Dotfiles
 .bash_history
 .cache
-nv
 
 # Backups
 *.bak
@@ -39,10 +38,7 @@ node_modules/
 .pytest_cache/
 *.pyc
 *.pyo
+.Trashes
 
 # KDE directory preferences
 .directory
-
-# Other
-.git/
-*.orig

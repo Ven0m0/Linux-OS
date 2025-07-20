@@ -2,14 +2,14 @@
 # ~/.bashrc
 #
 
-export LANG=C LC_ALL=C
+# export LANG=C LC_ALL=C
 
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-export LC_ALL=C LANG=C.UTF-8 
+# export LC_ALL=C LANG=C.UTF-8 
 
-PS1='[\u \W]\$ '
+PS1='[\u@\h \W]\$ '
 . "$HOME/.cargo/env"
 
 # https://github.com/iffse/pay-respects
@@ -17,6 +17,7 @@ if command -v pay-respects >/dev/null 2>&1; then
     eval "$(pay-respects bash --alias)"
 fi
 
+# eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 eval "$(starship init bash)"
 export EDITOR=micro

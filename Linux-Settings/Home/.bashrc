@@ -97,7 +97,6 @@ shopt -s dirspell 2> /dev/null
 shopt -s cdspell 2> /dev/null
 shopt -s checkwinsize
 
-
 # Binds
 bind 'set completion-query-items 0'
 bind 'set page-completions off'
@@ -106,17 +105,6 @@ bind 'set menu-complete-display-prefix on'
 bind "set completion-ignore-case on"
 bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
-
-
-# Add tab completion for SSH hostnames based on ~/.ssh/config, ignoring wildcards
-if [ -e "$HOME/.ssh/config" ]; then
-  if command -v rg >/dev/null 2>&1; then
-    hosts="$(rg --no-filename --no-heading '^Host' "$HOME/.ssh/config" | grep -v '[?*]' | awk '{for(i=2;i<=NF;i++) print $i}')"
-  else
-    hosts="$(grep '^Host' "$HOME/.ssh/config" | grep -v '[?*]' | cut -d' ' -f2- | tr ' ' '\n')"
-  fi
-  complete -o default -o nospace -W "$hosts" ssh scp sftp
-fi
 
 # Deduplicate PATH (preserve order) — pure Bash (requires Bash 4+)
 if [[ ${BASH_VERSINFO[0]} -ge 4 ]]; then

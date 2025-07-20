@@ -6,6 +6,9 @@ set input-meta on
 set output-meta on
 set convert-meta off
 
+# Disabling control echo
+set echo-control-characters off
+
 # Be more intelligent when autocompleting
 set skip-completed-text on
 

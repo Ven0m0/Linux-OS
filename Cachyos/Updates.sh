@@ -125,7 +125,7 @@ elif have /usr/lib/booster/regenerate_images; then
 elif have dracut-rebuild; then
   ${suexec} dracut-rebuild
 else
- echo "The initramfs generator was not found, please update initramfs manually..."
+ printf "\\033[31m The initramfs generator was not found, please update initramfs manually...\\033[0m\\n"
 fi
 
 echo "✅ All done."

@@ -50,7 +50,6 @@ alias ls='eza -al --color=always --group-directories-first --icons' # preferred 
 alias la='eza -a --color=always --group-directories-first --icons'  # all files and dirs
 alias ll='eza -l --color=always --group-directories-first --icons'  # long format
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
-alias l.="eza -a | grep -e '^\.'"                                   # show only dotfiles
 # alias cat='bat --strip-ansi=auto --style=auto -s'
 
 # Stops ping after sending 4 ECHO_REQUEST packets.

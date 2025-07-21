@@ -66,6 +66,10 @@ shopt -s cdspell 2> /dev/null
 shopt -s hostcomplete
 shopt -u checkhash
 set -o noclobber
+# Pi3 fix low power message warning
+setterm --msg off 
+setterm --bfreq 0
+setterm --linewrap on
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'
 bind 'set page-completions off'
@@ -75,11 +79,6 @@ bind "set completion-ignore-case on"
 bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
 bind "set bell-style none"
-
-# Pi3 fix low power message warning
-setterm --msg off 
-setterm --bfreq 0
-setterm --linewrap on
 
 # ─── Aliases ─────────────────────────────────────────────────────────
 # alias sshdb='dbclient'

@@ -19,7 +19,6 @@ set -x PAGER bat
 # set -gx LESS '-RQsn --no-histdups --mouse --wheel-lines=4'
 set -gx LESSHISTFILE '-'
 set -gx BATPIPE color
-set -gx DOTNET_CLI_TELEMETRY_OPTOUT 1
 
 # Faster locale
 if not status --is-interactive

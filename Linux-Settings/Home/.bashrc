@@ -55,14 +55,13 @@ alias l.="eza -a | grep -e '^\.'"                                   # show only 
 
 # Stops ping after sending 4 ECHO_REQUEST packets.
 alias ping='ping -c 4'
-
 # Makes `mount` command output pretty and with a human readable format.
 alias mount='mount | column -t'
 
 # Creates parent directories on demand.
-alias mkdir='mkdir -p'
-alias edit='$EDITOR'
-
+alias mkdir='mkdir -p '
+alias edit='$EDITOR '
+alias suedit='sudo $EDITOR '
 # Enable aliases to be sudo’ed
 alias sudo='\sudo '
 

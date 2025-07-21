@@ -70,6 +70,7 @@ bind "set mark-symlinked-directories on"
 
 # Pi3 fix low power message warning
 setterm --msg off
+setterm --bfreq 0
 
 ## Useful aliases
 # alias sshdb='dbclient'

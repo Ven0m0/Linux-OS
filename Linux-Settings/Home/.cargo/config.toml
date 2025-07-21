@@ -14,14 +14,12 @@ resolver = "3" # new dependency resolver
 [net]
 git-fetch-with-cli = true
 retry = 2
-# offline = true # do not access the network
-offline = false
 
 [http]
 debug = false
 ssl-version = "tlsv1.3"
-ssl-version.max = "tlsv1.3"
-ssl-version.min = "tlsv1.2"
+#ssl-version.max = "tlsv1.3"
+#ssl-version.min = "tlsv1.2"
 check-revoke = false
 multiplexing = true
 
@@ -37,13 +35,13 @@ rustc-wrapper = "sccache"
 CARGO_HTTP_MULTIPLEXING = "true"
 CARGO_NET_GIT_FETCH_WITH_CLI = "true"
 CARGO_HTTP_SSL_VERSION = "tlsv1.3"
-RUSTC_WRAPPER = "sccache"
 CARGO_INCREMENTAL = "0"
 RUST_LOG = "off"
 GITOXIDE_CORE_MULTIPACKINDEX = "true"
 GITOXIDE_HTTP_SSLVERSIONMAX = "tls1.3"
 GITOXIDE_HTTP_SSLVERSIONMIN = "tls1.2"
 #RUSTC_BOOTSTRAP = "1"
+#RUSTC_WRAPPER = "sccache"
 
 [registries.crates-io]
 protocol = "sparse"
@@ -53,28 +51,37 @@ incompatible-rust-versions = "allow"
 
 #[profile.release.build-override]
 [profile.release]
-opt-level = "3"
-codegen-units = "1"
+opt-level = 3
+codegen-units = 1
 lto = "fat"
 panic = "abort"
 strip = "symbols"
-debug = "false"
-debuginfo= "0"
-debug_assertions = "off"
-split-debuginfo = "off"
+debug = "none"
+debug-assertions = false
+overflow-checks = false
+incremental = false
+debuginfo= 0
+
+[profile.release.build-override]
+opt-level = 0
+codegen-units = 16 # 256 when not incremental
+incremental = true
+debug = "none"
 
 [profile.release.package."*"]
 inherits = "release"
 
 [profile.dev]
 debug = false
-
-[profile.release.build-override]
 opt-level = 0
-codegen-units = 16 # 256 when not incremental
+debug = "none"
+incremental = true
+codegen-units = 256
+lto = false
 
-[target.x86_64-unknown-linux-gnu]
-linker = "clang"
+#[target.x86_64-unknown-linux-gnu]
+#linker = "clang"
+#rustflags = ["-C", "target-cpu=native"]
 
 [term]
 unicode = false # ASCII is faster

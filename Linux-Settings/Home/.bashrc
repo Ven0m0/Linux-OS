@@ -51,7 +51,7 @@ export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=n
 # ─── Options ─────────────────────────────────────────────────────────
 HISTSIZE=1000
 HISTFILESIZE=${HISTSIZE}
-HISTCONTROL="erasedups:ignoreboth:ignorespace"
+HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish"
 HISTTIMEFORMAT='%F %T '
 shopt -s histappend

@@ -14,7 +14,9 @@ C_HOST='\[\e[38;5;33m\]'
 C_PATH='\[\e[38;5;129m\]'
 C_RESET='\[\e[0m\]'
 C_BLINK='\[\e[5m\]'
-PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${C_BLINK}\$${C_RESET}"
+#PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${C_BLINK}\$${C_RESET}"
+# With error codes
+PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${C_BLINK}\$?\$${C_RESET}"
 
 # github.com/iffse/pay-respects
 if command -v pay-respects >/dev/null 2>&1; then

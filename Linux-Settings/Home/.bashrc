@@ -1,18 +1,11 @@
-#
 # ~/.bashrc
-#
-
-# export LANG=C LC_ALL=C
 
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
 . "$HOME/.cargo/env"
 
-# export LC_ALL=C LANG=C.UTF-8 
-
-export PROMPT_DIRTRIM=2
-
+PROMPT_DIRTRIM=2
 #PS1='[\u@\h \w]\$ ' # Default
 
 # bash-prompt-generator.org
@@ -91,13 +84,11 @@ export FZF_DEFAULT_COMMAND='fd -tf -F'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 
 # options
-export HISTSIZE=1000
-export HISTFILESIZE=${HISTSIZE}
-export HISTCONTROL="erasedups:ignoreboth:ignorespace"
-# export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
-export HISTIGNORE='&:[ ]*:ls:ll:la:bg:fg:cd:exit:clear:history:fish:bash'
-export HISTTIMEFORMAT='%F %T '
-
+HISTSIZE=1000
+HISTFILESIZE=${HISTSIZE}
+HISTCONTROL="erasedups:ignoreboth:ignorespace"
+HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish"
+HISTTIMEFORMAT='%F %T '
 shopt -s histappend
 shopt -s no_empty_cmd_completion
 shopt -s checkwinsize

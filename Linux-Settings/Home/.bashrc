@@ -5,18 +5,23 @@
 
 # ─── Prompt ─────────────────────────────────────────────────────────
 # bash-prompt-generator.org
+# PS1='[\u@\h|\w] \$' # Default
 PROMPT_DIRTRIM=2
-if command -v starship >/dev/null 2>&1; then
+configure_prompt() {
+  if command -v starship &> /dev/null; then
     eval "$(starship init bash)"
-else
+  else
+    local C_USER C_HOST C_PATH C_RESET CODE
     C_USER='\[\e[38;5;201m\]'
     C_HOST='\[\e[38;5;33m\]'
     C_PATH='\[\e[38;5;129m\]'
     C_RESET='\[\e[0m\]'
-    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}] \$ "
-    unset C_USER C_HOST C_PATH C_RESET
-fi
-#PS1='[\u@\h|\w] \$' # Default
+    CODE='$(if [[ $? != 0 ]]; then printf "\[\e[38;5;203m\]%d\[\e[0m\]" "$?"; fi)'
+    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$CODE \$ "
+  fi
+}
+configure_prompt
+# Remove $CODE when to remove error codes
 
 # ─── Eval/Sourcing ─────────────────────────────────────────────────────────
 . "$HOME/.cargo/env"
@@ -24,7 +29,6 @@ fi
 if command -v pay-respects >/dev/null 2>&1; then
     eval "$(pay-respects bash --alias)"
 fi
-# eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 
 # ─── Environment ─────────────────────────────────────────────────────────
@@ -67,8 +71,7 @@ shopt -s hostcomplete
 shopt -u checkhash
 set -o noclobber
 # Pi3 fix low power message warning
-setterm --msg off 
-setterm --bfreq 0
+[[ $TERM != xterm-256color ]] && { setterm --msg off; setterm --bfreq 0; }
 setterm --linewrap on
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'

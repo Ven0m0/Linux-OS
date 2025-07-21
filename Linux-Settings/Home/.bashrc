@@ -20,18 +20,21 @@ PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${C_BLIN
 if command -v pay-respects >/dev/null 2>&1; then
     eval "$(pay-respects bash --alias)"
 fi
-
 # eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 eval "$(starship init bash)"
 export EDITOR=micro
 export VISUAL=$EDITOR
+export VIEWER=$EDITOR
+export GIT_EDITOR=$EDITOR
+export SYSTEMD_EDITOR=$EDITOR
+export FCEDIT=$EDITOR
 alias editor='micro'
 alias nano='nano -/ ' # Nano modern keybinds
 #export GIT_PAGER=delta
 #export CARGO_TERM_PAGER=bat
-# export PAGER=less
-export LESS='-FRXns --mouse --use-color --no-init'
+export PAGER=bat
+#export LESS='-FRXns --mouse --use-color --no-init'
 export LESSHISTFILE='-'
 # export MANPAGER="less -sRn"
 # Faster Skim (fastest to slowest skim command)

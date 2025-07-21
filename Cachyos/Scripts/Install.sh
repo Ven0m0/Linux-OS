@@ -189,8 +189,8 @@ curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HO
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm || true
 
 
-echo "Installing rust toolchain"
-rustup install nightly --profile minimal -t x86_64-unknown-linux-gnu -c "rustc,rust-std,rust-src,rustfmt,rust-analyzer,rustc-dev,clippy,llvm-tools,llvm-bitcode-linker"
+echo "Installing rust + components..."
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -t x86_64-unknown-linux-gnu,wasm32-unknown-unknown -y -q
 
 echo "Installing Cargo crates"
 cargostall(

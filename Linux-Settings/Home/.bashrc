@@ -20,7 +20,6 @@ fi
 
 # ─── Eval/Sourcing ─────────────────────────────────────────────────────────
 . "$HOME/.cargo/env"
-
 # github.com/iffse/pay-respects
 if command -v pay-respects >/dev/null 2>&1; then
     eval "$(pay-respects bash --alias)"

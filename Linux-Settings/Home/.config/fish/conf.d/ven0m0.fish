@@ -35,7 +35,7 @@ if status --is-interactive
     set -gx __fish_git_prompt_showupstream none
 
     # Aliases: safe & efficient defaults
-    alias cat='bat --strip-ansi=auto -p --paging=auto'
+    alias cat='bat --strip-ansi=auto -pp'
 
     # My stuff
     alias sshdb='dbclient'

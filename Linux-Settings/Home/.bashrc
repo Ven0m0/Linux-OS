@@ -40,6 +40,37 @@ export LESSHISTFILE='-'
 # Faster Skim (fastest to slowest skim command)
 export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=never . || find . -type f'
 
+# Options
+HISTSIZE=1000
+HISTFILESIZE=${HISTSIZE}
+HISTCONTROL="erasedups:ignoreboth:ignorespace"
+HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish"
+HISTTIMEFORMAT='%F %T '
+shopt -s histappend
+shopt -s no_empty_cmd_completion
+shopt -s checkwinsize
+shopt -s globstar
+shopt -s nocaseglob
+shopt -s cmdhist
+shopt -s autocd 2> /dev/null
+shopt -s dirspell 2> /dev/null
+shopt -s cdspell 2> /dev/null
+shopt -s hostcomplete
+shopt -u checkhash
+set -o noclobber
+
+# Binds
+bind 'set completion-query-items 0'
+bind 'set page-completions off'
+bind 'set show-all-if-ambiguous on'
+bind 'set menu-complete-display-prefix on'
+bind "set completion-ignore-case on"
+bind "set completion-map-case on"
+bind "set mark-symlinked-directories on"
+
+# Pi3 fix low power message warning
+setterm --msg off
+
 ## Useful aliases
 # alias sshdb='dbclient'
 alias ptch='patch -p1 <'
@@ -83,34 +114,6 @@ alias c='clear'
 # FD https://github.com/sharkdp/fd
 export FZF_DEFAULT_COMMAND='fd -tf -F'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-
-# options
-HISTSIZE=1000
-HISTFILESIZE=${HISTSIZE}
-HISTCONTROL="erasedups:ignoreboth:ignorespace"
-HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish"
-HISTTIMEFORMAT='%F %T '
-shopt -s histappend
-shopt -s no_empty_cmd_completion
-shopt -s checkwinsize
-shopt -s globstar
-shopt -s nocaseglob
-shopt -s cmdhist
-shopt -s autocd 2> /dev/null
-shopt -s dirspell 2> /dev/null
-shopt -s cdspell 2> /dev/null
-shopt -s hostcomplete
-shopt -u checkhash
-set -o noclobber
-
-# Binds
-bind 'set completion-query-items 0'
-bind 'set page-completions off'
-bind 'set show-all-if-ambiguous on'
-bind 'set menu-complete-display-prefix on'
-bind "set completion-ignore-case on"
-bind "set completion-map-case on"
-bind "set mark-symlinked-directories on"
 
 # Deduplicate PATH (preserve order) — pure Bash (requires Bash 4+)
 dedupe_path() {

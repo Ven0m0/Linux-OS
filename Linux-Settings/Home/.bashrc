@@ -69,8 +69,9 @@ bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
 
 # Pi3 fix low power message warning
-setterm --msg off
+setterm --msg off 
 setterm --bfreq 0
+setterm --linewrap on
 
 ## Useful aliases
 # alias sshdb='dbclient'

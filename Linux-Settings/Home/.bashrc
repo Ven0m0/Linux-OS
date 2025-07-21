@@ -73,6 +73,7 @@ set -o noclobber
 # Pi3 fix low power message warning
 [[ $TERM != xterm-256color ]] && { setterm --msg off; setterm --bfreq 0; }
 setterm --linewrap on
+
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'
 bind 'set page-completions off'

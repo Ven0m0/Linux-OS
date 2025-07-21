@@ -122,21 +122,12 @@ fi
 
 # ─── Deduplicate PATH (preserve order) ─────────────────────────────────────────────────────────
 dedupe_path() {
-  local IFS=':' i dir
-  declare -A seen
-  local -a parts new_parts=()
-  # read into an array
-  read -r -a parts <<< "$PATH"
-  for dir in "${parts[@]}"; do
-    [[ -z $dir ]] && continue     # skip empty
-    if [[ -z ${seen[$dir]} ]]; then
-      seen[$dir]=1
-      new_parts+=("$dir")
-    fi
+  local dir
+  local -A seen
+  for dir in ${PATH//:/ }; do
+    [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && new+=("$dir")
   done
-  # reassemble
-  PATH="${new_parts[*]}"
-  PATH="${PATH// /:}"               # replace spaces with colons
+  PATH=$(IFS=:; echo "${new[*]}")
   export PATH
 }
 dedupe_path

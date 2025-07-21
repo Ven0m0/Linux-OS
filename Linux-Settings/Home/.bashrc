@@ -3,8 +3,7 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-. "$HOME/.cargo/env"
-
+# ─── Prompt ─────────────────────────────────────────────────────────
 # bash-prompt-generator.org
 PROMPT_DIRTRIM=2
 if command -v starship >/dev/null 2>&1; then
@@ -19,6 +18,9 @@ else
 fi
 #PS1='[\u@\h|\w] \$' # Default
 
+# ─── Eval/Sourcing ─────────────────────────────────────────────────────────
+. "$HOME/.cargo/env"
+
 # github.com/iffse/pay-respects
 if command -v pay-respects >/dev/null 2>&1; then
     eval "$(pay-respects bash --alias)"
@@ -26,6 +28,7 @@ fi
 # eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
 
+# ─── Environment ─────────────────────────────────────────────────────────
 export EDITOR=micro
 export VISUAL=$EDITOR
 export VIEWER=$EDITOR
@@ -40,10 +43,13 @@ export PAGER=bat
 #export LESS='-FRXns --mouse --use-color --no-init'
 export LESSHISTFILE='-'
 # export MANPAGER="less -sRn"
+# FD https://github.com/sharkdp/fd
+export FZF_DEFAULT_COMMAND='fd -tf -F'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 # Faster Skim (fastest to slowest skim command)
 export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=never . || find . -type f'
 
-# Options
+# ─── Options ─────────────────────────────────────────────────────────
 HISTSIZE=1000
 HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth:ignorespace"
@@ -61,8 +67,7 @@ shopt -s cdspell 2> /dev/null
 shopt -s hostcomplete
 shopt -u checkhash
 set -o noclobber
-
-# Binds
+# ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'
 bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
@@ -77,7 +82,7 @@ setterm --msg off
 setterm --bfreq 0
 setterm --linewrap on
 
-## Useful aliases
+# ─── Aliases ─────────────────────────────────────────────────────────
 # alias sshdb='dbclient'
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
@@ -88,6 +93,10 @@ alias la='eza -a --color=always --group-directories-first --icons'  # all files 
 alias ll='eza -l --color=always --group-directories-first --icons'  # long format
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 # alias cat='bat --strip-ansi=auto --style=auto -s'
+
+# Quick clear
+alias cls='clear'
+alias c='clear'
 
 # Stops ping after sending 4 ECHO_REQUEST packets.
 alias ping='ping -c 4'
@@ -113,15 +122,7 @@ else
     alias egrep='egrep --color=auto'
 fi
 
-# Quick clear
-alias cls='clear'
-alias c='clear'
-
-# FD https://github.com/sharkdp/fd
-export FZF_DEFAULT_COMMAND='fd -tf -F'
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-
-# Deduplicate PATH (preserve order) — pure Bash (requires Bash 4+)
+# ─── Deduplicate PATH (preserve order) ─────────────────────────────────────────────────────────
 dedupe_path() {
   local IFS=':' i dir
   declare -A seen

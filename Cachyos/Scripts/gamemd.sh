@@ -24,3 +24,21 @@ sudo cpupower frequency-set -g performance
 echo 1024 | sudo tee /sys/block/sda/queue/read_ahead_kb >/dev/null
 echo 1024 | sudo tee /sys/block/sda/queue/nr_requests >/dev/null
 echo 0 | sudo tee /sys/block/sda/queue/add_random >/dev/null
+
+
+
+# disable bluetooth
+sudo systemctl stop bluetooth.service
+
+# enable USB autosuspend
+for usb_device in /sys/bus/usb/devices/*/power/control; do
+    echo 'auto' | sudo tee "$usb_device" > /dev/null
+done
+
+# disable NMI watchdog
+echo '0' | sudo tee /proc/sys/kernel/nmi_watchdog > /dev/null
+
+# disable Wake-on-Timer
+echo '0' | sudo tee /sys/class/rtc/rtc0/wakealarm > /dev/null
+
+export USE_CCACHE=1

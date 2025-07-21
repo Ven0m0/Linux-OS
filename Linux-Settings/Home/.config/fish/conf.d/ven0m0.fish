@@ -73,12 +73,6 @@ if status --is-interactive
       alias egrep='egrep --color=auto'
     end
 
-    # you see nothing...
-    set -gx SHELL_MOMMYS_ONLY_NEGATIVE true
-    set -gx MOMMY_SWEETIE girl
-    alias margo='cargo mommy '
-    alias gargo='cargo gg '
-
     # Reset
     alias clear='command clear; and fish_greeting'
     alias cls='command clear; and fish_greeting'

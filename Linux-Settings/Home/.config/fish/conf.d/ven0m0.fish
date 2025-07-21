@@ -5,9 +5,9 @@
 
 # ─── Paths─────────────────────────────────────────────────────────
 set -x XDG_CONFIG_HOME $HOME/.config
-set -x XDG_CACHE_HOME  $HOME/.cache
-set -x XDG_DATA_HOME   $HOME/.local/share
-set -x XDG_STATE_HOME  $HOME/.local/state
+set -x XDG_CACHE_HOME $HOME/.cache
+set -x XDG_DATA_HOME $HOME/.local/share
+set -x XDG_STATE_HOME $HOME/.local/state
 
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
@@ -16,12 +16,9 @@ set -gx VIEWER $EDITOR
 set -gx GIT_EDITOR $EDITOR
 set -gx SYSTEMD_EDITOR $EDITOR
 set -x PAGER bat
-# -X -F disable mouse support
 # set -gx LESS '-RQsn --no-histdups --mouse --wheel-lines=4'
-# set -gx SYSTEMD_LESS $LESS
-# set -gx LESSOPEN "|/usr/bin/batpipe %s"
 set -gx LESSHISTFILE '-'
-set -gx BATPIPE "color"
+set -gx BATPIPE color
 set -gx DOTNET_CLI_TELEMETRY_OPTOUT 1
 
 # Faster locale
@@ -39,8 +36,7 @@ if status --is-interactive
     set -gx __fish_git_prompt_showupstream none
 
     # Aliases: safe & efficient defaults
-    alias cat='bat --strip-ansi=auto --squeeze-blank --style=auto --paging=auto'
-    #alias cat='bat --pager never'
+    alias cat='bat --strip-ansi=auto -p --paging=auto'
 
     # My stuff
     alias sshdb='dbclient'
@@ -88,6 +84,8 @@ if status --is-interactive
     # you see nothing...
     set -gx SHELL_MOMMYS_ONLY_NEGATIVE true
     set -gx MOMMY_SWEETIE girl
+    alias margo='cargo mommy '
+    alias gargo='cargo gg '
 
     # Reset
     alias clear='command clear; and fish_greeting'

@@ -21,11 +21,11 @@ set -gx LESSHISTFILE '-'
 set -gx BATPIPE color
 
 # Faster locale
-if not status --is-interactive
-  set -x LANG C; set -x LC_ALL C
-else
-  set -x LC_ALL C; set -x LANG C.UTF-8
-end
+#if status --is-interactive
+  #set -x LC_ALL C; set -x LANG C.UTF-8
+#else
+  #set -x LANG C; set -x LC_ALL C
+#end
 
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
 if status --is-interactive
@@ -50,17 +50,10 @@ if status --is-interactive
     alias sudo-rs='sudo-rs '
     alias su='su-rs '
 
-    # Better sudo (if available)
-    #if type -q sudo-rs
-        #alias sudo sudo-rs
-    #end
-    #if type -q su-rs
-        #alias su su-rs
-    #end
-
     # Creates parent directories on demand.
-    alias mkdir='mkdir -p'
-    alias edit='$EDITOR'
+    alias mkdir='mkdir -p '
+    alias edit='$EDITOR '
+    alias suedit='sudo $EDITOR '
 
     # Stops ping after sending 4 ECHO_REQUEST packets.
     alias ping='ping -c 4'
@@ -90,13 +83,13 @@ if status --is-interactive
     alias clear='command clear; and fish_greeting'
     alias cls='command clear; and fish_greeting'
     abbr --add c clear
-
-   # bind Esc Esc to toggle_sudo
-   #source ~/.config/fish/functions/presudo.fish
-   #bind \e\e toggle_sudo
-   function which
-    command -v $argv[1] 
-   end 
+    
+    # bind Esc Esc to toggle_sudo
+    #source ~/.config/fish/functions/presudo.fish
+    #bind \e\e toggle_sudo
+    function which
+      command -v $argv[1] 
+    end 
 end
 
 # ─── Path Deduplication ─────────────────────────────────────────────────────────

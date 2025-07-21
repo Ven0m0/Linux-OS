@@ -7,7 +7,7 @@ set -gx XDG_DATA_HOME "$HOME/.local/share"
 set -gx XDG_STATE_HOME "$HOME/.local/state"
 
 # Qt 6
-set -gx QT_QPA_PLATFORMTHEME qt6ct
+#set -gx QT_QPA_PLATFORMTHEME qt6ct
 
 # Fzf
 set -gx FZF_LEGACY_KEYBINDINGS 0
@@ -22,7 +22,7 @@ set -x MOZ_ENABLE_WAYLAND 1
 
 # Rust
 set -gx RUSTC_WRAPPER sccache
-set -x RUST_LOG off
+set -gx RUST_LOG off
 set -gx CARGO_HTTP_MULTIPLEXING true
 set -gx CARGO_NET_GIT_FETCH_WITH_CLI true
 set -gx CARGO_HTTP_SSL_VERSION tlsv1.3

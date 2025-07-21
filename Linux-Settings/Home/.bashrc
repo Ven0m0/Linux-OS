@@ -95,23 +95,19 @@ alias la='eza -a --color=always --group-directories-first --icons'  # all files 
 alias ll='eza -l --color=always --group-directories-first --icons'  # long format
 alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 # alias cat='bat --strip-ansi=auto --style=auto -s'
-
 # Quick clear
 alias cls='clear'
 alias c='clear'
-
 # Stops ping after sending 4 ECHO_REQUEST packets.
 alias ping='ping -c 4'
 # Makes `mount` command output pretty and with a human readable format.
 alias mount='mount | column -t'
-
 # Creates parent directories on demand.
 alias mkdir='mkdir -p '
 alias edit='$EDITOR '
 alias suedit='sudo $EDITOR '
 # Enable aliases to be sudo’ed
 alias sudo='\sudo '
-
 # Ripgrep
 if command -v rg >/dev/null 2>&1; then
     alias rg='rg --no-stats --color=auto'

@@ -5,18 +5,19 @@
 
 . "$HOME/.cargo/env"
 
-PROMPT_DIRTRIM=2
-#PS1='[\u@\h \w]\$ ' # Default
-
 # bash-prompt-generator.org
-C_USER='\[\e[38;5;201m\]'
-C_HOST='\[\e[38;5;33m\]'
-C_PATH='\[\e[38;5;129m\]'
-C_RESET='\[\e[0m\]'
-C_BLINK='\[\e[5m\]'
-#PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${C_BLINK}\$${C_RESET}"
-# With error codes
-PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${C_BLINK}\$?\$${C_RESET}"
+PROMPT_DIRTRIM=2
+if command -v starship >/dev/null 2>&1; then
+    eval "$(starship init bash)"
+else
+    C_USER='\[\e[38;5;201m\]'
+    C_HOST='\[\e[38;5;33m\]'
+    C_PATH='\[\e[38;5;129m\]'
+    C_RESET='\[\e[0m\]'
+    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}] \$ "
+    unset C_USER C_HOST C_PATH C_RESET
+fi
+#PS1='[\u@\h|\w] \$' # Default
 
 # github.com/iffse/pay-respects
 if command -v pay-respects >/dev/null 2>&1; then
@@ -24,7 +25,7 @@ if command -v pay-respects >/dev/null 2>&1; then
 fi
 # eval "$(pay-respects bash --alias)"
 eval "$(fzf --bash)"
-eval "$(starship init bash)"
+
 export EDITOR=micro
 export VISUAL=$EDITOR
 export VIEWER=$EDITOR

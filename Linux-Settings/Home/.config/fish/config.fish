@@ -6,6 +6,9 @@ end
 set -gx PATH $basher $PATH
 status --is-interactive; and . (basher init - fish | psub)
 
+# Fix weird fish binding, restore ctrl+v
+bind --erase \cv
+
 # Prompt
 #starship init fish | source
 #pay-respects fish --alias | source

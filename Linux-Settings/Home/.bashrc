@@ -7,12 +7,23 @@
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 
-# export LC_ALL=C LANG=C.UTF-8 
-
-PS1='[\u@\h \W]\$ '
 . "$HOME/.cargo/env"
 
-# https://github.com/iffse/pay-respects
+# export LC_ALL=C LANG=C.UTF-8 
+
+export PROMPT_DIRTRIM=2
+
+#PS1='[\u@\h \w]\$ ' # Default
+
+# bash-prompt-generator.org
+C_USER='\[\e[38;5;201m\]'
+C_HOST='\[\e[38;5;33m\]'
+C_PATH='\[\e[38;5;129m\]'
+C_RESET='\[\e[0m\]'
+C_BLINK='\[\e[5m\]'
+PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${C_BLINK}\$${C_RESET}"
+
+# github.com/iffse/pay-respects
 if command -v pay-respects >/dev/null 2>&1; then
     eval "$(pay-respects bash --alias)"
 fi
@@ -87,19 +98,18 @@ export HISTCONTROL="erasedups:ignoreboth:ignorespace"
 export HISTIGNORE='&:[ ]*:ls:ll:la:bg:fg:cd:exit:clear:history:fish:bash'
 export HISTTIMEFORMAT='%F %T '
 
-export PROMPT_DIRTRIM=2
+shopt -s histappend
 shopt -s no_empty_cmd_completion
+shopt -s checkwinsize
 shopt -s globstar
 shopt -s nocaseglob
-set -o noclobber
-shopt -s histappend
 shopt -s cmdhist
 shopt -s autocd 2> /dev/null
 shopt -s dirspell 2> /dev/null
 shopt -s cdspell 2> /dev/null
-shopt -s checkwinsize
-shopt -u checkhash
 shopt -s hostcomplete
+shopt -u checkhash
+set -o noclobber
 
 # Binds
 bind 'set completion-query-items 0'

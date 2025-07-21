@@ -67,6 +67,7 @@ bind 'set menu-complete-display-prefix on'
 bind "set completion-ignore-case on"
 bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
+bind "set bell-style none"
 
 # Pi3 fix low power message warning
 setterm --msg off 

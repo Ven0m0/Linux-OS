@@ -18,9 +18,3 @@ echo "https://github.com/Itai-Nelken/PiApps-terminal_bash-edition"
 wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
 pi-apps update -y
 
-echo 
-echo "https://github.com/Drewsif/PiShrink"
-sudo apt update && sudo apt install -y wget parted gzip pigz xz-utils udev e2fsprogs
-wget https://raw.githubusercontent.com/Drewsif/PiShrink/master/pishrink.sh
-chmod +x pishrink.sh
-sudo mv pishrink.sh /usr/local/bin

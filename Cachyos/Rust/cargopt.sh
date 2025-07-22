@@ -5,7 +5,7 @@ IFS=$'\n\t'
 shopt -s nullglob globstar
 # —————————————————————————————————————————————————————
 # Speed and caching
-LC_ALL=C LANG=C
+LC_ALL=C LANG=C.UTF-8
 hash -r
 hash  cargo rustc  nproc sccache cat sudo
 # —————————————————————————————————————————————————————
@@ -16,7 +16,6 @@ rustup update
 orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)
 orig_perf=$(sysctl -n kernel.perf_event_paranoid)
 orig_turbo=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
-orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
 
 # —————————————————————————————————————————————————————
 # Clean up cargo cache on error
@@ -39,37 +38,37 @@ Usage: $0 [-m|-mold] [-l|--locked] <crate> [-h|--help]
 
   -m|-mold       use mold as the linker
   -l|--locked    pass --locked to cargo install
-  <crate>        name of the crate/s to install
-  -h|--help      display help
+  -h|--help      show this help and exit
+  <crate>        one or more crates to install
 
 Examples:
   $0 ripgrep
-  $0 -m --locked ripgrep
+  $0 -m --locked bat fd
 EOF
   exit "${1:-1}"
 }
 
 # —————————————————————————————————————————————————————
-# Simple argument parsing
-while [[ $# -gt 0 ]]; do
+# Parse args
+while (( $# )); do
   case "$1" in
   -m|--mold)
-    USE_MOLD=1; shift;;
+    USE_MOLD=1; shift ;;
   -l|--locked)
-    LOCKED_FLAG="--locked"; shift;;
+    LOCKED_FLAG="--locked"; shift ;;
   -h|--help)
     usage; exit 0;;
   --)          shift; break ;;
   -*)          echo "Error: unknown option '$1'" >&2; usage 1 ;;
   *)
-    CRATES+=("$1"); shift;;
+    CRATES+=("$1"); shift ;;
   esac
 done
 
-[ -n "$CRATES" ] || {
-  echo "Error: <crate> is required" >&2
-  usage
-}
+if (( ${#CRATES[@]} == 0 )); then
+  echo "Error: at least one <crate> is required" >&2
+  usage 1
+fi
 
 # —————————————————————————————————————————————————————
 # Prepare environment
@@ -199,9 +198,9 @@ MISC_OPT=(--ignore-rust-version -f --bins -j"${jobs}")
 sudo cpupower frequency-set --governor performance
 sync
 echo "Installing ${CRATES[*]} with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
-for CRATE in "${CRATES[@]}"; do
+for app in "${CRATES[@]}"; do
   printf '→ Installing "%s"…\n' "$CRATES"
-  cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATES"
+  cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$crate"
   printf '🎉 %s installed in %s/.cargo/bin\n' "$CRATE" "$HOME"
 done
 

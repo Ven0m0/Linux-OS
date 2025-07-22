@@ -3,28 +3,40 @@
 set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
+set -CE
 # —————————————————————————————————————————————————————
-# Presetup
+# Speed and caching
 LC_ALL=C LANG=C.UTF-8
 hash -r
-hash  cargo rustc  nproc sccache cat sudo
-sync
+hash cargo rustc clang nproc sccache cat sudo
+sudo cpupower frequency-set --governor performance
+# —————————————————————————————————————————————————————
+# Preparation
 sudo -v
-rustup update
+read -r -p "Update Rust toolchains? [y/N] " ans
+[[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || true
 # Save originals
 orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)
-orig_perf=$(sysctl -n kernel.perf_event_paranoid)
+orig_perf=$(cat /proc/sys/kernel/perf_event_paranoid)
 orig_turbo=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
+orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
 
 # —————————————————————————————————————————————————————
 # Clean up cargo cache on error
 cleanup() {
-  trap - ERR HUP TERM INT ABRT
+  trap - ERR EXIT HUP QUIT TERM INT ABRT
+  set +e
   cargo-cache -efg >/dev/null 2>&1 || true
   cargo clean >/dev/null 2>&1 || true
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || true
+  # restore kernel settings
+  echo "$orig_kptr" | sudo tee /proc/sys/kernel/kptr_restrict >/dev/null || true
+  echo "$orig_perf" | sudo tee /proc/sys/kernel/perf_event_paranoid >/dev/null || true
+  echo "$orig_turbo" | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null || true
+  echo "$orig_thp" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
+  set -e
 }
-trap cleanup ERR HUP TERM INT ABRT
+trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————————————————————————————————————————————————————
 # Defaults & help
 USE_MOLD=0
@@ -62,7 +74,7 @@ done
 # Ensure cargo-pgo is installed
 if ! command -v cargo-pgo >/dev/null; then
   echo "cargo-pgo not found, installing..."
-  cargo install cargo-pgo
+  cargo install cargo-pgo || true
 fi
 # —————————————————————————————————————————————————————
 # Toolchains
@@ -73,6 +85,7 @@ export RUSTC_BOOTSTRAP=1
 #RUSTUP_TOOLCHAIN=nightly RUST_BACKTRACE=full
 export CARGO_INCREMENTAL=0 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 
 ZFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z avoid-dev-deps -Z feature-unification"
 LTOFLAGS="-C lto=on -C embed-bitcode=yes -Z dylib-lto"

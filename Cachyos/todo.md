@@ -10,6 +10,8 @@ https://crates.io/crates/fd-find
 
 https://crates.io/crates/brush-shell
 
+cargo install nexish
+
 https://crates.io/crates/boltshell
 
 https://gitlab.redox-os.org/redox-os/ion/
@@ -30,10 +32,19 @@ https://wiki.archlinux.org/title/Domain_name_resolution
 
 https://github.com/Kobzol/cargo-pgo/blob/main/README.md
 
-https://crates.io/crates/rocketfetch
+cargo-unused-features
+cargo install rustscout-cli
+cargo install dedups
+cargo install argc
 
+cargo install redlib
 
-https://crates.io/crates/cargo-unused-features
+cargo install teip
+
+cargo install shim
+cargo install shimexe
+
+cargo install flash
 
 # ls
 https://crates.io/crates/lla

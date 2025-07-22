@@ -9,6 +9,7 @@
 -Z virtual-function-elimination
 RUSTFLAGS="-C passes=mem2reg,simplifycfg,instcombine,gvn,loop-unroll,licm"
 
+PGO 2nd compilation:
 -C profile-correction
 -Cllvm-args=-pgo-warn-missing-function -Cprofile-use
 

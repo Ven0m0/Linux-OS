@@ -7,7 +7,7 @@ shopt -s nullglob globstar
 # Speed and caching
 LC_ALL=C LANG=C.UTF-8
 hash -r
-hash  cargo rustc  nproc sccache cat sudo
+hash cargo rustc clang nproc sccache cat sudo
 # —————————————————————————————————————————————————————
 # Preparation
 sync; sudo -v
@@ -16,6 +16,7 @@ rustup update
 orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)
 orig_perf=$(sysctl -n kernel.perf_event_paranoid)
 orig_turbo=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
+orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
 
 # —————————————————————————————————————————————————————
 # Clean up cargo cache on error
@@ -24,6 +25,8 @@ cleanup() {
   cargo-cache -efg >/dev/null 2>&1 || true  
   cargo clean >/dev/null 2>&1 || true
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || true
+  # restore kernel settings
+  
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————————————————————————————————————————————————————
@@ -81,11 +84,11 @@ if command -v sccache >/dev/null 2>&1; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
   SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || true
 else
-  export CC=clang CXX=clang++
+  export CC="clang" CXX="clang++"
   unset RUSTC_WRAPPER
 fi
-export AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib
-
+export CPP="clang-cpp"
+export AR="llvm-ar" NM="llvm-nm" RANLIB="llvm-ranlib"
 export STRIP="llvm-strip"
 # Make sure rustflags arent being overwritten by cargo
 unset CARGO_ENCODED_RUSTFLAGS
@@ -99,10 +102,11 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 export CARGO_BUILD_JOBS="${jobs}"
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
-# Jemalloc tweaks (rust is build with jemalloc)
+# Jemalloc tweaks
 export MALLOC_CONF="thp:always,metadata_thp:always"
 # export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
+sudo cpupower frequency-set --governor performance
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
 
 # ensure RUSTFLAGS is set
@@ -113,19 +117,18 @@ if ((USE_MOLD)); then
     echo "→ using ld.mold via clang"
     LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=mold)
     CLDFLAGS=(-fuse-ld=mold)
-    hash clang mold
+    hash mold
   elif command -v clang >/dev/null 2>&1; then
     echo "→ using ld.lld via clang"
     LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
     CLDFLAGS=(-fuse-ld=lld)
-    hash clang lld ld.lld
+    hash lld ld.lld
   else
     echo "→ falling back to ld.lld via linker-flavor"
     LFLAGS=(-Clinker-flavor=ld.lld -C linker-features=lld)
     CLDFLAGS=(-fuse-ld=lld)
   fi
 fi
-hash clang
 
 # —————————————————————————————————————————————————————
 # Core optimization flags
@@ -154,7 +157,7 @@ RUSTFLAGS_BASE=(
   -Copt-level=3
   -Ctarget-cpu=native
   -Ccodegen-units=1
-  -Cstrip=true
+  -Cstrip=symbols
   -Clto=fat
   -Clink-arg=-flto
   -Clinker-plugin-lto
@@ -195,13 +198,12 @@ MISC_OPT=(--ignore-rust-version -f --bins -j"${jobs}")
 
 # —————————————————————————————————————————————————————
 # Finally, install the crates
-sudo cpupower frequency-set --governor performance
 sync
-echo "Installing ${CRATES[*]} with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
-for app in "${CRATES[@]}"; do
-  printf '→ Installing "%s"…\n' "$CRATES"
+echo "Installing "${CRATES[@]}" with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
+for crate in "${CRATES[@]}"; do
+  printf '→ Installing "%s"…\n' "$crate"
   cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$crate"
-  printf '🎉 %s installed in %s/.cargo/bin\n' "$CRATE" "$HOME"
+  printf '🎉 %s installed in %s/.cargo/bin\n' "$crate" "$HOME"
 done
 
 cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATES" &&

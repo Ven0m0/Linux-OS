@@ -9,7 +9,7 @@ INPUT="${1:?Usage: $0 <script.sh>}"
 OUTPUT="${INPUT%.sh}.optimized.sh"
 
 # Format and minify the script
-shfmt -mn -ln bash -fn -ci -kp "$INPUT" > "$OUTPUT"
+shfmt -ln=bash -i=2 "$INPUT" > "$OUTPUT"
 
 # Lint the result explicitly as Bash
 shellcheck -s bash --exclude=SC2054 "$OUTPUT"

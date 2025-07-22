@@ -44,7 +44,7 @@ alias nano='nano -/ ' # Nano modern keybinds
 #export CARGO_TERM_PAGER=bat
 export PAGER=bat
 #export LESS='-FRXns --mouse --use-color --no-init'
-export LESSHISTFILE='-'
+export LESSHISTFILE=-
 # export MANPAGER="less -sRn"
 # FD https://github.com/sharkdp/fd
 export FZF_DEFAULT_COMMAND='fd -tf -F'

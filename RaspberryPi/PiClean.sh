@@ -55,3 +55,4 @@ echo "System clean-up complete."
 
 echo "Clearing DietPi logs..."
 sudo -E dietpi-logclear 2
+./boot/dietpi/func/dietpi-logclear 2

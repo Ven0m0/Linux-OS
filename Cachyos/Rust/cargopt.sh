@@ -3,6 +3,9 @@
 set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
+# shopt -s extglob
+# set -CE
+
 # —————————————————————————————————————————————————————
 # Speed and caching
 LC_ALL=C LANG=C.UTF-8

@@ -31,7 +31,7 @@ trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # Defaults & help
 USE_MOLD=0
 LOCKED_FLAG=""
-CRATE=""
+CRATES=()
 
 usage() {
   cat <<EOF >&2
@@ -39,7 +39,7 @@ Usage: $0 [-m|-mold] [-l|--locked] <crate> [-h|--help]
 
   -m|-mold       use mold as the linker
   -l|--locked    pass --locked to cargo install
-  <crate>        name of the crate to install
+  <crate>        name of the crate/s to install
   -h|--help      display help
 EOF
   exit 1
@@ -60,11 +60,11 @@ while [[ $# -gt 0 ]]; do
   -*)
     printf 'Error: invalid option: %s\n' "$1" >&2; usage; exit 1;;
   *)
-    CRATES+=( "$1" ); shift;;
+    CRATES+=("$1"); shift;;
   esac
 done
 
-[ -n "$CRATE" ] || {
+[ -n "$CRATES" ] || {
   echo "Error: <crate> is required" >&2
   usage
 }
@@ -193,10 +193,16 @@ INSTALL_FLAGS=(-Zunstable-options -Zgit -Zgitoxide -Zno-embed-metadata)
 MISC_OPT=(--ignore-rust-version -f --bins -j"${jobs}")
 
 # —————————————————————————————————————————————————————
-# Finally, install the crate
+# Finally, install the crates
 sudo cpupower frequency-set --governor performance
 sync
-echo "Installing '$CRATE' with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
-cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATE" &&
-  LANG=C.UTF-8 echo "🎉 $CRATE successfully installed in '$HOME/.cargo/bin'"
+echo "Installing ${CRATES[*]} with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
+for CRATE in "${CRATES[@]}"; do
+  printf '→ Installing "%s"…\n' "$CRATES"
+  cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATES"
+  printf '🎉 %s installed in %s/.cargo/bin\n' "$CRATE" "$HOME"
+done
+
+cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATES" &&
+  LANG=C.UTF-8 echo "🎉 $CRATES successfully installed in '$HOME/.cargo/bin'"
 exit 0

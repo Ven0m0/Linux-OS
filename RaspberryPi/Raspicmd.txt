@@ -31,7 +31,7 @@ disable_camera_led=1
 dtoverlay=disable-wifi
 dtoverlay=disable-bt
 quiet
-
+dtparam=sd_poll_once
 
 sudo nano /etc/fstab
 commit=120,data=writeback,journal_async_commit,barrier=0,nobh

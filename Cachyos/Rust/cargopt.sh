@@ -46,7 +46,7 @@ Examples:
   $0 ripgrep
   $0 -m --locked ripgrep
 EOF
-  exit 1
+  exit "${1:-1}"
 }
 
 # —————————————————————————————————————————————————————

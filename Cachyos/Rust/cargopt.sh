@@ -5,7 +5,7 @@ IFS=$'\n\t'
 shopt -s nullglob globstar
 # —————————————————————————————————————————————————————
 # Speed and caching
-export LC_ALL=C LANG=C
+LC_ALL=C LANG=C
 hash -r
 hash  cargo rustc  nproc sccache cat sudo
 # —————————————————————————————————————————————————————
@@ -80,9 +80,10 @@ if command -v sccache >/dev/null 2>&1; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
   SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || true
 else
-  export CC="clang" CXX="clang++"
+  export CC=clang CXX=clang++
   unset RUSTC_WRAPPER
 fi
+export AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib
 
 export STRIP="llvm-strip"
 # Make sure rustflags arent being overwritten by cargo
@@ -98,7 +99,8 @@ export CARGO_BUILD_JOBS="${jobs}"
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
 # Jemalloc tweaks (rust is build with jemalloc)
-export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
+export MALLOC_CONF="thp:always,metadata_thp:always"
+# export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
 
@@ -108,37 +110,28 @@ echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null ||
 if ((USE_MOLD)); then
   if command -v mold >/dev/null 2>&1; then
     echo "→ using ld.mold via clang"
-    LFLAGS=(
-      -C linker=clang
-      -C link-arg=-fuse-ld=mold
-    )
+    LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=mold)
     CLDFLAGS=(-fuse-ld=mold)
     hash clang mold
   elif command -v clang >/dev/null 2>&1; then
     echo "→ using ld.lld via clang"
-    LFLAGS=(
-      -C linker=clang
-      -C link-arg=-fuse-ld=lld
-      -C linker-features=lld
-      -C link-arg=-Wl,--ignore-function-address-equality
-      -C link-arg=--compact-branches
-    )
+    LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
     CLDFLAGS=(-fuse-ld=lld)
-    
+    hash clang lld ld.lld
   else
     echo "→ falling back to ld.lld via linker-flavor"
-    LFLAGS=(-C linker-flavor=ld.lld -C linker-features=lld)
+    LFLAGS=(-Clinker-flavor=ld.lld -C linker-features=lld)
     CLDFLAGS=(-fuse-ld=lld)
   fi
 fi
-hash clang lld
+hash clang
 
 # —————————————————————————————————————————————————————
 # Core optimization flags
 CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections"
 CXXFLAGS="${CFLAGS}"
 LDFLAGS=(
-  -Wl,-O3 
+  -Wl,-O3
   -Wl,--sort-common
   -Wl,--as-needed
   -Wl,-gc-sections
@@ -146,71 +139,48 @@ LDFLAGS=(
   -Wl,-z,now
   -Wl,-z,relro
   -Wl,--icf=all
-  -Wl,--ignore-data-address-equality
-  -Wl,--enable-new-dtags
-  -Wl,--optimize-bb-jumps
   -Wl,-z,pack-relative-relocs
-  -Wl,--compress-relocations
-  -Wl,--compress-sections=zstd:3
-  -Wl,--compress-debug-sections=zstd
-  -Wl,--lto-O3
-  -Wl,--lto-partitions=1
-  -Wl,-plugin-opt=--fat-lto-objects
-  -Wl,-plugin-opt=--lto-aa-pipeline
-  -Wl,-plugin-opt=--lto-newpm-passes
   -flto
   "${CLDFLAGS[@]}"
 )
 
 # https://github.com/johnthagen/min-sized-rust / https://doc.rust-lang.org/rustc/codegen-options/index.html
 # https://nnethercote.github.io/perf-book/build-configuration.html
-# "-C link-arg=-flto" needed for mold
-# -C embed-bitcode=y  // maybe not needed with "-C linker-plugin-lto"
+# "-Clink-arg=-flto" needed for mold
+# -Cembed-bitcode=y / might not needed with "-Clinker-plugin-lto"
 
 RUSTFLAGS_BASE=(
-  -C opt-level=3
-  -C target-cpu=native
-  -C codegen-units=1
-  -C strip=true
-  -C lto=fat
-  -C link-arg=-flto
-  -C linker-plugin-lto
-  -Z tune-cpu=native
-  -C debuginfo=0
-  -C panic=abort
-  -C relro-level=off
-  -Z default-visibility=hidden
-  -Z dylib-lto
-  -C force-frame-pointers=n
-  -C link-dead-code=n
-  -Z function-sections
-  -Z location-detail=none
-  -Z fmt-debug=none
-  -Z threads=8
+  -Copt-level=3
+  -Ctarget-cpu=native
+  -Ccodegen-units=1
+  -Cstrip=true
+  -Clto=fat
+  -Clink-arg=-flto
+  -Clinker-plugin-lto
+  -Ztune-cpu=native
+  -Cdebuginfo=0
+  -Cpanic=abort
+  -Crelro-level=off
+  -Zdefault-visibility=hidden
+  -Zdylib-lto
+  -Cforce-frame-pointers=n
+  -Clink-dead-code=n
+  -Zfunction-sections
+  -Zlocation-detail=none
+  -Zfmt-debug=none
+  -Zthreads=8
 )
 EXTRA_LINK=(
-  -C link-arg=-Wl,-O3
-  -C link-arg=-Wl,-gc-sections
-  -C link-arg=-Wl,--icf=all
-  -C link-arg=-Wl,--sort-common
-  -C link-arg=-Wl,--as-needed
-  -C link-arg=-Wl,-z,relro
-  -C link-arg=-Wl,-z,now
-  -C link-arg=-Wl,--lto-O3
-  -C link-arg=-Wl,--optimize-bb-jumps
-  -C link-arg=-Wl,--strip-all
-  -C link-arg=-Wl,--compress-sections=zstd:3
-  -C link-arg=-Wl,--compress-relocations
-  -C link-arg=-Wl,--compress-debug-sections=zstd
-  -C link-arg=-Wl,-z,pack-relative-relocs
-  # -C link-arg=--lto-emit-llvm
-  -C link-arg=-Wl,-plugin-opt=--lto-aa-pipeline
-  -C link-arg=-Wl,-plugin-opt=--lto-newpm-passes
-  -C link-arg=-Wl,--lto-O3
-  -C link-arg=-Wl,--lto-partitions=1
-  -C link-arg=-Wl,-plugin-opt=--fat-lto-objects
+  -Clink-arg=-Wl,-O3
+  -Clink-arg=-Wl,-gc-sections
+  -Clink-arg=-Wl,--icf=all
+  -Clink-arg=-Wl,--sort-common
+  -Clink-arg=-Wl,--as-needed
+  -Clink-arg=-Wl,-z,now
+  # -Clink-arg=--lto-emit-llvm
+  -Clink-arg=-Wl,--lto-O3
 )
-ZFLAGS=(-Z unstable-options -Z fewer-names -Z combine-cgu -Z merge-functions=aliases -Zno-embed-metadata -Zmir-opt-level=3)
+ZFLAGS=(-Zunstable-options -Zfewer-names -Zcombine-cgu -Zmerge-functions=aliases -Zno-embed-metadata -Zmir-opt-level=3)
 
 # Combine all rustflags into one exported variable
 export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA_LINK[@]}"

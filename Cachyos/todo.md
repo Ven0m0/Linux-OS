@@ -95,8 +95,8 @@ Cargo:
 -Z avoid-dev-deps -Z no-embed-metadata -Z trim-paths
 
 Full lto:
--Z build-std=std,panic_abort
--Z build-std-features
+-Zbuild-std=std,panic_abort
+-Zbuild-std-features=panic_immediate_abort
 
 -Z cargo-lints
 
@@ -120,6 +120,9 @@ export BUILDCACHE_COMPRESS_FORMAT=LZ4
 export BUILDCACHE_ACCURACY=SLOPPY
 export BUILDCACHE_ACCURACY=DEFAULT
 export BUILDCACHE_DIRECT_MODE=true
+export CCACHE_COMPRESS=true
+export CCACHE_COMPRESSLEVEL=3
+export CCACHE_INODECACHE=true
 
 Codegen:
 -Z precise-enum-drop-elaboration=yes

@@ -12,6 +12,6 @@ OUTPUT="${INPUT%.sh}.optimized.sh"
 shfmt -mn -ln bash -fn -ci -kp "$INPUT" > "$OUTPUT"
 
 # Lint the result explicitly as Bash
-shellcheck -s bash "$OUTPUT"
+shellcheck -s bash --exclude=SC2054 "$OUTPUT"
 
 echo "Optimized script saved as $OUTPUT"

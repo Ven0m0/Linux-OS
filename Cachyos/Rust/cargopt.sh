@@ -11,7 +11,8 @@ hash cargo rustc clang nproc sccache cat sudo
 # —————————————————————————————————————————————————————
 # Preparation
 sudo -v
-rustup update
+read -r -p "Update Rust toolchains? [y/N] " ans
+if [[ $ans =~ ^[Yy]$ ]]; then rustup update; fi
 # Save originals
 orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)
 orig_perf=$(sysctl -n kernel.perf_event_paranoid)

@@ -16,7 +16,6 @@ sudo -v
 read -r -p "Update Rust toolchains? [y/N] " ans
 [[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || true
 # Save original
-orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
 
 # —————————————————————————————————————————————————————
 # Clean up cargo cache on error
@@ -26,8 +25,6 @@ cleanup() {
   cargo-cache -efg >/dev/null 2>&1 || true
   cargo clean >/dev/null 2>&1 || true
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || true
-  # restore kernel settings
-  echo "$orig_thp" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
@@ -214,6 +211,4 @@ for crate in "${CRATES[@]}"; do
   cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate"
   printf '🎉 %s installed in %s/.cargo/bin\n' "$crate" "$HOME"
 done
-
-cleanup
 exit 0

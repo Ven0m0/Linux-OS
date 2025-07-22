@@ -87,9 +87,98 @@ fisher install meaningful-ooo/sponge
 fisher install acomagu/fish-async-prompt
 ```
 
-```
+```markdown
 ARCH="$(uname -m)"
 SHELL=/usr/bin/bash
 
+Cargo:
+-Z avoid-dev-deps -Z no-embed-metadata -Z trim-paths
 
+Full lto:
+-Z build-std=std,panic_abort
+-Z build-std-features
+
+-Z cargo-lints
+
+Rustc:
+-Z relax-elf-relocations -Z checksum-hash-algorithm=blake3 -Z fewer-names -Z combine-cgu
+-Z mir-opt-level=4 / 3
+
+RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
+
+
+export PYTHONOPTIMIZE=2
+
+export BUILDCACHE_COMPRESS_FORMAT=ZSTD
+export BUILDCACHE_COMPRESS_FORMAT=LZ4
+export BUILDCACHE_ACCURACY=SLOPPY
+export BUILDCACHE_ACCURACY=DEFAULT
+export BUILDCACHE_DIRECT_MODE=true
+
+
+PGO:
+-Z debug-info-for-profiling
+
+
+
+```
+
+```markdown
+Rust tls models:
+-Z tls-model=initial-exec
+# Fallback
+-Z tls-model=local-dynamic
+# fastest if no dynamic libs
+-Z tls-model=local-exec 
+```
+
+```
+LC_MEASUREMENT=metric
+LC_COLLATE=C
+LC_CTYPE=C.UTF-8
+
+curl ifconfig.me
+```
+```
+rust-parallel -d stderr -j16
+-p, --progress-bar
+PROGRESS_STYLE=dark_bg
+PROGRESS_STYLE=simple
+```
+```
+# Build only minimal debug info to reduce size
+CFLAGS=${CFLAGS/-g /-g0 }
+CXXFLAGS=${CXXFLAGS/-g /-g0 }
+```
+
+## PGO
+```
+# define PGO_PROFILE_DIR to use a custom directory for the profile data
+export PGO_PROFILE_DIR=$PWD/pgo
+
+# clean up the profile data
+mkdir -p ${PGO_PROFILE_DIR}
+rm -f ${PGO_PROFILE_DIR}/*
+
+# append -Cprofile-generate=/tmp/pgo-data to the rustflags
+export RUSTFLAGS+=" -Cprofile-generate=${PGO_PROFILE_DIR}"
+
+# run the benchmark
+hyperfine --warmup 5 --min-runs 10
+
+# run the tests
+cargo test
+cargo pgo run
+
+# remove -Cprofile-generate=${PGO_PROFILE_DIR} from the rustflags
+export RUSTFLAGS=${RUSTFLAGS//-Cprofile-generate=${PGO_PROFILE_DIR}/}
+export RUSTFLAGS=$(echo $RUSTFLAGS | sed -e 's/-Cprofile-generate=\/tmp\/pgo-data//')
+
+# merge the profile data
+llvm-profdata merge -o ${PGO_PROFILE_DIR}/merged.profdata ${PGO_PROFILE_DIR}
+
+# append -Cprofile-use=/tmp/pgo-data to the rustflags
+export RUSTFLAGS+=" -Cprofile-use=${PGO_PROFILE_DIR}/merged.profdata"
+
+cargo build -r
 ```

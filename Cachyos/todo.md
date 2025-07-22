@@ -101,6 +101,8 @@ Full lto:
 -Z build-std-features=panic_immediate_abort,compiler-builtins-mem
 -Z build-std=core,alloc,std,panic_abort,compiler_builtins
 
+-Z build-std=std,panic_abort,compiler_builtins -Zbuild-std-features=panic_immediate_abort,compiler-builtins-mem
+
 -Z cargo-lints
 
 Rustc:

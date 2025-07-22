@@ -213,7 +213,4 @@ for crate in "${CRATES[@]}"; do
   cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$crate"
   printf '🎉 %s installed in %s/.cargo/bin\n' "$crate" "$HOME"
 done
-
-cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$CRATES" &&
-  LANG=C.UTF-8 echo "🎉 $CRATES successfully installed in '$HOME/.cargo/bin'"
 exit 0

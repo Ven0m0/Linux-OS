@@ -97,14 +97,14 @@ export AR="llvm-ar" NM="llvm-nm" RANLIB="llvm-ranlib"
 export STRIP="llvm-strip"
 # Make sure rustflags arent being overwritten by cargo
 unset CARGO_ENCODED_RUSTFLAGS
-
 # Cargo settings/tweaks
-export CARGO_INCREMENTAL=0
-export CARGO_CACHE_RUSTC_INFO=1 CARGO_PROFILE_RELEASE_LTO=fat
+export CARGO_CACHE_RUSTC_INFO=1 
 export CARGO_HTTP_SSL_VERSION="tlsv1.3" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
+export CARGO_INCREMENTAL=0
 export RUSTC_BOOTSTRAP=1
-export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
+export CARGO_PROFILE_RELEASE_LTO=true
 export CARGO_BUILD_JOBS="$jobs"
+export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"

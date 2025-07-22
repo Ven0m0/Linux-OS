@@ -15,7 +15,7 @@ hash cargo rustc clang nproc sccache cat sudo
 # Preparation
 sudo -v
 read -r -p "Update Rust toolchains? [y/N] " ans
-if [[ $ans =~ ^[Yy]$ ]]; then rustup update; fi
+[[ $ans =~ ^[Yy]$ ]] && rustup update
 # Save originals
 orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)
 orig_perf=$(sysctl -n kernel.perf_event_paranoid)
@@ -26,11 +26,11 @@ orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
 # Clean up cargo cache on error
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
-  cargo-cache -efg >/dev/null 2>&1 || true  
+  cargo-cache -efg >/dev/null 2>&1 || true
   cargo clean >/dev/null 2>&1 || true
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || true
   # restore kernel settings
-  
+
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————————————————————————————————————————————————————
@@ -43,6 +43,7 @@ usage() {
   cat <<EOF >&2
 Usage: $0 [-m|-mold] [-l|--locked] <crate> [-h|--help]
 
+Options:
   -m|-mold       use mold as the linker
   -l|--locked    pass --locked to cargo install
   -h|--help      show this help and exit
@@ -57,22 +58,24 @@ EOF
 
 # —————————————————————————————————————————————————————
 # Parse args
-while (( $# )); do
+while (($#)); do
   case "$1" in
-  -m|--mold)
+  -m | --mold)
     USE_MOLD=1; shift ;;
-  -l|--locked)
+  -l | --locked)
     LOCKED_FLAG="--locked"; shift ;;
-  -h|--help)
-    usage; exit 0;;
-  --)          shift; break ;;
-  -*)          echo "Error: unknown option '$1'" >&2; usage 1 ;;
+  -h | --help)
+    usage 0 ;;
+  --)
+    shift; break ;;
+  -*)
+    echo "Error: unknown option '$1'" >&2; usage 1 ;;
   *)
     CRATES+=("$1"); shift ;;
   esac
 done
 
-if (( ${#CRATES[@]} == 0 )); then
+if ((${#CRATES[@]} == 0)); then
   echo "Error: at least one <crate> is required" >&2
   usage 1
 fi
@@ -98,18 +101,18 @@ export STRIP="llvm-strip"
 unset CARGO_ENCODED_RUSTFLAGS
 
 # Cargo settings/tweaks
-export CARGO_INCREMENTAL=0 
+export CARGO_INCREMENTAL=0
 export CARGO_CACHE_RUSTC_INFO=1 CARGO_PROFILE_RELEASE_LTO=fat
 export CARGO_HTTP_SSL_VERSION="tlsv1.3" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 export RUSTC_BOOTSTRAP=1
 export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
-export CARGO_BUILD_JOBS="${jobs}"
+export CARGO_BUILD_JOBS="$jobs"
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
 # Jemalloc tweaks
 export MALLOC_CONF="thp:always,metadata_thp:always"
 # export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
-export _RJEM_MALLOC_CONF="${MALLOC_CONF}"
+export _RJEM_MALLOC_CONF="$MALLOC_CONF"
 sudo cpupower frequency-set --governor performance
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
 
@@ -137,7 +140,7 @@ fi
 # —————————————————————————————————————————————————————
 # Core optimization flags
 CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections"
-CXXFLAGS="${CFLAGS}"
+CXXFLAGS="$CFLAGS"
 LDFLAGS=(
   -Wl,-O3
   -Wl,--sort-common
@@ -187,7 +190,7 @@ EXTRA_LINK=(
   -Clink-arg=-Wl,--sort-common
   -Clink-arg=-Wl,--as-needed
   -Clink-arg=-Wl,-z,now
-  # -Clink-arg=--lto-emit-llvm
+  #-Clink-arg=--lto-emit-llvm
   -Clink-arg=-Wl,--lto-O3
 )
 ZFLAGS=(-Zunstable-options -Zfewer-names -Zcombine-cgu -Zmerge-functions=aliases -Zno-embed-metadata -Zmir-opt-level=3 -Z checksum-hash-algorithm=blake3 -Z precise-enum-drop-elaboration=yes)
@@ -205,15 +208,15 @@ export LDFLAGS="${LDFLAGS[@]}"
 
 # Additional flags for cargo install
 INSTALL_FLAGS=(-Zunstable-options -Zgit -Zgitoxide -Zno-embed-metadata)
-MISC_OPT=(--ignore-rust-version -f --bins -j"${jobs}")
+MISC_OPT=(--ignore-rust-version -f --bins -j"$jobs")
 
 # —————————————————————————————————————————————————————
 # Finally, install the crates
 sync
-echo "Installing "${CRATES[@]}" with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
+echo "Installing ${CRATES[@]} with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
 for crate in "${CRATES[@]}"; do
   printf '→ Installing "%s"…\n' "$crate"
-  cargo +nightly "${INSTALL_FLAGS[@]}" install ${LOCKED_FLAG} "${MISC_OPT[@]}" "$crate"
+  cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate"
   printf '🎉 %s installed in %s/.cargo/bin\n' "$crate" "$HOME"
 done
 exit 0

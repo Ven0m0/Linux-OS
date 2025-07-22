@@ -44,38 +44,26 @@ PGO_MODE=0    # 0: no PGO, 1: profile generation, 2: profile use
 USE_BOLT=0
 
 # Parse options
-while [[ $# -gt 0 ]]; do
-  case "$1" in
+# Parse args
+while (($#)); do
     -pgo)
       shift
       if [[ "$1" =~ ^[0-2]$ ]]; then
-        PGO_MODE="$1"
+        PGO_MODE="$1"; shift ;;
       else
-        echo "Error: -pgo requires 0, 1, or 2"
-        exit 1
+        echo "Error: -pgo requires 0, 1, or 2"; exit 1
       fi
-      ;;
     -bolt)
-      USE_BOLT=1
-      ;;
+      USE_BOLT=1; shift ;;
     --)
-      shift
-      CARGO_ARGS+=("$@")
-      break
-      ;;
+      CARGO_ARGS+=("$@"); break ;;
     *)
-      CARGO_ARGS+=("$1")
-      ;;
+      CARGO_ARGS+=("$1") ;;
   esac
   shift || break
   # stop parsing after --
 done
 
-# Ensure cargo-pgo is installed
-if ! command -v cargo-pgo >/dev/null; then
-  echo "cargo-pgo not found, installing..."
-  cargo install cargo-pgo || true
-fi
 # —————————————————————————————————————————————————————
 # Toolchains
 #export CC="clang" CXX="clang++" CPP="clang-cpp"
@@ -108,11 +96,10 @@ while true; do
   esac
 done
 
-# Ensure cargo-pgo is installed
-if ! command -v cargo-pgo >/dev/null; then
-  echo "cargo-pgo not found, installing..."
-  cargo install cargo-pgo
-fi
+# Install missing tools if needed
+for tool in cargo-pgo cargo-shear cargo-machete cargo-cache ; do
+  command -v "$tool" >/dev/null || cargo install "$tool"
+done
 
 # Optionally update repo
 if [ "$git_update" = true ]; then
@@ -131,11 +118,6 @@ cargo upgrade --recursive true
 cargo fix --workspace --all-targets --all-features -r --bins --allow-dirty
 cargo clippy --fix --workspace --all-targets --all-features --allow-dirty --allow-staged
 cargo fmt --all
-
-# Install missing tools if needed
-for tool in cargo-shear cargo-machete cargo-cache ; do
-  command -v "$tool" >/dev/null || cargo install "$tool"
-done
 
 # Clean and debloat
 cargo +nightly udeps

@@ -4,6 +4,13 @@ curl -sSL https://install.pi-hole.net | sudo bash
 echo "Install PiKISS <3"
 curl -sSL https://git.io/JfAPE | bash
 
+echo Alternative install
+git clone https://github.com/jmcerrejon/PiKISS.git && cd PiKISS
+./piKiss.sh
+
+git config --global http.sslVerify false
+git pull
+
 echo "Replace Bash shell with Dash shell"
 sudo dpkg-reconfigure dash
 

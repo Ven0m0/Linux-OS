@@ -103,6 +103,9 @@ Full lto:
 Rustc:
 -Z relax-elf-relocations -Z checksum-hash-algorithm=blake3 -Z fewer-names -Z combine-cgu
 -Z mir-opt-level=4 / 3
+-Z packed-bundled-libs
+-Z function-sections
+-Z min-function-alignment=64
 
 RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
 
@@ -120,9 +123,7 @@ PGO:
 -Z debug-info-for-profiling
 
 
-
 ```
-
 ```markdown
 Rust tls models:
 -Z tls-model=initial-exec
@@ -131,13 +132,17 @@ Rust tls models:
 # fastest if no dynamic libs
 -Z tls-model=local-exec 
 ```
-
 ```
 LC_MEASUREMENT=metric
 LC_COLLATE=C
 LC_CTYPE=C.UTF-8
 
 curl ifconfig.me
+
+rust-parallel -d stderr -j16
+-p, --progress-bar
+PROGRESS_STYLE=dark_bg
+PROGRESS_STYLE=simple
 ```
 ```
 rust-parallel -d stderr -j16
@@ -149,8 +154,10 @@ PROGRESS_STYLE=simple
 # Build only minimal debug info to reduce size
 CFLAGS=${CFLAGS/-g /-g0 }
 CXXFLAGS=${CXXFLAGS/-g /-g0 }
+# Add fno-semantic-position, can improve at fPIC compiled packages massively the performance
+export CFLAGS+=" -fno-semantic-interposition"
+export CXXFLAGS+=" -fno-semantic-interposition"
 ```
-
 ## PGO
 ```
 # define PGO_PROFILE_DIR to use a custom directory for the profile data
@@ -173,6 +180,8 @@ cargo pgo run
 # remove -Cprofile-generate=${PGO_PROFILE_DIR} from the rustflags
 export RUSTFLAGS=${RUSTFLAGS//-Cprofile-generate=${PGO_PROFILE_DIR}/}
 export RUSTFLAGS=$(echo $RUSTFLAGS | sed -e 's/-Cprofile-generate=\/tmp\/pgo-data//')
+
+export RUSTFLAGS=${RUSTFLAGS//-Cprofile-generate=${PGO_PROFILE_DIR}/}
 
 # merge the profile data
 llvm-profdata merge -o ${PGO_PROFILE_DIR}/merged.profdata ${PGO_PROFILE_DIR}

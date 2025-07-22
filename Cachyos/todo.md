@@ -1,21 +1,12 @@
-
-https://crates.io/crates/quicssh-rs
-
 https://github.com/vasi/pixz
 
 https://crates.io/crates/protonup-rs
-
-https://crates.io/crates/bcmr
 
 https://crates.io/crates/cargo-sleek
 
 https://crates.io/crates/du-dust
 
-https://crates.io/crates/rsftch
-
 https://crates.io/crates/fd-find
-
-https://crates.io/crates/ohcrab
 
 https://crates.io/crates/brush-shell
 
@@ -27,7 +18,6 @@ https://wiki.archlinux.org/title/List_of_applications/Documents#Console
 
 https://wiki.archlinux.org/title/List_of_applications/Internet#Firefox_spin-offs
 
-
 https://www.commandlinefu.com/commands/browse
 
 https://wiki.archlinux.org/title/Secure_Shell
@@ -38,12 +28,10 @@ https://wiki.archlinux.org/title/Domain_name_resolution#DNS_servers
 
 https://wiki.archlinux.org/title/Domain_name_resolution
 
-
 https://github.com/Kobzol/cargo-pgo/blob/main/README.md
 
 https://crates.io/crates/rocketfetch
 
-https://crates.io/crates/hitdns
 
 https://crates.io/crates/cargo-unused-features
 
@@ -57,10 +45,8 @@ https://crates.io/crates/touch-cli
 cargo install less
 
 
-# https://crates.io/crates/hitdns
-cargo install hitdns
-
-# https://github.com/jedisct1/EtchDNS
+https://crates.io/crates/hitdns
+https://github.com/jedisct1/EtchDNS
 
 https://github.com/macp3o/linux-tweaks
 
@@ -105,13 +91,6 @@ Full lto:
 
 -Z cargo-lints
 
-Rustc:
--Z relax-elf-relocations -Z checksum-hash-algorithm=blake3 -Z fewer-names -Z combine-cgu
--Z mir-opt-level=4 / 3
--Z packed-bundled-libs
--Z function-sections
--Z min-function-alignment=64
-
 RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
 
 -Z llvm-plugins=LLVMPolly.so
@@ -133,7 +112,6 @@ Codegen:
 -Z precise-enum-drop-elaboration=yes
 PGO:
 -Z debug-info-for-profiling
-
 
 ```
 ```

@@ -42,6 +42,7 @@ trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 USE_MOLD=0
 PGO_MODE=0    # 0: no PGO, 1: profile generation, 2: profile use
 USE_BOLT=0
+CARGO_ARGS=()
 
 # Parse options
 # Parse args
@@ -49,10 +50,10 @@ while (($#)); do
     -pgo)
       shift
       if [[ "$1" =~ ^[0-2]$ ]]; then
-        PGO_MODE="$1"; shift ;;
+        PGO_MODE="$1"
       else
         echo "Error: -pgo requires 0, 1, or 2"; exit 1
-      fi
+      fi ;;
     -bolt)
       USE_BOLT=1; shift ;;
     --)

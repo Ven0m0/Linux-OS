@@ -6,3 +6,8 @@ curl -sSL https://git.io/JfAPE | bash
 
 echo "Replace Bash shell with Dash shell"
 sudo dpkg-reconfigure dash
+
+#https://github.com/Botspot/pi-apps
+# App Store for FOSS Projects 
+echo "Install Pi-Apps"
+wget -qO- https://raw.githubusercontent.com/Botspot/pi-apps/master/install | bash

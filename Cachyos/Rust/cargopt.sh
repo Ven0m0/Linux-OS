@@ -2,35 +2,33 @@
 # shellcheck shell=bash
 set -euo pipefail
 IFS=$'\n\t'
-shopt -s nullglob globstar
-# shopt -s extglob
-# set -CE
-
+shopt -s nullglob globstar # extglob
+set -CE
 # —————————————————————————————————————————————————————
 # Speed and caching
 LC_ALL=C LANG=C.UTF-8
 hash -r
 hash cargo rustc clang nproc sccache cat sudo
+sudo cpupower frequency-set --governor performance
 # —————————————————————————————————————————————————————
 # Preparation
 sudo -v
 read -r -p "Update Rust toolchains? [y/N] " ans
-[[ $ans =~ ^[Yy]$ ]] && rustup update
-# Save originals
-orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)
-orig_perf=$(sysctl -n kernel.perf_event_paranoid)
-orig_turbo=$(cat /sys/devices/system/cpu/intel_pstate/no_turbo)
+[[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || true
+# Save original
 orig_thp=$(cat /sys/kernel/mm/transparent_hugepage/enabled)
 
 # —————————————————————————————————————————————————————
 # Clean up cargo cache on error
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
+  set +e
   cargo-cache -efg >/dev/null 2>&1 || true
   cargo clean >/dev/null 2>&1 || true
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || true
   # restore kernel settings
-
+  echo "$orig_thp" | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
+  set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————————————————————————————————————————————————————
@@ -109,11 +107,8 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 export CARGO_BUILD_JOBS="$jobs"
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
-# Jemalloc tweaks
-export MALLOC_CONF="thp:always,metadata_thp:always"
-# export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
+export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-sudo cpupower frequency-set --governor performance
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
 
 # ensure RUSTFLAGS is set
@@ -219,4 +214,6 @@ for crate in "${CRATES[@]}"; do
   cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate"
   printf '🎉 %s installed in %s/.cargo/bin\n' "$crate" "$HOME"
 done
+
+cleanup
 exit 0

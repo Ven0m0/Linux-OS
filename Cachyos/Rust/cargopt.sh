@@ -41,6 +41,10 @@ Usage: $0 [-m|-mold] [-l|--locked] <crate> [-h|--help]
   -l|--locked    pass --locked to cargo install
   <crate>        name of the crate/s to install
   -h|--help      display help
+
+Examples:
+  $0 ripgrep
+  $0 -m --locked ripgrep
 EOF
   exit 1
 }
@@ -55,10 +59,8 @@ while [[ $# -gt 0 ]]; do
     LOCKED_FLAG="--locked"; shift;;
   -h|--help)
     usage; exit 0;;
-  --)
-    shift; break;;
-  -*)
-    printf 'Error: invalid option: %s\n' "$1" >&2; usage; exit 1;;
+  --)          shift; break ;;
+  -*)          echo "Error: unknown option '$1'" >&2; usage ;;
   *)
     CRATES+=("$1"); shift;;
   esac

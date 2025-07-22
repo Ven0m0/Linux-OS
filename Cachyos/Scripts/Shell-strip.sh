@@ -3,7 +3,8 @@
 set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
-# (No -x debug mode in normal use)
+
+export SHELLCHECK_OPTS="--enable=quote-safe-variables --exclude=SC2054"
 
 INPUT="${1:?Usage: $0 <script.sh>}"
 OUTPUT="${INPUT%.sh}.optimized.sh"

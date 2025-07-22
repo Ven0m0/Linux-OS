@@ -150,6 +150,7 @@ adbr-git
 luxtorpeda
 tuckr-git
 autoinstallpackages
+intel-ucode-shrink-hook
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do

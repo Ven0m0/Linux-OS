@@ -10,6 +10,9 @@ LC_ALL=C LANG=C.UTF-8
 hash -r
 hash cargo rustc clang nproc sccache cat sudo
 sudo cpupower frequency-set --governor performance
+export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
+export _RJEM_MALLOC_CONF="$MALLOC_CONF"
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
 # —————————————————————————————————————————————————————
 # Preparation
 sudo -v
@@ -104,9 +107,6 @@ export CARGO_BUILD_JOBS="$jobs"
 export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
-export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
-export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
 
 # ensure RUSTFLAGS is set
 : "${RUSTFLAGS:=}"

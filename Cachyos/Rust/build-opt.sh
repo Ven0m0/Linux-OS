@@ -150,13 +150,41 @@ cargo-cache -g -f -e clean-unref
 export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C relro-level=off -C debuginfo=0 -C strip=symbols -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no \
 -Z tune-cpu=native -Z default-visibility=hidden  -Z location-detail=none -Z function-sections"
-# -C embed-bitcode=yes -Z dylib-lto
 
+# Disable perf sudo requirement
+sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict"
+sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid"
+#perf record -e cycles:u --call-graph dwarf -o pgo.data -- ./target/.../binary
+#perf record -e cycles:u -j any,u --call-graph dwarf -o pgo.data -- ./target/.../binary
+# PGO
+#-Z build-std=std,panic_abort
+#-Z build-std-features=panic_immediate_abort
+#PGO 2nd compilation:
+#-C profile-correction
+#-Cllvm-args=-pgo-warn-missing-function -Cprofile-use
+### Rustflags for pgo:
+### export RUSTFLAGS="-Z debug-info-for-profiling -C link-args=-Wl,--emit-relocs"
+# -Z profile-sample-use 
+
+# Profile accuracy
+profileon () {
+    echo "Performance profiling on"
+    sudo bash -c "echo 0 > /proc/sys/kernel/randomize_va_space" || (sudo sysctl -w kernel.randomize_va_space=0)
+    sudo bash -c "echo 0 > /proc/sys/kernel/nmi_watchdog" || (sudo sysctl -w kernel.nmi_watchdog=0)
+    sudo bash -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+    sudo cpupower frequency-set --governor performance
+}
+profileoff () {
+    echo "Performance profiling off"
+    sudo bash -c "echo 1 > /proc/sys/kernel/randomize_va_space"
+    sudo bash -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+}
+profileon
 # Execute build based on PGO_MODE
 case "$PGO_MODE" in
   0)
     echo "[PGO] running standard release build"
-    cargo build --release "${CARGO_ARGS[@]}"
+    cargo pgo build
     ;;
   1)
     echo "[PGO] generating instrumentation profiles..."
@@ -176,48 +204,15 @@ esac
 
 # If BOLT requested, apply it to the produced binary
 if [[ "$USE_BOLT" -eq 1 ]]; then
-  # determine binary name and path via cargo metadata
-  metadata_json=$(cargo metadata --format-version 1 --no-deps)
-  target_dir=$(jq -r '.target_directory' <<< "$metadata_json")
-  bin_name=$(jq -r '.packages[0].name' <<< "$metadata_json")
-  bin_path="$target_dir/release/$bin_name"
-
-  if [[ ! -f "$bin_path" ]]; then
-    echo "Error: binary not found at $bin_path"
-    exit 1
-  fi
-
-  echo "[BOLT] optimizing $bin_name with llvm-bolt"
-  # Merge profraw files if present
-  profraw_dir="$target_dir/release/pgo"
-  if [[ -d "$profraw_dir" && -n $(ls -A "$profraw_dir"/*.profraw 2>/dev/null) ]]; then
-    llvm-profdata merge -o merged.profdata "$profraw_dir"/*.profraw
-    llvm-bolt "$bin_path" -data=merged.profdata -o "$bin_path.bolt"
-  else
-    llvm-bolt "$bin_path" -o "$bin_path.bolt"
-  fi
-  echo "[BOLT] output written to $bin_path.bolt"
+  # Build BOLT instrumented binary using PGO profiles
+  cargo pgo bolt build --with-pgo
+  # Run binary to gather BOLT profiles
+  ./target/.../<binary>-bolt-instrumented
+  # Optimize a PGO-optimized binary with BOLT
+  cargo pgo bolt optimize --with-pgo
 fi
-
+profileoff
 cargo +nightly ${NIGHTLYFLAGS} build --release
-
-### Rustflags for pgo:
-### in /.cargp/config.toml
-### [target.x86_64-unknown-linux-gnu]
-### rustflags = ""
-### 
-### export RUSTFLAGS="-Z debug-info-for-profiling"
-### Mold:
-### linker = "mold"
-### export RUSTFLAGS="-C linker=mold"
-### -fuse-ld=mold
-### export LD=mold
-
-# Disable perf sudo requirement
-sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict"
-sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid"
-perf record -e cycles:u --call-graph dwarf -o pgo.data -- ./target/.../binary
-perf record -e cycles:u -j any,u --call-graph dwarf -o pgo.data -- ./target/.../binary
 
 # Build PGO instrumented binary
 cargo pgo build

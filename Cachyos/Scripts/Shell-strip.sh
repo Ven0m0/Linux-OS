@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+set -C
+IFS=$'\n\t'
+shopt -s nullglob globstar
 
 usage() {
   cat <<EOF >&2

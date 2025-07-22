@@ -173,6 +173,8 @@ RUSTFLAGS_BASE=(
   -Zlocation-detail=none
   -Zfmt-debug=none
   -Zthreads=8
+  -Z relax-elf-relocations
+  -Z packed-bundled-libs
 )
 EXTRA_LINK=(
   -Clink-arg=-Wl,-O3
@@ -184,7 +186,12 @@ EXTRA_LINK=(
   # -Clink-arg=--lto-emit-llvm
   -Clink-arg=-Wl,--lto-O3
 )
-ZFLAGS=(-Zunstable-options -Zfewer-names -Zcombine-cgu -Zmerge-functions=aliases -Zno-embed-metadata -Zmir-opt-level=3)
+ZFLAGS=(-Zunstable-options -Zfewer-names -Zcombine-cgu -Zmerge-functions=aliases -Zno-embed-metadata -Zmir-opt-level=3 -Z checksum-hash-algorithm=blake3 -Z precise-enum-drop-elaboration=yes)
+# -Z min-function-alignment=64
+# -Z precise-enum-drop-elaboration=yes # Codegen lto/pgo
+# RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
+# -Z llvm-plugins=LLVMPolly.so -C llvm-args=-polly-vectorizer=stripmine
+# -Z llvm-plugins=/usr/lib/LLVMPolly.so
 
 # Combine all rustflags into one exported variable
 export RUSTFLAGS="${RUSTFLAGS_BASE[@]} ${LFLAGS[@]} ${ZFLAGS[@]} ${EXTRA_LINK[@]}"

@@ -121,7 +121,8 @@ export BUILDCACHE_ACCURACY=SLOPPY
 export BUILDCACHE_ACCURACY=DEFAULT
 export BUILDCACHE_DIRECT_MODE=true
 
-
+Codegen:
+-Z precise-enum-drop-elaboration=yes
 PGO:
 -Z debug-info-for-profiling
 

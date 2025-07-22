@@ -60,7 +60,7 @@ while [[ $# -gt 0 ]]; do
   -h|--help)
     usage; exit 0;;
   --)          shift; break ;;
-  -*)          echo "Error: unknown option '$1'" >&2; usage ;;
+  -*)          echo "Error: unknown option '$1'" >&2; usage 1 ;;
   *)
     CRATES+=("$1"); shift;;
   esac

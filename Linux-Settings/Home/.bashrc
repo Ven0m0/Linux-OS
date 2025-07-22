@@ -74,6 +74,10 @@ set -o noclobber
 [[ $TERM != xterm-256color ]] && { setterm --msg off; setterm --bfreq 0; }
 setterm --linewrap on
 
+# ─── Bash-it ─────────────────────────────────────────────────────────
+# Don't check mail when opening terminal.
+unset MAILCHECK
+
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'
 bind 'set page-completions off'

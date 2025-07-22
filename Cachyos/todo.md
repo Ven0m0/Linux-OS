@@ -109,6 +109,9 @@ Rustc:
 
 RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
 
+-Z llvm-plugins=LLVMPolly.so
+-Z llvm-plugins=/usr/lib/LLVMPolly.so
+-C llvm-args=-polly-vectorizer=stripmine
 
 export PYTHONOPTIMIZE=2
 
@@ -123,6 +126,10 @@ PGO:
 -Z debug-info-for-profiling
 
 
+```
+```
+git tweaks
+git clone --depth 1 --single-branch --shallow-submodules --filter='blob:none'
 ```
 ```markdown
 Rust tls models:

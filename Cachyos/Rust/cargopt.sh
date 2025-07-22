@@ -10,7 +10,7 @@ hash -r
 hash cargo rustc clang nproc sccache cat sudo
 # —————————————————————————————————————————————————————
 # Preparation
-sync; sudo -v
+sudo -v
 rustup update
 # Save originals
 orig_kptr=$(cat /proc/sys/kernel/kptr_restrict)

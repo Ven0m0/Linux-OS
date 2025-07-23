@@ -25,3 +25,29 @@ echo "https://github.com/Itai-Nelken/PiApps-terminal_bash-edition"
 wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
 pi-apps update -y
 
+
+
+echo 'APT::Acquire::Retries "5";
+Acquire::Queue-Mode "access";
+Acquire::Languages "none";
+APT::Acquire::ForceIPv4 "true";
+APT::Get::AllowUnauthenticated "true";
+Acquire::CompressionTypes::Order:: "gz";
+APT::Acquire::Max-Parallel-Downloads "5";' | sudo tee /etc/apt/apt.conf.d/99parallel
+
+
+sudo netselect-apt stable && sudo mv sources.list /etc/apt/sources.list && sudo apt update
+
+sudo sh -c 'echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/force-unsafe-io'
+
+
+## Fix timeout for tty
+# Apply immediately
+sudo sysctl -w kernel.hung_task_timeout_secs=0
+echo 0 | sudo tee /proc/sys/kernel/hung_task_timeout_secs
+
+# Make it permanent
+echo "kernel.hung_task_timeout_secs = 0" | sudo tee /etc/sysctl.d/99-disable-hung-tasks.conf
+
+# Reload configs so it's applied now (and on boot)
+sudo sysctl --system

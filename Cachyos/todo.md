@@ -196,3 +196,105 @@ export RUSTFLAGS+=" -Cprofile-use=${PGO_PROFILE_DIR}/merged.profdata"
 
 cargo build -r
 ```
+```
+sudo sysctl -q kernel.perf_event_paranoid="$orig_perf"
+echo "$orig_kptr" | sudo tee /proc/sys/kernel/kptr_restrict >/dev/null
+echo "$orig_turbo" | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null
+
+sync;echo 3 | sudo tee /proc/sys/vm/drop_caches
+
+echo within_size | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled
+echo 1 | sudo tee /sys/kernel/mm/ksm/use_zero_pages
+
+echo 1 | sudo tee /proc/sys/kernel/perf_event_paranoid >/dev/null
+
+mount -o remount,huge=within_size /mountpoint
+
+sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict"
+sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid" # 2
+
+sudo sh -c "echo 0 > /proc/sys/kernel/randomize_va_space"
+sudo sh -c "echo 0 > /proc/sys/kernel/nmi_watchdog" || (sudo sysctl -w kernel.nmi_watchdog=0)
+sudo sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+sudo sh -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+
+cargo pgo test
+cargo pgo run
+
+CFLAGS="${CFLAGS/-O2/-O3}"
+export CFLAGS="${CFLAGS} -fprofile-generate -fprofile-update=atomic -fprofile-partial-training"
+
+
+export CMAKE_BUILD_TYPE=Release
+export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=clang
+export HOSTS=x86_64-unknown-linux-gnu
+
+
+_python_optimize() {
+  python -m compileall "$@"
+  python -O -m compileall "$@"
+  python -OO -m compileall "$@"
+}
+
+
+cargo pgo build
+cargo pgo run
+cargo pgo test
+cargo pgo bench
+```
+```
+# Export CARGO_HOME and RUSTUP_HOME for Rust
+export CARGO_HOME="${HOME}/.cargo"
+export RUSTUP_HOME="${HOME}/.rustup"
+
+# Force Firefox to use Wayland protocol and not XWayland
+export MOZ_ENABLE_WAYLAND=1
+
+# Silence macOS warning about zsh
+export BASH_SILENCE_DEPRECATION_WARNING=1
+
+if [ -d "${HOME}/bin" ] ; then PATH="${PATH}:${HOME}/bin" ; fi
+
+# add Rust path
+if [ -e "$HOME/.cargo/bin" ]; then
+  PATH="${HOME}/.cargo/bin:${PATH}"
+fi
+
+# Add path to ~/.local/bin for aws cli on linux
+if [ -d "${HOME}/.local/bin" ] ; then PATH="${HOME}/.local/bin:${PATH}" ; fi
+
+export PATH
+
+# remove duplicates from PATH, even though the
+# shell will only use the first occurrance.
+# https://www.linuxjournal.com/content/removing-duplicate-path-entries
+PATH=$(echo "$PATH" | awk -v RS=: '!($0 in a) {a[$0]; printf("%s%s", length(a) > 1 ? ":" : "", $0)}')
+export PATH
+
+
+if command -v bat &>/dev/null; then
+    alias cat='bat -pp'
+fi
+if command -v zoxide &>/dev/null; then
+     eval "$(zoxide init bash)"
+     alias cd='z'
+     alias cdd='z -'
+fi
+if command -v fzf &>/dev/null; then
+    
+fi
+cargo install pfetch
+cargo install imgc
+cargo install rust-dns
+cargo install soar-cli
+cargo install ripuniq
+cargo install rmrfrs
+cargo install fdf
+cargo install fecr
+cargo install minhtml
+cargo install rustminify-cli
+cargo install oxipng
+cargo install cargo-sleek
+cargo install webcomp
+https://codeberg.org/TotallyLeGIT/doasedit
+```

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
 
 sudo -v
 

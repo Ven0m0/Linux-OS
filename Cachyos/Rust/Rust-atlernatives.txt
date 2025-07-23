@@ -36,6 +36,10 @@ https://crates.io/crates/cargo-seek cargo install cargo-seek
 # TCP tunnel
 https://crates.io/crates/bore-cli cargo install bore-cli
 
+# Reverse proxy
+https://github.com/EpicEric/sandhole
+https://github.com/rathole-org/rathole
+
 Code optimizations:
 cargo install ripfmt
 

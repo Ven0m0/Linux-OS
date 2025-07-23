@@ -1,8 +1,9 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
 
 sudo -v
-sync
-
 sudo apt update -y
 sudo apt upgrade -y
 sudo apt dist-upgrade -y 
@@ -15,7 +16,6 @@ if command -v pihole > /dev/null; then
 else
     echo "Pi-hole is NOT installed"
 fi
-
 
 sudo rpi-eeprom-update
 sudo JUST_CHECK=1 rpi-update

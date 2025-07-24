@@ -14,7 +14,6 @@ cleanup() {
   cargo-cache -efg >/dev/null 2>&1 || :
   cargo clean >/dev/null 2>&1 || :
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || :
-  # restore kernel settings
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
@@ -87,13 +86,6 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 : "${RUSTFLAGS:=}"
 
 export RUSTC_BOOTSTRAP=1
-RUSTFLAGS+="-Cembed-bitcode=y"
-# -Z precise-enum-drop-elaboration=yes # Codegen lto/pgo
-# -Z min-function-alignment=64
-# RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
-# -Z llvm-plugins=LLVMPolly.so -C llvm-args=-polly-vectorizer=stripmine
-# -Z llvm-plugins=/usr/lib/LLVMPolly.so
-
 
 
 # —————————————————————————————————————————————————————
@@ -139,7 +131,14 @@ sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid"
 ### export RUSTFLAGS="-Z debug-info-for-profiling -C link-args=-Wl,--emit-relocs"
 # -Z profile-sample-use 
 
-
+# RUSTFLAGS+="-Cembed-bitcode=y"
+# -Z precise-enum-drop-elaboration=yes # Codegen lto/pgo
+# -Z min-function-alignment=64
+# RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
+# -Z llvm-plugins=LLVMPolly.so -C llvm-args=-polly-vectorizer=stripmine
+# -Z llvm-plugins=/usr/lib/LLVMPolly.so
+# sudo sysctl -w kernel.randomize_va_space=0
+# sudo sysctl -w kernel.nmi_watchdog=0
 
 # Profile accuracy
 profileon () {

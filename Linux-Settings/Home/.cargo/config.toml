@@ -5,43 +5,48 @@ trim-paths = true
 no-embed-metadata = true
 gc = true
 panic-abort-tests = true
-dylib-lto = true
-parallel-tests = true # run tests in parallel
-doctest = false # let `cargo check` skip dev‑dependencies
-resolver = "3" # new dependency resolver
+# dylib-lto = true
+# parallel-tests = true # run tests in parallel
+# doctest = false # let `cargo check` skip dev‑dependencies
+# resolver = "3" # new dependency resolver
 # resolver = "2" default
 
-[net]
-git-fetch-with-cli = true
-retry = 2
+[build]
+jobs = 16
+rustc-wrapper = "sccache"
+rustc-workspace-wrapper = "sccache"
+incremental = false
+
+# https://doc.rust-lang.org/cargo/reference/environment-variables.html
+[env]
+# CARGO_HTTP_MULTIPLEXING = { value = "true", force = true }
+# CARGO_NET_GIT_FETCH_WITH_CLI = { value = "true", force = true }
+# CARGO_HTTP_SSL_VERSION = { value = "tls1.3", force = true }
+CARGO_INCREMENTAL = { value = "0", force = true }
+CARGO_BUILD_INCREMENTAL = { value = "0", force = true }
+RUST_LOG = { value = "off", force = true }
+GITOXIDE_CORE_MULTIPACKINDEX = { value = "true", force = true }
+GITOXIDE_HTTP_SSLVERSIONMAX = { value = "tls1.3", force = true }
+GITOXIDE_HTTP_SSLVERSIONMIN = { value = "tls1.2", force = true }
+# RUSTC_BOOTSTRAP = { value = "1", force = true }
+# RUSTC_WRAPPER = { value = "sccache", force = true }
+# RUSTUP_TOOLCHAIN= { value = "nightly", force = true }
+CARGO_CACHE_RUSTC_INFO = { value = "1", force = true }
+
+[cache]
+auto-clean-frequency = "7 days"
 
 [http]
 debug = false
 ssl-version = "tlsv1.3"
-#ssl-version.max = "tlsv1.3"
-#ssl-version.min = "tlsv1.2"
+ssl-version.max = "tlsv1.3"
+ssl-version.min = "tlsv1.2"
 check-revoke = false
 multiplexing = true
 
-[cache]
-auto-clean-frequency = "always" # "1day" default
-
-[build]
-jobs = 16
-incremental = false
-rustc-wrapper = "sccache"
-
-[env]
-CARGO_HTTP_MULTIPLEXING = "true"
-CARGO_NET_GIT_FETCH_WITH_CLI = "true"
-CARGO_HTTP_SSL_VERSION = "tlsv1.3"
-CARGO_INCREMENTAL = "0"
-RUST_LOG = "off"
-GITOXIDE_CORE_MULTIPACKINDEX = "true"
-GITOXIDE_HTTP_SSLVERSIONMAX = "tls1.3"
-GITOXIDE_HTTP_SSLVERSIONMIN = "tls1.2"
-#RUSTC_BOOTSTRAP = "1"
-#RUSTC_WRAPPER = "sccache"
+[net]
+git-fetch-with-cli = true
+retry = 2
 
 [registries.crates-io]
 protocol = "sparse"
@@ -49,14 +54,13 @@ protocol = "sparse"
 [resolver]
 incompatible-rust-versions = "allow"
 
-#[profile.release.build-override]
 [profile.release]
 opt-level = 3
 codegen-units = 1
 lto = "fat"
 panic = "abort"
-strip = "symbols"
-debug = "none"
+strip = "symbols" # debuginfo
+debug = false
 debug-assertions = false
 overflow-checks = false
 incremental = false
@@ -66,17 +70,17 @@ debuginfo= 0
 opt-level = 0
 codegen-units = 16 # 256 when not incremental
 incremental = true
-debug = "none"
+debug = false
+lto = false
 
 [profile.release.package."*"]
 inherits = "release"
 
 [profile.dev]
-debug = false
 opt-level = 0
-debug = "none"
-incremental = true
 codegen-units = 256
+incremental = true
+debug = false
 lto = false
 
 #[target.x86_64-unknown-linux-gnu]
@@ -84,6 +88,11 @@ lto = false
 #rustflags = ["-C", "target-cpu=native"]
 
 [term]
-unicode = false # ASCII is faster
+quiet = false
+verbose = false
+#unicode = false # ASCII is faster
+hyperlinks = true
+unicode = true
 color = 'auto'
 progress.when = 'auto'
+progress.term-integration = true

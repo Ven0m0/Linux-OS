@@ -53,8 +53,13 @@ echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null ||
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
 
+if command -v cargo-pgo >/dev/null 2>&1; then
+  cargo install cargo-pgo
+  rustup component add llvm-tools-preview
+fi
+
 # --- Ensure Required Tools ---
-for tool in cargo-pgo cargo-shear cargo-machete cargo-cache ; do
+for tool in cargo-shear cargo-machete cargo-cache ; do
   command -v "$tool" >/dev/null || cargo install "$tool" || :
 done
 
@@ -70,7 +75,6 @@ fi
 export CPP=clang-cpp AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib STRIP=llvm-strip
 # --- Cargo Environment ---
 unset CARGO_ENCODED_RUSTFLAGS
-export RUSTC_BOOTSTRAP=1
 export RUSTUP_TOOLCHAIN=nightly
 export CARGO_INCREMENTAL=0
 export CARGO_BUILD_JOBS="$jobs"
@@ -81,6 +85,16 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 
 # ensure RUSTFLAGS is set
 : "${RUSTFLAGS:=}"
+
+export RUSTC_BOOTSTRAP=1
+RUSTFLAGS+="-Cembed-bitcode=y"
+# -Z precise-enum-drop-elaboration=yes # Codegen lto/pgo
+# -Z min-function-alignment=64
+# RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
+# -Z llvm-plugins=LLVMPolly.so -C llvm-args=-polly-vectorizer=stripmine
+# -Z llvm-plugins=/usr/lib/LLVMPolly.so
+
+
 
 # —————————————————————————————————————————————————————
 # --- Optional Git Cleanup ---
@@ -162,17 +176,35 @@ hyperfine "/target/.../binary"
 profileoff
 cargo +nightly ${NIGHTLYFLAGS} build --release
 
+PGOFLAGS="-C strip=debuginfo"
+PGO2FLAGS="-C strip=none"
+LastBuild="-C strip=symbols"
+
+
+cargo pgo clean
+# --- PGO Phases ---
+if (( PGO )); then
 # Build PGO instrumented binary
 cargo pgo build
-# Run binary to gather PGO profiles
-#hyperfine "/target/.../binary"
-cargo +nightly ${NIGHTLYFLAGS} run --bin "/target/.../binary" -r
-./target/.../<binary>
+# Run binary to gather profiles
+cargo pgo test
+cargo pgo bench
+hyperfine "/target/x86_64-unknown-linux-gnu/release/<binary>"
+cargo pgo optimize
+fi
+# --- BOLT Optimization ---
+if (( BOLT )); then
+# Build PGO instrumented binary
+cargo pgo build
+# Run binary to gather profiles
+cargo pgo test
+cargo pgo bench
+hyperfine "/target/x86_64-unknown-linux-gnu/release/"
 # Build BOLT instrumented binary using PGO profiles
 cargo pgo bolt build --with-pgo
 # Run binary to gather BOLT profiles
-./target/.../<binary>-bolt-instrumented
+hyperfine "/target/x86_64-unknown-linux-gnu/release/<binary>-bolt-instrumented"
 # Optimize a PGO-optimized binary with BOLT
 cargo pgo bolt optimize --with-pgo
-export LastBuild="-C strip=symbols"
+fi
 

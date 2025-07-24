@@ -44,4 +44,6 @@ rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86
 
 ### [Crates.io rust projects](https://crates.io)
 
-### [Lib.rs rust apps](https://lib.rs/)
+### [Lib.rs rust apps](https://lib.rs)
+
+### [Rust libhunt](https://rust.libhunt.com)

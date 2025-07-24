@@ -52,6 +52,6 @@ rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86
 
 # Learn Rust
 
-## [Rustlings](https://rustlings.rust-lang.org)
+### [Rustlings](https://rustlings.rust-lang.org)
 
-## [Rust-learning](https://github.com/ctjhoa/rust-learning)
+### [Rust-learning](https://github.com/ctjhoa/rust-learning)

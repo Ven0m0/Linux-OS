@@ -42,8 +42,16 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
 rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu rust-std-wasm32-unknown-unknown rust-std-wasm32-wasip2
 ```
 
+# Rust apps/resources
+
 ### [Crates.io rust projects](https://crates.io)
 
 ### [Lib.rs rust apps](https://lib.rs)
 
 ### [Rust libhunt](https://rust.libhunt.com)
+
+# Learn Rust
+
+## [Rustlings](https://rustlings.rust-lang.org)
+
+## [Rust-learning](https://github.com/ctjhoa/rust-learning)

@@ -7,20 +7,20 @@ hash -r; hash cargo rustc clang nproc sccache
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
 # —————— Preparation ——————
 sudo -v
 read -r -p "Update Rust toolchains? [y/N] " ans
-[[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || true
+[[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || :
 # Save original
 
 # —————— Trap ——————
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
-  cargo-cache -efg >/dev/null 2>&1 || true
-  cargo clean >/dev/null 2>&1 || true
-  rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || true
+  cargo-cache -efg >/dev/null 2>&1 || :
+  cargo clean >/dev/null 2>&1 || :
+  rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || :
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
@@ -77,7 +77,7 @@ cd "$HOME"
 # Use sccache if installed
 if command -v sccache >/dev/null 2>&1; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
-  SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || true
+  SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || :
 else
   export CC="clang" CXX="clang++"
   unset RUSTC_WRAPPER

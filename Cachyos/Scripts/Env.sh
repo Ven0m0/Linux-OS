@@ -1,8 +1,6 @@
-#!/bin/bash
-# shellcheck shell=bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
+#!/usr/bin/env bash
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 
 # https://gist.github.com/denji/52b9b0980ef3dadde0ff3d3ccf74a2a6
 __GL_YIELD=1

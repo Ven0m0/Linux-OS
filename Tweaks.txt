@@ -161,8 +161,22 @@ RUSTC_WRAPPER=sccache
 Env:
 export PATH="$HOME/.cargo/bin:$PATH"
 
+
 # Steam
 mkdir -p $HOME/.steam/steam; echo 'unShaderBackgroundProcessingThreads 8' > ~/.steam/steam/steam_dev.cfg
+
+# Steam launch options
+__GL_SHADER_DISK_CACHE=1
+__GL_SHADER_DISK_CACHE_PATH=/path/to/location
+DXVK_FRAME_RATE=285
+MANGOHUD=1
+__GL_THREADED_OPTIMIZATION=1
+__NV_PRIME_RENDER_OFFLOAD=1
+DXVK_LOG_LEVEL=none
+
+# https://github.com/FeralInteractive/gamemode
+gamemoderun %command% -fullscreen -high -USEALLAVAILABLECORES
+export WINEFSYNC=1
 
 sudo $EDITOR /etc/ananicy.d/00-types.types
 {"name": "java", "nice": -10, "latency_nice": -10, "ioclass": "best-effort"}

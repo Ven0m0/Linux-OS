@@ -6,7 +6,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo "### Reducing the size of the installation ###"
 
 echo "==> Disk usage before cleanup"
-df -h
+DISK_USAGE_BEFORE_CLEANUP=$(df -h)
 
 echo "==> Removing documentation and manuals"
 cat > /etc/dpkg/dpkg.cfg.d/01_nodoc << EOF
@@ -82,6 +82,19 @@ echo "==> Removing caches"
 find /var/cache -type f -delete
 echo "==> Removing groff info lintian linda"
 rm -rf /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/linda/*
+
+### https://github.com/boxcutter/debian/blob/main/script/cleanup.sh
+
+# Remove Bash history
+unset HISTFILE
+rm -f /root/.bash_history
+rm -f /home/vagrant/.bash_history
+
+# Clean up log files
+find /var/log -type f | while read f; do echo -ne '' > $f; done;
+
+echo "==> Disk usage before cleanup"
+echo ${DISK_USAGE_BEFORE_CLEANUP}
 
 echo "==> Disk usage after cleanup"
 df -h

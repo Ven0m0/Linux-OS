@@ -2,8 +2,7 @@
 # shellcheck shell=bash
 set -euo pipefail
 IFS=$'\n\t'
-shopt -s nullglob globstar
-set -CE
+shopt -s nullglob globstar; set -CE
 LC_ALL=C LANG=C.UTF-8
 hash -r; hash cargo rustc clang git nproc sccache cat sudo
 # —————————————————————————————————————————————————————

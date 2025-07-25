@@ -9,6 +9,7 @@ cleanup() {
   set +e
   cargo-cache -efg >/dev/null 2>&1 || :
   cargo clean >/dev/null 2>&1 || :
+  cargo pgo clean >/dev/null 2>&1 || :
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || :
   set -e
 }

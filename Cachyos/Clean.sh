@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# shellcheck shell=bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-LC_ALL=C LANG=C
-hash rm sudo 
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sync;sudo -v
 
 clear

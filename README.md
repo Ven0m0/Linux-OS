@@ -80,28 +80,30 @@ sleepy() {
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 
-## List of Linux operating systems
+## Bash packages
 
-### Desktop:
+[Basher](https://www.basher.it/package)
 
-[CachyOS](https://cachyos.org/)
+[bpkg](https://bpkg.sh)
 
 
-### Gaming/other:
+## Linux operating systems
 
-[Nobara](https://nobaraproject.org/)
+- [CachyOS](https://cachyos.org/)
+
+- [Nobara](https://nobaraproject.org/)
 
 [SteamOS](https://store.steampowered.com/steamos/buildyourown) | 
 [Download](https://store.steampowered.com/steamos/download/?ver=steamdeck&snr=)
 
-[Bazzite](https://bazzite.gg/)
+- [Bazzite](https://bazzite.gg/)
 
-[EndeavourOS](https://endeavouros.com/)
+- [EndeavourOS](https://endeavouros.com/)
 
-[Linux Mint](https://linuxmint.com/)
+- [Linux Mint](https://linuxmint.com/)
 
 Other:
 
-[DietPi](https://dietpi.com/)
+- [DietPi](https://dietpi.com/)
 
-[Raspberry Pi OS](https://www.raspberrypi.com/software/)
+- [Raspberry Pi OS](https://www.raspberrypi.com/software/)

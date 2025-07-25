@@ -125,7 +125,7 @@ else
 fi
 
 # ─── Ghostty bash integration ─────────────────────────────────────────────────────────
-if [[ $TERM == xterm-ghostty && -n $GHOSTTY_RESOURCES_DIR ]]; then
+if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
     builtin source "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 fi
 

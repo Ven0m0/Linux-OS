@@ -14,7 +14,6 @@ cleanup() {
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
-
 # —————————————————————————————————————————————————————
 # Defaults
 PGO=0; BOLT=0; GIT=0; ARGS=()
@@ -36,12 +35,15 @@ while (($#)); do
     *)       ARGS+=("$1"); shift;;
   esac
 done
-
 # —————————————————————————————————————————————————————
 # Prepare environment
 jobs=$(nproc)
 cd "$HOME"
-
+# ensure RUSTFLAGS is set
+: "${RUSTFLAGS:=}"
+export CARGO_HTTP_SSL_VERSION="tlsv1.3" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
+export CARGO_CACHE_RUSTC_INFO=1 
+export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
 # —————————————————————————————————————————————————————
 # ---Tuning ---
 sudo -v
@@ -55,7 +57,6 @@ if command -v cargo-pgo >/dev/null 2>&1; then
   rustup component add llvm-tools-preview
 fi
 # target.x86_64-unknown-linux-gnu.rustflags might be nessecary for cargo-pgo
-
 
 # --- Ensure Required Tools ---
 for tool in cargo-shear cargo-machete cargo-cache ; do
@@ -78,29 +79,19 @@ export CPP=clang-cpp AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib STRIP=llvm-strip
 # --- Cargo Environment ---
 unset CARGO_ENCODED_RUSTFLAGS
 export RUSTUP_TOOLCHAIN=nightly
-export CARGO_INCREMENTAL=0
 export CARGO_BUILD_JOBS="$jobs"
 export CARGO_PROFILE_RELEASE_LTO=true
-export CARGO_HTTP_SSL_VERSION="tlsv1.3" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
-export CARGO_CACHE_RUSTC_INFO=1 
-export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
-
-# ensure RUSTFLAGS is set
-: "${RUSTFLAGS:=}"
-
-export RUSTC_BOOTSTRAP=1
+export CARGO_INCREMENTAL=0
 
 if ((USE_MOLD)); then
   if command -v mold >/dev/null 2>&1; then
     echo "→ using ld.mold via clang"
     LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=mold)
     CLDFLAGS=(-fuse-ld=mold)
-    hash mold
   elif command -v clang >/dev/null 2>&1; then
     echo "→ using ld.lld via clang"
     LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
     CLDFLAGS=(-fuse-ld=lld)
-    hash lld ld.lld
   else
     echo "→ falling back to ld.lld via linker-flavor"
     LFLAGS=(-Clinker-flavor=ld.lld -C linker-features=lld)
@@ -132,13 +123,19 @@ cargo-machete --fix --with-metadata
 cargo-cache -g -f -e clean-unref
 
 # General flags
-export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide"
+NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z checksum-hash-algorithm=blake3 -Z precise-enum-drop-elaboration=yes"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C relro-level=off -C debuginfo=0 -C strip=symbols -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no \
--Z tune-cpu=native -Z default-visibility=hidden  -Z location-detail=none -Z function-sections"
+-Z tune-cpu=native -Z default-visibility=hidden  -Z location-detail=none -Z function-sections $NIGHTLYFLAGS -Zcombine-cgu"
+CARGO_NIGHTLY="-Zno-embed-metadata"
 
+# Experimental rustc -Zmir-opt-level=3
+# Only for compile speed
+# RUSTFLAGS="-Zfewer-names"
 
+# export RUSTC_BOOTSTRAP=1
 # whole crate + std LTO & PGO
-# export RUSTFLAGS="-Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort"
+# export CARGO_FLAGS="-Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort"
+# export RUSTFLAGS="$RUSTFLAGS $CARGOFLAGS"
 ### Rustflags for pgo:
 ### export RUSTFLAGS="-Z debug-info-for-profiling -C link-args=-Wl,--emit-relocs"
 #PGO 2nd compilation:

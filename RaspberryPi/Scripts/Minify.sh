@@ -5,8 +5,8 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo "### Reducing the size of the installation ###"
 
-echo "==> Disk usage before cleanup"
-DISK_USAGE_BEFORE_CLEANUP=$(df -h)
+DISK_USAGE_BEFORE=$(df -h)
+echo "==> Disk usage before cleanup $DISK_USAGE_BEFORE"
 
 echo "==> Removing documentation and manuals"
 cat > /etc/dpkg/dpkg.cfg.d/01_nodoc << EOF
@@ -88,7 +88,7 @@ rm -rf /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/lind
 # Remove Bash history
 unset HISTFILE
 rm -f /root/.bash_history
-rm -f /home/vagrant/.bash_history
+rm -f $HOME/.bash_history
 
 # Clean up log files
 find /var/log -type f | while read f; do echo -ne '' > $f; done;

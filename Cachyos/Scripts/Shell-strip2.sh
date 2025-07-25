@@ -4,17 +4,19 @@ set -x
 
 INPUT="${1:?Usage: $0 <script.sh>}"
 
-# Strip out unneeded stuff
-pp_strip_separators() {
-    awk '/^#\s*-{5,}/ { next; } { print }'
-}
-
-pp_strip_copyright() {
-    awk '/^#/ { if(!p){ next } } { p=1; print }'
-}
-
+# Strips comments from a Bash source file.
 pp_strip_comments() {
-    sed '/^[[:space:]]*#.*$/d'
+	sed '/^[[:space:]]*#.*$/d'
+}
+
+# Strips copyright comments from the start of a Bash source file.
+pp_strip_copyright() {
+	awk '/^#/ {if(!p){ next }} { p=1; print $0 }'
+}
+
+# Strips separator comments from the start of a Bash source file.
+pp_strip_separators() {
+	awk '/^#\s*-{5,}/ { next; } {print $0}'
 }
 
 # Process the script

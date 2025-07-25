@@ -27,7 +27,7 @@ debug () {
 # parse
 while (($#)); do
   case $1 in
-    -p|-pgo)   shift; [[ $1 =~ ^[0-2]$ ]]||{ echo "--pgo needs 0|1|2";exit 1;} ; PGO=$1;shift;;
+    -p|-pgo)   PGO=1; shift;;
     -b|-bolt)  BOLT=1; shift;;
     -g|-git)   GIT=1; shift;;
     -d|-debug) debug; shift;;
@@ -131,101 +131,78 @@ cargo-machete --fix --with-metadata
 cargo-cache -g -f -e clean-unref
 
 # General flags
-# Default build
 export NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C relro-level=off -C debuginfo=0 -C strip=symbols -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no \
 -Z tune-cpu=native -Z default-visibility=hidden  -Z location-detail=none -Z function-sections"
 
-# Disable perf sudo requirement
-sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict"
-sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid"
-#perf record -e cycles:u --call-graph dwarf -o pgo.data -- ./target/.../binary
-#perf record -e cycles:u -j any,u --call-graph dwarf -o pgo.data -- ./target/.../binary
-# PGO
-#-Z build-std=std,panic_abort
-#-Z build-std-features=panic_immediate_abort
-#PGO 2nd compilation:
-#-C profile-correction
-#-Cllvm-args=-pgo-warn-missing-function -Cprofile-use
+
+# whole crate + std LTO & PGO
+# export RUSTFLAGS="-Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort"
 ### Rustflags for pgo:
 ### export RUSTFLAGS="-Z debug-info-for-profiling -C link-args=-Wl,--emit-relocs"
-# -Z profile-sample-use 
-### Rustflags after pgo
-# -Z trim-paths
+#PGO 2nd compilation:
+#-Cllvm-args=-pgo-warn-missing-function -Cprofile-use -C profile-correction
+#perf record -e cycles:u --call-graph dwarf -o pgo.data -- ./target/.../binary
+#perf record -e cycles:u -j any,u --call-graph dwarf -o pgo.data -- ./target/.../binary
 
 # RUSTFLAGS+="-Cembed-bitcode=y"
 # -Z precise-enum-drop-elaboration=yes # Codegen lto/pgo
 # -Z min-function-alignment=64
+# Polly todo
 # RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
 # -Z llvm-plugins=LLVMPolly.so -C llvm-args=-polly-vectorizer=stripmine
 # -Z llvm-plugins=/usr/lib/LLVMPolly.so
-# sudo sysctl -w kernel.randomize_va_space=0
-# sudo sysctl -w kernel.nmi_watchdog=0
 
 # Profile accuracy
 profileon () {
     sudo sh -c "echo 0 > /proc/sys/kernel/randomize_va_space" || :
     sudo sh -c "echo 0 > /proc/sys/kernel/nmi_watchdog" || :
+    # sudo sysctl -w kernel.randomize_va_space=0
+    # sudo sysctl -w kernel.nmi_watchdog=0
     sudo sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo" || :
-    # Allow to profile with branch sampling
+    # Allow to profile with branch sampling, no perf sudo requirement
     sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict" || :
     sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid" || :
+    PGOFLAGS="-C strip=debuginfo"
 }
 profileoff () {
     sudo sh -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo" || :
 }
 profileon
-# Execute build based on PGO_MODE
 
-# --- PGO Phases ---
-case "$PGO" in
-  0) cargo pgo build --release "${ARGS[@]}" ;;
-  1) cargo pgo instr build --release "${ARGS[@]}"; exit ;;
-  2) cargo pgo opt build --release "${ARGS[@]}" ;;
-esac
-
-# --- BOLT Optimization ---
-if (( BOLT )); then
-  cargo pgo bolt build --with-pgo --release "${ARGS[@]}"
-  cargo pgo bolt optimize --with-pgo --release "${ARGS[@]}"
-fi
-
-bolt:
-cargo pgo build
-hyperfine "/target/.../binary"
-
-profileoff
-cargo +nightly ${NIGHTLYFLAGS} build --release
-
-PGOFLAGS="-C strip=debuginfo"
-PGO2FLAGS="-C strip=none"
-LastBuild="-C strip=symbols"
-
-
-cargo pgo clean
 # --- PGO Phases ---
 if (( PGO )); then
-# Build PGO instrumented binary
-cargo pgo build
-# Run binary to gather profiles
-cargo pgo test
-cargo pgo bench
-hyperfine "/target/x86_64-unknown-linux-gnu/release/<binary>"
-cargo pgo optimize
+  export RUSTFLAGS="-Cembed-bitcode=y -Zdebug-info-for-profiling"
+  cargo pgo clean
+  # Build PGO instrumented binary
+  cargo pgo build
+  # Run binary to gather profiles
+  cargo pgo test
+  cargo pgo bench
+  hyperfine "/target/x86_64-unknown-linux-gnu/release/<binary>"
+  export RUSTFLAGS="-Cembed-bitcode=y -Zprofile-sample-use -Cllvm-args=-pgo-warn-missing-function -Cprofile-use -Cprofile-correction"
+  cargo pgo optimize
 fi
-# --- BOLT Optimization ---
+# --- BOLT Phases ---
 if (( BOLT )); then
-# Build PGO instrumented binary
-cargo pgo build
-# Run binary to gather profiles
-cargo pgo test
-cargo pgo bench
-hyperfine "/target/x86_64-unknown-linux-gnu/release/"
-# Build BOLT instrumented binary using PGO profiles
-cargo pgo bolt build --with-pgo
-# Run binary to gather BOLT profiles
-hyperfine "/target/x86_64-unknown-linux-gnu/release/<binary>-bolt-instrumented"
-# Optimize a PGO-optimized binary with BOLT
-cargo pgo bolt optimize --with-pgo
+  export RUSTFLAGS="-Cembed-bitcode=y -Zdebug-info-for-profiling -Clink-args=-Wl,--emit-relocs"
+  cargo pgo clean
+  # Build PGO instrumented binary
+  cargo pgo build
+  # Run binary to gather profiles
+  cargo pgo test
+  cargo pgo bench
+  hyperfine "/target/x86_64-unknown-linux-gnu/release/"
+  # Build BOLT instrumented binary using PGO profiles
+  export RUSTFLAGS="-Cembed-bitcode=y -Z profile-sample-use -Cllvm-args=-pgo-warn-missing-function -Cprofile-correction"
+  cargo pgo bolt build --with-pgo
+  # Run binary to gather BOLT profiles
+  hyperfine "/target/x86_64-unknown-linux-gnu/release/<binary>-bolt-instrumented"
+  # Optimize a PGO-optimized binary with BOLT
+  export RUSTFLAGS="-Cembed-bitcode=y -Z profile-sample-use"
+  cargo pgo bolt optimize --with-pgo
 fi
+profileoff
 
+LastBuild="-C strip=symbols -Z trim-paths"
+cargo +nightly ${NIGHTLYFLAGS} build --release

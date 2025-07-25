@@ -12,12 +12,21 @@ cleanup() {
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
+# —————— Speed and caching ——————
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+sudo -v
+hash -r; hash cargo rustc clang nproc sccache
+sudo cpupower frequency-set --governor performance
+export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
+export _RJEM_MALLOC_CONF="$MALLOC_CONF"
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
+# —————— Update Rust toolchains ——————
+read -r -p "Update Rust toolchains? [y/N] " ans
+[[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || :
 # —————— Defaults & help ——————
 PGO=0; BOLT=0; GIT=0; ARGS=()
 debug () {
-  export RUST_LOG=trace
-  export RUST_BACKTRACE=1
-  set -x
+  export RUST_LOG=trace RUST_BACKTRACE=1; set -x
 }
 # parse
 while (($#)); do

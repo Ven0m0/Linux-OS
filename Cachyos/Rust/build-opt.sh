@@ -20,6 +20,7 @@ PGO=0; BOLT=0; GIT=0; ARGS=()
 
 debug () {
   export RUST_LOG=trace
+  export RUST_BACKTRACE=1
   set -x
 }
 
@@ -67,6 +68,9 @@ else
   export CC="clang" CXX="clang++"
   unset RUSTC_WRAPPER
 fi
+# Otherwise double sccache
+unset RUSTC_WORKSPACE_WRAPPER
+
 export CPP=clang-cpp AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib STRIP=llvm-strip
 # --- Cargo Environment ---
 unset CARGO_ENCODED_RUSTFLAGS
@@ -83,6 +87,24 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 
 export RUSTC_BOOTSTRAP=1
 
+if ((USE_MOLD)); then
+  if command -v mold >/dev/null 2>&1; then
+    echo "→ using ld.mold via clang"
+    LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=mold)
+    CLDFLAGS=(-fuse-ld=mold)
+    hash mold
+  elif command -v clang >/dev/null 2>&1; then
+    echo "→ using ld.lld via clang"
+    LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
+    CLDFLAGS=(-fuse-ld=lld)
+    hash lld ld.lld
+  else
+    echo "→ falling back to ld.lld via linker-flavor"
+    LFLAGS=(-Clinker-flavor=ld.lld -C linker-features=lld)
+    CLDFLAGS=(-fuse-ld=lld)
+    # export CARGO_TARGET_x86_64-unknown-linux-gnu_LINKER=lld
+  fi
+fi
 
 # —————————————————————————————————————————————————————
 # --- Optional Git Cleanup ---

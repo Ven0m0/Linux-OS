@@ -1,27 +1,20 @@
 #!/usr/bin/env bash
-# shellcheck shell=bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar # extglob
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 set -CE
-# —————————————————————————————————————————————————————
-# Speed and caching
-LC_ALL=C LANG=C.UTF-8
-hash -r
-hash cargo rustc clang nproc sccache cat sudo
+# —————— Speed and caching ——————
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+hash -r; hash cargo rustc clang nproc sccache
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || true
-# —————————————————————————————————————————————————————
-# Preparation
+# —————— Preparation ——————
 sudo -v
 read -r -p "Update Rust toolchains? [y/N] " ans
 [[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || true
 # Save original
 
-# —————————————————————————————————————————————————————
-# Clean up cargo cache on error
+# —————— Trap ——————
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
@@ -31,8 +24,7 @@ cleanup() {
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
-# —————————————————————————————————————————————————————
-# Defaults & help
+# —————— Defaults & help ——————
 USE_MOLD=0
 LOCKED_FLAG=""
 CRATES=()
@@ -54,8 +46,7 @@ EOF
   exit "${1:-1}"
 }
 
-# —————————————————————————————————————————————————————
-# Parse args
+# —————— Parse args ——————
 while (($#)); do
   case "$1" in
   -m | --mold)
@@ -78,8 +69,7 @@ if ((${#CRATES[@]} == 0)); then
   usage 1
 fi
 
-# —————————————————————————————————————————————————————
-# Prepare environment
+# —————— Prepare environment ——————
 jobs="$(nproc)"
 cd "$HOME"
 
@@ -129,8 +119,7 @@ if ((USE_MOLD)); then
   fi
 fi
 
-# —————————————————————————————————————————————————————
-# Core optimization flags
+# —————— Core optimization flags ——————
 CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections"
 CXXFLAGS="$CFLAGS"
 LDFLAGS=(
@@ -202,8 +191,7 @@ export LDFLAGS="${LDFLAGS[@]}"
 INSTALL_FLAGS=(-Zunstable-options -Zgit -Zgitoxide -Zno-embed-metadata)
 MISC_OPT=(--ignore-rust-version -f --bins -j"$jobs")
 
-# —————————————————————————————————————————————————————
-# Finally, install the crates
+# —————— Install the crates ——————
 sync
 echo "Installing ${CRATES[@]} with Mold=${USE_MOLD} and ${LOCKED_FLAG}..."
 for crate in "${CRATES[@]}"; do

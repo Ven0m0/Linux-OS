@@ -45,18 +45,12 @@ EOF
 # —————— Parse args ——————
 while (($#)); do
   case "$1" in
-  -m | --mold)
-    USE_MOLD=1; shift ;;
-  -l | --locked)
-    LOCKED_FLAG="--locked"; shift ;;
-  -h | --help)
-    usage 0 ;;
-  --)
-    shift; break ;;
-  -*)
-    echo "Error: unknown option '$1'" >&2; usage 1 ;;
-  *)
-    CRATES+=("$1"); shift ;;
+  -m | --mold) USE_MOLD=1; shift ;;
+  -l | --locked) LOCKED_FLAG="--locked"; shift ;;
+  -h | --help) usage 0 ;;
+  --) shift; break ;;
+  -*) echo "Error: unknown option '$1'" >&2; usage 1 ;;
+  *) CRATES+=("$1"); shift ;;
   esac
 done
 

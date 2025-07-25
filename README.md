@@ -77,7 +77,7 @@ sleepy() {
 ```
 ## Get external IP
 ```bash
-curl ipinfo.io/ip
+curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 
 ## List of Linux operating systems

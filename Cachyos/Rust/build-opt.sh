@@ -28,15 +28,37 @@ PGO=0; BOLT=0; GIT=0; ARGS=()
 debug () {
   export RUST_LOG=trace RUST_BACKTRACE=1; set -x
 }
+
+usage() {
+  cat <<EOF >&2
+Usage: $0 [-m|-mold] [-l|--locked] <crate> [-h|--help]
+
+Options:
+  -p|-pgo       use PGO to optimize the crate
+  -b|-bolt      use BOLT and PGO to optimize
+  -g|-git       Clean the crate up through git first
+  -d|-debug     Verbose output for debug
+  -h|--help     show this help and exit
+  <crate>       one or more crates to install
+
+Examples:
+  $0 -pgo
+  $0 -bolt
+  $0 -pgo -git -debug
+EOF
+  exit "${1:-1}"
+}
+
 # parse
 while (($#)); do
   case $1 in
-    -p|-pgo)   PGO=1; shift;;
-    -b|-bolt)  BOLT=1; shift;;
-    -g|-git)   GIT=1; shift;;
-    -d|-debug) debug; shift;;
-    --)      shift; ARGS=("$@"); break;;
-    *)       ARGS+=("$1"); shift;;
+    -p|-pgo) PGO=1; shift ;;
+    -b|-bolt) BOLT=1; shift ;;
+    -g|-git) GIT=1; shift ;;
+    -d|-debug) debug; shift ;;
+    -h|--help) usage 0 ;;
+    --) shift; ARGS=("$@"); break ;;
+    *) ARGS+=("$1"); shift;;
   esac
 done
 # —————— Prepare environment ——————

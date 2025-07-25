@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 # optimize_apk.sh: Automate APK linting, stripping, bytecode optimization, and repackaging
 # Usage: ./optimize_apk.sh input.apk output.apk
 # Requirements: apktool, redex, dex2jar, proguard (or R8), zipalign, apksigner, pngcrush, jpegoptim, 7z
-
-set -euo pipefail
-IFS=$'\n\t'
 
 # Configuration: adjust paths and keystore info
 KEYSTORE_PATH="mykey.keystore"

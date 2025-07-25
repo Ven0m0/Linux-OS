@@ -35,7 +35,7 @@ _evalcache fzf --fish
 #_evalcache pay-respects fish --alias
 #_evalcache zoxide init fish
 
-if test "$TERM" = "xterm-ghostty" -a -e "$GHOSTTY_RESOURCES_DIR/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish"
+if test "$TERM" = "xterm-ghostty" -a -e "$GHOSTTY_RESOURCES_DIR"/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
     source "$GHOSTTY_RESOURCES_DIR"/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
 end
 

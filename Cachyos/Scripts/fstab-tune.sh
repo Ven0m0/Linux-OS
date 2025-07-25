@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 # f2fs-fstab-tune.sh
 # Interactive F2FS fstab entry updater for root filesystem
 # Usage: sudo ./f2fs-fstab-tune.sh
-
-set -euo pipefail
 
 # Detect root device and ensure it's F2FS
 device=$(findmnt -n -o SOURCE /)

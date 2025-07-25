@@ -1,5 +1,6 @@
-#!/usr/bin/bash
-set -euo pipefail
+#!/usr/bin/env bash
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sudo -v
 
 LOG="copy-bench-$(date -u +%Y%m%dT%H%M%SZ).jsonl"

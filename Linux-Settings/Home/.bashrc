@@ -8,7 +8,7 @@
 # PS1='[\u@\h|\w] \$' # Default
 PROMPT_DIRTRIM=2
 configure_prompt() {
-  if command -v starship &> /dev/null; then
+  if command -v starship &>/dev/null; then
     eval "$(starship init bash)"
   else
     local C_USER C_HOST C_PATH C_RESET CODE
@@ -19,6 +19,7 @@ configure_prompt() {
     CODE='$(if [[ $? != 0 ]]; then printf "\[\e[38;5;203m\]%d\[\e[0m\]" "$?"; fi)'
     PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$CODE \$ "
   fi
+  command -v mommy &>/dev/null && PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
 }
 configure_prompt
 # Remove $CODE when to remove error codes

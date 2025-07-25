@@ -23,7 +23,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Ras
 pass the `-y` flag to suppress interactive prompts. If you don't want to restart the Docker engine, pass the `--no-restart` flag.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/samoshkin/docker-reclaim-disk-space/master/script.sh | bash -s -- -y --no-restart
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/RaspberryPi/Scripts/Docker-clean.sh | bash -s -- -y --no-restart
 
 ```
 

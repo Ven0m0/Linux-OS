@@ -75,6 +75,10 @@ sleepy() {
 }
 
 ```
+## Get external IP
+```bash
+curl ipinfo.io/ip
+```
 
 ## List of Linux operating systems
 

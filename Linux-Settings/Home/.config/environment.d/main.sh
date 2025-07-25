@@ -22,5 +22,5 @@ ZSTD_NBTHREADS=0
 MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 _RJEM_MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
 
-
+_JAVA_AWT_WM_NONREPARENTING=1
 JAVA_OPTS="-XX:+IgnoreUnrecognizedVMOptions"

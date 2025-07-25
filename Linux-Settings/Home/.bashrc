@@ -29,7 +29,15 @@ configure_prompt
 if command -v pay-respects >/dev/null 2>&1; then
     eval "$(pay-respects bash --alias)"
 fi
-eval "$(fzf --bash)"
+if command -v fzf >/dev/null 2>&1; then
+  eval "$(fzf --bash)"
+fi
+if command -v batpipe >/dev/null 2>&1; then
+    eval "$(batpipe)"
+fi
+if command -v batman >/dev/null 2>&1; then
+    eval "$(batman --export-env)"
+fi
 
 # ─── Environment ─────────────────────────────────────────────────────────
 if command -v micro >/dev/null 2>&1; then

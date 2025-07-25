@@ -29,7 +29,7 @@ if status --is-interactive
     set -gx __fish_git_prompt_showupstream none
 
     # Aliases: safe & efficient defaults
-    alias cat='bat -pp '
+    alias cat='bat -pp --strip-ansi=auto '
 
     # My stuff
     alias sshdb='dbclient'
@@ -47,7 +47,7 @@ if status --is-interactive
     # Creates parent directories on demand.
     alias mkdir='mkdir -p '
     alias edit='$EDITOR '
-    alias suedit='sudo $EDITOR '
+    alias suedit='sudo -E $EDITOR '
 
     # Stops ping after sending 4 ECHO_REQUEST packets.
     alias ping='ping -c 4'

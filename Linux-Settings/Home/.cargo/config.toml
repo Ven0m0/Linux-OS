@@ -6,9 +6,9 @@ no-embed-metadata = true
 gc = true
 panic-abort-tests = true
 profile-rustflags = true
-#dylib-lto = true
-#parallel-tests = true # run tests in parallel
-#doctest = false # let `cargo check` skip dev‑dependencies
+dylib-lto = true
+parallel-tests = true # run tests in parallel
+doctest = false # let `cargo check` skip dev‑dependencies
 #resolver = "3" # new dependency resolver
 # resolver = "2" default
 # https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#target-applies-to-host

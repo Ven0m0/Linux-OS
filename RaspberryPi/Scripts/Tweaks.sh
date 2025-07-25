@@ -49,3 +49,28 @@ read -p "Do you want to enable ZRAM? [y/n] " option
 case "$option" in
 y*) enableZRAM ;;
 esac
+
+https://github.com/salihmarangoz/UbuntuTweaks/blob/22.04/to_be_refactored/Performance.md
+$ sudo touch /usr/bin/zram.sh
+$ sudo chmod 555 /usr/bin/zram.sh
+$ sudo nano /usr/bin/zram.sh
+##########################
+ZRAM_MEMORY=2048
+##########################
+set -x
+CORES=$(nproc --all)
+modprobe zram
+ZRAM_DEVICE=
+while [ -z "$ZRAM_DEVICE" ] 
+do
+	ZRAM_DEVICE=$(zramctl --find --size "$ZRAM_MEMORY"M --streams $CORES --algorithm lz4)
+	sleep 5
+done
+mkswap $ZRAM_DEVICE
+swapon --priority 5 $ZRAM_DEVICE
+
+# Run on boot
+$ sudo crontab -e
+# Paste the following lines
+@reboot /bin/bash /usr/bin/zram.sh
+# Reboot, Check the swap memory

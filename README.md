@@ -82,9 +82,9 @@ curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 
 ## Bash packages
 
-[Basher](https://www.basher.it/package)
+- [Basher](https://www.basher.it/package)
 
-[bpkg](https://bpkg.sh)
+- [bpkg](https://bpkg.sh)
 
 
 ## Linux operating systems
@@ -93,7 +93,7 @@ curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 
 - [Nobara](https://nobaraproject.org/)
 
-[SteamOS](https://store.steampowered.com/steamos/buildyourown) | 
+- [SteamOS](https://store.steampowered.com/steamos/buildyourown) | 
 [Download](https://store.steampowered.com/steamos/download/?ver=steamdeck&snr=)
 
 - [Bazzite](https://bazzite.gg/)

@@ -1,6 +1,6 @@
 
 
-## [Docker cleaner](/RaspberryPi/Scripts/Docker-clean.sh) &nbsp; <sup>[<a href="https://github.com/samoshkin/docker-reclaim-disk-space">1</a>]</sup>
+## [Docker cleaner](/RaspberryPi/Scripts/Docker-clean.sh) <sup>[<a href="https://github.com/samoshkin/docker-reclaim-disk-space">1</a>]</sup>
 
 - prints the Docker disk usage information
 - interactively prompts you for confirmation

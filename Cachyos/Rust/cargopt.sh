@@ -25,9 +25,7 @@ cleanup() {
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————— Defaults & help ——————
-USE_MOLD=0
-LOCKED_FLAG=""
-CRATES=()
+USE_MOLD=0; LOCKED_FLAG=""; CRATES=()
 
 usage() {
   cat <<EOF >&2
@@ -68,10 +66,11 @@ if ((${#CRATES[@]} == 0)); then
   echo "Error: at least one <crate> is required" >&2
   usage 1
 fi
-
 # —————— Prepare environment ——————
 jobs="$(nproc)"
 cd "$HOME"
+# ensure RUSTFLAGS is set
+: "${RUSTFLAGS:=}"
 
 # https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
 # Use sccache if installed
@@ -98,8 +97,7 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
 
-# ensure RUSTFLAGS is set
-: "${RUSTFLAGS:=}"
+
 
 if ((USE_MOLD)); then
   if command -v mold >/dev/null 2>&1; then

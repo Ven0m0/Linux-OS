@@ -2,6 +2,16 @@
 
 ## [Docker cleaner](/RaspberryPi/Scripts/Docker-clean.sh) &nbsp; <sup>[<a href="https://github.com/samoshkin/docker-reclaim-disk-space">1</a>]</sup>
 
+- prints the Docker disk usage information
+- interactively prompts you for confirmation
+- removes stopped containers
+- removes orphan (dangling) images layers
+- removes unused volumes
+- removes Docker build cache
+- shrinks the `Docker.raw` file on MacOS
+- restarts the Docker engine (through launchctl on macOS or systemctl on Linux). Waits until the Docker is up and running after the restart.
+- prints Docker disk usage once again
+
 ### Usage
 
 Using `curl`:

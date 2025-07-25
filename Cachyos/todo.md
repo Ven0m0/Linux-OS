@@ -61,6 +61,9 @@ https://github.com/jedisct1/EtchDNS
 
 https://github.com/macp3o/linux-tweaks
 
+https://gitlab.com/iucode-tool/iucode-tool/-/wikis/home
+https://github.com/AnnikaV9/kbuilder
+
 # Dotfiles
 
 ```markdown

@@ -1,4 +1,6 @@
-!#/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 
 sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
 sudo pacman-key --lsign-key 3056513887B78AEB

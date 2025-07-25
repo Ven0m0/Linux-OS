@@ -1,6 +1,6 @@
-#!/usr/bin/bash
-set -euo pipefail
-# shellcheck shell=bash
+#!/usr/bin/env bash
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" >/dev/null 2>&1; }

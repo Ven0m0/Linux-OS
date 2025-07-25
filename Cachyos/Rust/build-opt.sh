@@ -109,18 +109,25 @@ if (( GIT )); then
   git clean -fdX
 fi
 
-# Update and fix code
-cargo update --recursive
-cargo upgrade --recursive true
-cargo fix --workspace --all-targets --all-features -r --bins --allow-dirty
-cargo clippy --fix --workspace --all-targets --all-features --allow-dirty --allow-staged
-cargo fmt --all
-
+Scope="--workspace --allow-dirty --allow-staged --allow-no-vcs"
+# Update
+cargo update --recursive >/dev/null 2>&1 || :
+cargo upgrade --recursive --pinned allow >/dev/null 2>&1 || :
 # Clean and debloat
-cargo +nightly udeps
-cargo-shear --fix
-cargo-machete --fix --with-metadata
-cargo-cache -g -f -e clean-unref
+cargo +nightly udeps --workspace --release --all-features --keep-going >/dev/null 2>&1 || :
+cargo-shear --fix >/dev/null 2>&1 || :
+cargo-machete --fix >/dev/null 2>&1 || :
+cargo-machete --fix --with-metadata >/dev/null 2>&1 || :
+cargo-minify "$Scope" --apply >/dev/null 2>&1 || :
+
+# Lint
+cargo fix "$Scope" --all-targets --all-features -r --bins >/dev/null 2>&1 || :
+cargo fix "$Scope" --edition-idiom --all-features --bins --lib -r >/dev/null 2>&1 || :
+cargo clippy --all-targets >/dev/null 2>&1 || :
+cargo clippy --fix "$Scope" --all-features >/dev/null 2>&1 || :
+cargo fmt --all >/dev/null 2>&1 || :
+cargo-sort -w --order package,dependencies,features >/dev/null 2>&1 || :
+cargo-cache -g -f -e clean-unref >/dev/null 2>&1 || :
 
 # General flags
 NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z checksum-hash-algorithm=blake3 -Z precise-enum-drop-elaboration=yes"
@@ -132,19 +139,6 @@ CARGO_NIGHTLY="-Zno-embed-metadata"
 # Only for compile speed
 # RUSTFLAGS="-Zfewer-names"
 
-# export RUSTC_BOOTSTRAP=1
-# whole crate + std LTO & PGO
-# export CARGO_FLAGS="-Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort"
-# export RUSTFLAGS="$RUSTFLAGS $CARGOFLAGS"
-### Rustflags for pgo:
-### export RUSTFLAGS="-Z debug-info-for-profiling -C link-args=-Wl,--emit-relocs"
-#PGO 2nd compilation:
-#-Cllvm-args=-pgo-warn-missing-function -Cprofile-use -C profile-correction
-#perf record -e cycles:u --call-graph dwarf -o pgo.data -- ./target/.../binary
-#perf record -e cycles:u -j any,u --call-graph dwarf -o pgo.data -- ./target/.../binary
-
-# RUSTFLAGS+="-Cembed-bitcode=y"
-# -Z precise-enum-drop-elaboration=yes # Codegen lto/pgo
 # -Z min-function-alignment=64
 # Polly todo
 # RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
@@ -161,38 +155,51 @@ profileon () {
     # Allow to profile with branch sampling, no perf sudo requirement
     sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict" || :
     sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid" || :
-    PGOFLAGS="-C strip=debuginfo"
+    PGOFLAGS="-Cstrip=debuginfo -Z debug-info-for-profiling"
+    RUSTFLAGS="$RUSTFLAGS -Cembed-bitcode=y -Zprecise-enum-drop-elaboration=yes $PGOFLAGS"
 }
 profileoff () {
     sudo sh -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo" || :
+    PGOFLAGS="-C strip=symbols -Cembed-bitcode=y -Zprecise-enum-drop-elaboration=yes"
 }
-profileon
+# -Cprofile-use
+PGO2="-Cllvm-args=-pgo-warn-missing-function -C profile-correction"
+# whole crate + std LTO & PGO
+if (( FULL )); then
+  FULLPGO="-Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort"
+  export RUSTC_BOOTSTRAP=1
+fi
 
 # --- PGO Phases ---
 if (( PGO )); then
-  export RUSTFLAGS="-Cembed-bitcode=y -Zdebug-info-for-profiling"
   cargo pgo clean
+  profileon >/dev/null 2>&1 || :
   # Build PGO instrumented binary
   cargo pgo build
   # Run binary to gather profiles
   cargo pgo test
   cargo pgo bench
   hyperfine "/target/x86_64-unknown-linux-gnu/release/<binary>"
-  export RUSTFLAGS="-Cembed-bitcode=y -Zprofile-sample-use -Cllvm-args=-pgo-warn-missing-function -Cprofile-use -Cprofile-correction"
+  #perf record -e cycles:u --call-graph dwarf -o pgo.data -- ./target/.../binary
+  #perf record -e cycles:u -j any,u --call-graph dwarf -o pgo.data -- ./target/.../binary
+  export RUSTFLAGS="-Cembed-bitcode=y -Zprofile-sample-use -Cprofile-use $PGO2"
   cargo pgo optimize
 fi
 # --- BOLT Phases ---
 if (( BOLT )); then
-  export RUSTFLAGS="-Cembed-bitcode=y -Zdebug-info-for-profiling -Clink-args=-Wl,--emit-relocs"
   cargo pgo clean
+  profileon >/dev/null 2>&1 || :
+  export RUSTFLAGS="$RUSTFLAGS -Clink-args=-Wl,--emit-relocs"
   # Build PGO instrumented binary
   cargo pgo build
   # Run binary to gather profiles
   cargo pgo test
   cargo pgo bench
   hyperfine "/target/x86_64-unknown-linux-gnu/release/"
+  #perf record -e cycles:u --call-graph dwarf -o pgo.data -- ./target/.../binary
+  #perf record -e cycles:u -j any,u --call-graph dwarf -o pgo.data -- ./target/.../binary
   # Build BOLT instrumented binary using PGO profiles
-  export RUSTFLAGS="-Cembed-bitcode=y -Z profile-sample-use -Cllvm-args=-pgo-warn-missing-function -Cprofile-correction"
+  export RUSTFLAGS="-Cembed-bitcode=y -Z profile-sample-use $PGO2"
   cargo pgo bolt build --with-pgo
   # Run binary to gather BOLT profiles
   hyperfine "/target/x86_64-unknown-linux-gnu/release/<binary>-bolt-instrumented"
@@ -200,7 +207,7 @@ if (( BOLT )); then
   export RUSTFLAGS="-Cembed-bitcode=y -Z profile-sample-use"
   cargo pgo bolt optimize --with-pgo
 fi
-profileoff
+profileoff >/dev/null 2>&1 || :
 
 LastBuild="-C strip=symbols -Z trim-paths"
 cargo +nightly ${NIGHTLYFLAGS} build --release

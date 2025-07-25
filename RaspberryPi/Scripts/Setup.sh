@@ -51,3 +51,27 @@ echo "kernel.hung_task_timeout_secs = 0" | sudo tee /etc/sysctl.d/99-disable-hun
 
 # Reload configs so it's applied now (and on boot)
 sudo sysctl --system
+
+
+python3 -m pip install --upgrade pip
+pip cache purge
+sudo apt remove lib*-doc
+flatpak uninstall --unused --delete-data
+docker system prune --all --volumes
+sudo apt remove texlive-*-doc
+sudo apt-get --purge remove tex.\*-doc$
+
+sudo apt install --fix-missings
+sudo apt install --fix-broken
+pip install --upgrade pip
+
+# YT-DLP
+sudo add-apt-repository ppa:tomtomtom/yt-dlp    # Add ppa repo to apt
+sudo apt update                                 # Update package list
+sudo apt install yt-dlp                         # Install yt-dlp
+
+# DISABLE THESE SERVICES ON OLD SYSTEMS
+sudo apt remove whoopsie # Error Repoting
+sudo systemctl mask packagekit.service # gnome-software
+sudo systemctl mask geoclue.service # CAUTION: Disable if you don't use Night Light or location services
+sudo apt remove gnome-online-accounts # Gnome online accounts plugins

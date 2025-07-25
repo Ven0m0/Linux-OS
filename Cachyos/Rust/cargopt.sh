@@ -13,7 +13,6 @@ sudo -v
 read -r -p "Update Rust toolchains? [y/N] " ans
 [[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || :
 # Save original
-
 # —————— Trap ——————
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT

@@ -138,15 +138,18 @@ cleanlib32
 optipng-parallel
 dxvk-gplasync-bin
 pay-respects
-ssh3
 rust-parallel
-fcp-bin
 unzrip-git
 adbr-git
 luxtorpeda
 tuckr-git
-autoinstallpackages
 intel-ucode-shrink-hook
+xdg-ninja
+cylon
+pleaser
+scaramanga
+dotter-rs
+kbuilder
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do
@@ -220,6 +223,9 @@ cargo install rust-curl
 
 # GUI for fclones
 cargo install fclones-gui
+
+paru -S mommy
+
 
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service

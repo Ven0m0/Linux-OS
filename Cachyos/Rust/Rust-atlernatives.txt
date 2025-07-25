@@ -123,11 +123,13 @@ cargo install ruget
 https://crates.io/crates/curlux cargo install curlux
 https://crates.io/crates/curlio cargo install curlio
 
+cargo install dns-bench
+
 DNS:
 cargo install hitdns
-cargo install dns-bench
 https://crates.io/crates/hickory-dns cargo install hickory-dns
 https://github.com/jedisct1/EtchDNS
+https://github.com/mokeyish/smartdns-rs
 
 Exec:
 cargo install rust-parallel https://github.com/aaronriekenberg/rust-parallel

@@ -3,16 +3,15 @@ set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 set -CE
 # —————— Speed and caching ——————
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+sudo -v
 hash -r; hash cargo rustc clang nproc sccache
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
-# —————— Preparation ——————
-sudo -v
+# —————— Update Rust toolchains ——————
 read -r -p "Update Rust toolchains? [y/N] " ans
 [[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || :
-# Save original
 # —————— Trap ——————
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT

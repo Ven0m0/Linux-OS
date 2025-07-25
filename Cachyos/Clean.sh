@@ -7,6 +7,7 @@ LC_ALL=C LANG=C
 hash rm sudo 
 sync;sudo -v
 
+clear
 echo
 echo " ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗     ███████╗ ██████╗██████╗ ██╗██████╗ ████████╗"
 echo "██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝     ██╔════╝██╔════╝██╔══██╗██║██╔══██╗╚══██╔══╝"
@@ -15,6 +16,8 @@ echo "██║     ██║     ██╔══╝  ██╔══██║�
 echo "╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝    ███████║╚██████╗██║  ██║██║██║        ██║   "
 echo " ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝   "
 echo 
+
+DISK_USAGE_BEFORE=$(df -h)
 
 # Pacman cleanup
 sudo pacman -Rns $(pacman -Qdtq) --noconfirm || :
@@ -35,14 +38,14 @@ sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*
 sudo rm -rf /var/crash/*
 sudo rm -rf /var/lib/systemd/coredump/
-rm -rf ~/.cache/*
+rm -rf $HOME/.cache/*
 sudo rm -rf /root/.cache/*
-rm -rf ~/.var/app/*/cache/*
-rm ~/.config/Trolltech.conf || :
+rm -rf $HOME/.var/app/*/cache/*
+rm $HOME/.config/Trolltech.conf || :
 kbuildsycoca6 --noincremental || :
 
 # Empty global trash
-rm -rf ~/.local/share/Trash/*
+rm -rf $HOME/.local/share/Trash/*
 sudo rm -rf /root/.local/share/Trash/*
 
 # Flatpak
@@ -52,13 +55,13 @@ else
   echo 'Skipping because "flatpak" is not found.'
 fi
 sudo rm -rf /var/tmp/flatpak-cache-*
-rm -rf ~/.cache/flatpak/system-cache/*
-rm -rf ~/.local/share/flatpak/system-cache/*
-rm -rf ~/.var/app/*/data/Trash/*
+rm -rf $HOME/.cache/flatpak/system-cache/*
+rm -rf $HOME/.local/share/flatpak/system-cache/*
+rm -rf $HOME/.var/app/*/data/Trash/*
 
 # Clear thumbnails
-rm -rf ~/.thumbnails/*
-rm -rf ~/.cache/thumbnails/*
+rm -rf $HOME/.thumbnails/*
+rm -rf $HOME/.cache/thumbnails/*
 
 # Clear system logs
 sudo rm -f /var/log/pacman.log || :
@@ -68,49 +71,49 @@ sudo rm -rf /run/log/journal/* /var/log/journal/* || :
 sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || :
 
 # Shell history
-rm -f ~/.local/share/fish/fish_history ~/.config/fish/fish_history ~/.zsh_history ~/.bash_history ~/.history
+rm -f $HOME/.local/share/fish/fish_history $HOME/.config/fish/fish_history $HOME/.zsh_history $HOME/.bash_history $HOME/.history
 sudo rm -f /root/.local/share/fish/fish_history /root/.config/fish/fish_history /root/.zsh_history /root/.bash_history /root/.history
 
 # LibreOffice
-rm -f ~/.config/libreoffice/4/user/registrymodifications.xcu
-rm -f ~/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu
-rm -f ~/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu
+rm -f $HOME/.config/libreoffice/4/user/registrymodifications.xcu
+rm -f $HOME/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu
+rm -f $HOME/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu
 
 # Steam
-rm -rf ~/.local/share/Steam/appcache/*
-rm -rf ~/snap/steam/common/.cache/*
-rm -rf ~/snap/steam/common/.local/share/Steam/appcache/*
-rm -rf ~/.var/app/com.valvesoftware.Steam/cache/*
-rm -rf ~/.var/app/com.valvesoftware.Steam/data/Steam/appcache/*
+rm -rf $HOME/.local/share/Steam/appcache/*
+rm -rf $HOME/snap/steam/common/.cache/*
+rm -rf $HOME/snap/steam/common/.local/share/Steam/appcache/*
+rm -rf $HOME/.var/app/com.valvesoftware.Steam/cache/*
+rm -rf $HOME/.var/app/com.valvesoftware.Steam/data/Steam/appcache/*
 
 # Python
-rm -f ~/.python_history
+rm -f $HOME/.python_history
 sudo rm -f /root/.python_history
 
 # Firefox
-rm -rf ~/.cache/mozilla/*
-rm -rf ~/.var/app/org.mozilla.firefox/cache/*
-rm -rf ~/snap/firefox/common/.cache/*
-rm -rf ~/.mozilla/firefox/Crash\ Reports/*
-rm -rf ~/.var/app/org.mozilla.firefox/.mozilla/firefox/Crash\ Reports/*
-rm -rf ~/snap/firefox/common/.mozilla/firefox/Crash\ Reports/**
+rm -rf $HOME/.cache/mozilla/*
+rm -rf $HOME/.var/app/org.mozilla.firefox/cache/*
+rm -rf $HOME/snap/firefox/common/.cache/*
+rm -rf $HOME/.mozilla/firefox/Crash\ Reports/*
+rm -rf $HOME/.var/app/org.mozilla.firefox/.mozilla/firefox/Crash\ Reports/*
+rm -rf $HOME/snap/firefox/common/.mozilla/firefox/Crash\ Reports/**
 
 # Wine
-rm -rf ~/.wine/drive_c/windows/temp/*
-rm -rf ~/.cache/wine/
-rm -rf ~/.cache/winetricks/
+rm -rf $HOME/.wine/drive_c/windows/temp/*
+rm -rf $HOME/.cache/wine/
+rm -rf $HOME/.cache/winetricks/
 
 # GTK
-rm -f ~/.local/share/recently-used.xbel*
-rm -f ~/snap/*/*/.local/share/recently-used.xbel
-rm -f ~/.var/app/*/data/recently-used.xbel
+rm -f $HOME/.local/share/recently-used.xbel*
+rm -f $HOME/snap/*/*/.local/share/recently-used.xbel
+rm -f $HOME/.var/app/*/data/recently-used.xbel
 
 # KDE
-rm -rf ~/.local/share/RecentDocuments/*.desktop
-rm -rf ~/.kde/share/apps/RecentDocuments/*.desktop
-rm -rf ~/.kde4/share/apps/RecentDocuments/*.desktop
-rm -f ~/snap/*/*/.local/share/*.desktop
-rm -rf ~/.var/app/*/data/*.desktop
+rm -rf $HOME/.local/share/RecentDocuments/*.desktop
+rm -rf $HOME/.kde/share/apps/RecentDocuments/*.desktop
+rm -rf $HOME/.kde4/share/apps/RecentDocuments/*.desktop
+rm -f $HOME/snap/*/*/.local/share/*.desktop
+rm -rf $HOME/.var/app/*/data/*.desktop
 
 # TLDR cache
 tldr -c && sudo tldr -c || :
@@ -131,3 +134,8 @@ bleachbit -c --preset && sudo -E bleachbit -c --preset || :
 
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches || :
 echo "System cleaned!"
+
+echo "==> Disk usage before cleanup ${DISK_USAGE_BEFORE}"
+
+echo "==> Disk usage after cleanup"
+df -h

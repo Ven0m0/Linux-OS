@@ -131,20 +131,6 @@ echo "🚀 Installing $CRATE with optimized flags..."
 
 ---------------------------------------
 
-PASS_BASE=( 
-  lcssa mem2reg memcpyopt loop-unroll globalopt
-  simplifycfg instcombine gvn licm
-  strip-dead-debug-info strip-dead-prototypes
-  dce deadargelim dse globaldce gvn
-  loop-deletion tailcallelim loop-simplify
-  constmerge mergefunc jump-threading
-  loop-unroll-and-jam sink
-)
-# PASS as a single element, comma‑joining PASS_BASE
-PASS=( "-C passes=$(IFS=,; echo "${PASS_BASE[*]}")" )
-
-export RUSTFLAGS=(${RUSTFLAGS} "${PASS_BASE[@]}")
-
 cargo +nightly build --bins --lib -r --ignore-rust-version --keep-going -Z unstable-options -Zno-embed-metadata
 
 

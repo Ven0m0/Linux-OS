@@ -17,7 +17,6 @@ doctest = false # let `cargo check` skip dev‑dependencies
 [build]
 jobs = 16
 rustc-wrapper = "sccache"
-rustc-workspace-wrapper = "sccache"
 incremental = false
 
 # https://doc.rust-lang.org/cargo/reference/environment-variables.html

@@ -111,6 +111,9 @@ tldr -c && sudo tldr -c || :
 # Trim disks
 sudo fstrim -a --quiet-unsupported || :
 
+# Clearing dns cache
+systemd-resolve --flush-caches
+
 # BleachBit if available
 #if command -v bleachbit &>/dev/null; then
 #    bleachbit -c --preset && sudo -E bleachbit -c --preset

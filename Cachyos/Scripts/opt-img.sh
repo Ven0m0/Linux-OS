@@ -1,9 +1,6 @@
-#!/bin/bash
-# shellcheck shell=bash
-set -euo pipefail
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
-shopt -s nullglob globstar
+#!/usr/bin/env bash
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 
 SAFE_DIRS=(
     "/usr/share/icons"

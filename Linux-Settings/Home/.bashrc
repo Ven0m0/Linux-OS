@@ -124,6 +124,11 @@ else
     alias egrep='egrep --color=auto'
 fi
 
+# ─── Ghostty bash integration ─────────────────────────────────────────────────────────
+if [[ $TERM == xterm-ghostty && -n $GHOSTTY_RESOURCES_DIR ]]; then
+    builtin source "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
+fi
+
 # ─── Deduplicate PATH (preserve order) ─────────────────────────────────────────────────────────
 dedupe_path() {
   local dir

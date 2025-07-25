@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-# shellcheck shell=bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar; set -CE
-LC_ALL=C LANG=C.UTF-8
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_ALL=C LANG=C.UTF-8; set -CE
 hash -r; hash cargo rustc clang git nproc sccache cat sudo
 # —————————————————————————————————————————————————————
 # Clean up cargo cache on error

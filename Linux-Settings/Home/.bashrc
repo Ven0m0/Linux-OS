@@ -44,10 +44,13 @@ export SYSTEMD_EDITOR=$EDITOR
 export FCEDIT=$EDITOR
 alias nano='nano -/ ' # Nano modern keybinds
 export GIT_PAGER=delta
-export PAGER=bat
-#export LESS='-FRXns --mouse --use-color --no-init'
 export LESSHISTFILE=-
+#export LESS='-FRXns --mouse --use-color --no-init'
 # export MANPAGER="less -sRn"
+# https://github.com/eth-p/bat-extras
+export PAGER=bat
+BATPIPE=color
+
 # FD https://github.com/sharkdp/fd
 export FZF_DEFAULT_COMMAND='fd -tf -F'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"

@@ -53,6 +53,8 @@ if command -v cargo-pgo >/dev/null 2>&1; then
   cargo install cargo-pgo
   rustup component add llvm-tools-preview
 fi
+# target.x86_64-unknown-linux-gnu.rustflags might be nessecary for cargo-pgo
+
 
 # --- Ensure Required Tools ---
 for tool in cargo-shear cargo-machete cargo-cache ; do
@@ -148,6 +150,8 @@ sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid"
 ### Rustflags for pgo:
 ### export RUSTFLAGS="-Z debug-info-for-profiling -C link-args=-Wl,--emit-relocs"
 # -Z profile-sample-use 
+### Rustflags after pgo
+# -Z trim-paths
 
 # RUSTFLAGS+="-Cembed-bitcode=y"
 # -Z precise-enum-drop-elaboration=yes # Codegen lto/pgo

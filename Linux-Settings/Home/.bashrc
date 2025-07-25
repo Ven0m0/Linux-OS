@@ -32,16 +32,18 @@ fi
 eval "$(fzf --bash)"
 
 # ─── Environment ─────────────────────────────────────────────────────────
-export EDITOR=micro
+if command -v micro >/dev/null 2>&1; then
+  export EDITOR=micro
+else
+  export EDITOR=nano
+fi
 export VISUAL=$EDITOR
 export VIEWER=$EDITOR
 export GIT_EDITOR=$EDITOR
 export SYSTEMD_EDITOR=$EDITOR
 export FCEDIT=$EDITOR
-alias editor='micro'
 alias nano='nano -/ ' # Nano modern keybinds
-#export GIT_PAGER=delta
-#export CARGO_TERM_PAGER=bat
+export GIT_PAGER=delta
 export PAGER=bat
 #export LESS='-FRXns --mouse --use-color --no-init'
 export LESSHISTFILE=-

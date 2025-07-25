@@ -3,6 +3,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
+LC_ALL=C LANG=C
 sync;sudo -v
 
 echo

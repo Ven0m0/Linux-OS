@@ -5,26 +5,23 @@ LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" >/dev/null 2>&1; }
 
-# 1) Detect and cache privilege executor
-hash -r
+# 1) Detect privilege executor
 if have sudo-rs; then
   #subin="command sudo-rs"
-  subin="$(command -v sudo-rs)"
+  subin="$(command -v sudo-rs 2>/dev/null || :)"
 elif have "sudo"; then
   #subin="command sudo"
-  subin="$(command -v sudo)"
+  subin="$(command -v sudo 2>/dev/null || :)"
 elif have doas; then
   #subin="command doas"
-  subin="$(command -v doas)"
+  subin="$(command -v doas 2>/dev/null || :)"
 fi
 #export suexec="command ${subin}"
 export suexec="${subin}"
-# Cache command path lookups
-hash "${subin}" cargo git curl pacman paru
 
 # Only run `-v` if not doas
 if [[ "$subin" != "doas" ]]; then
-  "${suexec}" -v || :
+  "${suexec}" -v 2>/dev/null || :
 fi
 
 echo "🔄 System update using pacman..."
@@ -41,15 +38,17 @@ if have topgrade; then
 fi
 if have uv; then
   echo "UV tool upgrade..."
-  uv tool upgrade --all >/dev/null 2>&1 || :
+  uv tool upgrade --all 2>/dev/null || :
 fi
-if command -v pipx >/dev/null; then
-    pipx upgrade-all
+if command -v pipx >/dev/null 2>&1; then
+    pipx upgrade-all || :
 fi
-if have rustup; then
-  echo "update Rust toolchain..."
-  # broken rn
-  rustup update >/dev/null 2>&1 || :
+
+rustup_bin="$(command -v rustup 2>/dev/null || true)"
+if [ -n "$rustup_bin" ] && [ -x "$rustup_bin" ]; then
+  "$rustup_bin" update >/dev/null 2>&1 || :
+else
+  command rustup update >/dev/null 2>&1 || :
 fi
 
 echo "update cargo/rust binaries..."

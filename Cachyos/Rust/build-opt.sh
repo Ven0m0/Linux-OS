@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-# —————————————————————————————————————————————————————
-# Clean up cargo cache on error
+# —————— Trap ——————
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
@@ -15,7 +14,6 @@ cleanup() {
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————— Defaults & help ——————
 PGO=0; BOLT=0; GIT=0; ARGS=()
-
 debug () {
   export RUST_LOG=trace
   export RUST_BACKTRACE=1
@@ -40,7 +38,7 @@ cd "$HOME"
 export CARGO_HTTP_SSL_VERSION="tlsv1.3" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 export CARGO_CACHE_RUSTC_INFO=1 
 export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
-# ———Tuning ———
+# —————— Tuning ——————
 sudo -v
 sudo cpupower frequency-set --governor performance || :
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
@@ -51,11 +49,10 @@ if command -v cargo-pgo >/dev/null 2>&1; then
   rustup component add llvm-tools-preview
 fi
 # target.x86_64-unknown-linux-gnu.rustflags might be nessecary for cargo-pgo
-# ——— Ensure Required Tools ———
+# —————— Ensure Required Tools ——————
 for tool in cargo-shear cargo-machete cargo-cache ; do
   command -v "$tool" >/dev/null || cargo install "$tool" || :
 done
-
 # —————— Compiler Setup (prefer sccache + clang) ——————
 # https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
 if command -v sccache >/dev/null 2>&1; then
@@ -67,7 +64,6 @@ else
 fi
 # Otherwise double sccache
 unset RUSTC_WORKSPACE_WRAPPER
-
 export CPP=clang-cpp AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib STRIP=llvm-strip
 # —————— Cargo Environment ——————
 unset CARGO_ENCODED_RUSTFLAGS
@@ -92,7 +88,6 @@ if ((USE_MOLD)); then
     # export CARGO_TARGET_x86_64-unknown-linux-gnu_LINKER=lld
   fi
 fi
-
 # —————— Git Cleanup ——————
 if (( GIT )); then
   git reflog expire --expire=now --all
@@ -100,7 +95,6 @@ if (( GIT )); then
   git repack -ad --depth=250 --window=250
   git clean -fdX
 fi
-
 Scope="--workspace --allow-dirty --allow-staged --allow-no-vcs"
 # —————— Update ——————
 cargo update --recursive >/dev/null 2>&1 || :

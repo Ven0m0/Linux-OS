@@ -57,9 +57,11 @@ export LESSHISTFILE=-
 # export MANPAGER="less -sRn"
 # https://github.com/eth-p/bat-extras
 export PAGER=bat
-BATPIPE=color
+export BATPIPE=color
 
 # FD https://github.com/sharkdp/fd
+# export FZF_DEFAULT_OPTS="--layout=reverse --border --cycle"
+# export _ZO_FZF_OPTS=--algo=v1 -e --no-unicode --no-color
 export FZF_DEFAULT_COMMAND='fd -tf -F'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 # Faster Skim (fastest to slowest skim command)

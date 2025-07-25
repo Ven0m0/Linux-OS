@@ -11,13 +11,17 @@ have() { command -v "$1" >/dev/null 2>&1; }
 # 1) Detect and cache privilege executor
 hash -r
 if have sudo-rs; then
-  subin="command sudo-rs"
+  #subin="command sudo-rs"
+  subin="$(command -v sudo-rs)"
 elif have "sudo"; then
-  subin="command sudo"
+  #subin="command sudo"
+  subin="$(command -v sudo)"
 elif have doas; then
-  subin="command doas"
+  #subin="command doas"
+  subin="$(command -v doas)"
 fi
-export suexec="command ${subin}"
+#export suexec="command ${subin}"
+export suexec="${subin}"
 # Cache command path lookups
 hash "${subin}" cargo git curl pacman paru
 
@@ -31,7 +35,7 @@ ${suexec} pacman -Syu --noconfirm || :
 
 echo "AUR update..."
 paru -Syu --noconfirm --combinedupgrade --nouseask --removemake \
-  --cleanafter --skipreview --nokeepsrc --sudo $(command -v sudo) || :
+  --cleanafter --skipreview --nokeepsrc --sudo ${suexec} || :
 
 if have topgrade; then
   echo "update using topgrade..."

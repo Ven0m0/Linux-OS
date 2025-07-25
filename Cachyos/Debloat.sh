@@ -20,6 +20,10 @@ else
     echo "Printer service not found. Skipping."
 fi
 
+https://wiki.archlinux.org/title/Fwupd
+P2pPolicy=nothing -> /etc/fwupd/fwupd.conf 
+passim.service
+
 
 echo 'The script finished. Press any key to exit.'
 read -n 1 -s

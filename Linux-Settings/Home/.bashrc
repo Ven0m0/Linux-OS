@@ -71,7 +71,7 @@ shopt -s hostcomplete
 shopt -u checkhash
 set -o noclobber
 # Pi3 fix low power message warning
-[[ $TERM != xterm-256color ]] && { setterm --msg off; setterm --bfreq 0; }
+[[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
 setterm --linewrap on
 
 # ─── Bash-it ─────────────────────────────────────────────────────────

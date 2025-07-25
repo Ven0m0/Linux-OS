@@ -3,8 +3,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
-
-sudo -v
+sync;sudo -v
 
 echo "Cleaning apt cache"
 sudo apt clean
@@ -52,6 +51,9 @@ echo "Running fstrim"
 sudo rm -rf /run/log/journal/*
 sudo rm -rf /var/log/journal/*
 sudo fstrim -a --quiet-unsupported
+
+echo "Removind old log files"
+sudo find /var/log -type f -name "*.log" -exec rm -f {} \;
 
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
 echo "System clean-up complete."

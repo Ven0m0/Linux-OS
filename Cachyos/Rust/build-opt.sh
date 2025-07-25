@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_ALL=C LANG=C.UTF-8; set -CE
-hash -r; hash cargo rustc clang git nproc sccache cat sudo
+LC_ALL=C LANG=C.UTF-8
 # —————————————————————————————————————————————————————
 # Clean up cargo cache on error
 cleanup() {
@@ -23,7 +22,6 @@ debug () {
   export RUST_BACKTRACE=1
   set -x
 }
-
 # parse
 while (($#)); do
   case $1 in
@@ -44,26 +42,23 @@ cd "$HOME"
 export CARGO_HTTP_SSL_VERSION="tlsv1.3" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 export CARGO_CACHE_RUSTC_INFO=1 
 export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
-# —————————————————————————————————————————————————————
-# ---Tuning ---
+# ———Tuning ———
 sudo -v
 sudo cpupower frequency-set --governor performance || :
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-
 if command -v cargo-pgo >/dev/null 2>&1; then
   cargo install cargo-pgo
   rustup component add llvm-tools-preview
 fi
 # target.x86_64-unknown-linux-gnu.rustflags might be nessecary for cargo-pgo
-
-# --- Ensure Required Tools ---
+# ——— Ensure Required Tools ———
 for tool in cargo-shear cargo-machete cargo-cache ; do
   command -v "$tool" >/dev/null || cargo install "$tool" || :
 done
 
-# --- Compiler Setup (prefer sccache + clang) ---
+# ——— Compiler Setup (prefer sccache + clang) ———
 # https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
 if command -v sccache >/dev/null 2>&1; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
@@ -76,7 +71,7 @@ fi
 unset RUSTC_WORKSPACE_WRAPPER
 
 export CPP=clang-cpp AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib STRIP=llvm-strip
-# --- Cargo Environment ---
+# ——— Cargo Environment ———
 unset CARGO_ENCODED_RUSTFLAGS
 export RUSTUP_TOOLCHAIN=nightly
 export CARGO_BUILD_JOBS="$jobs"
@@ -100,8 +95,7 @@ if ((USE_MOLD)); then
   fi
 fi
 
-# —————————————————————————————————————————————————————
-# --- Optional Git Cleanup ---
+# ——— Git Cleanup ———
 if (( GIT )); then
   git reflog expire --expire=now --all
   git gc --prune=now --aggressive
@@ -110,17 +104,17 @@ if (( GIT )); then
 fi
 
 Scope="--workspace --allow-dirty --allow-staged --allow-no-vcs"
-# Update
+# ——— Update ———
 cargo update --recursive >/dev/null 2>&1 || :
 cargo upgrade --recursive --pinned allow >/dev/null 2>&1 || :
-# Clean and debloat
+# ——— Minify ———
 cargo +nightly udeps --workspace --release --all-features --keep-going >/dev/null 2>&1 || :
 cargo-shear --fix >/dev/null 2>&1 || :
 cargo-machete --fix >/dev/null 2>&1 || :
 cargo-machete --fix --with-metadata >/dev/null 2>&1 || :
 cargo-minify "$Scope" --apply >/dev/null 2>&1 || :
 
-# Lint
+# ——— Lint ———
 cargo fix "$Scope" --all-targets --all-features -r --bins >/dev/null 2>&1 || :
 cargo fix "$Scope" --edition-idiom --all-features --bins --lib -r >/dev/null 2>&1 || :
 cargo clippy --all-targets >/dev/null 2>&1 || :
@@ -129,23 +123,21 @@ cargo fmt --all >/dev/null 2>&1 || :
 cargo-sort -w --order package,dependencies,features >/dev/null 2>&1 || :
 cargo-cache -g -f -e clean-unref >/dev/null 2>&1 || :
 
-# General flags
+# ——— General flags ———
 NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z checksum-hash-algorithm=blake3 -Z precise-enum-drop-elaboration=yes"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C relro-level=off -C debuginfo=0 -C strip=symbols -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no \
 -Z tune-cpu=native -Z default-visibility=hidden  -Z location-detail=none -Z function-sections $NIGHTLYFLAGS -Zcombine-cgu"
 CARGO_NIGHTLY="-Zno-embed-metadata"
-
 # Experimental rustc -Zmir-opt-level=3
 # Only for compile speed
 # RUSTFLAGS="-Zfewer-names"
-
 # -Z min-function-alignment=64
 # Polly todo
 # RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
 # -Z llvm-plugins=LLVMPolly.so -C llvm-args=-polly-vectorizer=stripmine
 # -Z llvm-plugins=/usr/lib/LLVMPolly.so
 
-# Profile accuracy
+# ——— Profile accuracy ———
 profileon () {
     sudo sh -c "echo 0 > /proc/sys/kernel/randomize_va_space" || :
     sudo sh -c "echo 0 > /proc/sys/kernel/nmi_watchdog" || :
@@ -170,7 +162,7 @@ if (( FULL )); then
   export RUSTC_BOOTSTRAP=1
 fi
 
-# --- PGO Phases ---
+# ——— PGO Phases ———
 if (( PGO )); then
   cargo pgo clean
   profileon >/dev/null 2>&1 || :
@@ -185,7 +177,7 @@ if (( PGO )); then
   export RUSTFLAGS="-Cembed-bitcode=y -Zprofile-sample-use -Cprofile-use $PGO2"
   cargo pgo optimize
 fi
-# --- BOLT Phases ---
+# ——— BOLT Phases ———
 if (( BOLT )); then
   cargo pgo clean
   profileon >/dev/null 2>&1 || :
@@ -209,5 +201,6 @@ if (( BOLT )); then
 fi
 profileoff >/dev/null 2>&1 || :
 
-LastBuild="-C strip=symbols -Z trim-paths"
-cargo +nightly ${NIGHTLYFLAGS} build --release
+# ——— Todo ———
+# LastBuild="-C strip=symbols -Z trim-paths"
+# cargo +nightly ${NIGHTLYFLAGS} build --release

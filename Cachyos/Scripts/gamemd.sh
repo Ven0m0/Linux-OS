@@ -1,9 +1,6 @@
-#!/bin/bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-export LC_ALL=C LANG=C
-# export LC_ALL=C LANG=C.UTF-8
+#!/usr/bin/env bash
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 
 # Cache commands
 hash -r

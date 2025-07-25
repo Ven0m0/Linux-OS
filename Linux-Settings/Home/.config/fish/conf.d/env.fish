@@ -11,14 +11,17 @@ set -gx XDG_STATE_HOME "$HOME/.local/state"
 
 # Fzf
 set -gx FZF_LEGACY_KEYBINDINGS 0
- 
-# JetBrains IDE
-set -gx _JAVA_AWT_WM_NONREPARENTING 1
-set -gx _JAVA_OPTIONS '-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true'
 
-# Firefox
-set -x MOZ_USE_XINPUT2 1
-set -x MOZ_ENABLE_WAYLAND 1
+if [ $XDG_SESSION_TYPE = "wayland" ]
+    set -x SDL_VIDEODRIVER wayland
+    set -x QT_QPA_PLATFORM wayland
+    set -x MOZ_ENABLE_XINPUT2 1
+    set -x MOZ_ENABLE_WAYLAND 1
+    set -x GDK_BACKEND wayland
+end
+
+# JetBrains IDE
+set -gx _JAVA_OPTIONS '-Dawt.useSystemAAFontSettings=on -Dswing.aatext=true'
 
 # Rust
 set -gx RUSTC_WRAPPER sccache

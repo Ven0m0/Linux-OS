@@ -39,30 +39,42 @@ if have topgrade; then
   topno=(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup})
   ${suexec} topgrade -y --skip-notify --no-retry "${topno[@]}" || :
 fi
-# pipx upgrade-all
 if have uv; then
   echo "UV tool upgrade..."
   uv tool upgrade --all >/dev/null 2>&1 || :
 fi
-
+if command -v pipx >/dev/null; then
+    pipx upgrade-all
+fi
 if have rustup; then
   echo "update Rust toolchain..."
   # broken rn
-  #rustup update || :
+  rustup update >/dev/null 2>&1 || :
 fi
 
 echo "update cargo/rust binaries..."
 if have cargo-install-update; then
-  cargo install-update -agij"$(nproc)" || :
-elif have cargo-updater; then
+  cargo install-update -agi || :
+fi
+if have cargo-updater; then
   cargo updater -u || :
-elif have cargo-list; then
+fi
+if have cargo-list; then
   cargo list -uaI || : 
 fi
 
 if have micro; then
   echo "micro plugin update..."
   micro -plugin update || :
+fi
+
+# Update user-installed npm global packages
+if command -v npm >/dev/null && npm config get prefix | grep -q "$HOME"; then
+    npm update -g || :
+fi
+
+if command -v flatpak >/dev/null; then
+  flatpak update -y --noninteractive
 fi
 
 if have yal then
@@ -90,41 +102,41 @@ if have tldr; then
   ${suexec} tldr -u >/dev/null 2>&1 &
 fi
 
-if have sdboot-manage; then
-  echo "update sdboot-manage..."
-  ${suexec} sdboot-manage update >/dev/null 2>&1
-  ${suexec} sdboot-manage remove
-fi
-
 if have fwupdmgr; then
   echo "update with fwupd..."
-  fwupdmgr refresh >/dev/null 2>&1 && fwupdmgr update &
+  fwupdmgr refresh >/dev/null 2>&1 || :
+  fwupdmgr update || :
 fi
 
+if have sdboot-manage; then
+  echo "update sdboot-manage..."
+  ${suexec} sdboot-manage update >/dev/null 2>&1 || :
+  ${suexec} sdboot-manage remove || :
+fi
 echo "misc updates in background..."
-have updatedb && ${suexec} updatedb
-have update-desktop-database && ${suexec} update-desktop-database
-have update-pciids && ${suexec} update-pciids >/dev/null 2>&1
-have update-smart-drivedb && ${suexec} update-smart-drivedb >/dev/null 2>&1
+have updatedb && ${suexec} updatedb || :
+have update-desktop-database && ${suexec} update-desktop-database || :
+have update-pciids && ${suexec} update-pciids >/dev/null 2>&1 || :
+have update-smart-drivedb && ${suexec} update-smart-drivedb >/dev/null 2>&1 || :
 
 echo "🔍 Checking for systemd-boot..."
 if [[ -d /sys/firmware/efi ]] && have bootctl && bootctl is-installed >/dev/null 2>&1; then
     echo "✅ systemd‑boot detected, updating…"
     ${suexec} bootctl update >/dev/null 2>&1 || :
-    ${suexec} bootctl cleanup >/dev/null 2>&1
+    ${suexec} bootctl cleanup >/dev/null 2>&1 || :
 else
     echo "❌ systemd‑boot not present, skipping."
 fi
 
 echo "Try to update kernel initcpio..."
 if have limine-mkinitcpio; then
-  ${suexec} limine-mkinitcpio
+  ${suexec} limine-mkinitcpio || :
 elif have mkinitcpio; then
-  ${suexec} mkinitcpio -P
+  ${suexec} mkinitcpio -P || :
 elif have /usr/lib/booster/regenerate_images; then
-  ${suexec} /usr/lib/booster/regenerate_images
+  ${suexec} /usr/lib/booster/regenerate_images || :
 elif have dracut-rebuild; then
-  ${suexec} dracut-rebuild
+  ${suexec} dracut-rebuild || :
 else
  printf "\\033[31m The initramfs generator was not found, please update initramfs manually...\\033[0m\\n"
 fi

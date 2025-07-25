@@ -5,11 +5,14 @@ trim-paths = true
 no-embed-metadata = true
 gc = true
 panic-abort-tests = true
-# dylib-lto = true
-# parallel-tests = true # run tests in parallel
-# doctest = false # let `cargo check` skip dev‑dependencies
-# resolver = "3" # new dependency resolver
+profile-rustflags = true
+#dylib-lto = true
+#parallel-tests = true # run tests in parallel
+#doctest = false # let `cargo check` skip dev‑dependencies
+#resolver = "3" # new dependency resolver
 # resolver = "2" default
+# https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#target-applies-to-host
+# target-applies-to-host = false
 
 [build]
 jobs = 16

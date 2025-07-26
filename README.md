@@ -99,11 +99,12 @@ curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 
 ## Supported Linux Distributions
 
-* [CachyOS](https://cachyos.org/)
-* [Nobara](https://nobaraproject.org/)
+* [CachyOS](https://cachyos.org)
+* [EndeavourOS](https://endeavouros.com)
+* [Nobara](https://nobaraproject.org)
 * [SteamOS](https://store.steampowered.com/steamos/buildyourown) ([Download](https://store.steampowered.com/steamos/download/?ver=steamdeck&snr=))
-* [Bazzite](https://bazzite.gg/)
-* [EndeavourOS](https://endeavouros.com/)
+* [Bazzite](https://bazzite.gg)
+* [Gentoo](https://www.gentoo.org)
 * [Linux Mint](https://linuxmint.com/)
 * [DietPi](https://dietpi.com/)
 * [Raspberry Pi OS](https://www.raspberrypi.com/software/)

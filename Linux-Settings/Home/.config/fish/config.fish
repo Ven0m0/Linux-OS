@@ -31,7 +31,7 @@ end
 
 set -U FZF_LEGACY_KEYBINDINGS 0
 set -U FZF_COMPLETE 1
-set -gx sudope_sequence \cs
+bind \cs '__ethp_commandline_toggle_sudo.fish'
 # Async prompt
 set -U async_prompt_functions fish_prompt fish_right_prompt
 set -gx async_prompt_enable 1

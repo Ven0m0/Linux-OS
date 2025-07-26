@@ -10,10 +10,9 @@ status --is-interactive; and . (basher init - fish | psub)
 bind --erase \cv
 
 # Prompt
-#starship init fish | source
 #pay-respects fish --alias | source
-#zoxide init fish | source
-#fzf --fish | source
+# _evalcache fzf --fish
+#_evalcache zoxide init fish
 
 _evalcache starship init fish
 if type -q batman
@@ -22,21 +21,19 @@ end
 if type -q batpipe
 	_evalcache batpipe
 end
-if type -q zoxide
-	_evalcache zoxide init fish
-end
+
 if type -q pay-respects
 	#pay-respects fish --alias | source
 	_evalcache pay-respects fish --alias
 end
-if type -q fzf
-	_evalcache fzf --fish
-fi
 
 # ─── Ghostty bash integration ─────────────────────────────────────────────────────────
 if test "$TERM" = "xterm-ghostty" -a -e "$GHOSTTY_RESOURCES_DIR"/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
     source "$GHOSTTY_RESOURCES_DIR"/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
 end
+
+set -U FZF_LEGACY_KEYBINDINGS 0
+set -U FZF_COMPLETE 1
 
 # Async prompt
 set -U async_prompt_functions fish_prompt fish_right_prompt

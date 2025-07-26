@@ -15,9 +15,9 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash
 ```
-
 <details>
 
+---
 <details>
 <summary><i>Rank mirrors & keyrings</i></summary>
 
@@ -25,7 +25,8 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Rank.sh | bash
 ```
 <details>
-  
+
+---
 <details>
 <summary><i>Automated install</i></summary>
 
@@ -33,27 +34,26 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/Install.sh | bash
 ```
 <details>
-  
+
+---
 <details>
 <summary><i>Automated configuration</i></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/AutoSetup.sh | bash
 ```
-
 <details>
 
+---
 <details>
 <summary><i>Bleachbit extra cleaner install</i></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/bleachbit.sh | bash
 ```
-
------
-
 <details>
 
+---
 <details>
 <summary><i>Misc</i></summary>
 
@@ -64,6 +64,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```
 <details>
 
+---
 <details>
 <summary><i>Script start</i></summary>
 
@@ -95,12 +96,16 @@ sleepy() {
 
 ```
 <details>
+
+---
+<details>
 <summary><i>Get external IP</i></summary>
 ```bash
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
-
 <details>
+
+---
 
 ## Bash packages
 

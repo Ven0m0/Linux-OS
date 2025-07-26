@@ -21,9 +21,7 @@ end
 if type -q batpipe
 	_evalcache batpipe
 end
-
 if type -q pay-respects
-	#pay-respects fish --alias | source
 	_evalcache pay-respects fish --alias
 end
 

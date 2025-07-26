@@ -1,38 +1,48 @@
 # Linux-OS  
 
 <details>
-<summary><i>Updatess</i></summary>
+<summary><i>Updates</i></summary>
   
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash
 ```
 </details>
 
-### Cleaning
+<details>
+<summary><i>Cleaning</i></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash
 ```
+<details>
 
-### Rank mirrors & keyrings
+<details>
+<summary><i>Rank mirrors & keyrings</i></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Rank.sh | bash
 ```
-
-### Automated install
+<details>
+  
+<details>
+<summary><i>Automated install</i></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/Install.sh | bash
 ```
-
-### Automated configuration
+<details>
+  
+<details>
+<summary><i>Automated configuration</i></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/AutoSetup.sh | bash
 ```
 
-### Bleachbit extra cleaner install
+<details>
+
+<details>
+<summary><i>Bleachbit extra cleaner install</i></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/bleachbit.sh | bash
@@ -40,15 +50,20 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 
 -----
 
-### Misc
+<details>
+
+<details>
+<summary><i>Misc</i></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Rust/Strip-rust.sh | bash
 
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Debloat.sh | bash
 ```
+<details>
 
-### Script start:
+<details>
+<summary><i>Script start</i></summary>
 
 ```bash
 #!/usr/bin/bash
@@ -77,10 +92,13 @@ sleepy() {
 }
 
 ```
-## Get external IP
+<details>
+<summary><i>Get external IP</i></summary>
 ```bash
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
+
+<details>
 
 ## Bash packages
 

@@ -2,6 +2,7 @@
 
 <details>
 <summary><i>Updatess</i></summary>
+  
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash
 ```

@@ -15,3 +15,8 @@ alias sudoedit='sudo-rs rnano'
 
 # Curl-rustls
 alias curl='curl-rustls'
+
+
+Pacman list: https://archlinux.org/mirrorlist
+
+mirror="https://archlinux.org/mirrorlist/?country=BE&country=CZ&country=DK&country=FR&country=DE&country=LU&country=NL&country=PL&country=CH&country=GB&protocol=https&ip_version=4&use_mirror_status=on"

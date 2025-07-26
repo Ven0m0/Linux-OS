@@ -15,6 +15,11 @@ rustup default nightly && rustup set profile minimal && rustup set default-host 
 rustup default stable && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
 ```
 
+### Some componements commonly required  
+```bash
+rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu rust-std-wasm32-unknown-unknown rust-std-wasm32-wasip2
+```
+
 Flags:
 
 <details>
@@ -44,11 +49,6 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
 
 </details>
 
- 
-### Some componements commonly required  
-```bash
-rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu rust-std-wasm32-unknown-unknown rust-std-wasm32-wasip2
-```
 
 # Rust apps/resources
 

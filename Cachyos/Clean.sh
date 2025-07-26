@@ -41,7 +41,7 @@ rm $HOME/.config/Trolltech.conf || :
 kbuildsycoca6 --noincremental || :
 
 # Empty global trash
-rm -rf $HOME/.local/share/Trash/*
+sudo rm -rf $HOME/.local/share/Trash/*
 sudo rm -rf /root/.local/share/Trash/*
 
 # Flatpak

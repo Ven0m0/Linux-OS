@@ -16,6 +16,10 @@ rustup default stable && rustup set profile minimal && rustup set default-host x
 ```
 
 Flags:
+
+<details>
+<summary><b>Flags:</b></summary>
+
 ```bash
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C strip=symbols -C lto=on -C embed-bitcode=yes -C relro-level=off -Z tune-cpu=native \
 -Z default-visibility=hidden -Z location-detail=none"
@@ -37,6 +41,10 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
          -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations \
          -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
 ```
+
+<details>
+
+ 
 ### Some componements commonly required  
 ```bash
 rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu rust-std-wasm32-unknown-unknown rust-std-wasm32-wasip2

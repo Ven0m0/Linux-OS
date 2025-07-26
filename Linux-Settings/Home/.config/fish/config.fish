@@ -10,7 +10,6 @@ status --is-interactive; and . (basher init - fish | psub)
 bind --erase \cv
 
 # Prompt
-#pay-respects fish --alias | source
 # _evalcache fzf --fish
 #_evalcache zoxide init fish
 

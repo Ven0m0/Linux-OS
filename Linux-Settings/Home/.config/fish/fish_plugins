@@ -2,13 +2,12 @@ jorgebucaran/fisher
 meaningful-ooo/sponge
 acomagu/fish-async-prompt
 archelaus/shell-mommy
-oh-my-fish/plugin-sudope
 oh-my-fish/plugin-xdg
 oh-my-fish/plugin-ssh
 patrickf1/fzf.fish
 gyakovlev/fish-fzy
 kyohsuke/fish-evalcache
-eth-p/fish-plugin-sudo
 scaryrawr/cheat.sh.fish
 y3owk1n/fish-x
 scaryrawr/zoxide.fish
+eth-p/fish-plugin-sudo

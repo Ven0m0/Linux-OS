@@ -8,6 +8,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```
 </details>
 
+---
 <details>
 <summary><i>Cleaning</i></summary>
 

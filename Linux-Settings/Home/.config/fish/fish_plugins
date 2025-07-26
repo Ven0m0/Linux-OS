@@ -7,10 +7,8 @@ oh-my-fish/plugin-xdg
 oh-my-fish/plugin-ssh
 patrickf1/fzf.fish
 gyakovlev/fish-fzy
-icezyclon/zoxide.fish
 kyohsuke/fish-evalcache
-kpbaks/ctrl-z.fish
 eth-p/fish-plugin-sudo
 scaryrawr/cheat.sh.fish
-wawa19933/fish-systemd
 y3owk1n/fish-x
+scaryrawr/zoxide.fish

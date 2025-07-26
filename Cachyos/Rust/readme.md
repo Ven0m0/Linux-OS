@@ -42,7 +42,7 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
          -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
 ```
 
-<details>
+</details>
 
  
 ### Some componements commonly required  

@@ -25,11 +25,11 @@ if [[ "$subin" != "doas" ]]; then
 fi
 
 echo "🔄 System update using pacman..."
-${suexec} pacman -Syu --noconfirm || :
-
+${suexec} -Sy archlinux-keyring --noconfirm 2>/dev/null || : 
+${suexec} pacman -Syu --noconfirm 2>/dev/null || :
 echo "AUR update..."
-paru -Syu --noconfirm --combinedupgrade --nouseask --removemake \
-  --cleanafter --skipreview --nokeepsrc --sudo ${suexec} || :
+paru -Sua --noconfirm --combinedupgrade --nouseask --removemake \
+--cleanafter --skipreview --nokeepsrc --sudo ${suexec} || :
 
 if have topgrade; then
   echo "update using topgrade..."

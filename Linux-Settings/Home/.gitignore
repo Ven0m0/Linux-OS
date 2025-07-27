@@ -34,7 +34,9 @@ logs/
 tmp/
 temp/
 *~
-node_modules/
+node_modules
+target
+build
 .pytest_cache/
 *.pyc
 *.pyo

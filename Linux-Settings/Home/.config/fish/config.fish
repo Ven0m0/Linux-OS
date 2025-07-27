@@ -29,10 +29,9 @@ if test "$TERM" = "xterm-ghostty" -a -e "$GHOSTTY_RESOURCES_DIR"/shell-integrati
     source "$GHOSTTY_RESOURCES_DIR"/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
 end
 
-set -U FZF_LEGACY_KEYBINDINGS 0
-set -U FZF_COMPLETE 1
+set -Ux FZF_LEGACY_KEYBINDINGS 0
+set -Ux FZF_COMPLETE 1
 bind \cs '__ethp_commandline_toggle_sudo.fish'
 # Async prompt
 set -U async_prompt_functions fish_prompt fish_right_prompt
 set -gx async_prompt_enable 1
-set -gx FORGIT_INSTALL_DIR "/usr/share/fish/vendor_conf.d"

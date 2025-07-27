@@ -71,9 +71,9 @@ fi
 
 # export FZF_DEFAULT_OPTS="--layout=reverse --border --cycle"
 # export _ZO_FZF_OPTS=--algo=v1 -e --no-unicode --no-color
-export FZF_DEFAULT_COMMAND="fd -tf -F"
+export FZF_DEFAULT_COMMAND="fd -tf --strip-cwd-prefix"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-export SKIM_DEFAULT_COMMAND="fd -tf -F || rg --files || find ."
+export SKIM_DEFAULT_COMMAND="fd -tf --strip-cwd-prefix || rg --files || find ."
 # ─── Options ─────────────────────────────────────────────────────────
 HISTSIZE=1000
 HISTFILESIZE=${HISTSIZE}

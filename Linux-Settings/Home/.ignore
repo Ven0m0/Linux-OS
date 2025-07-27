@@ -1,0 +1,7 @@
+# ~/.ignore
+*.log
+*.tmp
+*.bak
+node_modules
+target
+build

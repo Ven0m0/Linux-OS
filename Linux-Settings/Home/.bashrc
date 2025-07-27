@@ -60,21 +60,20 @@ export LESSHISTFILE=-
 export PAGER=bat
 export BATPIPE=color
 
-# FD https://github.com/sharkdp/fd
-
 if [ -f ~/.ignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore
 elif [ -f ~/.gitignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore
 fi
+if command -v sk >/dev/null 2>&1; then
+  echo 'source <(sk --shell bash)' >> ~/.bashrc  # Or save to ~/.bash_completion
+fi
 
 # export FZF_DEFAULT_OPTS="--layout=reverse --border --cycle"
 # export _ZO_FZF_OPTS=--algo=v1 -e --no-unicode --no-color
-export FZF_DEFAULT_COMMAND='fd -tf -F'
+export FZF_DEFAULT_COMMAND="fd -tf -F"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-# Faster Skim (fastest to slowest skim command)
-export SKIM_DEFAULT_COMMAND='rg --files--glob "!.git/*" || fd --type f --color=never . || find . -type f'
-
+export SKIM_DEFAULT_COMMAND="fd -tf -F || rg --files || find ."
 # ─── Options ─────────────────────────────────────────────────────────
 HISTSIZE=1000
 HISTFILESIZE=${HISTSIZE}

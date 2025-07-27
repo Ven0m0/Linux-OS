@@ -1,2 +1,2 @@
---threads 0
---exclude .git
+-j0
+-d5

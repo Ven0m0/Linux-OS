@@ -16,3 +16,8 @@ cargo-diet diet
 cargo-cache -g -f -e clean-unref
 cargo install --profile release --path .
 ```
+
+### LLVM args
+```
+-Cllvm-args=-enable-dfa-jump-thread -Cllvm-args=-enable-misched -Cllvm-args=-enable-gvn-hoist -Cllvm-args=-enable-gvn-sink -Cllvm-args=-enable-loopinterchange -Cllvm-args=-enable-pipeliner -Cllvm-args=-enable-tail-merge
+```

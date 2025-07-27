@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-set -euo pipefail
-set -CE
+set -eECuo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
 # shopt -s extglob

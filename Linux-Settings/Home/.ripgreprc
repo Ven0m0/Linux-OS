@@ -9,8 +9,8 @@
 # Quicker and more grep like
 --fixed-strings
 
+--threads 0
 --smart-case
-# --threads $(nproc)
 --max-depth 5
 --one-file-system
 --trim
@@ -18,3 +18,4 @@
 --color=auto
 --mmap
 --no-line-number
+#--no-heading

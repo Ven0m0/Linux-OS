@@ -1,0 +1,11 @@
+# This file contains fish universal variable definitions.
+# VERSION: 3.0
+SETUVAR --export FZF_COMPLETE:1
+SETUVAR --export FZF_LEGACY_KEYBINDINGS:0
+SETUVAR async_prompt_functions:fish_prompt\x1efish_right_prompt
+SETUVAR sponge_allow_previously_successful:true
+SETUVAR sponge_delay:2
+SETUVAR sponge_filters:sponge_filter_failed\x1esponge_filter_matched
+SETUVAR sponge_purge_only_on_exit:false
+SETUVAR sponge_regex_patterns:\x1d
+SETUVAR sponge_successful_exit_codes:0

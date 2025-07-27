@@ -35,3 +35,4 @@ bind \cs '__ethp_commandline_toggle_sudo.fish'
 # Async prompt
 set -U async_prompt_functions fish_prompt fish_right_prompt
 set -gx async_prompt_enable 1
+set -gx FORGIT_INSTALL_DIR "/usr/share/fish/vendor_conf.d"

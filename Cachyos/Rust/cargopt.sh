@@ -151,8 +151,8 @@ RUSTFLAGS_BASE=(
   -Zlocation-detail=none
   -Zfmt-debug=none
   -Zthreads=8
-  -Z relax-elf-relocations
-  -Z packed-bundled-libs
+  -Zrelax-elf-relocations
+  -Zpacked-bundled-libs
 )
 EXTRA_LINK=(
   -Clink-arg=-Wl,-O3

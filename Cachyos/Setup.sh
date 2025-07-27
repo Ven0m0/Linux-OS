@@ -4,6 +4,8 @@ LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 
 sudo sed -i -e s"/\#LogFile.*/LogFile = /"g /etc/pacman.conf
 
+git clone git://github.com/Ven0m0/dotfiles $HOME/dotfiles
+
 # --- CONFIG ---
 DOTFILES_REPO="git@github.com:Ven0m0/dotfiles.git" # dotfiles repo
 DOTFILES_TOOL="chezmoi"  # or "dotter"

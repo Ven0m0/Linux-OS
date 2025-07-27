@@ -10,12 +10,12 @@
 --fixed-strings
 
 --threads 0
+--mmap
 --smart-case
 --max-depth 5
 --one-file-system
 --trim
 --block-buffered
 --color=auto
---mmap
 --no-line-number
-#--no-heading
+--no-heading

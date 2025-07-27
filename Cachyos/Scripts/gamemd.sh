@@ -13,6 +13,9 @@ hash ghostty konsole rio alacritty
 hash java
 sudo -v
 
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
+echo advise | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled
+echo 1 | sudo tee /proc/sys/vm/page_lock_unfairness
 echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 sudo powerprofilesctl set performance
@@ -39,3 +42,7 @@ echo '0' | sudo tee /proc/sys/kernel/nmi_watchdog > /dev/null
 echo '0' | sudo tee /sys/class/rtc/rtc0/wakealarm > /dev/null
 
 export USE_CCACHE=1
+
+if command -v gamemoderun;then
+    gamemoderun
+fi

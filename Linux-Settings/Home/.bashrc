@@ -61,6 +61,13 @@ export PAGER=bat
 export BATPIPE=color
 
 # FD https://github.com/sharkdp/fd
+
+if [ -f ~/.ignore ]; then
+  export FD_IGNORE_FILE=$HOME/.ignore
+elif [ -f ~/.gitignore ]; then
+  export FD_IGNORE_FILE=$HOME/.ignore
+fi
+
 # export FZF_DEFAULT_OPTS="--layout=reverse --border --cycle"
 # export _ZO_FZF_OPTS=--algo=v1 -e --no-unicode --no-color
 export FZF_DEFAULT_COMMAND='fd -tf -F'

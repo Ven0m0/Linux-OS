@@ -63,6 +63,7 @@ https://github.com/macp3o/linux-tweaks
 
 https://gitlab.com/iucode-tool/iucode-tool/-/wikis/home
 https://github.com/AnnikaV9/kbuilder
+https://crates.io/crates/vicut
 
 # Dotfiles
 
@@ -79,7 +80,9 @@ https://github.com/comtrya/comtrya
 https://github.com/RaphGL/Tuckr
 https://github.com/elkowar/yolk
 
+```
 
+```
 https://github.com/644/compressimages
 https://github.com/jkool702/forkrun
 https://crates.io/crates/trees-rs

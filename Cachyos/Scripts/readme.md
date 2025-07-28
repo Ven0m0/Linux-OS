@@ -1,4 +1,4 @@
-
+# Useful shell stuff
 
 
 <details>
@@ -21,3 +21,6 @@ DEBUG=true
 ```
 
 </details>
+
+
+echo "Your Global IP is: $(curl -s https://api.ipify.org/)"

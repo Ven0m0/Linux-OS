@@ -304,3 +304,16 @@ cargo install cargo-sleek
 cargo install webcomp
 https://codeberg.org/TotallyLeGIT/doasedit
 ```
+
+Twaks todo:
+
+```bash
+sudo nano /usr/lib/tmpfiles.d/pcie_aspm_performance.conf
+w /sys/module/pcie_aspm/parameters/policy - - - - performance
+
+sudo nano /usr/lib/tmpfiles.d/cpu-governor.conf
+w /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor - - - - performance
+
+sudo nano /usr/lib/tmpfiles.d/energy_performance_preference.conf
+w /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference - - - - performance
+```

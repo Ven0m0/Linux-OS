@@ -22,7 +22,6 @@ COMMON_RUSTFLAGS="
   -C lto=fat
   -C codegen-units=1
   -C embed-bitcode=yes
-  -C relocation-model=pic
 "
 
 # “Hidden” LLVM passes to enable via -Cllvm-args

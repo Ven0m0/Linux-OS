@@ -21,12 +21,9 @@ DEF='\e[0m'   #Default color and effects
 BLD='\e[1m'   #Bold\brighter  
 #----------------------------------------|
 
-sudo -v
-
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 echo $WORKDIR
 cd $WORKDIR
 
-
-
+# Ensure root rights
+sudo -v

@@ -38,6 +38,8 @@ set page-completions off
 # don't match files starting with .
 set match-hidden-files off
 
+# do not bell on tab-completion
+set bell-style none
 
 # allow the use of the Home/End keys
 # https://wiki.archlinux.org/index.php/Home_and_End_keys_not_working

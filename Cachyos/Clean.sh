@@ -46,7 +46,7 @@ sudo rm -rf /root/.local/share/Trash/*
 
 # Flatpak
 if command -v flatpak &> /dev/null; then
-  flatpak uninstall --unused --noninteractive
+  flatpak uninstall --unused --delete-data -y --noninteractive
 else
   echo 'Skipping because "flatpak" is not found.'
 fi

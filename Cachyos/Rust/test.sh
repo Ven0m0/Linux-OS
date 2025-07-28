@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
+set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+# —————— Trap ——————
+cleanup() {
+  trap - ERR EXIT HUP QUIT TERM INT ABRT
+  set +e
+  cargo-cache -efg  &>/dev/null || :
+  cargo clean  &>/dev/null || :
+  cargo pgo clean  &>/dev/null || :
+  rm -rf "$HOME/.cache/sccache/"*  &>/dev/null || :
+  set -e
+}
+trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # ┌─────────────────────────────────────────────────────────────────────────┐
 # │                            CONFIGURATION                              │
 # └─────────────────────────────────────────────────────────────────────────┘

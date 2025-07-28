@@ -15,7 +15,6 @@ trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————— Speed and caching ——————
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sudo -v
-hash -r; hash cargo rustc clang nproc sccache
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"

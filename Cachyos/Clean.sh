@@ -116,6 +116,7 @@ tldr -c && sudo tldr -c || :
 
 # Trim disks
 sudo fstrim -a --quiet-unsupported || :
+sudo fstrim -v / --quiet-unsupported || :
 
 # Clearing dns cache
 systemd-resolve --flush-caches

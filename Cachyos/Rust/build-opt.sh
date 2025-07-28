@@ -102,6 +102,7 @@ export RUSTUP_TOOLCHAIN=nightly
 export CARGO_BUILD_JOBS="$jobs"
 export CARGO_PROFILE_RELEASE_LTO=true
 export CARGO_INCREMENTAL=0
+export RUSTC_LINKER=clang
 
 if ((USE_MOLD)); then
   if command -v mold >/dev/null 2>&1; then
@@ -221,4 +222,5 @@ fi
 profileoff >/dev/null 2>&1 || :
 # —————— Todo ——————
 # LastBuild="-C strip=symbols -Z trim-paths"
+export CARGO_TRIM_PATHS=all
 # cargo +nightly ${NIGHTLYFLAGS} build --release -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort

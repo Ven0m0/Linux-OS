@@ -79,7 +79,7 @@ export SKIM_DEFAULT_COMMAND="fd -tf --strip-cwd-prefix --exclude .git || rg --fi
 HISTSIZE=1000
 HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth"
-HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish"
+HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
 shopt -s histappend &> /dev/null
 shopt -s no_empty_cmd_completion

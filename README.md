@@ -76,8 +76,10 @@ set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$HOME"
+WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd $WORKDIR
+
+# Sleep replacement in bash
 sleepy() { read -rt 0.1 <> <(:) || :; }
 ```
 

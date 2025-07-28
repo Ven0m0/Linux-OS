@@ -72,7 +72,7 @@ https://github.com/milobanks/greatness
 https://github.com/SuperCuber/dotter
 https://github.com/oknozor/toml-bombadil
 https://github.com/volllly/rotz
-https://github.com/plamorg/ambit
+https://github.com/freshshell/fresh
 https://crates.io/crates/ldfm
 https://crates.io/crates/dfm
 https://github.com/Addvilz/dots

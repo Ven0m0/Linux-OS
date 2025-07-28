@@ -1,5 +1,16 @@
 # ShellCheck settings
 
+shell=bash
+
+# Allow opening any 'source'd file, even if not specified as input
+external-sources=true
+
+# Turn on warnings for unquoted variables with safe values
+enable=quote-safe-variables
+
+# Turn on warnings for unassigned uppercase variables
+enable=check-unassigned-uppercase
+
 # All optional checks
 enable=all
 
@@ -10,6 +21,15 @@ enable=all
 # Check ID          Symbolic name                   Type
 # SC2250            require-variable-braces         optional
 disable=SC2250
+
+# allow export VAR=value instead of VAR=value; export VAR;
+disable=SC2155
+
+# allow env vars that are not assigned in the same script. (e.g. $TERM_PROGRAM)
+disable=SC2154
+
+# Allow [ ! -z foo ] instead of suggesting -n
+disable=SC2236
 
 # Add the script directory to the search path for source statements
 source-path=SCRIPTDIR

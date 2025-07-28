@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# https://github.com/644/compressimages
 # Depends on GNU parallel, pngquant, jpegoptim, mogrify, and bash >= 4.0+
 # Takes files/urls and directories from stdin, and arguments to the script
 case "${BASH_VERSION}" in ''|[123].*) printf 'Bash >= 4.0+ required\n' >&2; exit 1; ;; esac

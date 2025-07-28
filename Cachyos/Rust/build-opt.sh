@@ -221,4 +221,4 @@ fi
 profileoff >/dev/null 2>&1 || :
 # —————— Todo ——————
 # LastBuild="-C strip=symbols -Z trim-paths"
-# cargo +nightly ${NIGHTLYFLAGS} build --release
+# cargo +nightly ${NIGHTLYFLAGS} build --release -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort

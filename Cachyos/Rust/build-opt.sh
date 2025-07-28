@@ -5,15 +5,14 @@ LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
-  cargo-cache -efg >/dev/null 2>&1 || :
-  cargo clean >/dev/null 2>&1 || :
-  cargo pgo clean >/dev/null 2>&1 || :
-  rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || :
+  cargo-cache -efg &>/dev/null || :
+  cargo clean &>/dev/null || :
+  cargo pgo clean &>/dev/null || :
+  rm -rf "$HOME/.cache/sccache/"* &>/dev/null || :
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————— Speed and caching ——————
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sudo -v
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"

@@ -1,10 +1,19 @@
 # /etc/inputrc - global inputrc for libreadline
 # See readline(3readline) and 'info rluserman' for more information.
 
+
+
 # Allow UTF-8 input and output
 set input-meta on
 set output-meta on
 set convert-meta off
+
+# https://github.com/dotphiles/dotphiles/blob/master/input/inputrc
+$include /etc/inputrc
+set meta-flag on
+set show-all-if-unmodified on
+# Adds punctuation as word delimiters
+set bind-tty-special-chars off
 
 # Disabling control echo
 set echo-control-characters off

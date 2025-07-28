@@ -60,6 +60,7 @@ export LESSHISTFILE=-
 # https://github.com/eth-p/bat-extras
 export PAGER=bat
 export BATPIPE=color
+export CURL_HOME=$HOME
 
 if [ -f ~/.ignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore

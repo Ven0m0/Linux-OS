@@ -7,9 +7,9 @@ set -euo pipefail
 
 # Project directory (assumes Cargo.toml is here)
 # Posix compatible
-#WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+#WORKDIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P) || exit
 # Non-posix
-WORKDIR="$(readlink -f -- "${BASH_SOURCE[0]%/*}")"
+WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$WORKDIR"
 
 # Use nightly Rust for LLVM args and PGO support

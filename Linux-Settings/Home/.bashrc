@@ -49,6 +49,7 @@ fi
 export VISUAL=$EDITOR
 export VIEWER=$EDITOR
 export GIT_EDITOR=$EDITOR
+git config --global core.editor "$EDITOR"
 export SYSTEMD_EDITOR=$EDITOR
 export FCEDIT=$EDITOR
 alias nano='nano -/ ' # Nano modern keybinds

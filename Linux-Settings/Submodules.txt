@@ -2,3 +2,4 @@ https://github.com/excalibur1234/pacui
 https://github.com/Hetsh/mcsctl
 https://github.com/AnnikaV9/kbuilder
 https://github.com/lestofante/PacmanParallelizer
+https://github.com/xvoland/Extract

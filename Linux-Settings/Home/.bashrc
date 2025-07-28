@@ -101,6 +101,7 @@ ulimit -c 0
 
 # ─── Bash-it ─────────────────────────────────────────────────────────
 # Don't check mail when opening terminal.
+shopt -u mailwarn
 unset MAILCHECK
 
 # ─── Binds ─────────────────────────────────────────────────────────

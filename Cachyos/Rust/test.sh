@@ -6,9 +6,6 @@ set -euo pipefail
 # └─────────────────────────────────────────────────────────────────────────┘
 
 # Project directory (assumes Cargo.toml is here)
-# Posix compatible
-#WORKDIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P) || exit
-# Non-posix
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$WORKDIR"
 

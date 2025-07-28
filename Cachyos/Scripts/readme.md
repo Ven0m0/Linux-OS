@@ -18,6 +18,9 @@ cd $WORKDIR
 
 # Ensure root rights
 sudo -v
+
+# Sleep replacement in bash
+sleepy() { read -rt 0.1 <> <(:) || :; }
 ```
 
 </details>

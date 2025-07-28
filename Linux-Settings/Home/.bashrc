@@ -95,6 +95,8 @@ set -o noclobber
 # Pi3 fix low power message warning
 [[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
 setterm --linewrap on
+# Disable coredumps
+ulimit -c 0
 
 # ─── Bash-it ─────────────────────────────────────────────────────────
 # Don't check mail when opening terminal.

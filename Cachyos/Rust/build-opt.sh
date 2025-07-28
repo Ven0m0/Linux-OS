@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+set -eECuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+shopt -s inherit_errexit
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 # —————— Trap ——————
 cleanup() {

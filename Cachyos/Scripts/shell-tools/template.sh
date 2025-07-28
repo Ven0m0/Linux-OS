@@ -8,7 +8,10 @@ LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
 
 sudo -v
 
-this_script_dir=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
+WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo $this_script_dir
-cd $this_script_dir
+echo $WORKDIR
+cd $WORKDIR
+
+
+

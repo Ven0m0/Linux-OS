@@ -1,5 +1,58 @@
 # Useful shell stuff
 
+<details>
+<summary><b>Bash script template</b></summary>
+
+```bash
+#!/usr/bin/env bash
+# shellcheck shell=bash
+set -eECuo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
+
+
+
+# Faster sorting and emoji support
+LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
+
+WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo $WORKDIR
+cd $WORKDIR
+
+# Ensure root rights
+sudo -v
+```
+
+</details>
+
+<details>
+<summary><b>Colors</b></summary>
+
+```bash
+#|---Foreground colors---|
+BLK='\033[30m' # Black
+RED='\033[31m' # Red
+GRN='\033[32m' # Green
+YLW='\033[33m' # Yellow
+BLU='\033[34m' # Blue
+MGN='\033[35m' # Magenta
+CYN='\033[36m' # Cyan
+WHT='\033[37m' # White
+#|---Effects---|
+DEF='\033[0m'  # Reset to default
+BLD='\033[1m'  # Bold / Bright
+#|---Bright colors---|
+BRIGHT_RED='\033[91m'
+BRIGHT_GRN='\033[92m'
+BRIGHT_YLW='\033[93m'
+BRIGHT_BLU='\033[94m'
+BRIGHT_MGN='\033[95m'
+BRIGHT_CYN='\033[96m'
+BRIGHT_WHT='\033[97m'
+#|-----------------|
+```
+
+</details>
 
 <details>
 <summary><b>Config file in bash</b></summary>
@@ -41,6 +94,18 @@ awk -v s="$down" 'BEGIN {printf "Download: %.2f Mbps\n", (s*8)/(1024*1024)}'
 up=$(dd if=/dev/zero bs=1M count=10 2>/dev/null | \
   curl -s -o /dev/null -w "%{speed_upload}" --data-binary @- https://speed.cloudflare.com/__up)
 awk -v s="$up" 'BEGIN {printf "Upload: %.2f Mbps\n", (s*8)/(1024*1024)}'
+```
+
+</details>
+
+<details>
+<summary><b>Misc</b></summary>
+
+```bash
+# shopt -s extglob
+# For 
+# *.(jpg|png)
+# file?(.*) # file and file.bak
 ```
 
 </details>

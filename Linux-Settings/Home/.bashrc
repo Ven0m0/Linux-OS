@@ -80,7 +80,7 @@ HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish"
 HISTTIMEFORMAT='%F %T '
-shopt -s histappend
+shopt -s histappend &> /dev/null
 shopt -s no_empty_cmd_completion
 shopt -s checkwinsize &> /dev/null
 shopt -s globstar

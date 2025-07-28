@@ -2,7 +2,10 @@
 *.log
 *.tmp
 *.bak
-node_modules
-target
-build
-.git
+node_modules/
+target/
+build/
+.git/
+*~
+.directory
+.Trash-*

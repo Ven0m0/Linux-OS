@@ -1,8 +1,6 @@
 # /etc/inputrc - global inputrc for libreadline
 # See readline(3readline) and 'info rluserman' for more information.
 
-
-
 # Allow UTF-8 input and output
 set input-meta on
 set output-meta on

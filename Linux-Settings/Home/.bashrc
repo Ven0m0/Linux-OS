@@ -52,6 +52,7 @@ export GIT_EDITOR=$EDITOR
 git config --global core.editor "$EDITOR"
 export SYSTEMD_EDITOR=$EDITOR
 export FCEDIT=$EDITOR
+export SUDO_EDITOR="$EDITOR"
 alias nano='nano -/ ' # Nano modern keybinds
 export GIT_PAGER=delta
 export LESSHISTFILE=-

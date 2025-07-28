@@ -5,12 +5,9 @@
 
 ```bash
 #!/usr/bin/env bash
-# shellcheck shell=bash
 set -eECuo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
-
-
 
 # Faster sorting and emoji support
 LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
@@ -29,7 +26,7 @@ sudo -v
 <summary><b>Colors</b></summary>
 
 ```bash
-#|---Foreground colors---|
+#──────────── Foreground colors ────────────
 BLK='\033[30m' # Black
 RED='\033[31m' # Red
 GRN='\033[32m' # Green
@@ -38,10 +35,10 @@ BLU='\033[34m' # Blue
 MGN='\033[35m' # Magenta
 CYN='\033[36m' # Cyan
 WHT='\033[37m' # White
-#|---Effects---|
+#──────────── Effects ────────────
 DEF='\033[0m'  # Reset to default
 BLD='\033[1m'  # Bold / Bright
-#|---Bright colors---|
+#──────────── Bright colors ────────────
 BRIGHT_RED='\033[91m'
 BRIGHT_GRN='\033[92m'
 BRIGHT_YLW='\033[93m'
@@ -49,7 +46,7 @@ BRIGHT_BLU='\033[94m'
 BRIGHT_MGN='\033[95m'
 BRIGHT_CYN='\033[96m'
 BRIGHT_WHT='\033[97m'
-#|-----------------|
+#────────────────────────
 ```
 
 </details>

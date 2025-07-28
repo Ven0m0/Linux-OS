@@ -43,6 +43,15 @@ echo 0 | sudo tee /sys/class/rtc/rtc0/wakealarm
 
 export USE_CCACHE=1
 
+enable hdd write cache:
+hdparm -W 1 /dev/sdX
+
+Disables aggressive power-saving, but keeps APM enabled
+hdparm -B 254
+
+Completely disables APM
+hdparm -B 255
+
 if command -v gamemoderun;then
     gamemoderun
 fi

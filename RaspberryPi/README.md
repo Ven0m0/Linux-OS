@@ -39,7 +39,7 @@ net.ipv4.ip_forward=1
 
 
 <details>
-<summary><b>CasaOS</b>[^1]</summary>
+<summary><b>CasaOS</b><sup>[<a href="https://casaos.zimaspace.com">1</a>]</sup></summary>
 
 - Install
 

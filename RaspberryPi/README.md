@@ -27,7 +27,7 @@ net.ipv4.ip_forward=1
 </details>
 
 <details>
-<summary><b>**Raspberry pi os on f2fs**</b></summary>
+<summary><b>Raspberry pi os on f2fs</b></summary>
 
 - download an os image ([DietPi](https://dietpi.com) or [Raspberry Pi OS](https://www.raspberrypi.com/software))
 - change the filenames to fit your usecase in [raspberry-fs.sh](RaspberryPi/raspberry-fs.sh)

@@ -50,6 +50,39 @@ case "$option" in
 y*) enableZRAM ;;
 esac
 
+if [ -f /etc/inittab ]; then
+    echo -e "\nRemove the extra tty/getty | Save: +3.5 MB RAM"
+    read -p "Agree (y/n)? " option
+    case "$option" in
+    y*) sudo sed -i '/[2-6]:23:respawn:\/sbin\/getty 38400 tty[2-6]/s%^%#%g' /etc/inittab ;;
+    esac
+fi
+
+echo -e "\nReplace Bash shell with Dash shell | Save: +1 MB RAM"
+read -p "Agree (y/n)? " option
+case "$option" in
+y*) sudo dpkg-reconfigure dash ;;
+esac
+
+echo -e "\nOptimize /mount with defaults,noatime,nodiratime"
+read -p "Agree (y/n)? " option
+case "$option" in
+y*) sudo sed -i 's/defaults,noatime/defaults,noatime,nodiratime/g' /etc/fstab ;;
+esac
+
+echo -e "\nReduce shutdown timeout for a stop job running to 5 seconds."
+read -p "Agree (y/n)? " option
+case "$option" in
+y*) sudo sed -i 's/#DefaultTimeoutStopSec=90s/DefaultTimeoutStopSec=5s/g' /etc/systemd/system.conf ;;
+esac
+
+packages="libraspberrypi-doc manpages snapd cups*"
+echo -e "\nRemove packages? ( $packages )"
+read -p "Agree (y/n)? " option
+y*) sudo apt-get remove -y "$packages" ;;
+
+sudo apt-get -y autoremove --purge && sudo apt-get clean
+
 https://github.com/salihmarangoz/UbuntuTweaks/blob/22.04/to_be_refactored/Performance.md
 $ sudo touch /usr/bin/zram.sh
 $ sudo chmod 555 /usr/bin/zram.sh
@@ -74,3 +107,6 @@ $ sudo crontab -e
 # Paste the following lines
 @reboot /bin/bash /usr/bin/zram.sh
 # Reboot, Check the swap memory
+
+echo
+read -p "Have a nice day and don't blame me!. Press [Enter] to continue..."

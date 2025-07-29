@@ -1,6 +1,6 @@
 # ~/.bashrc
 
-# If not running interactively, don't do anything
+# ─── Only for interactive shells ───────────────────────────────────────────
 [[ $- != *i* ]] && return
 
 # ─── Prompt ─────────────────────────────────────────────────────────

@@ -38,7 +38,7 @@ net.ipv4.ip_forward=1
 </details>
 
 <details>
-<summary><b><a href="https://casaos.zimaspace.com">CasaOS</a></b></summary>
+<summary>**[CasaOS](https://casaos.zimaspace.com)**</summary>
   
 ```bash
 sudo casaos-uninstall

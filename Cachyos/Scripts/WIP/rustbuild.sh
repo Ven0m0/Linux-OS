@@ -4,10 +4,10 @@ set -euo pipefail
 # 1. Detect & remove unused dependencies
 cargo +nightly install cargo-udeps cargo-shear
 cargo udeps --all-targets
-cargo shear                         # removes unused deps from Cargo.toml
+cargo shear
 
 # 2. Find dead code / unused items
-cargo machete                      # (optional) remove unused public functions
+cargo machete
 
 # 3. Minify HTML
 find . -name "*.html" -exec minhtml -i {} -o {} \;

@@ -27,7 +27,7 @@ net.ipv4.ip_forward=1
 </details>
 
 <details>
-<summary><h2>Raspberry pi os on f2fs</h2></summary>
+<summary><b>Raspberry pi os on f2fs</b></summary>
 
 - download an os image ([DietPi](https://dietpi.com) or [Raspberry Pi OS](https://www.raspberrypi.com/software))
 - change the filenames to fit your usecase in [raspberry-fs.sh](RaspberryPi/raspberry-fs.sh)
@@ -37,7 +37,7 @@ net.ipv4.ip_forward=1
 </details>
 
 <details>
-<summary><h2>CasaOS</h2></summary>
+<summary><b>CasaOS</b></summary>
 
 - Install [CasaOS](https://casaos.zimaspace.com)
 

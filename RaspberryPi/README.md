@@ -39,9 +39,9 @@ net.ipv4.ip_forward=1
 
 
 <details>
-<summary><b>CasaOS</b><sup>[<a href="https://casaos.zimaspace.com">1</a>]</sup></summary>
+<summary><h2>CasaOS</h2></summary>
 
-- Install
+- Install [CasaOS](https://casaos.zimaspace.com)
 
 ```bash
 sudo casaos-uninstall

@@ -47,7 +47,12 @@ EOF
   exit "${1:-1}"
 }
 
-# parse
+# —————— Parse args ——————
+if [ "$#" -eq 0 ]; then
+  echo "Error: at least one <crate> is required" >&2
+  usage 1
+fi
+
 while (($#)); do
   case $1 in
     -p|-pgo) PGO=1; shift ;;
@@ -56,6 +61,7 @@ while (($#)); do
     -d|-debug) debug; shift ;;
     -h|--help) usage 0 ;;
     --) shift; ARGS=("$@"); break ;;
+    -*) echo >&2 "Error: unknown option '$1'"; usage 1 ;;
     *) ARGS+=("$1"); shift;;
   esac
 done

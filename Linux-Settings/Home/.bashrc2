@@ -1,0 +1,157 @@
+# ~/.bashrc
+
+# ─── Only for interactive shells ───────────────────────────────────────────
+[[ $- != *i* ]] && return
+
+# ─── Prompt Configuration ─────────────────────────────────────────────────
+PROMPT_DIRTRIM=2
+configure_prompt() {
+  if command -v starship &>/dev/null; then
+    eval "$(starship init bash)"
+  else
+    local C_USER C_HOST C_PATH C_RESET CODE
+    C_USER='\[\e[38;5;201m\]'
+    C_HOST='\[\e[38;5;33m\]'
+    C_PATH='\[\e[38;5;129m\]'
+    C_RESET='\[\e[0m\]'
+    CODE='$(if [[ $? != 0 ]]; then printf "\[\e[38;5;203m\]%d\[\e[0m\]" "$?"; fi)'
+    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$CODE \$ "
+  fi
+  # Pre-prompt hook for mommy if installed
+  command -v mommy &>/dev/null && PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+}
+configure_prompt
+
+# ─── Core Environment ─────────────────────────────────────────────────────
+export HOME
+export CDPATH=".:~"
+ulimit -c 0                       # disable core dumps
+shopt -s checkwinsize globstar    # better globbing & window resize
+shopt -s histappend cmdhist       # safer history
+HISTSIZE=1000
+HISTFILESIZE=$HISTSIZE
+HISTCONTROL="erasedups:ignoreboth"
+HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
+HISTTIMEFORMAT='%F %T '
+
+# ─── Editor / Pager ────────────────────────────────────────────────────────
+if command -v micro &>/dev/null; then
+  export EDITOR=micro
+else
+  export EDITOR=nano
+fi
+export VISUAL=$EDITOR
+export GIT_EDITOR=$EDITOR  # also sets SUDO_EDITOR
+git config --global core.editor "$EDITOR" 2>/dev/null || true
+
+# Bat | Less pager fallback
+if command -v bat &>/dev/null; then
+  export PAGER=bat
+  export BATPIPE=color
+elif command -v less &>/dev/null; then
+  export PAGER=less
+  export LESSHISTFILE=-
+  export LESS='-FRXns --mouse --use-color --no-init'
+fi
+
+# ─── Cargo & Other Tool Init ──────────────────────────────────────────────
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias)"
+command -v batpipe     &>/dev/null && eval "$(batpipe)"
+command -v batman      &>/dev/null && eval "$(batman --export-env)"
+
+# ─── Fuzzy Finder Setup (fzf + skim) ──────────────────────────────────────
+# pick best finder: fd > rg > find
+if command -v fd &>/dev/null; then
+  FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
+elif command -v rg &>/dev/null; then
+  FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
+else
+  FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
+fi
+
+export FZF_DEFAULT_COMMAND="$FIND_CMD"
+export SKIM_DEFAULT_COMMAND="$FIND_CMD"
+
+# General fzf/sk options
+export FZF_DEFAULT_OPTS="
+  --inline-info
+  --tiebreak=index
+  --layout=reverse-list
+  --height=70%
+"
+export SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+
+# Key-bindings & completions
+if command -v fzf &>/dev/null; then
+  eval "$(fzf --key-bindings --completion)"
+fi
+if command -v sk &>/dev/null; then
+  source <(sk --completion bash)
+fi
+
+# fzf additional shortcuts
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_CTRL_R_OPTS="--color header:italic --header 'Press CTRL-Y to copy command into clipboard'"
+export FZF_ALT_C_OPTS="--preview 'tree -C {}'"
+
+# ─── Shell Bindings & Aliases ─────────────────────────────────────────────
+# History magic-space
+bind 'set completion-query-items 0'
+bind 'set page-completions off'
+bind 'set show-all-if-ambiguous on'
+bind 'set menu-complete-display-prefix on'
+bind 'set completion-ignore-case on'
+bind 'set completion-map-case on'
+bind 'set mark-symlinked-directories on'
+bind 'set bell-style none'
+bind Space:magic-space
+
+# Core aliases
+alias nano='nano -/'         # modern keybinds
+alias cls='clear'; alias c='clear'
+alias ping='ping -c 4'
+alias mount='mount | column -t'
+alias mkdir='mkdir -p '
+alias edit='$EDITOR '; alias suedit='sudo $EDITOR '
+alias sudo='\sudo '          # allow alias via sudo
+
+# eza file listings
+alias ls='eza -al --color=always --group-directories-first --icons'
+alias la='eza -a  --color=always --group-directories-first --icons'
+alias ll='eza -l  --color=always --group-directories-first --icons'
+alias lt='eza -aT --color=always --group-directories-first --icons'
+
+# Ripgrep / grep
+if command -v rg &>/dev/null; then
+  alias rg='rg --no-stats --color=auto'
+  alias grep='rg -uuu --no-stats --color=auto'
+  alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8'
+  alias egrep='rg --no-stats --color=auto'
+else
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
+fi
+
+# project-specific aliases
+alias ptch='patch -p1 <'
+alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
+alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
+
+# ─── Path Deduplication ───────────────────────────────────────────────────
+dedupe_path() {
+  local dir new=()
+  declare -A seen
+  for dir in ${PATH//:/ }; do
+    [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && new+=("$dir")
+  done
+  PATH=$(IFS=:; echo "${new[*]}")
+}
+dedupe_path
+export PATH
+
+# ─── Ghostty Integration ──────────────────────────────────────────────────
+if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
+  source "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
+fi

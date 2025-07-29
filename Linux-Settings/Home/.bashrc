@@ -75,11 +75,23 @@ if command -v sk &>/dev/null; then
   echo 'source <(sk --shell bash)' >> ~/.bashrc  # Or save to ~/.bash_completion
 fi
 
-export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout reverse-list --height 70% --preview 'bat --color=always -s {}' --preview-window=right:50%"
+export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout reverse-list --height 70%"
 export FZF_DEFAULT_COMMAND="fd -tf -F --exclude .git || rg --files || find ."
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND --walker-skip .git,node_modules,target"
+export FZF_CTRL_R_OPTS="--color header:italic --header 'Press CTRL-Y to copy command into clipboard'"
+export FZF_ALT_C_OPTS="--walker-skip .git,node_modules,target --preview 'tree -C {}'"
+
+# Options to fzf command
+export FZF_COMPLETION_OPTS='--border --info=inline'
+
+# Options for path completion (e.g. vim **<TAB>)
+export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
+
+# Options for directory completion (e.g. cd **<TAB>)
+export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
+
 export SKIM_DEFAULT_COMMAND="fd -tf -F --exclude .git || rg --files || find ."
-export SKIM_DEFAULT_OPTIONS="--inline-info --tiebreak=index --layout=reverse-list --height=70% --preview 'bat --color=always -s {}' --preview-window=right:50%"
+export SKIM_DEFAULT_OPTIONS="--inline-info --tiebreak=index --layout=reverse-list --height=70%"
 
 # ─── Options ─────────────────────────────────────────────────────────
 HISTSIZE=1000

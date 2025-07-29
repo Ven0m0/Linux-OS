@@ -15,15 +15,11 @@ set -gx LESSHISTFILE '-'
 set -gx BATPIPE color
 
 # Fuzzy
-set -gx FZF_DEFAULT_OPS \
-    "--extended --inline-info --tiebreak=index \
-     --layout=reverse-list --height=70% \
-     --preview 'bat --color=always -s'"
-set -gx FZF_DEFAULT_COMMAND \
-    "fd -tf --strip-cwd-prefix --exclude .git"
+set -gx FZF_DEFAULT_OPTS '--inline-info' '--tiebreak=index' '--layout=reverse-list' '--height=70%' '--preview=bat --color=always -s {}' '--preview-window=right:50%'
+set -gx FZF_DEFAULT_COMMAND 'fd -tf -F --strip-cwd-prefix --exclude .git'
 set -gx FZF_CTRL_T_COMMAND $FZF_DEFAULT_COMMAND
-set -gx SKIM_DEFAULT_COMMAND \
-    "fd -tf --strip-cwd-prefix --exclude .git; or rg --files; or find ."
+set -gx SKIM_DEFAULT_COMMAND 'fd -tf -F --strip-cwd-prefix --exclude .git; or rg --files; or find .'
+set -gx SKIM_DEFAULT_OPTIONS '--inline-info' '--tiebreak=index' '--layout=reverse-list' '--height=70%' '--preview=bat --color=always -s {}' '--preview-window=right:50%'
 
 # Faster locale
 #if status --is-interactive

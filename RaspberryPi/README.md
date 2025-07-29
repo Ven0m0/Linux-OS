@@ -19,10 +19,14 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Ras
 net.ipv4.ip_forward=1
 ```
 
-Tools
+<details>
+<summary><b>Tools</b></summary>
 
-[cylon-deb](https://github.com/gavinlyonsrepo/cylon-deb)
+- [cylon-deb](https://github.com/gavinlyonsrepo/cylon-deb)
 
+* [cylon-deb](https://github.com/gavinlyonsrepo/cylon-deb)
+
+</details>
 
 **Raspberry pi os on f2fs:**
 - download an os image (dietpi os/raspberry pi os)

@@ -14,6 +14,17 @@ set -x PAGER bat
 set -gx LESSHISTFILE '-'
 set -gx BATPIPE color
 
+# Fuzzy
+set -gx FZF_DEFAULT_OPS \
+    "--extended --inline-info --tiebreak=index \
+     --layout=reverse-list --height=70% \
+     --preview 'bat --color=always -s'"
+set -gx FZF_DEFAULT_COMMAND \
+    "fd -tf --strip-cwd-prefix --exclude .git"
+set -gx FZF_CTRL_T_COMMAND $FZF_DEFAULT_COMMAND
+set -gx SKIM_DEFAULT_COMMAND \
+    "fd -tf --strip-cwd-prefix --exclude .git; or rg --files; or find ."
+
 # Faster locale
 #if status --is-interactive
   #set -x LC_ALL C; set -x LANG C.UTF-8

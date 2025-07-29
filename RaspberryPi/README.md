@@ -24,17 +24,18 @@ net.ipv4.ip_forward=1
 
 - [cylon-deb](https://github.com/gavinlyonsrepo/cylon-deb)
 
-* [cylon-deb](https://github.com/gavinlyonsrepo/cylon-deb)
-
 </details>
 
-**Raspberry pi os on f2fs:**
-- download an os image (dietpi os/raspberry pi os)
-- change the filenames to fit your usecase in raspberry-fs.sh
-- have raspberry_f2fs.sh and the image in the same path as the raspberry-fs.sh script
+<details>
+<summary><b>**Raspberry pi os on f2fs**</b></summary>
+
+- download an os image ([DietPi](https://dietpi.com) or [Raspberry Pi OS](https://www.raspberrypi.com/software))
+- change the filenames to fit your usecase in [raspberry-fs.sh](RaspberryPi/raspberry-fs.sh)
+- have [raspberry_f2fs.sh](RaspberryPi/raspberry_f2fs.sh) and the image in the same path as the raspberry-fs.sh script
 - answer the prompts
 - success
 
+</details>
 
 ## [CasaOS](https://casaos.zimaspace.com)
 ```

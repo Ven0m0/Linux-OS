@@ -43,21 +43,21 @@ EOF
 }
 
 # —————— Parse args ——————
-while (($#)); do
-  case "$1" in
-  -m | --mold) USE_MOLD=1; shift ;;
-  -l | --locked) LOCKED_FLAG="--locked"; shift ;;
-  -h | --help) usage 0 ;;
-  --) shift; break ;;
-  -*) echo "Error: unknown option '$1'" >&2; usage 1 ;;
-  *) CRATES+=("$1"); shift ;;
-  esac
-done
-
-if ((${#CRATES[@]} == 0)); then
+if [ "$#" -eq 0 ]; then
   echo "Error: at least one <crate> is required" >&2
   usage 1
 fi
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -m|--mold) USE_MOLD=1; shift ;;
+    -l|--locked) LOCKED_FLAG="--locked"; shift ;;
+    -h|--help) usage 0 ;;
+    --) shift; break ;;
+    -*) echo >&2 "Error: unknown option '$1'"; usage 1 ;;
+    *) CRATES+=("$1"); shift ;;
+  esac
+done
 # —————— Prepare environment ——————
 jobs="$(nproc)"
 cd "$HOME"

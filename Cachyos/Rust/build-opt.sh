@@ -12,6 +12,9 @@ cleanup() {
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
+# —————— Update Rust toolchains ——————
+read -r -p "Update Rust toolchains? [y/N] " ans
+[[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || :
 # —————— Speed and caching ——————
 sudo -v
 sudo cpupower frequency-set --governor performance

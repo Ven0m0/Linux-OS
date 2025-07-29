@@ -58,19 +58,19 @@ export FCEDIT=$EDITOR
 export SUDO_EDITOR="$EDITOR"
 alias nano='nano -/ ' # Nano modern keybinds
 export GIT_PAGER=delta
-export LESSHISTFILE=-
-#export LESS='-FRXns --mouse --use-color --no-init'
 # export MANPAGER="less -sRn"
 # https://github.com/eth-p/bat-extras
-export PAGER=bat
-export BATPIPE=color
+
 export CURL_HOME=$HOME
 
-
 if command -v bat &>/dev/null; then
+  export PAGER=bat
+  export BATPIPE=color
   batname="bat"
-else
-  cat "$1"; exit
+elif command -v less &>/dev/null; then
+  export PAGER=less
+  export LESSHISTFILE=-
+  export LESS='-FRXns --mouse --use-color --no-init'
 fi
 ${batname} --style="${BAT_STYLE:-numbers}" --color=always --pager=never --highlight-line="${center:-0}" -- "$file"
 

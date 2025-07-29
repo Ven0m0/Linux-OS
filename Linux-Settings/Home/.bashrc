@@ -87,20 +87,27 @@ HISTTIMEFORMAT='%F %T '
 shopt -s histappend &> /dev/null
 shopt -s no_empty_cmd_completion
 shopt -s checkwinsize &> /dev/null
-shopt -s globstar
+shopt -s globstar 2> /dev/null
 shopt -s nocaseglob
 shopt -s cmdhist
-shopt -s autocd &> /dev/null
-shopt -s dirspell &> /dev/null
-shopt -s cdspell &> /dev/null
+shopt -s autocd 2> /dev/null
+shopt -s dirspell 2> /dev/null
+shopt -s cdspell 2> /dev/null
 shopt -s hostcomplete
 shopt -u checkhash
-set -o noclobber
+# Prevent file overwrite on stdout redirection
+# Use `>|` to force redirection to an existing file
+#set -o noclobber
+set -C
 # Pi3 fix low power message warning
 [[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
 setterm --linewrap on
 # Disable coredumps
 ulimit -c 0
+# This defines where cd looks for targets
+# Add the directories you want to have fast access to, separated by colon
+# Ex: CDPATH=".:~:~/projects" will look for targets in the current working directory, in home and in the ~/projects folder
+CDPATH=".:~"
 
 # ─── Bash-it ─────────────────────────────────────────────────────────
 # Don't check mail when opening terminal.
@@ -116,6 +123,10 @@ bind "set completion-ignore-case on"
 bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
 bind "set bell-style none"
+
+# Enable history expansion with space
+# E.g. typing !!<space> will replace the !! with your last command
+bind Space:magic-space
 
 # ─── Aliases ─────────────────────────────────────────────────────────
 # alias sshdb='dbclient'

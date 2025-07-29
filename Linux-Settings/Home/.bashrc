@@ -72,7 +72,7 @@ if command -v sk >/dev/null 2>&1; then
   echo 'source <(sk --shell bash)' >> ~/.bashrc  # Or save to ~/.bash_completion
 fi
 
-export FZF_DEFAULT_OPS="--extended --inline-info --tiebreak=index --layout=reverse --height=70% --preview 'bat --color=always -s'"
+export FZF_DEFAULT_OPS="--extended --inline-info --tiebreak=index --layout=reverse-list --height=70% --preview 'bat --color=always -s'"
 export FZF_DEFAULT_COMMAND='fd -tf --strip-cwd-prefix --exclude .git'
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export SKIM_DEFAULT_COMMAND="fd -tf --strip-cwd-prefix --exclude .git || rg --files || find ."

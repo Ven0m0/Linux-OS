@@ -37,8 +37,9 @@ net.ipv4.ip_forward=1
 
 </details>
 
+
 <details>
-<summary><h2><a href="https://casaos.zimaspace.com">CasaOS</a></h2></summary>
+<summary><b>CasaOS</b>[^1]</summary>
 
 - Install
 
@@ -63,3 +64,6 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 [yunohost](https://yunohost.org)
 
 [Homepage docker](https://github.com/gethomepage/homepage)
+
+
+[^1]: [CasaOS](https://casaos.zimaspace.com)

@@ -12,14 +12,16 @@ cargo machete                      # (optional) remove unused public functions
 # 3. Minify HTML
 find . -name "*.html" -exec minhtml -i {} -o {} \;
 
-# 4. Compress images
+# 4. Optimize images
 find assets -type f \( -iname '*.png' -o -iname '*.jpg' \) -exec rimage {} --optimize \;
+find assets -type f -name '*.png' -exec oxipng -o 4 {} \;
+find assets -type f -name '*.jpg' -exec jpegoptim --strip-all {} \;
 
 # 5. Compress arbitrary assets (fonts, maps, wasm, json, etc.)
 flaca compress ./static
 
 # 6. Remove unneeded workspace cruft
-cargo diet -p your_crate_name      # shows what will ship → trim as needed
+cargo diet
 
 # 7. Lint features and dep versions
 cargo unused-features
@@ -34,3 +36,7 @@ cargo q build --release            # if you installed cargo-q
 
 # 10. PGO compile
 cargo pgo build --bin your_app
+
+# 11. Strip and report size
+strip target/release/$(basename $(pwd))
+ls -lh target/release/$(basename $(pwd))

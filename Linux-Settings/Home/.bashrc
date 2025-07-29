@@ -25,11 +25,11 @@ configure_prompt
 # Remove $CODE when to remove error codes
 
 # ─── Core Environment ─────────────────────────────────────────────────────
-
+export HOME
 export CDPATH=".:~"
 ulimit -c 0                       # disable core dumps
 shopt -s checkwinsize globstar    # better globbing & window resize
-shopt -s histappend cmdhist       # safer history
+shopt -s histappend cmdhist 2>/dev/null # safer history
 HISTSIZE=1000
 HISTFILESIZE=$HISTSIZE
 HISTCONTROL="erasedups:ignoreboth"
@@ -132,16 +132,11 @@ shopt -s histappend 2>/dev/null
 shopt -s no_empty_cmd_completion
 shopt -s checkwinsize 2>/dev/null
 shopt -s globstar 2>/dev/null
-shopt -s nocaseglob
 shopt -s cmdhist
 shopt -s autocd 2>/dev/null
 shopt -s dirspell 2>/dev/null
 shopt -s cdspell 2>/dev/null
-shopt -s hostcomplete
-shopt -u checkhash
-# Prevent file overwrite on stdout redirection
-# Use `>|` to force redirection to an existing file
-#set -C # set -o noclobber
+shopt -s hostcomplete 2>/dev/null
 
 # Pi3 fix low power message warning
 [[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }

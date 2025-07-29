@@ -66,6 +66,14 @@ export PAGER=bat
 export BATPIPE=color
 export CURL_HOME=$HOME
 
+
+if command -v bat &>/dev/null; then
+  batname="bat"
+else
+  cat "$1"; exit
+fi
+${batname} --style="${BAT_STYLE:-numbers}" --color=always --pager=never --highlight-line="${center:-0}" -- "$file"
+
 if [ -f ~/.ignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore
 elif [ -f ~/.gitignore ]; then

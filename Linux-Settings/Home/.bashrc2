@@ -114,7 +114,7 @@ alias cls='clear'; alias c='clear'
 alias ping='ping -c 4'
 alias mount='mount | column -t'
 alias mkdir='mkdir -p '
-alias edit='$EDITOR '; alias suedit='sudo $EDITOR '
+alias ed='$EDITOR '; alias sued='sudo $EDITOR '
 alias sudo='\sudo '          # allow alias via sudo
 
 # eza file listings

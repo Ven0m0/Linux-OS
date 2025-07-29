@@ -24,6 +24,18 @@ configure_prompt() {
 configure_prompt
 # Remove $CODE when to remove error codes
 
+# ─── Core Environment ─────────────────────────────────────────────────────
+
+export CDPATH=".:~"
+ulimit -c 0                       # disable core dumps
+shopt -s checkwinsize globstar    # better globbing & window resize
+shopt -s histappend cmdhist       # safer history
+HISTSIZE=1000
+HISTFILESIZE=$HISTSIZE
+HISTCONTROL="erasedups:ignoreboth"
+HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
+HISTTIMEFORMAT='%F %T '
+
 # ─── Eval/Sourcing ─────────────────────────────────────────────────────────
 . "$HOME/.cargo/env"
 # github.com/iffse/pay-respects
@@ -129,8 +141,8 @@ shopt -s hostcomplete
 shopt -u checkhash
 # Prevent file overwrite on stdout redirection
 # Use `>|` to force redirection to an existing file
-#set -o noclobber
-set -C
+#set -C # set -o noclobber
+
 # Pi3 fix low power message warning
 [[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
 setterm --linewrap on

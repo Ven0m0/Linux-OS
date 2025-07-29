@@ -87,15 +87,15 @@ HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
-shopt -s histappend 2> /dev/null
+shopt -s histappend 2>/dev/null
 shopt -s no_empty_cmd_completion
-shopt -s checkwinsize 2> /dev/null
-shopt -s globstar 2> /dev/null
+shopt -s checkwinsize 2>/dev/null
+shopt -s globstar 2>/dev/null
 shopt -s nocaseglob
 shopt -s cmdhist
-shopt -s autocd 2> /dev/null
-shopt -s dirspell 2> /dev/null
-shopt -s cdspell 2> /dev/null
+shopt -s autocd 2>/dev/null
+shopt -s dirspell 2>/dev/null
+shopt -s cdspell 2>/dev/null
 shopt -s hostcomplete
 shopt -u checkhash
 # Prevent file overwrite on stdout redirection

@@ -39,24 +39,21 @@ net.ipv4.ip_forward=1
 
 <details>
 <summary><h2><a href="https://casaos.zimaspace.com">CasaOS</a></h2></summary>
-  
+
+- Install
+
 ```bash
 sudo casaos-uninstall
 curl -fsSL https://get.casaos.io | sudo bash
 ```
 
-</details>
+- Update
 
-## [CasaOS](https://casaos.zimaspace.com)
-```
-sudo casaos-uninstall
-curl -fsSL https://get.casaos.io | sudo bash
-```
-
-### Update
-```
+```bash
 curl -fsSL https://get.casaos.io/update | sudo bash
 ```
+
+</details>
 
 
 [Runtipi](https://runtipi.io)

@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export RUSTFLAGS="-C opt-level=3 -C lto -C codegen-units=1 -C target-cpu=native -C linker=clang -C link-arg=-fuse-ld=mold -C panic=abort -Zno-embed-metadata"
+
+# Update & audit deps
+cargo update
+cargo outdated
+
+# Format & lint
+cargo fmt
+cargo clippy -- -D warnings
+
 # 1. Detect & remove unused dependencies
 cargo +nightly install cargo-udeps cargo-shear
 cargo udeps --all-targets
@@ -26,10 +36,13 @@ cargo diet
 # 7. Lint features and dep versions
 cargo unused-features
 cargo duplicated-deps
-cargo outdated
 
 # 8. Sort & normalize
 cargo sort-fix
+
+# Format & lint
+cargo fmt
+cargo clippy -- -D warnings
 
 # 9. Parallel compile (faster dev cycle)
 cargo q build --release            # if you installed cargo-q

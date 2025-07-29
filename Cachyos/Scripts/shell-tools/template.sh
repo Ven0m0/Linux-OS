@@ -27,3 +27,6 @@ cd $WORKDIR
 
 # Ensure root rights
 sudo -v
+
+# don’t re‑hash $PATH on each command lookup
+shopt -u checkhash 

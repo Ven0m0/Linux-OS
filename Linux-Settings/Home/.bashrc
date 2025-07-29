@@ -27,21 +27,24 @@ configure_prompt
 # ─── Eval/Sourcing ─────────────────────────────────────────────────────────
 . "$HOME/.cargo/env"
 # github.com/iffse/pay-respects
-if command -v pay-respects >/dev/null 2>&1; then
+if command -v pay-respects &>/dev/null; then
     eval "$(pay-respects bash --alias)"
 fi
-if command -v fzf >/dev/null 2>&1; then
+if command -v fzf &>/dev/null; then
   eval "$(fzf --bash)"
 fi
-if command -v batpipe >/dev/null 2>&1; then
+if command -v sk &>/dev/null;then
+  source <(sk --shell bash)
+fi
+if command -v batpipe &>/dev/null; then
     eval "$(batpipe)"
 fi
-if command -v batman >/dev/null 2>&1; then
+if command -v batman &>/dev/null; then
     eval "$(batman --export-env)"
 fi
 
 # ─── Environment ─────────────────────────────────────────────────────────
-if command -v micro >/dev/null 2>&1; then
+if command -v micro &>/dev/null; then
   export EDITOR=micro
 else
   export EDITOR=nano
@@ -68,7 +71,7 @@ if [ -f ~/.ignore ]; then
 elif [ -f ~/.gitignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore
 fi
-if command -v sk >/dev/null 2>&1; then
+if command -v sk &>/dev/null; then
   echo 'source <(sk --shell bash)' >> ~/.bashrc  # Or save to ~/.bash_completion
 fi
 
@@ -84,9 +87,9 @@ HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
-shopt -s histappend &> /dev/null
+shopt -s histappend 2> /dev/null
 shopt -s no_empty_cmd_completion
-shopt -s checkwinsize &> /dev/null
+shopt -s checkwinsize 2> /dev/null
 shopt -s globstar 2> /dev/null
 shopt -s nocaseglob
 shopt -s cmdhist
@@ -153,7 +156,7 @@ alias suedit='sudo $EDITOR '
 # Enable aliases to be sudo’ed
 alias sudo='\sudo '
 # Ripgrep
-if command -v rg >/dev/null 2>&1; then
+if command -v rg &>/dev/null; then
     alias rg='rg --no-stats --color=auto'
     alias grep='rg -uuu --no-stats --color=auto'
     alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8'

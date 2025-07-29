@@ -83,8 +83,18 @@ if command -v sk &>/dev/null; then
   echo 'source <(sk --shell bash)' >> ~/.bashrc  # Or save to ~/.bash_completion
 fi
 
+if command -v fd &>/dev/null; then
+    FIND_CMD='fd -tf -F --exclude .git'
+elif command -v rg &>/dev/null; then
+    FIND_CMD='rg --files'
+else
+    FIND_CMD='find .'
+fi
+
+export FZF_DEFAULT_COMMAND="$FIND_CMD"
+export SKIM_DEFAULT_COMMAND="$FIND_CMD"
+
 export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout reverse-list --height 70%"
-export FZF_DEFAULT_COMMAND="fd -tf -F --exclude .git || rg --files || find ."
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND --walker-skip .git,node_modules,target"
 export FZF_CTRL_R_OPTS="--color header:italic --header 'Press CTRL-Y to copy command into clipboard'"
 export FZF_ALT_C_OPTS="--walker-skip .git,node_modules,target --preview 'tree -C {}'"
@@ -98,7 +108,6 @@ export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
 # Options for directory completion (e.g. cd **<TAB>)
 export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
 
-export SKIM_DEFAULT_COMMAND="fd -tf -F --exclude .git || rg --files || find ."
 export SKIM_DEFAULT_OPTIONS="--inline-info --tiebreak=index --layout=reverse-list --height=70%"
 
 # ─── Options ─────────────────────────────────────────────────────────

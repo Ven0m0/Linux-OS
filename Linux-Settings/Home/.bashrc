@@ -72,43 +72,43 @@ elif command -v less &>/dev/null; then
   export LESSHISTFILE=-
   export LESS='-FRXns --mouse --use-color --no-init'
 fi
-${batname} --style="${BAT_STYLE:-numbers}" --color=always --pager=never --highlight-line="${center:-0}" -- "$file"
+# ${batname} --style="${BAT_STYLE:-numbers}" --color=always --pager=never --highlight-line="${center:-0}" -- "$file"
 
 if [ -f ~/.ignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore
 elif [ -f ~/.gitignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore
 fi
-if command -v sk &>/dev/null; then
-  echo 'source <(sk --shell bash)' >> ~/.bashrc  # Or save to ~/.bash_completion
-fi
 
+# ─── Fuzzy finders ─────────────────────────────────────────────────────────
+
+# Detect best available file finder (fd > rg > find)
 if command -v fd &>/dev/null; then
-    FIND_CMD='fd -tf -F --exclude .git'
+    FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
 elif command -v rg &>/dev/null; then
-    FIND_CMD='rg --files'
+    FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
 else
-    FIND_CMD='find .'
+    # Find all files, skipping common junk dirs
+    FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
 fi
-
 export FZF_DEFAULT_COMMAND="$FIND_CMD"
 export SKIM_DEFAULT_COMMAND="$FIND_CMD"
 
-export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout reverse-list --height 70%"
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND --walker-skip .git,node_modules,target"
+# General fzf options (consistent across commands)
+export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout=reverse-list --height=70%"
+
+# Extra commands with walker (fd-compatible) skipping noisy dirs
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_CTRL_R_OPTS="--color header:italic --header 'Press CTRL-Y to copy command into clipboard'"
-export FZF_ALT_C_OPTS="--walker-skip .git,node_modules,target --preview 'tree -C {}'"
+export FZF_ALT_C_OPTS="--preview 'tree -C {}'"
 
-# Options to fzf command
+# Completion options (fzf-specific)
 export FZF_COMPLETION_OPTS='--border --info=inline'
-
-# Options for path completion (e.g. vim **<TAB>)
 export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
-
-# Options for directory completion (e.g. cd **<TAB>)
 export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
 
-export SKIM_DEFAULT_OPTIONS="--inline-info --tiebreak=index --layout=reverse-list --height=70%"
+# Skim (skim uses same options syntax as fzf, so we mirror them)
+export SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 
 # ─── Options ─────────────────────────────────────────────────────────
 HISTSIZE=1000

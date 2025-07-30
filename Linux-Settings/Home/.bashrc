@@ -21,8 +21,7 @@ configure_prompt
 # Remove "$CODE" to remove error codes
 
 # ─── Core Environment + Options ─────────────────────────────────────────────────────
-export LANG="${LANG:-C.UTF-8}"
-unset LC_ALL
+export LANG="${LANG:-C.UTF-8}"; unset LC_ALL
 export HOME
 export CDPATH=".:~"
 ulimit -c 0 2>/dev/null # disable core dumps
@@ -55,17 +54,21 @@ if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bas
 fi
 
 # ─── Environment ─────────────────────────────────────────────────────────
-if command -v micro &>/dev/null; then
-  export EDITOR=micro
-else
-  export EDITOR=nano
-fi
+command -v micro &>/dev/null && EDITOR=micro || EDITOR=nano
+
 for v in VISUAL VIEWER GIT_EDITOR SYSTEMD_EDITOR FCEDIT SUDO_EDITOR; do
   export "$v=$EDITOR"
 done
-git config --global core.editor "$EDITOR"
+
+for var in VISUAL VIEWER GIT_EDITOR SYSTEMD_EDITOR FCEDIT SUDO_EDITOR; do
+  : "${!var:=$EDITOR}"
+  export "$var"
+done
+
+git config --global core.editor "$EDITOR" 2>/dev/null
+
 alias nano='nano -/ ' # Nano modern keybinds
-command -v curl &>/dev/null && export CURL_HOME=$HOME
+command -v curl &>/dev/null && export CURL_HOME="$HOME"
 command -v delta &>/dev/null && export GIT_PAGER=delta
 if command -v bat &>/dev/null; then
   export PAGER=bat BATPIPE=color
@@ -74,10 +77,11 @@ elif command -v less &>/dev/null; then
   export LESS='-FRXns --mouse --use-color --no-init'
 fi
 
-if [ -f ~/.ignore ]; then
-  export FD_IGNORE_FILE=$HOME/.ignore
-elif [ -f ~/.gitignore ]; then
-  export FD_IGNORE_FILE=$HOME/.gitignore
+# fd‑ignore file
+if [[ -f $HOME/.ignore ]]; then
+  export FD_IGNORE_FILE="$HOME/.ignore"
+elif [[ -f $HOME/.gitignore ]]; then
+  export FD_IGNORE_FILE="$HOME/.gitignore"
 fi
 
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────

@@ -99,6 +99,10 @@ regex() {
 
 This is an alternative to `cut`, `awk` and other tools.
 
+```bash
+split() { IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"; printf '%s\n' "${arr[@]}" }
+```
+
 **Example Function:**
 
 ```bash

@@ -2,7 +2,10 @@
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 # —————— Tweaks ——————
-sudo -v
+if [[ $EUID -ne 0 ]]; then
+  sudo -v
+  return 1
+fi
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"

@@ -5,6 +5,10 @@ LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 # Interactive F2FS fstab entry updater for root filesystem
 # Usage: sudo ./f2fs-fstab-tune.sh
 
+if [[ $EUID -ne 0 ]]; then
+  echo "This script requires root privileges. Validating with sudo..."
+  sudo -v || { echo "Sudo failed. Exiting."; exit 1; }
+fi
 # Detect root device and ensure it's F2FS
 device=$(findmnt -n -o SOURCE /)
 fs_type=$(blkid -s TYPE -o value "$device" || echo "")
@@ -12,10 +16,8 @@ if [[ "$fs_type" != "f2fs" ]]; then
   echo "Error: Root filesystem is not F2FS (detected type: $fs_type). Exiting."
   exit 1
 fi
-
 # Get UUID
 UUID=$(blkid -s UUID -o value "$device")
-
 # Desktop vs Server presets
 desktop_opts="defaults,noatime,mode=adaptive,memory=normal,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,checkpoint_merge,background_gc=on"
 server_opts="defaults,noatime,nodiratime,mode=adaptive,memory=high,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,checkpoint_merge,background_gc=sync,flush_merge,nobarrier"
@@ -46,16 +48,12 @@ fi
 backup="/etc/fstab.bak.$(date +%F_%H%M%S)"
 sudo cp /etc/fstab "$backup"
 echo "Backup saved to $backup"
-
 # Remove existing root entry by UUID
 sudo sed -i "/UUID=$UUID[[:space:]]*\/\b/d" /etc/fstab
-
 # Append new entry
 echo "UUID=$UUID  /  f2fs  $opts  0  1" | sudo tee -a /etc/fstab
-
 echo "/etc/fstab updated."
 
 echo "To apply immediately, run:"
 echo "  sudo mount -o remount,$opts /"
-
 exit 0

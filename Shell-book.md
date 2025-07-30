@@ -195,7 +195,7 @@ TheQuick Brown Fox
 ```
 </details>
 <details>
-<summary><b>Remove duplicate array elements</b></summary>
+<summary><b>Remove duplicate array elements</b></summary>&nbsp;
 
 Create a temporary associative array. When setting associative array
 values and a duplicate assignment occurs, bash overwrites the key. This
@@ -235,5 +235,49 @@ $ remove_array_dups "${arr[@]}"
 red
 green
 blue
+```
+</details>
+<details>
+<summary><b>Loop over the contents of a file</b></summary>
+
+```shell
+while read -r line; do
+    printf '%s\n' "$line"
+done < "file"
+```
+
+</details>
+<details>
+<summary><b>## Loop over files and directories</b></summary>
+
+Don’t use `ls`.
+
+```shell
+# Greedy example.
+for file in *; do
+    printf '%s\n' "$file"
+done
+
+# PNG files in dir.
+for file in ~/Pictures/*.png; do
+    printf '%s\n' "$file"
+done
+
+# Iterate over directories.
+for dir in ~/Downloads/*/; do
+    printf '%s\n' "$dir"
+done
+
+# Brace Expansion.
+for file in /path/to/parentdir/{file1,file2,subdir/file3}; do
+    printf '%s\n' "$file"
+done
+
+# Iterate recursively.
+shopt -s globstar
+for file in ~/Pictures/**/*; do
+    printf '%s\n' "$file"
+done
+shopt -u globstar
 ```
 </details>

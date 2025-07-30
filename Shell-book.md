@@ -47,9 +47,7 @@ cd $WORKDIR
 ```bash
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
-
 </details>
-
 <details>
 <summary><b>Sleep replacement in bash</b></summary>
 
@@ -58,3 +56,82 @@ curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 </details>
 
+
+
+
+
+
+
+
+
+
+
+<details>
+<summary><b>Use regex on a string</b></summary>
+
+```bash
+regex() { [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}" }
+```
+
+The result of `bash`'s regex matching can be used to replace `sed` for a
+large number of use-cases.
+
+**CAVEAT**: This is one of the few platform dependent `bash` features.
+`bash` will use whatever regex engine is installed on the user's system.
+Stick to POSIX regex features if aiming for compatibility.
+
+**CAVEAT**: This example only prints the first matching group. When using
+multiple capture groups some modification is needed.
+
+**Example Function:**
+
+```bash
+regex() {
+    # Usage: regex "string" "regex"
+    [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
+}
+```
+</details>
+<details>
+<summary><b>Split a string on a delimiter</b></summary>
+
+**CAVEAT:** Requires `bash` 4+
+
+This is an alternative to `cut`, `awk` and other tools.
+
+**Example Function:**
+
+```bash
+split() {
+   # Usage: split "string" "delimiter"
+   IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"
+   printf '%s\n' "${arr[@]}"
+}
+```
+
+**Example Usage:**
+
+```shell
+$ split "apples,oranges,pears,grapes" ","
+apples
+oranges
+pears
+grapes
+
+$ split "1, 2, 3, 4, 5" ", "
+1
+2
+3
+4
+5
+
+# Multi char delimiters work too!
+$ split "hello---world---my---name---is---john" "---"
+hello
+world
+my
+name
+is
+john
+```
+</details>

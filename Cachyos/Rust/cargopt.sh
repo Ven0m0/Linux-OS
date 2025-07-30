@@ -90,8 +90,6 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 # export RUSTUP_TOOLCHAIN=nightly
 # RUST_LOG=trace
 
-
-
 if ((USE_MOLD)); then
   if command -v mold >/dev/null 2>&1; then
     echo "→ using ld.mold via clang"
@@ -105,7 +103,7 @@ if ((USE_MOLD)); then
     hash lld ld.lld
   else
     echo "→ falling back to ld.lld via linker-flavor"
-    LFLAGS=(-Clinker-flavor=ld.lld -C linker-features=lld)
+    LFLAGS=(-Clinker=ld.lld -Clinker-flavor=ld.lld -C linker-features=lld)
     CLDFLAGS=(-fuse-ld=lld)
   fi
 fi
@@ -165,7 +163,7 @@ EXTRA_LINK=(
   #-Clink-arg=--lto-emit-llvm
   -Clink-arg=-Wl,--lto-O3
 )
-ZFLAGS=(-Zunstable-options -Zfewer-names -Zcombine-cgu -Zmerge-functions=aliases -Zno-embed-metadata -Zmir-opt-level=3 -Z checksum-hash-algorithm=blake3 -Z precise-enum-drop-elaboration=yes)
+ZFLAGS=(-Zunstable-options -Zfewer-names -Zcombine-cgu -Zmerge-functions=aliases -Zno-embed-metadata -Zmir-opt-level=3 -Zchecksum-hash-algorithm=blake3 -Zprecise-enum-drop-elaboration=yes)
 # -Z min-function-alignment=64
 # -Z precise-enum-drop-elaboration=yes # Codegen lto/pgo
 # RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"

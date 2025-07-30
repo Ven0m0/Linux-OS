@@ -8,3 +8,4 @@ https://github.com/lestofante/PacmanParallelizer
 https://github.com/xvoland/Extract
 https://github.com/VirtuBox/img-optimize
 https://github.com/niksingh710/fzf-preview
+https://github.com/pystardust/ytfzf

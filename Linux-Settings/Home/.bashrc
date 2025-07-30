@@ -133,6 +133,7 @@ export FZF_DEFAULT_COMMAND="$FIND_CMD" \
        SKIM_DEFAULT_COMMAND="$FIND_CMD" \
        SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 
+export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
 # ─── Completions ─────────────────────────────────────────────────────────
 # Ensure completion directory exists
 COMPDIR="$HOME/.config/bash/completions"
@@ -154,7 +155,6 @@ done
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
 command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)" 
 
-
 command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
 command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
 
@@ -169,9 +169,13 @@ fi
 if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
     builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 fi
+
+# Wikiman
+command -v wikiman &>/dev/null && . /usr/share/wikiman/widgets/widget.bash
+
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'
-#bind 'set page-completions off'
+bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
 bind 'set menu-complete-display-prefix on'
 bind "set completion-ignore-case on"
@@ -179,6 +183,7 @@ bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
 bind "set bell-style none"
 bind Space:magic-space
+bind '"\C-o": kill-whole-line'
 # ─── Aliases ─────────────────────────────────────────────────────────
 # Enable aliases to be sudo’ed
 alias sudo='\sudo '

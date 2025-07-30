@@ -116,7 +116,7 @@ fi
 export FZF_DEFAULT_COMMAND="$FIND_CMD" \
        FZF_DEFAULT_OPTS="--info=inline --tiebreak=index --layout=reverse-list --height=70%" \
        FZF_CTRL_T_COMMAND="$FIND_CMD" \
-       FZF_CTRL_T_OPTS="--select-1 --exit-0  --preview '(bat {} || cat {}) 2>/dev/null | head -200'"
+       FZF_CTRL_T_OPTS="--select-1 --exit-0  --preview '(bat --color=always --style=numbers --line-range=:250 {} || cat {}) 2>/dev/null)'"
        FZF_CTRL_R_OPTS='--no-sort --exact' \
        FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
        FZF_COMPLETION_PATH_OPTS='--info=inline --walker file,dir,follow,hidden' \

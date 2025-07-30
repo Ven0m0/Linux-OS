@@ -5,7 +5,8 @@
 
 ```bash
 #!/usr/bin/env bash
-set -eECuo pipefail
+#set -eECuo pipefail
+set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
 

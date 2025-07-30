@@ -16,4 +16,8 @@ BLD='\e[1m'  #Bold
 echo ${HOSTNAME:-$(hostname)}
 echo ${HOSTTYPE:-$(uname -m)}
 echo $LANG $LC_ALL
+OS="${:-$(uname -o)}"
+KERNEL="$(uname -sr)"
+# https://github.com/deathbybandaid/pimotd/blob/master/10logo
 
+Running Processes..: `ps ax | wc -l | tr -d " "`

@@ -2,7 +2,6 @@
 
 # ─── Only for interactive shells ───────────────────────────────────────────
 [[ $- != *i* ]] && return
-
 # ─── Prompt ─────────────────────────────────────────────────────────
 # bash-prompt-generator.org
 # PS1='[\u@\h|\w] \$' # Default

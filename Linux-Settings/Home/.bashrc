@@ -144,8 +144,18 @@ done
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
 command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)" 
+
+
 command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
 command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
+
+if command -v batgrep &>/dev/null || command -v batgrep.sh &>/dev/null; then
+  alias batgrep='batgrep --rga -S --color '
+fi
+if command -v delta &>/dev/null && command -v batdiff &>/dev/null || command -v batdiff.sh &>/dev/null; then
+  export BATDIFF_USE_DELTA=true
+fi
+
 # Ghostty
 if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
     builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"

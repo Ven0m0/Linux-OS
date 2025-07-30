@@ -3,7 +3,7 @@ https://github.com/salvoton/parus
 https://github.com/ericlay/fuzzy-pkg-finder
 https://github.com/sheepla/fzpac
 https://github.com/gavinlyonsrepo/cylon
-https://github.com/Hetsh/mcsctl
+https://github.com/joehillen/sysz
 https://github.com/AnnikaV9/kbuilder
 https://github.com/lestofante/PacmanParallelizer
 https://github.com/xvoland/Extract
@@ -11,3 +11,4 @@ https://github.com/VirtuBox/img-optimize
 https://github.com/niksingh710/fzf-preview
 https://github.com/pystardust/ytfzf
 https://github.com/sheepla/pacsummary
+https://github.com/Hetsh/mcsctl

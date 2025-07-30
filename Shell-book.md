@@ -1,9 +1,14 @@
+<details>
+<summary><h2>Bash Package Managers</h2></summary>
+
+* [Basher](https://www.basher.it/package)
+* [bpkg](https://bpkg.sh)
+</details>
 
 
 ## Bash Package Managers
 
-* [Basher](https://www.basher.it/package)
-* [bpkg](https://bpkg.sh)
+
 
 
 ## Bash snippets

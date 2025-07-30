@@ -51,13 +51,6 @@ setterm --linewrap on
 [[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
 # Bins
 [[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin:${PATH}"
-command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)" 
-command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
-command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
-# Ghostty
-if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
-    builtin source "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
-fi
 
 # ─── Environment ─────────────────────────────────────────────────────────
 command -v micro &>/dev/null && EDITOR=micro || EDITOR=nano
@@ -102,6 +95,7 @@ fi
 command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
 command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
 command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
+command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
 
 if command -v cargo &>/dev/null; then
   export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
@@ -114,8 +108,6 @@ fi
 export PYTHONIOENCODING='UTF-8'
 export PYTHONOPTIMIZE=2
 
-command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
-
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 if command -v fd &>/dev/null; then
   FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
@@ -124,31 +116,45 @@ elif command -v rg &>/dev/null; then
 else
   FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
 fi
-export FZF_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_COMMAND="$FIND_CMD"
-export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout=reverse-list --height=70%"
-export FZF_CTRL_T_COMMAND="$FIND_CMD"
-export FZF_COMPLETION_OPTS='--border --info=inline'
-export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
-export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
-export SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
-command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
-command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
+export FZF_DEFAULT_COMMAND="$FIND_CMD" \
+       FZF_DEFAULT_OPTS="--info=inline --tiebreak=index --layout=reverse-list --height=70%" \
+       FZF_CTRL_T_COMMAND="$FIND_CMD" \
+       FZF_CTRL_T_OPTS="--select-1 --exit-0  --preview '(bat {} || cat {}) 2>/dev/null | head -200'"
+       FZF_CTRL_R_OPTS='--no-sort --exact' \
+       FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
+       FZF_COMPLETION_PATH_OPTS='--info=inline --walker file,dir,follow,hidden' \
+       FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow' \
+       SKIM_DEFAULT_COMMAND="$FIND_CMD" \
+       SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 
-if command -v fzf &>/dev/null && [[ ! -f $HOME/.fzf_completion ]]; then
-  fzf --bash 2>/dev/null >|"$HOME/.fzf_completion"
-  eval "$HOME/.fzf_completion" >/dev/null
-elif command -v fzf &>/dev/null && [[ -f $HOME/.fzf_completion ]]; then
-  eval "$HOME/.fzf_completion" >/dev/null || eval "$(fzf --bash 2>/dev/null)" >/dev/null
-fi
-if command -v sk &>/dev/null && [[ ! -f $HOME/.skim_completion ]]; then
-  sk --shell bash 2>/dev/null >|"$HOME/.skim_completion"
-  eval "$HOME/.skim_completion"
-elif command -v sk &>/dev/null && [[ -f $HOME/.skim_completion ]]; then
-  eval "$HOME/.skim_completion" >/dev/null || . <(sk --shell bash 2>/dev/null) >/dev/null
-fi
+# ─── Completions ─────────────────────────────────────────────────────────
+# Ensure completion directory exists
+COMPDIR="$HOME/.config/bash/completions"
+mkdir -p "$COMPDIR"
 
-if command -v sk &>/dev/null && [[ ! -f $HOME/.skim_completion ]]; then
-  sk --shell bash 2>/dev/null >|"$HOME/.skim_completion"
+for tool in fzf sk; do
+  command -v "$tool" &>/dev/null || continue
+  comp="$COMPDIR/${tool}_completion.bash"
+  [[ -f $comp ]] || {
+    [[ $tool == fzf ]] && "$tool" --bash 2>/dev/null >|"$comp"
+    [[ $tool == sk  ]] && "$tool" --shell bash 2>/dev/null >|"$comp"
+  }
+    . "$comp" 2>/dev/null || {
+      [[ $tool == fzf ]] && . <("$tool" --bash 2>/dev/null)
+      [[ $tool == sk  ]] && . <("$tool" --shell bash 2>/dev/null)
+    }
+  fi
+done
+
+# command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
+# command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
+command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)" 
+command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
+command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
+
+# Ghostty
+if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
+    builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 fi
 
 # ─── Binds ─────────────────────────────────────────────────────────

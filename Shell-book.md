@@ -126,3 +126,83 @@ is
 john
 ```
 </details>
+
+
+
+
+<details>
+<summary><b> </b></summary>
+
+
+
+</details>
+
+
+
+<details>
+<summary><b>Trim quotes from a string</b></summary>
+
+**Example Function:**
+
+```bash
+trim_quotes() {
+    # Usage: trim_quotes "string"
+    : "${1//\'}"
+    printf '%s\n' "${_//\"}"
+}
+```
+
+**Example Usage:**
+
+```shell
+$ var="'Hello', \"World\""
+$ trim_quotes "$var"
+Hello, World
+```
+</details>
+<details>
+<summary><b>Strip all instances of pattern from string</b></summary>
+
+**Example Function:**
+
+```sh
+strip_all() {
+    # Usage: strip_all "string" "pattern"
+    printf '%s\n' "${1//$2}"
+}
+```
+
+**Example Usage:**
+
+```shell
+$ strip_all "The Quick Brown Fox" "[aeiou]"
+Th Qck Brwn Fx
+
+$ strip_all "The Quick Brown Fox" "[[:space:]]"
+TheQuickBrownFox
+
+$ strip_all "The Quick Brown Fox" "Quick "
+The Brown Fox
+```
+</details>
+<details>
+<summary><b>Strip first occurrence of pattern from string</b></summary>
+
+**Example Function:**
+
+```sh
+strip() {
+    # Usage: strip "string" "pattern"
+    printf '%s\n' "${1/$2}"
+}
+```
+
+**Example Usage:**
+
+```shell
+$ strip "The Quick Brown Fox" "[aeiou]"
+Th Quick Brown Fox
+
+$ strip "The Quick Brown Fox" "[[:space:]]"
+TheQuick Brown Fox
+```

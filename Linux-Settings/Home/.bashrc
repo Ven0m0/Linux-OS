@@ -42,12 +42,12 @@ shopt -u mailwarn; unset MAILCHECK # Bash-it
 setterm --linewrap on
 
 # ─── Sourcing ──────────────────────────────────────────────
-[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
+# Bins
+[[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin:${PATH}"
 command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)" 
 command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
 command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
-command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
-ommand -v sk &>/dev/null && source <(sk --shell bash 2>/dev/null)
 # Ghostty
 if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
     builtin source "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
@@ -109,11 +109,12 @@ fi
 export FZF_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_COMMAND="$FIND_CMD"
 export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout=reverse-list --height=70%"
 export FZF_CTRL_T_COMMAND="$FIND_CMD"
-export FZF_CTRL_R_OPTS="--color header:italic --header 'Press CTRL-Y to copy command into clipboard'"
 export FZF_COMPLETION_OPTS='--border --info=inline'
 export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
 export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
 export SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
+command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
 
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'

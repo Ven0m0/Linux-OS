@@ -9,20 +9,17 @@
 PROMPT_DIRTRIM=2
 configure_prompt() {
   if command -v starship &>/dev/null; then
-    eval "$(starship init bash)"
+    eval "$(starship init bash 2>/dev/null)" >/dev/null
   else
-    local C_USER C_HOST C_PATH C_RESET CODE
-    C_USER='\[\e[38;5;201m\]'
-    C_HOST='\[\e[38;5;33m\]'
-    C_PATH='\[\e[38;5;129m\]'
-    C_RESET='\[\e[0m\]'
-    CODE='$(if [[ $? != 0 ]]; then printf "\[\e[38;5;203m\]%d\[\e[0m\]" "$?"; fi)'
+    local C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
+          C_PATH='\[\e[38;5;129m\]' C_RESET='\[\e[0m\]' CODE
+    CODE='$( (($?)) && printf "\[\e[38;5;203m\]%d\[\e[0m\]" "$?" )'
     PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$CODE \$ "
   fi
   command -v mommy &>/dev/null && PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
 }
 configure_prompt
-# Remove $CODE when to remove error codes
+# Remove "$CODE" to remove error codes
 
 # ─── Core Environment + Options ─────────────────────────────────────────────────────
 export LANG="${LANG:-C.UTF-8}"

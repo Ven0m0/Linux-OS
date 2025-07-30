@@ -24,35 +24,37 @@ configure_prompt() {
 configure_prompt
 # Remove $CODE when to remove error codes
 
-# ─── Core Environment ─────────────────────────────────────────────────────
+# ─── Core Environment + Options ─────────────────────────────────────────────────────
+export LANG=${LANG:-C.UTF-8}
+unset LC_ALL
 export HOME
 export CDPATH=".:~"
-ulimit -c 0                       # disable core dumps
-shopt -s checkwinsize globstar    # better globbing & window resize
-shopt -s histappend cmdhist 2>/dev/null # safer history
+ulimit -c 0 # disable core dumps
+shopt -s nullglob globstar 2>/dev/null
+shopt -s histappend cmdhist 2>/dev/null
+shopt -s checkwinsize 2>/dev/null
+shopt -s dirspell cdspell autocd 2>/dev/null
+shopt -s hostcomplete no_empty_cmd_completion 2>/dev/null
 HISTSIZE=1000
-HISTFILESIZE=$HISTSIZE
+HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
 
-# ─── Eval/Sourcing ─────────────────────────────────────────────────────────
-. "$HOME/.cargo/env"
-# github.com/iffse/pay-respects
-if command -v pay-respects &>/dev/null; then
-    eval "$(pay-respects bash --alias)"
-fi
-if command -v fzf &>/dev/null; then
-  eval "$(fzf --bash)"
-fi
-if command -v sk &>/dev/null;then
-  source <(sk --shell bash)
-fi
-if command -v batpipe &>/dev/null; then
-    eval "$(batpipe)"
-fi
-if command -v batman &>/dev/null; then
-    eval "$(batman --export-env)"
+# Pi3 fix low power message warning
+[[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
+setterm --linewrap on
+
+# ─── Sourcing ──────────────────────────────────────────────
+[ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
+command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias)" 2>/dev/null
+command -v batpipe &>/dev/null && eval "$(batpipe)" 2>/dev/null
+command -v batman &>/dev/null && eval "$(batman --export-env)" 2>/dev/null
+command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
+ommand -v sk &>/dev/null && source <(sk --shell bash 2>/dev/null)
+# Ghostty
+if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
+    builtin source "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 fi
 
 # ─── Environment ─────────────────────────────────────────────────────────
@@ -71,20 +73,16 @@ export SUDO_EDITOR="$EDITOR"
 alias nano='nano -/ ' # Nano modern keybinds
 export GIT_PAGER=delta
 # export MANPAGER="less -sRn"
-# https://github.com/eth-p/bat-extras
-
-export CURL_HOME=$HOME
+command -v curl &>/dev/null && export CURL_HOME=$HOME
 
 if command -v bat &>/dev/null; then
   export PAGER=bat
   export BATPIPE=color
-  batname="bat"
 elif command -v less &>/dev/null; then
   export PAGER=less
   export LESSHISTFILE=-
   export LESS='-FRXns --mouse --use-color --no-init'
 fi
-# ${batname} --style="${BAT_STYLE:-numbers}" --color=always --pager=never --highlight-line="${center:-0}" -- "$file"
 
 if [ -f ~/.ignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore
@@ -122,32 +120,6 @@ export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
 # Skim (skim uses same options syntax as fzf, so we mirror them)
 export SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 
-# ─── Options ─────────────────────────────────────────────────────────
-HISTSIZE=1000
-HISTFILESIZE=${HISTSIZE}
-HISTCONTROL="erasedups:ignoreboth"
-HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
-HISTTIMEFORMAT='%F %T '
-shopt -s histappend 2>/dev/null
-shopt -s no_empty_cmd_completion
-shopt -s checkwinsize 2>/dev/null
-shopt -s globstar 2>/dev/null
-shopt -s cmdhist
-shopt -s autocd 2>/dev/null
-shopt -s dirspell 2>/dev/null
-shopt -s cdspell 2>/dev/null
-shopt -s hostcomplete 2>/dev/null
-
-# Pi3 fix low power message warning
-[[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
-setterm --linewrap on
-# Disable coredumps
-ulimit -c 0
-# This defines where cd looks for targets
-# Add the directories you want to have fast access to, separated by colon
-# Ex: CDPATH=".:~:~/projects" will look for targets in the current working directory, in home and in the ~/projects folder
-CDPATH=".:~"
-
 # ─── Bash-it ─────────────────────────────────────────────────────────
 # Don't check mail when opening terminal.
 shopt -u mailwarn
@@ -155,43 +127,43 @@ unset MAILCHECK
 
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'
-bind 'set page-completions off'
+#bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
 bind 'set menu-complete-display-prefix on'
 bind "set completion-ignore-case on"
 bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
 bind "set bell-style none"
-
-# Enable history expansion with space
-# E.g. typing !!<space> will replace the !! with your last command
 bind Space:magic-space
 
 # ─── Aliases ─────────────────────────────────────────────────────────
-# alias sshdb='dbclient'
+# Enable aliases to be sudo’ed
+alias sudo='\sudo '
+#alias su='\su '
+#alias doas='\doas '
+#alias sudo-rs='\sudo-rs '
+#alias su='\su-rs '
+
+alias mkdir='mkdir -p '
+alias ed='$EDITOR '
+alias sued='sudo $EDITOR '
+
+alias cls='clear'
+alias c='clear'
+alias ping='ping -c 4' # Stops ping after 4 requests
+alias mount='mount | column -t' # human readable format
+
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
-# Replace ls with eza
-alias ls='eza -al --color=always --group-directories-first --icons' # preferred listing
-alias la='eza -a --color=always --group-directories-first --icons'  # all files and dirs
-alias ll='eza -l --color=always --group-directories-first --icons'  # long format
-alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
-# alias cat='bat --strip-ansi=auto --style=auto -s'
-# Quick clear
-alias cls='clear'
-alias c='clear'
-# Stops ping after sending 4 ECHO_REQUEST packets.
-alias ping='ping -c 4'
-# Makes `mount` command output pretty and with a human readable format.
-alias mount='mount | column -t'
-# Creates parent directories on demand.
-alias mkdir='mkdir -p '
-alias edit='$EDITOR '
-alias suedit='sudo $EDITOR '
-# Enable aliases to be sudo’ed
-alias sudo='\sudo '
-# Ripgrep
+
+command -v bat &>/dev/null && alias cat='bat -pp --strip-ansi=auto '
+if command -v eza &>/dev/null; then
+  alias ls='eza -al --color=always --group-directories-first --icons' # preferred listing
+  alias la='eza -a --color=always --group-directories-first --icons'  # all files and dirs
+  alias ll='eza -l --color=always --group-directories-first --icons'  # long format
+  alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
+fi
 if command -v rg &>/dev/null; then
     alias rg='rg --no-stats --color=auto'
     alias grep='rg -uuu --no-stats --color=auto'
@@ -203,10 +175,10 @@ else
     alias egrep='egrep --color=auto'
 fi
 
-# ─── Ghostty bash integration ─────────────────────────────────────────────────────────
-if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
-    builtin source "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
-fi
+# Replace "which" with "command -v"
+which() {
+    command -v "$1" 2>/dev/null || return 1
+}
 
 # ─── Deduplicate PATH (preserve order) ─────────────────────────────────────────────────────────
 dedupe_path() {

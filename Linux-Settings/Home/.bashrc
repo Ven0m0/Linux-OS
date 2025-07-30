@@ -95,6 +95,7 @@ fi
 export FZF_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_COMMAND="$FIND_CMD"
 export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout=reverse-list --height=70%"
 export FZF_CTRL_T_COMMAND="$FIND_CMD"
+export FZF_CTRL_R_OPTS="--color header:italic --header 'Press CTRL-Y to copy command into clipboard'"
 export FZF_COMPLETION_OPTS='--border --info=inline'
 export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
 export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'

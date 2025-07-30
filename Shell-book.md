@@ -306,8 +306,6 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 # Output here...
 ```
 </details>
-
-<!-- CHAPTER START -->
 <details>
 <summary><b>Parameter expansion</b></summary>
 
@@ -376,4 +374,4 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 | `${VAR:?STRING}` | Display an error if empty or unset.
 | `${VAR?STRING}` | Display an error if unset.
 </details>
-<!-- CHAPTER END -->
+

@@ -245,10 +245,9 @@ while read -r line; do
     printf '%s\n' "$line"
 done < "file"
 ```
-
 </details>
 <details>
-<summary><b>## Loop over files and directories</b></summary>
+<summary><b>Loop over files and directories</b></summary>
 
 Don’t use `ls`.
 

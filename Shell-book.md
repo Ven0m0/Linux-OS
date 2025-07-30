@@ -9,7 +9,7 @@
 ## Bash snippets
 
 <details>
-<summary><b>Script start template</b></summary>
+<summary><b>Script start template</b></summary>&nbsp;
   
 ```bash
 #!/usr/bin/bash
@@ -43,6 +43,7 @@ cd $WORKDIR
 </details>
 <details>
 <summary><b>Get external IP</b></summary>&nbsp;
+  
 ```bash
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```

@@ -63,7 +63,14 @@ command -v curl &>/dev/null && export CURL_HOME="$HOME"
 command -v delta &>/dev/null && export GIT_PAGER=delta
 if command -v bat &>/dev/null; then
   export PAGER=bat BATPIPE=color
+  export BAT_STYLE="auto"
+  alias cat='bat -pp ' alias bat='bat --color auto '
   : "${GIT_PAGER:=bat}"
+elif command -v batcat &>/dev/null; then
+  export PAGER=batcat
+  export BAT_STYLE="auto"
+  alias cat='batcat -pp ' alias bat='batcat --color auto '
+  : "${GIT_PAGER:=batcat}"
 elif command -v less &>/dev/null; then
   export PAGER=less LESSHISTFILE=-
   export LESS='-FRXns --mouse --use-color --no-init'

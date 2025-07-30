@@ -21,5 +21,4 @@ if [[ $EUID -ne 0 ]]; then
   sudo -v || { echo "Sudo failed. Exiting."; exit 1; }
 fi
 
-# don’t re‑hash $PATH on each command lookup
-shopt -u checkhash 
+shopt -u checkhash # don’t re‑hash $PATH on each command lookup

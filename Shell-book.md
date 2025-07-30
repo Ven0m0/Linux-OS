@@ -409,4 +409,4 @@ rm -rf ~/Downloads/{Movies,Music,ISOS}
 ```
 </details>
 
-### [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
+## [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)

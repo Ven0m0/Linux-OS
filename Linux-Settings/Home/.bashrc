@@ -25,11 +25,11 @@ configure_prompt
 # Remove $CODE when to remove error codes
 
 # ─── Core Environment + Options ─────────────────────────────────────────────────────
-export LANG=${LANG:-C.UTF-8}
+export LANG="${LANG:-C.UTF-8}"
 unset LC_ALL
 export HOME
 export CDPATH=".:~"
-ulimit -c 0 # disable core dumps
+ulimit -c 0 2>/dev/null # disable core dumps
 shopt -s nullglob globstar 2>/dev/null
 shopt -s histappend cmdhist 2>/dev/null
 shopt -s checkwinsize 2>/dev/null
@@ -40,6 +40,7 @@ HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
+shopt -u mailwarn; unset MAILCHECK # Bash-it
 
 # Pi3 fix low power message warning
 [[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
@@ -47,9 +48,9 @@ setterm --linewrap on
 
 # ─── Sourcing ──────────────────────────────────────────────
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
-command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias)" 2>/dev/null
-command -v batpipe &>/dev/null && eval "$(batpipe)" 2>/dev/null
-command -v batman &>/dev/null && eval "$(batman --export-env)" 2>/dev/null
+command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)" 
+command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
+command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
 command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 ommand -v sk &>/dev/null && source <(sk --shell bash 2>/dev/null)
 # Ghostty
@@ -63,67 +64,41 @@ if command -v micro &>/dev/null; then
 else
   export EDITOR=nano
 fi
-export VISUAL=$EDITOR
-export VIEWER=$EDITOR
-export GIT_EDITOR=$EDITOR
+for v in VISUAL VIEWER GIT_EDITOR SYSTEMD_EDITOR FCEDIT SUDO_EDITOR; do
+  export "$v=$EDITOR"
+done
 git config --global core.editor "$EDITOR"
-export SYSTEMD_EDITOR=$EDITOR
-export FCEDIT=$EDITOR
-export SUDO_EDITOR="$EDITOR"
 alias nano='nano -/ ' # Nano modern keybinds
-export GIT_PAGER=delta
-# export MANPAGER="less -sRn"
 command -v curl &>/dev/null && export CURL_HOME=$HOME
-
+command -v delta &>/dev/null && export GIT_PAGER=delta
 if command -v bat &>/dev/null; then
-  export PAGER=bat
-  export BATPIPE=color
+  export PAGER=bat BATPIPE=color
 elif command -v less &>/dev/null; then
-  export PAGER=less
-  export LESSHISTFILE=-
+  export PAGER=less LESSHISTFILE=-
   export LESS='-FRXns --mouse --use-color --no-init'
 fi
 
 if [ -f ~/.ignore ]; then
   export FD_IGNORE_FILE=$HOME/.ignore
 elif [ -f ~/.gitignore ]; then
-  export FD_IGNORE_FILE=$HOME/.ignore
+  export FD_IGNORE_FILE=$HOME/.gitignore
 fi
 
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
-
-# Detect best available file finder (fd > rg > find)
 if command -v fd &>/dev/null; then
-    FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
+  FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
 elif command -v rg &>/dev/null; then
-    FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
+  FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
 else
-    # Find all files, skipping common junk dirs
-    FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
+  FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
 fi
-export FZF_DEFAULT_COMMAND="$FIND_CMD"
-export SKIM_DEFAULT_COMMAND="$FIND_CMD"
-
-# General fzf options (consistent across commands)
+export FZF_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_COMMAND="$FIND_CMD"
 export FZF_DEFAULT_OPTS="--inline-info --tiebreak=index --layout=reverse-list --height=70%"
-
-# Extra commands with walker (fd-compatible) skipping noisy dirs
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-export FZF_CTRL_R_OPTS="--color header:italic --header 'Press CTRL-Y to copy command into clipboard'"
-export FZF_ALT_C_OPTS="--preview 'tree -C {}'"
-
-# Completion options (fzf-specific)
+export FZF_CTRL_T_COMMAND="$FIND_CMD"
 export FZF_COMPLETION_OPTS='--border --info=inline'
 export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
 export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
-
-# Skim (skim uses same options syntax as fzf, so we mirror them)
 export SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
-
-# ─── Bash-it ─────────────────────────────────────────────────────────
-# Don't check mail when opening terminal.
-shopt -u mailwarn
-unset MAILCHECK
 
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'
@@ -145,11 +120,9 @@ alias sudo='\sudo '
 #alias su='\su-rs '
 
 alias mkdir='mkdir -p '
-alias ed='$EDITOR '
-alias sued='sudo $EDITOR '
+alias ed='$EDITOR ' sued='sudo $EDITOR '
 
-alias cls='clear'
-alias c='clear'
+alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
 alias mount='mount | column -t' # human readable format
 
@@ -175,19 +148,15 @@ else
     alias egrep='egrep --color=auto'
 fi
 
-# Replace "which" with "command -v"
-which() {
-    command -v "$1" 2>/dev/null || return 1
-}
+# ─── Utility Functions ─────────────────────────────────────────────
+which() { command -v "$1" 2>/dev/null || return 1; }
 
-# ─── Deduplicate PATH (preserve order) ─────────────────────────────────────────────────────────
+# Deduplicate PATH (preserve order)
 dedupe_path() {
-  local dir
-  local -A seen
+  local dir; local -A seen; local new=()
   for dir in ${PATH//:/ }; do
     [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && new+=("$dir")
   done
   PATH=$(IFS=:; echo "${new[*]}")
-  export PATH
 }
-dedupe_path
+dedupe_path; export PATH

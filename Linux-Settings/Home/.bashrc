@@ -80,6 +80,18 @@ elif [[ -f $HOME/.gitignore ]]; then
 fi
 export FIGNORE=argo.lock
 
+### Apps
+# Wayland
+if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
+  export GDK_BACKEND=wayland
+  export QT_QPA_PLATFORM=wayland
+  export SDL_VIDEODRIVER=wayland
+  export MOZ_ENABLE_WAYLAND=1
+  export MOZ_ENABLE_XINPUT2=1
+  export _JAVA_AWT_WM_NONREPARENTING=1
+  export ELECTRON_OZONE_PLATFORM_HINT=auto
+fi
+
 # Build env
 command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
 command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
@@ -89,7 +101,7 @@ if command -v cargo &>/dev/null; then
   export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
   export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true 
   export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-  export RUST_LOG=off
+  export RUST_LOG=off RUST_BACKTRACE=0
 fi
 
 # Make Python use UTF-8 encoding for output to stdin, stdout, and stderr.
@@ -115,6 +127,23 @@ export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
 export SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
+
+if command -v fzf &>/dev/null && [[ ! -f $HOME/.fzf_completion ]]; then
+  fzf --bash 2>/dev/null >|"$HOME/.fzf_completion"
+  eval "$HOME/.fzf_completion" >/dev/null
+elif command -v fzf &>/dev/null && [[ -f $HOME/.fzf_completion ]]; then
+  eval "$HOME/.fzf_completion" >/dev/null || eval "$(fzf --bash 2>/dev/null)" >/dev/null
+fi
+if command -v sk &>/dev/null && [[ ! -f $HOME/.skim_completion ]]; then
+  sk --shell bash 2>/dev/null >|"$HOME/.skim_completion"
+  eval "$HOME/.skim_completion"
+elif command -v sk &>/dev/null && [[ -f $HOME/.skim_completion ]]; then
+  eval "$HOME/.skim_completion" >/dev/null || . <(sk --shell bash 2>/dev/null) >/dev/null
+fi
+
+if command -v sk &>/dev/null && [[ ! -f $HOME/.skim_completion ]]; then
+  sk --shell bash 2>/dev/null >|"$HOME/.skim_completion"
+fi
 
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'

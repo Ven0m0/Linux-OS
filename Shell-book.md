@@ -10,7 +10,7 @@
 
 <details>
 <summary><b>Script start template</b></summary>
-
+  
 ```bash
 #!/usr/bin/bash
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
@@ -41,7 +41,6 @@ WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd $WORKDIR
 ```
 </details>
-
 <details>
 <summary><b>Get external IP</b></summary>
 

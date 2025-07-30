@@ -42,21 +42,20 @@ cd $WORKDIR
 ```
 </details>
 <details>
-<summary><b>Get external IP</b></summary>
-
+<summary><b>Get external IP</b></summary>&nbsp;
 ```bash
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 </details>
 <details>
-<summary><b>Sleep replacement in bash</b></summary>
+<summary><b>Sleep replacement in bash</b></summary>&nbsp;
 
 ```bash
 #sleepy() { read -rt 0.1 <> <(:) &>/dev/null || :; }
 ```
 </details>
 <details>
-<summary><b>Use regex on a string</b></summary>
+<summary><b>Use regex on a string</b></summary>&nbsp;
 
 ```bash
 regex() { [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}" }

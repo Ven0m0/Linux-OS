@@ -82,7 +82,7 @@ regex() {
 ```
 </details>
 <details>
-<summary><b>Split a string on a delimiter</b></summary>
+<summary><b>Split a string on a delimiter</b></summary>&nbsp;
 
 &nbsp;
 **CAVEAT:** Requires `bash` 4+

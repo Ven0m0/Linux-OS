@@ -21,7 +21,7 @@ configure_prompt
 # Remove "$CODE" to remove error codes
 
 # ─── Core Environment + Options ─────────────────────────────────────────────────────
-export LANG="${LANG:-C.UTF-8}"; unset LC_ALL
+export LC_CTYPE=C LC_COLLATE=C LANG="${LANG:-C.UTF-8}"; unset LC_ALL
 export HOME
 export CDPATH=".:~"
 ulimit -c 0 2>/dev/null # disable core dumps
@@ -78,6 +78,25 @@ if [[ -f $HOME/.ignore ]]; then
 elif [[ -f $HOME/.gitignore ]]; then
   export FD_IGNORE_FILE="$HOME/.gitignore"
 fi
+export FIGNORE=argo.lock
+
+# Build env
+command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
+command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
+command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
+
+if command -v cargo &>/dev/null; then
+  export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
+  export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true 
+  export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+  export RUST_LOG=off
+fi
+
+# Make Python use UTF-8 encoding for output to stdin, stdout, and stderr.
+export PYTHONIOENCODING='UTF-8'
+export PYTHONOPTIMIZE=2
+
+command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
 
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 if command -v fd &>/dev/null; then

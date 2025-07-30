@@ -309,7 +309,7 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 
 <!-- CHAPTER START -->
 <details>
-<summary><b>PARAMETER EXPANSION</b></summary>
+<summary><b>Parameter expansion</b></summary>
 
 ### Indirection
 

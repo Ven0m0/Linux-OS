@@ -55,17 +55,10 @@ fi
 
 # ─── Environment ─────────────────────────────────────────────────────────
 command -v micro &>/dev/null && EDITOR=micro || EDITOR=nano
-
+git config --global core.editor "$EDITOR" 2>/dev/null
 for v in VISUAL VIEWER GIT_EDITOR SYSTEMD_EDITOR FCEDIT SUDO_EDITOR; do
   export "$v=$EDITOR"
 done
-
-for var in VISUAL VIEWER GIT_EDITOR SYSTEMD_EDITOR FCEDIT SUDO_EDITOR; do
-  : "${!var:=$EDITOR}"
-  export "$var"
-done
-
-git config --global core.editor "$EDITOR" 2>/dev/null
 
 alias nano='nano -/ ' # Nano modern keybinds
 command -v curl &>/dev/null && export CURL_HOME="$HOME"

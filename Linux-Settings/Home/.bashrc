@@ -22,7 +22,6 @@ configure_prompt
 
 # ─── Core Environment + Options ─────────────────────────────────────────────────────
 export LC_CTYPE=C LC_COLLATE=C LANG="${LANG:-C.UTF-8}"; unset LC_ALL
-export HOME
 export CDPATH=".:~"
 ulimit -c 0 2>/dev/null # disable core dumps
 shopt -s nullglob globstar 2>/dev/null
@@ -38,10 +37,11 @@ HISTTIMEFORMAT='%F %T '
 shopt -u mailwarn; unset MAILCHECK # Bash-it
 
 # XDG
-export XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
-export XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
-export XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
-export XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+export HOME \
+       XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config} \
+       XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share} \
+       XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state} \
+       XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 
 # Pi3 fix low power message warning
 [[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
@@ -58,7 +58,6 @@ git config --global core.editor "$EDITOR" 2>/dev/null
 for v in VISUAL VIEWER GIT_EDITOR SYSTEMD_EDITOR FCEDIT SUDO_EDITOR; do
   export "$v=$EDITOR"
 done
-
 alias nano='nano -/ ' # Nano modern keybinds
 command -v curl &>/dev/null && export CURL_HOME="$HOME"
 command -v delta &>/dev/null && export GIT_PAGER=delta
@@ -70,7 +69,6 @@ elif command -v less &>/dev/null; then
   export LESS='-FRXns --mouse --use-color --no-init'
   : "${GIT_PAGER:=less}"
 fi
-
 # fd‑ignore file
 if [[ -f $HOME/.ignore ]]; then
   export FD_IGNORE_FILE="$HOME/.ignore"
@@ -103,7 +101,6 @@ if command -v cargo &>/dev/null; then
   export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
   export RUST_LOG=off RUST_BACKTRACE=0
 fi
-
 # Make Python use UTF-8 encoding for output to stdin, stdout, and stderr.
 export PYTHONIOENCODING='UTF-8'
 export PYTHONOPTIMIZE=2
@@ -131,7 +128,6 @@ export FZF_DEFAULT_COMMAND="$FIND_CMD" \
 # Ensure completion directory exists
 COMPDIR="$HOME/.config/bash/completions"
 mkdir -p "$COMPDIR"
-
 for tool in fzf sk; do
   command -v "$tool" &>/dev/null || continue
   comp="$COMPDIR/${tool}_completion.bash"
@@ -145,18 +141,15 @@ for tool in fzf sk; do
     }
   fi
 done
-
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
 command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)" 
 command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
 command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
-
 # Ghostty
 if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
     builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 fi
-
 # ─── Binds ─────────────────────────────────────────────────────────
 bind 'set completion-query-items 0'
 #bind 'set page-completions off'
@@ -167,7 +160,6 @@ bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
 bind "set bell-style none"
 bind Space:magic-space
-
 # ─── Aliases ─────────────────────────────────────────────────────────
 # Enable aliases to be sudo’ed
 alias sudo='\sudo '
@@ -175,19 +167,16 @@ alias sudo='\sudo '
 #alias doas='\doas '
 #alias sudo-rs='\sudo-rs '
 #alias su='\su-rs '
-
 alias mkdir='mkdir -p '
 alias ed='$EDITOR ' sued='sudo $EDITOR '
-
 alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
 alias mount='mount | column -t' # human readable format
-
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
 
-command -v bat &>/dev/null && alias cat='bat -pp --strip-ansi=auto '
+command -v bat &>/dev/null && alias cat='bat -pp '
 if command -v eza &>/dev/null; then
   alias ls='eza -al --color=always --group-directories-first --icons' # preferred listing
   alias la='eza -a --color=always --group-directories-first --icons'  # all files and dirs

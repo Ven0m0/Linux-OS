@@ -189,6 +189,8 @@ TheQuick Brown Fox
 <details>
 <summary><b>Remove duplicate array elements</b></summary>&nbsp;
 
+[Source](https://github.com/dylanaraps/pure-bash-bible?tab=readme-ov-file#remove-duplicate-array-elements)
+
 Create a temporary associative array. When setting associative array
 values and a duplicate assignment occurs, bash overwrites the key. This
 allows us to effectively remove array duplicates.

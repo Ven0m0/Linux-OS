@@ -40,7 +40,7 @@ curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 </details>
 
-### [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
+## [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
 
 <details>
 <summary><b>Sleep replacement in bash</b></summary>

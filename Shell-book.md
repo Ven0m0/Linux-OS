@@ -126,19 +126,6 @@ is
 john
 ```
 </details>
-
-
-
-
-<details>
-<summary><b> </b></summary>
-
-
-
-</details>
-
-
-
 <details>
 <summary><b>Trim quotes from a string</b></summary>
 

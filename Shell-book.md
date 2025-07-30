@@ -55,17 +55,6 @@ curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 #sleepy() { read -rt 0.1 <> <(:) &>/dev/null || :; }
 ```
 </details>
-
-
-
-
-
-
-
-
-
-
-
 <details>
 <summary><b>Use regex on a string</b></summary>
 
@@ -95,7 +84,7 @@ regex() {
 <details>
 <summary><b>Split a string on a delimiter</b></summary>
 
-
+&nbsp;
 **CAVEAT:** Requires `bash` 4+
 
 This is an alternative to `cut`, `awk` and other tools.

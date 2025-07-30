@@ -320,11 +320,27 @@ sudo nano /usr/lib/tmpfiles.d/energy_performance_preference.conf
 w /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference - - - - performance
 ```
 
-https://lancache.net/
 
-## Java:
+
+* Java:
 
 https://www.graalvm.org/22.2/reference-manual/native-image/guides/optimize-native-executable-with-pgo
 
 https://www.graalvm.org/22.2/reference-manual/native-image/optimizations-and-performance/MemoryManagement
+
+https://github.com/XDream8/kiss-repo/blob/main/bin/openjdk17-jdk/build
+
+
+
+https://gitlab.com/arkboi/dotfiles
+
+https://lancache.net
+
+https://github.com/XDream8/kiss-repo/blob/main/core/mawk/build
+
+Root do:
+https://codeberg.org/sw1tchbl4d3/rdo
+
+
+https://github.com/DanielFGray/fzf-scripts
 

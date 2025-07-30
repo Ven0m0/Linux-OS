@@ -3,8 +3,8 @@ set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 # —————— Tweaks ——————
 if [[ $EUID -ne 0 ]]; then
-  sudo -v
-  return 1
+  echo "This script requires root privileges. Validating with sudo..."
+  sudo -v || { echo "Sudo failed. Exiting."; exit 1; }
 fi
 sudo cpupower frequency-set --governor performance
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"

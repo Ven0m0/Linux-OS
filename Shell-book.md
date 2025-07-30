@@ -9,7 +9,7 @@
 ## Bash snippets
 
 <details>
-<summary><b>Script start template</b></summary>&nbsp;
+<summary><b>Script start template</b></summary>
   
 ```bash
 #!/usr/bin/bash
@@ -42,21 +42,21 @@ cd $WORKDIR
 ```
 </details>
 <details>
-<summary><b>Get external IP</b></summary>&nbsp;
+<summary><b>Get external IP</b></summary>
   
 ```bash
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 </details>
 <details>
-<summary><b>Sleep replacement in bash</b></summary>&nbsp;
+<summary><b>Sleep replacement in bash</b></summary>
 
 ```bash
 #sleepy() { read -rt 0.1 <> <(:) &>/dev/null || :; }
 ```
 </details>
 <details>
-<summary><b>Use regex on a string</b></summary>&nbsp;
+<summary><b>Use regex on a string</b></summary>
 
 ```bash
 regex() { [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}" }
@@ -82,11 +82,9 @@ regex() {
 ```
 </details>
 <details>
-<summary><b>Split a string on a delimiter</b></summary>&nbsp;
+<summary><b>Split a string on a delimiter</b></summary>
 
-**CAVEAT:** Requires `bash` 4+
-
-This is an alternative to `cut`, `awk` and other tools.
+This is an alternative to `cut`, `awk` and other tools. **CAVEAT:** Requires `bash` 4+
 
 ```bash
 split() { IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"; printf '%s\n' "${arr[@]}" }

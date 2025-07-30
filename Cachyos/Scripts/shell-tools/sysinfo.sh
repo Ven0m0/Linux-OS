@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 2>/dev/null
+LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red

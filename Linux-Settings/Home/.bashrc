@@ -72,9 +72,11 @@ command -v curl &>/dev/null && export CURL_HOME="$HOME"
 command -v delta &>/dev/null && export GIT_PAGER=delta
 if command -v bat &>/dev/null; then
   export PAGER=bat BATPIPE=color
+  : "${GIT_PAGER:=bat}"
 elif command -v less &>/dev/null; then
   export PAGER=less LESSHISTFILE=-
   export LESS='-FRXns --mouse --use-color --no-init'
+  : "${GIT_PAGER:=less}"
 fi
 
 # fd‑ignore file

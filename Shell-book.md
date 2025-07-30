@@ -311,7 +311,7 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 <details>
 <summary><b>PARAMETER EXPANSION</b></summary>
 
-## Indirection
+### Indirection
 
 | Parameter | What does it do? |
 | --------- | ---------------- |
@@ -320,7 +320,7 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 | `${!VAR@}` | Expand to `IFS` separated list of variable names starting with `VAR`. If double-quoted, each variable name expands to a separate word. |
 
 
-## Replacement
+### Replacement
 
 | Parameter | What does it do? |
 | --------- | ---------------- |
@@ -333,14 +333,14 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 | `${VAR/PATTERN}` | Remove first match.
 | `${VAR//PATTERN}` | Remove all matches.
 
-## Length
+### Length
 
 | Parameter | What does it do? |
 | --------- | ---------------- |
 | `${#VAR}` | Length of var in characters.
 | `${#ARR[@]}` | Length of array in elements.
 
-## Expansion
+### Expansion
 
 | Parameter | What does it do? |
 | --------- | ---------------- |
@@ -351,7 +351,7 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 | `${VAR: -OFFSET}` | Get last `N` chars from variable.
 | `${VAR:OFFSET:-OFFSET}` | Cut first `N` chars and last `N` chars. | `bash 4.2+` |
 
-## Case Modification
+### Case Modification
 
 | Parameter | What does it do? | CAVEAT |
 | --------- | ---------------- | ------ |
@@ -363,7 +363,7 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 | `${VAR~~}` | Reverse case of all characters. | `bash 4+` |
 
 
-## Default Value
+### Default Value
 
 | Parameter | What does it do? |
 | --------- | ---------------- |
@@ -375,6 +375,5 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 | `${VAR+STRING}` | If `VAR` is set, use `STRING` as its value.
 | `${VAR:?STRING}` | Display an error if empty or unset.
 | `${VAR?STRING}` | Display an error if unset.
-
 </details>
 <!-- CHAPTER END -->

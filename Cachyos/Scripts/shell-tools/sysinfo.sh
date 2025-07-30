@@ -21,3 +21,6 @@ KERNEL="$(uname -sr)"
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 
 Running Processes..: `ps ax | wc -l | tr -d " "`
+
+LOCALIP=ip a | grep glo | awk '{print $2}' | head -1
+GLOBALIP=wget -q -O - http://icanhazip.com/ | tail

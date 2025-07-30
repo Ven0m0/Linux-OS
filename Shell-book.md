@@ -1,18 +1,11 @@
 <details>
-<summary><h>Bash Package Managers</h></summary>
+<summary><h2>Bash Package Managers</h2></summary>
 
 * [Basher](https://www.basher.it/package)
 * [bpkg](https://bpkg.sh)
 </details>
 
-
-## Bash Package Managers
-
-
-
-
 ## Bash snippets
-
 <details>
 <summary><b>Script start template</b></summary>
   

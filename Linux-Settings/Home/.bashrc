@@ -154,14 +154,12 @@ for tool in fzf sk; do
 done
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
-command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)"
+command -v pay-respects &>/dev/null && eval "$(pay-respects bash 2>/dev/null)"
 
 command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
 command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
+command -v batgrep &>/dev/null && alias batgrep='batgrep --rga -S --color '
 
-if command -v batgrep &>/dev/null || command -v batgrep.sh &>/dev/null; then
-  alias batgrep='batgrep --rga -S --color '
-fi
 if command -v delta &>/dev/null && command -v batdiff &>/dev/null || command -v batdiff.sh &>/dev/null; then
   export BATDIFF_USE_DELTA=true
 fi
@@ -172,7 +170,7 @@ if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bas
 fi
 
 # Wikiman
-command -v wikiman &>/dev/null && . /usr/share/wikiman/widgets/widget.bash
+#command -v wikiman &>/dev/null && . /usr/share/wikiman/widgets/widget.bash
 
 # ─── Binds ───────────── ────────────────────────────────────────────
 bind 'set completion-query-items 0'

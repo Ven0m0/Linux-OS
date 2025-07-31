@@ -94,7 +94,7 @@ done
 # —————— Compiler Setup (prefer sccache + clang) ——————
 # https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
 if command -v sccache >/dev/null 2>&1; then
-  export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
+  export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache SCCACHE_DIRECT=true SCCACHE_RECACHE=true
   SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || :
 else
   export CC="clang" CXX="clang++"

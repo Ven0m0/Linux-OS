@@ -9,7 +9,7 @@ set -gx VISUAL $EDITOR
 set -gx VIEWER $EDITOR
 set -gx GIT_EDITOR $EDITOR
 set -gx SYSTEMD_EDITOR $EDITOR
-set -x PAGER bat
+set -gx PAGER bat
 # set -gx LESS '-RQsn --no-histdups --mouse --wheel-lines=4'
 set -gx LESSHISTFILE '-'
 set -gx BATPIPE color

@@ -110,23 +110,8 @@ export CARGO_BUILD_JOBS="$jobs"
 export CARGO_PROFILE_RELEASE_LTO=true
 export CARGO_INCREMENTAL=0
 export RUSTC_LINKER=clang
-
-if ((USE_MOLD)); then
-  if command -v mold >/dev/null 2>&1; then
-    echo "→ using ld.mold via clang"
-    LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=mold)
-    CLDFLAGS=(-fuse-ld=mold)
-  elif command -v clang >/dev/null 2>&1; then
-    echo "→ using ld.lld via clang"
-    LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
-    CLDFLAGS=(-fuse-ld=lld)
-  else
-    echo "→ falling back to ld.lld via linker-flavor"
-    LFLAGS=(-Clinker-flavor=ld.lld -C linker-features=lld)
-    CLDFLAGS=(-fuse-ld=lld)
-    # export CARGO_TARGET_x86_64-unknown-linux-gnu_LINKER=lld
-  fi
-fi
+LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
+CLDFLAGS=(-fuse-ld=lld)
 # —————— Git Cleanup ——————
 if (( GIT )); then
   git reflog expire --expire=now --all

@@ -3,6 +3,7 @@
 --lto-emit-llvm
 -Z build-std=std,panic_abort
 -Z build-std-features=panic_immediate_abort
+# -Z build-std-features=panic_immediate_abort,force_alloc_jemalloc,threads
 -Z panic-abort-tests
 
 -Z unstable-options -Z fewer-names -Z combine-cgu

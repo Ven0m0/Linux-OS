@@ -235,7 +235,7 @@ dedupe_path; export PATH
 
 # ─── Jumping ─────────────────────────────────────────────
 if command -v zoxide &>/dev/null;
-  _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
+  export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
   eval "$(zoxide init bash)"
 else
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"

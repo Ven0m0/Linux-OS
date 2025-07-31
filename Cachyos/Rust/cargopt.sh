@@ -152,6 +152,7 @@ RUSTFLAGS_BASE=(
   -Zthreads=8
   -Zrelax-elf-relocations
   -Zpacked-bundled-libs
+  -Ztrap-unreachable=no
 )
 EXTRA_LINK=(
   -Clink-arg=-Wl,-O3

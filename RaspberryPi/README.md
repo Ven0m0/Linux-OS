@@ -63,5 +63,12 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 
 [Homepage docker](https://github.com/gethomepage/homepage)
 
+# DNS Adblock
+
+- Pihole
+
+- Adguard
+
+- [Blocky](https://0xerr0r.github.io/blocky/latest)
 
 [^1]: [CasaOS](https://casaos.zimaspace.com)

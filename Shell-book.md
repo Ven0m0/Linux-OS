@@ -410,3 +410,11 @@ rm -rf ~/Downloads/{Movies,Music,ISOS}
 </details>
 
 ## [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
+
+
+
+----------------------------
+
+### Ascii
+
+[Flag color codes](https://www.flagcolorcodes.com)

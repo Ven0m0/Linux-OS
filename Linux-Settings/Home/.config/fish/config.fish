@@ -1,5 +1,10 @@
 source /usr/share/cachyos-fish-config/cachyos-config.fish
 
+# Run welcome message
+function fish_greeting
+  hyfetch -b fastfetch -m rgb -p transgender
+end
+
 if test -d ~/.basher
     set basher ~/.basher/bin
 end

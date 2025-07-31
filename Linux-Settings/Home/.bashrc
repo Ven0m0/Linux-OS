@@ -1,5 +1,4 @@
 # ~/.bashrc
-set +x +v
 # ─── Only for interactive shells ───────────────────────────────────────────
 [[ $- != *i* ]] && return
 

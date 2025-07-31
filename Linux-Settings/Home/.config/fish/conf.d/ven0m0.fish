@@ -1,8 +1,3 @@
-# Run welcome message
-function fish_greeting
-  hyfetch -b fastfetch -m rgb -p transgender
-end
-
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro
 set -gx VISUAL $EDITOR

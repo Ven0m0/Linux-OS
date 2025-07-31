@@ -98,7 +98,12 @@ if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
   export MOZ_ENABLE_XINPUT2=1
   export _JAVA_AWT_WM_NONREPARENTING=1
   export ELECTRON_OZONE_PLATFORM_HINT=auto
+  # To use KDE file dialog with firefox https://daniele.tech/2019/02/how-to-execute-firefox-with-support-for-kde-filepicker/
+  export GTK_USE_PORTAL=1
 fi
+
+# https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids/
+export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
 
 # Build env
 command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
@@ -113,8 +118,7 @@ if command -v cargo &>/dev/null; then
   export RUST_LOG=off RUST_BACKTRACE=0
 fi
 # Make Python use UTF-8 encoding for output to stdin, stdout, and stderr.
-export PYTHONIOENCODING='UTF-8'
-export PYTHONOPTIMIZE=2
+export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1
 
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 if command -v fd &>/dev/null; then

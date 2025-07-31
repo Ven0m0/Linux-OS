@@ -99,13 +99,13 @@ if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
 fi
 
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids/
-# export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
+export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
 
 # Build env
-command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
-command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
-command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
-command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
+#command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
+#command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
+#command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
+#command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
 
 if command -v cargo &>/dev/null; then
   export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"

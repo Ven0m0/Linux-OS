@@ -1,7 +1,7 @@
 # Run welcome message
-#function fish_greeting
-  #crabfetch -d arch || fastfetch
-#end
+function fish_greeting
+  hyfetch -b fastfetch -m rgb -p transgender | fastfetch
+end
 
 # ─── Environment Tweaks ─────────────────────────────────────────────────────────
 set -gx EDITOR micro

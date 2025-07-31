@@ -55,27 +55,23 @@ setterm --linewrap on
 [[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin:${PATH}"
 
 # ─── Environment ─────────────────────────────────────────────────────────
-command -v micro &>/dev/null && EDITOR=micro || EDITOR=nano
+if command -v micro &>/dev/null; then
+  export EDITOR=micro
+else
+export EDITOR=nano
+fi
 git config --global core.editor "$EDITOR" 2>/dev/null
-for v in VISUAL VIEWER GIT_EDITOR SYSTEMD_EDITOR FCEDIT SUDO_EDITOR; do
-  export "$v=$EDITOR"
-done
+export VISUAL="$EDITOR" VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 alias nano='nano -/ ' # Nano modern keybinds
 command -v curl &>/dev/null && export CURL_HOME="$HOME"
 command -v delta &>/dev/null && export GIT_PAGER=delta
 command -v batpipe &>/dev/null && export BATPIPE=color
 if command -v bat &>/dev/null; then
-  export PAGER=bat \
-         BAT_STYLE="auto"
+  export PAGER=bat BAT_STYLE="auto"
   alias cat='bat -pp ' bat='bat --color auto '
   : "${GIT_PAGER:=bat}"
-elif command -v batcat &>/dev/null; then
-  export PAGER=batcat \
-         BAT_STYLE="auto"
-  alias cat='batcat -pp ' bat='batcat --color auto '
-  : "${GIT_PAGER:=batcat}"
 elif command -v less &>/dev/null; then
-  export PAGER=less \ 
+  export PAGER=less \
          LESSHISTFILE="-" \
          LESS='-FRXns --mouse --use-color --no-init'
   : "${GIT_PAGER:=less}"
@@ -103,7 +99,7 @@ if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
 fi
 
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids/
-export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
+# export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
 
 # Build env
 command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
@@ -113,7 +109,7 @@ command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
 
 if command -v cargo &>/dev/null; then
   export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
-  export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true 
+  export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
   export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
   export RUST_LOG=off RUST_BACKTRACE=0
 fi
@@ -158,7 +154,7 @@ for tool in fzf sk; do
 done
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
-command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)" 
+command -v pay-respects &>/dev/null && eval "$(pay-respects bash --alias 2>/dev/null)"
 
 command -v batpipe &>/dev/null && eval "$(batpipe 2>/dev/null)"
 command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
@@ -178,7 +174,7 @@ fi
 # Wikiman
 command -v wikiman &>/dev/null && . /usr/share/wikiman/widgets/widget.bash
 
-# ─── Binds ─────────────────────────────────────────────────────────
+# ─── Binds ───────────── ────────────────────────────────────────────
 bind 'set completion-query-items 0'
 bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
@@ -191,10 +187,12 @@ bind Space:magic-space
 bind '"\C-o": kill-whole-line'
 # ─── Aliases ─────────────────────────────────────────────────────────
 # Enable aliases to be sudo’ed
-alias sudo='\sudo ' doas='\doas ' sudo-rs='\sudo-rs '
+alias sudo='\sudo '
+alias doas='\doas '
+alias sudo-rs='\sudo-rs '
 alias mkdir='mkdir -p '
-alias ed='$EDITOR ' sued='sudo $EDITOR '
-sued() { sudo $EDITOR "$1" 2>/dev/null }
+alias ed='$EDITOR '
+
 alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
 alias mount='mount | column -t' # human readable format

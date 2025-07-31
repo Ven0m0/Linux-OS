@@ -40,4 +40,7 @@ set -U async_prompt_functions fish_prompt fish_right_prompt
 set -gx async_prompt_enable 1
 
  _evalcache fzf --fish
-_evalcache zoxide init fish
+if type -q zoxide
+	set _ZO_FZF_OPTS "--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
+	_evalcache zoxide init fish
+end

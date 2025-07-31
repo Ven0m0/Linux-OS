@@ -1,4 +1,9 @@
 [unstable]
+unstable-options = true
+avoid-dev-deps = true
+git = { shallow_index = true, shallow_deps = true }
+gitoxide = { checkout = true, fetch = true, internal_use_git2 = true }
+checksum-freshness = true
 cargo-lints = true
 feature-unification = true
 trim-paths = true
@@ -26,14 +31,20 @@ incremental = false
 # CARGO_HTTP_SSL_VERSION = { value = "tls1.3", force = true }
 CARGO_INCREMENTAL = { value = "0", force = true }
 CARGO_BUILD_INCREMENTAL = { value = "0", force = true }
-RUST_LOG = { value = "off", force = true }
 GITOXIDE_CORE_MULTIPACKINDEX = { value = "true", force = true }
 GITOXIDE_HTTP_SSLVERSIONMAX = { value = "tls1.3", force = true }
 GITOXIDE_HTTP_SSLVERSIONMIN = { value = "tls1.2", force = true }
-# RUSTC_BOOTSTRAP = { value = "1", force = true }
+RUSTC_BOOTSTRAP = { value = "1", force = true }
 # RUSTC_WRAPPER = { value = "sccache", force = true }
 # RUSTUP_TOOLCHAIN= { value = "nightly", force = true }
 CARGO_CACHE_RUSTC_INFO = { value = "1", force = true }
+RUST_BACKTRACE = "0"
+RUST_LIB_BACKTRACE = "0"
+RUST_PANIC_STRATEGY = "abort"
+RUSTC_ICE = "0"
+CARGO_LOG = "off"
+RUSTDOC_LOG = "off"
+RUSTC_LOG = "off"
 
 [cache]
 auto-clean-frequency = "7 days"

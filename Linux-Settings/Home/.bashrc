@@ -103,10 +103,10 @@ fi
 export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
 
 # Build env
-#command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
-#command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
-#command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
-#command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
+command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
+command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
+command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
+command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
 
 if command -v cargo &>/dev/null; then
   export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
@@ -116,6 +116,11 @@ if command -v cargo &>/dev/null; then
 fi
 # Make Python use UTF-8 encoding for output to stdin, stdout, and stderr.
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1
+
+# Jump
+export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
+_ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
+command -v zoxide &>/dev/null && eval "$(zoxide init bash)"
 
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 if command -v fd &>/dev/null; then
@@ -136,8 +141,9 @@ export FZF_DEFAULT_COMMAND="$FIND_CMD" \
        SKIM_DEFAULT_COMMAND="$FIND_CMD" \
        SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 
-export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
 # ─── Completions ─────────────────────────────────────────────────────────
+complete -cf sudo
+
 # Ensure completion directory exists
 COMPDIR="$HOME/.config/bash/completions"
 mkdir -p "$COMPDIR"

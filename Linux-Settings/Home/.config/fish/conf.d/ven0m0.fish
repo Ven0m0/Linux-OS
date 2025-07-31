@@ -46,15 +46,12 @@ if status --is-interactive
 
     # Enable aliases to be sudo’ed
     alias sudo='sudo '
-    alias su='su '
     alias doas='doas '
     alias sudo-rs='sudo-rs '
-    alias su='su-rs '
 
     # Creates parent directories on demand.
     alias mkdir='mkdir -p '
-    alias edit='$EDITOR '
-    alias suedit='sudo -E $EDITOR '
+    alias ed='$EDITOR '
 
     # Stops ping after sending 4 ECHO_REQUEST packets.
     alias ping='ping -c 4'
@@ -82,9 +79,6 @@ if status --is-interactive
     # bind Esc Esc to toggle_sudo
     #source ~/.config/fish/functions/presudo.fish
     #bind \e\e toggle_sudo
-    function which
-      command -v $argv[1] 
-    end 
 end
 
 # ─── Path Deduplication ─────────────────────────────────────────────────────────

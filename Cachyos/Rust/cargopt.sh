@@ -88,25 +88,8 @@ export CARGO_PROFILE_RELEASE_LTO=true
 export CARGO_BUILD_JOBS="$jobs"
 export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
 # export RUSTUP_TOOLCHAIN=nightly
-# RUST_LOG=trace
-
-if ((USE_MOLD)); then
-  if command -v mold >/dev/null 2>&1; then
-    echo "→ using ld.mold via clang"
-    LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=mold)
-    CLDFLAGS=(-fuse-ld=mold)
-    hash mold
-  elif command -v clang >/dev/null 2>&1; then
-    echo "→ using ld.lld via clang"
-    LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
-    CLDFLAGS=(-fuse-ld=lld)
-    hash lld ld.lld
-  else
-    echo "→ falling back to ld.lld via linker-flavor"
-    LFLAGS=(-Clinker=ld.lld -Clinker-flavor=ld.lld -C linker-features=lld)
-    CLDFLAGS=(-fuse-ld=lld)
-  fi
-fi
+LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
+CLDFLAGS=(-fuse-ld=lld)
 
 # —————— Core optimization flags ——————
 CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections"

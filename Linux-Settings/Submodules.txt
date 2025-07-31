@@ -3,6 +3,7 @@ https://github.com/salvoton/parus
 https://github.com/ericlay/fuzzy-pkg-finder
 https://github.com/gavinlyonsrepo/cylon
 https://github.com/joehillen/sysz
+https://github.com/DanielFGray/fzf-scripts
 https://github.com/AnnikaV9/kbuilder
 https://github.com/lestofante/PacmanParallelizer
 https://github.com/xvoland/Extract

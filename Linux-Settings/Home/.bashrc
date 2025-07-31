@@ -67,12 +67,12 @@ command -v batpipe &>/dev/null && export BATPIPE=color
 if command -v bat &>/dev/null; then
   export PAGER=bat \
          BAT_STYLE="auto"
-  alias cat='bat -pp ' alias bat='bat --color auto '
+  alias cat='bat -pp ' bat='bat --color auto '
   : "${GIT_PAGER:=bat}"
 elif command -v batcat &>/dev/null; then
   export PAGER=batcat \
          BAT_STYLE="auto"
-  alias cat='batcat -pp ' alias bat='batcat --color auto '
+  alias cat='batcat -pp ' bat='batcat --color auto '
   : "${GIT_PAGER:=batcat}"
 elif command -v less &>/dev/null; then
   export PAGER=less \ 
@@ -155,7 +155,6 @@ for tool in fzf sk; do
       [[ $tool == fzf ]] && . <("$tool" --bash 2>/dev/null)
       [[ $tool == sk  ]] && . <("$tool" --shell bash 2>/dev/null)
     }
-  fi
 done
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
@@ -192,13 +191,10 @@ bind Space:magic-space
 bind '"\C-o": kill-whole-line'
 # ─── Aliases ─────────────────────────────────────────────────────────
 # Enable aliases to be sudo’ed
-alias sudo='\sudo '
-#alias su='\su '
-#alias doas='\doas '
-#alias sudo-rs='\sudo-rs '
-#alias su='\su-rs '
+alias sudo='\sudo ' doas='\doas ' sudo-rs='\sudo-rs '
 alias mkdir='mkdir -p '
 alias ed='$EDITOR ' sued='sudo $EDITOR '
+sued() { sudo $EDITOR "$1" 2>/dev/null }
 alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
 alias mount='mount | column -t' # human readable format

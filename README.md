@@ -70,6 +70,8 @@ https://github.com/scopatz/nanorc
 curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
 ```
 
+# Lite version (no overwriting existing ones)
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh -s -- -l
 ```

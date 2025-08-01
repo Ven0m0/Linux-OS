@@ -1,45 +1,32 @@
 # /etc/inputrc - global inputrc for libreadline
 # See readline(3readline) and 'info rluserman' for more information.
+# Credit to:
+# https://github.com/dotphiles/dotphiles/blob/master/input/inputrc
+# https://github.com/Rudxain/dotfiles
+$include /etc/inputrc
 
-# Allow UTF-8 input and output
+# UTF-8 support
 set input-meta on
 set output-meta on
 set convert-meta off
 
-# https://github.com/dotphiles/dotphiles/blob/master/input/inputrc
-$include /etc/inputrc
+# Other
 set meta-flag on
-set show-all-if-unmodified on
-# Adds punctuation as word delimiters
-set bind-tty-special-chars off
-
-# Disabling control echo
-set echo-control-characters off
-
-# Be more intelligent when autocompleting
+set completion-ignore-case On
+set completion-map-case on
 set skip-completed-text on
-
-# Immediately add a trailing slash when autocompleting symlinks to directories
-set mark-symlinked-directories on
-
-# List all matches in case multiple possible completions are possible
+set page-completions off
+set match-hidden-files off
+set show-all-if-unmodified on
 set show-all-if-ambiguous on
-
-# try to enable the application keypad when it is called.  Some systems
-# need this to enable the arrow keys.
+set mark-symlinked-directories on
+set completion-prefix-display-length 3
+set echo-control-characters off
+set bell-style none
 # set enable-keypad on
 
-# Very useful for the tab completion
-set completion-ignore-case On
-# It treats hyphens and underscores equally during the completion
-set completion-map-case on
-# turn off use of internal pager when returning long completion lists
-set page-completions off
-# don't match files starting with .
-set match-hidden-files off
-
-# do not bell on tab-completion
-set bell-style none
+# Adds punctuation as word delimiters
+set bind-tty-special-chars off
 
 # allow the use of the Home/End keys
 # https://wiki.archlinux.org/index.php/Home_and_End_keys_not_working
@@ -53,20 +40,11 @@ set bell-style none
 "\e[3~": delete-char
 "\e[2~": quoted-insert
 
-# mappings for "page up" and "page down" to step to the beginning/end
-# of the history
+# smart up/down, pgup,pgdown to start/end
+"\e[B": history-search-forward
+"\e[A": history-search-backward
 "\e[5~": beginning-of-history
 "\e[6~": end-of-history
-
-# alternate mappings for "page up" and "page down" to search the history
-# "\e[5~": history-search-backward
-# "\e[6~": history-search-forward
-
-$if Bash
-  #do history expansion when space entered
-  Space: magic-space
-$endif
-
 # mappings for Ctrl-left-arrow and Ctrl-right-arrow for word moving
 "\e[1;5C": forward-word
 "\e[1;5D": backward-word
@@ -74,3 +52,8 @@ $endif
 "\e[5D": backward-word
 "\e\e[C": forward-word
 "\e\e[D": backward-word
+
+$if Bash
+  #do history expansion when space entered
+  Space: magic-space
+$endif

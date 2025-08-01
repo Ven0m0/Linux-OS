@@ -3,6 +3,8 @@ source /usr/share/cachyos-fish-config/cachyos-config.fish
 # Run welcome message
 function fish_greeting
   hyfetch -b fastfetch -m rgb -p transgender
+  #hyfetch -b fastfetch -m rgb -p rainbow
+  #hyfetch -b fastfetch -m rgb -p bisexual
 end
 
 if test -d ~/.basher

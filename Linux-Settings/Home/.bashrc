@@ -219,7 +219,13 @@ else
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
 fi
-
+# ─── Jumping ─────────────────────────────────────────────
+if command -v zoxide &>/dev/null; then
+  export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
+  eval "$(zoxide init bash)"
+else
+  export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
+fi
 # ─── Utility Functions ─────────────────────────────────────────────
 which() { command -v "$1" 2>/dev/null || return 1; }
 
@@ -232,11 +238,3 @@ dedupe_path() {
   PATH=$(IFS=:; echo "${new[*]}")
 }
 dedupe_path; export PATH
-
-# ─── Jumping ─────────────────────────────────────────────
-if command -v zoxide &>/dev/null;
-  export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
-  eval "$(zoxide init bash)"
-else
-  export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
-fi

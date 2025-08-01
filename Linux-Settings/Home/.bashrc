@@ -242,3 +242,6 @@ dedupe_path() {
   PATH=$(IFS=:; echo "${new[*]}")
 }
 dedupe_path; export PATH
+
+# force 0 exit-code
+true

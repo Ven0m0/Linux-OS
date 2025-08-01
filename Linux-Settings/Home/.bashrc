@@ -4,11 +4,10 @@
 [[ $- != *i* ]] && return
 
 # ─── Sourcing ───────────────────────────────────────────
-if [ -f /etc/bashrc ]; then
+if [[ -f /etc/bashrc ]]; then
 	. /etc/bashrc
 fi
-
-if [ -f "$HOME/.config/Bash/bashenv"
+if [ -f $HOME/.config/Bash/bashenv ]]; then
 . "$HOME/.config/Bash/bashenv"
 fi
 # ─── Prompt ─────────────────────────────────────────────────────────

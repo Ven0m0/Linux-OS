@@ -7,7 +7,7 @@
 if [[ -f /etc/bashrc ]]; then
 	. /etc/bashrc
 fi
-if [ -f $HOME/.config/Bash/bashenv ]]; then
+if [ -f $HOME/.config/bash/bashenv.env ]]; then
 . "$HOME/.config/Bash/bashenv"
 fi
 # ─── Prompt ─────────────────────────────────────────────────────────

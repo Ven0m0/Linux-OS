@@ -1,0 +1,23 @@
+#!/bin/bash
+
+mkcd() {
+	#shellcheck disable=SC2164
+	mkdir -p -- "$1" && cd -- "$1"
+}
+
+cdls() {
+	cd -- "$1" && ls
+}
+cdla() {
+	cd -- "$1" && ls -A
+}
+
+fs() {
+	if [ "$#" -gt 0 ]; then
+		du -sbh -- "$@"
+	else
+		# `--` is a micro-optimization.
+		# these patterns work poorly with `failglob`.
+		du -sbh -- .[!.]* ./* | sort -hr
+	fi
+}

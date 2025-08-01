@@ -62,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 
 </details>
 <details>
-<summary><b>Install nano sytax hilighting</b></summary>
+<summary><b>Install sytax hilighting for the nano editor</b></summary>
 
 https://github.com/scopatz/nanorc
 
@@ -71,7 +71,7 @@ curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
 ```
 
 ```bash
-curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh -l | sh
+curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh -s -- -l
 ```
 
 ## Supported Linux Distributions

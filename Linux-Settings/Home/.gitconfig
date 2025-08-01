@@ -15,6 +15,7 @@
 	sparseCheckoutCone = true
 	fsyncMethod = batch
 	fsmonitor = true
+	precomposeunicode = false
 [interactive]
 	diffFilter = delta --color-only --features=interactive
 [color]

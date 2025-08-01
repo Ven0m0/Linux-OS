@@ -1,7 +1,16 @@
 # ~/.bashrc
+
 # ─── Only for interactive shells ───────────────────────────────────────────
 [[ $- != *i* ]] && return
 
+# 
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+if [ -f "$HOME/.config/Bash/bashenv"
+. "$HOME/.config/Bash/bashenv"
+fi
 # ─── Prompt ─────────────────────────────────────────────────────────
 # bash-prompt-generator.org
 # PS1='[\u@\h|\w] \$' # Default

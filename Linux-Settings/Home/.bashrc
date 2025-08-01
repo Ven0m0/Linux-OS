@@ -64,12 +64,12 @@ setterm --linewrap on
 
 # ─── Environment ─────────────────────────────────────────────────────────
 if command -v micro &>/dev/null; then
-  export EDITOR=micro
+  export EDITOR=micro VISUAL=micro
 else
-export EDITOR=nano
+export EDITOR=nano VISUAL=name
 fi
 git config --global core.editor "$EDITOR" 2>/dev/null
-export VISUAL="$EDITOR" VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
+export VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 alias nano='nano -/ ' # Nano modern keybinds
 command -v curl &>/dev/null && export CURL_HOME="$HOME"
 command -v delta &>/dev/null && export GIT_PAGER=delta

@@ -44,3 +44,16 @@ if type -q zoxide
 	set _ZO_FZF_OPTS "--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
 	_evalcache zoxide init fish
 end
+
+# ─── Abbreviations ─────────────────────────────────────────────────────────
+abbr -a
+abbr -a mv mv -iv
+abbr -a rm rm -iv
+abbr -a cp cp -iv
+abbr -a sort sort -h
+abbr -a mkdir mkdir -pv
+abbr -a df df -h
+abbr -a free free -h
+abbr -a grep grep -n
+abbr -a ip ip --color=auto
+abbr -a du du -hcsx

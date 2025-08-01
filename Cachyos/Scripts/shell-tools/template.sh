@@ -13,8 +13,7 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
-WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd $WORKDIR
+cd -- "$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 
 if [[ $EUID -ne 0 ]]; then
   echo "This script requires root privileges. Validating with sudo..."

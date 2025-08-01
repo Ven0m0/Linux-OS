@@ -116,11 +116,6 @@ fi
 # Make Python use UTF-8 encoding for output to stdin, stdout, and stderr.
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1
 
-# Jump
-export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
-_ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
-command -v zoxide &>/dev/null && eval "$(zoxide init bash)"
-
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 if command -v fd &>/dev/null; then
   FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'

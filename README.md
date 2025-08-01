@@ -10,7 +10,6 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```
 
 </details>
-
 <details>
 <summary><b>Cleaning</b></summary>
 
@@ -19,7 +18,6 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```
 
 </details>
-
 <details>
 <summary><b>Rank mirrors & keyrings</b></summary>
 
@@ -28,7 +26,6 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```
 
 </details>
-
 <details>
 <summary><b>Automated install</b></summary>
 
@@ -46,7 +43,6 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```
 
 </details>
-
 <details>
 <summary><b>Bleachbit extra cleaner</b></summary>
 
@@ -55,7 +51,6 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```
 
 </details>
-
 <details>
 <summary><b>Miscellaneous scripts</b></summary>
 
@@ -66,6 +61,18 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```
 
 </details>
+<details>
+<summary><b>Install nano sytax hilighting</b></summary>
+
+https://github.com/scopatz/nanorc
+
+```bash
+curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
+```
+
+```bash
+curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh -l | sh
+```
 
 ## Supported Linux Distributions
 

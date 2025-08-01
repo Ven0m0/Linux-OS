@@ -160,7 +160,7 @@ for tool in fzf sk; do
       [[ $tool == fzf ]] && . <("$tool" --bash 2>/dev/null)
       [[ $tool == sk  ]] && . <("$tool" --shell bash 2>/dev/null)
     }
-done
+done; unset tool
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
 command -v pay-respects &>/dev/null && eval "$(pay-respects bash 2>/dev/null)"

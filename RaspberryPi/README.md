@@ -54,14 +54,17 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 
 </details>
 
+- [DietPi](https://dietpi.com)
 
-[Runtipi](https://runtipi.io)
+- [NextcloudPi](https://github.com/nextcloud/nextcloudpi)
 
-[cosmos](https://cosmos-cloud.io)
+- [Runtipi](https://runtipi.io)
 
-[yunohost](https://yunohost.org)
+- [cosmos](https://cosmos-cloud.io)
 
-[Homepage docker](https://github.com/gethomepage/homepage)
+- [yunohost](https://yunohost.org)
+
+- [Homepage docker](https://github.com/gethomepage/homepage)
 
 # DNS Adblock
 

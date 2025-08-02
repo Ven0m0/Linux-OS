@@ -61,8 +61,38 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 - [NextcloudPi](https://github.com/nextcloud/nextcloudpi)
 
 - [Runtipi](https://runtipi.io)
+  <details>
+    <summary><b>Install</b></summary>
+
+    ```bash
+    curl -L https://setup.runtipi.io | bash
+    ```
+
+  </details>
 
 - [cosmos](https://cosmos-cloud.io)
+  <details>
+    <summary><b>Install</b></summary>
+
+    https://cosmos-cloud.io/doc/1%20index/#automatic-installation
+    ```bash
+    # IF YOU NEED TO CHANGE THE PORTS, DO IT BEFORE RUNNING THE COMMAND
+    # You can overwrite any other env var by adding them here
+    export COSMOS_HTTP_PORT=80
+    export COSMOS_HTTPS_PORT=443
+    
+    # You can run a dry run to see what will be installed
+    curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s -- --dry-run
+    
+    # If you are happy with the result, you can run the command
+    curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
+    ```
+    One liner:
+    ```bash
+    export COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443; curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
+    ```
+
+  </details>
 
 - [yunohost](https://yunohost.org)
 

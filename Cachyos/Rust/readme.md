@@ -58,7 +58,7 @@ export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,no
 
 ### [Min-sized-rust](https://github.com/johnthagen/min-sized-rust)
 
-### [std aware cargo](https://github.com/rust-lang/wg-cargo-std-aware)
+### [Std aware cargo](https://github.com/rust-lang/wg-cargo-std-aware)
 
 # Learn Rust
 

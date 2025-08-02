@@ -76,9 +76,6 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 
 - [Blocky](https://0xerr0r.github.io/blocky/latest)
 
-[^1]: [CasaOS](https://casaos.zimaspace.com)
-
-
 # Resources:
 
 - [Awesome-selfhosted](https://awesome-selfhosted.net/tags/web-servers.html)

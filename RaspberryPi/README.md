@@ -66,6 +66,8 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 
 - [Homepage docker](https://github.com/gethomepage/homepage)
 
+- [ShellHub](https://www.shellhub.io)
+
 # DNS Adblock
 
 - Pihole

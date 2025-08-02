@@ -53,7 +53,9 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 ```
 
 </details>
-
+<details>
+<summary><b>Other selfhost tools/OS's</b></summary>
+  
 - [DietPi](https://dietpi.com)
 
 - [NextcloudPi](https://github.com/nextcloud/nextcloudpi)
@@ -67,6 +69,8 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 - [Homepage docker](https://github.com/gethomepage/homepage)
 
 - [ShellHub](https://www.shellhub.io)
+
+</details>
 
 # DNS Adblock
 

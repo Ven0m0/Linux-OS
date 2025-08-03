@@ -1,4 +1,9 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
+
+# vnfetch (ven0m0-fetch)
+# For Arch/Debian based distro's
+# The goal is to keep dependencies as minimal as possible
+
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 2>/dev/null
 LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
 #──────────── Color & Effects ────────────

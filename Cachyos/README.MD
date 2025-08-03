@@ -344,3 +344,13 @@ https://codeberg.org/sw1tchbl4d3/rdo
 
 https://github.com/DanielFGray/fzf-scripts
 
+https://crates.io/crates/autokernel
+
+https://crates.io/crates/cargo-seek
+
+https://crates.io/crates/cargo-trim
+
+https://crates.io/crates/cargo-unused-features
+
+https://crates.io/crates/fclones
+

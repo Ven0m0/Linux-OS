@@ -27,11 +27,13 @@ if [ -r /proc/uptime ]; then
   UPTIME="${UPTIME_H} hours, ${UPTIME_M} minutes"
 fi
 PKG_COUNT=$(pacman -Q | wc -l)
+PROCS="$(ps ax | wc -l | tr -d " ")"
 #─────────────────────────────────────────
 echo $USER
 echo ──────────────
 echo Kernel: $KERNEL
 echo Packages: $PKG_COUNT
+echo Processes: $PROCS
 echo Shell: $SHELL
 echo $DESKTOP_SESSION
 echo Editor: $$EDITOR

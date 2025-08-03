@@ -4,3 +4,11 @@
 [Adbloat](https://github.com/YurinDoctrine/adbloat)
 
 [UAD-NG](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation)
+
+
+Game mode
+
+```bash
+# Game on, normal use off:
+adb shell cmd power set-fixed-performance-mode-enabled [true|false]
+```

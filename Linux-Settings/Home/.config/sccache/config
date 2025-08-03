@@ -1,0 +1,21 @@
+# If specified, wait this long for the server to start up.
+server_startup_timeout_ms = 10000
+
+[cache.disk]
+dir = "/tmp/sccache"
+size = 8589934592 # 8 GiBytes
+
+# See the local docs on more explanations about this mode
+[cache.disk.preprocessor_cache_mode]
+# Whether to use the preprocessor cache mode
+use_preprocessor_cache_mode = true
+# Whether to use file times to check for changes
+file_stat_matches = true
+# Whether to also use ctime (file status change) time to check for changes
+use_ctime_for_stat = true
+# Whether to ignore `__TIME__` when caching
+ignore_time_macros = false
+# Whether to skip (meaning not cache, only hash) system headers
+skip_system_headers = false
+# Whether hash the current working directory
+hash_working_directory = true

@@ -29,7 +29,7 @@ else
 fi
 distro="$(uname -o | awk -F '"' '/PRETTY_NAME/ { print $2 }' /etc/os-release)"
 KERNEL="$(uname -sr)"
-UPT="$(uptime -p | sed 's/up//')"
+UPT="$(uptime -p | sed 's/^up //')"
 PROCS="$(ps ax | wc -l | tr -d " ")"
 if command -v pacman 2>/dev/null >&2; then
   PKG_COUNT="$(pacman -Q | wc -l)"

@@ -2,7 +2,6 @@
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sync;clear
-
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -16,7 +15,6 @@ echo "$banner"
 
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" &>/dev/null; }
-
 # 1) Detect privilege executor
 suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"
 [[ $suexec == */sudo-rs || $suexec == */sudo ]] && "$suexec" -v || :

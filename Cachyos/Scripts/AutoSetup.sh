@@ -163,3 +163,12 @@ sudo sed -i -e 's/^#Compress=yes/Compress=yes/' /etc/systemd/journald.conf
 sudo sed -i -e 's/^#compress/compress/' /etc/logrotate.conf
 echo -e "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf
 
+#--Disable crashes
+sudo sed -i -e 's/^#DumpCore=.*/DumpCore=no/' /etc/systemd/system.conf
+sudo sed -i -e 's/^#CrashShell=.*/CrashShell=no/' /etc/systemd/system.conf
+sudo sed -i -e 's/^#DumpCore=.*/DumpCore=no/' /etc/systemd/user.conf
+sudo sed -i -e 's/^#CrashShell=.*/CrashShell=no/' /etc/systemd/user.conf
+
+#--Update CA
+sudo update-ca-trust
+

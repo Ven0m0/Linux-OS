@@ -72,7 +72,7 @@ setterm --linewrap on
 if command -v micro &>/dev/null; then
   export EDITOR=micro VISUAL=micro
 else
-export EDITOR=nano VISUAL=name
+  export EDITOR=nano VISUAL=name
 fi
 git config --global core.editor "$EDITOR" 2>/dev/null
 export VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
@@ -115,8 +115,14 @@ fi
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids/
 export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
 
+
+
 # Build env
-command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
+if command -v sccache &>/dev/null; then
+  export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 \
+         SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G
+  export RUSTC_WRAPPER=sccache
+fi
 command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
 command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
 command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple

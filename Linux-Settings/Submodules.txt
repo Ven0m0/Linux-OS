@@ -13,3 +13,5 @@ https://github.com/pystardust/ytfzf
 https://github.com/sheepla/pacsummary
 https://github.com/Hetsh/mcsctl
 https://github.com/sheepla/fzman
+https://github.com/bigH/git-fuzzy
+https://github.com/wfxr/forgit

@@ -13,14 +13,20 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
+OS="${:-$(uname -o)}"
+KERNEL="$(uname -sr)"
+#─────────────────────────────────────────
+echo $USER
+echo ──────────────
+echo Kernel: $KERNEL
+echo Shell: $SHELL
+echo $DESKTOP_SESSION
+echo Editor: $$EDITOR
 echo ${HOSTNAME:-$(hostname)}
 echo ${HOSTTYPE:-$(uname -m)}
 echo $LANG $LC_ALL
-OS="${:-$(uname -o)}"
-KERNEL="$(uname -sr)"
+
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
-
 Running Processes..: `ps ax | wc -l | tr -d " "`
-
 LOCALIP=ip a | grep glo | awk '{print $2}' | head -1
 GLOBALIP=wget -q -O - http://icanhazip.com/ | tail

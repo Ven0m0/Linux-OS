@@ -1,4 +1,6 @@
 -Cllvm-args=-enable-dfa-jump-thread
+-Cllvm-args="-loop-vectorize -slp-vectorize"
+
 
 --lto-emit-llvm
 -Z build-std=std,panic_abort

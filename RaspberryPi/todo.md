@@ -20,6 +20,8 @@ else
 fi
 ```
 
-### Nala
+### [Nala] (https://github.com/volitank/nala)
 
+```bash
 sudo apt-get -y install nala
+```

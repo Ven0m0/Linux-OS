@@ -22,6 +22,7 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
+USERN="$(id -un)"
 if [[ -f /etc/os-release ]]; then
   OS="$(awk -F= '/^NAME=/{print $2}' /etc/os-release | tr -d '"')"
 else
@@ -42,7 +43,7 @@ wmname="$XDG_CURRENT_DESKTOP $DESKTOP_SESSION"
 LOCALIP=$(ip a | grep glo | awk '{print $2}' | head -1)
 GLOBALIP=$(wget -q -O - http://icanhazip.com/ | tail)
 #─────────────────────────────────────────
-echo $USER
+echo $USERN
 echo ──────────────
 echo $OS
 echo Kernel: $KERNEL

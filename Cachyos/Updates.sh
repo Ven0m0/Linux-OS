@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-sync
-clear
+sync;clear
+
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -19,21 +19,13 @@ have() { command -v "$1" &>/dev/null; }
 
 # 1) Detect privilege executor
 if have sudo-rs; then
-  #subin="command sudo-rs"
-  subin="$(command -v sudo-rs 2>/dev/null || :)"
-elif have "sudo"; then
-  #subin="command sudo"
-  subin="$(command -v sudo 2>/dev/null || :)"
-elif have doas; then
-  #subin="command doas"
-  subin="$(command -v doas 2>/dev/null || :)"
+  suexec="$(command -v sudo-rs 2>/dev/null || :)"
+else
+  suexec="$(command -v sudo 2>/dev/null || :)"
 fi
-#export suexec="command ${subin}"
-export suexec="${subin}"
 
-# Only run `-v` if not doas
-if [[ "$subin" != "doas" ]]; then
-  "${suexec}" -v 2>/dev/null || :
+if [ "$EUID" -ne 0 ]; then
+  $suexec -v 2>/dev/null
 fi
 
 echo "🔄 System update using pacman..."

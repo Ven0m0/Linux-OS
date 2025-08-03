@@ -1,40 +1,30 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C LANG=C
 
 #–– Helper to test for a binary in $PATH
-have() { command -v "$1" >/dev/null 2>&1; }
+have() { command -v "$1" &>/dev/null; }
+suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"
+[[ $suexec == */sudo-rs || $suexec == */sudo ]] && "$suexec" -v || :
+have hyperfine || { echo "❌ hyperfine not found in PATH"; exit 1; }
 
-if have "sudo-rs"; then
-  suexec="sudo-rs"
-  sudo-rs -v || true
-elif have "/usr/bin/sudo"; then
-  suexec="/usr/bin/sudo"
-  /usr/bin/sudo -v || true
-elif have "sudo"; then
-  suexec="sudo"
-  sudo -v || true
-else
-  suexec="doas"
-fi
-
-export LANG=C
-export LC_ALL=C
+o1="$(< /sys/devices/system/cpu/intel_pstate/no_turbo)"
+Reset() { 
+  "$suexec" sh -c "echo $o1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+}
+"$suexec" cpupower frequency-set --governor performance &>/dev/null || :
+"$suexec" sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
 
 benchmark() {
   local name="$1"; shift
-  local cmd="$*" # Join all remaining args into one string
-
-  echo "▶ Running benchmark: $name"
-  hyperfine \
-    -w 5 \
-    -i \
-    --prepare "sync; echo 3 | $suexec tee /proc/sys/vm/drop_caches" \
+  local cmd="$*"
+  echo "▶ $name"
+  hyperfine -w 5 -m 20 -i \
+    -p "sync; $suexec sh -c 'echo 3 > /proc/sys/vm/drop_caches'" \
     "$cmd"
 }
 
-# Template
-#benchmark "" ""
+# Benchmarks
 benchmark "xargs" "seq 1000 | xargs -n1 -P$(nproc) echo"
 benchmark "parallel" "seq 1000 | parallel -j $(nproc) echo {}"
 benchmark "rust-parallel" "seq 1000 | rust-parallel -j $(nproc) echo {}"
@@ -42,3 +32,4 @@ benchmark "parel" "parel -t $(nproc) 'seq 1000'"
 benchmark "parallel-sh" "parallel-sh -j $(nproc) 'seq 1000'"
 
 echo "✅ Benchmarks complete..."
+Reset

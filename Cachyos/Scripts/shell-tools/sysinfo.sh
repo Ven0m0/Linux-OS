@@ -13,7 +13,7 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
-OS="${:-$(uname -o)}"
+OS="$(awk -F= '/^NAME=/{print $2}' /etc/os-release | tr -d '"')"
 KERNEL="$(uname -sr)"
 #─────────────────────────────────────────
 echo $USER

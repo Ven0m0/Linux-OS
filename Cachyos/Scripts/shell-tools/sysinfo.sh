@@ -20,14 +20,12 @@ else
 fi
 KERNEL="$(uname -sr)"
 UPT="$(uptime -p | sed 's/up//')"
-PKG_COUNT="$(pacman -Q | wc -l)"
 PROCS="$(ps ax | wc -l | tr -d " ")"
-PKG() {
-  if command -v pacman 2>/dev/null >&2; then
-    PKG_COUNT="$(pacman -Q | wc -l)"
-  elif command -v apt 2>/dev/null >&2; then
-    PKG_COUNT="$(($(apt list --installed 2>/dev/null | wc -l) - 1))"
-  fi
+if command -v pacman 2>/dev/null >&2; then
+  PKG_COUNT="$(pacman -Q | wc -l)"
+elif command -v apt 2>/dev/null >&2; then
+  PKG_COUNT="$(($(apt list --installed 2>/dev/null | wc -l) - 1))"
+fi
 }
 #─────────────────────────────────────────
 echo $USER

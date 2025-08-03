@@ -18,27 +18,20 @@ echo "$banner"
 have() { command -v "$1" &>/dev/null; }
 
 # 1) Detect privilege executor
-if have sudo-rs; then
-  suexec="$(command -v sudo-rs 2>/dev/null || :)"
-else
-  suexec="$(command -v sudo 2>/dev/null || :)"
-fi
-
-if [ "$EUID" -ne 0 ]; then
-  $suexec -v 2>/dev/null
-fi
+suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"
+[[ $suexec == */sudo-rs || $suexec == */sudo ]] && "$suexec" -v || :
 
 echo "🔄 System update using pacman..."
-${suexec} -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
-${suexec} pacman -Syu --noconfirm --needed -q 2>/dev/null || :
+"$suexec" -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
+"$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
 echo "AUR update..."
 paru -Sua --noconfirm --needed --combinedupgrade --nouseask --removemake \
---cleanafter --skipreview --nokeepsrc --sudo ${suexec} 2>/dev/null || :
+--cleanafter --skipreview --nokeepsrc --sudo "$suexec" 2>/dev/null || :
 
 if have topgrade; then
   echo "update using topgrade..."
   topno=(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup})
-  ${suexec} topgrade -y --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
+  "$suexec" topgrade -y --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
 fi
 if have uv; then
   echo "UV tool upgrade..."
@@ -48,7 +41,7 @@ if command -v pipx &>/dev/null; then
     pipx upgrade-all 2>/dev/null || :
 fi
 
-rustup_bin="$(command -v rustup 2>/dev/null || true)"
+rustup_bin="$(command -v rustup 2>/dev/null || :)"
 if [ -n "$rustup_bin" ] && [ -x "$rustup_bin" ]; then
   "$rustup_bin" update &>/dev/null || :
 else
@@ -112,33 +105,32 @@ fi
 
 if have sdboot-manage; then
   echo "update sdboot-manage..."
-  ${suexec} sdboot-manage update &>/dev/null || :
-  ${suexec} sdboot-manage remove || :
+  "$suexec" sdboot-manage update &>/dev/null || :
+  "$suexec" sdboot-manage remove || :
 fi
 echo "misc updates in background..."
-have updatedb && ${suexec} updatedb || :
-have update-desktop-database && ${suexec} update-desktop-database || :
-have update-pciids && ${suexec} update-pciids &>/dev/null || :
-have update-smart-drivedb && ${suexec} update-smart-drivedb &>/dev/null || :
+have updatedb && "$suexec" updatedb || :
+have update-desktop-database && "$suexec" update-desktop-database || :
+have update-pciids && "$suexec" update-pciids &>/dev/null || :
+have update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 
 echo "🔍 Checking for systemd-boot..."
 if [[ -d /sys/firmware/efi ]] && have bootctl && bootctl is-installed &>/dev/null; then
     echo "✅ systemd‑boot detected, updating…"
-    ${suexec} bootctl update &>/dev/null || :
-    ${suexec} bootctl cleanup &>/dev/null || :
+    "$suexec" bootctl update &>/dev/null; "$suexec" bootctl cleanup &>/dev/null || :
 else
     echo "❌ systemd‑boot not present, skipping."
 fi
 
 echo "Try to update kernel initcpio..."
 if have limine-mkinitcpio; then
-  ${suexec} limine-mkinitcpio || :
+ "$suexec" limine-mkinitcpio || :
 elif have mkinitcpio; then
-  ${suexec} mkinitcpio -P || :
+  "$suexec" mkinitcpio -P || :
 elif have /usr/lib/booster/regenerate_images; then
-  ${suexec} /usr/lib/booster/regenerate_images || :
+  "$suexec" /usr/lib/booster/regenerate_images 2>/dev/null || :
 elif have dracut-rebuild; then
-  ${suexec} dracut-rebuild || :
+  "$suexec" dracut-rebuild 2>/dev/null || :
 else
  printf "\\033[31m The initramfs generator was not found, please update initramfs manually...\\033[0m\\n"
 fi

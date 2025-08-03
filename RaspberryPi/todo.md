@@ -19,3 +19,7 @@ else
 	apt purge ?config-files
 fi
 ```
+
+### Nala
+
+sudo apt-get -y install nala

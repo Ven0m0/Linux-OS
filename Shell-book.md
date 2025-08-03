@@ -411,6 +411,19 @@ rm -rf ~/Downloads/{Movies,Music,ISOS}
 ```
 </details>
 
+**Run a command in the background**
+
+This will run the given command and keep it running, even after the terminal or SSH connection is terminated. All output is ignored.
+
+```bash
+bkr() {
+    (nohup "$@" &>/dev/null &)
+}
+
+bkr ./some_script.sh # some_script.sh is now running in the background
+```
+
+
 ## [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
 
 

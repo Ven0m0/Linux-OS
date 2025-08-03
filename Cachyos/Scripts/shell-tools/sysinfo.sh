@@ -19,19 +19,21 @@ else
   OS="$(uname -s)"
 fi
 KERNEL="$(uname -sr)"
-if [ -r /proc/uptime ]; then
-  UPTIME_S=$(cut -d ' ' -f1 < /proc/uptime)
-  UPTIME_S=${UPTIME_S%.*}  # drop decimal part
-  UPTIME_H=$(( UPTIME_S / 3600 ))
-  UPTIME_M=$(( (UPTIME_S % 3600) / 60 ))
-  UPTIME="${UPTIME_H} hours, ${UPTIME_M} minutes"
-fi
-PKG_COUNT=$(pacman -Q | wc -l)
+UPT="$(uptime -p | sed 's/up//')"
+PKG_COUNT="$(pacman -Q | wc -l)"
 PROCS="$(ps ax | wc -l | tr -d " ")"
+PKG() {
+  if command -v pacman 2>/dev/null >&2; then
+    PKG_COUNT="$(pacman -Q | wc -l)"
+  elif command -v apt 2>/dev/null >&2; then
+    PKG_COUNT="$(($(apt list --installed 2>/dev/null | wc -l) - 1))"
+  fi
+}
 #─────────────────────────────────────────
 echo $USER
 echo ──────────────
 echo Kernel: $KERNEL
+echo Uptime: $UPT
 echo Packages: $PKG_COUNT
 echo Processes: $PROCS
 echo Shell: $SHELL

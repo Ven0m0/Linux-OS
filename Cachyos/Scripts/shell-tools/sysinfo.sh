@@ -13,12 +13,25 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
-OS="$(awk -F= '/^NAME=/{print $2}' /etc/os-release | tr -d '"')"
+if [[ -f /etc/os-release ]]; then
+  OS="$(awk -F= '/^NAME=/{print $2}' /etc/os-release | tr -d '"')"
+else
+  OS="$(uname -s)"
+fi
 KERNEL="$(uname -sr)"
+if [ -r /proc/uptime ]; then
+  UPTIME_S=$(cut -d ' ' -f1 < /proc/uptime)
+  UPTIME_S=${UPTIME_S%.*}  # drop decimal part
+  UPTIME_H=$(( UPTIME_S / 3600 ))
+  UPTIME_M=$(( (UPTIME_S % 3600) / 60 ))
+  UPTIME="${UPTIME_H} hours, ${UPTIME_M} minutes"
+fi
+PKG_COUNT=$(pacman -Q | wc -l)
 #─────────────────────────────────────────
 echo $USER
 echo ──────────────
 echo Kernel: $KERNEL
+echo Packages: $PKG_COUNT
 echo Shell: $SHELL
 echo $DESKTOP_SESSION
 echo Editor: $$EDITOR

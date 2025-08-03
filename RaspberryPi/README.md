@@ -35,8 +35,13 @@ net.ipv4.ip_forward=1
 - answer the prompts
 - success
 </details>
-
 <details>
+<summary><b>PiShrink</b></summary>
+
+- [PiShrink](https://github.com/Drewsif/PiShrink)
+
+</details>
+<details> 
 <summary><b>CasaOS</b></summary>
 
 - Install [CasaOS](https://casaos.zimaspace.com)

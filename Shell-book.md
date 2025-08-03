@@ -28,6 +28,8 @@ BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd $WORKDIR
+
+sleepy() { read -rt 0.1 <> <(:) || :; }
 ```
 </details>
 <details>

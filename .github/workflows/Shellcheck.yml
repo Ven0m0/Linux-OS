@@ -1,0 +1,41 @@
+# https://github.com/luizm/action-sh-checker
+name: Shellcheck
+on:
+  - pull_request
+  - workflow_dispatch
+  - push
+jobs:
+  sh-checker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run the sh-checker
+        uses: luizm/action-sh-checker@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHELLCHECK_OPTS: -e SC1004,SC2236,SC2154,SC2155,SC2250 --norc # exclude some shellcheck warnings.
+          SHFMT_OPTS: -s -ln=bash -kp -ci -bn -i 2 -d # arguments to shfmt.
+        with:
+          sh_checker_comment: true
+          sh_checker_exclude: "^Cachyos/Scripts/shell-tools/template.sh"
+          sh_checker_checkbashisms_enable: true
+          sh_checker_shfmt_disable: false
+          sh_checker_shellcheck_disable: false
+          sh_checker_only_diff: false
+          
+      #- name: Upload a Build Artifact
+        #uses: actions/upload-artifact@v4
+       # with:
+          # Artifact name
+          #name: # optional, default is artifact
+          # A file, directory or wildcard pattern that describes what to upload
+          #path: |
+            #!Linux-Settings/etc/
+            #!Linux-Settings/usr/
+            #path/output/test-results
+            #!Cachyos/Scripts/shell-tools/template.sh
+          # The desired behavior if no files are found using the provided path.
+          #if-no-files-found: ignore
+          retention-days: 7
+          #compression-level:
+          #overwrite: true

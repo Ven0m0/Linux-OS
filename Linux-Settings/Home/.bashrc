@@ -98,6 +98,16 @@ elif [[ -f $HOME/.gitignore ]]; then
 fi
 export FIGNORE=argo.lock
 
+# Having to set a new script as executable always annoys me.
+chrun() {
+  script=$1
+  if [ -z "$script" ]; then
+    printf 'chrun: missing argument\nUsage: chrun <script>\n' >&2
+    return 2
+  fi
+  chmod u+x -- "$script" 2>/dev/null && exec "./$script"
+}
+
 ### Apps
 # Wayland
 if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
@@ -114,8 +124,6 @@ fi
 
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids/
 export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
-
-
 
 # Build env
 if command -v sccache &>/dev/null; then

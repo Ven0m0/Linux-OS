@@ -14,7 +14,7 @@ indent_style = tab
 indent_size = 4
 
 # Shell scripts
-[*.{sh,bash}]
+[*.sh,*.bash]
 keep_padding = true
 space_redirects = true
 switch_case_indent = true
@@ -27,21 +27,29 @@ binary_next_line = true
 [*.bash]
 shell_variant = bash
 
+[*.fish]
+indent_style = tab
+indent_size = 2
+tab_width = 2
+
+[*.dash,*.mksh]
+indent_style = space
+indent_size = 2
+tab_width = 2
+
 # Markdown
 [*.md]
 # trailing whitespaces have meaning on Markdown interpretation
 trim_trailing_whitespace = false
 
-[{Makefile,**.mk}]
+[*.yml,*.yaml]
+indent_style = space
+
+[Makefile,*.mk]
 # Makefiles require tabs
 indent_style = tab
 indent_size=4
 
-[*.{go,rs,zig,fish}]
-indent_style=tab
-indent_size=4
-
-[*.yml]
-indent_style = space
-[*.yaml]
-indent_style = space
+[*.go,*.rs,*.zig]
+indent_style = tab
+indent_size = 4

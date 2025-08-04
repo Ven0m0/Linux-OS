@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 
 </details>
 <details>
-<summary><b>Bleachbit extra cleaner</b></summary>
+<summary><b>Bleachbit extra cleaner install</b></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/bleachbit.sh | bash

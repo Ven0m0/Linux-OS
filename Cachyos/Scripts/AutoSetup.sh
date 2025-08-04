@@ -172,3 +172,28 @@ sudo sed -i -e 's/^#CrashShell=.*/CrashShell=no/' /etc/systemd/user.conf
 #--Update CA
 sudo update-ca-trust
 
+doas sh -c 'touch /etc/modprobe.d/ignore_ppc.conf; echo "options processor ignore_ppc=1" >/etc/modprobe.d/ignore_ppc.conf'
+
+doas sh -c 'touch /etc/modprobe.d/nvidia.conf; echo "options nvidia NVreg_UsePageAttributeTable=1 NVreg_InitializeSystemMemoryAllocations=0 NVreg_DynamicPowerManagement=0x02" >/etc/modprobe.d/nvidia.conf'
+
+echo "options vfio_pci disable_vga=1
+                   options cec debug=0
+                   options kvm mmu_audit=0
+                   options kvm ignore_msrs=1
+                   options kvm report_ignored_msrs=0
+                   options kvm kvmclock_periodic_sync=1
+                   options nfs enable_ino64=1
+                   options libata allow_tpm=0
+                   options libata ignore_hpa=0
+                   options libahci ignore_sss=1
+                   options libahci skip_host_reset=1
+                   options uhci-hcd debug=0
+                   options usbcore usbfs_snoop=0
+                   options usbcore autosuspend=10" | doas tee /etc/modprobe.d/misc.conf
+
+echo "bfq
+      ntsync
+      tcp_bbr
+      zram" | doas tee /etc/modprobe.d/modules.conf
+
+        

@@ -2,8 +2,8 @@
 name: Shellcheck
 on:
   pull_request:
-  push:
   workflow_dispatch:
+  #push:
 
 permissions:
   contents: read

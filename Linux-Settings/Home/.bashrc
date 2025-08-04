@@ -148,8 +148,9 @@ if command -v cargo &>/dev/null; then
   export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
   export RUST_LOG=off RUST_BACKTRACE=0
 fi
-# Make Python use UTF-8 encoding for output to stdin, stdout, and stderr.
+# Python opt's
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1
+export GOPROXY="direct" # no fancy google cache for go
 
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 if command -v fd &>/dev/null; then

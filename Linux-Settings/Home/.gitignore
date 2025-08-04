@@ -31,9 +31,7 @@ logs/
 *.log.*
 *.old
 *.tmp
-*.temp
 tmp/
-temp/
 *~
 .*.kate-swp
 .swp.*

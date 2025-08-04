@@ -1,6 +1,5 @@
 # EditorConfig http://EditorConfig.org
 # Only for sh-checker action
-
 root = true
 
 [*]

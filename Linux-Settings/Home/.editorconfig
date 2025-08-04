@@ -1,7 +1,6 @@
 # EditorConfig
 # http://EditorConfig.org
-
-# Don't search any further up the directory tree
+# Don't search any further up the dir tree
 root = true
 
 # Baseline

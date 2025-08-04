@@ -27,9 +27,9 @@ binary_next_line = true
 shell_variant = bash
 
 [*.fish]
-indent_style = tab
-indent_size = 2
-tab_width = 2
+indent_style = space
+indent_size = 4
+tab_width = 4
 
 [*.dash,*.mksh]
 indent_style = space

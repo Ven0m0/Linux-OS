@@ -5,6 +5,10 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   sh-checker:
     runs-on: ubuntu-latest
@@ -37,6 +41,6 @@ jobs:
             #!Cachyos/Scripts/shell-tools/template.sh
           # The desired behavior if no files are found using the provided path.
           #if-no-files-found: ignore
-          retention-days: 7
+          #retention-days: 7
           #compression-level:
           #overwrite: true

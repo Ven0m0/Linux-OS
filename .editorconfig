@@ -1,0 +1,35 @@
+# EditorConfig http://EditorConfig.org
+# Only for sh-checker action
+
+root = true
+
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+indent_style = tab
+indent_size = 4
+
+[*.sh,*.bash]
+keep_padding = true
+space_redirects = true
+switch_case_indent = true
+indent_style = space
+indent_size = 2
+tab_width = 2
+function_next_line = true
+binary_next_line = true
+
+[*.bash]
+shell_variant = bash
+
+[*.fish]
+indent_style = tab
+indent_size = 2
+tab_width = 2
+
+[*.dash,*.mksh]
+indent_style = space
+indent_size = 2
+tab_width = 2

@@ -6,9 +6,9 @@
 # Credit:
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
-# 
+# #LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 2>/dev/null
-LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
+export LC_ALL=C LANG=C
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red
@@ -28,7 +28,8 @@ else
   OS="$(uname -s)"
 fi
 distro="$(uname -o | awk -F '"' '/PRETTY_NAME/ { print $2 }' /etc/os-release)"
-KERNEL="$(uname -sr)"
+read -r KERNEL < /proc/sys/kernel/osrelease || KERNEL=$((uname -r)
+read -r HOSTNAME < /etc/hostname 2>/dev/null || HOSTNAME=$(hostname)
 UPT="$(uptime -p | sed 's/^up //')"
 PROCS="$(ps ax | wc -l | tr -d " ")"
 if command -v pacman 2>/dev/null >&2; then
@@ -37,10 +38,11 @@ elif command -v apt 2>/dev/null >&2; then
   PKG_COUNT="$(($(apt list --installed 2>/dev/null | wc -l) - 1))"
 fi
 PROFILE=$(powerprofilesctl get)
-shell=$(basename $SHELL)
+SHELLX=$(printf '%s' "${SHELL##*/}")
 wmname="$XDG_CURRENT_DESKTOP $DESKTOP_SESSION"
 LOCALIP=$(ip a | grep glo | awk '{print $2}' | head -1)
 GLOBALIP=$(wget -q -O - http://icanhazip.com/ | tail)
+
 CPU=$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo | tr -s ' ')
 GPU=$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)
 # check display for screensize and working environment.
@@ -61,7 +63,6 @@ if [[ -n "$DISPLAY" ]]; then
 	    || D_SERVER="(Wayland)"
 fi
 TERM_ENV=$(printf '%s' "$TERM")
-SHELL=$(printf '%s' "${SHELL##*/}")
 
 #─────────────────────────────────────────
 # define space.
@@ -112,10 +113,11 @@ echo Kernel: $KERNEL
 echo Uptime: $UPT
 echo Packages: $PKG_COUNT
 echo Processes: $PROCS
-echo Shell: $shell
+echo Shell: $SHELLX
 echo $wmname
 echo $wmname
 echo Editor: $$EDITOR
+
 echo ${HOSTNAME:-$(hostname)}
 echo ${HOSTTYPE:-$(uname -m)}
 echo $LANG $LC_ALL

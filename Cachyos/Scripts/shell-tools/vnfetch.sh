@@ -8,7 +8,10 @@
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
 # #LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 2>/dev/null
-export LC_ALL=C LANG=C
+o1=$LC_ALL 
+o2=$LANG
+LC_ALL=C LANG=C
+echo Lang: $o1 LC: $o2
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red
@@ -28,8 +31,9 @@ else
   OS="$(uname -s)"
 fi
 distro="$(uname -o | awk -F '"' '/PRETTY_NAME/ { print $2 }' /etc/os-release)"
-read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null || KERNEL=$((uname -r)
-read -r HOSTNAME < /etc/hostname 2>/dev/null || HOSTNAME=$(hostname)
+read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null || KERNEL="$((uname -r)"
+read -r HOSTNAME < /etc/hostname 2>/dev/null || HOSTNAME="$(hostname)"
+ARCH="$(uname -m 2>/dev/null)"
 UPT="$(uptime -p | sed 's/^up //')"
 PROCS="$(ps ax | wc -l | tr -d " ")"
 if command -v pacman 2>/dev/null >&2; then
@@ -37,15 +41,15 @@ if command -v pacman 2>/dev/null >&2; then
 elif command -v apt 2>/dev/null >&2; then
   PKG_COUNT="$(($(apt list --installed 2>/dev/null | wc -l) - 1))"
 fi
-PROFILE=$(powerprofilesctl get)
-SHELLX=$(printf '%s' "${SHELL##*/}")
+PROFILE="$(powerprofilesctl get 2>/dev/null)"
+SHELLX="$(printf '%s' "${SHELL##*/}")"
 wmname="$XDG_CURRENT_DESKTOP $DESKTOP_SESSION"
 LOCALIP=$(ip a | grep glo | awk '{print $2}' | head -1)
 GLOBALIP=$(wget -q -O - http://icanhazip.com/ | tail)
 
-CPU=$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo | tr -s ' ')
-GPU=$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)
-# check display for screensize and working environment.
+CPU="$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo | tr -s ' ')"
+GPU="$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
+
 if [[ -n "$DISPLAY" ]]; then
     SCREEN=$(sed 's/,/x/' < /sys/class/graphics/fb0/virtual_size)
     [ -n "$DESKTOP_SESSION" ] && \
@@ -56,7 +60,7 @@ else
     tty=$(tty)
     WE=tty${tty##*/}
 fi
-# display server.
+
 if [[ -n "$DISPLAY" ]]; then
     ps -e | grep -e 'wayland\|Xorg' > /dev/null && \
 	D_SERVER="(Xorg)" \
@@ -106,20 +110,14 @@ below
 space 
 
 #─────────────────────────────────────────
-echo $USERN
-echo ──────────────
+echo ${USERN}─${HOSTNAME}
+echo ────────────────────
 echo $OS
 echo Kernel: $KERNEL
 echo Uptime: $UPT
 echo Packages: $PKG_COUNT
 echo Processes: $PROCS
 echo Shell: $SHELLX
-echo $wmname
-echo $wmname
+echo $wmname $D_SERVER
 echo Editor: $$EDITOR
-
-echo ${HOSTNAME:-$(hostname)}
-echo ${HOSTTYPE:-$(uname -m)}
-echo $LANG $LC_ALL
-
-
+echo "Lang: ${o2:-unset}, LC_ALL: ${o1:-unset}"

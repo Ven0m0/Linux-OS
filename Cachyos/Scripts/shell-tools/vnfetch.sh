@@ -42,6 +42,69 @@ shell=$(basename $SHELL)
 wmname="$XDG_CURRENT_DESKTOP $DESKTOP_SESSION"
 LOCALIP=$(ip a | grep glo | awk '{print $2}' | head -1)
 GLOBALIP=$(wget -q -O - http://icanhazip.com/ | tail)
+CPU=$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo | tr -s ' ')
+GPU=$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)
+# check display for screensize and working environment.
+if [[ -n "$DISPLAY" ]]; then
+    SCREEN=$(sed 's/,/x/' < /sys/class/graphics/fb0/virtual_size)
+    [ -n "$DESKTOP_SESSION" ] && \
+	WE="$DESKTOP_SESSION" \
+	    || WE=$(xprop -root WM_NAME | cut -d '"' -f2)
+else
+    SCREEN=$(stty size | awk '{print $1 "rows " $2 "columns"}')
+    tty=$(tty)
+    WE=tty${tty##*/}
+fi
+# display server.
+if [[ -n "$DISPLAY" ]]; then
+    ps -e | grep -e 'wayland\|Xorg' > /dev/null && \
+	D_SERVER="(Xorg)" \
+	    || D_SERVER="(Wayland)"
+fi
+TERM_ENV=$(printf '%s' "$TERM")
+SHELL=$(printf '%s' "${SHELL##*/}")
+
+#─────────────────────────────────────────
+# define space.
+space() {
+    printf '\n'
+}
+# define top decoration.
+above() {
+    tput smacs
+    printf '\033[0;33m%s\033[0m' " " "l" 
+    printf '\033[0;33mq%.0s\033[0m' $(seq 1 6)
+    tput rmacs
+    printf '%s\033[3;7;31m%s\033[0m' " " " ${HOSTNAME} " " "
+    tput smacs
+    printf '\033[0;33mq%.0s\033[0m' $(seq 1 50) 
+    tput rmacs
+}
+# define bottom decoration.
+below() {
+    tput smacs
+    printf '\033[0;33m%s\033[0m' " " "m"
+    printf '\033[0;33mq%.0s\033[0m' $(seq 1 50)
+    tput rmacs
+}
+space
+above
+# print formated information.
+printf "
+  \033[1;37m OS: \033[30m ..................\033[0m \033[3;37m  ${OS} \033[0m
+  \033[1;37m Kernel: \033[30m ..............\033[0m \033[3;37m  ${KERNEL}-${ARCH} \033[0m
+  \033[1;37m Init: \033[30m ................\033[0m \033[3;37m  ${INIT} \033[0m
+  \033[1;37m Processor: \033[30m ...........\033[0m \033[3;37m ${CPU} \033[0m
+  \033[1;37m Graphics:\033[30m .............\033[0m \033[3;37m ${GPU} \033[0m
+  \033[1;37m Mem: \033[30m .................\033[0m \033[3;37m  ${RAM}Mib ${SWAP}Mib\033[0m
+  \033[1;37m Packages: \033[30m ............\033[0m \033[3;37m  ${PKG} \033[0m
+  \033[1;37m Workplace: \033[30m ...........\033[0m \033[3;37m  ${WE} ${D_SERVER} ${SCREEN}\033[0m
+  \033[1;37m Term Env: \033[30m ............\033[0m \033[3;37m  ${TERM_ENV} \033[0m
+  \033[1;37m Shell: \033[30m ...............\033[0m \033[3;37m  ${SHELL} \033[0m
+"
+below
+space 
+
 #─────────────────────────────────────────
 echo $USERN
 echo ──────────────

@@ -102,10 +102,17 @@ export FIGNORE=argo.lock
 chrun() {
   script=$1
   if [ -z "$script" ]; then
-    printf 'chrun: missing argument\nUsage: chrun <script>\n' >&2
+    printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
     return 2
   fi
-  chmod u+x -- "$script" 2>/dev/null && exec "./$script"
+  chmod u+x -- "$script" 2>/dev/null || {
+    printf 'chrun: cannot make executable: %s\n' "$script" >&2
+    return 1
+  }
+  case "$script" in
+    */* )  exec "$script"   ;;  # e.g. /full/path or repo/script.sh
+    *   )  exec "./$script" ;;  # e.g. local file in current dir
+  esac
 }
 
 ### Apps

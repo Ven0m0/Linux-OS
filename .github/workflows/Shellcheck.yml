@@ -1,9 +1,10 @@
 # https://github.com/luizm/action-sh-checker
 name: Shellcheck
 on:
-  - pull_request
-  - workflow_dispatch
-  - push
+  pull_request:
+  push:
+  workflow_dispatch:
+
 jobs:
   sh-checker:
     runs-on: ubuntu-latest

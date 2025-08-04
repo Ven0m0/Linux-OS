@@ -84,6 +84,9 @@ rm -rf $HOME/snap/steam/common/.local/share/Steam/appcache/*
 rm -rf $HOME/.var/app/com.valvesoftware.Steam/cache/*
 rm -rf $HOME/.var/app/com.valvesoftware.Steam/data/Steam/appcache/*
 
+# NVIDIA
+sudo rm -rf $HOME/.nv/ComputeCache/*
+
 # Python
 rm -f $HOME/.python_history
 sudo rm -f /root/.python_history

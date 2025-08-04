@@ -8,9 +8,8 @@
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
 # #LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 2>/dev/null
-o1=$LC_ALL 
-o2=$LANG
-LC_ALL=C LANG=C
+old_LC_ALL="${LC_ALL-}" old_LANG="${LANG-}"
+export LC_ALL=C LANG=C
 echo Lang: $o1 LC: $o2
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
@@ -67,6 +66,48 @@ if [[ -n "$DISPLAY" ]]; then
 	    || D_SERVER="(Wayland)"
 fi
 TERM_ENV=$(printf '%s' "$TERM")
+
+# ────────────────
+# Memory (KiB units) — accurate: uses MemAvailable
+# See: free‑memory formula using MemAvailable rather than MemFree for correct reclaimable RAM :contentReference[oaicite:2]{index=2}
+read MemTotal MemAvailable << EOF
+$(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2}
+     END {printf "%d %d\n", t, a}' /proc/meminfo)
+EOF
+MemUsed=$((MemTotal - MemAvailable))
+MemPct=$(( (MemUsed * 100 + MemTotal/2) / MemTotal ))  # rounded percent
+
+# Convert to Gibibytes with two decimal places
+MemUsedGiB=$(awk "BEGIN {printf \"%.2f\", $MemUsed/1024/1024}")
+MemTotalGiB=$(awk "BEGIN {printf \"%.2f\", $MemTotal/1024/1024}")
+
+# ────────────────
+# Disk for "/"
+# POSIX df may not support --output, so use standardized parsing
+# Use df -P -k to guarantee portable fields: size,used,avail,used% on mountpoint "/" (GNU & BSD support -P) :contentReference[oaicite:3]{index=3}
+# Then get FSTYPE via findmnt (present on most Linuxes; safer than parsing /etc/mtab) :contentReference[oaicite:4]{index=4}
+read disk_sizeKB disk_usedKB disk_availKB disk_used_pct _ < <(
+  df -Pk / |
+  awk 'NR==2 {print $2, $3, $4, $5, $6}'
+)
+fstype=$(findmnt --raw --noheadings --first-only --output FSTYPE /)
+
+disk_used_GiB=$(awk "BEGIN {printf \"%.2f\", ${disk_usedKB}/1024/1024}")
+disk_avail_GiB=$(awk "BEGIN {printf \"%.2f\", ${disk_availKB}/1024/1024}")
+
+# ────────────────
+# Color threshold: green if pct < 75 else red
+[ "$MemPct" -ge 75 ] && mem_col="\033[31m" || mem_col="\033[32m"
+[ "${disk_used_pct%\%}" -ge 75 ] && disk_col="\033[31m" || disk_col="\033[32m"
+
+# Output final lines
+printf 'Memory: %s / %s GiB (%s%3d%%\033[0m)\n' \
+  "$MemUsedGiB" "$MemTotalGiB" "$mem_col" "$MemPct"
+
+# note ${disk_used_pct%\%} strips trailing '%' from df output
+disk_pct_num=${disk_used_pct%\%}
+printf 'Disk ( / ): %s / %s GiB (%s%3d%%\033[0m) – %s\n' \
+  "$disk_used_GiB" "$disk_avail_GiB" "$disk_col" "$disk_pct_num" "$fstype"
 
 #─────────────────────────────────────────
 # define space.

@@ -34,6 +34,10 @@ net.ipv4.ip_forward=1
 - have [raspberry_f2fs.sh](RaspberryPi/raspberry_f2fs.sh) and the image in the same path as the raspberry-fs.sh script
 - answer the prompts
 - success
+
+further links:
+https://gitlab.idleengineers.com/aaron/raspbian-f2fs
+  
 </details>
 <details>
 <summary><b>PiShrink</b></summary>

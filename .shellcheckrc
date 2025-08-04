@@ -1,0 +1,8 @@
+external-sources=true
+enable=quote-safe-variables
+enable=check-unassigned-uppercase
+enable=all
+disable=SC2250
+disable=SC2155
+disable=SC2154
+disable=SC2236

@@ -28,7 +28,7 @@ else
   OS="$(uname -s)"
 fi
 distro="$(uname -o | awk -F '"' '/PRETTY_NAME/ { print $2 }' /etc/os-release)"
-read -r KERNEL < /proc/sys/kernel/osrelease || KERNEL=$((uname -r)
+read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null || KERNEL=$((uname -r)
 read -r HOSTNAME < /etc/hostname 2>/dev/null || HOSTNAME=$(hostname)
 UPT="$(uptime -p | sed 's/^up //')"
 PROCS="$(ps ax | wc -l | tr -d " ")"

@@ -3,3 +3,6 @@ https://docs.pi-hole.net/main/basic-install/
 https://www.raspberrypi.com/documentation/computers/linux_kernel.html
 
 https://www.raspberrypi.com/software/
+
+# Adding your local user to the 'pihole' group
+sudo usermod -aG pihole $USER

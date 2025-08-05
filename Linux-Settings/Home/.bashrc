@@ -258,7 +258,8 @@ else
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
 fi
 # ─── Utility Functions ─────────────────────────────────────────────
-which() { command -v "$1" 2>/dev/null || return 1; }
+# which() { command -v "$1" 2>/dev/null || return 1; }
+alias which="command -v "
 
 # Deduplicate PATH (preserve order)
 dedupe_path() {

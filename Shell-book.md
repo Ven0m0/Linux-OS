@@ -32,7 +32,7 @@ cd $WORKDIR
 
 username="$(id -un)" # better than 'whoami'
 
-sleepy() { read -rt 0.1 <> <(:) || :; }
+sleepy() { read -rt "$1" <> <(:) || :; }
 ```
 </details>
 <details>
@@ -49,7 +49,7 @@ curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 <summary><b>Sleep replacement in bash</b></summary>
 
 ```bash
-#sleepy() { read -rt 0.1 <> <(:) &>/dev/null || :; }
+#sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
 ```
 </details>
 <details>

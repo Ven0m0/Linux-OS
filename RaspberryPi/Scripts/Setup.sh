@@ -75,3 +75,8 @@ sudo apt remove whoopsie # Error Repoting
 sudo systemctl mask packagekit.service # gnome-software
 sudo systemctl mask geoclue.service # CAUTION: Disable if you don't use Night Light or location services
 sudo apt remove gnome-online-accounts # Gnome online accounts plugins
+
+APPS=(
+btrfs-progs
+)
+sudo apt install $APPS

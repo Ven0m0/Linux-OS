@@ -29,3 +29,7 @@ sudo apt-get -y install nala
 ### Lists
 
 https://firebog.net/
+
+https://github.com/framps/raspberryTools.git
+
+https://github.com/novaspirit/rpi_zram

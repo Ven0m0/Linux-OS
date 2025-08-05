@@ -1,0 +1,59 @@
+#!/bin/bash
+{
+	#////////////////////////////////////
+	# DietPi
+	# https://github.com/MichaIng/DietPi/blob/master/dietpi/func/dietpi-optimal_mtu
+	# Info: Obtains the optimal MTU size
+	# Usage:
+	# - dietpi-optimal_mtu			| Tests using dietpi.com
+	# - dietpi-optimal_mtu <host>		| Tests using the provided host
+	#////////////////////////////////////
+	# Import DietPi-Globals --------------------------------------------------------------
+	. /boot/dietpi/func/dietpi-globals
+	readonly G_PROGRAM_NAME='DietPi-Optimal_MTU'
+	G_INIT
+	# Import DietPi-Globals --------------------------------------------------------------
+	# Check for ping
+	command -v ping > /dev/null || { G_DIETPI-NOTIFY 1 '"ping" command is missing, please install e.g. via "apt install iputils-ping". Aborting...'; exit 1; }
+	# Grab and test input host
+	HOST=${1:-google.com}
+	if ping -n4qc 1 "$HOST" > /dev/null; then
+
+		G_DIETPI-NOTIFY 2 "Finding optimal MTU size with test host $HOST, please wait..."
+
+	else
+
+		G_DIETPI-NOTIFY 1 "Pinging test host $HOST failed. Please verify spelling and that this host is online. Aborting..."
+		exit 1
+
+	fi
+
+	# Start with system default value
+	MTU_SIZE=1500
+
+	#-----------------------------------------------------------------------------------
+	while :
+	do
+
+		G_DIETPI-NOTIFY -2 "Testing MTU size: $MTU_SIZE"
+		# Remove IPv4 ICMP headers from total size
+		if ping -n4qc 1 -s $(( $MTU_SIZE - 28 )) -M 'do' "$HOST" &> /dev/null; then
+
+			G_DIETPI-NOTIFY 0 "Optimal MTU size = $MTU_SIZE"
+			break
+
+		elif (( $MTU_SIZE < 29 )); then
+
+			G_DIETPI-NOTIFY 1 'Failed to find optimal MTU size'
+			break
+
+		fi
+
+		((MTU_SIZE--))
+
+	done
+
+	#-----------------------------------------------------------------------------------
+	exit
+	#-----------------------------------------------------------------------------------
+}

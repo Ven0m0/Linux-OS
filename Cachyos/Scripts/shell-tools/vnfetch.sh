@@ -70,10 +70,7 @@ TERM_ENV=$(printf '%s' "$TERM")
 # ────────────────
 # Memory (KiB units) — accurate: uses MemAvailable
 # See: free‑memory formula using MemAvailable rather than MemFree for correct reclaimable RAM :contentReference[oaicite:2]{index=2}
-read MemTotal MemAvailable << EOF
-$(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2}
-     END {printf "%d %d\n", t, a}' /proc/meminfo)
-EOF
+read MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {printf "%d %d\n", t, a}' /proc/meminfo)
 MemUsed=$((MemTotal - MemAvailable))
 MemPct=$(( (MemUsed * 100 + MemTotal/2) / MemTotal ))  # rounded percent
 

@@ -25,3 +25,7 @@ fi
 ```bash
 sudo apt-get -y install nala
 ```
+
+### Lists
+
+https://firebog.net/

@@ -2,7 +2,6 @@
 set -euo pipefail; shopt -s nullglob globstar
 export LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 IFS=$'\n\t'
-
 #──────────── Color & Effects ────────────
 DEF='\e[0m'   # Default / Reset
 BLD='\e[1m'   # Bold
@@ -44,6 +43,7 @@ BG_BMGN='\e[105m' # Background Bright Magenta
 BG_BCYN='\e[106m' # Background Bright Cyan
 BG_BWHT='\e[107m' # Background Bright White
 #─────────────────────────────────────────
+cd -- "$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 
 #–– Helpers
 has() { command -v "$1" &>/dev/null; }

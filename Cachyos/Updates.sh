@@ -36,10 +36,6 @@ if ! command -v "$suexec" &>/dev/null; then
   echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
   exit 1
 fi
-echo "🔄 System update using pacman..."
-"$suexec" rm /var/lib/pacman/db.lck
-"$suexec" -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
-"$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
 
 cleanup() {
   trap - ERR
@@ -48,6 +44,11 @@ cleanup() {
   set -e
 }
 trap cleanup ERR
+
+echo "🔄 System update using pacman..."
+"$suexec" rm /var/lib/pacman/db.lck
+"$suexec" -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
+"$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
 
 echo "AUR update..."
 if has paru; then

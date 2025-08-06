@@ -27,13 +27,27 @@ echo -e "${MGN}${banner}"
 
 #–– Helpers
 has() { command -v "$1" &>/dev/null; }
+
+# Fully safe optimal privelege tool
 suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null || :)"
 [[ "${suexec:-}" == */sudo-rs || "${suexec:-}" == */sudo ]] && "$suexec" -v || :
 suexec="${suexec:-sudo}"
+if ! command -v "$suexec" &>/dev/null; then
+  echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
+  exit 1
+fi
 echo "🔄 System update using pacman..."
 "$suexec" rm /var/lib/pacman/db.lck
 "$suexec" -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
 "$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
+
+cleanup() {
+  trap - ERR
+  set +e
+  "$suexec" rm /var/lib/pacman/db.lck
+  set -e
+}
+trap cleanup ERR
 
 echo "AUR update..."
 if has paru; then

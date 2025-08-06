@@ -26,27 +26,28 @@ EOF
 echo -e "${MGN}${banner}"
 
 #–– Helper to test for a binary in $PATH
-have() { 
-  command -v "$1" &>/dev/null
-}
+has() { command -v "$1" &>/dev/null; }
 # 1) Detect privilege executor
-suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"
+suexec="$(
+	command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null
+)"
 [[ $suexec == */sudo-rs || $suexec == */sudo ]] && "$suexec" -v || :
-
 echo "🔄 System update using pacman..."
 "$suexec" rm /var/lib/pacman/db.lck
 "$suexec" -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
 "$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
 echo "AUR update..."
+if has paru; then
+	aurtool="has paru
 paru -Sua --noconfirm --needed --combinedupgrade --nouseask --removemake \
 --cleanafter --skipreview --nokeepsrc --sudo "$suexec" 2>/dev/null || :
 
-if have topgrade; then
+if has topgrade; then
   echo "update using topgrade..."
   topno=(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup})
   "$suexec" topgrade -y --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
 fi
-if have uv; then
+if has uv; then
   echo "UV tool upgrade..."
   uv tool upgrade --all 2>/dev/null || :
 fi
@@ -62,17 +63,17 @@ else
 fi
 
 echo "update cargo/rust binaries..."
-if have cargo-install-update; then
+if has cargo-install-update; then
   cargo install-update -agi 2>/dev/null || :
 fi
-if have cargo-updater; then
+if has cargo-updater; then
   cargo updater -u 2>/dev/null || :
 fi
-if have cargo-list; then
+if has cargo-list; then
   cargo list -uaI 2>/dev/null || : 
 fi
 
-if have micro; then
+if has micro; then
   echo "micro plugin update..."
   micro -plugin update 2>/dev/null || :
 fi
@@ -86,12 +87,12 @@ if command -v flatpak >/dev/null; then
   flatpak update -y --noninteractive &>/dev/null || :
 fi
 
-if have yazi; then
+if has yazi; then
   echo "yazi update..."
   ya pkg upgrade || :
 fi
 
-if have fish; then
+if has fish; then
   echo "update Fisher..."
   fish -c 'fisher update' || :
 fi
@@ -105,30 +106,30 @@ if [[ -d "$HOME/.basher" ]]; then
     git -C "$HOME/.basher" pull || echo "⚠️ basher pull failed"
 fi
 
-if have tldr; then
+if has tldr; then
   echo "update tldr pages..."
   ${suexec} tldr -u &>/dev/null &
 fi
 
-if have fwupdmgr; then
+if has fwupdmgr; then
   echo "update with fwupd..."
   fwupdmgr refresh &>/dev/null || :
   fwupdmgr update || :
 fi
 
-if have sdboot-manage; then
+if has sdboot-manage; then
   echo "update sdboot-manage..."
   "$suexec" sdboot-manage update &>/dev/null || :
   "$suexec" sdboot-manage remove || :
 fi
 echo "misc updates in background..."
-have updatedb && "$suexec" updatedb || :
-have update-desktop-database && "$suexec" update-desktop-database || :
-have update-pciids && "$suexec" update-pciids &>/dev/null || :
-have update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
+has updatedb && "$suexec" updatedb || :
+has update-desktop-database && "$suexec" update-desktop-database || :
+has update-pciids && "$suexec" update-pciids &>/dev/null || :
+has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 
 echo "🔍 Checking for systemd-boot..."
-if [[ -d /sys/firmware/efi ]] && have bootctl && bootctl is-installed &>/dev/null; then
+if [[ -d /sys/firmware/efi ]] && has bootctl && bootctl is-installed &>/dev/null; then
     echo "✅ systemd‑boot detected, updating…"
     "$suexec" bootctl update &>/dev/null; "$suexec" bootctl cleanup &>/dev/null || :
 else
@@ -136,13 +137,13 @@ else
 fi
 
 echo "Try to update kernel initcpio..."
-if have limine-mkinitcpio; then
+if has limine-mkinitcpio; then
  "$suexec" limine-mkinitcpio || :
-elif have mkinitcpio; then
+elif has mkinitcpio; then
   "$suexec" mkinitcpio -P || :
-elif have /usr/lib/booster/regenerate_images; then
+elif has /usr/lib/booster/regenerate_images; then
   "$suexec" /usr/lib/booster/regenerate_images 2>/dev/null || :
-elif have dracut-rebuild; then
+elif has dracut-rebuild; then
   "$suexec" dracut-rebuild 2>/dev/null || :
 else
  printf "\\033[31m The initramfs generator was not found, please update initramfs manually...\\033[0m\\n"

@@ -58,7 +58,7 @@ elif has yay; then
   auropts="--noredownload --norebuild"
 fi
 auropts="--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudo ${suexec} ${auropts}"
-"$aurtool" -Sua "$auropts" 2>/dev/null || :
+"$aurtool" -Sua $auropts 2>/dev/null || :
 
 if has topgrade; then
   echo "update using topgrade..."

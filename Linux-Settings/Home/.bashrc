@@ -99,23 +99,23 @@ fi
 export FIGNORE=argo.lock
 
 # Having to set a new script as executable always annoys me.
-chrun() {
-    local s=$1
-    # Missing argument?
-    [ -z "$s" ] && {
-        printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
-        return 2
-    }
-    # Make executable, fail if it doesn’t work
-    chmod u+x -- "$s" 2>/dev/null || {
-        printf 'chrun: cannot make executable: %s\n' "$s" >&2
-        return 1
-    }
-    # Execute: if path contains “/” use as-is, else prefix “./”
-    case $s in
-        */*) exec "$s"   ;;
-        *)   exec "./$s" ;;
-    esac
+runch() {
+  # Args
+  local s=$1
+  if [ -z "$s" ]; then
+      printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
+      return 2
+  fi
+  # Try to chmod, silencing stderr; bail if it fails
+  chmod u+x -- "$s" 2>/dev/null || {
+      printf 'chrun: cannot make executable: %s\n' "$s" >&2
+      return 1
+  }
+  # Exec: if name contains a slash, run as-is; otherwise prefix "./"
+  case "$s" in
+      */*) exec "$s"   ;;
+      *)   exec "./$s" ;;
+  esac
 }
 
 ### Apps

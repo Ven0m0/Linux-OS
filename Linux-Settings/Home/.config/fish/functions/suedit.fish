@@ -1,4 +1,4 @@
-function suedit --description 'Edit a file as root using $EDITOR'
+function suedit -d 'Edit a file as root using $EDITOR'
     if test -z "$EDITOR"
         echo "❌ \$EDITOR is not set. Please set your editor first." >&2
         return 1

@@ -14,18 +14,13 @@ git pull
 echo "Replace Bash shell with Dash shell"
 sudo dpkg-reconfigure dash
 
-
-# App Store for FOSS Projects 
-#echo "Install Pi-Apps"
-#echo "#https://github.com/Botspot/pi-apps"
-#wget -qO- https://raw.githubusercontent.com/Botspot/pi-apps/master/install | bash
-
 echo "Install PiApps-terminal_bash-edition"
 echo "https://github.com/Itai-Nelken/PiApps-terminal_bash-edition"
 wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
 pi-apps update -y
 
-
+echo "Install nala"
+sudo apt install nala
 
 echo 'APT::Acquire::Retries "5";
 Acquire::Queue-Mode "access";

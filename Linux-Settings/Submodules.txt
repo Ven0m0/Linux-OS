@@ -18,3 +18,16 @@ https://github.com/wfxr/forgit
 https://github.com/mssalvatore/ln2
 https://github.com/archy-linux/archy-scripts
 https://github.com/dylanaraps/fff
+https://github.com/Artour64/rofiles
+https://github.com/Zuzzuc/Bash-minifier
+https://github.com/ayumu436/arch-linux-scripts
+https://github.com/ulises-jeremias/dotfiles
+https://github.com/vaaandark/tldr-sh
+
+https://github.com/info-mono/diyfetch
+https://github.com/info-mono/os-ansi
+https://github.com/info-mono/colorstrip
+https://github.com/info-mono/emwave
+https://github.com/rustyflavor/clr.sh
+https://github.com/betafcc/clc
+https://github.com/PeterDaveHello/ColorEchoForShell

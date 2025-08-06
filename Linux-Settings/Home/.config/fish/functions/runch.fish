@@ -1,20 +1,22 @@
-function runch -w "exec" -d "make a script executable and run it"
-    # Grab first argument
+function runch -d "make a script executable and run it"
+    # Grab the first argument
     set -l s $argv[1]
+
     # Missing argument?
     if test -z "$s"
         printf 'runch: missing script argument\nUsage: runch <script>\n' >&2
         return 2
     end
-    # Make executable (ignore stderr), fail if it doesn’t work
-    chmod u+x -- $s ^/dev/null
-    or begin
-        printf 'runch: cannot make executable: %s\n' $s >&2
+
+    # Try to chmod, silencing stderr; bail if it fails
+    chmod u+x -- "$s" 2>/dev/null; or begin
+        printf 'runch: cannot make executable: %s\n' "$s" >&2
         return 1
     end
-    # Execute: if path has “/” use as-is, else prefix “./”
-    switch $s
-        case '*/'*; exec $s
+
+    # Exec: if there’s a slash, run as-is; otherwise prefix "./"
+    switch "$s"
+        case '*/'*; exec "$s"
         case '*';     exec "./$s"
     end
 end

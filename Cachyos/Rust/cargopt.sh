@@ -15,14 +15,14 @@ read -r -p "Update Rust toolchains? [y/N] " ans
 [[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || :
 # —————— Trap ——————
 cleanup() {
-  trap - ERR EXIT HUP QUIT TERM INT ABRT
+  trap - ERR
   set +e
   cargo-cache -efg >/dev/null 2>&1 || :
   cargo clean >/dev/null 2>&1 || :
   rm -rf "$HOME/.cache/sccache/"* >/dev/null 2>&1 || :
   set -e
 }
-trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
+trap cleanup ERR
 # —————— Defaults & help ——————
 USE_MOLD=0; LOCKED_FLAG=""; CRATES=()
 

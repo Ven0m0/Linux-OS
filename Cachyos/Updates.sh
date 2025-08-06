@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-#LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-#sync;clear
-
+LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+sync;clear
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red
@@ -15,7 +14,6 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
-
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝

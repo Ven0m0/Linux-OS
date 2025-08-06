@@ -17,3 +17,4 @@ https://github.com/bigH/git-fuzzy
 https://github.com/wfxr/forgit
 https://github.com/mssalvatore/ln2
 https://github.com/archy-linux/archy-scripts
+https://github.com/dylanaraps/fff

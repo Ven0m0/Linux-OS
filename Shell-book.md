@@ -8,10 +8,12 @@
 ## Bash snippets
 <details>
 <summary><b>Script start template</b></summary>
-  
+
+```set +f``` when fileglobbing is required
+
 ```bash
 #!/usr/bin/bash
-set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+set -efEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 shopt -s inherit_errexit 
 export LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 umask 0022

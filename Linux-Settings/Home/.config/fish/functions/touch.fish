@@ -1,4 +1,4 @@
-function touch2 --description "touch + mkdir -p, with tilde handling"
+function touch2 -d "touch + mkdir -p, with tilde handling"
   for f in $argv
     set path (string replace -ra '^~' $HOME $f)
     mkdir -p (dirname -- "$path")

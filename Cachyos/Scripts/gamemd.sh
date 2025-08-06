@@ -3,15 +3,11 @@ set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 
 # Cache commands
-hash -r
-hash sudo
-hash grep rg fd find awk
-hash cp rm mv tee
-hash pacman paru cargo git
-hash clang rustc make
-hash ghostty konsole rio alacritty
-hash java
-sudo -v
+if command -v sudo-rs &>/dev/null; then
+  sudo-rs -v
+else command -v sudo &>/dev/null; then
+  sudo -v
+fi
 
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 echo advise | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled

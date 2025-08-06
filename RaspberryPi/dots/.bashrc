@@ -41,6 +41,9 @@ alias poweroff='sudo poweroff'
 alias la='ls -A'
 alias ll='ls -lh'
 alias lt='ls -hsS1'
-alias ls='ls -F'
-
+alias ls='ls -ha --group-directories-first --color=auto'
 alias cls='clear'
+alias ..='cd ..'
+alias grep='grep --color=auto'
+alias py='python3'
+

@@ -29,18 +29,25 @@ echo -e "${MGN}${banner}"
 has() { command -v "$1" &>/dev/null; }
 # 1) Detect privilege executor
 suexec="$(
-	command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null
+  command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null
 )"
 [[ $suexec == */sudo-rs || $suexec == */sudo ]] && "$suexec" -v || :
+
 echo "🔄 System update using pacman..."
 "$suexec" rm /var/lib/pacman/db.lck
 "$suexec" -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
 "$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
+
 echo "AUR update..."
 if has paru; then
-	aurtool="has paru
-paru -Sua --noconfirm --needed --combinedupgrade --nouseask --removemake \
---cleanafter --skipreview --nokeepsrc --sudo "$suexec" 2>/dev/null || :
+  aurtool="$(command -v paru 2>/dev/null)"
+  auropts="--batchinstall --combinedupgrade --nouseask --nokeepsrc"
+elif has yay; then
+  aurtool="$(command -v yay 2>/dev/null)"
+  auropts="--noredownload --norebuild"
+fi
+auropts="--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudo ${suexec} ${auropts}"
+"aurtool" -Sua "auropts" 2>/dev/null || :
 
 if has topgrade; then
   echo "update using topgrade..."

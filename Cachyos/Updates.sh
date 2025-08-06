@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+export LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sync;clear
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
@@ -27,9 +27,9 @@ echo -e "${MGN}${banner}"
 
 #–– Helpers
 has() { command -v "$1" &>/dev/null; }
-suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"
-[[ $suexec == */sudo-rs || $suexec == */sudo ]] && "$suexec" -v || :
-
+suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null || :)"
+[[ "${suexec:-}" == */sudo-rs || "${suexec:-}" == */sudo ]] && "$suexec" -v || :
+suexec="${suexec:-sudo}"
 echo "🔄 System update using pacman..."
 "$suexec" rm /var/lib/pacman/db.lck
 "$suexec" -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
@@ -44,7 +44,7 @@ elif has yay; then
   auropts="--noredownload --norebuild"
 fi
 auropts="--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudo ${suexec} ${auropts}"
-"aurtool" -Sua "auropts" 2>/dev/null || :
+"$aurtool" -Sua "$auropts" 2>/dev/null || :
 
 if has topgrade; then
   echo "update using topgrade..."
@@ -83,11 +83,11 @@ if has micro; then
 fi
 
 # Update user-installed npm global packages
-if command -v npm >/dev/null && npm config get prefix | grep -q "$HOME"; then
+if has npm && npm config get prefix | grep -q "$HOME" 2>/dev/null; then
     npm update -g 2>/dev/null || :
 fi
 
-if command -v flatpak >/dev/null; then
+if has flatpak; then
   flatpak update -y --noninteractive &>/dev/null || :
 fi
 
@@ -102,7 +102,7 @@ if has fish; then
 fi
 if [[ ! -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
   echo "Reinstall fisher..."
-  curl -fsL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+  curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 fi
 
 if [[ -d "$HOME/.basher" ]]; then

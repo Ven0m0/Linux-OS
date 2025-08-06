@@ -29,7 +29,7 @@ echo -e "\e[35m${banner}"
 
 #–– Helper to test for a binary in $PATH
 have() { 
-  command -v "$1" &>/dev/null 
+  command -v "$1" &>/dev/null
 }
 # 1) Detect privilege executor
 suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"

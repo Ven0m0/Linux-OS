@@ -147,6 +147,10 @@ printf "
 below
 space 
 
+cat <<EOF
+
+
+
 #─────────────────────────────────────────
 echo ${USERN}─${HOSTNAME}
 echo ────────────────────

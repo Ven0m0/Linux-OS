@@ -25,7 +25,7 @@ banner=$(cat <<'EOF'
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 )
-echo -e "${MNG}${banner}"
+echo -e "${MGN}${banner}"
 
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" &>/dev/null }

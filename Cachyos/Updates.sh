@@ -9,7 +9,7 @@ RED='\e[31m' # Red
 GRN='\e[32m' # Green
 YLW='\e[33m' # Yellow
 BLU='\e[34m' # Blue
-export MGN='\e[35m' # Magenta
+MGN='\e[35m' # Magenta
 CYN='\e[36m' # Cyan
 WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
@@ -25,7 +25,7 @@ banner=$(cat <<'EOF'
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 )
-echo -e "${MGN}${banner}"
+echo -e "\e[35m${banner}"
 
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" &>/dev/null }

@@ -2,6 +2,20 @@
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sync;clear
+
+#──────────── Color & Effects ────────────
+BLK='\e[30m' # Black
+RED='\e[31m' # Red
+GRN='\e[32m' # Green
+YLW='\e[33m' # Yellow
+BLU='\e[34m' # Blue
+MGN='\e[35m' # Magenta
+CYN='\e[36m' # Cyan
+WHT='\e[37m' # White
+DEF='\e[0m'  # Reset to default
+BLD='\e[1m'  #Bold
+#─────────────────────────────────────────
+
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -11,7 +25,7 @@ banner=$(cat <<'EOF'
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 )
-echo "$banner"
+echo -e "${MNG}${banner}"
 
 #–– Helper to test for a binary in $PATH
 have() { command -v "$1" &>/dev/null }
@@ -71,7 +85,7 @@ if command -v flatpak >/dev/null; then
   flatpak update -y --noninteractive &>/dev/null || :
 fi
 
-if have yal then
+if have yazi; then
   echo "yazi update..."
   ya pkg upgrade || :
 fi

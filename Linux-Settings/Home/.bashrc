@@ -100,19 +100,22 @@ export FIGNORE=argo.lock
 
 # Having to set a new script as executable always annoys me.
 chrun() {
-  script=$1
-  if [ -z "$script" ]; then
-    printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
-    return 2
-  fi
-  chmod u+x -- "$script" 2>/dev/null || {
-    printf 'chrun: cannot make executable: %s\n' "$script" >&2
-    return 1
-  }
-  case "$script" in
-    */* )  exec "$script"   ;;  # e.g. /full/path or repo/script.sh
-    *   )  exec "./$script" ;;  # e.g. local file in current dir
-  esac
+    local s=$1
+    # Missing argument?
+    [ -z "$s" ] && {
+        printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
+        return 2
+    }
+    # Make executable, fail if it doesn’t work
+    chmod u+x -- "$s" 2>/dev/null || {
+        printf 'chrun: cannot make executable: %s\n' "$s" >&2
+        return 1
+    }
+    # Execute: if path contains “/” use as-is, else prefix “./”
+    case $s in
+        */*) exec "$s"   ;;
+        *)   exec "./$s" ;;
+    esac
 }
 
 ### Apps

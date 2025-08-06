@@ -36,9 +36,9 @@ ARCH="$(uname -m 2>/dev/null)"
 UPT="$(uptime -p | sed 's/^up //')"
 PROCS="$(ps ax | wc -l | tr -d " ")"
 if command -v pacman 2>/dev/null >&2; then
-  PKG_COUNT="$(pacman -Q | wc -l)"
+  PKG="$(pacman -Q | wc -l)"
 elif command -v apt 2>/dev/null >&2; then
-  PKG_COUNT="$(($(apt list --installed 2>/dev/null | wc -l) - 1))"
+  PKG="$(($(apt list --installed 2>/dev/null | wc -l) - 1))"
 fi
 PROFILE="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="$(printf '%s' "${SHELL##*/}")"
@@ -153,9 +153,10 @@ echo ────────────────────
 echo $OS
 echo Kernel: $KERNEL
 echo Uptime: $UPT
-echo Packages: $PKG_COUNT
+echo Packages: $PKG
 echo Processes: $PROCS
 echo Shell: $SHELLX
 echo $wmname $D_SERVER
 echo Editor: $$EDITOR
+echo Powerprofile: $PROFILE
 echo "Lang: ${o2:-unset}, LC_ALL: ${o1:-unset}"

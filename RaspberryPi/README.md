@@ -24,6 +24,7 @@ net.ipv4.ip_forward=1
 
 - [Pi-Apps-bash](https://github.com/Itai-Nelken/PiApps-terminal_bash-edition)
 
+	- 
 	```bash
 	wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
 	```

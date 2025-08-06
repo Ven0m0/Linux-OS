@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-sync;clear
+#sync;clear
 
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black

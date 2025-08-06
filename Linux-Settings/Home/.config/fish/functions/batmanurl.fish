@@ -1,4 +1,4 @@
-function batmanurl
+function batmanurl -w "man" -d "view a github manpage with bat"
     if test (count $argv) -eq 0
         echo "Usage: batmanurl <github-url>"
         return 1

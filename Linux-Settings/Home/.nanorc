@@ -19,6 +19,7 @@ set mouse
 set nonewlines           # Don't add newlines to the ends of files
 set smooth               # Use smooth scrolling as the default.
 set tabstospaces         # Convert typed tabs to spaces.
+set tabsize 2
 
 ## For snipping trailing blanks when you save a file:
 # bind ^S "{execute}| sed 's/\s\+$//' {enter}{savefile}" main

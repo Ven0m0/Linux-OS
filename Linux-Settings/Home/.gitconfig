@@ -2,20 +2,16 @@
 	excludesfile = /home/ven0m0/.gitignore
 	attributesfile = /home/ven0m0/.gitattributes
 	pager = delta
-	whitespace = whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
+	whitespace = fix,-indent-with-non-tab,trailing-space,cr-at-eol
 	editor = micro
 	autocrlf = input
 	preloadIndex = true
-	fscache = true
-	untrackedCache = true
 	eol = native
 	compression = -1
 	multiPackIndex = true
 	sparseCheckout = true
 	sparseCheckoutCone = true
 	fsyncMethod = batch
-	fsmonitor = true
-	precomposeunicode = false
 [interactive]
 	diffFilter = delta --color-only --features=interactive
 [color]
@@ -25,7 +21,6 @@
 	ui = auto
 [push]
 	default = simple
-	useBitmaps = true
 [pull]
 	ff = only
 	rebase = true
@@ -34,7 +29,6 @@
 	allowPackReuse = true
 	useBitmapBoundaryTraversal = true
 	useSparse = true
-	useBitmaps = true
 	indexVersion = 2
 	preferBitmapTips = true
 	writeBitmapHashCache = true
@@ -114,11 +108,9 @@
 [status]
 	aheadBehind = true
 	showUntrackedFiles = no
-    short = true
+	short = true
 [submodule]
 	fetchJobs = 8
-[format]
-	thread = 16
 [repack]
 	cruftThreads = 16
 [sendemail]

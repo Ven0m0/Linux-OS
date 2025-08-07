@@ -58,7 +58,7 @@
 	aggressiveWindow = 250
 	repackFilter = blob:none
 [checkout]
-	workers = 8
+	workers = 0
 [index]
 	skipHash = true
 	sparse = true
@@ -110,11 +110,9 @@
 	showUntrackedFiles = no
 	short = true
 [submodule]
-	fetchJobs = 8
+	fetchJobs = 0
 [repack]
-	cruftThreads = 16
-[sendemail]
-	thread = 16
+	cruftThreads = 0
 [maintenance]
 	strategy = incremental
 [include]

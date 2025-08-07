@@ -2,7 +2,6 @@
 
 # ─── Only for interactive shells ───────────────────────────────────────────
 [[ $- != *i* ]] && return
-
 # ─── Sourcing ───────────────────────────────────────────
 if [[ -f /etc/bashrc ]]; then
 	. /etc/bashrc

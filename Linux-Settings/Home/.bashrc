@@ -239,6 +239,9 @@ alias mkdir='mkdir -p '
 alias ed='$EDITOR '
 alias smi="sudo -E $(command -v micro)"
 
+# Rerun last cmd as sudo
+alias please='sudo $(history -p !-1)'
+
 alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
 alias mount='mount | column -t' # human readable format

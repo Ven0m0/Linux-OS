@@ -98,25 +98,11 @@ elif [[ -f $HOME/.gitignore ]]; then
 fi
 export FIGNORE=argo.lock
 
-# Having to set a new script as executable always annoys me.
-runch() {
-  # Args
-  local s=$1
-  if [ -z "$s" ]; then
-      printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
-      return 2
-  fi
-  # Try to chmod, silencing stderr; bail if it fails
-  chmod u+x -- "$s" 2>/dev/null || {
-      printf 'chrun: cannot make executable: %s\n' "$s" >&2
-      return 1
-  }
-  # Exec: if name contains a slash, run as-is; otherwise prefix "./"
-  case "$s" in
-      */*) exec "$s"   ;;
-      *)   exec "./$s" ;;
-  esac
-}
+if command -v qt6ct
+	export QT_QPA_PLATFORMTHEME='qt6ct'
+elif command -v qt5ct
+  export QT_QPA_PLATFORMTHEME='qt5ct'
+fi
 
 ### Apps
 # Wayland
@@ -156,7 +142,6 @@ fi
 # Python opt's
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1
 export GOPROXY="direct" # no fancy google cache for go
-
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 if command -v fd &>/dev/null; then
   FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
@@ -175,7 +160,29 @@ export FZF_DEFAULT_COMMAND="$FIND_CMD" \
        FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow' \
        SKIM_DEFAULT_COMMAND="$FIND_CMD" \
        SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+# ─── Utility Functions ─────────────────────────────────────────────
+# which() { command -v "$1" 2>/dev/null || return 1; }
+alias which="command -v "
 
+# Having to set a new script as executable always annoys me.
+runch() {
+  # Args
+  local s=$1
+  if [ -z "$s" ]; then
+      printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
+      return 2
+  fi
+  # Try to chmod, silencing stderr; bail if it fails
+  chmod u+x -- "$s" 2>/dev/null || {
+      printf 'chrun: cannot make executable: %s\n' "$s" >&2
+      return 1
+  }
+  # Exec: if name contains a slash, run as-is; otherwise prefix "./"
+  case "$s" in
+      */*) exec "$s"   ;;
+      *)   exec "./$s" ;;
+  esac
+}
 # ─── Completions ─────────────────────────────────────────────────────────
 complete -cf sudo
 
@@ -211,7 +218,6 @@ fi
 
 # Wikiman
 command -v wikiman &>/dev/null && . /usr/share/wikiman/widgets/widget.bash
-
 # ─── Binds ───────────── ────────────────────────────────────────────
 bind 'set completion-query-items 150'
 bind 'set page-completions off'
@@ -263,10 +269,7 @@ if command -v zoxide &>/dev/null; then
 else
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
 fi
-# ─── Utility Functions ─────────────────────────────────────────────
-# which() { command -v "$1" 2>/dev/null || return 1; }
-alias which="command -v "
-
+# ─── End ─────────────────────────────────────────────────────────
 # Deduplicate PATH (preserve order)
 dedupe_path() {
   local dir; local -A seen; local new=()
@@ -276,6 +279,5 @@ dedupe_path() {
   PATH=$(IFS=:; echo "${new[*]}")
 }
 dedupe_path; export PATH
-
 # force 0 exit-code
 true

@@ -20,9 +20,13 @@ trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$WORKDIR"
 
-# Use nightly Rust for LLVM args and PGO support
-RUST_TOOLCHAIN=nightly
-
+# Setup toolchain
+export RUST_TOOLCHAIN=nightly
+export AR=llvm-ar
+export CC=clang
+export CXX=clang++
+export NM=llvm-nm
+export RANLIB=llvm-ranlib
 # Common RUSTFLAGS for everything
 COMMON_RUSTFLAGS="
   -C opt-level=3

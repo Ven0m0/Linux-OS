@@ -1,6 +1,6 @@
 [core]
-	excludesfile = ~/.gitignore
-	attributesfile = ~/.gitattributes
+	excludesfile = /home/ven0m0/.gitignore
+	attributesfile = /home/ven0m0/.gitattributes
 	pager = delta
 	whitespace = whitespace=fix,-indent-with-non-tab,trailing-space,cr-at-eol
 	editor = micro
@@ -97,8 +97,6 @@
 	version = HTTP/2
 	sslVersion = tlsv1.3
 	postBuffer = 104857600
-[sequence]
-	editor = micro
 [fsck]
 	duplicateEntries = true
 [apply]
@@ -128,7 +126,7 @@
 [maintenance]
 	strategy = incremental
 [include]
-	path = ~/.gitconfig.local
+	path = /home/ven0m0/.gitconfig.local
 [pager]
 	log = delta
 	reflog = delta
@@ -136,8 +134,6 @@
 	diff = delta
 [advice]
 	statusUoption = false
-[merge]
-  ff = only
 [mergetool "meld"]
 	useAutoMerge = true
 [mergetool]

@@ -1,7 +1,9 @@
-# EditorConfig http://EditorConfig.org
-# Only for sh-checker action
+# EditorConfig
+# http://EditorConfig.org
+# Don't search any further up the dir tree
 root = true
 
+# Baseline
 [*]
 end_of_line = lf
 charset = utf-8
@@ -11,13 +13,11 @@ indent_style = space
 indent_size = 2
 tab_width = 2
 
+# Shell scripts
 [*.sh,*.bash]
 keep_padding = true
 space_redirects = true
 switch_case_indent = true
-indent_style = space
-indent_size = 2
-tab_width = 2
 function_next_line = true
 binary_next_line = true
 
@@ -25,19 +25,21 @@ binary_next_line = true
 shell_variant = bash
 
 [*.fish]
-indent_style = space
 indent_size = 4
 
-[*.dash,*.mksh]
-indent_style = space
-indent_size = 2
+# Markdown
+[*.md]
+# trailing whitespaces have meaning on Markdown interpretation
+trim_trailing_whitespace = false
+
+[Makefile,*.mk]
+# Makefiles require tabs
+indent_style = tab
+indent_size=4
+
+[*.go,*.rs,*.zig]
+indent_style = tab
+indent_size = 4
 
 [*.py]
-indent_style = space
 indent_size = 4
-
-[Makefile]
-indent_style = tab
-
-[*.md]
-trim_trailing_whitespace = false

@@ -34,6 +34,8 @@ cd $WORKDIR
 
 username="$(id -un)" # better than 'whoami'
 
+p() { printf "%s\n" "$@"; }
+
 sleepy() { read -rt "$1" <> <(:) || :; }
 ```
 </details>

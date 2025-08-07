@@ -23,6 +23,7 @@ https://github.com/Zuzzuc/Bash-minifier
 https://github.com/ayumu436/arch-linux-scripts
 https://github.com/ulises-jeremias/dotfiles
 https://github.com/vaaandark/tldr-sh
+https://github.com/b3nj5m1n/xdg-ninja
 
 https://github.com/info-mono/diyfetch
 https://github.com/info-mono/os-ansi

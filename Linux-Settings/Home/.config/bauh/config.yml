@@ -13,15 +13,15 @@ disk:
   trim:
     after_upgrade: true
 download:
-  check_ssl: true
+  check_ssl: false
   icons: true
   multithreaded: true
   multithreaded_client: aria2
 gems:
-- appimage
 - web
-- flatpak
 - arch
+- flatpak
+- appimage
 locale: null
 memory_cache:
   data_expiration: 3600
@@ -31,14 +31,14 @@ suggestions:
   by_type: 15
   enabled: true
 system:
-  notifications: true
-  single_dependency_checking: false
+  notifications: false
+  single_dependency_checking: true
 ui:
-  auto_scale: false
+  auto_scale: true
   hdpi: true
   qt_style: fusion
   scale_factor: 1.0
-  system_theme: false
+  system_theme: true
   table:
     max_displayed: 0
   theme: sublime

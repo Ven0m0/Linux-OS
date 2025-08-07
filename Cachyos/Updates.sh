@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-export LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-sync
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
+export LC_COLLATE=C LC_CTYPE=C 
+export LANG=C.UTF-8 
+export LANGUAGE=en_US
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red
@@ -36,7 +39,7 @@ if ! command -v "$suexec" &>/dev/null; then
   echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
   exit 1
 fi
-
+sync
 echo "🔄 System update using pacman..."
 [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -- "/var/lib/pacman/db.lck"
 
@@ -108,6 +111,7 @@ if has fish; then
   echo "update Fisher..."
   fish -c 'fisher update' || :
 fi
+
 if [[ ! -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
   echo "Reinstall fisher..."
   curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher

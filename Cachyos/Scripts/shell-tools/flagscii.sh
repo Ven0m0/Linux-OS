@@ -3,16 +3,12 @@
 # Trans flag colors (ANSI 256 color escape codes for better accuracy)
 # You can replace with truecolor (24-bit) if supported: \033[38;2;R;G;Bm
 colors=(
-  $'\033[38;2;173;216;230m'  # Light Blue
-  $'\033[38;2;255;192;203m'  # Pink
-  $'\033[38;2;255;255;255m'  # White
-  $'\033[38;2;255;192;203m'  # Pink
-  $'\033[38;2;173;216;230m'  # Light Blue
+  $'\033[38;5;117m'  # Light Blue
+  $'\033[38;5;218m'  # Pink
+  $'\033[38;5;15m'   # White
+  $'\033[38;5;218m'  # Pink
+  $'\033[38;5;117m'  # Light Blue
 )
-
-  # Light blue
-  # Pink
-  # White
 
 reset=$'\033[0m'
 

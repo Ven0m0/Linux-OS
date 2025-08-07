@@ -42,7 +42,9 @@ net.ipv4.ip_forward=1
 - success
 
 further links:
-https://gitlab.idleengineers.com/aaron/raspbian-f2fs
+* https://gitlab.idleengineers.com/aaron/raspbian-f2fs
+* https://github.com/d-a-v/raspbian-f2fs
+* https://github.com/timothybrown/raspbian-f2fs
   
 </details>
 <details>

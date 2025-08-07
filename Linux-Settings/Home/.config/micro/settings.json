@@ -6,7 +6,7 @@
     "detectlimit": 75,
     "encoding": "utf-8",
     "eofnewline": true,
-    "fastdirty": false,
+    "fastdirty": true,
     "fileformat": "unix",
     "filetype": "unknown",
     "keymenu": true,
@@ -16,9 +16,9 @@
     "savecursor": false,
     "savehistory": false,
     "saveundo": true,
-    "scrollspeed": 4,
+    "scrollspeed": 6,
     "smartpaste": true,
     "statusline": true,
-    "sucmd": "sudo",
+    "sucmd": "sudo-rs",
     "syntax": true
 }

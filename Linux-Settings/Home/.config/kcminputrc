@@ -1,0 +1,10 @@
+[Keyboard]
+RepeatDelay=350
+RepeatRate=35
+
+[Libinput][13159][6500][Endgame Gear Endgame Gear OP1 8k Gaming Mouse]
+PointerAcceleration=0.500
+PointerAccelerationProfile=1
+
+[Mouse]
+cursorTheme=breeze_cursors

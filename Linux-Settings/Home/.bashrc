@@ -132,14 +132,16 @@ if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
   export GTK_USE_PORTAL=1
 fi
 
+# gpg (for Github) https://github.com/alfunx/.dotfiles/blob/master/.profile
+export GPG_TTY="$(tty)"
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids/
 export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
 
 # Build env
 if command -v sccache &>/dev/null; then
   export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 \
-         SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G
-  export RUSTC_WRAPPER=sccache
+  		 SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G \
+  		 RUSTC_WRAPPER=sccache
 fi
 command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
 command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2

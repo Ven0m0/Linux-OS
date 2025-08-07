@@ -58,15 +58,15 @@ if status --is-interactive
     
     if type -q ugrep
       functions -e grep 2>/dev/null
-      alias grep 'ugrep --color=auto'
+      alias grep="ugrep --color=auto"
       functions -e fgrep 2>/dev/null
-      alias egrep 'ugrep -E --color=auto'
+      alias egrep="ugrep -E --color=auto"
       functions -e egrep 2>/dev/null
-      alias fgrep 'ugrep -F --color=auto'
+      alias fgrep="ugrep -F --color=auto"
     else
-      alias grep='grep --color=auto'
-      alias fgrep='fgrep --color=auto'
-      alias egrep='egrep --color=auto'
+      alias grep="grep --color=auto"
+      alias fgrep="fgrep --color=auto"
+      alias egrep="egrep --color=auto"
     end
 
     # Reset

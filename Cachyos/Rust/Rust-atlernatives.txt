@@ -183,8 +183,11 @@ cargo install downapk
 
 Sudo:
 https://github.com/trifectatechfoundation/sudo-rs 
-https://crates.io/crates/pleaser cargo install pleaser 
 
+https://github.com/Toqozz/wired-notify
+https://github.com/kamiyaa/joshuto
+https://github.com/sxyazi/yazi
+https://github.com/coastalwhite/lemurs
 
 # Replace system utils with rust versions (ubuntu only)
 https://github.com/jnsgruk/oxidizr

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 # Trans flag colors (ANSI 256 color escape codes for better accuracy)
-# You can replace with truecolor (24-bit) if supported: \033[38;2;R;G;Bm
 colors=(
   $'\033[38;5;117m'  # Light Blue
   $'\033[38;5;218m'  # Pink

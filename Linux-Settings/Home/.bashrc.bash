@@ -211,7 +211,7 @@ fi
 command -v wikiman &>/dev/null && . /usr/share/wikiman/widgets/widget.bash
 
 # ─── Binds ───────────── ────────────────────────────────────────────
-bind 'set completion-query-items 0'
+bind 'set completion-query-items 150'
 bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
 bind 'set menu-complete-display-prefix on'

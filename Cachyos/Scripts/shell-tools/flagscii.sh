@@ -11,8 +11,8 @@ colors=(
 
 reset=$'\033[0m'
 
-# Read banner into array
-read -r -d '' -a banner <<'EOF'
+# Read banner into a variable
+banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -20,13 +20,17 @@ read -r -d '' -a banner <<'EOF'
 ╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗███████║
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
+)
+
+# Split banner into an array
+IFS=$'\n' read -r -d '' -a banner_lines <<< "$banner"
 
 # Total lines
-lines=${#banner[@]}
+lines=${#banner_lines[@]}
 
 # Loop through each line and apply scaled trans flag colors
-for i in "${!banner[@]}"; do
+for i in "${!banner_lines[@]}"; do
   # Map line index to color index (scaled to 5 colors)
   color_index=$(( i * 5 / lines ))
-  printf "%s%s%s\n" "${colors[color_index]}" "${banner[i]}" "$reset"
+  printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
 done

@@ -37,16 +37,9 @@ if ! command -v "$suexec" &>/dev/null; then
   exit 1
 fi
 
-cleanup() {
-  trap - ERR
-  set +e
-  "$suexec" rm /var/lib/pacman/db.lck
-  set -e
-}
-trap cleanup ERR
-
 echo "🔄 System update using pacman..."
-"$suexec" rm /var/lib/pacman/db.lck
+[[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -- "/var/lib/pacman/db.lck"
+
 "$suexec" -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
 "$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
 

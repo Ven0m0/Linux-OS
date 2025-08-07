@@ -485,3 +485,12 @@ bkr ./some_script.sh # some_script.sh is now running in the background
 ### Ascii
 
 [Flag color codes](https://www.flagcolorcodes.com)
+
+
+### alternative clear / fix scrollback buffer clear for kitty
+
+```bash
+printf '\033[2J\033[3J\033[1;1H'
+
+alias clear "printf '\033[2J\033[3J\033[1;1H'"
+```

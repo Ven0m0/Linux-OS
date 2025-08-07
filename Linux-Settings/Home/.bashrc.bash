@@ -246,9 +246,9 @@ fi
 command -v rg &>/dev/null && alias rg='rg --no-stats --color=auto'
 
 if command -v ugrep &>/dev/null; then
-  alias grep 'ugrep --color=auto'
-  alias egrep 'ugrep -E --color=auto'
-  alias fgrep 'ugrep -F --color=auto'
+  alias grep='ugrep --color=auto'
+  alias egrep='ugrep -E --color=auto'
+  alias fgrep='ugrep -F --color=auto'
 else
   alias grep='grep --color=auto'
   alias fgrep='fgrep --color=auto'

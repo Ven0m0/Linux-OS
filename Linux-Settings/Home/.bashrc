@@ -103,6 +103,8 @@ elif command -v qt5ct
   export QT_QPA_PLATFORMTHEME='qt5ct'
 fi
 
+export CLICOLOR=1
+
 ### Apps
 # Wayland
 if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then

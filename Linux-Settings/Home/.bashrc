@@ -1,3 +1,4 @@
+#!/bin/bash
 # ~/.bashrc
 
 # ─── Only for interactive shells ───────────────────────────────────────────
@@ -248,6 +249,11 @@ if command -v rg &>/dev/null; then
     alias grep='rg -uuu --no-stats --color=auto'
     alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8'
     alias egrep='rg --no-stats --color=auto'
+elif command -v ugrep
+	alias grep 'ugrep --color=auto'
+alias egrep 'ugrep -E --color=auto'
+alias fgrep 'ugrep -F --color=auto'
+
 else
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'

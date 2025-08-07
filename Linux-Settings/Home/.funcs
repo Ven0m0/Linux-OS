@@ -96,11 +96,34 @@ up() {
 }
 
 # Automatically do an ls after each cd, z, or zoxide
- cd ()
- {
+ cd () {
 	if [ -n "$1" ]; then
  builtin cd "$@"
 	else
 		builtin cd ~
 	fi
  }
+
+# Printf like echo
+p() {
+  local newline=1 escape=0
+  local OPTIND opt
+
+  # Parse options -n and -e
+  while getopts ":ne" opt; do
+    case $opt in
+      n) newline=0 ;;
+      e) escape=1 ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  # Choose format string
+  local fmt="%s"
+  [[ $escape -eq 1 ]] && fmt="%b"
+
+  # Print arguments space-separated
+  printf "$fmt " "$@"
+  # Add newline if needed
+  [[ $newline -eq 1 ]] && printf "\n"
+}

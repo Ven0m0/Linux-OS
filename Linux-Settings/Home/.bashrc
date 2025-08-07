@@ -1,4 +1,3 @@
-#!/bin/bash
 # ~/.bashrc
 
 # ─── Only for interactive shells ───────────────────────────────────────────

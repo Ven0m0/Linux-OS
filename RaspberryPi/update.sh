@@ -4,6 +4,7 @@ IFS=$'\n\t'
 shopt -s nullglob globstar
 
 # From DietPi, unsure if unsafe
+# https://github.com/MichaIng/DietPi/blob/master/.build/images/dietpi-installer
 # - Reset possibly conflicting environment for sub scripts
 #> /etc/environment
 

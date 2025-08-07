@@ -23,7 +23,13 @@ set mark-symlinked-directories on
 set completion-prefix-display-length 3
 set echo-control-characters off
 set bell-style none
+set completion-query-items 150
 # set enable-keypad on
+
+set visible-stats on
+# Color Options
+set colored-completion-prefix on
+set colored-stats on
 
 # Adds punctuation as word delimiters
 set bind-tty-special-chars off

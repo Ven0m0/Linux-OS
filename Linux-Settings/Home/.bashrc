@@ -104,7 +104,6 @@ elif command -v qt5ct
 fi
 
 export CLICOLOR=1
-alias please="sudo !!"
 
 ### Apps
 # Wayland

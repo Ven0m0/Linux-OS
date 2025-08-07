@@ -243,20 +243,16 @@ if command -v eza &>/dev/null; then
   alias ll='eza -l --color=always --group-directories-first --icons'  # long format
   alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
 fi
-if command -v rg &>/dev/null; then
-    alias rg='rg --no-stats --color=auto'
-    alias grep='rg -uuu --no-stats --color=auto'
-    alias fgrep='rg -uuu --no-stats --color=auto -E UTF-8'
-    alias egrep='rg --no-stats --color=auto'
-elif command -v ugrep
-	alias grep 'ugrep --color=auto'
-alias egrep 'ugrep -E --color=auto'
-alias fgrep 'ugrep -F --color=auto'
+command -v rg &>/dev/null && alias rg='rg --no-stats --color=auto'
 
+if command -v ugrep &>/dev/null; then
+  alias grep 'ugrep --color=auto'
+  alias egrep 'ugrep -E --color=auto'
+  alias fgrep 'ugrep -F --color=auto'
 else
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
 fi
 # ─── Jumping ─────────────────────────────────────────────
 if command -v zoxide &>/dev/null; then

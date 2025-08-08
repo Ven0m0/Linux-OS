@@ -46,6 +46,7 @@ for i in "${!banner_lines[@]}"; do
   printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
 done
 sleepy 1
+sleep 1
 
 #–– Helpers
 has() { command -v "$1" &>/dev/null; }

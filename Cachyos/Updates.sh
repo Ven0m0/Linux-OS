@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-shopt -s nullglob globstar
-set -u
+shopt -s nullglob globstar; set -u
 export LC_ALL=C LANG=C.UTF-8
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black

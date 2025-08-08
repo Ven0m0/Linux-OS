@@ -136,7 +136,7 @@ if has fish; then
   fish -c 'fisher update' || :
 fi
 
-if [[ ! -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
+if [[ ! -f $HOME/.config/fish/functions/fisher.fish ]]; then
   p "Reinstall fisher..."
   curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 fi

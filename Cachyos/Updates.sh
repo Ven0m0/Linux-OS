@@ -98,7 +98,9 @@ elif
   cargo install --list | 
   awk '/^[[:alnum:]]/ {print $1}' | 
   xargs cargo install 2>/dev/null || :
+
 fi
+
 if has cargo-updater; then
   cargo updater -u 2>/dev/null || :
 fi

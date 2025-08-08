@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail
-export LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+set -u
+export LC_ALL=C LANG=C.UTF-8
 # Trans flag colors (ANSI 256 color escape codes for better accuracy)
 colors=(
   $'\033[38;5;117m'  # Light Blue

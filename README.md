@@ -3,20 +3,14 @@
 A collection of scripts and resources for managing and customizing Linux distributions.
 
 <details>
-<summary><b>Updates</b></summary>
+<summary><b>Arch scripts</b></summary>
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash
 ```
-
-</details>
-<details>
-<summary><b>Cleaning</b></summary>
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash
 ```
-
 </details>
 <details>
 <summary><b>Rank mirrors & keyrings</b></summary>

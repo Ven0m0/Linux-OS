@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-IFS=$'\n\t'
 shopt -s nullglob globstar
 set -u
 export LC_ALL=C LANG=C.UTF-8

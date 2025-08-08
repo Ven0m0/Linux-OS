@@ -16,6 +16,7 @@ BLD='\e[1m'  #Bold
 printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
 p() { printf "%s\n" "$@"; }
 pe() { printf "%b\n" "$@"; }
+sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
 # Ascii art banner
 colors=(
   $'\033[38;5;117m'  # Light Blue
@@ -40,6 +41,8 @@ for i in "${!banner_lines[@]}"; do
   color_index=$(( i * 5 / lines ))
   printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
 done
+sleepy 1
+
 #–– Helpers
 has() { command -v "$1" &>/dev/null; }
 

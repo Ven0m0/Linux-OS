@@ -355,3 +355,5 @@ https://crates.io/crates/cargo-unused-features
 https://crates.io/crates/fclones
 
 cargo install config-edit
+
+https://mrpicklepinosaur.github.io/shrs/

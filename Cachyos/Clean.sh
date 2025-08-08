@@ -16,6 +16,7 @@ BLD='\e[1m'  #Bold
 printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
 p() { printf "%s\n" "$@"; }
 pe() { printf "%b\n" "$@"; }
+sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
 # Ascii art banner
 colors=(
   $'\033[38;5;117m'  # Light Blue
@@ -47,6 +48,8 @@ done
 
 sudo -v
 DISK_USAGE_BEFORE=$(df -h)
+
+sleepy 1
 
 # Pacman cleanup
 sudo pacman -Rns $(pacman -Qdtq) --noconfirm || :

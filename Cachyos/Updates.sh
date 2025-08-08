@@ -17,7 +17,8 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
-printf '\e]2;%s\a' "Updates";
+printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
+p() { printf "%s\n" "$@"; }
 
 banner=$(cat <<EOF
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -42,13 +43,13 @@ if ! command -v "$suexec" &>/dev/null; then
   exit 1
 fi
 sync
-echo "🔄 System update using pacman..."
+p "🔄 System update using pacman..."
 [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -- "/var/lib/pacman/db.lck"
 
 "$suexec" pacman -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
 "$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
 
-echo "AUR update..."
+p "AUR update..."
 if has paru; then
   aurtool="$(command -v paru 2>/dev/null)"
   auropts="--batchinstall --combinedupgrade --nouseask --nokeepsrc"
@@ -60,12 +61,12 @@ auropts="--noconfirm --needed --bottomup --skipreview --cleanafter --removemake 
 "$aurtool" -Sua $auropts 2>/dev/null || :
 
 if has topgrade; then
-  echo "update using topgrade..."
+  p "update using topgrade..."
   topno=(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup})
   "$suexec" topgrade -y --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
 fi
 if has uv; then
-  echo "UV tool upgrade..."
+  p "UV tool upgrade..."
   uv tool upgrade --all 2>/dev/null || :
 fi
 if command -v pipx &>/dev/null; then
@@ -79,7 +80,7 @@ else
   command rustup update &>/dev/null || :
 fi
 
-echo "update cargo/rust binaries..."
+p "update cargo/rust binaries..."
 if has cargo-install-update; then
   cargo install-update -agi 2>/dev/null || :
 elif
@@ -97,13 +98,13 @@ if has cargo-list; then
 fi
 
 if has micro; then
-  echo "micro plugin update..."
+  p "micro plugin update..."
   micro -plugin update 2>/dev/null || :
 fi
 
-# Update user-installed npm global packages
 if has npm && npm config get prefix | grep -q "$HOME" 2>/dev/null; then
-    npm update -g 2>/dev/null || :
+  p "Update npm global packages"
+  npm update -g 2>/dev/null || :
 fi
 
 if has flatpak; then
@@ -111,7 +112,7 @@ if has flatpak; then
 fi
 
 if has yazi; then
-  echo "yazi update..."
+  p "yazi update..."
   ya pkg upgrade || :
 fi
 
@@ -121,38 +122,38 @@ if has fish; then
 fi
 
 if [[ ! -f "$HOME/.config/fish/functions/fisher.fish" ]]; then
-  echo "Reinstall fisher..."
+  p "Reinstall fisher..."
   curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
 fi
 
 if [[ -d "$HOME/.basher" ]]; then
-    echo "🔄 Updating $HOME/.basher…"
+    p "Updating $HOME/.basher…"
     git -C "$HOME/.basher" pull || echo "⚠️ basher pull failed"
 fi
 
 if has tldr; then
-  echo "update tldr pages..."
+  p "update tldr pages..."
   ${suexec} tldr -u &>/dev/null &
 fi
 
 if has fwupdmgr; then
-  echo "update with fwupd..."
+  p "update with fwupd..."
   fwupdmgr refresh &>/dev/null || :
   fwupdmgr update || :
 fi
 
 if has sdboot-manage; then
-  echo "update sdboot-manage..."
+  p "update sdboot-manage..."
   "$suexec" sdboot-manage update &>/dev/null || :
   "$suexec" sdboot-manage remove || :
 fi
-echo "misc updates in background..."
+p "misc updates in background..."
 has updatedb && "$suexec" updatedb || :
 has update-desktop-database && "$suexec" update-desktop-database || :
 has update-pciids && "$suexec" update-pciids &>/dev/null || :
 has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 
-echo "🔍 Checking for systemd-boot..."
+p "🔍 Checking for systemd-boot..."
 if [[ -d /sys/firmware/efi ]] && has bootctl && bootctl is-installed &>/dev/null; then
     echo "✅ systemd‑boot detected, updating…"
     "$suexec" bootctl update &>/dev/null; "$suexec" bootctl cleanup &>/dev/null || :
@@ -160,7 +161,7 @@ else
     echo "❌ systemd‑boot not present, skipping."
 fi
 
-echo "Try to update kernel initcpio..."
+p "Try to update kernel initcpio..."
 if has limine-mkinitcpio; then
  "$suexec" limine-mkinitcpio || :
 elif has mkinitcpio; then
@@ -170,7 +171,7 @@ elif has /usr/lib/booster/regenerate_images; then
 elif has dracut-rebuild; then
   "$suexec" dracut-rebuild 2>/dev/null || :
 else
- printf "\\033[31m The initramfs generator was not found, please update initramfs manually...\\033[0m\\n"
+ p "The initramfs generator was not found, please update initramfs manually..."
 fi
 
-echo "✅ All done."
+p "✅ All done."

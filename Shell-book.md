@@ -487,11 +487,6 @@ bkr() {
 bkr ./some_script.sh # some_script.sh is now running in the background
 ```
 
-## ----------------------------
-
-### Ascii
-
-
 ### alternative clear / fix scrollback buffer clear for kitty
 
 ```bash

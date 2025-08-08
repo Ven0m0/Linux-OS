@@ -3,8 +3,8 @@
 
 * [Basher](https://www.basher.it/package)
 * [bpkg](https://bpkg.sh)
-</details>
 
+</details>
 <details>
 <summary><b>Resources</b></summary>
   

@@ -26,6 +26,12 @@ rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86
 ```bash
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Zdylib-lto -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Zprecise-enum-drop-elaboration=yes -Zno-embed-metadata -Clinker=clang -Clink-arg=-fuse-ld=/usr/bin/ld.lld -Clink-arg=-flto -Cllvm-args=-enable-dfa-jump-thread"
 ```
+
+Safe RUSTFLAGS:
+```bash
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Clinker=/usr/bin/ld.lld -Clink-arg=-flto"
+```
+
 ```bash
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
   -fno-semantic-interposition -fdata-sections -ffunction-sections \

@@ -19,6 +19,7 @@ BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
 printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
 p() { printf "%s\n" "$@"; }
+pe() { printf "%b\n" "$@"; }
 
 banner=$(cat <<EOF
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -29,7 +30,7 @@ banner=$(cat <<EOF
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 )
-echo -e "${MGN}${banner}"
+pe "${MGN}${banner}${DEF}"
 
 #–– Helpers
 has() { command -v "$1" &>/dev/null; }

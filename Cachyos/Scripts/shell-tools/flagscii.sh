@@ -10,7 +10,6 @@ colors=(
   $'\033[38;5;117m'  # Light Blue
 )
 reset=$'\033[0m'
-
 # Read banner into a variable
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗

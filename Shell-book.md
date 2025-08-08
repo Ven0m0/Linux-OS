@@ -5,13 +5,18 @@
 * [bpkg](https://bpkg.sh)
 </details>
 
+<details>
+<summary><b>Resources</b></summary>
+  
+* [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
 
-- [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
+* [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
 
-- [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
+* [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
 
-- [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
+* [Ascii flag color codes](https://www.flagcolorcodes.com)
 
+</details>
 
 ## Bash snippets
 <details>
@@ -489,8 +494,6 @@ bkr ./some_script.sh # some_script.sh is now running in the background
 ## ----------------------------
 
 ### Ascii
-
-[Flag color codes](https://www.flagcolorcodes.com)
 
 
 ### alternative clear / fix scrollback buffer clear for kitty

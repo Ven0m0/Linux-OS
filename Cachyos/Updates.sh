@@ -82,6 +82,12 @@ fi
 echo "update cargo/rust binaries..."
 if has cargo-install-update; then
   cargo install-update -agi 2>/dev/null || :
+elif
+  # Update installed crates via default cargo tooling,
+  # which works even if `cargo-install-update` is not available.
+  cargo install --list | 
+  awk '/^[[:alnum:]]/ {print $1}' | 
+  xargs cargo install 2>/dev/null || :
 fi
 if has cargo-updater; then
   cargo updater -u 2>/dev/null || :

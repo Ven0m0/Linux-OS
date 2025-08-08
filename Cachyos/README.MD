@@ -357,3 +357,5 @@ https://crates.io/crates/fclones
 cargo install config-edit
 
 https://mrpicklepinosaur.github.io/shrs/
+
+https://github.com/Toqozz/wired-notify

@@ -1,8 +1,30 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-sync;clear
-
+shopt -s nullglob globstar; set -u
+export LC_ALL=C LANG=C.UTF-8
+#──────────── Color & Effects ────────────
+BLK='\e[30m' # Black
+RED='\e[31m' # Red
+GRN='\e[32m' # Green
+YLW='\e[33m' # Yellow
+BLU='\e[34m' # Blue
+MGN='\e[35m' # Magenta
+CYN='\e[36m' # Cyan
+WHT='\e[37m' # White
+DEF='\e[0m'  # Reset to default
+BLD='\e[1m'  #Bold
+#─────────────────────────────────────────
+printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
+p() { printf "%s\n" "$@"; }
+pe() { printf "%b\n" "$@"; }
+# Ascii art banner
+colors=(
+  $'\033[38;5;117m'  # Light Blue
+  $'\033[38;5;218m'  # Pink
+  $'\033[38;5;15m'   # White
+  $'\033[38;5;218m'  # Pink
+  $'\033[38;5;117m'  # Light Blue
+)
+reset=$'\033[0m'
 banner=$(cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ 
@@ -12,7 +34,16 @@ banner=$(cat <<'EOF'
  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
 EOF
 )
-echo "$banner"
+# Split banner into an array
+IFS=$'\n' read -r -d '' -a banner_lines <<< "$banner"
+# Total lines
+lines=${#banner_lines[@]}
+# Loop through each line and apply scaled trans flag colors
+for i in "${!banner_lines[@]}"; do
+  # Map line index to color index (scaled to 5 colors)
+  color_index=$(( i * 5 / lines ))
+  printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
+done
 
 sudo -v
 DISK_USAGE_BEFORE=$(df -h)

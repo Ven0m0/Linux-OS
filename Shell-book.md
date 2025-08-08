@@ -1,5 +1,5 @@
 <details>
-<summary><h2>Bash Package Managers</h2></summary>
+<summary><b>Bash Package Managers</b></summary>
 
 * [Basher](https://www.basher.it/package)
 * [bpkg](https://bpkg.sh)

@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
-export LC_COLLATE=C LC_CTYPE=C 
-export LANG=C.UTF-8 
-export LANGUAGE=en_US
+set -u
+export LC_ALL=C LANG=C.UTF-8
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red
@@ -20,8 +18,16 @@ BLD='\e[1m'  #Bold
 printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
 p() { printf "%s\n" "$@"; }
 pe() { printf "%b\n" "$@"; }
-
-banner=$(cat <<EOF
+# Ascii art banner
+colors=(
+  $'\033[38;5;117m'  # Light Blue
+  $'\033[38;5;218m'  # Pink
+  $'\033[38;5;15m'   # White
+  $'\033[38;5;218m'  # Pink
+  $'\033[38;5;117m'  # Light Blue
+)
+reset=$'\033[0m'
+banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -30,8 +36,12 @@ banner=$(cat <<EOF
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 )
-pe "${MGN}${banner}${DEF}"
-
+IFS=$'\n' read -r -d '' -a banner_lines <<< "$banner"
+lines=${#banner_lines[@]}
+for i in "${!banner_lines[@]}"; do
+  color_index=$(( i * 5 / lines ))
+  printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
+done
 #–– Helpers
 has() { command -v "$1" &>/dev/null; }
 

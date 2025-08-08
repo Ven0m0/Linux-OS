@@ -12,6 +12,8 @@
 
 * [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
 
+* [Bash Guide](https://guide.bash.academy) &nbsp; [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
+
 * [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
 
 * [Ascii flag color codes](https://www.flagcolorcodes.com)

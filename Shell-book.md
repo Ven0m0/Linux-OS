@@ -106,10 +106,6 @@ BG_BWHT='\e[107m' # Background Bright White
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 </details>
-
-
-## ----------------------------
-
 <details>
 <summary><b>Sleep replacement in bash</b></summary>
 

@@ -5,6 +5,14 @@
 * [bpkg](https://bpkg.sh)
 </details>
 
+
+- [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
+
+- [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
+
+- [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
+
+
 ## Bash snippets
 <details>
 <summary><b>Script start template</b></summary>
@@ -93,12 +101,6 @@ BG_BWHT='\e[107m' # Background Bright White
 curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 </details>
-
-- [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
-
-- [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
-
-- [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
 
 
 ## ----------------------------

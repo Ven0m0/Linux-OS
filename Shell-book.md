@@ -94,7 +94,14 @@ curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
 ```
 </details>
 
-## [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
+- [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
+
+- [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
+
+- [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
+
+
+## ----------------------------
 
 <details>
 <summary><b>Sleep replacement in bash</b></summary>
@@ -477,12 +484,7 @@ bkr() {
 bkr ./some_script.sh # some_script.sh is now running in the background
 ```
 
-
-## [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
-
-
-
-----------------------------
+## ----------------------------
 
 ### Ascii
 

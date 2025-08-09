@@ -12,5 +12,6 @@ https://github.com/ayumu436/arch-linux-scripts
 https://github.com/Hmz-x/std-references/blob/master/sh.txt
 https://github.com/Hmz-x/std-references/blob/master/bash.txt
 https://github.com/ptitfred/posix-toolbox/blob/main/src/short-path/short-path.sh
-https://mrpicklepinosaur.github.io/shrs/
+https://mrpicklepinosaur.github.io/shrs
+NO_COLOR=1
 ```

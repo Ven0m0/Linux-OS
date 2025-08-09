@@ -49,7 +49,8 @@ HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
 shopt -u mailwarn; unset MAILCHECK # Bash-it
 # Disable Ctrl-s, Ctrl-q
-stty -ixon
+#stty -ixon
+stty -ixon -ixoff -ixany
 
 # XDG
 export HOME \

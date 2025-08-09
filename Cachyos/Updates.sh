@@ -14,10 +14,16 @@ DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
 printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
+#──────────── Helpers ────────────────────
+# Check for command
+has() { command -v "$1" &>/dev/null; }
+# Print-echo
 p() { printf "%s\n" "$@"; }
+# Print-echo for color
 pe() { printf "%b\n" "$@"; }
+# Bash sleep replacement
 sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
-# Ascii art banner
+#──────────── Banner ────────────────────
 colors=(
   $'\033[38;5;117m'  # Light Blue
   $'\033[38;5;218m'  # Pink
@@ -45,13 +51,7 @@ for i in "${!banner_lines[@]}"; do
   color_index=$(( i * 5 / lines ))
   printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
 done
-sleepy 1
-sleep 1
-
-#–– Helpers
-has() { command -v "$1" &>/dev/null; }
-
-# Fully safe optimal privelege tool
+#──────────── Safe optimal privelege tool ────────────────────
 suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null || :)"
 [[ "${suexec:-}" == */sudo-rs || "${suexec:-}" == */sudo ]] && "$suexec" -v || :
 suexec="${suexec:-sudo}"
@@ -59,7 +59,8 @@ if ! command -v "$suexec" &>/dev/null; then
   echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
   exit 1
 fi
-sync
+#─────────────────────────────────────────
+sync; sleepy 1 || sleep 1
 p "🔄 System update using pacman..."
 [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -- "/var/lib/pacman/db.lck"
 

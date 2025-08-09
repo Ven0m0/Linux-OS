@@ -6,4 +6,5 @@ https://github.com/aristocratos/bashtop
 https://github.com/lbarchive/yjl
 https://github.com/betafcc/clc
 https://github.com/addy-dclxvi/almighty-dotfiles/blob/master/.toys/memefetch
+https://github.com/procount/pinn
 ```

@@ -26,6 +26,9 @@ fi
 sudo apt-get -y install nala
 ```
 
+- https://github.com/pacstall/pacstall
+- https://github.com/wimpysworld/deb-get
+
 ### Rust
 
 ```

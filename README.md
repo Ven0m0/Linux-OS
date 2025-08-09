@@ -80,4 +80,8 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 * [Gentoo](https://www.gentoo.org)
 * [Linux Mint](https://linuxmint.com/)
 * [DietPi](https://dietpi.com/)
-* [Raspberry Pi OS](https://www.raspberrypi.com/software/)
+* [Raspberry Pi OS](https://www.raspberrypi.com/software)
+
+## Useful websites
+
+- [Wormhole file sharing](https://wormhole.app)

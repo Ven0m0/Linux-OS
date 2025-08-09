@@ -33,3 +33,7 @@ https://github.com/info-mono/emwave
 https://github.com/rustyflavor/clr.sh
 https://github.com/betafcc/clc
 https://github.com/PeterDaveHello/ColorEchoForShell
+
+
+https://github.com/alexanderepstein/Bash-Snippets/blob/master/transfer/transfer
+https://github.com/alexanderepstein/Bash-Snippets/blob/master/weather/weather

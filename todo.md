@@ -9,4 +9,6 @@ https://github.com/addy-dclxvi/almighty-dotfiles/blob/master/.toys/memefetch
 https://github.com/procount/pinn
 https://github.com/SixArm/unix-shell-script-tactics
 https://github.com/ayumu436/arch-linux-scripts
+https://github.com/Hmz-x/std-references/blob/master/sh.txt
+https://github.com/Hmz-x/std-references/blob/master/bash.txt
 ```

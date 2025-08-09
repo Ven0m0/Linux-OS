@@ -37,3 +37,5 @@ https://github.com/PeterDaveHello/ColorEchoForShell
 
 https://github.com/alexanderepstein/Bash-Snippets/blob/master/transfer/transfer
 https://github.com/alexanderepstein/Bash-Snippets/blob/master/weather/weather
+https://github.com/alexanderepstein/Bash-Snippets/blob/master/cheat/cheat
+https://github.com/alexanderepstein/bsupdate

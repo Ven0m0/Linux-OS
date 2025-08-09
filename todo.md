@@ -13,5 +13,8 @@ https://github.com/Hmz-x/std-references/blob/master/sh.txt
 https://github.com/Hmz-x/std-references/blob/master/bash.txt
 https://github.com/ptitfred/posix-toolbox/blob/main/src/short-path/short-path.sh
 https://mrpicklepinosaur.github.io/shrs
+https://github.com/klaver/sysctl/blob/master/sysctl.conf
+```
+```
 NO_COLOR=1
 ```

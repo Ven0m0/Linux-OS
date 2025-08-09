@@ -26,6 +26,16 @@ fi
 sudo apt-get -y install nala
 ```
 
+### Rust
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly
+```
+
+```bash
+sudo apt install rustup
+```
+
 ### Lists
 
 https://firebog.net/

@@ -14,7 +14,7 @@ elif [[ -f /etc/bash_completion ]]; then
 fi
 if [[ -f $HOME/.config/bash/bashenv.env ]]; then
 . "$HOME/.config/Bash/bashenv"
-fi\
+fi
 #──────────── Helpers ────────────────────
 # Check for command
 has() { command -v "$1" &>/dev/null; }

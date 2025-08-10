@@ -278,7 +278,7 @@ fi
 if command -v zoxide &>/dev/null; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
   eval "$(zoxide init bash)"
-else
+elif command -v enhancd &>/dev/null; then
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
 fi
 # ─── End ─────────────────────────────────────────────────────────

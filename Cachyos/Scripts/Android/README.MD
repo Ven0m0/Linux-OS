@@ -12,3 +12,10 @@ Game mode
 # Game on, normal use off:
 adb shell cmd power set-fixed-performance-mode-enabled [true|false]
 ```
+
+```bash
+curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/Android/index.sh | bash
+```
+```bash
+
+```

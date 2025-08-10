@@ -168,6 +168,7 @@ https://crates.io/crates/ffzap
 https://crates.io/crates/rimage cargo install rimage
 https://github.com/Blobfolio/flaca
 https://crates.io/crates/cavif
+https://crates.io/crates/imagineer
 
 Image viewer:
 https://crates.io/crates/oculante

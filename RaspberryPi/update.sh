@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
+#set -euo pipefail
+#IFS=$'\n\t'
+#shopt -s nullglob globstar
 export LC_ALL="C" LANG="C.UTF-8"
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR
@@ -55,8 +55,8 @@ for i in "${!banner_lines[@]}"; do
   printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
 done
 #─────────────────────────────────────────
-sync; sleepy 1 || sleep 1
-sudo -v
+#sync; sleepy 1 || sleep 1
+#sudo -v
 
 if has apt-fast; then
   apttool="apt-fast"

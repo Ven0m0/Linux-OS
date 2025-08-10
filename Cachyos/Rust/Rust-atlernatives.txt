@@ -97,6 +97,8 @@ cargo install rotz
 https://crates.io/crates/dotter cargo install dotter
 pacman -S toml-bombadil # or "cargo install toml-bombadil"
 
+Wallpaper
+https://crates.io/crates/waytrogen
 
 Compression:
 cargo install paxit

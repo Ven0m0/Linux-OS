@@ -46,12 +46,17 @@ BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR
-
 username="$(id -un)" # better than 'whoami'
-
+#──────────── Helpers ────────────────────
+# Check for command
+has() { command -v "$1" &>/dev/null; }
+# Print-echo
 p() { printf "%s\n" "$@"; }
+# Print-echo for color
+pe() { printf "%b\n" "$@"; }
+# Bash sleep replacement
+sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
 
-sleepy() { read -rt "$1" <> <(:) || :; }
 ```
 </details>
 <details>

@@ -72,8 +72,9 @@ cargo install rmz
 Search:
 https://crates.io/crates/ruplacer cargo install ruplacer
 cargo install repgrep
-cargo install ripgrep
+cargo install ripgrep # (not rust but probably better: https://github.com/Genivia/ugrep)
 cargo install grip-grab
+
 cargo install runiq
 cargo install scanit
 https://github.com/whitfin/runiq

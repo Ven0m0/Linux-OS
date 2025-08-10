@@ -44,9 +44,9 @@ sudo apt full-upgrade -y
 # Check's the broken packages and fix them
 sudo dpkg --configure -a
 if [ $? -ne 0 ]; then
-    error_message "There were issues configuring packages."
+    p "There were issues configuring packages."
 else
-    success_message "No broken packages found or fixed successfully."
+    p "No broken packages found or fixed successfully."
 fi
 
 if [ "$(type -t G_SUDO 2>/dev/null)" = function ]; then
@@ -58,7 +58,7 @@ fi
 if has pihole; then
     sudo pihole -up
 else
-    echo "Pi-hole is NOT installed"
+    p "Pi-hole is NOT installed"
 fi
 
 has rpi-eeprom-update && sudo rpi-eeprom-update -a

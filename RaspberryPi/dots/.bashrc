@@ -5,7 +5,6 @@ alias mv='mv -i'
 alias cp='cp -i'
 alias ln='ln -i'
 alias rm='rm -I --preserve-root'
-alias chown='chown'
 alias chmod='chmod --preserve-root'
 alias chgrp='chgrp --preserve-root'
 

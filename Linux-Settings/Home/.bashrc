@@ -68,6 +68,9 @@ setterm --linewrap on
 # Bins
 [[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin:${PATH}"
 
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
 # ─── Environment ─────────────────────────────────────────────────────────
 if command -v micro &>/dev/null; then
   export EDITOR=micro VISUAL=micro

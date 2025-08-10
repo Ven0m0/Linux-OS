@@ -12,7 +12,7 @@ shopt -s nullglob globstar
 
 # Faster sorting and emoji support
 # export LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-export LC_ALL=C LANG=C.UTF-8
+export LC_ALL="C" LANG="C.UTF-8"
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR
 

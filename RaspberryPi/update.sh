@@ -2,9 +2,9 @@
 #set -euo pipefail
 #IFS=$'\n\t'
 #shopt -s nullglob globstar
-export LC_ALL="C" LANG="C.UTF-8"
-WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
-cd $WORKDIR
+#export LC_ALL="C" LANG="C.UTF-8"
+#WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+#cd $WORKDIR
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red
@@ -24,40 +24,10 @@ p() { printf "%s\n" "$@"; }
 # Print-echo for color
 pe() { printf "%b\n" "$@"; }
 # Bash sleep replacement
-sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
-#─────────────────────────────────────────
-#──────────── Banner ────────────────────
-colors=(
-  $'\033[38;5;117m'  # Light Blue
-  $'\033[38;5;218m'  # Pink
-  $'\033[38;5;15m'   # White
-  $'\033[38;5;218m'  # Pink
-  $'\033[38;5;117m'  # Light Blue
-)
-reset=$'\033[0m'
-banner=$(cat <<'EOF'
-██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
-██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
-██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
-██║   ██║██╔═══╝ ██║  ██║██╔══██║   ██║   ██╔══╝  ╚════██║
-╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗███████║
- ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
-EOF
-)
-# Split banner into an array
-IFS=$'\n' read -r -d '' -a banner_lines <<< "$banner"
-# Total lines
-lines=${#banner_lines[@]}
-# Loop through each line and apply scaled trans flag colors
-for i in "${!banner_lines[@]}"; do
-  # Map line index to color index (scaled to 5 colors)
-  color_index=$(( i * 5 / lines ))
-  printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
-done
+#sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
 #─────────────────────────────────────────
 #sync; sleepy 1 || sleep 1
 #sudo -v
-
 if has apt-fast; then
   apttool="apt-fast"
 else

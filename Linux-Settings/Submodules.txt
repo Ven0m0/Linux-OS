@@ -25,6 +25,7 @@ https://github.com/ulises-jeremias/dotfiles
 https://github.com/vaaandark/tldr-sh
 https://github.com/b3nj5m1n/xdg-ninja
 https://github.com/andresgongora/synth-shell
+https://github.com/andresgongora/bash-tools
 
 https://github.com/info-mono/diyfetch
 https://github.com/info-mono/os-ansi

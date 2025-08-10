@@ -110,3 +110,7 @@ $ sudo crontab -e
 
 echo
 read -p "Have a nice day and don't blame me!. Press [Enter] to continue..."
+
+
+
+echo 1 | sudo tee /sys/kernel/mm/ksm/run

@@ -10,6 +10,9 @@ alias chgrp='chgrp --preserve-root'
 
 # apt
 alias apt='sudo apt'
+if has apt-fast; then
+  alias apt-fast="sudo apt-fast "
+fi
 alias sa='apt'
 alias au='sudo apt update && sudo apt upgrade && sudo apt full-upgrade && sudo apt-file update && apt autoremove'
 alias ai='sudo apt install'

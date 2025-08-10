@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sudo -v
 
-sudo pacman -Rns openssh 
+# sudo pacman -Rns openssh 
 
 packages=(
 topgrade
@@ -79,10 +79,8 @@ graphicsmagick
 fclones
 )
 
-
 echo -e "\nChecking installed packages..."
 missing_pkgs=()
-
 # Collect packages that are not installed
 for pkg in "${packages[@]}"; do
   if ! pacman -Qi "$pkg" &>/dev/null; then
@@ -102,18 +100,14 @@ if [ ${#missing_pkgs[@]} -gt 0 ]; then
       # Try batch install
       sudo pacman -S --noconfirm -q "${missing_pkgs[@]}" || {
           echo "Some packages failed to install."
-          
           # Identify failed packages
           for pkg in "${missing_pkgs[@]}"; do
               sudo pacman -S --noconfirm -q "$pkg" || failed_pkgs+=("$pkg")
           done
-
           # Remove failed packages from retry list
           missing_pkgs=($(echo "${missing_pkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}")))
-
           echo "Retrying without: ${failed_pkgs[*]}"
       }
-
       [ ${#failed_pkgs[@]} -eq 0 ] && break  # Stop if all succeed
   done
 
@@ -146,7 +140,6 @@ tuckr-git
 intel-ucode-shrink-hook
 xdg-ninja
 cylon
-pleaser
 scaramanga
 dotter-rs
 kbuilder
@@ -179,8 +172,6 @@ echo "AUR package installation complete."
 # memavaild
 # precached
 
-
-
 # Image downloads
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HOME/Pictures/PFP.web
@@ -206,6 +197,7 @@ crab-fetch
 cargo-list
 minhtml
 cargo-minify
+rimage
 )
 
 # Fast, hardware-accelerated CRC calculation

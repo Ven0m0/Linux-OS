@@ -42,3 +42,11 @@ https://github.com/alexanderepstein/Bash-Snippets/blob/master/transfer/transfer
 https://github.com/alexanderepstein/Bash-Snippets/blob/master/weather/weather
 https://github.com/alexanderepstein/Bash-Snippets/blob/master/cheat/cheat
 https://github.com/alexanderepstein/bsupdate
+
+https://github.com/kaisenlinux/hyfetch
+https://github.com/i-lost-my-bagel/transfilesyeahsurethatsagoodname
+https://github.com/endeavouros-team/PKGBUILDS/tree/master/rami
+https://github.com/endeavouros-team/PKGBUILDS/tree/master/reflector-bash-completion
+https://github.com/endeavouros-team/PKGBUILDS/tree/master/keyserver-rank
+https://github.com/endeavouros-team/eos-bash-shared
+https://github.com/endeavouros-team/PKGBUILDS/tree/master/akm

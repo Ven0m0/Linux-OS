@@ -184,7 +184,7 @@ alias which="command -v "
 runch() {
   # Args
   local s=$1
-  if [ -z "$s" ]; then
+  if [[ -z $s ]]; then
       printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
       return 2
   fi

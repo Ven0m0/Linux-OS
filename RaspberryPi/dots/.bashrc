@@ -1,6 +1,4 @@
-#!/bin/sh
-
-umask 022
+#!/bin/basj
 
 # safety
 alias mv='mv -i'

@@ -245,6 +245,9 @@ bind "set mark-symlinked-directories on"
 bind "set bell-style none"
 bind Space:magic-space
 bind '"\C-o": kill-whole-line'
+# Bash 5.3
+bind 'set timeout 500'
+
 # ─── Aliases ─────────────────────────────────────────────────────────
 # Enable aliases to be sudo’ed
 alias sudo='\sudo '

@@ -82,6 +82,9 @@ https://github.com/sstadick/hck
 https://crates.io/crates/fdf cargo install fdf
 https://github.com/sharkdp/fd
 https://github.com/sharkdp/bat
+https://crates.io/crates/hck
+Edit:
+https://crates.io/crates/vicut
 
 Prompt:
 https://crates.io/crates/starship

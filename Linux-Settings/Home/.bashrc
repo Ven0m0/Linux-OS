@@ -14,13 +14,20 @@ elif [[ -f /etc/bash_completion ]]; then
 fi
 if [[ -f $HOME/.config/bash/bashenv.env ]]; then
 . "$HOME/.config/Bash/bashenv"
-fi
+fi\
+#──────────── Helpers ────────────────────
+# Check for command
+has() { command -v "$1" &>/dev/null; }
+# Print-echo
+p() { printf "%s\n" "$@"; }
+# Print-echo for color
+pe() { printf "%b\n" "$@"; }
 # ─── Prompt ─────────────────────────────────────────────────────────
 # bash-prompt-generator.org
 # PS1='[\u@\h|\w] \$' # Default
 PROMPT_DIRTRIM=2
 configure_prompt() {
-  if command -v starship &>/dev/null; then
+  if has -v starship; then
     eval "$(starship init bash 2>/dev/null)" >/dev/null
   else
     local C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
@@ -28,7 +35,7 @@ configure_prompt() {
     CODE='$( (($?)) && printf "\[\e[38;5;203m\]%d\[\e[0m\]" "$?" )'
     PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$CODE \$ "
   fi
-  command -v mommy &>/dev/null && PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+  has mommy && PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
 }
 configure_prompt
 # Remove "$CODE" to remove error codes
@@ -72,7 +79,7 @@ setterm --linewrap on
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 # ─── Environment ─────────────────────────────────────────────────────────
-if command -v micro &>/dev/null; then
+if has micro; then
   export EDITOR=micro VISUAL=micro
 else
   export EDITOR=nano VISUAL=name
@@ -80,14 +87,14 @@ fi
 git config --global core.editor "$EDITOR" 2>/dev/null
 export VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 alias nano='nano -/ ' # Nano modern keybinds
-command -v curl &>/dev/null && export CURL_HOME="$HOME"
-command -v delta &>/dev/null && export GIT_PAGER=delta
-command -v batpipe &>/dev/null && export BATPIPE=color
-if command -v bat &>/dev/null; then
+has curl && export CURL_HOME="$HOME"
+has delta && export GIT_PAGER=delta
+has batpipe && export BATPIPE=color
+if has bat; then
   export PAGER=bat BAT_STYLE="auto"
   alias cat='bat -pp ' bat='bat --color auto '
   : "${GIT_PAGER:=bat}"
-elif command -v less &>/dev/null; then
+elif has less; then
   export PAGER=less \
          LESSHISTFILE="-" \
          LESS='-FRXns --mouse --use-color --no-init'
@@ -148,23 +155,27 @@ fi
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1
 export GOPROXY="direct" # no fancy google cache for go
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
-if command -v fd &>/dev/null; then
-  FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
-elif command -v rg &>/dev/null; then
-  FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
-else
-  FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
-fi
-export FZF_DEFAULT_COMMAND="$FIND_CMD" \
-       FZF_DEFAULT_OPTS="--info=inline --tiebreak=index --layout=reverse-list --height=70%" \
-       FZF_CTRL_T_COMMAND="$FIND_CMD" \
-       FZF_CTRL_T_OPTS="--select-1 --exit-0  --preview '(bat --color=always --style=numbers --line-range=:250 {} || cat {}) 2>/dev/null)'"
-       FZF_CTRL_R_OPTS='--no-sort --exact' \
-       FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
-       FZF_COMPLETION_PATH_OPTS='--info=inline --walker file,dir,follow,hidden' \
-       FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow' \
-       SKIM_DEFAULT_COMMAND="$FIND_CMD" \
-       SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+fuzzy_finders() {
+	if command -v fd &>/dev/null; then
+  		FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
+	elif command -v rg &>/dev/null; then
+	  FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
+	else
+  		FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
+	fi
+	export FZF_DEFAULT_COMMAND="$FIND_CMD" \
+       	   FZF_DEFAULT_OPTS="--info=inline --tiebreak=index --layout=reverse-list --height=70%" \
+       	   FZF_CTRL_T_COMMAND="$FIND_CMD" \
+       	   FZF_CTRL_T_OPTS="--select-1 --exit-0  --preview '(bat --color=always --style=numbers --line-range=:250 {} || cat {}) 2>/dev/null)'"
+       	   FZF_CTRL_R_OPTS='--no-sort --exact' \
+       	   FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
+      	   FZF_COMPLETION_PATH_OPTS='--info=inline --walker file,dir,follow,hidden' \
+           FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow' \
+	if has sk; then
+		export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
+           		SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+	fi
+}
 # ─── Utility Functions ─────────────────────────────────────────────
 # which() { command -v "$1" 2>/dev/null || return 1; }
 alias which="command -v "

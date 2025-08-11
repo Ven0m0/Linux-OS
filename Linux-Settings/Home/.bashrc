@@ -291,7 +291,7 @@ else
   alias lt="ls --color=auto --group-directories-first -lhAR"
 fi
 
-has rg && alias rg='rg --no-stats --color=auto'
+has rg && alias rg="rg --no-stats --color=auto"
 if has ugrep; then
   alias grep="ugrep --color=auto"
   alias egrep="ugrep -E --color=auto"
@@ -315,7 +315,7 @@ dedupe_path() {
   for dir in ${PATH//:/ }; do
     [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && new+=("$dir")
   done
-  PATH=$(IFS=:; echo "${new[*]}")
+  PATH=$(IFS=:; echo "${new[*]}");
   export PATH
 }
 dedupe_path

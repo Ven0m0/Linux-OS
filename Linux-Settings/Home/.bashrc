@@ -26,16 +26,28 @@ fi
 # bash-prompt-generator.org
 # PS1='[\u@\h|\w] \$' # Default
 PROMPT_DIRTRIM=2
-configure_prompt() {
-  has mommy && PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+configure_prompt(){
+  export LC_ALL=C
   if has starship; then
     eval "$(starship init bash 2>/dev/null)" &>/dev/null
-  else
-    local C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
-          C_PATH='\[\e[38;5;129m\]' C_RESET='\[\e[0m\]' CODE
-    CODE='$( (($?)) && printf "\[\e[38;5;203m\]%d\[\e[0m\]" "$?" )'
-    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$CODE \$ "
-  fi  
+    has mommy && PROMPT_COMMAND="mommy -1 -s \$?; ${PROMPT_COMMAND}"
+    return
+  fi
+  local C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
+        C_PATH='\[\e[38;5;129m\]' C_RESET='\[\e[0m\]'
+
+  PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${GIT_PROMPT} \$ "
+
+  __update_git_prompt(){
+    local root name
+    root=$(git rev-parse --show-toplevel 2>/dev/null) || { GIT_PROMPT=; return; }
+    name=$(basename "$root")
+    GIT_PROMPT=${name:+" \[\e[38;5;203m\]>${name}\[\e[0m\]"}
+  }
+
+  PROMPT_COMMAND="__update_git_prompt; ${PROMPT_COMMAND}"
+  has mommy && PROMPT_COMMAND="mommy -1 -s \$?; ${PROMPT_COMMAND}"
+  unset LC_ALL
 }
 configure_prompt
 # ─── Core ─────────────────────────────────────────────────────

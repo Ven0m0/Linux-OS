@@ -60,11 +60,11 @@ shopt -u mailwarn; unset MAILCHECK # Bash-it
 stty -ixon -ixoff -ixany
 
 # XDG
-export HOME \
-       XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}" \
-       XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}" \
-       XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}" \
-       XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export \
+  XDG_CONFIG_HOME="${XDG_CONFIG_HOME:=$HOME/.config}" \
+  XDG_DATA_HOME="${XDG_DATA_HOME:=$HOME/.local/share}" \
+  XDG_STATE_HOME="${XDG_STATE_HOME:=$HOME/.local/state}" \
+  XDG_CACHE_HOME="${XDG_CACHE_HOME:=$HOME/.cache}"
 
 # Pi3 fix low power message warning
 [[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }

@@ -91,22 +91,34 @@ if has micro; then
 else
   export EDITOR=nano VISUAL=name
 fi
-git config --global core.editor "$EDITOR" 2>/dev/null
 export VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
+git config --global core.editor "$EDITOR" &>/dev/null
 alias nano='nano -/ ' # Nano modern keybinds
 has curl && export CURL_HOME="$HOME"
-has delta && export GIT_PAGER=delta
+
+if has delta; then
+  export GIT_PAGER=delta
+  if has batdiff || has batdiff.sh; then
+    export BATDIFF_USE_DELTA=true
+  fi
+fi
+
 has batpipe && export BATPIPE=color
 if has bat; then
   export PAGER=bat BAT_STYLE="auto"
-  alias cat='bat -pp ' bat='bat --color auto '
-  : "${GIT_PAGER:=bat}"
+  export GIT_PAGER="${GIT_PAGER:=bat}"
+  alias cat="bat -pp " bat="bat --color auto "
+elif has batcat; then
+  export PAGER=batcat BAT_STYLE="auto"
+  export GIT_PAGER="${GIT_PAGER:=batcat}"
+  alias cat="batcat -pp " bat="batcat --color auto "
 elif has less; then
   export PAGER=less \
          LESSHISTFILE="-" \
          LESS='-FRXns --mouse --use-color --no-init'
-  : "${GIT_PAGER:=less}"
+  export GIT_PAGER="${GIT_PAGER:=less}"
 fi
+
 # fd‑ignore file
 if [[ -f $HOME/.ignore ]]; then
   export FD_IGNORE_FILE="$HOME/.ignore"
@@ -115,9 +127,9 @@ elif [[ -f $HOME/.gitignore ]]; then
 fi
 export FIGNORE=argo.lock
 
-if command -v qt6ct
+if has qt6ct; then
 	export QT_QPA_PLATFORMTHEME='qt6ct'
-elif command -v qt5ct
+elif has qt5ct; then
   export QT_QPA_PLATFORMTHEME='qt5ct'
 fi
 
@@ -143,16 +155,16 @@ export GPG_TTY="$(tty)"
 export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
 
 # Build env
-if command -v sccache &>/dev/null; then
+if has sccache; then
   export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 \
   		 SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G \
   		 RUSTC_WRAPPER=sccache
 fi
-command -v ccache &>/dev/null && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
-command -v gix &>/dev/null && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
-command -v rust-parallel &>/dev/null && export PROGRESS_STYLE=simple
+has ccache && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
+has gix && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
+has rust-parallel && export PROGRESS_STYLE=simple
 
-if command -v cargo &>/dev/null; then
+if has cargo; then
   export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
   export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
   export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
@@ -163,9 +175,9 @@ export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1
 export GOPROXY="direct" # no fancy google cache for go
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 fuzzy_finders() {
-	if command -v fd &>/dev/null; then
+	if has fd; then
   		FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
-	elif command -v rg &>/dev/null; then
+	elif has rg; then
 	  FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
 	else
   		FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
@@ -208,7 +220,6 @@ runch() {
 }
 # ─── Completions ─────────────────────────────────────────────────────────
 complete -cf sudo
-
 # Ensure completion directory exists
 COMPDIR="$HOME/.config/bash/completions"
 mkdir -p "$COMPDIR"
@@ -226,21 +237,15 @@ for tool in fzf sk; do
 done; unset tool
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
-command -v pay-respects &>/dev/null && eval "$(pay-respects bash 2>/dev/null)"
-command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)"
-command -v batgrep &>/dev/null && alias batgrep='batgrep --rga -S --color '
-
-if command -v delta &>/dev/null && command -v batdiff &>/dev/null || command -v batdiff.sh &>/dev/null; then
-  export BATDIFF_USE_DELTA=true
-fi
+has pay-respects && eval "$(pay-respects bash 2>/dev/null)"
+has batman && eval "$(batman --export-env 2>/dev/null)"
+has batgrep && alias batgrep='batgrep --rga -S --color '
 
 # Ghostty
-if [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]]; then
-    builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
-fi
+[[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]] && builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 
 # Wikiman
-command -v wikiman &>/dev/null && . /usr/share/wikiman/widgets/widget.bash
+has wikiman && . /usr/share/wikiman/widgets/widget.bash
 # ─── Binds ───────────── ────────────────────────────────────────────
 bind 'set completion-query-items 150'
 bind 'set page-completions off'
@@ -265,10 +270,7 @@ alias ed='$EDITOR '
 alias smi="sudo -E $(command -v micro)"
 
 # Rerun last cmd as sudo
-# alias please='sudo $(history -p !-1)'
-please() {
-  sudo "$(fc -ln -1)"
-}
+please() { sudo "$(fc -ln -1)" }
 
 alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
@@ -277,16 +279,21 @@ alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
 
-command -v bat &>/dev/null && alias cat='bat -pp '
-if command -v eza &>/dev/null; then
+if has eza; then
   alias ls='eza -al --color=always --group-directories-first --icons' # preferred listing
   alias la='eza -a --color=always --group-directories-first --icons'  # all files and dirs
   alias ll='eza -l --color=always --group-directories-first --icons'  # long format
   alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
+else
+  alias ls="ls --color=auto --group-directories-first"
+  alias la="ls --color=auto --group-directories-first -a"
+  alias ll="ls --color=auto --group-directories-first -lh
+  alias lt="ls --color=auto --group-directories-first -lhAR
 fi
-command -v rg &>/dev/null && alias rg='rg --no-stats --color=auto'
 
-if command -v ugrep &>/dev/null; then
+has rg && alias rg='rg --no-stats --color=auto'
+
+if has ugrep; then
   alias grep='ugrep --color=auto'
   alias egrep='ugrep -E --color=auto'
   alias fgrep='ugrep -F --color=auto'
@@ -296,10 +303,10 @@ else
   alias egrep='egrep --color=auto'
 fi
 # ─── Jumping ─────────────────────────────────────────────
-if command -v zoxide &>/dev/null; then
+if has zoxide; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
   eval "$(zoxide init bash)"
-elif command -v enhancd &>/dev/null; then
+elif has enhancd; then
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
 fi
 # ─── End ─────────────────────────────────────────────────────────

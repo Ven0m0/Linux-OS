@@ -224,7 +224,7 @@ complete -cf sudo
 COMPDIR="$HOME/.config/bash/completions"
 mkdir -p "$COMPDIR"
 for tool in fzf sk; do
-  command -v "$tool" &>/dev/null || continue
+  has "$tool" || continue
   comp="$COMPDIR/${tool}_completion.bash"
   [[ -f $comp ]] || {
     [[ $tool == fzf ]] && "$tool" --bash 2>/dev/null >|"$comp"
@@ -234,12 +234,12 @@ for tool in fzf sk; do
       [[ $tool == fzf ]] && . <("$tool" --bash 2>/dev/null)
       [[ $tool == sk  ]] && . <("$tool" --shell bash 2>/dev/null)
     }
-done; unset tool
+done; unset tool comp COMPDIR
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
 has pay-respects && eval "$(pay-respects bash 2>/dev/null)"
 has batman && eval "$(batman --export-env 2>/dev/null)"
-has batgrep && alias batgrep='batgrep --rga -S --color '
+has batgrep && alias batgrep="batgrep --rga -S --color "
 
 # Ghostty
 [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]] && builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
@@ -262,22 +262,22 @@ bind 'set timeout 500'
 
 # ─── Aliases ─────────────────────────────────────────────────────────
 # Enable aliases to be sudo’ed
-alias sudo='\sudo '
-alias doas='\doas '
-alias sudo-rs='\sudo-rs '
-alias mkdir='mkdir -p '
-alias ed='$EDITOR '
-alias smi="sudo -E $(command -v micro)"
+alias sudo="\sudo "
+alias doas="\doas "
+alias sudo-rs="\sudo-rs "
+alias mkdir="mkdir -p "
+alias ed="$EDITOR "
+alias smi="sudo -E ${$EDITOR:=$(command -v micro)"
 
 # Rerun last cmd as sudo
 please() { sudo "$(fc -ln -1)" }
 
-alias cls='clear' c='clear'
-alias ping='ping -c 4' # Stops ping after 4 requests
-alias mount='mount | column -t' # human readable format
-alias ptch='patch -p1 <'
-alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
-alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
+alias cls="clear" c="clear"
+alias ping="ping -c 4" # Stops ping after 4 requests
+alias mount="mount | column -t" # human readable format
+alias ptch="patch -p1 <"
+alias cleansh="curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash"
+alias updatesh="curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash"
 
 if has eza; then
   alias ls="eza -al --color=always --group-directories-first --icons"
@@ -293,13 +293,13 @@ fi
 
 has rg && alias rg='rg --no-stats --color=auto'
 if has ugrep; then
-  alias grep='ugrep --color=auto'
-  alias egrep='ugrep -E --color=auto'
-  alias fgrep='ugrep -F --color=auto'
+  alias grep="ugrep --color=auto"
+  alias egrep="ugrep -E --color=auto"
+  alias fgrep="ugrep -F --color=auto"
 else
-  alias grep='grep --color=auto'
-  alias fgrep='fgrep --color=auto'
-  alias egrep='egrep --color=auto'
+  alias grep="grep --color=auto"
+  alias fgrep="fgrep --color=auto"
+  alias egrep="egrep --color=auto"
 fi
 # ─── Jumping ─────────────────────────────────────────────
 if has zoxide; then

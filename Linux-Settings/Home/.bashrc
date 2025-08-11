@@ -39,24 +39,24 @@ configure_prompt() {
 }
 configure_prompt
 # Remove "$CODE" to remove error codes
-# ─── Core Environment + Options ─────────────────────────────────────────────────────
+# ─── Core ─────────────────────────────────────────────────────
 export LC_CTYPE=C LC_COLLATE=C LANG="${LANG:-C.UTF-8}"; unset LC_ALL
 export CDPATH=".:~"
-ulimit -c 0 2>/dev/null # disable core dumps
-shopt -s nullglob globstar 2>/dev/null
-shopt -s histappend cmdhist 2>/dev/null
-shopt -s checkwinsize 2>/dev/null
-shopt -s dirspell cdspell autocd 2>/dev/null
-shopt -s hostcomplete no_empty_cmd_completion 2>/dev/null
+ulimit -c 0 &>/dev/null # disable core dumps
+shopt -s nullglob globstar &>/dev/null
+shopt -s histappend cmdhist &>/dev/null
+shopt -s checkwinsize &>/dev/null
+shopt -s dirspell cdspell autocd &>/dev/null
+shopt -s hostcomplete no_empty_cmd_completion &>/dev/null
 HISTSIZE=1000
 HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
-shopt -u mailwarn; unset MAILCHECK # Bash-it
+shopt -u mailwarn &>/dev/null; unset MAILCHECK # Bash-it
 # Disable Ctrl-s, Ctrl-q
 #stty -ixon
-stty -ixon -ixoff -ixany
+stty -ixon -ixoff -ixany &>/dev/null
 
 # XDG
 export \
@@ -66,10 +66,10 @@ export \
   XDG_CACHE_HOME="${XDG_CACHE_HOME:=$HOME/.cache}"
 
 # Pi3 fix low power message warning
-[[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off; setterm --bfreq 0; }
-setterm --linewrap on
+[[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off &>/dev/null; setterm --bfreq 0 &>/dev/null; }
+setterm --linewrap on &>/dev/null
 
-# ─── Sourcing ──────────────────────────────────────────────
+# ─── Env ──────────────────────────────────────────────
 [[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
 # Bins
 [[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin:${PATH}"
@@ -86,7 +86,6 @@ fi
 # Enable settings for wget
 has wget && wget() { command wget -c --hsts-file="${XDG_CACHE_HOME:-$HOME/.cache}/wget-hsts" "$@" }
 
-# ─── Environment ─────────────────────────────────────────────────────────
 if has micro; then
   export EDITOR=micro VISUAL=micro
 else

@@ -316,7 +316,6 @@ dedupe_path() {
     [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && new+=("$dir")
   done
   PATH=$(IFS=:; echo "${new[*]}")
+  export PATH
 }
-dedupe_path; export PATH
-# force 0 exit-code
-true
+dedupe_path

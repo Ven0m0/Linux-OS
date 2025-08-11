@@ -192,7 +192,7 @@ fuzzy_finders() {
            FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow' \
 	if has sk; then
 		export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
-           		SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+           		SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS";
 	fi
 }
 # ─── Utility Functions ─────────────────────────────────────────────

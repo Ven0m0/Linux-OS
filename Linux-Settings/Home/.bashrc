@@ -27,18 +27,17 @@ fi
 # PS1='[\u@\h|\w] \$' # Default
 PROMPT_DIRTRIM=2
 configure_prompt() {
-  if has -v starship; then
+  has mommy && PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+  if has starship; then
     eval "$(starship init bash 2>/dev/null)" &>/dev/null
   else
     local C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
           C_PATH='\[\e[38;5;129m\]' C_RESET='\[\e[0m\]' CODE
     CODE='$( (($?)) && printf "\[\e[38;5;203m\]%d\[\e[0m\]" "$?" )'
     PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$CODE \$ "
-  fi
-  has mommy && PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+  fi  
 }
 configure_prompt
-# Remove "$CODE" to remove error codes
 # ─── Core ─────────────────────────────────────────────────────
 unset LC_ALL; export LC_CTYPE=C LC_COLLATE=C
 if locale -a | grep -q "^en_US\.utf8$"; then
@@ -46,14 +45,10 @@ if locale -a | grep -q "^en_US\.utf8$"; then
 else
   export LANG="C.UTF-8"
 fi
-
 export CDPATH=".:$HOME"
 ulimit -c 0 &>/dev/null # disable core dumps
-shopt -s nullglob globstar &>/dev/null
-shopt -s histappend cmdhist &>/dev/null
-shopt -s checkwinsize &>/dev/null
-shopt -s dirspell cdspell autocd &>/dev/null
-shopt -s hostcomplete no_empty_cmd_completion &>/dev/null
+shopt -s nullglob globstar histappend cmdhist checkwinsize \
+         dirspell cdspell autocd hostcomplete no_empty_cmd_completion &>/dev/null
 HISTSIZE=1000
 HISTFILESIZE=${HISTSIZE}
 HISTCONTROL="erasedups:ignoreboth"
@@ -61,7 +56,6 @@ HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
 shopt -u mailwarn &>/dev/null; unset MAILCHECK # Bash-it
 # Disable Ctrl-s, Ctrl-q
-#stty -ixon
 stty -ixon -ixoff -ixany &>/dev/null
 
 # XDG

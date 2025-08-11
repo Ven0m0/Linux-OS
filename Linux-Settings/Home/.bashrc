@@ -41,7 +41,7 @@ configure_prompt
 # Remove "$CODE" to remove error codes
 # ─── Core ─────────────────────────────────────────────────────
 export LC_CTYPE=C LC_COLLATE=C LANG="${LANG:-C.UTF-8}"; unset LC_ALL
-export CDPATH=".:~"
+export CDPATH=".:$HOME"
 ulimit -c 0 &>/dev/null # disable core dumps
 shopt -s nullglob globstar &>/dev/null
 shopt -s histappend cmdhist &>/dev/null

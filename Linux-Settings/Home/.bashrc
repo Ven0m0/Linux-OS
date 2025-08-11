@@ -40,7 +40,13 @@ configure_prompt() {
 configure_prompt
 # Remove "$CODE" to remove error codes
 # ─── Core ─────────────────────────────────────────────────────
-export LC_CTYPE=C LC_COLLATE=C LANG="${LANG:-C.UTF-8}"; unset LC_ALL
+unset LC_ALL; export LC_CTYPE=C LC_COLLATE=C
+if locale -a | grep -q "^en_US\.utf8$"; then
+  export LANG="en_US.UTF-8"
+else
+  export LANG="C.UTF-8"
+fi
+
 export CDPATH=".:$HOME"
 ulimit -c 0 &>/dev/null # disable core dumps
 shopt -s nullglob globstar &>/dev/null

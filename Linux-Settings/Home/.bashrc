@@ -280,19 +280,18 @@ alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
 
 if has eza; then
-  alias ls='eza -al --color=always --group-directories-first --icons' # preferred listing
-  alias la='eza -a --color=always --group-directories-first --icons'  # all files and dirs
-  alias ll='eza -l --color=always --group-directories-first --icons'  # long format
-  alias lt='eza -aT --color=always --group-directories-first --icons' # tree listing
+  alias ls="eza -al --color=always --group-directories-first --icons"
+  alias la="eza -a --color=always --group-directories-first --icons"
+  alias ll="eza -l --color=always --group-directories-first --icons"
+  alias lt="eza -aT --color=always --group-directories-first --icons"
 else
   alias ls="ls --color=auto --group-directories-first"
   alias la="ls --color=auto --group-directories-first -a"
-  alias ll="ls --color=auto --group-directories-first -lh
-  alias lt="ls --color=auto --group-directories-first -lhAR
+  alias ll="ls --color=auto --group-directories-first -lh"
+  alias lt="ls --color=auto --group-directories-first -lhAR"
 fi
 
 has rg && alias rg='rg --no-stats --color=auto'
-
 if has ugrep; then
   alias grep='ugrep --color=auto'
   alias egrep='ugrep -E --color=auto'

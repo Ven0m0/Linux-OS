@@ -189,10 +189,10 @@ fuzzy_finders() {
        	   FZF_CTRL_R_OPTS='--no-sort --exact' \
        	   FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
       	   FZF_COMPLETION_PATH_OPTS='--info=inline --walker file,dir,follow,hidden' \
-           FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow' \
+           FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow'
 	if has sk; then
 		export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
-           		SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS";
+           		SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 	fi
 }
 # ─── Utility Functions ─────────────────────────────────────────────

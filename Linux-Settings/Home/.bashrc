@@ -2,11 +2,17 @@
 
 # ─── Only for interactive shells ───────────────────────────────────────────
 [[ $- != *i* ]] && return
+#──────────── Helpers ────────────────────
+# Check for command
+has() { command -v "$1" &>/dev/null; }
+# Print-echo
+p() { printf "%s\n" "$@"; }
+# Print-echo for color
+pe() { printf "%b\n" "$@"; }
 # ─── Sourcing ───────────────────────────────────────────
 if [[ -f /etc/bashrc ]]; then
 	. /etc/bashrc
 fi
-
 # Enable bash programmable completion features in interactive shells
 if [[ -f /usr/share/bash-completion/bash_completion ]]; then
 	. /usr/share/bash-completion/bash_completion
@@ -16,19 +22,6 @@ fi
 if [[ -f $HOME/.config/bash/bashenv.env ]]; then
 . "$HOME/.config/Bash/bashenv"
 fi
-
-if [[ -f "$HOME/.config/wget/wgetrc" ]]; then
-  export WGETRC="${WGETRC:=${XDG_CONFIG_HOME:-$HOME/.config}/wget/wgetrc}"
-elif [[ -f "$HOME/wgetrc" ]]; then
-  export WGETRC="${WGETRC:=${XDG_CONFIG_HOME:-$HOME}/wgetrc}"
-fi
-#──────────── Helpers ────────────────────
-# Check for command
-has() { command -v "$1" &>/dev/null; }
-# Print-echo
-p() { printf "%s\n" "$@"; }
-# Print-echo for color
-pe() { printf "%b\n" "$@"; }
 # ─── Prompt ─────────────────────────────────────────────────────────
 # bash-prompt-generator.org
 # PS1='[\u@\h|\w] \$' # Default

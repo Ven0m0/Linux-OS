@@ -28,7 +28,7 @@ fi
 PROMPT_DIRTRIM=2
 configure_prompt() {
   if has -v starship; then
-    eval "$(starship init bash 2>/dev/null)" >/dev/null
+    eval "$(starship init bash 2>/dev/null)" &>/dev/null
   else
     local C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
           C_PATH='\[\e[38;5;129m\]' C_RESET='\[\e[0m\]' CODE
@@ -39,7 +39,6 @@ configure_prompt() {
 }
 configure_prompt
 # Remove "$CODE" to remove error codes
-
 # ─── Core Environment + Options ─────────────────────────────────────────────────────
 export LC_CTYPE=C LC_COLLATE=C LANG="${LANG:-C.UTF-8}"; unset LC_ALL
 export CDPATH=".:~"
@@ -75,8 +74,17 @@ setterm --linewrap on
 # Bins
 [[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin:${PATH}"
 
-# make less more friendly for non-text input files, see lesspipe(1)
-[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+# Make less more friendly for non-text input files, see lesspipe(1)
+[[ -x /usr/bin/lesspipe ]] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# Wget
+if [[ -f "$HOME/.config/wget/wgetrc" ]]; then
+  export WGETRC="${WGETRC:=${XDG_CONFIG_HOME:-$HOME/.config}/wget/wgetrc}"
+elif [[ -f "$HOME/wgetrc" ]]; then
+  export WGETRC="${WGETRC:=${XDG_CONFIG_HOME:-$HOME}/wgetrc}"
+fi
+# Enable settings for wget
+has wget && wget() { command wget -c --hsts-file="${XDG_CACHE_HOME:-$HOME/.cache}/wget-hsts" "$@" }
 
 # ─── Environment ─────────────────────────────────────────────────────────
 if has micro; then

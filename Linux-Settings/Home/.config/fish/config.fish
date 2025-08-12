@@ -57,7 +57,6 @@ if type -q zoxide >/dev/null 2>&1
 end
 
 # ─── Abbreviations ─────────────────────────────────────────────────────────
-abbr -a
 abbr -a mv mv -iv
 abbr -a rm rm -iv
 abbr -a cp cp -iv

@@ -10,6 +10,9 @@ set input-meta on
 set output-meta on
 set convert-meta off
 
+# Fix stupid "\e[200~" whenever I paste in bash
+set enable-bracketed-paste off
+
 # Other
 set meta-flag on
 set completion-ignore-case On

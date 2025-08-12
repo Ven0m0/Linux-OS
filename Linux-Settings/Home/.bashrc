@@ -23,31 +23,29 @@ if [[ -f $HOME/.config/bash/bashenv.env ]]; then
 . "$HOME/.config/Bash/bashenv"
 fi
 # ─── Prompt ─────────────────────────────────────────────────────────
-# bash-prompt-generator.org
-# PS1='[\u@\h|\w] \$' # Default
+# PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 PROMPT_DIRTRIM=2
-configure_prompt(){
-  export LC_ALL=C
+configure_prompt() {
+  local GIT_PROMPT='' \
+        C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
+        C_PATH='\[\e[38;5;129m\]' C_RESET='\[\e[0m\]'
   if has starship; then
     eval "$(starship init bash 2>/dev/null)" &>/dev/null
-    has mommy && PROMPT_COMMAND="mommy -1 -s \$?; ${PROMPT_COMMAND}"
-    return
+  else
+    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$GIT_PROMPT \$ "
+    __update_git_prompt() {
+      [[ $PWD == ${__git_prompt_prev_pwd:-} ]] && return
+      __git_prompt_prev_pwd=$PWD
+      local root name
+      root=$(LC_ALL=C git rev-parse --show-toplevel 2>/dev/null) || { GIT_PROMPT=; return; }
+      name=${root##*/}
+      GIT_PROMPT=" \[\e[38;5;203m\]>$name\[\e[0m\]"
+    }
+    [[ ";$PROMPT_COMMAND" != *";"__update_git_prompt* ]] && \
+      PROMPT_COMMAND="__update_git_prompt; $PROMPT_COMMAND"
   fi
-  local C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
-        C_PATH='\[\e[38;5;129m\]' C_RESET='\[\e[0m\]'
-
-  PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]${GIT_PROMPT} \$ "
-
-  __update_git_prompt(){
-    local root name
-    root=$(git rev-parse --show-toplevel 2>/dev/null) || { GIT_PROMPT=; return; }
-    name=$(basename "$root")
-    GIT_PROMPT=${name:+" \[\e[38;5;203m\]>${name}\[\e[0m\]"}
-  }
-
-  PROMPT_COMMAND="__update_git_prompt; ${PROMPT_COMMAND}"
-  has mommy && PROMPT_COMMAND="mommy -1 -s \$?; ${PROMPT_COMMAND}"
-  unset LC_ALL
+  [[ ";$PROMPT_COMMAND" != *";"*mommy\ -1\ -s* ]] && \
+    PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
 }
 configure_prompt
 # ─── Core ─────────────────────────────────────────────────────

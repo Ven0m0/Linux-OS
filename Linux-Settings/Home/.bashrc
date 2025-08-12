@@ -113,10 +113,7 @@ fi
 export VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 git config --global core.editor "$EDITOR" &>/dev/null
 alias nano='nano -/ ' # Nano modern keybinds
-if has curl; then
-  export CURL_HOME="$HOME"
-  alias curl="curl -fsSLO --tcp-nodelay --tcp-fastopen --tls-earlydata --tls-max 1.3 --http3 "
-fi
+has curl && export CURL_HOME="$HOME"
 
 if has delta; then
   export GIT_PAGER=delta

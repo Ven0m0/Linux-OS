@@ -55,7 +55,7 @@ logs/
 tmp/
 *~
 .*.kate-swp
-.swp.*
+*swp.*
 node_modules
 target
 build

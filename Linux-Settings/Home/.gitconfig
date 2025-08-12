@@ -131,3 +131,12 @@
 	prompt = false
 [difftool]
 	prompt = false
+[cola]
+ startupmode = folder
+[diff-so-fancy]
+	markEmptyLines = false
+	stripLeadingSymbols = false
+[bash]
+	showInformativeStatus = false
+	showUntrackedFiles = no
+	showDirtyState = no

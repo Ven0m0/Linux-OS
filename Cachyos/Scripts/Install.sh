@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+export LC_ALL=C LANG=C.UTF-8
 sudo -v
 
 # sudo pacman -Rns openssh 
@@ -236,6 +236,9 @@ micro -plugin install cheat editorconfig fzf filemanager autofmt quoter misspell
 # Fisher fix
 fisher install jorgebucaran/fisher
 fisher install acomagu/fish-async-prompt
+
+# Basher
+curl -s https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash
 
 echo "Installing updates"
 sudo pacman -Syyu --noconfirm || true

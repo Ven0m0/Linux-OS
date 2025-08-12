@@ -114,10 +114,12 @@ LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
 CLDFLAGS=(-fuse-ld=lld)
 # —————— Git Cleanup ——————
 if (( GIT )); then
-  git reflog expire --expire=now --all
-  git gc --prune=now --aggressive
-  git repack -ad --depth=250 --window=250
-  git clean -fdX
+  if git rev-parse --is-inside-work-tree &>/dev/null; then
+    git reflog expire --expire=now --all
+    git gc --prune=now --aggressive
+    git repack -ad --depth=250 --window=250
+    git clean -fdX
+  fi
 fi
 Scope="--workspace --allow-dirty --allow-staged --allow-no-vcs"
 # —————— Update ——————

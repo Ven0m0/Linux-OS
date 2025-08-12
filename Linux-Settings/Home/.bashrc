@@ -274,11 +274,15 @@ has wikiman && . /usr/share/wikiman/widgets/widget.bash
 bind 'set completion-query-items 150'
 bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
+bind 'set show-all-if-unmodified on'
 bind 'set menu-complete-display-prefix on'
 bind "set completion-ignore-case on"
 bind "set completion-map-case on"
 bind "set mark-symlinked-directories on"
 bind "set bell-style none"
+bind 'set skip-completed-text on'
+bind 'set colored-stats on'
+bind 'set colored-completion-prefix on'
 bind Space:magic-space
 bind '"\C-o": kill-whole-line'
 # Bash 5.3

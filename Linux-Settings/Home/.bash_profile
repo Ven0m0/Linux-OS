@@ -2,5 +2,14 @@
 # ~/.bash_profile
 #
 
-[[ -f ~/.bashrc ]] && . ~/.bashrc
-. "$HOME/.cargo/env"
+[[ -f $HOME/.bashrc ]] && . "$HOME/.bashrc"
+[[ -f $HOME/.cargo/env ]] && . "$HOME/.cargo/env"
+
+_prependpath() {
+    # Only prepend if not already in PATH
+    [ -d "$1" ] && [ ":$PATH:" != *":$1:"* ] && PATH="$1${PATH:+:$PATH}"
+}
+
+_prependpath "$HOME/.local/bin"
+_prependpath "$HOME/bin"
+export PATH

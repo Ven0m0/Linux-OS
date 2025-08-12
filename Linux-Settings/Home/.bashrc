@@ -278,6 +278,8 @@ bind Space:magic-space
 bind '"\C-o": kill-whole-line'
 # Bash 5.3
 bind 'set timeout 500'
+# Fix bracket paste
+bind 'set enable-bracketed-paste off'
 
 # ─── Aliases ─────────────────────────────────────────────────────────
 # Enable aliases to be sudo’ed

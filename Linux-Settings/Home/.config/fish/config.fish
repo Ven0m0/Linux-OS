@@ -1,14 +1,17 @@
 source /usr/share/cachyos-fish-config/cachyos-config.fish
 
-if type -q hyfetch
-	set fetch "hyfetch -b fastfetch -m rgb -p transgender"
-elif type -q fastfetch
-	set fetch "fastfetch"
+set -gx fish_prompt_pwd_dir_length 2
+function fish_title
 end
 
 # Run welcome message
+if type -q hyfetch >/dev/null 2>&1
+    set fetch hyfetch -b fastfetch -m rgb -p transgender
+else if type -q fastfetch >/dev/null 2>&1
+    set fetch fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread
+end
 function fish_greeting
-  hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null || fastfetch
+    LC_ALL=C $fetch 2>/dev/null
 end
 
 if test -d ~/.basher
@@ -17,23 +20,22 @@ end
 set -gx PATH $basher $PATH
 status --is-interactive; and . (basher init - fish | psub)
 
-
-set -e LC_ALL 
+set -e LC_ALL
 
 # Fix weird fish binding, restore ctrl+v
-bind --erase \cv
+bind --erase \cv 2>/dev/null
 
 # Prompt
-_evalcache starship init fish
+_evalcache starship init fish 2>/dev/null
 
-if type -q batman
-	_evalcache batman --export-env
+if type -q batman >/dev/null 2>&1
+	_evalcache batman --export-env 2>/dev/null
 end
-if type -q batpipe
-	_evalcache batpipe
+if type -q batpipe >/dev/null 2>&1
+	_evalcache batpipe 2>/dev/null
 end
-if type -q pay-respects
-	_evalcache pay-respects fish --alias
+if type -q pay-respects >/dev/null 2>&1
+	_evalcache pay-respects fish --alias 2>/dev/null
 end
 
 # ─── Ghostty bash integration ─────────────────────────────────────────────────────────
@@ -41,17 +43,17 @@ if test "$TERM" = "xterm-ghostty" -a -e "$GHOSTTY_RESOURCES_DIR"/shell-integrati
     source "$GHOSTTY_RESOURCES_DIR"/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
 end
 
-set -Ux FZF_LEGACY_KEYBINDINGS 0
-set -Ux FZF_COMPLETE 1
-bind \cs '__ethp_commandline_toggle_sudo.fish'
+set -gx FZF_LEGACY_KEYBINDINGS 0 2>/dev/null
+set -gx FZF_COMPLETE 1 2>/dev/null
+bind \cs '__ethp_commandline_toggle_sudo.fish' 2>/dev/null
 # Async prompt
 set -U async_prompt_functions fish_prompt fish_right_prompt
 set -gx async_prompt_enable 1
 
- _evalcache fzf --fish
-if type -q zoxide
+ _evalcache fzf --fish 2>/dev/null
+if type -q zoxide >/dev/null 2>&1
 	set _ZO_FZF_OPTS "--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
-	_evalcache zoxide init fish
+	_evalcache zoxide init fish 2>/dev/null
 end
 
 # ─── Abbreviations ─────────────────────────────────────────────────────────
@@ -63,6 +65,6 @@ abbr -a sort sort -h
 abbr -a mkdir mkdir -pv
 abbr -a df df -h
 abbr -a free free -h
-abbr -a grep grep -n
+#abbr -a grep grep -n
 abbr -a ip ip --color=auto
 abbr -a du du -hcsx

@@ -10,15 +10,17 @@
     "fileformat": "unix",
     "filetype": "unknown",
     "keymenu": true,
-    "mkparents": false,
+    "mkparents": true,
     "mouse": true,
     "rmtrailingws": true,
     "savecursor": false,
-    "savehistory": false,
+    "savehistory": true,
     "saveundo": true,
     "scrollspeed": 6,
+    "scrollbar": true,
     "smartpaste": true,
     "statusline": true,
     "sucmd": "sudo-rs",
-    "syntax": true
+    "syntax": true,
+    "clipboard": "terminal"
 }

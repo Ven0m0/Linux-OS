@@ -277,8 +277,10 @@ alias sudo="\sudo "
 alias doas="\doas "
 alias sudo-rs="\sudo-rs "
 alias mkdir="mkdir -p "
-alias ed="$EDITOR "
-alias smi="sudo -E ${$EDITOR:=$(command -v micro)"
+alias ed='$EDITOR'
+alias mi='$EDITOR'
+alias smi='sudo $EDITOR'
+# alias smi="sudo -E ${$EDITOR:=$(command -v micro)"
 
 # Rerun last cmd as sudo
 please() { sudo "$(fc -ln -1)" }

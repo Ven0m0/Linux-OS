@@ -22,5 +22,8 @@
     "statusline": true,
     "sucmd": "sudo-rs",
     "syntax": true,
-    "clipboard": "terminal"
+    "clipboard": "terminal",
+    "tabstospaces": true,
+    "tabmovement": true,
+    "tabsize": 2
 }

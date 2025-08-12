@@ -278,6 +278,7 @@ bind 'set show-all-if-unmodified on'
 bind 'set menu-complete-display-prefix on'
 bind "set completion-ignore-case on"
 bind "set completion-map-case on"
+bind 'set mark-directories on'[
 bind "set mark-symlinked-directories on"
 bind "set bell-style none"
 bind 'set skip-completed-text on'

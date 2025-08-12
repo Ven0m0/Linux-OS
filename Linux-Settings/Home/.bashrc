@@ -80,9 +80,18 @@ export \
 setterm --linewrap on &>/dev/null
 
 # ─── Env ──────────────────────────────────────────────
-[[ -f "$HOME/.cargo/env" ]] && . "$HOME/.cargo/env"
+[[ -f $HOME/.cargo/env ]] && . "$HOME/.cargo/env"
 # Bins
-[[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin:${PATH}"
+[[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin${PATH:+:$PATH}"
+
+_prependpath() {
+    # Only prepend if not already in PATH
+    [ -d "$1" ] && [ ":$PATH:" != *":$1:"* ] && PATH="$1${PATH:+:$PATH}"
+}
+_prependpath "$HOME/.local/bin"
+_prependpath "$HOME/bin"
+export PATH
+
 
 # Make less more friendly for non-text input files, see lesspipe(1)
 [[ -x /usr/bin/lesspipe ]] && eval "$(SHELL=/bin/sh lesspipe)"

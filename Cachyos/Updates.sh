@@ -140,18 +140,19 @@ fi
 if [[ ! -f $HOME/.config/fish/functions/fisher.fish ]]; then
   p "Reinstall fisher..."
   curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+  curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
   #source <(curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher
 fi
 
-if [[ -d "$HOME/.basher" ]]; then
-    p "Updating $HOME/.basher…"
-    git -C "$HOME/.basher" pull || echo "⚠️ basher pull failed"
+if [[ -d $HOME/.basher ]]; then
+    p "Updating $HOME/.basher"
+    git -C "$HOME/.basher" pull >/dev/null || p "⚠️ basher pull failed"
 fi
 
-if has tldr; then
-  p "update tldr pages..."
-  ${suexec} tldr -u &>/dev/null &
-fi
+p "update tldr pages..."
+has tldr && "$suexec" tldr -u &>/dev/null &
+p "updating Font cache"
+has fc-cache && "$suexec" fc-cache -sf 2>/dev/null
 
 if has fwupdmgr; then
   p "update with fwupd..."

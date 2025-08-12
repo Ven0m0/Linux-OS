@@ -103,7 +103,7 @@ elif [[ -f "$HOME/wgetrc" ]]; then
   export WGETRC="${WGETRC:=${XDG_CONFIG_HOME:-$HOME}/wgetrc}"
 fi
 # Enable settings for wget
-has wget && wget() { command wget -c --hsts-file="${XDG_CACHE_HOME:-$HOME/.cache}/wget-hsts" "$@" }
+has wget && wget() { command wget-cnv --hsts-file="${XDG_CACHE_HOME:-$HOME/.cache}/wget-hsts" "$@" }
 
 if has micro; then
   export EDITOR=micro VISUAL=micro

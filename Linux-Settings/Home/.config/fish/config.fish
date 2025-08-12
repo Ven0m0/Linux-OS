@@ -1,10 +1,14 @@
 source /usr/share/cachyos-fish-config/cachyos-config.fish
 
+if type -q hyfetch
+	set fetch "hyfetch -b fastfetch -m rgb -p transgender"
+elif type -q fastfetch
+	set fetch "fastfetch"
+end
+
 # Run welcome message
 function fish_greeting
-  hyfetch -b fastfetch -m rgb -p transgender
-  #hyfetch -b fastfetch -m rgb -p rainbow
-  #hyfetch -b fastfetch -m rgb -p bisexual
+  hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null || fastfetch
 end
 
 if test -d ~/.basher
@@ -12,6 +16,9 @@ if test -d ~/.basher
 end
 set -gx PATH $basher $PATH
 status --is-interactive; and . (basher init - fish | psub)
+
+
+set -e LC_ALL 
 
 # Fix weird fish binding, restore ctrl+v
 bind --erase \cv

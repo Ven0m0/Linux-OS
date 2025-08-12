@@ -66,3 +66,5 @@ abbr -a df df -h
 abbr -a free free -h
 abbr -a ip ip --color=auto
 abbr -a du du -hcsx
+
+true >/dev/null 2>&1

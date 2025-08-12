@@ -55,6 +55,7 @@ if locale -a | grep -q "^en_US\.utf8$"; then
 else
   export LANG="C.UTF-8"
 fi
+export LANGUAGE="en_US"
 export CDPATH=".:$HOME"
 ulimit -c 0 &>/dev/null # disable core dumps
 shopt -s nullglob globstar histappend cmdhist checkwinsize \

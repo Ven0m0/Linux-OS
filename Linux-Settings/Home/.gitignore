@@ -12,6 +12,27 @@
 .dotter/cache.toml
 .dotter/cache
 
+# Dotfiles
+.*hist
+.*history
+.thumbnails/
+.wget-hsts
+.lesshst
+
+# XDG user dirs
+Desktop/
+Documents/
+Downloads/
+Music/
+Pictures/
+Public/
+Templates/
+Videos/
+
+# Security
+.gnupg/*
+.ssh/
+
 # Backups
 *.bak
 *.gho

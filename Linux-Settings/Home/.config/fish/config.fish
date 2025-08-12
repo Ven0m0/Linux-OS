@@ -1,9 +1,10 @@
 source /usr/share/cachyos-fish-config/cachyos-config.fish
 
 set -gx fish_prompt_pwd_dir_length 2
+set -gx __fish_git_prompt_show_informative_status 0
+set -gx __fish_git_prompt_showupstream none
 function fish_title
 end
-
 # Run welcome message
 if type -q hyfetch >/dev/null 2>&1
     set fetch hyfetch -b fastfetch -m rgb -p transgender
@@ -42,7 +43,6 @@ end
 if test "$TERM" = "xterm-ghostty" -a -e "$GHOSTTY_RESOURCES_DIR"/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
     source "$GHOSTTY_RESOURCES_DIR"/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
 end
-
 set -gx FZF_LEGACY_KEYBINDINGS 0 2>/dev/null
 set -gx FZF_COMPLETE 1 2>/dev/null
 bind \cs '__ethp_commandline_toggle_sudo.fish' 2>/dev/null

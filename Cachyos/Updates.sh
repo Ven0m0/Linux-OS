@@ -70,12 +70,12 @@ p "🔄 System update using pacman..."
 p "AUR update..."
 if has paru; then
   aurtool="$(command -v paru 2>/dev/null)"
-  auropts="--batchinstall --combinedupgrade --nouseask --nokeepsrc"
+  auropts_base="--batchinstall --combinedupgrade --nouseask --nokeepsrc"
 elif has yay; then
   aurtool="$(command -v yay 2>/dev/null)"
-  auropts="--noredownload --norebuild"
+  auropts_base="--noredownload --norebuild"
 fi
-auropts="--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudo ${suexec} ${auropts}"
+auropts="--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudo ${suexec} ${auropts_base}"
 "$aurtool" -Sua $auropts 2>/dev/null || :
 
 if has topgrade; then

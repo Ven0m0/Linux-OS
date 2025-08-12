@@ -67,6 +67,9 @@ HISTTIMEFORMAT='%F %T '
 shopt -u mailwarn &>/dev/null; unset MAILCHECK # Bash-it
 # Disable Ctrl-s, Ctrl-q
 stty -ixon -ixoff -ixany &>/dev/null
+# https://github.com/perlun/dotfiles/blob/master/profile
+# causes problems with git commit
+set +H
 
 # XDG
 export \

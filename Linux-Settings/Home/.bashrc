@@ -92,7 +92,6 @@ _prependpath "$HOME/.local/bin"
 _prependpath "$HOME/bin"
 export PATH
 
-
 # Make less more friendly for non-text input files, see lesspipe(1)
 [[ -x /usr/bin/lesspipe ]] && eval "$(SHELL=/bin/sh lesspipe)"
 
@@ -190,7 +189,7 @@ if has cargo; then
   export RUST_LOG=off RUST_BACKTRACE=0
 fi
 # Python opt's
-export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1
+export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
 export GOPROXY="direct" # no fancy google cache for go
 # ─── Fuzzy finders ─────────────────────────────────────────────────────────
 fuzzy_finders() {

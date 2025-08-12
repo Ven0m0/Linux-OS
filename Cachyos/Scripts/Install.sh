@@ -218,6 +218,7 @@ cargo install rust-curl
 # GUI for fclones
 cargo install fclones-gui
 
+cargo install shell-mommy
 paru -S mommy
 
 

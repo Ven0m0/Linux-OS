@@ -21,7 +21,7 @@ cargo clippy --fix --allow-dirty --allow-staged
 cargo-shear --fix --expand
 cargo-machete --fix --with-metadata && cargo-machete --fix
 cargo-diet diet
-cargo-cache -g -f -e clean-unref
+cargo-cache -egf
 cargo install --profile release --path .
 ```
 

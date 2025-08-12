@@ -57,9 +57,9 @@ if status --is-interactive >/dev/null 2>&1
     end
 
     # Reset
-    alias clear='command clear; and fish_greeting'
-    alias cls='command clear; and fish_greeting'
-    abbr --add c clear
+    alias clear='command clear; and fish_greeting 2>/dev/null'
+    alias cls='command clear; and fish_greeting 2>/dev/null'
+    abbr -a c clear
     
     # bind Esc Esc to toggle_sudo
     #source ~/.config/fish/functions/presudo.fish

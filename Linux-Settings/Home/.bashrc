@@ -11,7 +11,6 @@ p() { printf "%s\n" "$@"; }
 pe() { printf "%b\n" "$@"; }
 # ─── Sourcing ───────────────────────────────────────────
 [[ -f /etc/bashrc ]] && . /etc/bashrc
-
 # Enable bash programmable completion features in interactive shells
 if [[ -f /usr/share/bash-completion/bash_completion ]]; then
 	. /usr/share/bash-completion/bash_completion

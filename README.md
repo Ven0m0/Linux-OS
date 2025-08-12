@@ -79,6 +79,18 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 * [Lure.sh](https://lure.sh)
 * [Basher](https://www.basher.it/package)
 * [bpkg](https://bpkg.sh)
+* [x-cmd]()
+
+  ```bash
+  eval "$(curl https://get.x-cmd.com)"
+  ```
+
+  fish
+  
+  ```sh
+  curl https://get.x-cmd.com | sh
+  chmod +x $HOME/.x-cmd.root/bin/x-cmd && ./$HOME/.x-cmd.root/bin/x-cmd fish --setup
+  ```
 
 </details>
 

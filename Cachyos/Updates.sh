@@ -132,14 +132,14 @@ if has yazi; then
   ya pkg upgrade || :
 fi
 
+p "Updating shell environments..."
 if has fish; then
-  echo "update Fisher..."
+  p "update Fisher..."
   fish -c 'fisher update' || :
 fi
-
 if [[ ! -f $HOME/.config/fish/functions/fisher.fish ]]; then
   p "Reinstall fisher..."
-  curl -fsSL4 --tcp-nodelay --tcp-fastopen --tls-max 1.3 --tls-earlydata --http3 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+  curl -fsSL --http3 --tcp-nodelay --tcp-fastopen --tls-max 1.3 --tls-earlydata https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
   #source <(curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher
 fi
 
@@ -147,35 +147,34 @@ if [[ -d $HOME/.basher ]]; then
     p "Updating $HOME/.basher"
     git -C "$HOME/.basher" pull >/dev/null || p "⚠️ basher pull failed"
 fi
-
 p "update tldr pages..."
 has tldr && "$suexec" tldr -u &>/dev/null &
-p "updating Font cache"
-has fc-cache && "$suexec" fc-cache -sf 2>/dev/null
 
 if has fwupdmgr; then
   p "update with fwupd..."
-  fwupdmgr refresh &>/dev/null || :
-  fwupdmgr update || :
+  fwupdmgr refresh &>/dev/null; fwupdmgr update >/dev/null || :
 fi
 
 if has sdboot-manage; then
   p "update sdboot-manage..."
-  "$suexec" sdboot-manage update &>/dev/null || :
   "$suexec" sdboot-manage remove || :
+  "$suexec" sdboot-manage update &>/dev/null || :
 fi
+
+p "updating Font cache"
+has fc-cache && "$suexec" fc-cache -sf 2>/dev/null
 p "misc updates in background..."
-has updatedb && "$suexec" updatedb || :
-has update-desktop-database && "$suexec" update-desktop-database || :
+has updatedb && "$suexec" updatedb >/dev/null || :
+has update-desktop-database && "$suexec" update-desktop-database >/dev/null || :
 has update-pciids && "$suexec" update-pciids &>/dev/null || :
 has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 
 p "🔍 Checking for systemd-boot..."
 if [[ -d /sys/firmware/efi ]] && has bootctl && bootctl is-installed &>/dev/null; then
-    echo "✅ systemd‑boot detected, updating…"
+    p "✅ systemd‑boot detected, updating…"
     "$suexec" bootctl update &>/dev/null; "$suexec" bootctl cleanup &>/dev/null || :
 else
-    echo "❌ systemd‑boot not present, skipping."
+    p "❌ systemd‑boot not present, skipping."
 fi
 
 p "Try to update kernel initcpio..."

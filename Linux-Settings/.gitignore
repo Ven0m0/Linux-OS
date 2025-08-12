@@ -11,6 +11,8 @@
 *.orig
 *.rej
 *.tmp
+.*cache/
+*.log
 
 # LibreOffice locks
 .~lock.*#
@@ -18,6 +20,7 @@
 # Swap Files #
 .*.kate-swp
 .swp.*
+*.swp
 *~
 
 # temporary files which can be created if a process still has a handle open of a deleted file
@@ -35,3 +38,24 @@
 # Log files created by default by the nohup command
 nohup.out
 token
+
+# Dotfiles
+.*hist
+.*history
+.thumbnails/
+.wget-hsts
+.lesshst
+
+# XDG user dirs
+Desktop/
+Documents/
+Downloads/
+Music/
+Pictures/
+Public/
+Templates/
+Videos/
+
+# Security
+.gnupg/*
+.ssh/

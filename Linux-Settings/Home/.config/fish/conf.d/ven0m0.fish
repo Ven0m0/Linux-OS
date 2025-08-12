@@ -70,7 +70,7 @@ end
 set -l seen
 set -l newpath
 for dir in $PATH
-  if not contains -- $dir $seen
+  if not contains -- $dir $seen 2>/dev/null
     set seen $seen $dir
     set newpath $newpath $dir
   end

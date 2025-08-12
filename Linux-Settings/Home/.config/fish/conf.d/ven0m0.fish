@@ -16,25 +16,12 @@ set -gx FZF_CTRL_T_COMMAND $FZF_DEFAULT_COMMAND
 set -gx SKIM_DEFAULT_COMMAND 'fd -tf -F --strip-cwd-prefix --exclude .git; or rg --files; or find .'
 set -gx SKIM_DEFAULT_OPTIONS '--inline-info' '--tiebreak=index' '--layout=reverse-list' '--height=70%' '--preview=bat --color=always -s {}' '--preview-window=right:50%'
 
-# Faster locale
-#if status --is-interactive
-  #set -x LC_ALL C; set -x LANG C.UTF-8
-#else
-  #set -x LANG C; set -x LC_ALL C
-#end
-
 # ─── Only for Interactive Shells ────────────────────────────────────────────────
-if status --is-interactive
-    # Fast prompt
-    set -gx fish_prompt_pwd_dir_length 1
-    set -gx __fish_git_prompt_show_informative_status 0
-    set -gx __fish_git_prompt_showupstream none
-
+if status --is-interactive >/dev/null 2>&1
     # Aliases: safe & efficient defaults
     alias cat='bat -pp --strip-ansi=auto '
 
     # My stuff
-    alias sshdb='dbclient'
     alias ptch='patch -p1 <'
     alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
     alias clearnsh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
@@ -51,17 +38,17 @@ if status --is-interactive
     # Stops ping after sending 4 ECHO_REQUEST packets.
     alias ping='ping -c 4'
 
-    if type -q rg
+    if type -q rg >/dev/null 2>&1
       functions -e rg 2>/dev/null # reset due to cachyos-fish-config
       alias rg='rg --color=auto -S --engine=auto --block-buffered'
     end
     
-    if type -q ugrep
-      functions -e grep 2>/dev/null
+    if type -q ugrep >/dev/null 2>&1
+      functions -e grep >/dev/null 2>&1
       alias grep="ugrep --color=auto"
-      functions -e fgrep 2>/dev/null
+      functions -e fgrep >/dev/null 2>&1
       alias egrep="ugrep -E --color=auto"
-      functions -e egrep 2>/dev/null
+      functions -e egrep >/dev/null 2>&1
       alias fgrep="ugrep -F --color=auto"
     else
       alias grep="grep --color=auto"
@@ -78,17 +65,14 @@ if status --is-interactive
     #source ~/.config/fish/functions/presudo.fish
     #bind \e\e toggle_sudo
 end
-
 # ─── Path Deduplication ─────────────────────────────────────────────────────────
 # Deduplicate PATH (preserve order) to prevent PATH bloat across reloads
 set -l seen
 set -l newpath
-
 for dir in $PATH
   if not contains -- $dir $seen
     set seen $seen $dir
     set newpath $newpath $dir
   end
 end
-
 set -gx PATH $newpath

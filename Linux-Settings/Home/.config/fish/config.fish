@@ -64,6 +64,5 @@ abbr -a sort sort -h
 abbr -a mkdir mkdir -pv
 abbr -a df df -h
 abbr -a free free -h
-#abbr -a grep grep -n
 abbr -a ip ip --color=auto
 abbr -a du du -hcsx

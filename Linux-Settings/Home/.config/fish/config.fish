@@ -19,10 +19,10 @@ if test -d ~/.basher
     set basher ~/.basher/bin
 end
 set -gx PATH $basher $PATH
-status --is-interactive; and . (basher init - fish | psub)
+# status --is-interactive; and source (basher init - fish | psub)
+status --is-interactive; and _evalcache basher init - fish 2>/dev/null
 
 set -e LC_ALL
-
 # Fix weird fish binding, restore ctrl+v
 bind --erase \cv 2>/dev/null
 

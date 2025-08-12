@@ -45,7 +45,7 @@ irqbalance
 xorg-xhost
 libappindicator-gtk3
 appmenu-gtk-module
-xdg-desktop-portal
+xdg-desktop-portal 
 modprobed-db
 cachyos-ksm-settings
 cpupower-gui
@@ -56,7 +56,6 @@ multipath-tools
 libretls
 uutils-coreutils
 sudo-rs
-gitoxide
 curl-rustls
 librustls
 eza
@@ -199,6 +198,9 @@ minhtml
 cargo-minify
 rimage
 )
+
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread"
+cargo install --git https://github.com/GitoxideLabs/gitoxide gitoxide --no-default-features --features max-pure
 
 # Fast, hardware-accelerated CRC calculation
 cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq || true

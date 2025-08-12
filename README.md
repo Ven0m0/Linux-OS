@@ -70,6 +70,17 @@ Lite version (no overwriting existing ones)
 curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh -s -- -l
 ```
 </details>
+<details>
+<summary><b>Packages:</b></summary>
+
+* [Arch PKG](https://archlinux.org/packages)
+* [AUR PKG](https://aur.archlinux.org)
+* [Crates.io](https://crates.io)
+* [Lure.sh](https://lure.sh)
+* [Basher](https://www.basher.it/package)
+* [bpkg](https://bpkg.sh)
+
+</details>
 
 ## Supported Linux Distributions
 

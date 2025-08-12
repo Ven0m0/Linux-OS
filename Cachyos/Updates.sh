@@ -190,4 +190,10 @@ else
  p "The initramfs generator was not found, please update initramfs manually..."
 fi
 
+p "Updating pkgfile database"
+"$suexec" sh -c 'pkgfile -u -q <&- >&- 2>&- &'
+
+p "Updating mlocate database"
+"$suexec" updatedb
+
 p "✅ All done."

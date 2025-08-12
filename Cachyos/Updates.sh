@@ -139,7 +139,7 @@ fi
 
 if [[ ! -f $HOME/.config/fish/functions/fisher.fish ]]; then
   p "Reinstall fisher..."
-  curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
+  curl -fsSL4 --tcp-nodelay --tcp-fastopen --tls-max 1.3 --tls-earlydata --http3 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
   #source <(curl -fsSL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher
 fi
 

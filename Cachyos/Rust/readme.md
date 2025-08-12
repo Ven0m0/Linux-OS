@@ -33,6 +33,10 @@ export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=sy
 ```
 
 ```bash
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread"
+```
+
+```bash
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
   -fno-semantic-interposition -fdata-sections -ffunction-sections \
 	-mprefer-vector-width=256 -ftree-vectorize -fslp-vectorize \

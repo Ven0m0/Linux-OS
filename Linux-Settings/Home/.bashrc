@@ -210,9 +210,12 @@ fuzzy_finders() {
            FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow'
 	if has sk; then
 		export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
-           		SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+           SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 	fi
 }
+# skim (fzf replacement)
+alias fzf='sk'
+
 # ─── Utility Functions ─────────────────────────────────────────────
 # which() { command -v "$1" 2>/dev/null || return 1; }
 alias which="command -v "
@@ -318,17 +321,42 @@ if has ugrep; then
   alias grep="ugrep --color=auto"
   alias egrep="ugrep -E --color=auto"
   alias fgrep="ugrep -F --color=auto"
+if has rg; then
+  alias grep='rg --no-line-number'
+  alias fgrep="fgrep --color=auto"
+  alias egrep="egrep --color=auto"
 else
   alias grep="grep --color=auto"
   alias fgrep="fgrep --color=auto"
   alias egrep="egrep --color=auto"
 fi
+
+# fd (find replacement)
+has fd && alias find='fd'
+
+# Procs (ps replacement)
+has procs && alias ps='procs'
+
+# Dust (du replacement)
+has dust && alias du='dust'
+
+# Bottom (top replacement)
+has btm && alias top='btm' htop='btm'
+
+# Duf (df replacement)
+has duf && alias df='duf'
+
+alias dir='dir --color=auto'
+alias vdir='vdir --color=auto'
+
 # ─── Jumping ─────────────────────────────────────────────
 if has zoxide; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
   eval "$(zoxide init bash)"
+  alias cd='z'
 elif has enhancd; then
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
+  alias cd='enhancd'
 fi
 # ─── End ─────────────────────────────────────────────────────────
 # Deduplicate PATH (preserve order)

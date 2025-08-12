@@ -64,6 +64,10 @@ build
 *.pyo
 .Trashes
 .Trash-*
+token
+nohup.out
+.~lock.*#
+token
 
 # KDE directory preferences
 .directory
@@ -71,15 +75,5 @@ build
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
 
-# Log files created by default by the nohup command
-nohup.out
-
 # temporary files which can be created if a process still has a handle open of a deleted file
 .fuse_hidden*
-
-# LibreOffice locks
-.~lock.*#
-
-# Log files created by default by the nohup command
-nohup.out
-token

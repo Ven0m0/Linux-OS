@@ -28,9 +28,12 @@ export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=sy
 ```
 
 Safe RUSTFLAGS:
+
 ```bash
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Clinker=/usr/bin/ld.lld -Clink-arg=-flto"
 ```
+
+No lto:
 
 ```bash
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread"

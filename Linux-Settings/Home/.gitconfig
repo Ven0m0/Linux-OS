@@ -22,6 +22,7 @@
 	ui = auto
 [push]
 	default = simple
+	autoSetupRemote = true
 [pull]
 	ff = only
 	rebase = true
@@ -40,6 +41,8 @@
 	renames = copies
 	colorMoved = plain
 	tool = meld
+	nmemonicPrefix = true
+	external = difft
 [merge]
 	conflictStyle = zdiff3
 	tool = meld
@@ -53,11 +56,14 @@
 	autoPackLimit = 25
 	autoDetach = true
 	packRefs = true
-	reflogExpireUnreachable = 7.days
-	reflogExpire = 14.days
+	reflogExpireUnreachable = 0
+	reflogExpire = 0
 	aggressiveDepth = 250
 	aggressiveWindow = 250
 	repackFilter = blob:none
+	pruneExpire = now
+	rerereresolved = 0
+	rerereunresolved = 0
 [checkout]
 	workers = 0
 [index]
@@ -70,6 +76,7 @@
 	pruneTags = true
 	all = true
 	parallel = 0
+	fsckobjects = true
 [help]
 	autoCorrect = prompt
 [rebase]
@@ -124,12 +131,14 @@
 	reflog = delta
 	show = delta
 	diff = delta
+	difftool = true
 [advice]
 	statusUoption = false
 [mergetool "meld"]
 	useAutoMerge = true
 [mergetool]
 	prompt = false
+	keepBackup = false
 [difftool]
 	prompt = false
 [cola]
@@ -141,3 +150,5 @@
 	showInformativeStatus = false
 	showUntrackedFiles = no
 	showDirtyState = no
+[remote "origin"]
+	prune = true

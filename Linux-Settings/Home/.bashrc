@@ -10,18 +10,18 @@ p() { printf "%s\n" "$@"; }
 # Print-echo for color
 pe() { printf "%b\n" "$@"; }
 # ─── Sourcing ───────────────────────────────────────────
-if [[ -f /etc/bashrc ]]; then
-	. /etc/bashrc
-fi
+[[ -f /etc/bashrc ]] && . /etc/bashrc
+
 # Enable bash programmable completion features in interactive shells
 if [[ -f /usr/share/bash-completion/bash_completion ]]; then
 	. /usr/share/bash-completion/bash_completion
 elif [[ -f /etc/bash_completion ]]; then
 	. /etc/bash_completion
 fi
-if [[ -f $HOME/.config/bash/bashenv.env ]]; then
-. "$HOME/.config/Bash/bashenv"
-fi
+[[ -f $HOME/.config/bash/bashenv.env ]] && . "$HOME/.config/Bash/bashenv"
+
+# [[ -f $HOME/.fns]] && . "$HOME/.fns"
+# [[ -f $HOME/.funcs]] && . "$HOME/.funcs"
 # ─── Prompt ─────────────────────────────────────────────────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 PROMPT_DIRTRIM=2

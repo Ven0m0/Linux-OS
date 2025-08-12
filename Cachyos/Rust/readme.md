@@ -24,17 +24,17 @@ rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86
 <summary><b>Flags:</b></summary>
 
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=true -Clto=fat -Cembed-bitcode -Zunstable-options -Zdylib-lto -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Zprecise-enum-drop-elaboration=yes -Zno-embed-metadata -Clink-arg=-fuse-ld=lld -Clink-arg=-flto -Cllvm-args=-enable-dfa-jump-thread"
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Zdylib-lto -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Zprecise-enum-drop-elaboration=yes -Zno-embed-metadata -Clink-arg=-fuse-ld=lld -Clink-arg=-flto -Cllvm-args=-enable-dfa-jump-thread"
 ```
 
 Safe RUSTFLAGS:
 
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=true -Clto=fat -Cembed-bitcode -Clink-arg=-flto -Clink-arg=-fuse-ld=lld -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Zthreads=16 -Cllvm-args=-enable-dfa-jump-thread"
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Clink-arg=-flto -Clink-arg=-fuse-ld=lld -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Zthreads=16 -Cllvm-args=-enable-dfa-jump-thread"
 ```
 
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=true -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread"
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread"
 ```
 
 ```Linkers

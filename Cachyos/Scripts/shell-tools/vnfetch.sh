@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # vnfetch (ven0m0-fetch)
 # For Arch/Debian based distro's
 # The goal is to keep dependencies as minimal as possible

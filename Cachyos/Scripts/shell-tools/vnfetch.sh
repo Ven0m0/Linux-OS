@@ -39,9 +39,9 @@ fi
 PROFILE="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="$(printf '%s' "${SHELL##*/}")"
 wmname="$(echo $XDG_CURRENT_DESKTOP $DESKTOP_SESSION)"
-LOCALIP="$(ip a | grep glo | awk '{print $2}' | head -1)"
-GLOBALIP="$(wget -q -O - http://icanhazip.com 2>/dev/null | tail)"
-weather="$(curl -s wttr.in/Bielefeld?format=3 2>/dev/null)"
+LOCALIP="$(\ip route get 1 | tr -s ' ' | cut -d' ' -f7)"
+GLOBALIP="$(\curl -s icanhazip.com 2>/dev/null)"
+weather="$(\curl -s "wttr.in/Bielefeld?format=3" 2>/dev/null)"
 CPU="$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo 2>/dev/null | tr -s ' ')"
 GPU="$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
 
@@ -73,7 +73,6 @@ MemPct=$(( (MemUsed * 100 + MemTotal/2) / MemTotal ))  # rounded percent
 # Convert to Gibibytes with two decimal places
 MemUsedGiB=$(awk "BEGIN {printf \"%.2f\", $MemUsed/1024/1024}")
 MemTotalGiB=$(awk "BEGIN {printf \"%.2f\", $MemTotal/1024/1024}")
-
 # ────────────────
 # Disk for "/"
 # POSIX df may not support --output, so use standardized parsing

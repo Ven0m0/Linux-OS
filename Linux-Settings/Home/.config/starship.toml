@@ -82,7 +82,7 @@ unknown_indicator = ''
 
 # https://github.com/fwdekker/mommy
 [custom.mommy]
-disabled = false
+disabled = true
 style = "red"
 command = "mommy -1 -s $status"
 when = "true"

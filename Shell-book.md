@@ -503,5 +503,5 @@ bkr ./some_script.sh # some_script.sh is now running in the background
 printf '\e[3J\e[H\e[2J\e[m'
 alias clear 
 
-alias clear "printf '\033[2J\033[3J\033[1;1H'"
+alias clear "printf '\e[3J\e[H\e[2J\e[m'"
 ```

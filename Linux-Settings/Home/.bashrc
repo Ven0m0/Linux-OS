@@ -309,12 +309,12 @@ alias smi='sudo $EDITOR'
 # Rerun last cmd as sudo
 please() { sudo "$(fc -ln -1)" }
 
-alias cls='clear' c='clear'
+alias clear "printf '\e[3J\e[H\e[2J\e[m'" c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
 alias mount='mount | column -t' # human readable format
 alias ptch='patch -p1 <'
-alias cleansh="curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash"
-alias updatesh="curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash"
+alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
+alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
 
 if has eza; then
   alias ls='eza -al --color=always --group-directories-first --icons'

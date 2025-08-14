@@ -89,8 +89,21 @@ if has uv; then
   p "UV tool upgrade..."
   uv tool upgrade --all 2>/dev/null || :
 fi
-if command -v pipx &>/dev/null; then
+if has pipx; then
     pipx upgrade-all 2>/dev/null || :
+fi
+if has pip; then
+    log "Upgrading pip user packages..."
+    if has jq; then
+        python3 -m pip list --user --outdated --format=json | jq -r '.[].name' | while read -r pkg; do
+            python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
+        done
+    else
+        # Fallback: parse the human-readable format
+        python3 -m pip list --user --outdated | awk 'NR>2 {print $1}' | while read -r pkg; do
+            python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
+        done
+    fi
 fi
 
 rustup_bin="$(command -v rustup 2>/dev/null || :)"

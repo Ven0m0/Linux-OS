@@ -279,6 +279,17 @@ runch() {
       *)   exec "./$s" ;;
   esac
 }
+
+gcom() {
+  git add .
+  git commit -m "$1"
+}
+lazyg() {
+  git add .
+  git commit -m "$1"
+  git push
+}
+
 #────────────Aliases────────────
 # Enable aliases to be sudo’ed
 alias sudo="\sudo "

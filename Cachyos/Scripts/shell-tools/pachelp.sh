@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#|---/ /+---------------------+---/ /|#
+#|--/ /-| PKG-Manager wrapper |--/ /-|#
+#|/ /---+---------------------+/ /---|#
 # Credit:
 # https://github.com/ekahPruthvi/cynageOS/
 

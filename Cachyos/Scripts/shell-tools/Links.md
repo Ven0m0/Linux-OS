@@ -73,4 +73,6 @@ clean_script() {
     | pp_strip_copyright \
     | pp_strip_separators
 }
+#──────────── Usage ────────────
+echo "Usage: '.\clean_script.sh myscript.sh > myscript.cleaned.sh'"
 ```

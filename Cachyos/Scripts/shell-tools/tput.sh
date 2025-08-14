@@ -26,3 +26,8 @@ else
     BG_BBLK='\033[100m' BG_BRED='\033[101m' BG_BGRN='\033[102m' BG_BYLW='\033[103m'
     BG_BBLU='\033[104m' BG_BMGN='\033[105m' BG_BCYN='\033[106m' BG_BWHT='\033[107m'
 fi
+
+# - Remove colour codes: Use extended globbing
+shopt -s extglob
+input_string=${input_string//\\e[[0-9]*([;0-9])m}
+shopt -u extglob

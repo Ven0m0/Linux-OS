@@ -218,37 +218,16 @@ fuzzy_finders() {
        	   FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
       	   FZF_COMPLETION_PATH_OPTS='--info=inline --walker file,dir,follow,hidden' \
            FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow'
+	if has fzf; then
+	  unalias fzf
+	fi
 	if has sk; then
 		export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
            SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+	  alias fzf='sk '
 	fi
 }
-# skim (fzf replacement)
-alias fzf='sk'
 
-# ─── Utility Functions ─────────────────────────────────────────────
-# which() { command -v "$1" 2>/dev/null || return 1; }
-alias which="command -v "
-
-# Having to set a new script as executable always annoys me.
-runch() {
-  # Args
-  local s=$1
-  if [[ -z $s ]]; then
-      printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
-      return 2
-  fi
-  # Try to chmod, silencing stderr; bail if it fails
-  chmod u+x -- "$s" 2>/dev/null || {
-      printf 'chrun: cannot make executable: %s\n' "$s" >&2
-      return 1
-  }
-  # Exec: if name contains a slash, run as-is; otherwise prefix "./"
-  case "$s" in
-      */*) exec "$s"   ;;
-      *)   exec "./$s" ;;
-  esac
-}
 #────────────Completions────────────
 complete -cf sudo
 # Ensure completion directory exists
@@ -277,27 +256,29 @@ has batgrep && alias batgrep="batgrep --rga -S --color "
 
 # Wikiman
 has wikiman && . /usr/share/wikiman/widgets/widget.bash
-#────────────Binds────────────
-bind 'set completion-query-items 150'
-bind 'set page-completions off'
-bind 'set show-all-if-ambiguous on'
-bind 'set show-all-if-unmodified on'
-bind 'set menu-complete-display-prefix on'
-bind "set completion-ignore-case on"
-bind "set completion-map-case on"
-bind 'set mark-directories on'[
-bind "set mark-symlinked-directories on"
-bind "set bell-style none"
-bind 'set skip-completed-text on'
-bind 'set colored-stats on'
-bind 'set colored-completion-prefix on'
-bind Space:magic-space
-bind '"\C-o": kill-whole-line'
-# Bash 5.3
-bind 'set timeout 500'
-# Fix bracket paste
-bind 'set enable-bracketed-paste off'
+# ─── Functions ─────────────────────────────────────────────
+# which() { command -v "$1" 2>/dev/null || return 1; }
+alias which="command -v "
 
+# Having to set a new script as executable always annoys me.
+runch() {
+  # Args
+  local s=$1
+  if [[ -z $s ]]; then
+      printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
+      return 2
+  fi
+  # Try to chmod, silencing stderr; bail if it fails
+  chmod u+x -- "$s" 2>/dev/null || {
+      printf 'chrun: cannot make executable: %s\n' "$s" >&2
+      return 1
+  }
+  # Exec: if name contains a slash, run as-is; otherwise prefix "./"
+  case "$s" in
+      */*) exec "$s"   ;;
+      *)   exec "./$s" ;;
+  esac
+}
 #────────────Aliases────────────
 # Enable aliases to be sudo’ed
 alias sudo="\sudo "
@@ -307,43 +288,43 @@ alias mkdir="mkdir -p "
 alias ed='$EDITOR'
 alias mi='$EDITOR'
 alias smi='sudo $EDITOR'
-# alias smi="sudo -E ${$EDITOR:=$(command -v micro)"
+# alias smi='sudo -E ${$EDITOR:=$(command -v micro)'
 
 # Rerun last cmd as sudo
 please() { sudo "$(fc -ln -1)" }
 
-alias cls="clear" c="clear"
-alias ping="ping -c 4" # Stops ping after 4 requests
-alias mount="mount | column -t" # human readable format
-alias ptch="patch -p1 <"
+alias cls='clear' c='clear'
+alias ping='ping -c 4' # Stops ping after 4 requests
+alias mount='mount | column -t' # human readable format
+alias ptch='patch -p1 <'
 alias cleansh="curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash"
 alias updatesh="curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash"
 
 if has eza; then
-  alias ls="eza -al --color=always --group-directories-first --icons"
-  alias la="eza -a --color=always --group-directories-first --icons"
-  alias ll="eza -l --color=always --group-directories-first --icons"
-  alias lt="eza -aT --color=always --group-directories-first --icons"
+  alias ls='eza -al --color=always --group-directories-first --icons'
+  alias la='eza -a --color=always --group-directories-first --icons'
+  alias ll='eza -l --color=always --group-directories-first --icons'
+  alias lt='eza -aT --color=always --group-directories-first --icons'
 else
-  alias ls="ls --color=auto --group-directories-first"
-  alias la="ls --color=auto --group-directories-first -a"
-  alias ll="ls --color=auto --group-directories-first -lh"
-  alias lt="ls --color=auto --group-directories-first -lhAR"
+  alias ls='ls --color=auto --group-directories-first'
+  alias la='ls --color=auto --group-directories-first -a'
+  alias ll='ls --color=auto --group-directories-first -lh'
+  alias lt='ls --color=auto --group-directories-first -lhAR'
 fi
 
-has rg && alias rg="rg --no-stats --color=auto"
+has rg && alias rg='rg --no-stats --color=auto'
 if has ugrep; then
-  alias grep="ugrep --color=auto"
-  alias egrep="ugrep -E --color=auto"
-  alias fgrep="ugrep -F --color=auto"
+  alias grep='ugrep --color=auto'
+  alias egrep='ugrep -E --color=auto'
+  alias fgrep='ugrep -F --color=auto'
 if has rg; then
   alias grep='rg --no-line-number'
-  alias fgrep="fgrep --color=auto"
-  alias egrep="egrep --color=auto"
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
 else
-  alias grep="grep --color=auto"
-  alias fgrep="fgrep --color=auto"
-  alias egrep="egrep --color=auto"
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
 fi
 
 # fd (find replacement)
@@ -370,6 +351,27 @@ alias ...="cd ../.."
 alias ....="cd ../../.."
 alias ~="cd ~"
 alias -- -="cd -"  # Go back to previous directory
+
+#────────────Binds────────────
+bind 'set completion-query-items 150'
+bind 'set page-completions off'
+bind 'set show-all-if-ambiguous on'
+bind 'set show-all-if-unmodified on'
+bind 'set menu-complete-display-prefix on'
+bind "set completion-ignore-case on"
+bind "set completion-map-case on"
+bind 'set mark-directories on'[
+bind "set mark-symlinked-directories on"
+bind "set bell-style none"
+bind 'set skip-completed-text on'
+bind 'set colored-stats on'
+bind 'set colored-completion-prefix on'
+bind Space:magic-space
+bind '"\C-o": kill-whole-line'
+# Bash 5.3
+bind 'set timeout 500'
+# Fix bracket paste
+bind 'set enable-bracketed-paste off'
 
 #────────────Jumping────────────
 if has zoxide; then

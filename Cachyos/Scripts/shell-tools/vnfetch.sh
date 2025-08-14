@@ -33,29 +33,29 @@ distro="$(uname -o | awk -F '"' '/PRETTY_NAME/ { print $2 }' /etc/os-release)"
 read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null || KERNEL="$((uname -r)"
 read -r HOSTNAME < /etc/hostname 2>/dev/null || HOSTNAME="$(hostname)"
 ARCH="$(uname -m 2>/dev/null)"
-UPT="$(uptime -p | sed 's/^up //')"
-PROCS="$(ps ax | wc -l | tr -d " ")"
-if command -v pacman 2>/dev/null >&2; then
-  PKG="$(pacman -Q | wc -l)"
-elif command -v apt 2>/dev/null >&2; then
+UPT="$(uptime -p 2>/dev/null | sed 's/^up //')"
+PROCS="$(ps ax 2>/dev/null | wc -l | tr -d " ")"
+if command -v pacman &>/dev/null; then
+  PKG="$(pacman -Q 2>/dev/null | wc -l)"
+elif command -v apt &>/dev/null; then
   PKG="$(($(apt list --installed 2>/dev/null | wc -l) - 1))"
 fi
 PROFILE="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="$(printf '%s' "${SHELL##*/}")"
 wmname="$(echo $XDG_CURRENT_DESKTOP $DESKTOP_SESSION)"
-LOCALIP=$(ip a | grep glo | awk '{print $2}' | head -1)
-GLOBALIP=$(wget -q -O - http://icanhazip.com/ | tail)
+LOCALIP="$(ip a | grep glo | awk '{print $2}' | head -1)"
+GLOBALIP="$(wget -q -O - http://icanhazip.com 2>/dev/null | tail)"
 weather="$(curl -s wttr.in/Bielefeld?format=3 2>/dev/null)"
-CPU="$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo | tr -s ' ')"
+CPU="$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo 2>/dev/null | tr -s ' ')"
 GPU="$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
 
 if [[ -n "$DISPLAY" ]]; then
     SCREEN=$(sed 's/,/x/' < /sys/class/graphics/fb0/virtual_size)
     [ -n "$DESKTOP_SESSION" ] && \
 	WE="$DESKTOP_SESSION" \
-	    || WE=$(xprop -root WM_NAME | cut -d '"' -f2)
+	    || WE=$(xprop -root WM_NAME 2>/dev/null | cut -d '"' -f2)
 else
-    SCREEN=$(stty size | awk '{print $1 "rows " $2 "columns"}')
+    SCREEN=$(stty size 2>/dev/null | awk '{print $1 "rows " $2 "columns"}')
     tty=$(tty)
     WE=tty${tty##*/}
 fi
@@ -87,7 +87,7 @@ read disk_sizeKB disk_usedKB disk_availKB disk_used_pct _ < <(
   df -Pk / |
   awk 'NR==2 {print $2, $3, $4, $5, $6}'
 )
-fstype=$(findmnt --raw --noheadings --first-only --output FSTYPE /)
+fstype=$(findmnt --raw --noheadings --first-only --output FSTYPE / 2>/dev/null)
 
 disk_used_GiB=$(awk "BEGIN {printf \"%.2f\", ${disk_usedKB}/1024/1024}")
 disk_avail_GiB=$(awk "BEGIN {printf \"%.2f\", ${disk_availKB}/1024/1024}")

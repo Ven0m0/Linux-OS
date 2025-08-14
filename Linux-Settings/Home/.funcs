@@ -96,13 +96,14 @@ up() {
 }
 
 # Automatically do an ls after each cd, z, or zoxide
- cd () {
-	if [ -n "$1" ]; then
- builtin cd "$@"
-	else
-		builtin cd ~
-	fi
- }
+cd ()
+{
+  if [ -n "$1" ]; then
+	builtin cd "$@" && ls
+  else
+	builtin cd ~ && ls
+  fi
+}
 
 # Printf like echo
 p() {

@@ -349,6 +349,11 @@ else
 fi
 
 alias rmd='rm -rfv'
+alias h="history | grep "
+alias f="find . | grep "
+# Search running processes
+alias p="ps aux | grep "
+alias topcpu="/bin/ps -eo pcpu,pid,user,args | sort -k 1 -r | head -10"
 
 # fd (find replacement)
 has fd && alias find='fd'

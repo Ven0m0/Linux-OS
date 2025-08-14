@@ -364,6 +364,13 @@ has duf && alias df='duf'
 alias dir='dir --color=auto'
 alias vdir='vdir --color=auto'
 
+# DIRECTORY NAVIGATION
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias ~="cd ~"
+alias -- -="cd -"  # Go back to previous directory
+
 #────────────Jumping────────────
 if has zoxide; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"

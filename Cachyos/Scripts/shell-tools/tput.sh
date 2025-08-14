@@ -8,12 +8,10 @@ if command -v tput >/dev/null 2>&1 && [ -n "$TERM" ] && tput setaf 0 >/dev/null 
     UND=$(tput smul)
     INV=$(tput rev)
     HID=$(tput invis)
-
     BLK=$(tput setaf 0)  RED=$(tput setaf 1)  GRN=$(tput setaf 2)  YLW=$(tput setaf 3)
     BLU=$(tput setaf 4)  MGN=$(tput setaf 5)  CYN=$(tput setaf 6)  WHT=$(tput setaf 7)
     BBLK=$(tput setaf 8) BRED=$(tput setaf 9) BGRN=$(tput setaf 10) BYLW=$(tput setaf 11)
     BBLU=$(tput setaf 12) BMGN=$(tput setaf 13) BCYN=$(tput setaf 14) BWHT=$(tput setaf 15)
-
     BG_BLK=$(tput setab 0)  BG_RED=$(tput setab 1)  BG_GRN=$(tput setab 2)  BG_YLW=$(tput setab 3)
     BG_BLU=$(tput setab 4)  BG_MGN=$(tput setab 5)  BG_CYN=$(tput setab 6)  BG_WHT=$(tput setab 7)
     BG_BBLK=$(tput setab 8) BG_BRED=$(tput setab 9) BG_BGRN=$(tput setab 10) BG_BYLW=$(tput setab 11)

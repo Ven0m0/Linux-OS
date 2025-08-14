@@ -66,3 +66,42 @@ extract() {
         echo "Usage: extract <archive_file>"
     fi
 }
+
+# Find and kill processes (with confirmation)
+pk() {
+    if [ $# -eq 1 ]; then
+        local pids=$(ps aux | grep "$1" | grep -v grep | awk '{print $2}')
+        if [ -n "$pids" ]; then
+            echo "🔍 Found processes matching '$1':"
+            ps aux | grep "$1" | grep -v grep
+            echo -n "❓ Kill these processes? (y/N): "
+            read -r confirm
+            if [[ $confirm =~ ^[Yy]$ ]]; then
+                echo "$pids" | xargs kill -9
+                echo "💀 Processes killed"
+            else
+                echo "❌ Cancelled"
+            fi
+        else
+            echo "❌ No processes found matching '$1'"
+        fi
+    else
+        echo "Usage: pk <process_name>"
+    fi
+}
+
+# Quick directory creation and navigation
+mkcd() {
+    if [ $# -eq 1 ]; then
+        mkdir -p "$1" && cd "$1"
+        echo "📁 Created and entered directory: $1"
+    else
+        echo "Usage: mkcd <directory_name>"
+    fi
+}
+
+# Delete merged/gone branches
+alias gdbr="git fetch --prune && git branch -vv | grep ': gone]' | awk '{print \$1}' | xargs -r git branch -D"
+# Enhanced git branch view with better formatting
+alias gbr="git branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate"
+

@@ -32,7 +32,7 @@ LC_ALL='C' LANG='C.UTF-8' "$fetch" 2>/dev/null
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 # PS1="\w \[\e[31m\]»\[\e[33m\]»\[\e[32m\]»\[\e[0m\] "
 
-HISTSIZE=10000; HISTFILESIZE=10000
+HISTFILESIZE=10000 HISTSIZE=500
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '

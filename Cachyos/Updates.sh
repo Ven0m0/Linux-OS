@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-shopt -s nullglob globstar; set -u
+set -u; shopt -s nullglob globstar
 export LC_ALL=C LANG=C.UTF-8
 unalias -a
 #──────────── Color & Effects ────────────
@@ -13,8 +13,6 @@ CYN='\e[36m' # Cyan
 WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
-#─────────────────────────────────────────
-printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Title
 #──────────── Helpers ────────────────────
 # Check for command
 has() { command -v "$1" &>/dev/null; }
@@ -25,6 +23,7 @@ pe() { printf "%b\n" "$@"; }
 # Bash sleep replacement
 sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
 #──────────── Banner ────────────────────
+printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Title
 colors=(
   $'\033[38;5;117m'  # Light Blue
   $'\033[38;5;218m'  # Pink

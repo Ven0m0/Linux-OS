@@ -13,7 +13,7 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
-printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
+printf '\e]2;%s\a' "Updates"
 #──────────── Helpers ────────────────────
 # Check for command
 has() { command -v "$1" &>/dev/null; }

@@ -1,8 +1,8 @@
 # ~/.bashrc
 
-# ─── Only for interactive shells ───────────────────────────────────────────
+#──────────── Only for interactive shells────────────
 [[ $- != *i* ]] && return
-#──────────── Helpers ────────────────────
+#──────────── Helpers────────────
 # Check for command
 has() { command -v "$1" &>/dev/null; }
 # Print-echo
@@ -21,7 +21,9 @@ fi
 
 # [[ -f $HOME/.fns]] && . "$HOME/.fns"
 # [[ -f $HOME/.funcs]] && . "$HOME/.funcs"
-# ─── Prompt ─────────────────────────────────────────────────────────
+#──────────── Fetch────────────
+
+#──────────── Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 PROMPT_DIRTRIM=2
 configure_prompt() {
@@ -47,7 +49,7 @@ configure_prompt() {
     PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
 }
 configure_prompt
-# ─── Core ─────────────────────────────────────────────────────
+#────────────Core────────────
 unset LC_ALL; export LC_CTYPE=C LC_COLLATE=C
 if locale -a | grep -q "^en_US\.utf8$"; then
   export LANG="en_US.UTF-8"
@@ -82,7 +84,7 @@ export \
 [[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off &>/dev/null; setterm --bfreq 0 &>/dev/null; }
 setterm --linewrap on &>/dev/null
 
-# ─── Env ──────────────────────────────────────────────
+#────────────Env────────────
 [[ -f $HOME/.cargo/env ]] && . "$HOME/.cargo/env"
 # Bins
 [[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin${PATH:+:$PATH}"
@@ -194,7 +196,7 @@ fi
 # Python opt's
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
 export GOPROXY="direct" # no fancy google cache for go
-# ─── Fuzzy finders ─────────────────────────────────────────────────────────
+#────────────Fuzzy finders────────────
 fuzzy_finders() {
 	if has fd; then
   		FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
@@ -242,7 +244,7 @@ runch() {
       *)   exec "./$s" ;;
   esac
 }
-# ─── Completions ─────────────────────────────────────────────────────────
+#────────────Completions────────────
 complete -cf sudo
 # Ensure completion directory exists
 COMPDIR="$HOME/.config/bash/completions"
@@ -270,7 +272,7 @@ has batgrep && alias batgrep="batgrep --rga -S --color "
 
 # Wikiman
 has wikiman && . /usr/share/wikiman/widgets/widget.bash
-# ─── Binds ───────────── ────────────────────────────────────────────
+#────────────Binds────────────
 bind 'set completion-query-items 150'
 bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
@@ -291,7 +293,7 @@ bind 'set timeout 500'
 # Fix bracket paste
 bind 'set enable-bracketed-paste off'
 
-# ─── Aliases ─────────────────────────────────────────────────────────
+#────────────Aliases────────────
 # Enable aliases to be sudo’ed
 alias sudo="\sudo "
 alias doas="\doas "
@@ -357,7 +359,7 @@ has duf && alias df='duf'
 alias dir='dir --color=auto'
 alias vdir='vdir --color=auto'
 
-# ─── Jumping ─────────────────────────────────────────────
+#────────────Jumping────────────
 if has zoxide; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
   eval "$(zoxide init bash)"
@@ -366,7 +368,7 @@ elif has enhancd; then
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
   alias cd='enhancd'
 fi
-# ─── End ─────────────────────────────────────────────────────────
+#────────────End────────────
 # Deduplicate PATH (preserve order)
 dedupe_path() {
   local dir; local -A seen; local new=()

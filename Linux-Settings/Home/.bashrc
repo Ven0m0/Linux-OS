@@ -323,7 +323,6 @@ else
   alias lt='ls --color=auto --group-directories-first -lhAR'
 fi
 
-has rg && alias rg='rg --no-stats --color=auto'
 if has ugrep; then
   alias grep='ugrep --color=auto'
   alias egrep='ugrep -E --color=auto'
@@ -332,6 +331,7 @@ if has rg; then
   alias grep='rg --no-line-number'
   alias fgrep='fgrep --color=auto'
   alias egrep='egrep --color=auto'
+  alias rg='rg --no-stats --color=auto'
 else
   alias grep='grep --color=auto'
   alias fgrep='fgrep --color=auto'

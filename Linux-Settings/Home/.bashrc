@@ -50,8 +50,12 @@ configure_prompt() {
     [[ ";$PROMPT_COMMAND" != *";"__update_git_prompt* ]] && \
       PROMPT_COMMAND="__update_git_prompt; $PROMPT_COMMAND"
   fi
-  [[ ";$PROMPT_COMMAND" != *";"*mommy\ -1\ -s* ]] && \
-    PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+ if has mommy && [[ $(echo $PROMPT_COMMAND) != *"mommy"* ]]; then
+    # Shell-mommy https://github.com/sleepymincy/mommy
+    export PROMPT_COMMAND="mommy \$?; $PROMPT_COMMAND"
+    # mommy https://github.com/fwdekker/mommy
+    # export PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+  fi
 }
 configure_prompt
 #────────────Core────────────

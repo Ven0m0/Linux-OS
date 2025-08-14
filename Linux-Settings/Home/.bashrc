@@ -22,7 +22,12 @@ fi
 # [[ -f $HOME/.fns]] && . "$HOME/.fns"
 # [[ -f $HOME/.funcs]] && . "$HOME/.funcs"
 #──────────── Fetch────────────
-
+if has hyfetch; then
+  fetch="hyfetch -b fastfetch -m rgb -p transgender"
+elif has fastfetch
+  fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
+fi
+LC_ALL=C "$fetch" 2>/dev/null
 #──────────── Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 PROMPT_DIRTRIM=2

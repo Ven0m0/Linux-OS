@@ -8,9 +8,8 @@
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
 # #LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 2>/dev/null
-old_LC_ALL="${LC_ALL-}" old_LANG="${LANG-}"
+o1="${LANG-}"
 export LC_ALL=C LANG=C
-echo Lang: $o1 LC: $o2
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red
@@ -163,4 +162,4 @@ echo Shell: $SHELLX
 echo $wmname $D_SERVER
 echo Editor: $$EDITOR
 echo Powerprofile: $PROFILE
-echo "Lang: ${o2:-unset}, LC_ALL: ${o1:-unset}"
+echo "Lang: ${o1:-unset}

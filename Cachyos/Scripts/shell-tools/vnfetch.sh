@@ -6,7 +6,6 @@
 # Credit:
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
-# #LC_COLLATE=C LC_CTYPE=C.UTF-8 LANG=C.UTF-8
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 2>/dev/null
 o1="${LANG-}"
 export LC_ALL=C LANG=C

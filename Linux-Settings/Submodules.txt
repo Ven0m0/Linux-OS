@@ -50,3 +50,5 @@ https://github.com/endeavouros-team/PKGBUILDS/tree/master/reflector-bash-complet
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/keyserver-rank
 https://github.com/endeavouros-team/eos-bash-shared
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/akm
+
+https://gitlab.com/nycko123/pak

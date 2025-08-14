@@ -80,6 +80,8 @@ stty -ixon -ixoff -ixany &>/dev/null
 # https://github.com/perlun/dotfiles/blob/master/profile
 # causes problems with git commit
 set +H
+# Enforce default umask
+umask 0022
 
 # XDG
 export \

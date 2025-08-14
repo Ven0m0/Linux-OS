@@ -2,7 +2,8 @@
 # ~/.bash_profile
 #
 
-[[ -f $HOME/.bashrc ]] && . "$HOME/.bashrc"
+[[ -f $HOME/.bashrc ]] && . "$HOME/.bashrc
+[[ -f ~/.profile ]] && . "$HOME/.profile"
 [[ -f $HOME/.cargo/env ]] && . "$HOME/.cargo/env"
 
 _prependpath() {

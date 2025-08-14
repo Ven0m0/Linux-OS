@@ -13,7 +13,7 @@ WHT='\e[37m' # White
 DEF='\e[0m'  # Reset to default
 BLD='\e[1m'  #Bold
 #─────────────────────────────────────────
-printf '\e]2;%s\a' "Updates"
+printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Title
 #──────────── Helpers ────────────────────
 # Check for command
 has() { command -v "$1" &>/dev/null; }

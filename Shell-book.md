@@ -32,6 +32,9 @@ set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 shopt -s inherit_errexit 
 export LC_ALL="C" LANG="C.UTF-8"
 umask 0022
+\unalias -a
+\unset -v CDPATH GLOBIGNORE
+
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red

@@ -66,7 +66,7 @@ configure_prompt() {
     PROMPT_COMMAND="LC_ALL=C LANG=C.UTF-8 mommy -1 -s \$?; $PROMPT_COMMAND"
   fi
 }
-LC_ALL='C' configure_prompt 2>/dev/null
+LC_ALL=C LANG=C.UTF-8 configure_prompt 2>/dev/null
 #────────────Core────────────
 unset LC_ALL; export LC_CTYPE=C LC_COLLATE=C
 if locale -a | grep -q "^en_US\.utf8$"; then

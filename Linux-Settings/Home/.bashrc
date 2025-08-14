@@ -52,9 +52,9 @@ configure_prompt() {
   fi
  if has mommy && [[ $(echo $PROMPT_COMMAND) != *"mommy"* ]]; then
     # Shell-mommy https://github.com/sleepymincy/mommy
-    export PROMPT_COMMAND="mommy \$?; $PROMPT_COMMAND"
+    #export PROMPT_COMMAND="mommy \$?; $PROMPT_COMMAND"
     # mommy https://github.com/fwdekker/mommy
-    # export PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+    export PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
   fi
 }
 configure_prompt

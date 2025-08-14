@@ -30,11 +30,20 @@ fi
 LC_ALL='C' LANG='C.UTF-8' "$fetch" 2>/dev/null
 #──────────── Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
+# PS1="\w \[\e[31m\]»\[\e[33m\]»\[\e[32m\]»\[\e[0m\] "
+
+HISTSIZE=10000; HISTFILESIZE=10000
+HISTCONTROL="erasedups:ignoreboth"
+HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
+HISTTIMEFORMAT='%F %T '
+HISTFILE=$HOME/.bash_history
 PROMPT_DIRTRIM=2
+PROMPT_COMMAND="history -a"
+
 configure_prompt() {
   local GIT_PROMPT='' \
-        C_USER='\[\e[38;5;201m\]' C_HOST='\[\e[38;5;33m\]' \
-        C_PATH='\[\e[38;5;129m\]' C_RESET='\[\e[0m\]'
+        C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
+        C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]'
   if has starship; then
     eval "$(starship init bash 2>/dev/null)" &>/dev/null
   else
@@ -52,12 +61,12 @@ configure_prompt() {
   fi
  if has mommy && [[ $(echo $PROMPT_COMMAND) != *"mommy"* ]]; then
     # Shell-mommy https://github.com/sleepymincy/mommy
-    #export PROMPT_COMMAND="mommy \$?; $PROMPT_COMMAND" SHELL_MOMMY_ONLY_NEGATIVE=1
+    #PROMPT_COMMAND="mommy \$?; $PROMPT_COMMAND" SHELL_MOMMY_ONLY_NEGATIVE=1
     # mommy https://github.com/fwdekker/mommy
-    export PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+    PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
   fi
 }
-configure_prompt
+LC_ALL='C' configure_prompt 2>/dev/null
 #────────────Core────────────
 unset LC_ALL; export LC_CTYPE=C LC_COLLATE=C
 if locale -a | grep -q "^en_US\.utf8$"; then
@@ -69,11 +78,6 @@ export CDPATH=".:$HOME"
 ulimit -c 0 &>/dev/null # disable core dumps
 shopt -s nullglob globstar histappend cmdhist checkwinsize \
          dirspell cdspell autocd hostcomplete no_empty_cmd_completion &>/dev/null
-HISTSIZE=1000
-HISTFILESIZE=${HISTSIZE}
-HISTCONTROL="erasedups:ignoreboth"
-HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
-HISTTIMEFORMAT='%F %T '
 shopt -u mailwarn &>/dev/null; unset MAILCHECK # Bash-it
 # Disable Ctrl-s, Ctrl-q
 stty -ixon -ixoff -ixany &>/dev/null
@@ -368,7 +372,7 @@ alias ....="cd ../../.."
 alias ~="cd ~"
 alias -- -="cd -"  # Go back to previous directory
 
-#────────────Binds────────────
+#────────────Bindings (readline)────────────
 bind 'set completion-query-items 150'
 bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
@@ -388,6 +392,14 @@ bind '"\C-o": kill-whole-line'
 bind 'set timeout 500'
 # Fix bracket paste
 bind 'set enable-bracketed-paste off'
+
+# Ctrl+A = beginning-of-line
+# Ctrl+E = end-of-line
+# Ctrl+Left / Ctrl+Right word movement
+bind '"\C-a": beginning-of-line'
+bind '"\C-e": end-of-line'
+bind '"\e[1;5D": backward-word'
+bind '"\e[1;5C": forward-word'
 
 #────────────Jumping────────────
 if has zoxide; then

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Tput check
 #──────────── Color & Effects ────────────
 if command -v tput >/dev/null 2>&1 && [ -n "$TERM" ] && tput setaf 0 >/dev/null 2>&1; then

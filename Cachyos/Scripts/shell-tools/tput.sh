@@ -3,12 +3,8 @@
 #──────────── Color & Effects ────────────
 if command -v tput >/dev/null 2>&1 && [ -n "$TERM" ] && tput setaf 0 >/dev/null 2>&1; then
     # tput-based
-    DEF=$(tput sgr0)
-    BLD=$(tput bold)
-    DIM=$(tput dim)
-    UND=$(tput smul)
-    INV=$(tput rev)
-    HID=$(tput invis)
+    DEF=$(tput sgr0) BLD=$(tput bold) DIM=$(tput dim) UND=$(tput smul)
+    INV=$(tput rev) HID=$(tput invis)
     BLK=$(tput setaf 0)  RED=$(tput setaf 1)  GRN=$(tput setaf 2)  YLW=$(tput setaf 3)
     BLU=$(tput setaf 4)  MGN=$(tput setaf 5)  CYN=$(tput setaf 6)  WHT=$(tput setaf 7)
     BBLK=$(tput setaf 8) BRED=$(tput setaf 9) BGRN=$(tput setaf 10) BYLW=$(tput setaf 11)

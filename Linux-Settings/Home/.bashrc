@@ -348,7 +348,7 @@ else
   alias egrep='egrep --color=auto'
 fi
 
-alias rmd='rm -rfv'
+alias rmd='rm -rfv --preserve-root'
 alias h="history | grep "
 alias f="find . | grep "
 # Search running processes

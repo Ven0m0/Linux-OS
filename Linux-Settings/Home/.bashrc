@@ -375,12 +375,5 @@ elif has enhancd; then
 fi
 #────────────End────────────
 # Deduplicate PATH (preserve order)
-dedupe_path() {
-  local dir; local -A seen; local new=()
-  for dir in ${PATH//:/ }; do
-    [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && new+=("$dir")
-  done
-  PATH=$(IFS=:; echo "${new[*]}");
-  export PATH
-}
+dedupe_path(){ local IFS=: dir s; if ((BASH_VERSINFO[0]>=4)); then declare -A seen; for dir in $PATH; do [[ $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s=${s:+$s:}$dir; done; else for dir in $PATH; do [[ $dir && :$s: != *":$dir:"* ]] && s=${s:+$s:}$dir; done; fi; PATH=$s; export PATH; }
 dedupe_path

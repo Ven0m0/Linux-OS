@@ -3,7 +3,7 @@ set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 export LC_ALL=C LANG=C.UTF-8
 sudo -v
 
-printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Title
+printf '\e]1;%s\a\e]2;%s\a' "Install + Setup" "Install + Setup" # Title
 # sudo pacman -Rns openssh 
 packages=(
 topgrade

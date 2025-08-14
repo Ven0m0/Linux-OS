@@ -35,6 +35,6 @@ pp_strip_copyright() {
     awk '!/^#/ {p=1} p'
 }
 pp_strip_separators() {
-    awk '!/^#[[:space:]]*-{5,}/'
+    awk '!/^#[[:space:]]*[-─]{5,}/'
 }
 ```

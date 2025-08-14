@@ -42,10 +42,10 @@ elif command -v apt 2>/dev/null >&2; then
 fi
 PROFILE="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="$(printf '%s' "${SHELL##*/}")"
-wmname="$XDG_CURRENT_DESKTOP $DESKTOP_SESSION"
+wmname="$(echo $XDG_CURRENT_DESKTOP $DESKTOP_SESSION)"
 LOCALIP=$(ip a | grep glo | awk '{print $2}' | head -1)
 GLOBALIP=$(wget -q -O - http://icanhazip.com/ | tail)
-
+weather="$(curl -s wttr.in/Bielefeld?format=3 2>/dev/null)"
 CPU="$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo | tr -s ' ')"
 GPU="$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
 

@@ -27,7 +27,7 @@ if has hyfetch; then
 elif has fastfetch
   fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
 fi
-LC_ALL=C "$fetch" 2>/dev/null
+LC_ALL='C' LANG='C.UTF-8' "$fetch" 2>/dev/null
 #──────────── Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 PROMPT_DIRTRIM=2
@@ -61,11 +61,10 @@ configure_prompt
 #────────────Core────────────
 unset LC_ALL; export LC_CTYPE=C LC_COLLATE=C
 if locale -a | grep -q "^en_US\.utf8$"; then
-  export LANG="en_US.UTF-8"
+  export LANG="en_US.UTF-8" LANGUAGE="en_US"
 else
-  export LANG="C.UTF-8"
+  export LANG='C.UTF-8'
 fi
-export LANGUAGE="en_US"
 export CDPATH=".:$HOME"
 ulimit -c 0 &>/dev/null # disable core dumps
 shopt -s nullglob globstar histappend cmdhist checkwinsize \

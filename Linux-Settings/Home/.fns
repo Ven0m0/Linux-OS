@@ -105,3 +105,6 @@ alias gdbr="git fetch --prune && git branch -vv | grep ': gone]' | awk '{print \
 # Enhanced git branch view with better formatting
 alias gbr="git branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(contents:subject) %(color:green)(%(committerdate:relative)) [%(authorname)]' --sort=-committerdate"
 
+# Sudo wrapper
+# 	G_SUDO(){ local input=$*; sudo bash -c ". /boot/dietpi/func/dietpi-globals && $input"; }
+G_SUDO(){ local input=$*; sudo bash -c "$input"; }

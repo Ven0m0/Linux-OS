@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 shopt -s nullglob globstar; set -u
 export LC_ALL=C LANG=C.UTF-8
+unalias -a
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red

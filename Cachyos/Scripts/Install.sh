@@ -3,8 +3,8 @@ set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 export LC_ALL=C LANG=C.UTF-8
 sudo -v
 
+printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Title
 # sudo pacman -Rns openssh 
-
 packages=(
 topgrade
 bauh
@@ -174,6 +174,8 @@ echo "AUR package installation complete."
 sudo pacman -S flatpak --noconfirm
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
+flats=`awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs`
+flatpak install --user -y flathub ${flats}
 
 # Image downloads
 curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp

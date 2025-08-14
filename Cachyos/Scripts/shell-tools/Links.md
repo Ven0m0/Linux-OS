@@ -18,11 +18,11 @@ git clone https://github.com/pforret/shtext.git && cd shtext && chmod +x shtext.
 function strip_comments_and_white_spaces {
 	sed -E -e 's/^\s+//' -e 's/\s+$//' -e '/^#.*$/d' -e '/^\s*$/d'
 }
-function trim_white_spaces {
-	sed -E -e 's/^\s+//' -e 's/\s+$//'
+trim_white_spaces() {
+    sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//'
 }
-function use_minimal_function_header {
-	sed -E 's/function ([a-zA-Z0-9_]*) \{/\1 () {/'
+use_minimal_function_header() {
+    sed -E 's/^[[:space:]]*function[[:space:]]+([a-zA-Z0-9_]+)[[:space:]]*\{/\1 () {/'
 }
 ```
 
@@ -32,9 +32,9 @@ pp_strip_comments() {
 	sed '/^[[:space:]]*#.*$/d'
 }
 pp_strip_copyright() {
-	awk '/^#/ {if(!p){ next }} { p=1; print $0 }'
+    awk '!/^#/ {p=1} p'
 }
 pp_strip_separators() {
-	awk '/^#\s*-{5,}/ { next; } {print $0}'
+    awk '!/^#[[:space:]]*-{5,}/'
 }
 ```

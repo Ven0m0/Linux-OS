@@ -51,11 +51,12 @@ for i in "${!banner_lines[@]}"; do
   color_index=$(( i * 5 / lines ))
   printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$DEF"
 done
-#──────────── Safe optimal privelege tool ────────────────────
+#──────────── Safe optimal privilege tool ────────────────────
 suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null || :)"
 [[ "${suexec:-}" == */sudo-rs || "${suexec:-}" == */sudo ]] && "$suexec" -v || :
 suexec="${suexec:-sudo}"
-if ! command -v "$suexec" &>/dev/null; then
+suexec=${suexec##*/}  # keep only the program name
+if ! command -v "$suexec" >/dev/null 2>&1; then
   echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
   exit 1
 fi
@@ -114,18 +115,16 @@ else
 fi
 
 p "update cargo/rust binaries..."
-if has cargo-install-update; then
-  cargo install-update -agi 2>/dev/null || :
-else
-  # Update installed crates via default cargo tooling,
-  cargo install --list | awk '/^[[:alnum:]]/ {print $1}' | xargs cargo install 2>/dev/null || :
-fi
-
-if has cargo-updater; then
-  cargo updater -u 2>/dev/null || :
-fi
-if has cargo-list; then
-  cargo list -uaI 2>/dev/null || : 
+if has cargo; then
+  if cargo install-update -V >/dev/null 2>&1; then
+    cargo install-update -agi 2>/dev/null || :
+  else
+    # Update installed crates via default cargo tooling,
+    cargo install --list | awk '/^[[:alnum:]]/ {print $1}' | xargs cargo install 2>/dev/null || :
+  fi
+  if has cargo-updater; then
+    cargo updater -u 2>/dev/null || :
+  fi
 fi
 
 if has micro; then

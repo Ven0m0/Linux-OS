@@ -27,7 +27,7 @@ if has hyfetch; then
 elif has fastfetch
   fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
 fi
-LC_ALL='C' LANG='C.UTF-8' "$fetch" 2>/dev/null
+LC_ALL=C LANG=C.UTF-8 "$fetch" 2>/dev/null; unset fetch
 #──────────── Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 # PS1="\w \[\e[31m\]»\[\e[33m\]»\[\e[32m\]»\[\e[0m\] "
@@ -45,25 +45,25 @@ configure_prompt() {
         C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
         C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]'
   if has starship; then
-    eval "$(starship init bash 2>/dev/null)" &>/dev/null
+    eval "$(LC_ALL=C LANG=C.UTF-8 starship init bash 2>/dev/null)" &>/dev/null
   else
-    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}|${C_PATH}\w${C_RESET}]$GIT_PROMPT \$ "
+    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}»${C_PATH}\w${C_RESET}]$GIT_PROMPT \$ "
     __update_git_prompt() {
       [[ $PWD == ${__git_prompt_prev_pwd:-} ]] && return
       __git_prompt_prev_pwd=$PWD
       local root name
-      root=$(LC_ALL=C git rev-parse --show-toplevel 2>/dev/null) || { GIT_PROMPT=; return; }
+      root=$(LC_ALL=C LANG=C.UTF-8 git rev-parse --show-toplevel 2>/dev/null) || { GIT_PROMPT=; return; }
       name=${root##*/}
-      GIT_PROMPT=" \[\e[38;5;203m\]>$name\[\e[0m\]"
+      GIT_PROMPT=" \[\e[35m\]>$name\[\e[0m\]"
     }
     [[ ";$PROMPT_COMMAND" != *";"__update_git_prompt* ]] && \
       PROMPT_COMMAND="__update_git_prompt; $PROMPT_COMMAND"
   fi
  if has mommy && [[ $(echo $PROMPT_COMMAND) != *"mommy"* ]]; then
     # Shell-mommy https://github.com/sleepymincy/mommy
-    #PROMPT_COMMAND="mommy \$?; $PROMPT_COMMAND" SHELL_MOMMY_ONLY_NEGATIVE=1
+    #PROMPT_COMMAND="LC_ALL=C LANG=C.UTF-8 mommy \$?; $PROMPT_COMMAND" SHELL_MOMMY_ONLY_NEGATIVE=1
     # mommy https://github.com/fwdekker/mommy
-    PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+    PROMPT_COMMAND="LC_ALL=C LANG=C.UTF-8 mommy -1 -s \$?; $PROMPT_COMMAND"
   fi
 }
 LC_ALL='C' configure_prompt 2>/dev/null

@@ -386,6 +386,7 @@ alias ....="cd ../../.."
 alias ~="cd ~"
 alias -- -="cd -"  # Go back to previous directory
 
+alias speedt='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -'
 #────────────Bindings (readline)────────────
 bind 'set completion-query-items 150'
 bind 'set page-completions off'

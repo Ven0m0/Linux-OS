@@ -348,6 +348,8 @@ else
   alias egrep='egrep --color=auto'
 fi
 
+alias rmd='rm -rfv'
+
 # fd (find replacement)
 has fd && alias find='fd'
 

@@ -65,7 +65,7 @@ p "🔄 System update using pacman..."
 [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -- "/var/lib/pacman/db.lck"
 
 "$suexec" pacman -Sy archlinux-keyring --noconfirm --needed -q 2>/dev/null || : 
-"$suexec" pacman -Syu --noconfirm --needed -q 2>/dev/null || :
+"$suexec" pacman -Syu --noconfirm --needed -q --noprogressbar 2>/dev/null || :
 
 p "AUR update..."
 if has paru; then

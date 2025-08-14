@@ -26,6 +26,34 @@ extract() {
 	done
 }
 
+cr() {
+  if [ $# -eq 0 ]; then
+    echo "Usage: cr <file_or_folder1> <file_or_folder2> ..."
+    return 1
+  fi
+
+  echo "Choose compression format:"
+  echo "1) tar.gz"
+  echo "2) tar.xz"
+  echo "3) tar.zst"
+  echo "4) zip"
+  echo "5) 7z"
+  read -rp "Enter choice [1-5]: " choice
+
+  read -rp "Enter output name (without extension): " out
+
+  case "$choice" in
+    1) tar czf "$out.tar.gz" "$@" ;;
+    2) tar cJf "$out.tar.xz" "$@" ;;
+    3) tar --zstd -cf "$out.tar.zst" "$@" ;;
+    4) zip -r "$out.zip" "$@" ;;
+    5) 7z a "$out.7z" "$@" ;;
+    *) echo "Invalid choice" ;;
+  esac
+}
+
+
+
 # Searches for text in all files in the current folder
 ftext() {
 	# -i case-insensitive

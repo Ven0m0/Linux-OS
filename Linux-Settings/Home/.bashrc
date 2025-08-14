@@ -379,6 +379,8 @@ has duf && alias df='duf'
 alias dir='dir --color=auto'
 alias vdir='vdir --color=auto'
 
+alias disk='lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
+
 # DIRECTORY NAVIGATION
 alias ..="cd .."
 alias ...="cd ../.."

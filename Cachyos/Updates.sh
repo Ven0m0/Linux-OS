@@ -49,7 +49,7 @@ lines=${#banner_lines[@]}
 for i in "${!banner_lines[@]}"; do
   # Map line index to color index (scaled to 5 colors)
   color_index=$(( i * 5 / lines ))
-  printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
+  printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$DEF"
 done
 #──────────── Safe optimal privelege tool ────────────────────
 suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null || :)"

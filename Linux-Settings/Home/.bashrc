@@ -107,14 +107,14 @@ setterm --linewrap on &>/dev/null
 
 _prependpath() {
     # Only prepend if not already in PATH
-    [ -d "$1" ] && [ ":$PATH:" != *":$1:"* ] && PATH="$1${PATH:+:$PATH}"
+    [[ -d $1 ]] && [[ ":$PATH:" != *":$1:"* ]] && PATH="$1${PATH:+:$PATH}"
 }
 _prependpath "$HOME/.local/bin"
 _prependpath "$HOME/bin"
 export PATH
 
 # Make less more friendly for non-text input files, see lesspipe(1)
-[[ -x /usr/bin/lesspipe ]] && eval "$(SHELL=/bin/sh lesspipe)"
+[[ -x /usr/bin/lesspipe ]] && eval "$(SHELL=/bin/sh lesspipe 2>/dev/null)"
 
 # Wget
 if [[ -f "$HOME/.config/wget/wgetrc" ]]; then
@@ -126,11 +126,11 @@ fi
 has wget && wget() { command wget-cnv --hsts-file="${XDG_CACHE_HOME:-$HOME/.cache}/wget-hsts" "$@" }
 
 if has micro; then
-  export EDITOR=micro VISUAL=micro
+  EDITOR=micro VISUAL=micro
 else
-  export EDITOR=nano VISUAL=name
+  EDITOR=nano VISUAL=name
 fi
-export VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
+export EDITOR VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 git config --global core.editor "$EDITOR" &>/dev/null
 alias nano='nano -/ ' # Nano modern keybinds
 has curl && export CURL_HOME="$HOME"
@@ -284,6 +284,25 @@ runch() {
 # Short version (unreadable but should work the same)
 runch(){shopt -u nullglob nocaseglob;[[ $1 ]]||{echo >&2 "Usage: runch $1";return 2};[[ -f $1 ]]||{echo >&2 "No such file: $1";return 1};chmod u+x -- "$1"||return;[[ $1==*/* ]]&&"$1"||./"$1";}
 
+# ls or cat
+sel() {
+  [[ -e "$1" ]] || { printf 'sel: not found: %s\n' "$1" >&2; return 1; }
+  if [[ -d "$1" ]]; then
+    if command -v eza &>/dev/null; then
+	  eza -al --color=auto --group-directories-first --icons -- "$1"
+    else
+      ls -- "$1"
+	fi
+  elif [[ -f "$1" ]]; then
+    if command -v eza &>/dev/null; then
+	  bat -sp --color auto --strip-ansi auto -- "$1"
+    else
+      cat -- "$1"
+  else
+    printf 'sel: not a regular file or directory: %s\n' "$1" >&2; return 1
+  fi
+}
+
 gcom() { git add . && git commit -m "$1" }
 lazyg() { git add . && git commit -m "$1" && git push }
 navibestmatch() { navi --query "$1" --best-match }
@@ -310,10 +329,10 @@ alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
 
 if has eza; then
-  alias ls='eza -al --color=always --group-directories-first --icons'
-  alias la='eza -a --color=always --group-directories-first --icons'
-  alias ll='eza -l --color=always --group-directories-first --icons'
-  alias lt='eza -aT --color=always --group-directories-first --icons'
+  alias ls='eza -al --color=auto --group-directories-first --icons'
+  alias la='eza -a --color=auto --group-directories-first --icons'
+  alias ll='eza -l --color=auto --group-directories-first --icons'
+  alias lt='eza -aT --color=auto --group-directories-first --icons'
 else
   alias ls='ls --color=auto --group-directories-first'
   alias la='ls --color=auto --group-directories-first -a'

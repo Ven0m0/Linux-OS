@@ -1,49 +1,64 @@
+# Package manager
 https://github.com/excalibur1234/pacui
 https://github.com/salvoton/parus
 https://github.com/ericlay/fuzzy-pkg-finder
-https://github.com/gavinlyonsrepo/cylon
-https://github.com/joehillen/sysz
-https://github.com/DanielFGray/fzf-scripts
-https://github.com/AnnikaV9/kbuilder
 https://github.com/lestofante/PacmanParallelizer
-https://github.com/xvoland/Extract
-https://github.com/VirtuBox/img-optimize
-https://github.com/niksingh710/fzf-preview
-https://github.com/pystardust/ytfzf
 https://github.com/sheepla/pacsummary
-https://github.com/Hetsh/mcsctl
-https://github.com/sheepla/fzman
-https://github.com/bigH/git-fuzzy
-https://github.com/wfxr/forgit
-https://github.com/mssalvatore/ln2
-https://github.com/archy-linux/archy-scripts
-https://github.com/dylanaraps/fff
-https://github.com/Artour64/rofiles
-https://github.com/Zuzzuc/Bash-minifier
-https://github.com/ayumu436/arch-linux-scripts
-https://github.com/ulises-jeremias/dotfiles
-https://github.com/vaaandark/tldr-sh
-https://github.com/b3nj5m1n/xdg-ninja
+https://gitlab.com/nycko123/pak
+https://github.com/alexanderepstein/bsupdate
 
+#
 https://github.com/andresgongora/synth-shell
 https://github.com/andresgongora/bash-tools
 https://github.com/andresgongora/dotfiles-manager
 
+# Help
+https://github.com/vaaandark/tldr-sh
+https://github.com/rustyflavor/clr.sh
+https://github.com/betafcc/clc
+https://github.com/alexanderepstein/Bash-Snippets/blob/master/cheat/cheat
+https://github.com/sheepla/fzman
+
+# File manager
+https://github.com/Naheel-Azawy/fmz
+https://github.com/dylanaraps/fff
+https://github.com/Artour64/rofiles
+
+# Fetch
 https://github.com/info-mono/diyfetch
+https://github.com/kaisenlinux/hyfetch
+https://github.com/alexanderepstein/Bash-Snippets/blob/master/weather/weather
+
+# FZF
+https://github.com/DanielFGray/fzf-scripts
+https://github.com/niksingh710/fzf-preview
+https://github.com/pystardust/ytfzf
+https://github.com/bigH/git-fuzzy
+https://github.com/wfxr/forgit
+
+# Multi
+https://github.com/gavinlyonsrepo/cylon
+https://github.com/joehillen/sysz
+
+# Misc
+https://github.com/alexanderepstein/Bash-Snippets/blob/master/transfer/transfer
+https://github.com/xvoland/Extract
+https://github.com/VirtuBox/img-optimize
+https://github.com/AnnikaV9/kbuilder
+https://github.com/Hetsh/mcsctl
+https://github.com/mssalvatore/ln2
+
+# Lint/Cleanup
+https://github.com/b3nj5m1n/xdg-ninja
+https://github.com/Zuzzuc/Bash-minifier
+
+https://github.com/archy-linux/archy-scripts
+https://github.com/ayumu436/arch-linux-scripts
+https://github.com/ulises-jeremias/dotfiles
 https://github.com/info-mono/os-ansi
 https://github.com/info-mono/colorstrip
 https://github.com/info-mono/emwave
-https://github.com/rustyflavor/clr.sh
-https://github.com/betafcc/clc
 https://github.com/PeterDaveHello/ColorEchoForShell
-
-
-https://github.com/alexanderepstein/Bash-Snippets/blob/master/transfer/transfer
-https://github.com/alexanderepstein/Bash-Snippets/blob/master/weather/weather
-https://github.com/alexanderepstein/Bash-Snippets/blob/master/cheat/cheat
-https://github.com/alexanderepstein/bsupdate
-
-https://github.com/kaisenlinux/hyfetch
 https://github.com/i-lost-my-bagel/transfilesyeahsurethatsagoodname
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/rami
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/reflector-bash-completion
@@ -51,4 +66,4 @@ https://github.com/endeavouros-team/PKGBUILDS/tree/master/keyserver-rank
 https://github.com/endeavouros-team/eos-bash-shared
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/akm
 
-https://gitlab.com/nycko123/pak
+

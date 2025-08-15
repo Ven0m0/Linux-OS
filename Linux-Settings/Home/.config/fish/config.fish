@@ -3,6 +3,7 @@ source /usr/share/cachyos-fish-config/cachyos-config.fish
 set -gx fish_prompt_pwd_dir_length 2
 set -gx __fish_git_prompt_show_informative_status 0
 set -gx __fish_git_prompt_showupstream none
+set -gx fish_term24bit 1
 function fish_title
 end
 # Run welcome message

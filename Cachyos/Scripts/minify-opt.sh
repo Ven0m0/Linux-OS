@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-export LC_ALL=C
-
+set -euo pipefail; shopt -s nullglob globstar; export LC_ALL=C
 # ─── USAGE ─────────────────────────────────────────────────────────────────────
 if [ $# -ne 1 ]; then
-  echo "Usage: $0 /path/to/directory"
-  exit 1
+  echo "Usage: $0 /path/to/directory"; exit 1
 fi
 TARGET_DIR="$1"
-[ -d "$TARGET_DIR" ] || { echo "Error: '$TARGET_DIR' is not a directory"; exit 1; }
+[[ -d $TARGET_DIR ]] || { echo "Error: '$TARGET_DIR' is not a directory"; exit 1; }
 
 # ─── SETUP ──────────────────────────────────────────────────────────────────────
 BACKUP_DIR="$HOME/image_backups_$(date +%Y%m%d_%H%M%S)"
@@ -17,7 +14,7 @@ LOGFILE="$HOME/image_compression_log.txt"
 echo "Image compression started at $(date)" > "$LOGFILE"
 
 # degree of parallelism; override via JOBS env var
-JOBS=${JOBS:-"$(nproc)"}
+JOBS="$(nproc 2>/dev/null || echo 4)"
 
 # ─── compress_image FUNCTION ──────────────────────────────────────────────────
 compress_image() {

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar; export LC_ALL=C
 sudo -v
 
 # Determine the device mounted at root
@@ -24,6 +23,9 @@ kwriteconfig6 --file ~/.config/kdeglobals --group General --key ColorScheme "Bre
 plasma-apply-desktoptheme breeze-dark
 
 sed -i 's/opacity = 0.8/opacity = 1.0/' "$HOME/.config/alacritty/alacritty.toml"
+
+# Locale
+locale -a | grep -q '^en_US\.utf8$' && { export LANG='en_US.UTF-8' LANGUAGE='en_US'; } || export LANG='C.UTF-8'
 
 sudo curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Linux-Settings/etc/sysctl.d/99-tweak-settings.conf -o /etc/sysctl.d/99-tweak-settings.conf
 

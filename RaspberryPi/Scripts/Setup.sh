@@ -37,12 +37,21 @@ sudo sh -c 'echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/force-unsafe-io'
 
 
 # apt-fast
-sudo touch /etc/apt/sources.list.d/apt-fast.list && sudo micro /etc/apt/sources.list.d/apt-fast.list
-deb [signed-by=/etc/apt/keyrings/apt-fast.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main
+#sudo micro /etc/apt/sources.list.d/apt-fast.list
+sudo touch /etc/apt/sources.list.d/apt-fast.list && \
+  echo "deb [signed-by=/etc/apt/keyrings/apt-fast.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main" | sudo tee -a /etc/apt/sources.list.d/apt-fast.list
 
 mkdir -p /etc/apt/keyrings
 curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBC5934FD3DEBD4DAEA544F791E2824A7F22B44BD" | sudo gpg --dearmor -o /etc/apt/keyrings/apt-fast.gpg
 sudo apt-get update && sudo apt-get install apt-fast
+
+# Deb-get
+sudo apt install curl lsb-release wget
+curl -sL https://raw.githubusercontent.com/wimpysworld/deb-get/main/deb-get | sudo -E bash -s install deb-get
+
+# Eget
+curl -s https://zyedidia.github.io/eget.sh | sh
+cp -v eget $HOME/.local/bin/eget
 
 ## Fix timeout for tty
 # Apply immediately

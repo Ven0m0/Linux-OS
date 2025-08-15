@@ -8,9 +8,8 @@
 
 _prependpath() {
     # Only prepend if not already in PATH
-    [ -d "$1" ] && [ ":$PATH:" != *":$1:"* ] && PATH="$1${PATH:+:$PATH}"
+    [[ -d $1 ]] && [[ ":$PATH:" != *":$1:"* ]] && PATH="$1${PATH:+:$PATH}"
 }
-
 _prependpath "$HOME/.local/bin"
 _prependpath "$HOME/bin"
 export PATH

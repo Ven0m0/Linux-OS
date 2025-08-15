@@ -1,0 +1,10 @@
+name: Validate Config Files Action
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  validate-config-files:
+  runs-on: ubuntu-latest
+  steps:
+    - name: Validate Config Files Action
+    - uses: kehoe/validate-configs-action@v4.0.1

@@ -59,7 +59,6 @@ https://github.com/info-mono/os-ansi
 https://github.com/info-mono/colorstrip
 https://github.com/info-mono/emwave
 https://github.com/PeterDaveHello/ColorEchoForShell
-https://github.com/i-lost-my-bagel/transfilesyeahsurethatsagoodname
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/rami
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/reflector-bash-completion
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/keyserver-rank

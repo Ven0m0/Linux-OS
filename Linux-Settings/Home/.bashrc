@@ -237,7 +237,6 @@ fuzzy_finders() {
 	  alias fzf='sk '
 	fi
 }
-
 #────────────Completions────────────
 complete -cf sudo
 # Ensure completion directory exists
@@ -409,6 +408,7 @@ bind '"\C-o": kill-whole-line'
 bind 'set timeout 500'
 # Fix bracket paste
 bind 'set enable-bracketed-paste off'
+printf '\e[?2004l' > /dev/tty
 
 # Ctrl+A = beginning-of-line
 # Ctrl+E = end-of-line

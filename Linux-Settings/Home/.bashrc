@@ -2,39 +2,41 @@
 
 [[ $- != *i* ]] && return
 #──────────── Helpers────────────
-# Check for command
-has() { command -v "$1" &>/dev/null; }
-# echo & echo -e replacement
-p(){
-  local esc=0 IFS=' '
-  [[ $1 == -- ]] && shift
-  [[ $1 == -e ]] && { esc=1; shift; }
-  ((esc)) && printf '%b\n' "$*" || printf '%s\n' "$*"
-}
+# Command -v wrapper
+has() { LC_ALL=C command -v "$1" &>/dev/null }
+# Replacement for: echo, echo -e
+p(){ printf '%s\n' "$*" 2>/dev/null }
+pe(){ printf '%b\n' "$*" 2>/dev/null }
 
+# Single source-check
+# source_exists(){ [[ -f $1 ]] && . "$1" }
+# Multiple source-check
+source_exists(){ for f; do [[ -f $f ]] && . "$f"; done; }
 # ─── Sourcing ───────────────────────────────────────────
-[[ -f /etc/bashrc ]] && . /etc/bashrc
-# Enable bash programmable completion features in interactive shells
-if [[ -f /usr/share/bash-completion/bash_completion ]]; then
-	. /usr/share/bash-completion/bash_completion
-elif [[ -f /etc/bash_completion ]]; then
-	. /etc/bash_completion
-fi
+# [[ -f /etc/bashrc ]] && . /etc/bashrc
+source_exists "/etc/bashrc"
+source_exists "$HOME/.bash_aliases" "$HOME/.bash_functions"
+source_exists "$HOME/.fns" "$HOME/.funcs"
+
+#source_exists "$HOME/.config/Bash/bashenv"
 #[[ -f $HOME/.config/bash/bashenv.env ]] && . "$HOME/.config/Bash/bashenv"
-[[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
-
-# Source all environment and shell scripts in ~/.config/bash
-# [[ -d "$HOME/.config/Bash" ]] && readarray -d '' files < <(LC_ALL=C find "$HOME/.config/Bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
-
+#[[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
+#[[ -f $HOME/.bash_functions ]] && . "$HOME/.bash_functions"
 # [[ -f $HOME/.fns]] && . "$HOME/.fns"
 # [[ -f $HOME/.funcs]] && . "$HOME/.funcs"
+
+# Enable bash programmable completion features in interactive shells
+[[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . /etc/bash_completion
+
+# Source all environment and shell scripts in ~/.config/bash
+# [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
 #──────────── Fetch────────────
 if has hyfetch; then
   fetch="hyfetch -b fastfetch -m rgb -p transgender"
 elif has fastfetch
   fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
 fi
-LC_ALL=C LANG=C.UTF-8 "$fetch" 2>/dev/null; unset fetch
+LC_ALL=C "$fetch" 2>/dev/null; unset fetch
 #──────────── Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 # PS1="\w \[\e[31m\]»\[\e[33m\]»\[\e[32m\]»\[\e[0m\] "
@@ -68,24 +70,17 @@ configure_prompt() {
   fi
  if has mommy && [[ $(echo $PROMPT_COMMAND) != *"mommy"* ]]; then
     # Shell-mommy https://github.com/sleepymincy/mommy
-    #PROMPT_COMMAND="LC_ALL=C LANG=C.UTF-8 mommy \$?; $PROMPT_COMMAND" SHELL_MOMMY_ONLY_NEGATIVE=1
+    #PROMPT_COMMAND="LC_ALL=C mommy \$?; $PROMPT_COMMAND"
     # mommy https://github.com/fwdekker/mommy
-    PROMPT_COMMAND="LC_ALL=C LANG=C.UTF-8 mommy -1 -s \$?; $PROMPT_COMMAND"
+    PROMPT_COMMAND="LC_ALL=C mommy -1 -s \$?; $PROMPT_COMMAND"
   fi
 }
-LC_ALL=C LANG=C.UTF-8 configure_prompt 2>/dev/null
+LC_ALL=C configure_prompt 2>/dev/null
 #────────────Core────────────
-unset LC_ALL; export LC_CTYPE=C LC_COLLATE=C
-if locale -a | grep -q "^en_US\.utf8$"; then
-  export LANG="en_US.UTF-8" LANGUAGE="en_US"
-else
-  export LANG='C.UTF-8'
-fi
-export CDPATH=".:$HOME"
+export CDPATH=".:$HOME:/"
 ulimit -c 0 &>/dev/null # disable core dumps
-shopt -s nullglob globstar histappend cmdhist checkwinsize \
-         dirspell cdspell autocd hostcomplete no_empty_cmd_completion &>/dev/null
-shopt -u mailwarn &>/dev/null; unset MAILCHECK # Bash-it
+shopt -s histappend cmdhist checkwinsize dirspell \
+         cdspell autocd hostcomplete no_empty_cmd_completion &>/dev/null
 # Disable Ctrl-s, Ctrl-q
 stty -ixon -ixoff -ixany &>/dev/null
 # https://github.com/perlun/dotfiles/blob/master/profile

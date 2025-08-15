@@ -42,30 +42,15 @@ pp_strip_separators() {
 ### shell-min
 ```bash
 #──────────── Whitespace trimming ────────────
-trim_white_spaces() {
-    sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//'
-}
-
+trim_white_spaces() { sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' }
 #──────────── Minimal function header ────────────
-use_minimal_function_header() {
-    sed -E 's/^[[:space:]]*function[[:space:]]+([a-zA-Z0-9_]+)[[:space:]]*\{/\1 () {/'
-}
-
+use_minimal_function_header() { sed -E 's/^[[:space:]]*function[[:space:]]+([a-zA-Z0-9_]+)[[:space:]]*\{/\1 () {/' }
 #──────────── Strip leading copyright/comments ────────────
-pp_strip_copyright() {
-    awk '!/^#/ {p=1} p'
-}
-
+pp_strip_copyright() { awk '!/^#/ {p=1} p' }
 #──────────── Strip separator lines (----- or ──────) ────────────
-pp_strip_separators() {
-    awk '!/^#[[:space:]]*[-─]{5,}/'
-}
-
+pp_strip_separators() { awk '!/^#[[:space:]]*[-─]{5,}/' }
 #──────────── Strip all comments and empty lines ────────────
-strip_comments_and_empty_lines() {
-    sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//;/^#/d;/^$/d'
-}
-
+strip_comments_and_empty_lines() { sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//;/^#/d;/^$/d' }
 #──────────── Full cleanup pipeline example ────────────
 clean_script() {
     trim_white_spaces "$1" \

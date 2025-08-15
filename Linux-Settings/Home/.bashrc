@@ -178,41 +178,28 @@ export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40
 ### Apps
 # Wayland
 if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
-  export GDK_BACKEND=wayland
-  export QT_QPA_PLATFORM=wayland
-  export SDL_VIDEODRIVER=wayland
-  export MOZ_ENABLE_WAYLAND=1
-  export MOZ_ENABLE_XINPUT2=1
-  export _JAVA_AWT_WM_NONREPARENTING=1
-  export ELECTRON_OZONE_PLATFORM_HINT=auto
-  # To use KDE file dialog with firefox https://daniele.tech/2019/02/how-to-execute-firefox-with-support-for-kde-filepicker/
-  export GTK_USE_PORTAL=1
+  export GDK_BACKEND=wayland QT_QPA_PLATFORM=wayland SDL_VIDEODRIVER=wayland ELECTRON_OZONE_PLATFORM_HINT=auto \
+  		 MOZ_ENABLE_WAYLAND=1 MOZ_ENABLE_XINPUT2=1 GTK_USE_PORTAL=1 _JAVA_AWT_WM_NONREPARENTING=1
 fi
 
 # gpg (for Github) https://github.com/alfunx/.dotfiles/blob/master/.profile
 export GPG_TTY="$(tty)"
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids/
-export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
+#export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
+export TZ="Europe/BerlinEurope/Berlin"
 
 # Build env
-if has sccache; then
-  export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 \
-  		 SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G \
-  		 RUSTC_WRAPPER=sccache
-fi
+has sccache && export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G RUSTC_WRAPPER=sccache
 has ccache && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
 has gix && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
 has rust-parallel && export PROGRESS_STYLE=simple
 
-if has cargo; then
-  export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
-  export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
-  export CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-  export RUST_LOG=off RUST_BACKTRACE=0
-fi
+has cargo && export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup" \
+  		 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true \ 
+		 CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse \
+ 	 	 RUST_LOG=off RUST_BACKTRACE=0
 # Python opt's
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
-export GOPROXY="direct" # no fancy google cache for go
 #────────────Fuzzy finders────────────
 fuzzy_finders() {
 	if has fd; then
@@ -240,7 +227,7 @@ fuzzy_finders() {
 	  alias fzf='sk '
 	fi
 }
- 
+
 #────────────Completions────────────
 complete -cf sudo
 
@@ -282,7 +269,7 @@ runch() {
   [[ $s == */* ]] && "$s" || "./$s"
 }
 # Short version (unreadable but should work the same)
-runch(){shopt -u nullglob nocaseglob;[[ $1 ]]||{echo >&2 "Usage: runch $1";return 2};[[ -f $1 ]]||{echo >&2 "No such file: $1";return 1};chmod u+x -- "$1"||return;[[ $1==*/* ]]&&"$1"||./"$1";}
+# runch(){shopt -u nullglob nocaseglob;[[ $1 ]]||{echo >&2 "Usage: runch $1";return 2};[[ -f $1 ]]||{echo >&2 "No such file: $1";return 1};chmod u+x -- "$1"||return;[[ $1==*/* ]]&&"$1"||./"$1";}
 
 # ls or cat
 sel() {
@@ -291,26 +278,26 @@ sel() {
   if [[ -d "$p" ]]; then
     if command -v eza &>/dev/null; then
       LC_ALL=C eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions -- "$p"
-      else
-        LC_ALL=C ls -a --color=auto --group-directories-first -- "$p"
-      fi
-    elif [[ -f "$p" ]]; then
-      if command -v bat &>/dev/null; then
-        local bn
-        bn=$(basename -- "$p")
-        # let bat handle paging; show only basename as file-name
-        LC_ALL=C LANG=C.UTF-8 bat -sp --color auto --file-name="$bn" -- "$p"
-      else
-        cat -s -- "$p"
-      fi
+    else
+      LC_ALL=C ls -a --color=auto --group-directories-first -- "$p"
+    fi
+  elif [[ -f "$p" ]]; then
+    if command -v bat &>/dev/null; then
+      local bn
+      bn=$(basename -- "$p")
+      # let bat handle paging; show only basename as file-name
+      LC_ALL=C LANG=C.UTF-8 bat -sp --color auto --file-name="$bn" -- "$p"
+    else
+      cat -s -- "$p"
+    fi
   else
     printf 'sel: not a file/dir: %s\n' "$p" >&2; return 1
-    fi
+fi
 }
 
-gcom() { git add . && git commit -m "$1" }
-lazyg() { git add . && git commit -m "$1" && git push }
-navibestmatch() { navi --query "$1" --best-match }
+gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" }
+lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push }
+navibestmatch() { LC_ALL=C navi --query "$1" --best-match }
 
 #────────────Aliases────────────
 # Enable aliases to be sudo’ed
@@ -321,18 +308,16 @@ alias mkdir="mkdir -p "
 alias ed='$EDITOR'
 alias mi='$EDITOR'
 alias smi='\sudo $EDITOR'
-# alias smi='\sudo -E ${$EDITOR:=$(command -v micro)'
-
 # Rerun last cmd as sudo
 please() { sudo "$(fc -ln -1)" }
 
-alias clear "printf '\e[3J\e[H\e[2J\e[m'" c='clear'
+alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
 alias mount='mount | column -t' # human readable format
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
-eza -al    
+
 if has eza; then
   alias ls='eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
   alias la='eza -a --color=auto --group-directories-first --icons=auto --smart-group'
@@ -345,15 +330,17 @@ else
   alias lt='ls --color=auto --group-directories-first -lhAR'
 fi
 
-if has ugrep; then
-  alias grep='ugrep --color=auto'
-  alias egrep='ugrep -E --color=auto'
-  alias fgrep='ugrep -F --color=auto'
 if has rg; then
   alias grep='rg --no-line-number'
   alias fgrep='fgrep --color=auto'
   alias egrep='egrep --color=auto'
-  alias rg='rg --no-stats --color=auto'
+  alias rg='LC_ALL=C rg --no-stats --color=auto'
+elif has ugrep; then
+  alias grep='ugrep --color=auto'
+  alias egrep='ugrep -E --color=auto'
+  alias fgrep='ugrep -F --color=auto'
+  alias ugrep='LC_ALL=C ugrep --color=auto'
+  alias ug='LC_ALL=C ug -sjFU -J $(nproc 2>/dev/null) --color=auto'
 else
   alias grep='grep --color=auto'
   alias fgrep='fgrep --color=auto'

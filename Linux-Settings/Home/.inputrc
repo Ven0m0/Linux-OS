@@ -30,6 +30,9 @@ set bell-style none
 set completion-query-items 150
 # set enable-keypad on
 
+# set editing-mode vi
+# vi mode fix
+# C-L: clear-screen
 
 # Color Options
 set colored-completion-prefix on

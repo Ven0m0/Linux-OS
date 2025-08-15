@@ -9,4 +9,4 @@
 --wrap auto
 --decorations auto
 --tabs 2
---map-syntax ".ignore:Git Ignore"
+-m ".ignore:Git Ignore"

@@ -17,8 +17,15 @@ if [[ -f /usr/share/bash-completion/bash_completion ]]; then
 elif [[ -f /etc/bash_completion ]]; then
 	. /etc/bash_completion
 fi
-[[ -f $HOME/.config/bash/bashenv.env ]] && . "$HOME/.config/Bash/bashenv"
+#[[ -f $HOME/.config/bash/bashenv.env ]] && . "$HOME/.config/Bash/bashenv"
+[[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
 
+# Source all ".sh" files in ~/.config/Bash
+if has fd; then
+  [[ -d $HOME/.config/Bash ]] && mapfile -d '' f < <(fd -tf -e sh . "$HOME/.config/Bash" -0) && ((${#f[@]})) && for x in "${f[@]}"; do . "$x"; done
+else
+  [[ -d $HOME/.config/Bash ]] && mapfile -d '' f < <(find -- "$HOME/.config/Bash" -type f -name '*.sh' -print0) && ((${#f[@]})) && for x in "${f[@]}"; do . "$x"; done
+fi
 # [[ -f $HOME/.fns]] && . "$HOME/.fns"
 # [[ -f $HOME/.funcs]] && . "$HOME/.funcs"
 #──────────── Fetch────────────
@@ -32,14 +39,14 @@ LC_ALL=C LANG=C.UTF-8 "$fetch" 2>/dev/null; unset fetch
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 # PS1="\w \[\e[31m\]»\[\e[33m\]»\[\e[32m\]»\[\e[0m\] "
 
-HISTFILESIZE=10000 HISTSIZE=500
+HISTSIZE=10000 
+HISTFILESIZE=$HISTSIZE
 HISTCONTROL="erasedups:ignoreboth"
-HISTIGNORE="&:ls:[bf]g:help:clear:exit:history:bash:fish:?:??"
+HISTIGNORE="&:ls:[bf]g:help:clear:printf:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
 HISTFILE=$HOME/.bash_history
 PROMPT_DIRTRIM=2
 PROMPT_COMMAND="history -a"
-
 configure_prompt() {
   local GIT_PROMPT='' \
         C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
@@ -86,6 +93,8 @@ stty -ixon -ixoff -ixany &>/dev/null
 set +H
 # Enforce default umask
 umask 0022
+# vi mode
+# set -o vi
 
 # XDG
 export \
@@ -241,21 +250,20 @@ fuzzy_finders() {
  
 #────────────Completions────────────
 complete -cf sudo
-# Ensure completion directory exists
-COMPDIR="$HOME/.config/bash/completions"
-mkdir -p "$COMPDIR"
-for tool in fzf sk; do
-  has "$tool" || continue
-  comp="$COMPDIR/${tool}_completion.bash"
-  [[ -f $comp ]] || {
-    [[ $tool == fzf ]] && "$tool" --bash 2>/dev/null >|"$comp"
-    [[ $tool == sk  ]] && "$tool" --shell bash 2>/dev/null >|"$comp"
-  }
-    . "$comp" 2>/dev/null || {
-      [[ $tool == fzf ]] && . <("$tool" --bash 2>/dev/null)
-      [[ $tool == sk  ]] && . <("$tool" --shell bash 2>/dev/null)
-    }
-done; unset tool comp COMPDIR
+
+mkdir -p "$HOME/.config/bash/completions"
+if has fzf; then
+  if [[ -f $HOME/.config/bash/completions/fzf_completion.bash ]]; then
+    . $HOME/.config/bash/completions/fzf_completion.bash 2>/dev/null
+  else
+    fzf --bash 2>/dev/null >|"$HOME/.config/bash/completions/fzf_completion.bash"
+fi
+if has sk; then
+  if [[ -f $HOME/.config/bash/completions/sk_completion.bash ]]; then
+    . $HOME/.config/bash/completions/sk_completion.bash 2>/dev/null
+  else
+    sk --shell bash 2>/dev/null >|"$HOME/.config/bash/completions/sk_completion.bash"
+fi
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
 has pay-respects && eval "$(pay-respects bash 2>/dev/null)"
@@ -266,7 +274,7 @@ has batgrep && alias batgrep="batgrep --rga -S --color "
 [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]] && builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 
 # Wikiman
-has wikiman && . /usr/share/wikiman/widgets/widget.bash
+[[ has wikiman && -f /usr/share/wikiman/widgets/widget.bash ]] && . /usr/share/wikiman/widgets/widget.bash
 # ─── Functions ─────────────────────────────────────────────
 # which() { command -v "$1" 2>/dev/null || return 1; }
 alias which="command -v "
@@ -290,20 +298,9 @@ runch() {
       *)   exec "./$s" ;;
   esac
 }
-
-gcom() {
-  git add .
-  git commit -m "$1"
-}
-lazyg() {
-  git add .
-  git commit -m "$1"
-  git push
-}
-
-navibestmatch() {
-  navi --query "$1" --best-match
-}
+gcom() { git add . && git commit -m "$1" }
+lazyg() { git add . && git commit -m "$1" && git push }
+navibestmatch() { navi --query "$1" --best-match }
 
 #────────────Aliases────────────
 # Enable aliases to be sudo’ed

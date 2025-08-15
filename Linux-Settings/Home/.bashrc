@@ -274,9 +274,15 @@ alias which="command -v "
 
 # Having to set a new script as executable always annoys me.
 # Verbose version
-# runch(){[[ $1 ]]||{echo "Usage: runch <script>";return 2;};[[ -f $1 ]]||{echo "No such file: $1";return 1;};chmod u+x -- "$1"||return 1;[[ $1 == */* ]]&&"$1"||"./$1";}
-# Short version
-runch(){chmod u+x -- "$1"&&[[ $1 == */* ]]&&"$1"||"./$1";}
+runch() {
+  shopt -u nullglob nocaseglob; local s="$1"
+  [[ $s ]] || { printf 'runch: missing script argument\nUsage: runch <script>\n' >&2; return 2; }
+  [[ -f $s ]] || { printf 'runch: file not found: %s\n' "$s" >&2; return 1; }
+  chmod u+x -- "$s" 2>/dev/null || { printf 'runch: cannot make executable: %s\n' "$s" >&2; return 1; }
+  [[ $s == */* ]] && "$s" || "./$s"
+}
+# Short version (unreadable but should work the same)
+runch(){shopt -u nullglob nocaseglob;[[ $1 ]]||{echo >&2 "Usage: runch $1";return 2};[[ -f $1 ]]||{echo >&2 "No such file: $1";return 1};chmod u+x -- "$1"||return;[[ $1==*/* ]]&&"$1"||./"$1";}
 
 gcom() { git add . && git commit -m "$1" }
 lazyg() { git add . && git commit -m "$1" && git push }

@@ -28,7 +28,7 @@ jobs:
           sh_checker_checkbashisms_enable: false
           sh_checker_shfmt_disable: false
           sh_checker_shellcheck_disable: false
-          sh_checker_only_diff: true
+          sh_checker_only_diff: false
           
       #- name: Upload a Build Artifact
         #uses: actions/upload-artifact@v4

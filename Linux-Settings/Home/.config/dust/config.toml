@@ -7,10 +7,10 @@
 reverse=false
 
 # Subdirectories will not have their path shortened
-display-full-paths=true
+display-full-paths=false
 
 # Use file length instead of blocks
-display-apparent-size=true
+display-apparent-size=false
 
 # No colors will be printed
 no-colors=false
@@ -19,10 +19,10 @@ no-colors=false
 no-bars=true
 
 # No total row will be displayed
-skip-total=true
+skip-total=false
 
 # Do not display hidden files
 ignore-hidden=true
 
 # print sizes in powers of 1000 (e.g., 1.1G)
-output-format="si"
+#output-format="si"

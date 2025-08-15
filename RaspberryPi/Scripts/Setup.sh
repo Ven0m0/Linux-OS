@@ -53,6 +53,10 @@ curl -sL https://raw.githubusercontent.com/wimpysworld/deb-get/main/deb-get | su
 curl -s https://zyedidia.github.io/eget.sh | sh
 cp -v eget $HOME/.local/bin/eget
 
+# Pacstall
+sudo apt install pacstall
+sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install || wget -q https://pacstall.dev/q/install -O -)"
+
 ## Fix timeout for tty
 # Apply immediately
 sudo sysctl -w kernel.hung_task_timeout_secs=0

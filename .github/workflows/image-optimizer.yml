@@ -21,6 +21,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           export-webp: true
           export-avif: true
+          compress-png: true
+          compress-svg: true
+          compress-jpg: true
+          compress-webp: true
+          compress-avif: true
+          replace-original-after-export-webp: true
 
       - name: Create New Pull Request If Needed
         if: steps.compress-images.outputs.markdown_report != ''

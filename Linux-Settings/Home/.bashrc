@@ -277,7 +277,10 @@ has batgrep && alias batgrep="batgrep --rga -S --color "
 alias which="command -v "
 
 # Having to set a new script as executable always annoys me.
-runch(){[[ $1 ]]||{echo "Usage: runch <script>";return 2;};[[ -f $1 ]]||{echo "No such file: $1";return 1;};chmod u+x -- "$1"||return 1;[[ $1 == */* ]]&&"$1"||"./$1";}
+# Verbose version
+# runch(){[[ $1 ]]||{echo "Usage: runch <script>";return 2;};[[ -f $1 ]]||{echo "No such file: $1";return 1;};chmod u+x -- "$1"||return 1;[[ $1 == */* ]]&&"$1"||"./$1";}
+# Short version
+runch(){chmod u+x -- "$1"&&[[ $1 == */* ]]&&"$1"||"./$1";}
 
 gcom() { git add . && git commit -m "$1" }
 lazyg() { git add . && git commit -m "$1" && git push }

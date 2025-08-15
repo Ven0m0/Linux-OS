@@ -277,24 +277,8 @@ has batgrep && alias batgrep="batgrep --rga -S --color "
 alias which="command -v "
 
 # Having to set a new script as executable always annoys me.
-runch() {
-  # Args
-  local s=$1
-  if [[ -z $s ]]; then
-      printf 'chrun: missing script argument\nUsage: chrun <script>\n' >&2
-      return 2
-  fi
-  # Try to chmod, silencing stderr; bail if it fails
-  chmod u+x -- "$s" 2>/dev/null || {
-      printf 'chrun: cannot make executable: %s\n' "$s" >&2
-      return 1
-  }
-  # Exec: if name contains a slash, run as-is; otherwise prefix "./"
-  case "$s" in
-      */*) exec "$s"   ;;
-      *)   exec "./$s" ;;
-  esac
-}
+runch(){[[ $1 ]]||{echo "Usage: runch <script>";return 2;};[[ -f $1 ]]||{echo "No such file: $1";return 1;};chmod u+x -- "$1"||return 1;[[ $1 == */* ]]&&"$1"||"./$1";}
+
 gcom() { git add . && git commit -m "$1" }
 lazyg() { git add . && git commit -m "$1" && git push }
 navibestmatch() { navi --query "$1" --best-match }

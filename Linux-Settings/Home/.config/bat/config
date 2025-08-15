@@ -6,5 +6,6 @@
 --strip-ansi auto
 --style auto
 --paging auto
+--wrap auto
 --tabs 2
 --map-syntax ".ignore:Git Ignore"

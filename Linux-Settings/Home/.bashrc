@@ -85,12 +85,9 @@ shopt -u mailwarn &>/dev/null; unset MAILCHECK # Bash-it
 # Disable Ctrl-s, Ctrl-q
 stty -ixon -ixoff -ixany &>/dev/null
 # https://github.com/perlun/dotfiles/blob/master/profile
-# causes problems with git commit
-set +H
-# Enforce default umask
-umask 0022
-# vi mode
-# set -o vi
+set +H # causes problems with git commit
+# umask 0022 # Enforce default umask
+# set -o vi # vi mode
 
 # XDG
 export \
@@ -293,8 +290,8 @@ alias sudo-rs="\sudo-rs "
 alias mkdir="mkdir -p "
 alias ed='$EDITOR'
 alias mi='$EDITOR'
-alias smi='sudo $EDITOR'
-# alias smi='sudo -E ${$EDITOR:=$(command -v micro)'
+alias smi='\sudo $EDITOR'
+# alias smi='\sudo -E ${$EDITOR:=$(command -v micro)'
 
 # Rerun last cmd as sudo
 please() { sudo "$(fc -ln -1)" }

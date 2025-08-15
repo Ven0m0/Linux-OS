@@ -57,6 +57,13 @@ cp -v eget $HOME/.local/bin/eget
 sudo apt install pacstall
 sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install || wget -q https://pacstall.dev/q/install -O -)"
 
+
+sudo apt install flatpak
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+
+
+
 ## Fix timeout for tty
 # Apply immediately
 sudo sysctl -w kernel.hung_task_timeout_secs=0

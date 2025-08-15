@@ -299,6 +299,10 @@ lazyg() {
   git push
 }
 
+navibestmatch() {
+  navi --query "$1" --best-match
+}
+
 #────────────Aliases────────────
 # Enable aliases to be sudo’ed
 alias sudo="\sudo "

@@ -1,0 +1,17 @@
+# https://github.com/marketplace/actions/github-branch-cleaner
+name: Branches Cleaner
+on:
+  schedule:
+    - cron: "0 0 * * *"
+jobs:
+  cleanup-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: GitHub Branch Cleaner
+        uses: mmorenoregalado/action-branches-cleaner@v2.0.3
+        with:
+          base_branches: master
+          token: ${{ secrets.GITHUB_TOKEN }}
+          days_old_threshold: 7

@@ -21,11 +21,10 @@ fi
 [[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
 
 # Source all ".sh" files in ~/.config/Bash
-if has fd; then
-  [[ -d $HOME/.config/Bash ]] && mapfile -d '' f < <(fd -tf -e sh . "$HOME/.config/Bash" -0) && ((${#f[@]})) && for x in "${f[@]}"; do . "$x"; done
-else
-  [[ -d $HOME/.config/Bash ]] && mapfile -d '' f < <(find -- "$HOME/.config/Bash" -type f -name '*.sh' -print0) && ((${#f[@]})) && for x in "${f[@]}"; do . "$x"; done
-fi
+[[ -d $HOME/.config/Bash ]] &&
+mapfile -d '' f < <(LC_ALL=C find "$HOME/.config/Bash" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) &&
+((${#f[@]})) && for x in "${f[@]}"; do . "$x"; done
+
 # [[ -f $HOME/.fns]] && . "$HOME/.fns"
 # [[ -f $HOME/.funcs]] && . "$HOME/.funcs"
 #──────────── Fetch────────────

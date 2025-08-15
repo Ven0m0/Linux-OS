@@ -13,30 +13,37 @@ set convert-meta off
 # Fix stupid "\e[200~" whenever I paste in bash
 set enable-bracketed-paste off
 
+### Fish like tab completions in Bash
+# Use TAB to cycle forward through completions
+"\t": menu-complete
+# Use Shift-TAB to cycle backward through completions
+"\e[Z": menu-complete-backward
+
+# Tab completions:
+set menu-complete-display-prefix on
+set show-all-if-ambiguous on
+set show-all-if-unmodified on
+set match-hidden-files off
+set skip-completed-text on
+set completion-map-case on
+set completion-ignore-case On
+set completion-query-items 250
+set completion-prefix-display-length 3
+set mark-symlinked-directories on
+set visible-stats on
+#set page-completions off
+
+set colored-completion-prefix on
+set colored-stats on
 # Other
 set meta-flag on
-set completion-ignore-case On
-set completion-map-case on
-set skip-completed-text on
-#set page-completions off
-set visible-stats on
-set show-all-if-unmodified on
-set show-all-if-ambiguous on
-set match-hidden-files off
-set mark-symlinked-directories on
-set completion-prefix-display-length 3
 set echo-control-characters off
 set bell-style none
-set completion-query-items 250
 # set enable-keypad on
 
 # set editing-mode vi
 # vi mode fix
 # C-L: clear-screen
-
-# Color Options
-set colored-completion-prefix on
-set colored-stats on
 
 # Adds punctuation as word delimiters
 set bind-tty-special-chars off

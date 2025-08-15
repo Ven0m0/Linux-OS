@@ -21,9 +21,7 @@ fi
 [[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
 
 # Source all ".sh" files in ~/.config/Bash
-[[ -d $HOME/.config/Bash ]] &&
-mapfile -d '' f < <(LC_ALL=C find "$HOME/.config/Bash" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) &&
-((${#f[@]})) && for x in "${f[@]}"; do . "$x"; done
+[[ -d $HOME/.config/Bash ]] && mapfile -d '' < <(LC_ALL=C find "$HOME/.config/Bash" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#MAPFILE[@]})) && for f in "${MAPFILE[@]}"; do . "$f"; done
 
 # [[ -f $HOME/.fns]] && . "$HOME/.fns"
 # [[ -f $HOME/.funcs]] && . "$HOME/.funcs"

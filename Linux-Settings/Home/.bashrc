@@ -23,8 +23,8 @@ fi
 #[[ -f $HOME/.config/bash/bashenv.env ]] && . "$HOME/.config/Bash/bashenv"
 [[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
 
-# Source all ".sh" files in ~/.config/Bash
-# [[ -d $HOME/.config/Bash ]] && mapfile -d '' < <(LC_ALL=C find "$HOME/.config/Bash" -maxdepth 1 -type f \( -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#MAPFILE[@]})) && for f in "${MAPFILE[@]}"; do . "$f"; done
+# Source all environment and shell scripts in ~/.config/bash
+# [[ -d "$HOME/.config/Bash" ]] && readarray -d '' files < <(LC_ALL=C find "$HOME/.config/Bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
 
 # [[ -f $HOME/.fns]] && . "$HOME/.fns"
 # [[ -f $HOME/.funcs]] && . "$HOME/.funcs"

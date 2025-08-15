@@ -1,6 +1,5 @@
 # ~/.bashrc
 
-#──────────── Only for interactive shells────────────
 [[ $- != *i* ]] && return
 #──────────── Helpers────────────
 # Check for command

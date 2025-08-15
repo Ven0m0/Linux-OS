@@ -7,5 +7,6 @@
 --style auto
 --paging auto
 --wrap auto
+--decorations auto
 --tabs 2
 --map-syntax ".ignore:Git Ignore"

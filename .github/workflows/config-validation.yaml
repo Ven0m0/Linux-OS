@@ -3,7 +3,7 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
-  validate-config-files:
+  name: validate-config-files
   runs-on: ubuntu-latest
   steps:
     - name: Validate Config Files Action

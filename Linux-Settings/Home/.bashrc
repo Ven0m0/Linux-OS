@@ -4,10 +4,14 @@
 #──────────── Helpers────────────
 # Check for command
 has() { command -v "$1" &>/dev/null; }
-# Print-echo
-p() { printf "%s\n" "$@"; }
-# Print-echo for color
-pe() { printf "%b\n" "$@"; }
+# echo & echo -e replacement
+p(){
+  local esc=0 IFS=' '
+  [[ $1 == -- ]] && shift
+  [[ $1 == -e ]] && { esc=1; shift; }
+  ((esc)) && printf '%b\n' "$*" || printf '%s\n' "$*"
+}
+
 # ─── Sourcing ───────────────────────────────────────────
 [[ -f /etc/bashrc ]] && . /etc/bashrc
 # Enable bash programmable completion features in interactive shells
@@ -146,17 +150,18 @@ has batpipe && export BATPIPE=color
 if has bat; then
   export PAGER=bat BAT_STYLE="auto"
   export GIT_PAGER="${GIT_PAGER:=bat}"
-  alias cat="bat -pp " bat="bat --color auto "
+  alias cat="bat -spp -- " bat="bat --color auto -- "
 elif has batcat; then
   export PAGER=batcat BAT_STYLE="auto"
   export GIT_PAGER="${GIT_PAGER:=batcat}"
-  alias cat="batcat -pp " bat="batcat --color auto "
+  alias cat="batcat -spp -- " bat="batcat -s --color auto -- "
 elif has less; then
   export PAGER=less \
          LESSHISTFILE="-" \
          LESS='-FRXns --mouse --use-color --no-init'
   export GIT_PAGER="${GIT_PAGER:=less}"
 fi
+alias cat="cat -s -- "
 
 # fd‑ignore file
 if [[ -f $HOME/.ignore ]]; then
@@ -286,21 +291,26 @@ runch(){shopt -u nullglob nocaseglob;[[ $1 ]]||{echo >&2 "Usage: runch $1";retur
 
 # ls or cat
 sel() {
-  [[ -e "$1" ]] || { printf 'sel: not found: %s\n' "$1" >&2; return 1; }
-  if [[ -d "$1" ]]; then
+  local p="${1:-.}"
+  [[ -e "$p" ]] || { printf 'sel: not found: %s\n' "$p" >&2; return 1; }
+  if [[ -d "$p" ]]; then
     if command -v eza &>/dev/null; then
-	  eza -al --color=auto --group-directories-first --icons -- "$1"
-    else
-      ls -- "$1"
-	fi
-  elif [[ -f "$1" ]]; then
-    if command -v eza &>/dev/null; then
-	  bat -sp --color auto --strip-ansi auto -- "$1"
-    else
-      cat -- "$1"
+      LC_ALL=C eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions -- "$p"
+      else
+        LC_ALL=C ls -a --color=auto --group-directories-first -- "$p"
+      fi
+    elif [[ -f "$p" ]]; then
+      if command -v bat &>/dev/null; then
+        local bn
+        bn=$(basename -- "$p")
+        # let bat handle paging; show only basename as file-name
+        LC_ALL=C LANG=C.UTF-8 bat -sp --color auto --file-name="$bn" -- "$p"
+      else
+        cat -s -- "$p"
+      fi
   else
-    printf 'sel: not a regular file or directory: %s\n' "$1" >&2; return 1
-  fi
+    printf 'sel: not a file/dir: %s\n' "$p" >&2; return 1
+    fi
 }
 
 gcom() { git add . && git commit -m "$1" }
@@ -327,12 +337,12 @@ alias mount='mount | column -t' # human readable format
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
-
+eza -al    
 if has eza; then
-  alias ls='eza -al --color=auto --group-directories-first --icons'
-  alias la='eza -a --color=auto --group-directories-first --icons'
-  alias ll='eza -l --color=auto --group-directories-first --icons'
-  alias lt='eza -aT --color=auto --group-directories-first --icons'
+  alias ls='eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
+  alias la='eza -a --color=auto --group-directories-first --icons=auto --smart-group'
+  alias ll='eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group'
+  alias lt='eza -aT --color=auto --group-directories-first --icons=auto --smart-group'
 else
   alias ls='ls --color=auto --group-directories-first'
   alias la='ls --color=auto --group-directories-first -a'

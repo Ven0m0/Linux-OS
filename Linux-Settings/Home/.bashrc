@@ -221,22 +221,24 @@ fuzzy_finders() {
   		FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
 	fi
 	export FZF_DEFAULT_COMMAND="$FIND_CMD" \
-       	   FZF_DEFAULT_OPTS="--info=inline --tiebreak=index --layout=reverse-list --height=70%" \
-       	   FZF_CTRL_T_COMMAND="$FIND_CMD" \
-       	   FZF_CTRL_T_OPTS="--select-1 --exit-0  --preview '(bat --color=always --style=numbers --line-range=:250 {} || cat {}) 2>/dev/null)'"
-       	   FZF_CTRL_R_OPTS='--no-sort --exact' \
-       	   FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
-      	   FZF_COMPLETION_PATH_OPTS='--info=inline --walker file,dir,follow,hidden' \
-           FZF_COMPLETION_DIR_OPTS='--info=inline --walker dir,follow'
+    FZF_DEFAULT_OPTS="--info=inline --layout=reverse --tiebreak=index --height=70%" \
+    FZF_CTRL_T_COMMAND="$FIND_CMD" \
+    FZF_CTRL_T_OPTS="--select-1 --exit-0  --preview '(bat --color=always --style=numbers --line-range=:250 {} || cat {}) 2>/dev/null)'"
+    FZF_CTRL_R_OPTS='--select-1 --exit-0 --no-sort --exact' \
+		FZF_ALT_C_OPTS="--select-1 --exit-0 --walker-skip .git,node_modules,target --preview 'tree -C {}'"
+    FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
+    FZF_COMPLETION_PATH_OPTS='--info=inline --tiebreak=index --walker file,dir,follow,hidden' \
+    FZF_COMPLETION_DIR_OPTS='--info=inline --tiebreak=index --walker dir,follow'
 	if has fzf; then
 	  unalias fzf
 	fi
 	if has sk; then
 		export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
-           SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+      SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 	  alias fzf='sk '
 	fi
 }
+ 
 #────────────Completions────────────
 complete -cf sudo
 # Ensure completion directory exists

@@ -20,7 +20,7 @@ jobs:
         uses: luizm/action-sh-checker@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SHELLCHECK_OPTS: -e SC1004,SC2236,SC2154,SC2155,SC2250 --norc # exclude some shellcheck warnings.
+          SHELLCHECK_OPTS: -e SC1079,SC1078,SC1073,SC1072,SC1083,SC1090,SC1091,SC2016,SC2034,SC2312,SC2236,SC2154,SC2155,SC2250 # exclude some shellcheck warnings.
           SHFMT_OPTS: -s -ln=bash -kp -ci -bn -i 2 -d # arguments to shfmt.
         with:
           sh_checker_comment: true

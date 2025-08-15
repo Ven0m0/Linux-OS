@@ -1,8 +1,10 @@
-# Disable searching hidden files and directories
 no-hidden
-# ignore files specified in .ignore and .gitignore in recursive searches
-ignore-files=.ignore
 ignore-files=.gitignore
-
-# Perform case insensitive matching, unless a pattern is specified with a literal upper case letter.
+ignore-files=.ignore
+ignore-binary
 smart-case
+ascii
+no-messages
+pretty=auto
+index
+fixed-strings

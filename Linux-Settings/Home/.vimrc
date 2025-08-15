@@ -7,6 +7,15 @@ set background=dark
 set termguicolors
 set number
 set relativenumber
+set smartcase           " Enable smart-case search
+set ignorecase          " Always case-insensitive
+set incsearch           " Searches for strings incrementally
+set autoindent          " Auto-indent new lines
+set expandtab           " Use spaces instead of tabs
+set shiftwidth=2        " Number of auto-indent spaces
+set smartindent         " Enable smart-indent
+set smarttab            " Enable smart-tabs
+set softtabstop=2       " Number of spaces per Tab
 " ------------------------
 " keys
 " ------------------------

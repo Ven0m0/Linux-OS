@@ -27,7 +27,7 @@ set mark-symlinked-directories on
 set completion-prefix-display-length 3
 set echo-control-characters off
 set bell-style none
-set completion-query-items 150
+set completion-query-items 250
 # set enable-keypad on
 
 # set editing-mode vi

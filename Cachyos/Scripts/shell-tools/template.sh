@@ -19,5 +19,3 @@ if [[ $EUID -ne 0 ]]; then
   echo "This script requires root privileges. Validating with sudo..."
   sudo -v || { echo "Sudo failed. Exiting."; exit 1; }
 fi
-
-list_opened_apps() { ps axc | awk 'NR > 1' | awk '{print substr($0,index($0,$5))}' | sort -u }

@@ -83,7 +83,7 @@ LC_ALL=C configure_prompt 2>/dev/null
 #────────────Core────────────
 export CDPATH=".:$HOME:/"
 ulimit -c 0 &>/dev/null # disable core dumps
-shopt -s histappend cmdhist checkwinsize dirspell \
+shopt -s histappend cmdhist checkwinsize dirspell cdable_vars\
          cdspell autocd hostcomplete no_empty_cmd_completion &>/dev/null
 # Disable Ctrl-s, Ctrl-q
 stty -ixon -ixoff -ixany &>/dev/null
@@ -100,8 +100,8 @@ export \
   XDG_CACHE_HOME="${XDG_CACHE_HOME:=$HOME/.cache}"
 
 # Pi3 fix low power message warning
-[[ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off &>/dev/null; setterm --bfreq 0 &>/dev/null; }
-setterm --linewrap on &>/dev/null
+# [ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off &>/dev/null; setterm --bfreq 0 &>/dev/null; }
+# setterm --linewrap on &>/dev/null
 
 #────────────Env────────────
 [[ -f $HOME/.cargo/env ]] && . "$HOME/.cargo/env"

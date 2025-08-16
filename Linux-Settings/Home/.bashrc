@@ -319,6 +319,10 @@ gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" }
 lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push }
 navibestmatch() { LC_ALL=C navi --query "$1" --best-match }
 
+touch() { mkdir -p "$(dirname "$1")" && touch "$1" }
+
+symbreak() { find -L "${1:-.}" -type l }
+
 #────────────Aliases────────────
 # Enable aliases to be sudo’ed
 alias sudo="\sudo "

@@ -51,19 +51,22 @@ PROMPT_DIRTRIM=2
 PROMPT_COMMAND="history -a"
 configure_prompt() {
   local GIT_PROMPT='' \
-        C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
-        C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]'
+	C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
+    C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]' \
+	USERN="${C_USER}\u${C_RESET}" HOSTL="${C_HOST}\h${C_RESET}" YLW='\e[33m'
   if has starship; then
     eval "$(LC_ALL=C LANG=C.UTF-8 starship init bash 2>/dev/null)" &>/dev/null
   else
-    PS1="[${C_USER}\u${C_RESET}@${C_HOST}\h${C_RESET}»${C_PATH}\w${C_RESET}]$GIT_PROMPT \$ "
+  	[[ "$USER" = "root" ]] && USERN="${C_ROOT}\u${C_RESET}"
+    [[ -z "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
+    PS1="[${C_USER}\u${C_RESET}@${HOSTL}»${C_PATH}\w${C_RESET}]$GIT_PROMPT \$ "
     __update_git_prompt() {
       [[ $PWD == ${__git_prompt_prev_pwd:-} ]] && return
       __git_prompt_prev_pwd=$PWD
       local root name
-      root=$(LC_ALL=C LANG=C.UTF-8 git rev-parse --show-toplevel 2>/dev/null) || { GIT_PROMPT=; return; }
+      root=$(LC_ALL=C git rev-parse --show-toplevel 2>/dev/null) || { GIT_PROMPT=; return; }
       name=${root##*/}
-      GIT_PROMPT=" \[\e[35m\]>$name\[\e[0m\]"
+      GIT_PROMPT=" ${C_USER}>$name${C_RESET}"
     }
     [[ ";$PROMPT_COMMAND" != *";"__update_git_prompt* ]] && \
       PROMPT_COMMAND="__update_git_prompt; $PROMPT_COMMAND"
@@ -75,7 +78,8 @@ configure_prompt() {
     PROMPT_COMMAND="LC_ALL=C mommy -1 -s \$?; $PROMPT_COMMAND"
   fi
 }
-LC_ALL=C configure_prompt 2>/dev/null
+export PS1
+LC_ALL=C configure_prompt 2>/dev/null  
 #────────────Core────────────
 export CDPATH=".:$HOME:/"
 ulimit -c 0 &>/dev/null # disable core dumps

@@ -108,3 +108,28 @@ alias gbr="git branch --format='%(HEAD) %(color:yellow)%(refname:short)%(color:r
 # Sudo wrapper
 # 	G_SUDO(){ local input=$*; sudo bash -c ". /boot/dietpi/func/dietpi-globals && $input"; }
 G_SUDO(){ local input=$*; sudo bash -c "$input"; }
+
+# delete empty subdirs
+__prune() {
+  if [[ -n "$1" ]]; then
+    read -r "reply?Prune empty directories: are you sure? [y] "
+  else
+    local _reply=y
+  fi
+
+  [[ "$_reply" = y ]] && find . -type d -empty -delete
+}
+__prune "$@"
+
+alias yayf="yay -Slq | fzf --multi --preview 'yay -Sii {1}' --preview-window=down:75% | xargs -ro yay -S"
+
+vid2gif() {
+  local video_path="$1"
+  ffmpeg \
+	  -i "$video_path" \
+	  -r 15 \
+	  -vf scale=512:-1 \
+	  "$video_path.gif"
+}
+
+list_opened_apps() { ps axc | awk 'NR > 1' | awk '{print substr($0,index($0,$5))}' | sort -u }

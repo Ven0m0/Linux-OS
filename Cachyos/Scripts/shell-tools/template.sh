@@ -20,4 +20,4 @@ if [[ $EUID -ne 0 ]]; then
   sudo -v || { echo "Sudo failed. Exiting."; exit 1; }
 fi
 
-shopt -u checkhash # don’t re‑hash $PATH on each command lookup
+list_opened_apps() { ps axc | awk 'NR > 1' | awk '{print substr($0,index($0,$5))}' | sort -u }

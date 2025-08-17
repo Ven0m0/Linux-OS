@@ -361,7 +361,7 @@ fi
 if has rg; then
   alias grep='rg -S --color=auto'
   alias fgrep='rg -SF --color=auto'
-  alias egrep='rg -e --color=auto'
+  alias egrep='rg -Se --color=auto'
   alias rg='LC_ALL=C rg -NFS --mmap --no-unicode --engine=default --no-stats --color=auto'
 elif has ugrep; then
   alias grep='ugrep --color=auto'

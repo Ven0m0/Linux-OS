@@ -359,14 +359,14 @@ else
 fi
 
 if has rg; then
-  alias grep='rg --no-line-number'
-  alias fgrep='fgrep --color=auto'
-  alias egrep='egrep --color=auto'
-  alias rg='LC_ALL=C rg --no-stats --color=auto'
+  alias grep='rg -S --color=auto'
+  alias fgrep='rg -SF --color=auto'
+  alias egrep='rg -e --color=auto'
+  alias rg='LC_ALL=C rg -NFS --mmap --no-unicode --engine=default --no-stats --color=auto'
 elif has ugrep; then
   alias grep='ugrep --color=auto'
-  alias egrep='ugrep -E --color=auto'
   alias fgrep='ugrep -F --color=auto'
+  alias egrep='ugrep -E --color=auto'
   alias ugrep='LC_ALL=C ugrep --color=auto'
   alias ug='LC_ALL=C ug -sjFU -J $(nproc 2>/dev/null) --color=auto'
 else

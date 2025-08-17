@@ -10,7 +10,7 @@
 --fixed-strings
 
 --threads 0
---mmap
+#--mmap
 --smart-case
 --max-depth 5
 --one-file-system
@@ -19,3 +19,4 @@
 --color=auto
 --no-line-number
 --no-heading
+--no-ignore-messages

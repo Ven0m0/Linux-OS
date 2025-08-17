@@ -368,7 +368,7 @@ elif has ugrep; then
   alias fgrep='ugrep -F --color=auto'
   alias egrep='ugrep -E --color=auto'
   alias ugrep='LC_ALL=C ugrep --color=auto'
-  alias ug='LC_ALL=C ug -sjFU -J $(nproc 2>/dev/null) --color=auto'
+  alias ug='LC_ALL=C ug -sjFU --color=auto'
 else
   alias grep='grep --color=auto'
   alias fgrep='fgrep --color=auto'

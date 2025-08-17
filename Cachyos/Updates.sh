@@ -54,12 +54,16 @@ p 'Updating mlocate database'
 
 p "🔄 System update"
 if has paru; then
-  aurtool="$(command -v paru 2>/dev/null)"; aurtool="${aurtool##*/}"
-  auropts_base="--batchinstall --combinedupgrade --nouseask --nokeepsrc"
+  aurtool="$(hasname paru)"
+  auropts_base="--batchinstall --combinedupgrade --nokeepsrc"
 elif has yay; then
-  aurtool="$(command -v yay 2>/dev/null)"; aurtool="${aurtool##*/}"
-  auropts_base="--noredownload --norebuild"
+  aurtool="$(hasname yay)"
+  auropts_base="--answerclean y --answerdiff n --answeredit n --answerupgrade y"
 fi
+#aurtool="$(hasname paru || hasname yay)" || :
+
+auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" $auropts_base)
+"$aurtool" -Sua "${auropts[@]}" 2>/dev/null || :
 auropts="--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudo ${suexec} ${auropts_base}"
 "$aurtool" -Sua $auropts 2>/dev/null || :
 

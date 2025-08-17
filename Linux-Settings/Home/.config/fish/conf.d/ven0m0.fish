@@ -63,7 +63,6 @@ if status --is-interactive >/dev/null 2>&1
     alias clear='command clear; and fish_greeting 2>/dev/null'
     alias cls='command clear; and fish_greeting 2>/dev/null'
     abbr -a c clear
-    abbr -a ed 'edit'
 
     abbr -a py 'python3'
     

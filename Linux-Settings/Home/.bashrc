@@ -375,10 +375,10 @@ else
   alias egrep='egrep --color=auto'
 fi
 
-alias mv='mv -i'
-alias cp='cp -i'
-alias ln='ln -i'
-alias rm='rm -I --preserve-root'
+alias mv='mv -iv'
+alias cp='cp -iv'
+alias ln='ln -iv'
+alias rm='rm -Iv --preserve-root'
 alias rmd='rm -rfv --preserve-root'
 alias chmod='chmod --preserve-root'
 
@@ -412,11 +412,16 @@ alias vdir='vdir --color=auto'
 alias disk='lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
 
 # DIRECTORY NAVIGATION
-alias ..="cd .."
-alias ...="cd ../.."
-alias ....="cd ../../.."
-alias ~="cd ~"
-alias -- -="cd -"  # Go back to previous directory
+alias ..="cd -- .."
+alias ...="cd -- ../.."
+alias ....="cd -- ../../.."
+alias ~="cd -- $HOME"
+alias cd-="cd -- -"
+
+alias py3='python3'
+alias py='python'
+# https://snarky.ca/why-you-should-use-python-m-pip/
+alias pip='python -m pip'
 
 alias speedt='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -'
 #────────────Bindings (readline)────────────

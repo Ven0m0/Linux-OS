@@ -44,6 +44,7 @@ GLOBALIP="$(\curl -s icanhazip.com 2>/dev/null)"
 weather="$(\curl -s "wttr.in/Bielefeld?format=3" 2>/dev/null)"
 CPU="$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo 2>/dev/null | tr -s ' ')"
 GPU="$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
+DATE="$(printf '%(%d %b %R)T\n' '-1')"
 
 if [[ -n "$DISPLAY" ]]; then
     SCREEN=$(sed 's/,/x/' < /sys/class/graphics/fb0/virtual_size)
@@ -149,6 +150,7 @@ cat <<EOF
 #─────────────────────────────────────────
 echo ${USERN}─${HOSTNAME}
 echo ────────────────────
+echo "$DATE"
 echo $OS
 echo Kernel: $KERNEL
 echo Uptime: $UPT

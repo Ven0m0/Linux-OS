@@ -60,10 +60,21 @@ if status --is-interactive >/dev/null 2>&1
     alias clear='command clear; and fish_greeting 2>/dev/null'
     alias cls='command clear; and fish_greeting 2>/dev/null'
     abbr -a c clear
+    abbr -a ed 'edit'
+
+    abbr -a py 'python3'
     
     # bind Esc Esc to toggle_sudo
     #source ~/.config/fish/functions/presudo.fish
     #bind \e\e toggle_sudo
+    
+    function mkdircd
+        mkdir -p $argv; and cd $argv[-1]
+    end
+    function ip
+        command ip --color=auto $argv
+    end
+
 end
 # ─── Path Deduplication ─────────────────────────────────────────────────────────
 # Deduplicate PATH (preserve order) to prevent PATH bloat across reloads

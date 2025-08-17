@@ -64,7 +64,7 @@ if command -v cargo-cache &>/dev/null; then
 fi
 
 # Clear cache
-sudo systemd-tmpfiles --clean 
+sudo systemd-tmpfiles --clean >/dev/null
 sudo rm -rf /var/cache/*
 sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*
@@ -151,14 +151,17 @@ rm -f $HOME/snap/*/*/.local/share/*.desktop
 rm -rf $HOME/.var/app/*/data/*.desktop
 
 # TLDR cache
-tldr -c && sudo tldr -c || :
+sudo tldr -c >/dev/null || :
 
 # Trim disks
-sudo fstrim -a --quiet-unsupported || :
-sudo fstrim / --quiet-unsupported || :
+sudo fstrim -a --quiet-unsupported >/dev/null || :
+sudo fstrim / --quiet-unsupported >/dev/null || :
 
 # Clearing dns cache
-systemd-resolve --flush-caches
+systemd-resolve --flush-caches >/dev/null
+
+# Font cache
+fc-cache -f >/dev/null
 
 # BleachBit if available
 #if command -v bleachbit &>/dev/null; then

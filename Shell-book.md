@@ -27,7 +27,7 @@
 <summary><b>Script start template</b></summary>
 
 ```bash
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 
 export LC_ALL=C LANG=C
 #──────────── Color & Effects ────────────

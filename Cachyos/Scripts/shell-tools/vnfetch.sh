@@ -38,7 +38,8 @@ fi
 PROFILE="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="$(printf '%s' "${SHELL##*/}")"
 LOCALIP="$(\ip route get 1 | tr -s ' ' | cut -d' ' -f7)"
-GLOBALIP="$(\curl -s4 icanhazip.com 2>/dev/null)"
+public_ip="$(dig +time=1 +tries=1 +short TXT ch whoami.cloudflare @1.1.1.1 | tr -d '"')"
+#GLOBALIP="$(\curl -s4 icanhazip.com 2>/dev/null)"
 weather="$(\curl -s4 "wttr.in/Bielefeld?format=3" 2>/dev/null)"
 CPU="$(LC_ALL=C awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo 2>/dev/null | tr -s ' ')"
 GPU="$(LC_ALL=C lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
@@ -98,5 +99,6 @@ echo Editor: ${EDITOR}
 echo ${MEM}
 echo ${DISK}
 echo ${LOCALIP}
+echo${public_ip}
 echo Powerprofile: $PROFILE
 echo "Lang: ${o1:-unset}

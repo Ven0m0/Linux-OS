@@ -29,9 +29,7 @@
 ```bash
 #!/usr/bin/bash
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 
-export LC_ALL='C' LANG='C.UTF-8'
-umask 0022
-\unalias -a; \unset -v CDPATH GLOBIGNORE
+export LC_ALL=C LANG=C.UTF-8
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -43,15 +41,11 @@ WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR
 username="$(id -un)" # better than 'whoami'
 #──────────── Helpers ────────────────────
-# Check for command
-has() { command -v "$1" &>/dev/null; }
-# Print-echo
-p() { printf "%s\n" "$@"; }
-# Print-echo for color
-pe() { printf "%b\n" "$@"; }
-# Bash sleep replacement
-sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
-
+has() { command -v -- "$1" &>/dev/null; } # Check for command
+hasname(){ local x; x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
+p() { printf '%s\n' "$@" 2>/dev/null; } # Print-echo
+pe() { printf '%b\n' "$@" 2>/dev/null; } # Print-echo for color
+sleepy() { read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; } # Bash sleep replacement
 ```
 </details>
 <details>

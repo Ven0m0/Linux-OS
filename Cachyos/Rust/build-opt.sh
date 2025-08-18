@@ -156,8 +156,6 @@ CARGO_NIGHTLY="-Zno-embed-metadata"
 profileon () {
     sudo sh -c "echo 0 > /proc/sys/kernel/randomize_va_space" || :
     sudo sh -c "echo 0 > /proc/sys/kernel/nmi_watchdog" || :
-    # sudo sysctl -w kernel.randomize_va_space=0
-    # sudo sysctl -w kernel.nmi_watchdog=0
     sudo sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo" || :
     # Allow to profile with branch sampling, no perf sudo requirement
     sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict" || :

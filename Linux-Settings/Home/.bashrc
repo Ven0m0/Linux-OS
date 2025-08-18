@@ -42,7 +42,7 @@ LC_ALL=C LANG=C "$fetch" 2>/dev/null; unset fetch
 # PS1="\w \[\e[31m\]»\[\e[33m\]»\[\e[32m\]»\[\e[0m\] "
 HISTSIZE=10000 
 HISTFILESIZE=$HISTSIZE
-HISTCONTROL="erasedups:ignoreboth"
+HISTCONTROL="erasedups:ignoreboth:autoshare"
 HISTIGNORE="&:ls:[bf]g:help:clear:printf:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
 HISTFILE=$HOME/.bash_history

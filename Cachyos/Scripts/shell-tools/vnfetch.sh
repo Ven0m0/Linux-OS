@@ -22,12 +22,12 @@ USERN="$(id -un)"
 if [[ -f /etc/os-release ]]; then
   OS="$(awk -F= '/^NAME=/{print $2}' /etc/os-release | tr -d '"')"
 else
-  OS="$(uname -s)"
+  OS="$(uname -s 2>/dev/null)"
 fi
-distro="$(uname -o | awk -F '"' '/PRETTY_NAME/ { print $2 }' /etc/os-release)"
-read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null || KERNEL="$((uname -r)"
-read -r HOSTNAME < /etc/hostname 2>/dev/null || HOSTNAME="$(hostname)"
-ARCH="$(uname -m 2>/dev/null)"
+distro="$(awk -F '"' '/PRETTY_NAME/ { print $2 }' /etc/os-release)"
+read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null || KERNEL="$(uname -r 2>/dev/null)"
+read -r HOSTNAME < /etc/hostname 2>/dev/null || HOSTNAME="${HOSTNAME:-$(hostname 2>/dev/null)}"
+#ARCH="$(uname -m 2>/dev/null)"
 UPT="$(uptime -p 2>/dev/null | sed 's/^up //')"
 PROCS="$(ps ax 2>/dev/null | wc -l | tr -d " ")"
 if command -v pacman &>/dev/null; then
@@ -37,25 +37,14 @@ elif command -v apt &>/dev/null; then
 fi
 PROFILE="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="$(printf '%s' "${SHELL##*/}")"
-wmname="$(echo $XDG_CURRENT_DESKTOP $DESKTOP_SESSION)"
 LOCALIP="$(\ip route get 1 | tr -s ' ' | cut -d' ' -f7)"
-GLOBALIP="$(\curl -s icanhazip.com 2>/dev/null)"
-weather="$(\curl -s "wttr.in/Bielefeld?format=3" 2>/dev/null)"
-CPU="$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo 2>/dev/null | tr -s ' ')"
-GPU="$(lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
+GLOBALIP="$(\curl -s4 icanhazip.com 2>/dev/null)"
+weather="$(\curl -s4 "wttr.in/Bielefeld?format=3" 2>/dev/null)"
+CPU="$(LC_ALL=C awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo 2>/dev/null | tr -s ' ')"
+GPU="$(LC_ALL=C lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
 
-if [[ -n "$DISPLAY" ]]; then
-    SCREEN=$(sed 's/,/x/' < /sys/class/graphics/fb0/virtual_size)
-    [ -n "$DESKTOP_SESSION" ] && \
-	WE="$DESKTOP_SESSION" \
-	    || WE=$(xprop -root WM_NAME 2>/dev/null | cut -d '"' -f2)
-else
-    SCREEN=$(stty size 2>/dev/null | awk '{print $1 "rows " $2 "columns"}')
-    tty=$(tty)
-    WE=tty${tty##*/}
-fi
-
+wmname="${XDG_CURRENT_DESKTOP} ${DESKTOP_SESSION}"
 if [[ -n "$DISPLAY" ]]; then
     ps -e | grep -e 'wayland\|Xorg' > /dev/null && \
 	D_SERVER="(Xorg)" \
@@ -69,7 +58,6 @@ TERM_ENV=$(printf '%s' "$TERM")
 read MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {printf "%d %d\n", t, a}' /proc/meminfo)
 MemUsed=$((MemTotal - MemAvailable))
 MemPct=$(( (MemUsed * 100 + MemTotal/2) / MemTotal ))  # rounded percent
-
 # Convert to Gibibytes with two decimal places
 MemUsedGiB=$(awk "BEGIN {printf \"%.2f\", $MemUsed/1024/1024}")
 MemTotalGiB=$(awk "BEGIN {printf \"%.2f\", $MemTotal/1024/1024}")
@@ -82,81 +70,33 @@ read disk_sizeKB disk_usedKB disk_availKB disk_used_pct _ < <(
   df -Pk / |
   awk 'NR==2 {print $2, $3, $4, $5, $6}'
 )
-fstype=$(findmnt --raw --noheadings --first-only --output FSTYPE / 2>/dev/null)
-
+mntpoint="$(findmnt -rnf -o TARGET 2>/dev/null)"
+fstype="$(findmnt -rnf -o FSTYPE "${mntpoint:-/}" 2>/dev/null)"
 disk_used_GiB=$(awk "BEGIN {printf \"%.2f\", ${disk_usedKB}/1024/1024}")
 disk_avail_GiB=$(awk "BEGIN {printf \"%.2f\", ${disk_availKB}/1024/1024}")
-
 # ────────────────
 # Color threshold: green if pct < 75 else red
-[ "$MemPct" -ge 75 ] && mem_col="\033[31m" || mem_col="\033[32m"
-[ "${disk_used_pct%\%}" -ge 75 ] && disk_col="\033[31m" || disk_col="\033[32m"
-
-# Output final lines
-printf 'Memory: %s / %s GiB (%s%3d%%\033[0m)\n' \
-  "$MemUsedGiB" "$MemTotalGiB" "$mem_col" "$MemPct"
+[[ "$MemPct" -ge 75 ]] && mem_col=$'\e[31m' || mem_col=$'\e[32m'
+[[ "${disk_used_pct%\%}" -ge 75 ]] && disk_col=$'\e[31m' || disk_col=$'\e[32m'
+MEM="$(printf 'Memory: %s / %s GiB (%s%d%%\e[0m)\n' "$MemUsedGiB" "$MemTotalGiB" "$mem_col" "$MemPct")"
 
 # note ${disk_used_pct%\%} strips trailing '%' from df output
 disk_pct_num=${disk_used_pct%\%}
-printf 'Disk ( / ): %s / %s GiB (%s%3d%%\033[0m) – %s\n' \
-  "$disk_used_GiB" "$disk_avail_GiB" "$disk_col" "$disk_pct_num" "$fstype"
-
-#─────────────────────────────────────────
-# define space.
-space() {
-    printf '\n'
-}
-# define top decoration.
-above() {
-    tput smacs
-    printf '\033[0;33m%s\033[0m' " " "l" 
-    printf '\033[0;33mq%.0s\033[0m' $(seq 1 6)
-    tput rmacs
-    printf '%s\033[3;7;31m%s\033[0m' " " " ${HOSTNAME} " " "
-    tput smacs
-    printf '\033[0;33mq%.0s\033[0m' $(seq 1 50) 
-    tput rmacs
-}
-# define bottom decoration.
-below() {
-    tput smacs
-    printf '\033[0;33m%s\033[0m' " " "m"
-    printf '\033[0;33mq%.0s\033[0m' $(seq 1 50)
-    tput rmacs
-}
-space
-above
-# print formated information.
-printf "
-  \033[1;37m OS: \033[30m ..................\033[0m \033[3;37m  ${OS} \033[0m
-  \033[1;37m Kernel: \033[30m ..............\033[0m \033[3;37m  ${KERNEL}-${ARCH} \033[0m
-  \033[1;37m Init: \033[30m ................\033[0m \033[3;37m  ${INIT} \033[0m
-  \033[1;37m Processor: \033[30m ...........\033[0m \033[3;37m ${CPU} \033[0m
-  \033[1;37m Graphics:\033[30m .............\033[0m \033[3;37m ${GPU} \033[0m
-  \033[1;37m Mem: \033[30m .................\033[0m \033[3;37m  ${RAM}Mib ${SWAP}Mib\033[0m
-  \033[1;37m Packages: \033[30m ............\033[0m \033[3;37m  ${PKG} \033[0m
-  \033[1;37m Workplace: \033[30m ...........\033[0m \033[3;37m  ${WE} ${D_SERVER} ${SCREEN}\033[0m
-  \033[1;37m Term Env: \033[30m ............\033[0m \033[3;37m  ${TERM_ENV} \033[0m
-  \033[1;37m Shell: \033[30m ...............\033[0m \033[3;37m  ${SHELL} \033[0m
-"
-below
-space 
-
-cat <<EOF
-
-
-
+DISK="$(printf "Disk (${mntpoint:-/}): %s / %s GiB (%s%d%%\e[0m) – %s\n" "$disk_used_GiB" "$disk_avail_GiB" "$disk_col" "$disk_pct_num" "$fstype")"
 #─────────────────────────────────────────
 echo ${USERN}─${HOSTNAME}
 echo ────────────────────
-echo "$DATE"
-echo $OS
+echo ${DATE}
+echo ${OS}
 echo Kernel: $KERNEL
 echo Uptime: $UPT
 echo Packages: $PKG
 echo Processes: $PROCS
 echo Shell: $SHELLX
-echo $wmname $D_SERVER
-echo Editor: $$EDITOR
+echo WM: ${wmname} ${D_SERVER}
+echo Editor: ${EDITOR}
+echo ${MEM}
+echo ${DISK}
+echo ${LOCALIP}
 echo Powerprofile: $PROFILE
 echo "Lang: ${o1:-unset}

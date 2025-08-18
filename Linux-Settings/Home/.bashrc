@@ -33,7 +33,7 @@ source_exists "$HOME/.fns" "$HOME/.funcs"
 #──────────── Fetch────────────
 if has hyfetch; then
   fetch="hyfetch -b fastfetch -m rgb -p transgender"
-elif has fastfetch
+elif has fastfetch; then
   fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
 fi
 LC_ALL=C LANG=C "$fetch" 2>/dev/null; unset fetch

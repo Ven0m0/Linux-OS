@@ -69,4 +69,4 @@ sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
 echo "System clean-up complete."
 
 echo "Clearing DietPi logs..."
-sudo -E dietpi-logclear 2 || sudo -E ./boot/dietpi/func/dietpi-logclear 2
+sudo bash -c "dietpi-logclear 2" || sudo ./boot/dietpi/func/dietpi-logclear 2

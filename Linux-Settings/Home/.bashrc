@@ -321,6 +321,21 @@ sel() {
 fi
 }
 
+function sudo-command-line() {
+  p "toggle sudo at the beginning of the current or the previous command by hitting the ESC key twice"
+  [[ ${#READLINE_LINE} -eq 0 ]] && READLINE_LINE=$(fc -l -n -1 | xargs)
+  if [[ $READLINE_LINE == sudo\ * ]]; then
+	READLINE_LINE="${READLINE_LINE#sudo }"
+  else
+	READLINE_LINE="sudo $READLINE_LINE"
+  fi
+  READLINE_POINT=${#READLINE_LINE}
+}
+# Readline library requires bash version 4 or later
+if [ "${BASH_VERSINFO[0]}" -ge 4 ]; then
+	bind -x '"\e\e": sudo-command-line'
+fi
+
 gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" }
 lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push }
 navibestmatch() { LC_ALL=C navi --query "$1" --best-match }

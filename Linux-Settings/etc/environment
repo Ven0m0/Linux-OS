@@ -44,14 +44,19 @@ PROTON_ENABLE_NGX_UPDATER=1
 PROTON_FSR4_UPGRADE=1
 
 # Jemalloc
-#MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
-#_RJEM_MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu"
+#MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu,trust_madvise:enabled"
+#_RJEM_MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,background_thread:true,percpu_arena:percpu,trust_madvise:enabled"
+MALLOC_CONF="metadata_thp:auto,tcache:true,background_thread:true,percpu_arena:percpu,trust_madvise:enabled"
+_RJEM_MALLOC_CONF="metadata_thp:auto,tcache:true,background_thread:true,percpu_arena:percpu,trust_madvise:enabled"
+
 # https://github.com/microsoft/mimalloc/blob/main/docs/environment.html
 MIMALLOC_VERBOSE=0
 MIMALLOC_SHOW_ERRORS=0
 MIMALLOC_SHOW_STATS=0
 MIMALLOC_ALLOW_LARGE_OS_PAGES=1
 MIMALLOC_PURGE_DELAY=25
+MIMALLOC_ARENA_EAGER_COMMIT=2
+
 
 # Other
 ELECTRON_ENABLE_LOGGING=false

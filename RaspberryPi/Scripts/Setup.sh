@@ -65,8 +65,8 @@ bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts
 
 # Ripgrep-all
 # https://github.com/phiresky/ripgrep-all
-sudo apt install ripgrep pandoc poppler-utils ffmpeg
 
+# Eza
 sudo apt update && sudo apt install -y gpg
 sudo mkdir -p /etc/apt/keyrings
 wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
@@ -115,5 +115,7 @@ btrfs-progs
 fzf
 nala
 bat
+rust-sd
+ripgrep
 )
 sudo apt install $APPS

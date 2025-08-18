@@ -27,26 +27,32 @@ EOF
 # Split banner into array
 mapfile -t banner_lines <<< "$banner"
 lines=${#banner_lines[@]}
-# Trans flag gradient sequence (top→bottom)
+# Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
 flag_colors=(
   $LBLU  # Light Blue
   $PNK   # Pink
-  $BWHT   # White
+  $BWHT  # White
   $PNK   # Pink
   $LBLU  # Light Blue
 )
 segments=${#flag_colors[@]}
-# Smooth mapping function
-for i in "${!banner_lines[@]}"; do
-  # Compute fractional position (0 → segments-1)
-  pos=$(( i * (segments - 1) / (lines - 1) ))
-  segment_index=$((pos))
-  printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
-done
+# If banner is trivially short, just print without dividing by (lines-1)
+if (( lines <= 1 )); then
+  for line in "${banner_lines[@]}"; do
+    printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
+  done
+else
+  for i in "${!banner_lines[@]}"; do
+    # Map line index proportionally into 0..(segments-1)
+    segment_index=$(( i * (segments - 1) / (lines - 1) ))
+    (( segment_index >= segments )) && segment_index=$((segments - 1))
+    printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
+  done
+fi
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
+[[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
 [[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
-has "$suexec" || { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
 #─────────────────────────────────────────
 p 'Syncing hardware clock'
 "$suexec" hwclock -w >/dev/null || :
@@ -63,6 +69,8 @@ sysupdate() {
   elif has yay; then
     aurtool="$(hasname yay)"
     auropts_base=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
+  else
+    aurtool=''
   fi
   # Ensure pacman lock is removed
   [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null || :
@@ -71,7 +79,7 @@ sysupdate() {
   "$suexec" pacman -Fy --noconfirm >/dev/null || :
   # Build AUR options array
   if [[ -n $aurtool ]]; then
-    auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]}")
+    auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
     pe "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
     "$aurtool" -Suy "${auropts[@]}" 2>/dev/null || :
     "$aurtool" -Sua "${auropts[@]}" 2>/dev/null || :
@@ -82,10 +90,69 @@ sysupdate() {
 }
 sysupdate
 
+if has flatpak; then
+  flatpak update -y --noninteractive &>/dev/null || :
+fi
+
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread \
+  -Zunstable-options -Ztune-cpu=native -Zthreads=$(nproc 2>/dev/null)" \
+  CFLAGS="-march=native -mtune=native -O3 -pipe -fno-semantic-interposition -fdata-sections -ffunction-sections -fjump-tables -pthread" \
+  CXXFLAGS="$CFLAGS" \
+  LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 if has topgrade; then
   p 'update using topgrade...'
-  topno="(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup})"
+  topno="(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup,cargo})"
   "$suexec" topgrade -y --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
+fi
+
+if has rustup; then
+  rustup_bin="$(hasname rustup)"
+  if [[ -n ${rustup_bin:-} ]]; then
+    "$rustup_bin" update >/dev/null || :
+  else
+    command rustup update >/dev/null || :
+  fi
+  if has cargo; then
+    p 'update cargo binaries...'
+    if cargo install-update -V &>/dev/null; then
+      cargo install-update -agi >/dev/null || :
+    else
+      cargo install --list | awk '/^[[:alnum:]]/ {print $1}' | xargs -r -n1 cargo install >/dev/null || :
+    fi
+    has cargo-updater && cargo updater -u >/dev/null || :
+  fi
+else
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y
+fi
+
+if has micro; then
+  p 'micro plugin update...'
+  micro -plugin update >/dev/null || :
+fi
+
+if has yazi; then
+  p 'yazi update...'
+  ya pkg upgrade >/dev/null || :
+fi
+
+p 'Updating shell environments...'
+if has fish; then
+  if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
+    p 'update Fisher...'
+    fish -c 'fisher update' || :
+  else
+    p 'Reinstall fisher...'
+    source <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher
+  fi
+fi
+if [[ -d $HOME/.basher ]]; then
+    p "Updating basher"
+    git -C "$HOME/.basher" pull >/dev/null || p "⚠️ basher pull failed"
+fi
+
+if has tldr; then
+  p 'update tldr pages...'
+  "$suexec" tldr -u &>/dev/null &
 fi
 
 if has uv; then
@@ -102,69 +169,17 @@ if has pip; then
       python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
     done
   else
-  # Fallback: parse the human-readable format
+    # Fallback: parse the human-readable format
     python3 -m pip list --user --outdated | awk 'NR>2 {print $1}' | while read -r pkg; do
       python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
     done
   fi
 fi
-
-if has rustup; then
-  rustup_bin="$(hasname rustup)"
-  if [[ -n $rustup_bin ]]; then
-    "$rustup_bin" update >/dev/null || :
-  else
-    command rustup update >/dev/null || :
-  fi
-  if has cargo; then
-  p 'update cargo binaries...'
-  if cargo install-update -V &>/dev/null; then
-    cargo install-update -agi >/dev/null || :
-  else
-    cargo install --list | awk '/^[[:alnum:]]/ {print $1}' | xargs cargo install >/dev/null || :
-  fi
-  has cargo-updater && cargo updater -u >/dev/null || :
-  fi
-else
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y
-fi
-
-if has micro; then
-  p 'micro plugin update...'
-  micro -plugin update >/dev/null || :
-fi
-
 if has npm && npm config get prefix | grep -q "$HOME" 2>/dev/null; then
   p 'Update npm global packages'
   npm update -g >/dev/null || :
 fi
-if has flatpak; then
-  flatpak update -y --noninteractive &>/dev/null || :
-fi
 
-if has yazi; then
-  p 'yazi update...'
-  ya pkg upgrade >/dev/null || :
-fi
-
-p 'Updating shell environments...'
-if has fish; then
-  if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
-    p 'update Fisher...'
-  fish -c 'fisher update' || :
-  else
-  p 'Reinstall fisher...'
-  #curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher
-  source <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher
-fi
-if [[ -d $HOME/.basher ]]; then
-    p "Updating $HOME/.basher"
-    git -C "$HOME/.basher" pull >/dev/null || p "⚠️ basher pull failed"
-fi
-if has tldr; then
-  p 'update tldr pages...'
-  "$suexec" tldr -u &>/dev/null &
-fi
 if has fwupdmgr; then
   p 'update with fwupd...'
   fwupdmgr refresh &>/dev/null; fwupdmgr update >/dev/null || :
@@ -185,14 +200,14 @@ has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 
 p "🔍 Checking for systemd-boot..."
 if [[ -d /sys/firmware/efi ]] && has bootctl && bootctl is-installed &>/dev/null; then
-    p "✅ systemd‑boot detected, updating…"
-    "$suexec" bootctl update &>/dev/null; "$suexec" bootctl cleanup &>/dev/null || :
+  p "✅ systemd-boot detected, updating…"
+  "$suexec" bootctl update &>/dev/null; "$suexec" bootctl cleanup &>/dev/null || :
 else
-    p "❌ systemd‑boot not present, skipping."
+  p "❌ systemd-boot not present, skipping."
 fi
 p 'Try to update kernel initcpio...'
 if has limine-mkinitcpio; then
- "$suexec" limine-mkinitcpio >/dev/null || :
+  "$suexec" limine-mkinitcpio >/dev/null || :
 elif has mkinitcpio; then
   "$suexec" mkinitcpio -P >/dev/null || :
 elif has /usr/lib/booster/regenerate_images; then
@@ -200,7 +215,6 @@ elif has /usr/lib/booster/regenerate_images; then
 elif has dracut-rebuild; then
   "$suexec" dracut-rebuild >/dev/null || :
 else
- p 'The initramfs generator was not found, please update initramfs manually...'
+  p 'The initramfs generator was not found, please update initramfs manually...'
 fi
-
 p "✅ All done."

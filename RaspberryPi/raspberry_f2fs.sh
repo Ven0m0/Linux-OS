@@ -1,37 +1,35 @@
-#!/bin/bash
-if [ "$(whoami)" != "root" ]; then
+#!/usr/bin/env bash
+export LC_ALL=C LANG=C
+p() { printf '%s\n' "$*" 2>/dev/null; }
+
+if [[ "$(id -un 2>/dev/null)" != root ]]; then
     echo "this script needs to be run as root in order to modify partitions etc. please provide your root password for sudo to execute this script as root"
-    sudo -s /bin/bash "$0" "$@"
+    sudo -s "$(command -v bash)" "$0" "$@"
     exit $?
 fi
-
 image=$1
 card=$2
-
 if [ -z $1 ]; then
-    echo "usage: raspberry_f2fs.sh <image> <sdcard>"
-    echo "example: raspberry_f2fs.sh Downloads/raspberryos.img /dev/sdb"
+    p "usage: raspberry_f2fs.sh <image> <sdcard>"
+    p "example: raspberry_f2fs.sh Downloads/raspberryos.img /dev/sdb"
     exit 100
 fi 
-
 if [ ! -f $image ]; then 
-    echo "ERROR"
-    echo "file $image not found,"
-    echo "first parameter should be the raspberry os image"
+    p "ERROR"
+    p "file $image not found,"
+    p "first parameter should be the raspberry os image"
     exit 1
 fi
-
 if ! kpartx -l $image  | grep -q "loop.\+p1 : 0"; then 
-    echo "ERROR"
-    echo "image $image not readable by kpartx or kpartx not found"
-    echo "first parameter should be the raspberry os image, and make sure kpartx is installed"
+    p "ERROR"
+    p "image $image not readable by kpartx or kpartx not found"
+    p "first parameter should be the raspberry os image, and make sure kpartx is installed"
     exit 2
 fi
-
 if [ ! -b $card ]; then 
-    echo "ERROR"
-    echo "$card is not a block device"
-    echo "second argument should be a block device"
+    p "ERROR"
+    p "$card is not a block device"
+    p "second argument should be a block device"
     exit 3
 fi
 echo 
@@ -55,14 +53,14 @@ function clean_up(){
 }
 trap clean_up EXIT SIGINT
 
-echo "make sure the card is unmounted"
+p "make sure the card is unmounted"
 set +e
 umount $card* 2>/dev/null
 set -e
 
-echo "erase old partitions"
+p "erase old partitions"
 wipefs -af $card
-echo "create new partitions"
+p "create new partitions"
 parted -s $card mklabel msdos
 parted -s $card mkpart primary fat32 0% 512MB
 parted -s $card mkpart primary 512MB 100%
@@ -75,26 +73,26 @@ else
     partbase=$card
 fi
 
-echo "format boot partition"
+p "format boot partition"
 mkfs.vfat -F 32 ${partbase}1
 
-echo "format os partition with f2fs"
+p "format os partition with f2fs"
 mkfs.f2fs -f -O extra_attr,compression ${partbase}2
 
-echo "create mountpoints and mount boot partition"
+p "create mountpoints and mount boot partition"
 mkdir -p /tmp/{sd,img}
 mount ${partbase}1 /tmp/sd
 
-echo "load image as loopback device and mount boot partition"
+p "load image as loopback device and mount boot partition"
 out=$(kpartx -av $image)
-echo "$out"
+p "$out"
 loopdev=$(echo "$out" | sed 's/^add map \(loop[^p]\+\)p. .*$/\1/' | head -1)
 mount /dev/mapper/${loopdev}p1 /tmp/img
 
-echo "copy the contents of the boot partition"
+p "copy the contents of the boot partition"
 rsync -av /tmp/img/ /tmp/sd/
 
-echo "adjust cmdline.txt"
+p "adjust cmdline.txt"
 partuuidbase=$(blkid $card | sed -e 's/^.*PTUUID="\([^"]*\)".*$/\1/')
 sed -i "s/\(PARTUUID=\)[^ ]*\(-02 \)/\1$partuuidbase\2/" /tmp/sd/cmdline.txt
 sed -i 's/init=[^ ]*//' /tmp/sd/cmdline.txt
@@ -102,7 +100,7 @@ sed -i 's/ext4/f2fs/' /tmp/sd/cmdline.txt
 
 echo
 echo 
-echo "I am done with the boot partition, now is the time to configure your network for headless operation if you want to.."
+p "I am done with the boot partition, now is the time to configure your network for headless operation if you want to.."
 echo 
 read -p "do you want to configure a wireless lan? if so, type \"y\" and i will open a configuration template in nano for you. simply adjust, quit and save and you are all set, otherwise press any key to continue without configuring a wlan" -n 1 -r
 echo
@@ -130,18 +128,18 @@ else
 fi
 
 echo 
-echo "we are done with the boot partition"
-echo "unmount boot partition and mount root partition of both the card and the image"
+p "we are done with the boot partition"
+p "unmount boot partition and mount root partition of both the card and the image"
 umount /tmp/sd
 umount /tmp/img
 mount ${partbase}2 /tmp/sd
 mount /dev/mapper/${loopdev}p2 /tmp/img
 
-echo "copy the contents of the root partition to the card, this can take a few minutes..."
+p "copy the contents of the root partition to the card, this can take a few minutes..."
 rsync --progress -aAHhvxX /tmp/img/ /tmp/sd/
 echo "done copying"
 
-echo "adjust fstab for f2fs"
+p "adjust fstab for f2fs"
 sed -i "s/\(PARTUUID=\)[^ ]*\(-0[12] \)/\1$partuuidbase\2/" /tmp/sd/etc/fstab
 sed -i 's/ext4/f2fs/' /tmp/sd/etc/fstab
 rm -f /tmp/sd/etc/rc3.d/S01resize2fs_once
@@ -157,7 +155,7 @@ if [ $ssh -eq 1 ]; then
 fi
 echo 
 echo
-echo "done preparing the root partition"
+p "done preparing the root partition"
 echo 
 read -p "do you want to configure a fixed ip address? if so, type \"y\" and i will open the /etc/dhcpcd.conf file in a nano editor for you. simply adjust, quit and save and you are all set, otherwise press any key to continue without configuring your network interface" -n 1 -r
 echo
@@ -171,15 +169,15 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     nano /tmp/sd/etc/hostname
 fi
 echo 
-echo 'okay, we are done, time to clean up! mind you, this can take some time as we weill have to wait for everything to be written to the SD card. do not abort!'
+p 'okay, we are done, time to clean up! mind you, this can take some time as we weill have to wait for everything to be written to the SD card. do not abort!'
 umount /tmp/sd
 umount /tmp/img
 kpartx -d $image
 rmdir /tmp/{sd,img}
 echo 
-echo "you are all set, you can now remove the sd card and put it into your raspberry, boot it up and start using it" 
-echo 'if you want to insert this card into your pc in the future to modify some things on it, I strongly recommend to disable gnomes automount temporarily, as it may mess up your f2fs filesystem'
-echo "to do that you can simply run this command:"
-echo "    gsettings set org.gnome.desktop.media-handling automount 'false'"
-echo "to re-enable simply use 'true' as value instead"
+p "you are all set, you can now remove the sd card and put it into your raspberry, boot it up and start using it" 
+p 'if you want to insert this card into your pc in the future to modify some things on it, I strongly recommend to disable gnomes automount temporarily, as it may mess up your f2fs filesystem'
+p "to do that you can simply run this command:"
+p "    gsettings set org.gnome.desktop.media-handling automount 'false'"
+p "to re-enable simply use 'true' as value instead"
 trap - EXIT

@@ -38,19 +38,13 @@ fi
 PROFILE="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="$(printf '%s' "${SHELL##*/}")"
 LOCALIP="$(\ip route get 1 | tr -s ' ' | cut -d' ' -f7)"
-public_ip="$(dig +time=1 +tries=1 +short TXT ch whoami.cloudflare @1.1.1.1 | tr -d '"')"
-#GLOBALIP="$(\curl -s4 icanhazip.com 2>/dev/null)"
-weather="$(\curl -s4 "wttr.in/Bielefeld?format=3" 2>/dev/null)"
-CPU="$(LC_ALL=C awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo 2>/dev/null | tr -s ' ')"
-GPU="$(LC_ALL=C lspci 2>/dev/null | awk -F ":" '/VGA/ {print $3}' | cut -c 1-50)"
+GLOBALIP="$(dig +time=1 +tries=1 +short TXT ch whoami.cloudflare @1.1.1.1 | tr -d '"')"
+weather="$(\curl -sf4 -- 'wttr.in/Bielefeld?format=3' 2>/dev/null)"
+CPU="$(awk -F ":" 'NR==5 {print $2}' /proc/cpuinfo 2>/dev/null | tr -s ' ')"
+GPU="$(lspci 2>/dev/null | awk -F : '/VGA/ {print }' | cut -c 1-50)"
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
-
 wmname="${XDG_CURRENT_DESKTOP} ${DESKTOP_SESSION}"
-if [[ -n "$DISPLAY" ]]; then
-    ps -e | grep -e 'wayland\|Xorg' > /dev/null && \
-	D_SERVER="(Xorg)" \
-	    || D_SERVER="(Wayland)"
-fi
+[[ -n "$DISPLAY" ]] && D_SERVER=$(ps -e | grep -qes 'Xorg' && echo "(Xorg)" || echo "(Wayland)")
 TERM_ENV=$(printf '%s' "$TERM")
 
 # ────────────────

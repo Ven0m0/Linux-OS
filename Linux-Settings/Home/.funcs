@@ -98,15 +98,15 @@ cpg() {
 # Move and go to the directory
 mvg() {
 	if [ -d "$2" ]; then
-		mv "$1" "$2" && cd "$2"
+		mv -- "$1" "$2" && cd -- "$2"
 	else
-		mv "$1" "$2"
+		mv -- "$1" "$2"
 	fi
 }
 
 # Create and go to the directory
 mkdirg() {
-	mkdir -p "$1" && cd "$1"
+	mkdir -p -- "$1" && cd -- "$1"
 }
 
 # Goes up a specified number of directories  (i.e. up 4)
@@ -120,16 +120,16 @@ up() {
 	if [ -z "$d" ]; then
 		d=..
 	fi
-	cd $d
+	cd -- $d
 }
 
 # Automatically do an ls after each cd, z, or zoxide
 cd ()
 {
   if [ -n "$1" ]; then
-	builtin cd "$@" && ls
+	builtin cd -- "$@" && ls
   else
-	builtin cd ~ && ls
+	builtin cd -- "$HOME" && ls
   fi
 }
 

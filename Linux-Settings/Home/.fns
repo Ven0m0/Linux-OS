@@ -133,3 +133,17 @@ vid2gif() {
 }
 
 list_opened_apps() { ps axc | awk 'NR > 1' | awk '{print substr($0,index($0,$5))}' | sort -u }
+
+diff() {
+  if exists diff-so-fancy; then
+    command diff -u "$@" | diff-so-fancy | less -RF
+  elif exists colordiff; then
+    command diff -u "$@" | colordiff | less -RF
+  else
+  command diff -u "$@" | less -RF
+fi
+}
+
+murder() (
+  ps aux | grep -i "$1" | awk '{print $2}' | xargs kill -9
+}

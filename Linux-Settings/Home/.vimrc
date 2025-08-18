@@ -4,6 +4,7 @@
 set nocompatible
 filetype plugin indent on
 syntax on
+set encoding=utf-8
 set background=dark
 set termguicolors
 set number
@@ -31,6 +32,8 @@ set hidden
 set scrolloff=8         "Start scrolling when we're 8 lines away from margins
 set sidescrolloff=15
 set sidescroll=1
+set lazyredraw          " Don't redraw while executing macros (good performance config)
+
 " ================ Turn Off Swap Files ==============
 set noswapfile
 set nobackup

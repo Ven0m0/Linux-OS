@@ -359,16 +359,16 @@ else
 fi
 
 if has rg; then
-  alias grep='rg --no-line-number'
-  alias fgrep='fgrep --color=auto'
-  alias egrep='egrep --color=auto'
-  alias rg='LC_ALL=C rg --no-stats --color=auto'
+  alias grep='rg -S --color=auto'
+  alias fgrep='rg -SF --color=auto'
+  alias egrep='rg -Se --color=auto'
+  alias rg='LC_ALL=C rg -NFS --mmap --no-unicode --engine=default --no-stats --color=auto'
 elif has ugrep; then
   alias grep='ugrep --color=auto'
-  alias egrep='ugrep -E --color=auto'
   alias fgrep='ugrep -F --color=auto'
+  alias egrep='ugrep -E --color=auto'
   alias ugrep='LC_ALL=C ugrep --color=auto'
-  alias ug='LC_ALL=C ug -sjFU -J $(nproc 2>/dev/null) --color=auto'
+  alias ug='LC_ALL=C ug -sjFU --color=auto'
 else
   alias grep='grep --color=auto'
   alias fgrep='fgrep --color=auto'
@@ -379,8 +379,10 @@ alias mv='mv -i'
 alias cp='cp -i'
 alias ln='ln -i'
 alias rm='rm -I --preserve-root'
-alias rmd='rm -rfv --preserve-root'
+alias rmd='rm -rf --preserve-root'
 alias chmod='chmod --preserve-root'
+alias chown='chown --preserve-root'
+alias chgrp='chgrp --preserve-root'
 
 alias h="history | grep "
 alias f="find . | grep "
@@ -412,11 +414,16 @@ alias vdir='vdir --color=auto'
 alias disk='lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
 
 # DIRECTORY NAVIGATION
-alias ..="cd .."
-alias ...="cd ../.."
-alias ....="cd ../../.."
-alias ~="cd ~"
-alias -- -="cd -"  # Go back to previous directory
+alias ..="cd -- .."
+alias ...="cd -- ../.."
+alias ....="cd -- ../../.."
+alias ~="cd -- $HOME"
+alias cd-="cd -- -"
+
+alias py3='python3'
+alias py='python'
+# https://snarky.ca/why-you-should-use-python-m-pip/
+alias pip='python -m pip'
 
 alias speedt='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -'
 #────────────Bindings (readline)────────────

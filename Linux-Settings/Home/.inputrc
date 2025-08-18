@@ -27,11 +27,11 @@ set match-hidden-files off
 set skip-completed-text on
 set completion-map-case on
 set completion-ignore-case On
-set completion-query-items 250
-set completion-prefix-display-length 3
+set completion-query-items 200
+set completion-prefix-display-length 2
 set mark-symlinked-directories on
 set visible-stats on
-#set page-completions off
+set page-completions off
 
 set colored-completion-prefix on
 set colored-stats on

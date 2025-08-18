@@ -1,7 +1,0 @@
-#!/bin/bash
-
-# Copy with creating dirs
-# https://github.com/wilzbach/shell-tools
-
-mkdir -p "${!#}";
-cp -r "$@";

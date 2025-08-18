@@ -42,28 +42,41 @@ if status --is-interactive >/dev/null 2>&1
       functions -e rg 2>/dev/null # reset due to cachyos-fish-config
       alias rg='rg --color=auto -S --engine=auto --block-buffered'
     end
-    
-    if type -q ugrep >/dev/null 2>&1
-      functions -e grep >/dev/null 2>&1
-      alias grep="ugrep --color=auto"
-      functions -e fgrep >/dev/null 2>&1
-      alias egrep="ugrep -E --color=auto"
-      functions -e egrep >/dev/null 2>&1
-      alias fgrep="ugrep -F --color=auto"
+
+    if type -q rg
+        functions -e grep; and alias grep="LC_ALL=C rg -S --color=auto"
+        functions -e fgrep; and alias egrep="rg -SF --color=auto"
+        functions -e egrep; and alias fgrep="rg -Se --color=auto"
+        functions -e rg; and alias rg="LC_ALL=C rg -NFS --no-unicode --engine=default --mmap --threads $(nproc 2>/dev/null)"
+    else if type -q ugrep
+        functions -e grep; and alias grep="LC_ALL=C ugrep --color=auto"
+        functions -e fgrep; and alias egrep="ugrep -F --color=auto"
+        functions -e egrep; and alias fgrep="ugrep -E --color=auto"
+        functions -e ug; and alias ug='LC_ALL=C ug -sjFU -J $(nproc 2>/dev/null) --color=auto'
     else
-      alias grep="grep --color=auto"
-      alias fgrep="fgrep --color=auto"
-      alias egrep="egrep --color=auto"
+        functions -e grep; and alias grep="LC_ALL=C grep --color=auto"
+        functions -e fgrep; and alias fgrep="fgrep --color=auto"
+        functions -e egrep; and alias egrep="egrep --color=auto"
     end
 
     # Reset
     alias clear='command clear; and fish_greeting 2>/dev/null'
     alias cls='command clear; and fish_greeting 2>/dev/null'
     abbr -a c clear
+
+    abbr -a py 'python3'
     
     # bind Esc Esc to toggle_sudo
     #source ~/.config/fish/functions/presudo.fish
     #bind \e\e toggle_sudo
+    
+    function mkdircd
+        mkdir -p $argv; and cd $argv[-1]
+    end
+    function ip
+        command ip --color=auto $argv
+    end
+
 end
 # ─── Path Deduplication ─────────────────────────────────────────────────────────
 # Deduplicate PATH (preserve order) to prevent PATH bloat across reloads

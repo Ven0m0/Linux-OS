@@ -43,6 +43,7 @@
 	tool = meld
 	nmemonicPrefix = true
 	external = difft
+	compactionHeuristic = true
 [merge]
 	conflictStyle = zdiff3
 	tool = meld

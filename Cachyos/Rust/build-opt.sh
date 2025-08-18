@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+export LC_ALL=C LANG=C
 # —————— Trap ——————
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
@@ -14,7 +14,7 @@ cleanup() {
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
 # —————— Update Rust toolchains ——————
 read -r -p "Update Rust toolchains? [y/N] " ans
-[[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || :
+[[ $ans =~ ^[Yy]$ ]] && rustup update &>/dev/null || :
 # —————— Speed and caching ——————
 sudo -v
 sudo cpupower frequency-set --governor performance
@@ -23,7 +23,7 @@ export _RJEM_MALLOC_CONF="$MALLOC_CONF"
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
 # —————— Update Rust toolchains ——————
 read -r -p "Update Rust toolchains? [y/N] " ans
-[[ $ans =~ ^[Yy]$ ]] && rustup update >/dev/null 2>&1 || :
+[[ $ans =~ ^[Yy]$ ]] && rustup update &>/dev/null || :
 # —————— Defaults & help ——————
 PGO=0; BOLT=0; GIT=0; ARGS=()
 debug () {
@@ -82,7 +82,7 @@ sudo cpupower frequency-set --governor performance || :
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-if command -v cargo-pgo >/dev/null 2>&1; then
+if command -v cargo-pgo &>/dev/null; then
   cargo install cargo-pgo
   rustup component add llvm-tools-preview
 fi
@@ -93,7 +93,7 @@ for tool in cargo-shear cargo-machete cargo-cache ; do
 done
 # —————— Compiler Setup (prefer sccache + clang) ——————
 # https://github.com/rust-lang/rust/blob/master/src/ci/run.sh
-if command -v sccache >/dev/null 2>&1; then
+if command -v sccache &>/dev/null; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache SCCACHE_DIRECT=true SCCACHE_RECACHE=true
   SCCACHE_IDLE_TIMEOUT=10800 sccache --start-server 2>/dev/null || :
 else
@@ -123,22 +123,22 @@ if (( GIT )); then
 fi
 Scope="--workspace --allow-dirty --allow-staged --allow-no-vcs"
 # —————— Update ——————
-cargo update --recursive >/dev/null 2>&1 || :
-cargo upgrade --recursive --pinned allow >/dev/null 2>&1 || :
+cargo update --recursive &>/dev/null || :
+cargo upgrade --recursive --pinned allow &>/dev/null || :
 # —————— Minify ——————
-cargo +nightly udeps --workspace --release --all-features --keep-going >/dev/null 2>&1 || :
-cargo-shear --fix >/dev/null 2>&1 || :
-cargo-machete --fix >/dev/null 2>&1 || :
-cargo-machete --fix --with-metadata >/dev/null 2>&1 || :
-cargo-minify "$Scope" --apply >/dev/null 2>&1 || :
+cargo +nightly udeps --workspace --release --all-features --keep-going &>/dev/null || :
+cargo-shear --fix &>/dev/null || :
+cargo-machete --fix &>/dev/null || :
+cargo-machete --fix --with-metadata &>/dev/null || :
+cargo-minify "$Scope" --apply &>/dev/null || :
 # —————— Lint ——————
-cargo fix "$Scope" --all-targets --all-features -r --bins >/dev/null 2>&1 || :
-cargo fix "$Scope" --edition-idiom --all-features --bins --lib -r >/dev/null 2>&1 || :
-cargo clippy --all-targets >/dev/null 2>&1 || :
-cargo clippy --fix "$Scope" --all-features >/dev/null 2>&1 || :
-cargo fmt --all >/dev/null 2>&1 || :
-cargo-sort -w --order package,dependencies,features >/dev/null 2>&1 || :
-cargo-cache -g -f -e clean-unref >/dev/null 2>&1 || :
+cargo fix "$Scope" --all-targets --all-features -r --bins &>/dev/null || :
+cargo fix "$Scope" --edition-idiom --all-features --bins --lib -r &>/dev/null || :
+cargo clippy --all-targets &>/dev/null || :
+cargo clippy --fix "$Scope" --all-features &>/dev/null || :
+cargo fmt --all &>/dev/null || :
+cargo-sort -w --order package,dependencies,features &>/dev/null || :
+cargo-cache -g -f -e clean-unref &>/dev/null || :
 # —————— General flags ——————
 NIGHTLYFLAGS="-Z unstable-options -Z gc -Z git -Z gitoxide -Z checksum-hash-algorithm=blake3 -Z precise-enum-drop-elaboration=yes"
 export RUSTFLAGS="-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=on -C embed-bitcode=yes -C relro-level=off -C debuginfo=0 -C strip=symbols -C debuginfo=0 -C force-frame-pointers=no -C link-dead-code=no \
@@ -156,8 +156,6 @@ CARGO_NIGHTLY="-Zno-embed-metadata"
 profileon () {
     sudo sh -c "echo 0 > /proc/sys/kernel/randomize_va_space" || :
     sudo sh -c "echo 0 > /proc/sys/kernel/nmi_watchdog" || :
-    # sudo sysctl -w kernel.randomize_va_space=0
-    # sudo sysctl -w kernel.nmi_watchdog=0
     sudo sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo" || :
     # Allow to profile with branch sampling, no perf sudo requirement
     sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict" || :
@@ -179,7 +177,7 @@ fi
 # —————— PGO Phases ——————
 if (( PGO )); then
   cargo pgo clean
-  profileon >/dev/null 2>&1 || :
+  profileon &>/dev/null || :
   # Build PGO instrumented binary
   cargo pgo build
   # Run binary to gather profiles
@@ -194,7 +192,7 @@ fi
 # —————— BOLT Phases ——————
 if (( BOLT )); then
   cargo pgo clean
-  profileon >/dev/null 2>&1 || :
+  profileon &>/dev/null || :
   export RUSTFLAGS="$RUSTFLAGS -Clink-args=-Wl,--emit-relocs"
   # Build PGO instrumented binary
   cargo pgo build
@@ -213,7 +211,7 @@ if (( BOLT )); then
   export RUSTFLAGS="-Cembed-bitcode=y -Z profile-sample-use"
   cargo pgo bolt optimize --with-pgo
 fi
-profileoff >/dev/null 2>&1 || :
+profileoff &>/dev/null || :
 # —————— Todo ——————
 # LastBuild="-C strip=symbols -Z trim-paths"
 export CARGO_TRIM_PATHS=all

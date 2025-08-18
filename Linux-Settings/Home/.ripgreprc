@@ -4,18 +4,30 @@
 
 # Using glob patterns to include/exclude files or folders
 --glob=!.git/*
+--ignore
+--no-require-git
+--ignore-vcs
+--ignore-parent
+--ignore-global
+--ignore-dot
+--ignore-file="$HOME/.gitignore"
+--ignore-file="$HOME/.ignore"
 
 # Disable regular expression matching and treat the pattern as a literal string
-# Quicker and more grep like
 --fixed-strings
 
---threads 0
---mmap
+--color=auto
 --smart-case
---max-depth 5
+--threads 0
+#--threads $(nproc 2>/dev/null)
+#--mmap
+#--max-depth 4
 --one-file-system
 --trim
 --block-buffered
---color=auto
 --no-line-number
 --no-heading
+--no-ignore-messages
+--engine=default
+#--engine=auto
+--no-unicode

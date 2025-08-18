@@ -29,7 +29,7 @@
 ```bash
 #!/usr/bin/bash
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 
-export LC_ALL=C LANG=C.UTF-8
+export LC_ALL=C LANG=C
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

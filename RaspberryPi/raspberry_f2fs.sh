@@ -7,8 +7,8 @@ if [[ "$(id -un 2>/dev/null)" != root ]]; then
     sudo -s "$(command -v bash)" "$0" "$@"
     exit $?
 fi
-image=$1
-card=$2
+image="$1"
+card="$2"
 if [ -z $1 ]; then
     p "usage: raspberry_f2fs.sh <image> <sdcard>"
     p "example: raspberry_f2fs.sh Downloads/raspberryos.img /dev/sdb"

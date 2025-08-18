@@ -435,12 +435,9 @@ bind 'set colored-stats on'
 bind 'set colored-completion-prefix on'
 bind Space:magic-space
 bind '"\C-o": kill-whole-line'
-# Bash 5.3
-bind 'set timeout 500'
 # Fix bracket paste
 bind 'set enable-bracketed-paste off'
 printf '\e[?2004l' > /dev/tty
-
 # Ctrl+A = beginning-of-line
 # Ctrl+E = end-of-line
 # Ctrl+Left / Ctrl+Right word movement
@@ -448,7 +445,6 @@ bind '"\C-a": beginning-of-line'
 bind '"\C-e": end-of-line'
 bind '"\e[1;5D": backward-word'
 bind '"\e[1;5C": forward-word'
-
 #────────────Jumping────────────
 if has zoxide; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"

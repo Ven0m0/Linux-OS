@@ -247,6 +247,13 @@ fisher install acomagu/fish-async-prompt
 # Basher
 curl -s https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash
 
+echo "Install fzf bash tap completions"
+mkdir -p "$HOME/.config/bash"
+curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "$HOME/.config/bash/fzf-simple-completion.sh"
+chmod +x "$HOME/.config/bash/fzf-simple-completion.sh"
+[[ -f $HOME/.config/bash/fzf-simple-completion.sh ]] && . "$HOME/.config/bash/fzf-simple-completion.sh"
+
+
 echo "Installing updates"
 sudo pacman -Syyu --noconfirm || true
 sudo paru --cleanafter -Syu --combinedupgrade || true

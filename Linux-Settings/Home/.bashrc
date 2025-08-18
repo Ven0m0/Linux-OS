@@ -36,11 +36,10 @@ if has hyfetch; then
 elif has fastfetch
   fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
 fi
-LC_ALL=C "$fetch" 2>/dev/null; unset fetch
+LC_ALL=C LANG=C "$fetch" 2>/dev/null; unset fetch
 #──────────── Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 # PS1="\w \[\e[31m\]»\[\e[33m\]»\[\e[32m\]»\[\e[0m\] "
-
 HISTSIZE=10000 
 HISTFILESIZE=$HISTSIZE
 HISTCONTROL="erasedups:ignoreboth"
@@ -207,12 +206,12 @@ has cargo && export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup" \
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
 #────────────Fuzzy finders────────────
 fuzzy_finders() {
-	if has fd; then
-  		FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
+  if has fd; then
+  	FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
 	elif has rg; then
 	  FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
 	else
-  		FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
+  	FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
 	fi
 	export FZF_DEFAULT_COMMAND="$FIND_CMD" \
     FZF_DEFAULT_OPTS="--info=inline --layout=reverse --tiebreak=index --height=70%" \
@@ -225,11 +224,13 @@ fuzzy_finders() {
     FZF_COMPLETION_DIR_OPTS="--info=inline --tiebreak=index --walker dir,follow"
 	if has fzf; then
 	  unalias fzf
+	  [[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash"
 	fi
 	if has sk; then
 		export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
       SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 	  alias fzf='sk '
+    [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash"
 	fi
 }
 # Advanced customization of fzf options via _fzf_comprun function

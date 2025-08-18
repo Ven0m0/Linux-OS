@@ -16,7 +16,7 @@ fi
 iso="${1:-$(find . -maxdepth 1 -type f \( -iname '*raspberry*.img' -o -iname '*dietpi*.img' \) | head -n1)}"
 iso="${iso##*/}"
 # Auto-select USB
-usb="${2:-$(lsblk -rniA -o NAME,TYPE | awk '$2=="part"{print $1}' | grep -E '^sd[a-z][0-9]+$' | sort -V | tail -n1)}"
+usb="${2:-$(lsblk -rno NAME,TYPE | awk '$2=="disk" && $1 ~ /^sd[a-z]$/ {print "/dev/"$1}' | sort | tail -n1)}"
 # Check ISO exists
 if [[ ! -f $iso ]]; then
     pe "${RED}File not found: $iso"

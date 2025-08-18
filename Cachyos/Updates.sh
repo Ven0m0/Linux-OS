@@ -95,10 +95,10 @@ if has flatpak; then
 fi
 
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread \
-  -Zunstable-options -Ztune-cpu=native -Zthreads=$(nproc 2>/dev/null)" \
-  CFLAGS="-march=native -mtune=native -O3 -pipe -fno-semantic-interposition -fdata-sections -ffunction-sections -fjump-tables -pthread" \
-  CXXFLAGS="$CFLAGS" \
-  LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
+-Zunstable-options -Ztune-cpu=native -Zthreads=$(nproc 2>/dev/null)"
+export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-semantic-interposition -fdata-sections -ffunction-sections -fjump-tables -pthread"
+export CXXFLAGS="$CFLAGS"
+export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 if has topgrade; then
   p 'update using topgrade...'
   topno="(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup,cargo})"

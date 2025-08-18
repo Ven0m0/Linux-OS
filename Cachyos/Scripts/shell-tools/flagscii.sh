@@ -1,15 +1,12 @@
 #!/usr/bin/env bash
-set -u; export LC_ALL=C LANG=C.UTF-8
-# Trans flag colors (ANSI 256 color escape codes for better accuracy)
-colors=(
-  $'\033[38;5;117m'  # Light Blue
-  $'\033[38;5;218m'  # Pink
-  $'\033[38;5;15m'   # White
-  $'\033[38;5;218m'  # Pink
-  $'\033[38;5;117m'  # Light Blue
-)
-reset=$'\033[0m'
-# Read banner into a variable
+#──────────── Color & Effects ────────────
+BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
+MGN=$'\e[35m' PNK=$'\e[38;5;218m'
+DEF=$'\e[0m' BLD=$'\e[1m'
+#──────────── Banner ────────────────────
+printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Terminal title
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -19,13 +16,28 @@ banner=$(cat <<'EOF'
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 )
-# Split banner into an array
-IFS=$'\n' read -r -d '' -a banner_lines <<< "$banner"
-# Total lines
+# Split banner into array
+mapfile -t banner_lines <<< "$banner"
 lines=${#banner_lines[@]}
-# Loop through each line and apply scaled trans flag colors
-for i in "${!banner_lines[@]}"; do
-  # Map line index to color index (scaled to 5 colors)
-  color_index=$(( i * 5 / lines ))
-  printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
-done
+# Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
+flag_colors=(
+  $LBLU  # Light Blue
+  $PNK   # Pink
+  $BWHT  # White
+  $PNK   # Pink
+  $LBLU  # Light Blue
+)
+segments=${#flag_colors[@]}
+# If banner is trivially short, just print without dividing by (lines-1)
+if (( lines <= 1 )); then
+  for line in "${banner_lines[@]}"; do
+    printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
+  done
+else
+  for i in "${!banner_lines[@]}"; do
+    # Map line index proportionally into 0..(segments-1)
+    segment_index=$(( i * (segments - 1) / (lines - 1) ))
+    (( segment_index >= segments )) && segment_index=$((segments - 1))
+    printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
+  done
+fi

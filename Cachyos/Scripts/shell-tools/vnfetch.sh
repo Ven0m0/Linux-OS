@@ -49,15 +49,7 @@ CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/c
 GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}' || echo "N/A")"
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
 WMNAME="${XDG_CURRENT_DESKTOP:-} ${DESKTOP_SESSION:-}"
-if [[ -n "$DISPLAY" ]]; then
-  if has pgrep; then
-    pgrep -x Xorg &>/dev/null && D_SERVER="(Xorg)" || D_SERVER="(Wayland)"
-  else
-    ps -e | grep -qes 'Xorg' && D_SERVER="(Xorg)" || D_SERVER="(Wayland)"
-  fi
-else
-  D_SERVER=""
-fi
+[[ -n "$DISPLAY" ]] && { pgrep -x Xorg &>/dev/null && D_SERVER="(Xorg)" || D_SERVER="(Wayland)" } || D_SERVER=""
 #─────────────────────────────────────────
 # Memory: totals, used, percent, GiB formatting via awk
 read MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print (t+0),(a+0)}' /proc/meminfo)

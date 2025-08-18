@@ -124,12 +124,19 @@ up() {
 }
 
 # Automatically do an ls after each cd, z, or zoxide
-cd ()
-{
-  if [ -n "$1" ]; then
-	builtin cd -- "$@" && ls
+cd () {
+  if command -v z &>/dev/null; then
+    if [ -n "$1" ]; then
+      command z -- "$@" && ls
+    else
+	  builtin z -- "$HOME" && ls
+	fi
   else
-	builtin cd -- "$HOME" && ls
+    if [ -n "$1" ]; then
+      builtin cd -- "$@" && ls
+    else
+      builtin cd -- "$HOME" && ls
+    fi
   fi
 }
 

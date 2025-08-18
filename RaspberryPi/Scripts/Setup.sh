@@ -16,7 +16,7 @@ sudo dpkg-reconfigure dash
 
 echo "Install PiApps-terminal_bash-edition"
 echo "https://github.com/Itai-Nelken/PiApps-terminal_bash-edition"
-wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
+curl -ssfL https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
 pi-apps update -y
 
 echo 'APT::Acquire::Retries "5";

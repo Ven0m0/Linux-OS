@@ -38,7 +38,7 @@ MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #─────────────────────────────────────────
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
-cd $WORKDIR
+cd -- "$WORKDIR"
 username="$(id -un)" # better than 'whoami'
 #──────────── Helpers ────────────────────
 # Check for command

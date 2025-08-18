@@ -7,6 +7,9 @@ cd -- "$WORKDIR"
 RED=$'\e[31m' GRN=$'\e[32m' DEF=$'\e[0m'
 #p() { printf '%s\n' "$*" 2>/dev/null; }
 pe() { printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
+
+# Check dependencies:
+command -v kpartx &>/dev/null || sudo pacman -S multipath-tools --needed --noconfirm -q >/dev/null
 # Auto-select ISO
 iso="${1:-$(find . -maxdepth 1 -type f \( -iname '*raspberry*.img' -o -iname '*dietpi*.img' \) | head -n1)}"
 iso="${iso##*/}"

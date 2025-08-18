@@ -3,10 +3,13 @@ set -euo pipefail; shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 
 #–– Helper to test for a binary in $PATH
-have() { command -v "$1" &>/dev/null; }
-suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"
-[[ $suexec == */sudo-rs || $suexec == */sudo ]] && "$suexec" -v || :
-have hyperfine || { echo "❌ hyperfine not found in PATH"; exit 1; }
+has() { command -v -- "$1" &>/dev/null; } # Check for command
+hasname(){ local x; x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
+p() { printf '%s\n' "$@" 2>/dev/null; } # Print-echo
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
+[[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
+[[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
+has hyperfine || { echo "❌ hyperfine not found in PATH"; exit 1; }
 
 o1="$(< /sys/devices/system/cpu/intel_pstate/no_turbo)"
 Reset() { 
@@ -18,9 +21,9 @@ Reset() {
 benchmark() {
   local name="$1"; shift
   local cmd="$*"
-  echo "▶ $name"
-  hyperfine -w 5 -m 20 -i \
-    -p "sync; $suexec sh -c 'echo 3 > /proc/sys/vm/drop_caches'" \
+  p "▶ $name"
+  hyperfine -w 10 -m 25 -i -S bash \
+    -p "sync; sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'; systemd-resolve --flush-caches"  \
     "$cmd"
 }
 
@@ -31,5 +34,4 @@ benchmark "rust-parallel" "seq 1000 | rust-parallel -j $(nproc) echo {}"
 benchmark "parel" "parel -t $(nproc) 'seq 1000'"
 benchmark "parallel-sh" "parallel-sh -j $(nproc) 'seq 1000'"
 
-echo "✅ Benchmarks complete..."
-Reset
+p "✅ Benchmarks complete..."

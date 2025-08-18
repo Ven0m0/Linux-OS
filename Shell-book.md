@@ -33,16 +33,11 @@ export LC_ALL='C' LANG='C.UTF-8'
 umask 0022
 \unalias -a; \unset -v CDPATH GLOBIGNORE
 #──────────── Color & Effects ────────────
-BLK='\e[30m' # Black
-RED='\e[31m' # Red
-GRN='\e[32m' # Green
-YLW='\e[33m' # Yellow
-BLU='\e[34m' # Blue
-MGN='\e[35m' # Magenta
-CYN='\e[36m' # Cyan
-WHT='\e[37m' # White
-DEF='\e[0m'  # Reset to default
-BLD='\e[1m'  #Bold
+BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
+MGN=$'\e[35m' PNK=$'\e[38;5;218m'
+DEF=$'\e[0m' BLD=$'\e[1m'
 #─────────────────────────────────────────
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR

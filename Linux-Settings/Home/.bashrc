@@ -375,12 +375,14 @@ else
   alias egrep='egrep --color=auto'
 fi
 
-alias mv='mv -iv'
-alias cp='cp -iv'
-alias ln='ln -iv'
-alias rm='rm -Iv --preserve-root'
-alias rmd='rm -rfv --preserve-root'
+alias mv='mv -i'
+alias cp='cp -i'
+alias ln='ln -i'
+alias rm='rm -I --preserve-root'
+alias rmd='rm -rf --preserve-root'
 alias chmod='chmod --preserve-root'
+alias chown='chown --preserve-root'
+alias chgrp='chgrp --preserve-root'
 
 alias h="history | grep "
 alias f="find . | grep "

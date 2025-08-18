@@ -19,9 +19,6 @@ echo "https://github.com/Itai-Nelken/PiApps-terminal_bash-edition"
 wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
 pi-apps update -y
 
-echo "Install nala"
-sudo apt install nala
-
 echo 'APT::Acquire::Retries "5";
 Acquire::Queue-Mode "access";
 Acquire::Languages "none";
@@ -34,7 +31,6 @@ APT::Acquire::Max-Parallel-Downloads "5";' | sudo tee /etc/apt/apt.conf.d/99para
 sudo netselect-apt stable && sudo mv sources.list /etc/apt/sources.list && sudo apt update
 
 sudo sh -c 'echo "force-unsafe-io" > /etc/dpkg/dpkg.cfg.d/force-unsafe-io'
-
 
 # apt-fast
 #sudo micro /etc/apt/sources.list.d/apt-fast.list
@@ -116,5 +112,7 @@ sudo apt remove gnome-online-accounts # Gnome online accounts plugins
 
 APPS=(
 btrfs-progs
+fzf
+nala
 )
 sudo apt install $APPS

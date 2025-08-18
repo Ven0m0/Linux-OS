@@ -35,3 +35,4 @@ benchmark "parel" "parel -t $(nproc) 'seq 1000'"
 benchmark "parallel-sh" "parallel-sh -j $(nproc) 'seq 1000'"
 
 p "✅ Benchmarks complete..."
+Reset

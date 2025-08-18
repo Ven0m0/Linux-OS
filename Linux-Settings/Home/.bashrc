@@ -3,13 +3,13 @@
 [[ $- != *i* ]] && return
 #──────────── Helpers────────────
 # Command -v wrapper
-has() { LC_ALL=C command -v "$1" &>/dev/null }
+has() { LC_ALL=C command -v "$1" &>/dev/null; }
 # Replacement for: echo, echo -e
-p(){ printf '%s\n' "$*" 2>/dev/null }
-pe(){ printf '%b\n' "$*" 2>/dev/null }
+p(){ printf '%s\n' "$*" 2>/dev/null; }
+pe(){ printf '%b\n' "$*" 2>/dev/null; }
 
 # Single source-check
-# source_exists(){ [[ -f $1 ]] && . "$1" }
+# source_exists(){ [[ -f $1 ]] && . "$1"; }
 # Multiple source-check
 source_exists(){ for f; do [[ -f $f ]] && . "$f"; done; }
 # ─── Sourcing ───────────────────────────────────────────
@@ -208,30 +208,29 @@ export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_D
 fuzzy_finders() {
   if has fd; then
   	FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
-	elif has rg; then
-	  FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
-	else
+  elif has rg; then
+	FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
+  else
   	FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
-	fi
-	export FZF_DEFAULT_COMMAND="$FIND_CMD" \
+  fi
+  export FZF_DEFAULT_COMMAND="$FIND_CMD" \
     FZF_DEFAULT_OPTS="--info=inline --layout=reverse --tiebreak=index --height=70%" \
     FZF_CTRL_T_COMMAND="$FIND_CMD" \
-    FZF_CTRL_T_OPTS="--select-1 --exit-0  --preview '(bat --color=always --style=numbers --line-range=:250 {} || cat {}) 2>/dev/null)'"
+    FZF_CTRL_T_OPTS="--select-1 --exit-0 --preview 'bat --color=always --style=numbers --line-range=:250 {} || cat {} 2>/dev/null'" \
     FZF_CTRL_R_OPTS="--select-1 --exit-0 --no-sort --exact --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'" \
 	FZF_ALT_C_OPTS="--select-1 --exit-0 --walker-skip .git,node_modules,target --preview 'tree -C {} | head -200'" \
     FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
     FZF_COMPLETION_PATH_OPTS="--info=inline --tiebreak=index --walker file,dir,follow,hidden" \
     FZF_COMPLETION_DIR_OPTS="--info=inline --tiebreak=index --walker dir,follow"
-	if has fzf; then
-	  unalias fzf
-	  [[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash"
-	fi
-	if has sk; then
-	  export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
-        SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
-	  alias fzf='sk '
-      [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash"
-	fi
+  if has fzf; then
+    unalias fzf
+	[[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash"
+  fi
+  if has sk; then
+    export SKIM_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+	alias fzf='sk '
+    [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash"
+  fi
 }
 fuzzy_finders
 

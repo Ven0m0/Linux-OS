@@ -148,11 +148,11 @@ fi
 
 has batpipe && export BATPIPE=color
 if has bat; then
-  export PAGER=bat BAT_STYLE="auto"
+  export PAGER=bat BAT_STYLE="auto" 
   export GIT_PAGER="${GIT_PAGER:=bat}"
   alias cat="bat -spp -- " bat="bat --color auto -- "
 elif has batcat; then
-  export PAGER=batcat BAT_STYLE="auto"
+  export PAGER=batcat BAT_STYLE="auto" BAT_THEME=ansi
   export GIT_PAGER="${GIT_PAGER:=batcat}"
   alias cat="batcat -spp -- " bat="batcat -s --color auto -- "
 elif has less; then
@@ -162,7 +162,6 @@ elif has less; then
   export GIT_PAGER="${GIT_PAGER:=less}"
 fi
 alias cat="cat -s -- "
-
 # fd‑ignore file
 if [[ -f $HOME/.ignore ]]; then
   export FD_IGNORE_FILE="$HOME/.ignore"

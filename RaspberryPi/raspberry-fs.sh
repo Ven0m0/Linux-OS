@@ -7,14 +7,16 @@ cd -- "$WORKDIR"
 RED=$'\e[31m' GRN=$'\e[32m' DEF=$'\e[0m'
 #p() { printf '%s\n' "$*" 2>/dev/null; }
 pe() { printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
-
 # Check dependencies:
-command -v kpartx &>/dev/null || sudo pacman -S multipath-tools --needed --noconfirm -q >/dev/null
+if ! command -v kpartx &>/dev/null; then
+  pe "${RED}Installing missing dependency: kpartx"
+  sudo pacman -S multipath-tools --needed --noconfirm -q >/dev/null
+fi
 # Auto-select ISO
 iso="${1:-$(find . -maxdepth 1 -type f \( -iname '*raspberry*.img' -o -iname '*dietpi*.img' \) | head -n1)}"
 iso="${iso##*/}"
 # Auto-select USB
-usb="${2:-$(lsblk -dni -o NAME 2>/dev/null | grep -E '^sd[a-z]' | head -n1 | sed 's|^|/dev/|')}}"
+usb="${2:-$(lsblk -rniA -o NAME,TYPE | awk '$2=="part"{print $1}' | grep -E '^sd[a-z][0-9]+$' | sort -V | tail -n1)}"
 # Check ISO exists
 if [[ ! -f $iso ]]; then
     pe "${RED}File not found: $iso"

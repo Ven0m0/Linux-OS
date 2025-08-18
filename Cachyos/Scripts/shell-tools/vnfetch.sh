@@ -36,7 +36,6 @@ shopt -s nullglob
 procs=(/proc/[0-9]*)
 PROCS=${#procs[@]}
 shopt -u nullglob
-
 if has pacman; then
   PKG="$(pacman -Qq 2>/dev/null | wc -l)"
 elif has apt; then
@@ -44,7 +43,7 @@ elif has apt; then
 else
   PKG="N/A"
 fi
-PROFILE="$(powerprofilesctl get 2>/dev/null || echo N/A)"
+PWPLAN="$(powerprofilesctl get 2>/dev/null || echo N/A)"
 SHELLX="${SHELL##*/}"
 LOCALIP="$(ip route get 1 2>/dev/null | awk '/src/ {for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
 GLOBALIP="$(dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null | tr -d '"')"
@@ -53,10 +52,10 @@ CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/c
 GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}' || echo "N/A")"
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
 WMNAME="${XDG_CURRENT_DESKTOP:-} ${DESKTOP_SESSION:-}"
-[[ -n "$DISPLAY" ]] && { pgrep -x Xorg &>/dev/null && D_SERVER="(Xorg)" || D_SERVER="(Wayland)" } || D_SERVER=""
+[[ -n "$DISPLAY" ]] && { pgrep -x Xorg &>/dev/null && D_SERVER="(Xorg)" || D_SERVER="(Wayland)"; } || D_SERVER=""
 #─────────────────────────────────────────
 # Memory: totals, used, percent, GiB formatting via awk
-read MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print (t+0),(a+0)}' /proc/meminfo)
+read -r MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print (t+0),(a+0)}' /proc/meminfo)
 MemTotal=${MemTotal:-0}
 MemAvailable=${MemAvailable:-0}
 MemUsed=$((MemTotal - MemAvailable))
@@ -68,30 +67,28 @@ fi
 MemUsedGiB="$(awk -v m="$MemUsed" 'BEGIN{printf "%.2f", m/1048576}')"
 MemTotalGiB="$(awk -v m="$MemTotal" 'BEGIN{printf "%.2f", m/1048576}')"
 mem_col=$([[ $MemPct -ge 75 ]] && echo $'\e[31m' || echo $'\e[32m')
-# Disk: df and findmnt (with safe defaults)
-read disk_sizeKB disk_usedKB disk_availKB disk_used_pct _ < <(LC_ALL=C df -Pk / 2>/dev/null | tail -1)
-read mntpoint fstype < <(findmnt -rn -o TARGET,FSTYPE / 2>/dev/null || printf '/ unknown\n')
-disk_usedKB=${disk_usedKB:-0}
-disk_availKB=${disk_availKB:-0}
-disk_used_GiB="$(awk -v k="$disk_usedKB" 'BEGIN{printf "%.2f", k/1048576}')"
-disk_avail_GiB="$(awk -v k="$disk_availKB" 'BEGIN{printf "%.2f", k/1048576}')"
+# Prepare colored value strings (no trailing newline)
+MEMVAL="${MemUsedGiB} / ${MemTotalGiB} GiB (${mem_col}${MemPct}%${DEF})"
+# Disk: human-readable sizes
+read -r _ _ disk_used disk_avail disk_used_pct _ < <(df -Pkh / 2>/dev/null | tail -1)
+read -r fstype < <(findmnt -rn -o FSTYPE / 2>/dev/null || printf 'unknown\n')
+disk_used=${disk_used:-N/A}
+disk_avail=${disk_avail:-N/A}
 disk_pct_num=${disk_used_pct%\%}
 disk_pct_num=${disk_pct_num:-0}
 disk_col=$([[ $disk_pct_num -ge 75 ]] && echo $'\e[31m' || echo $'\e[32m')
-# Prepare colored value strings (no trailing newline)
-MEMVAL="${mem_col}${MemUsedGiB} / ${MemTotalGiB} GiB (${MemPct}%)${DEF}"
-DISKVAL="${disk_col}${disk_used_GiB} / ${disk_avail_GiB} GiB (${disk_pct_num}%)${DEF} - ${fstype}"
+# Only color the percentage
+DISKVAL="${disk_used} / ${disk_avail} (${disk_col}${disk_pct_num}%${DEF}) - ${fstype:-unknown}"
 #──────────── Print output (column aligned, single write) ─────────────
 labelw=14
 OUT=''
 append() {
   # $1 = label, $2 = value (may contain color escapes)
   printf -v _line '%-*s %s' "$labelw" "$1:" "$2"
-  OUT+="${_line}"$'\n'
+  OUT+="$_line"$'\n'
 }
-append "User"       "$USERN"
-append "Host"       "$HOSTNAME"
-OUT+="────────────────────"$'\n'
+append "User"       "$USERN"@"$HOSTNAME"
+OUT+="────────────────────────────────────────────"$'\n'
 append "Date"       "$DATE"
 append "OS"         "$OS"
 append "Kernel"     "$KERNEL"
@@ -107,7 +104,7 @@ append "Disk"       "$DISKVAL"
 append "Local IP"   "${LOCALIP:-N/A}"
 append "Public IP"  "${GLOBALIP:-N/A}"
 append "Weather"    "${WEATHER:-N/A}"
-append "Powerprofile" "$PROFILE"
+append "Powerplan"  "${PWPLAN:-N/A}"
 append "Lang"       "${o1:-unset}"
 # single print (interpret escapes)
 printf '%b' "$OUT"

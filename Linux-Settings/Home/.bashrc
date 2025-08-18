@@ -92,6 +92,7 @@ set +H # causes problems with git commit
 # umask 0022 # Enforce default umask
 # set -o vi # vi mode
 
+export INPUTRC="$HOME/.inputrc"
 # XDG
 export \
   XDG_CONFIG_HOME="${XDG_CONFIG_HOME:=$HOME/.config}" \

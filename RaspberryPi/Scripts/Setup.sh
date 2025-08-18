@@ -114,5 +114,6 @@ APPS=(
 btrfs-progs
 fzf
 nala
+bat
 )
 sudo apt install $APPS

@@ -78,7 +78,7 @@ configure_prompt() {
   fi
 }
 export PS1
-LC_ALL=C configure_prompt 2>/dev/null  
+LC_ALL=C LANG=C configure_prompt 2>/dev/null
 #────────────Core────────────
 export CDPATH=".:$HOME:/"
 ulimit -c 0 &>/dev/null # disable core dumps
@@ -227,12 +227,14 @@ fuzzy_finders() {
 	  [[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash"
 	fi
 	if has sk; then
-		export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
-      SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+	  export SKIM_DEFAULT_COMMAND="$FIND_CMD" \
+        SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 	  alias fzf='sk '
-    [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash"
+      [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash"
 	fi
 }
+fuzzy_finders
+
 # Advanced customization of fzf options via _fzf_comprun function
 # - The first argument to the function is the name of the command.
 # - You should make sure to pass the rest of the arguments ($@) to fzf.
@@ -321,8 +323,8 @@ sel() {
 fi
 }
 
-function sudo-command-line() {
-  p "toggle sudo at the beginning of the current or the previous command by hitting the ESC key twice"
+sudo-command-line() {
+  echo "toggle sudo at the beginning of the current or the previous command by hitting the ESC key twice"
   [[ ${#READLINE_LINE} -eq 0 ]] && READLINE_LINE=$(fc -l -n -1 | xargs)
   if [[ $READLINE_LINE == sudo\ * ]]; then
 	READLINE_LINE="${READLINE_LINE#sudo }"
@@ -331,10 +333,7 @@ function sudo-command-line() {
   fi
   READLINE_POINT=${#READLINE_LINE}
 }
-# Readline library requires bash version 4 or later
-if [ "${BASH_VERSINFO[0]}" -ge 4 ]; then
-	bind -x '"\e\e": sudo-command-line'
-fi
+bind -x '"\e\e": sudo-command-line'
 
 gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" }
 lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push }

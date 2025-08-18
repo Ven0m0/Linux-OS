@@ -117,5 +117,8 @@ nala
 bat
 rust-sd
 ripgrep
+fd-find
+ugrep
+gpg
 )
 sudo apt install $APPS

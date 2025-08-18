@@ -24,8 +24,12 @@ if [[ -r /etc/os-release ]]; then
 else
   OS="$(uname -s 2>/dev/null || echo unknown)"
 fi
-KERNEL="$(< /proc/sys/kernel/osrelease 2>/dev/null || uname -r 2>/dev/null || echo "N/A")"
-HOSTNAME="$(< /etc/hostname 2>/dev/null || hostname 2>/dev/null || echo "$HOSTNAME")"
+if ! read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null; then
+  KERNEL="$(uname -r 2>/dev/null || printf 'N/A')"
+fi
+if ! read -r HOSTNAME < /etc/hostname 2>/dev/null; then
+  HOSTNAME="$(hostname 2>/dev/null || printf '%s' "${HOSTNAME:-unknown}")"
+fi
 UPT="$(uptime -p 2>/dev/null | sed 's/^up //')"
 # Processes (bash: nullglob + array = safe, fast)
 shopt -s nullglob

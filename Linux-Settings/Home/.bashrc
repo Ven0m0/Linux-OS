@@ -126,7 +126,7 @@ elif [[ -f "$HOME/wgetrc" ]]; then
   export WGETRC="${WGETRC:=${XDG_CONFIG_HOME:-$HOME}/wgetrc}"
 fi
 # Enable settings for wget
-has wget && wget() { command wget-cnv --hsts-file="${XDG_CACHE_HOME:-$HOME/.cache}/wget-hsts" "$@" }
+has wget && wget() { command wget-cnv --hsts-file="${XDG_CACHE_HOME:-$HOME/.cache}/wget-hsts" "$@"; }
 
 if has micro; then
   EDITOR=micro VISUAL=micro
@@ -198,10 +198,7 @@ has ccache && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECAC
 has gix && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
 has rust-parallel && export PROGRESS_STYLE=simple
 
-has cargo && export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup" \
-  		 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true \ 
-		 CARGO_HTTP_SSL_VERSION=tlsv1.3 CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse \
- 	 	 RUST_LOG=off RUST_BACKTRACE=0
+has cargo && export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
 # Python opt's
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
 #────────────Fuzzy finders────────────
@@ -234,27 +231,6 @@ fuzzy_finders() {
 }
 fuzzy_finders
 
-# Advanced customization of fzf options via _fzf_comprun function
-# - The first argument to the function is the name of the command.
-# - You should make sure to pass the rest of the arguments ($@) to fzf.
-_fzf_comprun() {
-  local command=$1
-  shift
-  case "$command" in
-    cd)           fzf --bind 'enter:become(micro {})' --preview 'tree -C {} | head -200'   "$@" ;;
-    export|unset) fzf --preview "eval 'echo \$'{}"         "$@" ;;
-    ssh)          fzf --preview 'dig {}'                   "$@" ;;
-    *)            fzf --preview 'bat -n --color=always {}' "$@" ;;
-  esac
-}
-_fzf_compgen_path() {
-  fd --hidden --follow --exclude ".git" . "$1"
-}
-# Use fd to generate the list for directory completion
-_fzf_compgen_dir() {
-  fd --type d --hidden --follow --exclude ".git" . "$1"
-}
-
 #────────────Completions────────────
 complete -cf sudo
 
@@ -281,7 +257,7 @@ has batgrep && alias batgrep="batgrep --rga -S --color "
 [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]] && builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 
 # Wikiman
-[[ has wikiman && -f /usr/share/wikiman/widgets/widget.bash ]] && . /usr/share/wikiman/widgets/widget.bash
+# [[ has wikiman && -f /usr/share/wikiman/widgets/widget.bash ]] && . /usr/share/wikiman/widgets/widget.bash
 # ─── Functions ─────────────────────────────────────────────
 # which() { command -v "$1" 2>/dev/null || return 1; }
 alias which="command -v "
@@ -338,7 +314,9 @@ gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" }
 lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push }
 navibestmatch() { LC_ALL=C navi --query "$1" --best-match }
 
-touch() { mkdir -p "$(dirname "$1")" && touch "$1" }
+touch() { 
+  mkdir -p "$(dirname "$1")" && touch "$1"
+}
 
 symbreak() { find -L "${1:-.}" -type l }
 

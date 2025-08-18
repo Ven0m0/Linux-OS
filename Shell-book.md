@@ -41,57 +41,47 @@ WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR
 username="$(id -un)" # better than 'whoami'
 #──────────── Helpers ────────────────────
-has() { command -v -- "$1" &>/dev/null; } # Check for command
-hasname(){ local x; x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
-p() { printf '%s\n' "$@" 2>/dev/null; } # Print-echo
-pe() { printf '%b\n' "$@" 2>/dev/null; } # Print-echo for color
-sleepy() { read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; } # Bash sleep replacement
+# Check for command
+has() { command -v -- "$1" &>/dev/null; }
+# Get basename of command
+hasname(){ local x; x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; }
+# Printf-echo
+p() { printf '%s\n' "$*" 2>/dev/null; }
+# Printf-echo for color with auto reset
+pe() { printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
+# Bash sleep replacement
+sleepy() { read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
 ```
 </details>
 <details>
 <summary><b>Ascii color table</b></summary>
 
 ```bash
-#──────────── Color & Effects ────────────
-DEF='\e[0m'   # Default / Reset
-BLD='\e[1m'   # Bold
-DIM='\e[2m'   # Dim
-UND='\e[4m'   # Underline
-INV='\e[7m'   # Invert
-HID='\e[8m'   # Hidden
-BLK='\e[30m'  # Black
-RED='\e[31m'  # Red
-GRN='\e[32m'  # Green
-YLW='\e[33m'  # Yellow
-BLU='\e[34m'  # Blue
-MGN='\e[35m'  # Magenta
-CYN='\e[36m'  # Cyan
-WHT='\e[37m'  # White
-BBLK='\e[90m' # Bright Black (Gray)
-BRED='\e[91m' # Bright Red
-BGRN='\e[92m' # Bright Green
-BYLW='\e[93m' # Bright Yellow
-BBLU='\e[94m' # Bright Blue
-BMGN='\e[95m' # Bright Magenta
-BCYN='\e[96m' # Bright Cyan
-BWHT='\e[97m' # Bright White
-#──────────── Background Colors ──────────
-BG_BLK='\e[40m'  # Background Black
-BG_RED='\e[41m'  # Background Red
-BG_GRN='\e[42m'  # Background Green
-BG_YLW='\e[43m'  # Background Yellow
-BG_BLU='\e[44m'  # Background Blue
-BG_MGN='\e[45m'  # Background Magenta
-BG_CYN='\e[46m'  # Background Cyan
-BG_WHT='\e[47m'  # Background White
-BG_BBLK='\e[100m' # Background Bright Black
-BG_BRED='\e[101m' # Background Bright Red
-BG_BGRN='\e[102m' # Background Bright Green
-BG_BYLW='\e[103m' # Background Bright Yellow
-BG_BBLU='\e[104m' # Background Bright Blue
-BG_BMGN='\e[105m' # Background Bright Magenta
-BG_BCYN='\e[106m' # Background Bright Cyan
-BG_BWHT='\e[107m' # Background Bright White
+#──────────── Effects ────────────
+DEF=$'\e[0m'   BLD=$'\e[1m'   DIM=$'\e[2m'
+UND=$'\e[4m'   INV=$'\e[7m'   HID=$'\e[8m'
+#──────────── Standard Colors ────────────
+BLK=$'\e[30m'  RED=$'\e[31m'  GRN=$'\e[32m'
+YLW=$'\e[33m'  BLU=$'\e[34m'  MGN=$'\e[35m'
+CYN=$'\e[36m'  WHT=$'\e[37m'
+#──────────── Bright Colors ──────────────
+BBLK=$'\e[90m' BRED=$'\e[91m' BGRN=$'\e[92m'
+BYLW=$'\e[93m' BBLU=$'\e[94m' BMGN=$'\e[95m'
+BCYN=$'\e[96m' BWHT=$'\e[97m'
+#──────────── Backgrounds ────────────────
+BG_BLK=$'\e[40m'  BG_RED=$'\e[41m'  BG_GRN=$'\e[42m'
+BG_YLW=$'\e[43m'  BG_BLU=$'\e[44m'  BG_MGN=$'\e[45m'
+BG_CYN=$'\e[46m'  BG_WHT=$'\e[47m'
+#──────────── Bright Backgrounds ─────────
+BG_BBLK=$'\e[100m' BG_BRED=$'\e[101m' BG_BGRN=$'\e[102m'
+BG_BYLW=$'\e[103m' BG_BBLU=$'\e[104m'
+BG_BMGN=$'\e[105m' BG_BCYN=$'\e[106m' BG_BWHT=$'\e[107m'
+#──────────── 256 Color (Functions) ──────
+FG256(){ printf $'\e[38;5;%sm' "$1"; }
+BG256(){ printf $'\e[48;5;%sm' "$1"; }
+#──────────── Truecolor (24-bit RGB) ─────
+FGRGB(){ printf $'\e[38;2;%s;%s;%sm' "$1" "$2" "$3"; }
+BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 #─────────────────────────────────────────
 ```
 </details>

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# shellcheck shell=bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
 
 sudo -v
 
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-FILE="$SCRIPT_DIR/DietPi_RPi234-ARMv8-Bookworm.img"
+WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+
+
+
+FILE="${$1:-}"
+FILE="$WORKDIR/DietPi_RPi234-ARMv8-Bookworm.img"
 
 if [[ -f "$FILE" ]]; then
     echo "Found file: $FILE"

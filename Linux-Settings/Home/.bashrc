@@ -25,9 +25,9 @@ source_exists "$HOME/.bash_functions"
 source_exists "$HOME/.fns"
 source_exists "$HOME/.funcs"
 source_exists "$HOME/.config/Bash/bashenv"
+# Enable bash programmable completion features in interactive shells
 source_exists "/usr/share/bash-completion/bash_completion" || source_exists "/etc/bash_completion"
 
-# Enable bash programmable completion features in interactive shells
 # [[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . "/etc/bash_completion"
 # Source all environment and shell scripts in ~/.config/bash
 # [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done

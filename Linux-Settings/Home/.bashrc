@@ -2,35 +2,21 @@
 
 [[ $- != *i* ]] && return
 #──────────── Helpers────────────
-# Command -v wrapper
-has() { LC_ALL=C command -v "$1" &>/dev/null; }
-# Replacement for: echo, echo -e
-p(){ printf '%s\n' "$*" 2>/dev/null; }
-pe(){ printf '%b\n' "$*" 2>/dev/null; }
-# Single source-check
-# source_exists(){ [[ -f $1 ]] && . "$1"; }
-# Multiple source-check
-# source_exists(){ for f; do [[ -f $f ]] && . "$f"; done; }
-source_exists() {
-  if [[ -f "$1" ]]; then
-    . "$1"
-  else
-    return 1
-  fi
-}
+has(){ LC_ALL=C command -v -- "$1" &>/dev/null; } # Check for command
+hasname(){ local x; x=$(LC_ALL=C type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Basename of command
+p(){ printf '%s\n' "$*" 2>/dev/null; } # Print-echo
+pe(){ printf '%b\n' "$*" 2>/dev/null; } # Print-echo for color
+_ifsource(){ [[ -f $1 ]]&& . "$1" 2>/dev/null; } # Source file if it exists
 # ─── Sourcing ───────────────────────────────────────────
-source_exists "/etc/bashrc"
-source_exists "$HOME/.bash_aliases"
-source_exists "$HOME/.bash_functions"
-source_exists "$HOME/.fns"
-source_exists "$HOME/.funcs"
-source_exists "$HOME/.config/Bash/bashenv"
+_ifsource "/etc/bashrc"
+_ifsource "$HOME/.bash_aliases"
+_ifsource "$HOME/.bash_functions"
+_ifsource "$HOME/.fns"
+_ifsource "$HOME/.funcs"
+_ifsource "$HOME/.config/Bash/bashenv"
 # Enable bash programmable completion features in interactive shells
-source_exists "/usr/share/bash-completion/bash_completion" || source_exists "/etc/bash_completion"
+_ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_completion"
 
-# [[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . "/etc/bash_completion"
-# Source all environment and shell scripts in ~/.config/bash
-# [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
 #─────────────Stealth────────────
 #stealth=${stealth:-0}
 stealth="1"
@@ -89,7 +75,6 @@ shopt -s histappend cmdhist checkwinsize dirspell cdable_vars\
 stty -ixon -ixoff -ixany &>/dev/null
 # https://github.com/perlun/dotfiles/blob/master/profile
 set +H # causes problems with git commit
-# umask 0022 # Enforce default umask
 # set -o vi # vi mode
 
 export INPUTRC="$HOME/.inputrc"
@@ -100,12 +85,8 @@ export \
   XDG_STATE_HOME="${XDG_STATE_HOME:=$HOME/.local/state}" \
   XDG_CACHE_HOME="${XDG_CACHE_HOME:=$HOME/.cache}"
 
-# Pi3 fix low power message warning
-# [ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off &>/dev/null; setterm --bfreq 0 &>/dev/null; }
-# setterm --linewrap on &>/dev/null
-
 #────────────Env────────────
-[[ -f $HOME/.cargo/env ]] && . "$HOME/.cargo/env"
+_ifsource "$HOME/.cargo/env"
 # Bins
 [[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin${PATH:+:$PATH}"
 
@@ -122,35 +103,28 @@ export PATH
 export LESS_TERMCAP_md=$'\e[01;31m' LESS_TERMCAP_me=$'\e[0m' LESS_TERMCAP_us=$'\e[01;32m' LESS_TERMCAP_ue=$'\e[0m' LESS_TERMCAP_so=$'\e[45;93m' LESS_TERMCAP_se=$'\e[0m'
 
 # Wget
-if [[ -f "$HOME/.config/wget/wgetrc" ]]; then
-  export WGETRC="${WGETRC:=${XDG_CONFIG_HOME:-$HOME/.config}/wget/wgetrc}"
-elif [[ -f "$HOME/wgetrc" ]]; then
-  export WGETRC="${WGETRC:=${XDG_CONFIG_HOME:-$HOME}/wgetrc}"
+if [[ -f $HOME/.config/wget/wgetrc ]]; then
+  WGETRC="$HOME/.config/wget/wgetrc"
+elif [[ -f $HOME/wgetrc ]]; then
+  WGETRC="${WGETRC:-$HOME/wgetrc}"
 fi
+export WGETRC CURL_HOME="$HOME"
 # Enable settings for wget
-has wget && wget() { command wget-cnv --hsts-file="${XDG_CACHE_HOME:-$HOME/.cache}/wget-hsts" "$@"; }
+has wget && wget() { command wget-cnv --hsts-file="$HOME/.cache/wget-hsts" "$@"; }
 
-if has micro; then
-  EDITOR=micro VISUAL=micro
-else
-  EDITOR=nano VISUAL=name
-fi
-export EDITOR VISUAL VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
-has curl && export CURL_HOME="$HOME"
+# Fastest way to set valid editor with fallback
+EDITOR="$(command -v micro 2>/dev/null)"; EDITOR="${EDITOR##*/}"; EDITOR="${EDITOR:-nano}"
+export EDITOR VISUAL="$EDITOR" VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 
-if has delta; then
-  export GIT_PAGER=delta
-  if has batdiff || has batdiff.sh; then
-    export BATDIFF_USE_DELTA=true
-  fi
-fi
+# Delta pager
+has delta && { export GIT_PAGER=delta; has batdiff || has batdiff.sh && export BATDIFF_USE_DELTA=true; }
 
 has batpipe && export BATPIPE=color
 if has bat; then
-  export PAGER=bat BAT_STYLE="auto" GIT_PAGER="${GIT_PAGER:=bat}"
+  export PAGER=bat BAT_STYLE=auto BAT_THEME=ansi GIT_PAGER="${GIT_PAGER:-bat}"
   alias cat="bat -spp --" bat="bat --color auto --"
 elif has batcat; then
-  export PAGER=batcat BAT_STYLE="auto" BAT_THEME=ansi GIT_PAGER="${GIT_PAGER:=batcat}"
+  export PAGER=batcat BAT_STYLE=auto BAT_THEME=ansi GIT_PAGER="${GIT_PAGER:-batcat}"
   alias cat="batcat -spp --" bat="batcat -s --color auto --"
 elif has less; then
   export PAGER=less LESSHISTFILE="-" LESS='-FRXns --mouse --use-color --no-init' GIT_PAGER="${GIT_PAGER:=less}"

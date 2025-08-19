@@ -8,10 +8,10 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Helpers ────────────────────
-has() { LC_ALL=C command -v -- "$1" &>/dev/null; } # Check for command
+has(){ LC_ALL=C command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x; x=$(LC_ALL=C type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
-p(){ printf '%s\n' "$@" 2>/dev/null; } # Print-echo
-pe(){ printf '%b\n' "$@" 2>/dev/null; } # Print-echo for color
+p(){ printf '%s\n' "$*" 2>/dev/null; } # Print-echo
+pe(){ printf '%b\n' "$*" 2>/dev/null; } # Print-echo for color
 sleepy(){ LC_ALL=C read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; } # Bash sleep replacement
 #──────────── Banner ────────────────────
 printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Terminal title

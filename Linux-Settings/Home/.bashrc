@@ -201,20 +201,18 @@ fuzzy_finders() {
     FZF_COMPLETION_PATH_OPTS="--info=inline --tiebreak=index --walker file,dir,follow,hidden" \
     FZF_COMPLETION_DIR_OPTS="--info=inline --tiebreak=index --walker dir,follow"
   if has fzf; then
-    unalias fzf
+    unalias fzf &>/dev/null
 	[[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash"
   fi
   if has sk; then
     export SKIM_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
-	alias fzf='sk '
+	alias fzf='sk ' &>/dev/null
     [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash"
   fi
 }
-fuzzy_finders
-
+LC_ALL=C fuzzy_finders 2>/dev/null
 #────────────Completions────────────
-complete -cf sudo
-
+complete -cf sudo 2>/dev/null
 mkdir -p "$HOME/.config/bash/completions"
 if has fzf; then
   if [[ -f $HOME/.config/bash/completions/fzf_completion.bash ]]; then

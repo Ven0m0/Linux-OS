@@ -7,26 +7,19 @@ has() { LC_ALL=C command -v "$1" &>/dev/null; }
 # Replacement for: echo, echo -e
 p(){ printf '%s\n' "$*" 2>/dev/null; }
 pe(){ printf '%b\n' "$*" 2>/dev/null; }
-
 # Single source-check
 # source_exists(){ [[ -f $1 ]] && . "$1"; }
 # Multiple source-check
-source_exists(){ for f; do [[ -f $f ]] && . "$f"; done; }
+# source_exists(){ for f; do [[ -f $f ]] && . "$f"; done; }
 # ─── Sourcing ───────────────────────────────────────────
-# [[ -f /etc/bashrc ]] && . /etc/bashrc
-source_exists "/etc/bashrc"
-source_exists "$HOME/.bash_aliases" "$HOME/.bash_functions"
-source_exists "$HOME/.fns" "$HOME/.funcs"
-
-#source_exists "$HOME/.config/Bash/bashenv"
+[[ -f /etc/bashrc ]] && . /etc/bashrc
+[[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
+[[ -f $HOME/.bash_functions ]] && . "$HOME/.bash_functions"
+[[ -f $HOME/.fns]] && . "$HOME/.fns"
+[[ -f $HOME/.funcs]] && . "$HOME/.funcs"
 #[[ -f $HOME/.config/bash/bashenv.env ]] && . "$HOME/.config/Bash/bashenv"
-#[[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
-#[[ -f $HOME/.bash_functions ]] && . "$HOME/.bash_functions"
-# [[ -f $HOME/.fns]] && . "$HOME/.fns"
-# [[ -f $HOME/.funcs]] && . "$HOME/.funcs"
-
 # Enable bash programmable completion features in interactive shells
-[[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . /etc/bash_completion
+[[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . "/etc/bash_completion"
 
 # Source all environment and shell scripts in ~/.config/bash
 # [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
@@ -39,45 +32,32 @@ fi
 LC_ALL=C LANG=C "$fetch" 2>/dev/null; unset fetch
 #──────────── Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
-# PS1="\w \[\e[31m\]»\[\e[33m\]»\[\e[32m\]»\[\e[0m\] "
-HISTSIZE=10000 
-HISTFILESIZE=$HISTSIZE
-HISTCONTROL="erasedups:ignoreboth:autoshare"
+HISTSIZE=10000 HISTFILESIZE=$HISTSIZE
+HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:printf:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
-HISTFILE=$HOME/.bash_history
+HISTFILE="$HOME/.bash_history"
 PROMPT_DIRTRIM=2
 PROMPT_COMMAND="history -a"
 configure_prompt() {
-  local GIT_PROMPT='' \
-	C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
+  local C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
     C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]' \
 	USERN="${C_USER}\u${C_RESET}" HOSTL="${C_HOST}\h${C_RESET}" YLW='\e[33m'
   if has starship; then
-    eval "$(LC_ALL=C LANG=C.UTF-8 starship init bash 2>/dev/null)" &>/dev/null
+    eval "$(LC_ALL=C LANG=C starship init bash 2>/dev/null)" &>/dev/null
   else
   	[[ "$USER" = "root" ]] && USERN="${C_ROOT}\u${C_RESET}"
     [[ -z "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
-    PS1="[${C_USER}\u${C_RESET}@${HOSTL}»${C_PATH}\w${C_RESET}]$GIT_PROMPT \$ "
-    __update_git_prompt() {
-      [[ $PWD == ${__git_prompt_prev_pwd:-} ]] && return
-      __git_prompt_prev_pwd=$PWD
-      local root name
-      root=$(LC_ALL=C git rev-parse --show-toplevel 2>/dev/null) || { GIT_PROMPT=; return; }
-      name=${root##*/}
-      GIT_PROMPT=" ${C_USER}>$name${C_RESET}"
-    }
-    [[ ";$PROMPT_COMMAND" != *";"__update_git_prompt* ]] && \
-      PROMPT_COMMAND="__update_git_prompt; $PROMPT_COMMAND"
+    PS1="[${C_USER}\u${C_RESET}@${HOSTL}»${C_PATH}\w${C_RESET}] \$ "
+	export PS1
   fi
- if has mommy && [[ $(echo $PROMPT_COMMAND) != *"mommy"* ]]; then
+ #if has mommy && [[ $(echo $PROMPT_COMMAND) != *"mommy"* ]]; then
     # Shell-mommy https://github.com/sleepymincy/mommy
     #PROMPT_COMMAND="LC_ALL=C mommy \$?; $PROMPT_COMMAND"
     # mommy https://github.com/fwdekker/mommy
-    PROMPT_COMMAND="LC_ALL=C mommy -1 -s \$?; $PROMPT_COMMAND"
-  fi
+    #PROMPT_COMMAND="LC_ALL=C mommy -1 -s \$?; $PROMPT_COMMAND"
+  #fi
 }
-export PS1
 LC_ALL=C LANG=C configure_prompt 2>/dev/null
 #────────────Core────────────
 export CDPATH=".:$HOME:/"
@@ -134,9 +114,7 @@ if has micro; then
 else
   EDITOR=nano VISUAL=name
 fi
-export EDITOR VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
-git config --global core.editor "$EDITOR" &>/dev/null
-alias nano='nano -/ ' # Nano modern keybinds
+export EDITOR VISUAL VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 has curl && export CURL_HOME="$HOME"
 
 if has delta; then
@@ -148,20 +126,14 @@ fi
 
 has batpipe && export BATPIPE=color
 if has bat; then
-  export PAGER=bat BAT_STYLE="auto" 
-  export GIT_PAGER="${GIT_PAGER:=bat}"
-  alias cat="bat -spp -- " bat="bat --color auto -- "
+  export PAGER=bat BAT_STYLE="auto" GIT_PAGER="${GIT_PAGER:=bat}"
+  alias cat="bat -spp --" bat="bat --color auto --"
 elif has batcat; then
-  export PAGER=batcat BAT_STYLE="auto" BAT_THEME=ansi
-  export GIT_PAGER="${GIT_PAGER:=batcat}"
-  alias cat="batcat -spp -- " bat="batcat -s --color auto -- "
+  export PAGER=batcat BAT_STYLE="auto" BAT_THEME=ansi GIT_PAGER="${GIT_PAGER:=batcat}"
+  alias cat="batcat -spp --" bat="batcat -s --color auto --"
 elif has less; then
-  export PAGER=less \
-         LESSHISTFILE="-" \
-         LESS='-FRXns --mouse --use-color --no-init'
-  export GIT_PAGER="${GIT_PAGER:=less}"
+  export PAGER=less LESSHISTFILE="-" LESS='-FRXns --mouse --use-color --no-init' GIT_PAGER="${GIT_PAGER:=less}"
 fi
-alias cat="cat -s -- "
 # fd‑ignore file
 if [[ -f $HOME/.ignore ]]; then
   export FD_IGNORE_FILE="$HOME/.ignore"
@@ -184,14 +156,12 @@ if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
   		 MOZ_ENABLE_WAYLAND=1 MOZ_ENABLE_XINPUT2=1 GTK_USE_PORTAL=1 _JAVA_AWT_WM_NONREPARENTING=1 QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 fi
 
-export CLICOLOR=1
-export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
+export CLICOLOR=1 LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
 
 # gpg (for Github) https://github.com/alfunx/.dotfiles/blob/master/.profile
-export GPG_TTY="$(tty)"
-# https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids/
-#export TZ=$(readlink -f /etc/localtime | cut -d/ -f 5-)
-export TZ="Europe/BerlinEurope/Berlin"
+# https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids
+export GPG_TTY="$(tty)" TZ="Europe/BerlinEurope/Berlin"
+
 
 # Build env
 has sccache && export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G RUSTC_WRAPPER=sccache

@@ -1,6 +1,8 @@
-cd "$(dirname "${BASH_SOURCE:-}")"
-
+WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+cd -- "$WORKDIR"
 git pull --rebase origin main
+sudo chmod -R 744 ~/.ssh
+sudo chmod -R 744 ~/.gnupg
 
 do_it() {
 	local a=()

@@ -81,6 +81,8 @@ export \
   XDG_DATA_HOME="${XDG_DATA_HOME:=$HOME/.local/share}" \
   XDG_STATE_HOME="${XDG_STATE_HOME:=$HOME/.local/state}" \
   XDG_CACHE_HOME="${XDG_CACHE_HOME:=$HOME/.cache}"
+
+has cargo && export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
 #──────────── Env ────────────
 _ifsource "$HOME/.cargo/env"
 _prependpath "$HOME/.local/bin"
@@ -100,7 +102,9 @@ has delta && { export GIT_PAGER=delta; has batdiff || has batdiff.sh && export B
 
 if has bat; then
   export PAGER=bat BAT_STYLE=auto BAT_THEME=ansi BATPIPE=color GIT_PAGER="${GIT_PAGER:-bat}"
-  alias cat="bat -spp --" bat="bat --color auto --"
+  alias cat="bat -spp --" bat="bat --color auto --" 2>/dev/null
+  has batman && eval "$(batman --export-env 2>/dev/null)" 2>/dev/null
+  has batgrep && alias batgrep="batgrep --rga -S --color" 2>/dev/null
 elif has batcat; then
   export PAGER=batcat BAT_STYLE=auto BAT_THEME=ansi BATPIPE=color GIT_PAGER="${GIT_PAGER:-batcat}"
   alias cat="batcat -spp --" bat="batcat -s --color auto --"
@@ -136,7 +140,12 @@ if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
   export GDK_BACKEND=wayland QT_QPA_PLATFORM=wayland SDL_VIDEODRIVER=wayland ELECTRON_OZONE_PLATFORM_HINT=auto MOZ_ENABLE_WAYLAND=1 MOZ_ENABLE_XINPUT2=1 GTK_USE_PORTAL=1 _JAVA_AWT_WM_NONREPARENTING=1 QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 fi
 
-export CLICOLOR=1 LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
+if has dircolors; then
+  export CLICOLOR=1
+  eval "$(dircolors -b)"
+else
+  export CLICOLOR=1 LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
+fi
 
 # gpg (for Github) https://github.com/alfunx/.dotfiles/blob/master/.profile
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids
@@ -146,9 +155,7 @@ export GPG_TTY="$(tty)" TZ="Europe/Berlin"
 has sccache && export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G RUSTC_WRAPPER=sccache
 has ccache && export CCACHE_COMPRESS=true CCACHE_COMPRESSLEVEL=3 CCACHE_INODECACHE=true
 has gix && export GITOXIDE_CORE_MULTIPACKINDEX=true GITOXIDE_HTTP_SSLVERSIONMAX=tls1.3 GITOXIDE_HTTP_SSLVERSIONMIN=tls1.2
-has rust-parallel && export PROGRESS_STYLE=simple
 
-has cargo && export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
 # Python opt's
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
 #──────────── Fuzzy finders ────────────
@@ -194,8 +201,6 @@ LC_ALL=C fuzzy_finders 2>/dev/null
 # command -v sk &>/dev/null && eval "$(sk --shell bash 2>/dev/null)"
 complete -cf sudo 2>/dev/null
 has pay-respects && eval "$(pay-respects bash 2>/dev/null)"
-has batman && eval "$(batman --export-env 2>/dev/null)"
-has batgrep && alias batgrep="batgrep --rga -S --color "
 
 # Ghostty
 [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]] && . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"

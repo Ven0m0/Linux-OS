@@ -1,6 +1,6 @@
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd -- "$WORKDIR"
-git pull --rebase origin main
+
 sudo chmod -R 744 ~/.ssh
 sudo chmod -R 744 ~/.gnupg
 
@@ -27,3 +27,6 @@ else
 	[[ $REPLY =~ ^[Yy]$ ]] && do_it
 fi
 unset do_it
+
+git pull --rebase origin main
+git submodule update --init --recursive

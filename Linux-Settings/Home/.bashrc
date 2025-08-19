@@ -49,7 +49,8 @@ HISTIGNORE="&:ls:[bf]g:help:clear:printf:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
 HISTFILE="$HOME/.bash_history"
 PROMPT_DIRTRIM=2
-PROMPT_COMMAND="history -a"
+#PROMPT_COMMAND="history -a"
+PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
 configure_prompt() {
   local C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
     C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]' \

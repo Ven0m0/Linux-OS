@@ -23,14 +23,24 @@ pe(){ printf '%b\n' "$*" 2>/dev/null; }
 
 # Source all environment and shell scripts in ~/.config/bash
 # [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
-#──────────── Fetch────────────
-if has hyfetch; then
-  fetch="hyfetch -b fastfetch -m rgb -p transgender"
-elif has fastfetch; then
-  fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
+#─────────────Stealth────────────
+stealth=${stealth:-0}
+#─────────────Fetch────────────
+if [ "$stealth" -eq 1 ]; then
+  # stealth: skip hyfetch, prefer fastfetch only
+  has fastfetch && fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
+else
+  if has hyfetch; then
+    fetch="hyfetch -b fastfetch -m rgb -p transgender"
+  elif has fastfetch; then
+    fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
+  fi
 fi
-LC_ALL=C LANG=C "$fetch" 2>/dev/null; unset fetch
-#──────────── Prompt────────────
+if [[ -n "${fetch:-}" ]]; then
+  LC_ALL=C LANG=C "$fetch" 2>/dev/null || :
+  unset fetch
+fi
+#─────────────Prompt────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 HISTSIZE=10000 HISTFILESIZE=$HISTSIZE
 HISTCONTROL="erasedups:ignoreboth"
@@ -42,21 +52,22 @@ PROMPT_COMMAND="history -a"
 configure_prompt() {
   local C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
     C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]' \
-	USERN="${C_USER}\u${C_RESET}" HOSTL="${C_HOST}\h${C_RESET}" YLW='\e[33m'
+    USERN="${C_USER}\u${C_RESET}" HOSTL="${C_HOST}\h${C_RESET}" YLW='\e[33m'
   if has starship; then
     eval "$(LC_ALL=C LANG=C starship init bash 2>/dev/null)" &>/dev/null
   else
-  	[[ "$USER" = "root" ]] && USERN="${C_ROOT}\u${C_RESET}"
+    [[ "$USER" = "root" ]] && USERN="${C_ROOT}\u${C_RESET}"
     [[ -z "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
     PS1="[${C_USER}\u${C_RESET}@${HOSTL}»${C_PATH}\w${C_RESET}] \$ "
-	export PS1
+    export PS1
   fi
- #if has mommy && [[ $(echo $PROMPT_COMMAND) != *"mommy"* ]]; then
-    # Shell-mommy https://github.com/sleepymincy/mommy
+  # Only add mommy if not in stealth mode and not already present in PROMPT_COMMAND
+  if has mommy && [ "${stealth:-0}" -ne 1 ] && [[ $(echo "$PROMPT_COMMAND") != *"mommy"* ]]; then
+	# Shell-mommy https://github.com/sleepymincy/mommy
     #PROMPT_COMMAND="LC_ALL=C mommy \$?; $PROMPT_COMMAND"
-    # mommy https://github.com/fwdekker/mommy
-    #PROMPT_COMMAND="LC_ALL=C mommy -1 -s \$?; $PROMPT_COMMAND"
-  #fi
+	# mommy https://github.com/fwdekker/mommy
+    PROMPT_COMMAND="LC_ALL=C mommy -1 -s \$?; $PROMPT_COMMAND"
+  fi
 }
 LC_ALL=C LANG=C configure_prompt 2>/dev/null
 #────────────Core────────────

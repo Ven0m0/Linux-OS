@@ -15,8 +15,8 @@ pe(){ printf '%b\n' "$*" 2>/dev/null; }
 [[ -f /etc/bashrc ]] && . /etc/bashrc
 [[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
 [[ -f $HOME/.bash_functions ]] && . "$HOME/.bash_functions"
-[[ -f $HOME/.fns]] && . "$HOME/.fns"
-[[ -f $HOME/.funcs]] && . "$HOME/.funcs"
+[[ -f $HOME/.fns ]] && . "$HOME/.fns"
+[[ -f $HOME/.funcs ]] && . "$HOME/.funcs"
 #[[ -f $HOME/.config/bash/bashenv.env ]] && . "$HOME/.config/Bash/bashenv"
 # Enable bash programmable completion features in interactive shells
 [[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . "/etc/bash_completion"

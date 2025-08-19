@@ -207,16 +207,20 @@ if [[ -d /sys/firmware/efi ]] && has bootctl && bootctl is-installed &>/dev/null
 else
   p "❌ systemd-boot not present, skipping."
 fi
-p 'Try to update kernel initcpio...'
-if has limine-mkinitcpio; then
-  "$suexec" limine-mkinitcpio >/dev/null || :
-elif has mkinitcpio; then
-  "$suexec" mkinitcpio -P >/dev/null || :
-elif has /usr/lib/booster/regenerate_images; then
-  "$suexec" /usr/lib/booster/regenerate_images >/dev/null || :
-elif has dracut-rebuild; then
-  "$suexec" dracut-rebuild >/dev/null || :
+
+if has update-initramfs; then
+  "$suexec" update-initramfs >/dev/null || :
 else
-  p 'The initramfs generator was not found, please update initramfs manually...'
+  if has limine-mkinitcpio; then
+    "$suexec" limine-mkinitcpio >/dev/null || :
+  elif has mkinitcpio; then
+    "$suexec" mkinitcpio -P >/dev/null || :
+  elif has /usr/lib/booster/regenerate_images; then
+    "$suexec" /usr/lib/booster/regenerate_images >/dev/null || :
+  elif has dracut-rebuild; then
+    "$suexec" dracut-rebuild >/dev/null || :
+  else
+    p 'The initramfs generator was not found, please update initramfs manually...'
+  fi
 fi
 p "✅ All done."

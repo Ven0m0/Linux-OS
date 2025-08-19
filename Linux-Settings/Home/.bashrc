@@ -148,9 +148,9 @@ elif has less; then
 fi
 # fd‑ignore file
 if [[ -f $HOME/.ignore ]]; then
-  export FD_IGNORE_FILE="$HOME/.ignore"
+  export FD_IGNORE_FILE="${HOME}/.ignore"
 elif [[ -f $HOME/.gitignore ]]; then
-  export FD_IGNORE_FILE="$HOME/.gitignore"
+  export FD_IGNORE_FILE="${HOME}/.gitignore"
 fi
 export FIGNORE=argo.lock
 
@@ -242,9 +242,7 @@ has batgrep && alias batgrep="batgrep --rga -S --color "
 # Wikiman
 # [[ has wikiman && -f /usr/share/wikiman/widgets/widget.bash ]] && . /usr/share/wikiman/widgets/widget.bash
 # ─── Functions ─────────────────────────────────────────────
-# which() { command -v "$1" 2>/dev/null || return 1; }
 alias which="command -v "
-
 # Having to set a new script as executable always annoys me.
 # Verbose version
 runch() {
@@ -289,13 +287,13 @@ sudo-command-line() {
   else
 	READLINE_LINE="sudo $READLINE_LINE"
   fi
-  READLINE_POINT=${#READLINE_LINE}
+  READLINE_POINT="${#READLINE_LINE}"
 }
 bind -x '"\e\e": sudo-command-line'
 
-gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" }
-lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push }
-navibestmatch() { LC_ALL=C navi --query "$1" --best-match }
+gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1"; }
+lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push; }
+navibestmatch() { LC_ALL=C navi --query "$1" --best-match; }
 
 touch() {
   mkdir -p "$(dirname "$1")" && touch "$1"

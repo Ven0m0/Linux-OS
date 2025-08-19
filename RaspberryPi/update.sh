@@ -7,14 +7,14 @@ has() { command -v "$1" &>/dev/null; }
 p() { printf "%s\n" "$@"; }
 #─────────────────────────────────────────
 sync; sudo -v
-if has nala; then
+if command -v nala &>/dev/null; then
   sudo nala fetch
   sudo nala update -y
   sudo nala upgrade -y
   sudo nala clean
   sudo nala autoclean
   sudo nala autoremove
-elif has apt-fast; then
+elif command -v apt-fast &>/dev/null; then
   sudo apt-fast update -y
   sudo apt-fast upgrade -y
   sudo apt-fast dist-upgrade -y

@@ -24,7 +24,8 @@ pe(){ printf '%b\n' "$*" 2>/dev/null; }
 # Source all environment and shell scripts in ~/.config/bash
 # [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
 #─────────────Stealth────────────
-stealth=${stealth:-0}
+#stealth=${stealth:-0}
+stealth="1"
 #─────────────Fetch────────────
 if [ "$stealth" -eq 1 ]; then
   # stealth: skip hyfetch, prefer fastfetch only

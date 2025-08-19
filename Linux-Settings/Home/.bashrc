@@ -297,11 +297,11 @@ gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" }
 lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push }
 navibestmatch() { LC_ALL=C navi --query "$1" --best-match }
 
-touch() { 
+touch() {
   mkdir -p "$(dirname "$1")" && touch "$1"
 }
 
-symbreak() { find -L "${1:-.}" -type l }
+symbreak() { find -L "${1:-.}" -type l; }
 
 #────────────Aliases────────────
 # Enable aliases to be sudo’ed
@@ -313,7 +313,7 @@ alias ed='$EDITOR'
 alias mi='$EDITOR'
 alias smi='\sudo $EDITOR'
 # Rerun last cmd as sudo
-please() { sudo "$(fc -ln -1)" }
+please() { sudo "$(fc -ln -1)"; }
 
 alias pacman='sudo pacman --noconfirm --needed --color=auto'
 alias paru='paru --skipreview --noconfirm --needed'
@@ -378,7 +378,7 @@ has procs && alias ps='procs'
 # Dust (du replacement)
 if has dust; then
   alias du='dust'
-  dustd() { 
+  dustd() {
     LC_ALL=C dust -bP -T $(nproc 2>/dev/null) $1 2>/dev/null
   }
 fi
@@ -449,14 +449,14 @@ dedupe_path() {
   if (( BASH_VERSINFO[0] >= 4 )); then
     declare -A seen
     for dir in $PATH; do
-      [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s=${s:+$s:}$dir
+      [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s="${s:+$s:}$dir"
     done
   else
     for dir in $PATH; do
-      [[ -n $dir && :$s: != *":$dir:"* ]] && s=${s:+$s:}$dir
+      [[ -n $dir && :$s: != *":$dir:"* ]] && s="${s:+$s:}$dir"
     done
   fi
-  PATH=$s
+  PATH="$s"
   export PATH
 }
 dedupe_path 2>/dev/null

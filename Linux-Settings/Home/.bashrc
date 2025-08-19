@@ -462,3 +462,8 @@ fi
 # Deduplicate PATH (preserve order)
 dedupe_path(){ local IFS=: dir s; if ((BASH_VERSINFO[0]>=4)); then declare -A seen; for dir in $PATH; do [[ $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s=${s:+$s:}$dir; done; else for dir in $PATH; do [[ $dir && :$s: != *":$dir:"* ]] && s=${s:+$s:}$dir; done; fi; PATH=$s; export PATH; }
 dedupe_path
+
+# Import PATH to systemd
+if has systemctl; then
+  systemctl --user import-environment PATH;
+fi

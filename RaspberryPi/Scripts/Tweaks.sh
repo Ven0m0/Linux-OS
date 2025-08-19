@@ -83,10 +83,10 @@ y*) sudo apt-get remove -y "$packages" ;;
 
 sudo apt-get -y autoremove --purge && sudo apt-get clean
 
-https://github.com/salihmarangoz/UbuntuTweaks/blob/22.04/to_be_refactored/Performance.md
-$ sudo touch /usr/bin/zram.sh
-$ sudo chmod 555 /usr/bin/zram.sh
-$ sudo nano /usr/bin/zram.sh
+# https://github.com/salihmarangoz/UbuntuTweaks/blob/22.04/to_be_refactored/Performance.md
+# $ sudo touch /usr/bin/zram.sh
+# $ sudo chmod 555 /usr/bin/zram.sh
+# $ sudo nano /usr/bin/zram.sh
 ##########################
 ZRAM_MEMORY=2048
 ##########################

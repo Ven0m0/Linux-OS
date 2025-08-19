@@ -33,7 +33,7 @@ else
 fi
 if [[ -n "${fetch:-}" ]]; then
   LC_ALL=C LANG=C "$fetch" 2>/dev/null || :
-  unset fetch
+  unset fetch &>/dev/null
 fi
 #──────────── Prompt ────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org

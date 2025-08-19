@@ -6,7 +6,7 @@
     "batchinstall": true,
     "editor": "false",
     "sortby": "votes",
-    "bottomup": false,
+    "bottomup": true,
     "combinedupgrade": true,
     "git": "git clone --depth 1 --single-branch --shallow-submodules --filter='blob:none'",
     "doublelineresults": true

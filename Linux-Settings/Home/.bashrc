@@ -333,6 +333,9 @@ alias smi='\sudo $EDITOR'
 # Rerun last cmd as sudo
 please() { sudo "$(fc -ln -1)" }
 
+alias pacman='sudo pacman --noconfirm --needed --color=auto'
+alias paru='paru --skipreview --noconfirm --needed'
+
 alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
 alias mount='mount | column -t' # human readable format

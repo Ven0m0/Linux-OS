@@ -21,18 +21,20 @@ _ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_c
 #stealth=${stealth:-0}
 stealth="1"
 #──────────── Fetch ────────────
-if [ "$stealth" -eq 1 ]; then
-  # stealth: skip hyfetch, prefer fastfetch only
-  has fastfetch && fast_cmd=(fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread)
+# precompute reusable array
+fast_cmd=(fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread)
+if [ "${stealth:-0}" -eq 1 ]; then
+  fetch_cmd=("${fast_cmd[@]}")
 else
   if has hyfetch; then
     fetch_cmd=(hyfetch -b fastfetch -m rgb -p transgender)
   elif has fastfetch; then
-    fetch_cmd="${fast_cmd[@]}"
+    fetch_cmd=("${fast_cmd[@]}")
   fi
 fi
-if [[ -n "${fetch_cmd[*]:-}" ]]; then
-  LC_ALL=C LANG=C "${fetch_cmd[@]}" 2>/dev/null || :
+if (( ${#fetch_cmd[@]:-0} )); then
+  #LC_ALL=C LANG=C "${fetch_cmd[@]}" 2>/dev/null || :
+  LC_ALL=C LANG=C "${fetch_cmd[@]}" &>/dev/null & disown 2>/dev/null || :
   unset fetch_cmd &>/dev/null
 fi
 #──────────── Prompt ────────────

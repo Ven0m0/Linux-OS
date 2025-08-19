@@ -23,17 +23,17 @@ stealth="1"
 #──────────── Fetch ────────────
 if [ "$stealth" -eq 1 ]; then
   # stealth: skip hyfetch, prefer fastfetch only
-  has fastfetch && fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
+  has fastfetch && fast_cmd=(fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread)
 else
   if has hyfetch; then
-    fetch="hyfetch -b fastfetch -m rgb -p transgender"
+    fetch_cmd=(hyfetch -b fastfetch -m rgb -p transgender)
   elif has fastfetch; then
-    fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
+    fetch_cmd="${fast_cmd[@]}"
   fi
 fi
-if [[ -n "${fetch:-}" ]]; then
-  LC_ALL=C LANG=C "$fetch" 2>/dev/null || :
-  unset fetch &>/dev/null
+if [[ -n "${fetch_cmd[*]:-}" ]]; then
+  LC_ALL=C LANG=C "${fetch_cmd[@]}" 2>/dev/null || :
+  unset fetch_cmd &>/dev/null
 fi
 #──────────── Prompt ────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
@@ -264,18 +264,14 @@ symbreak(){ find -L "${1:-.}" -type l; }
 has hyperfine && hypertest(){ LC_ALL=C hyperfine -w 20 -m 50 -i -S bash -- "$@"; }
 #──────────── Aliases ────────────
 # Enable aliases to be sudo’ed
-alias sudo="\sudo "
-alias doas="\doas "
-alias sudo-rs="\sudo-rs "
+alias sudo="sudo " sudo-rs="sudo-rs " doas="doas "
 alias mkdir="mkdir -p "
-alias ed='$EDITOR'
-alias mi='$EDITOR'
-alias smi='\sudo $EDITOR'
+alias ed='$EDITOR' mi='$EDITOR'
+alias smi='sudo $EDITOR'
 # Rerun last cmd as sudo
 please() { sudo "$(fc -ln -1)"; }
 
-alias pacman='sudo pacman --noconfirm --needed --color=auto'
-alias paru='paru --skipreview --noconfirm --needed'
+alias pacman='sudo pacman --noconfirm --needed --color=auto' paru='paru --skipreview --noconfirm --needed'
 
 alias cls='clear' c='clear'
 alias ping='ping -c 4' # Stops ping after 4 requests
@@ -313,45 +309,30 @@ else
   alias egrep='egrep --color=auto'
 fi
 
-alias mv='mv -i'
-alias cp='cp -i'
-alias ln='ln -i'
+alias mv='mv -i' cp='cp -i' ln='ln -i'
 alias rm='rm -I --preserve-root'
 alias rmd='rm -rf --preserve-root'
 alias chmod='chmod --preserve-root'
 alias chown='chown --preserve-root'
 alias chgrp='chgrp --preserve-root'
 
-alias h="history | grep "
-alias f="find . | grep "
+alias h="history | grep " f="find . | grep "
 # Search running processes
 alias p="ps aux | grep "
-alias topcpu="/bin/ps -eo pcpu,pid,user,args | sort -k 1 -r | head -10"
+alias topcpu="ps -eo pcpu,pid,user,args | sort -k 1 -r | head -10"
+alias disk='lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
+alias dir='dir --color=auto' vdir='vdir --color=auto'
 
 # fd (find replacement)
 has fd && alias find='fd'
-
 # Procs (ps replacement)
 has procs && alias ps='procs'
 
 # Dust (du replacement)
-if has dust; then
-  alias du='dust'
-  dustd() {
-    LC_ALL=C dust -bP -T $(nproc 2>/dev/null) $1 2>/dev/null
-  }
-fi
+has dust && alias du='dust'; dustd(){ LC_ALL=C dust -bP -T $(nproc 2>/dev/null) $1 2>/dev/null; }
 
 # Bottom (top replacement)
 has btm && alias top='btm' htop='btm'
-
-# Duf (df replacement)
-has duf && alias df='duf'
-
-alias dir='dir --color=auto'
-alias vdir='vdir --color=auto'
-
-alias disk='lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
 
 # DIRECTORY NAVIGATION
 alias ..="cd -- .."
@@ -360,10 +341,8 @@ alias ....="cd -- ../../.."
 alias ~="cd -- $HOME"
 alias cd-="cd -- -"
 
-alias py3='python3'
-alias py='python'
 # https://snarky.ca/why-you-should-use-python-m-pip/
-alias pip='python -m pip'
+alias pip='python -m pip' py3='python3' py='python'
 
 alias speedt='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -'
 #──────────── Bindings (readline) ────────────
@@ -404,7 +383,7 @@ elif has enhancd; then
 fi
 #──────────── End ────────────
 # Deduplicate PATH (preserve order)
-dedupe_path() {
+dedupe_path(){
   local IFS=: dir s
   if (( BASH_VERSINFO[0] >= 4 )); then
     declare -A seen

@@ -1,0 +1,8 @@
+# Single source-check
+# source_exists(){ [[ -f $1 ]] && . "$1"; }
+# Multiple source-check
+# source_exists(){ for f; do [[ -f $f ]] && . "$f"; done; }
+
+# [[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . "/etc/bash_completion"
+# Source all environment and shell scripts in ~/.config/bash
+# [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done

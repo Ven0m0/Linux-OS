@@ -260,18 +260,18 @@ sel() {
   [[ -e "$p" ]] || { printf 'sel: not found: %s\n' "$p" >&2; return 1; }
   if [[ -d "$p" ]]; then
     if command -v eza &>/dev/null; then
-      LC_ALL=C eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions -- "$p"
+      LC_ALL=C LANG=C eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions -- "$p"
     else
-      LC_ALL=C ls -a --color=auto --group-directories-first -- "$p"
+      LC_ALL=C LANG=C ls -a --color=auto --group-directories-first -- "$p"
     fi
   elif [[ -f "$p" ]]; then
     if command -v bat &>/dev/null; then
       local bn
       bn=$(basename -- "$p")
       # let bat handle paging; show only basename as file-name
-      LC_ALL=C LANG=C.UTF-8 bat -sp --color auto --file-name="$bn" -- "$p"
+      LC_ALL=C LANG=C bat -sp --color auto --file-name="$bn" -- "$p"
     else
-      cat -s -- "$p"
+      LC_ALL=C LANG=C cat -s -- "$p"
     fi
   else
     printf 'sel: not a file/dir: %s\n' "$p" >&2; return 1

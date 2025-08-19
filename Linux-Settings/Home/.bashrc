@@ -155,25 +155,23 @@ fi
 export FIGNORE=argo.lock
 
 if has qt6ct; then
-	export QT_QPA_PLATFORMTHEME='qt6ct'
+  QT_QPA_PLATFORMTHEME='qt6ct'
 elif has qt5ct; then
-  export QT_QPA_PLATFORMTHEME='qt5ct'
+  QT_QPA_PLATFORMTHEME='qt5ct'
 fi
-export QT_AUTO_SCREEN_SCALE_FACTOR=1
+export QT_AUTO_SCREEN_SCALE_FACTOR=1 QT_QPA_PLATFORMTHEME
 
 ### Apps
 # Wayland
 if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
-  export GDK_BACKEND=wayland QT_QPA_PLATFORM=wayland SDL_VIDEODRIVER=wayland ELECTRON_OZONE_PLATFORM_HINT=auto \
-  		 MOZ_ENABLE_WAYLAND=1 MOZ_ENABLE_XINPUT2=1 GTK_USE_PORTAL=1 _JAVA_AWT_WM_NONREPARENTING=1 QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+  export GDK_BACKEND=wayland QT_QPA_PLATFORM=wayland SDL_VIDEODRIVER=wayland ELECTRON_OZONE_PLATFORM_HINT=auto MOZ_ENABLE_WAYLAND=1 MOZ_ENABLE_XINPUT2=1 GTK_USE_PORTAL=1 _JAVA_AWT_WM_NONREPARENTING=1 QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 fi
 
 export CLICOLOR=1 LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
 
 # gpg (for Github) https://github.com/alfunx/.dotfiles/blob/master/.profile
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids
-export GPG_TTY="$(tty)" TZ="Europe/BerlinEurope/Berlin"
-
+export GPG_TTY="$(tty)" TZ="Europe/Berlin"
 
 # Build env
 has sccache && export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G RUSTC_WRAPPER=sccache
@@ -223,12 +221,14 @@ if has fzf; then
     . $HOME/.config/bash/completions/fzf_completion.bash 2>/dev/null
   else
     fzf --bash 2>/dev/null >|"$HOME/.config/bash/completions/fzf_completion.bash"
+  fi
 fi
 if has sk; then
   if [[ -f $HOME/.config/bash/completions/sk_completion.bash ]]; then
     . $HOME/.config/bash/completions/sk_completion.bash 2>/dev/null
   else
     sk --shell bash 2>/dev/null >|"$HOME/.config/bash/completions/sk_completion.bash"
+  fi
 fi
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
 # command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
@@ -442,10 +442,23 @@ elif has enhancd; then
 fi
 #────────────End────────────
 # Deduplicate PATH (preserve order)
-dedupe_path(){ local IFS=: dir s; if ((BASH_VERSINFO[0]>=4)); then declare -A seen; for dir in $PATH; do [[ $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s=${s:+$s:}$dir; done; else for dir in $PATH; do [[ $dir && :$s: != *":$dir:"* ]] && s=${s:+$s:}$dir; done; fi; PATH=$s; export PATH; }
-dedupe_path
-
-# Import PATH to systemd
+dedupe_path() {
+  local IFS=: dir s
+  if (( BASH_VERSINFO[0] >= 4 )); then
+    declare -A seen
+    for dir in $PATH; do
+      [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s=${s:+$s:}$dir
+    done
+  else
+    for dir in $PATH; do
+      [[ -n $dir && :$s: != *":$dir:"* ]] && s=${s:+$s:}$dir
+    done
+  fi
+  PATH=$s
+  export PATH
+}
+dedupe_path 2>/dev/null
+# Import PATH into systemd user environment if systemctl exists
 if has systemctl; then
-  systemctl --user import-environment PATH;
+  systemctl --user import-environment PATH &>/dev/null || :
 fi

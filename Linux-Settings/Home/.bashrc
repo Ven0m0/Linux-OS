@@ -378,7 +378,9 @@ has procs && alias ps='procs'
 # Dust (du replacement)
 if has dust; then
   alias du='dust'
-  has dust && dustd() { LC_ALL=C dust -bP -T $(nproc 2>/dev/null) $1 2>/dev/null }
+  dustd() { 
+    LC_ALL=C dust -bP -T $(nproc 2>/dev/null) $1 2>/dev/null
+  }
 fi
 
 # Bottom (top replacement)

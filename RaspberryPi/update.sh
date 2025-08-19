@@ -14,7 +14,7 @@ if has nala; then
   sudo nala clean
   sudo nala autoclean
   sudo nala autoremove
-elif has apt-fast; them
+elif has apt-fast; then
   sudo apt-fast update -y
   sudo apt-fast upgrade -y
   sudo apt-fast dist-upgrade -y

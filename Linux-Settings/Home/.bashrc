@@ -1,13 +1,14 @@
 # ~/.bashrc
 
 [[ $- != *i* ]] && return
-#──────────── Helpers────────────
+#──────────── Helpers ────────────
 has(){ LC_ALL=C command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x; x=$(LC_ALL=C type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Basename of command
 p(){ printf '%s\n' "$*" 2>/dev/null; } # Print-echo
 pe(){ printf '%b\n' "$*" 2>/dev/null; } # Print-echo for color
 _ifsource(){ [[ -f $1 ]]&& . "$1" 2>/dev/null; } # Source file if it exists
-# ─── Sourcing ───────────────────────────────────────────
+_prependpath() { [[ -d $1 ]] && [[ ":$PATH:" != *":$1:"* ]] && PATH="$1${PATH:+:$PATH}"; } # Only prepend if not already in PATH
+#──────────── Sourcing ────────────
 _ifsource "/etc/bashrc"
 _ifsource "$HOME/.bash_aliases"
 _ifsource "$HOME/.bash_functions"
@@ -16,11 +17,10 @@ _ifsource "$HOME/.funcs"
 _ifsource "$HOME/.config/Bash/bashenv"
 # Enable bash programmable completion features in interactive shells
 _ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_completion"
-
-#─────────────Stealth────────────
+#──────────── Stealth ────────────
 #stealth=${stealth:-0}
 stealth="1"
-#─────────────Fetch────────────
+#──────────── Fetch ────────────
 if [ "$stealth" -eq 1 ]; then
   # stealth: skip hyfetch, prefer fastfetch only
   has fastfetch && fetch="fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread"
@@ -35,17 +35,15 @@ if [[ -n "${fetch:-}" ]]; then
   LC_ALL=C LANG=C "$fetch" 2>/dev/null || :
   unset fetch
 fi
-#─────────────Prompt────────────
+#──────────── Prompt ────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 HISTSIZE=10000 HISTFILESIZE=$HISTSIZE
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:printf:exit:history:bash:fish:?:??"
 HISTTIMEFORMAT='%F %T '
 HISTFILE="$HOME/.bash_history"
-PROMPT_DIRTRIM=2
-#PROMPT_COMMAND="history -a"
-PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
-configure_prompt() {
+PROMPT_DIRTRIM=2 PROMPT_COMMAND="history -a"
+configure_prompt(){
   local C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' \
     C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]' \
     USERN="${C_USER}\u${C_RESET}" HOSTL="${C_HOST}\h${C_RESET}" YLW='\e[33m'
@@ -55,7 +53,6 @@ configure_prompt() {
     [[ "$USER" = "root" ]] && USERN="${C_ROOT}\u${C_RESET}"
     [[ -z "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
     PS1="[${C_USER}\u${C_RESET}@${HOSTL}»${C_PATH}\w${C_RESET}] \$ "
-    export PS1
   fi
   # Only add mommy if not in stealth mode and not already present in PROMPT_COMMAND
   if has mommy && [ "${stealth:-0}" -ne 1 ] && [[ $(echo "$PROMPT_COMMAND") != *"mommy"* ]]; then
@@ -66,8 +63,8 @@ configure_prompt() {
   fi
 }
 LC_ALL=C LANG=C configure_prompt 2>/dev/null
-#────────────Core────────────
-export CDPATH=".:$HOME:/"
+#──────────── Core ────────────
+CDPATH=".:$HOME:/"
 ulimit -c 0 &>/dev/null # disable core dumps
 shopt -s histappend cmdhist checkwinsize dirspell cdable_vars\
          cdspell autocd hostcomplete no_empty_cmd_completion &>/dev/null
@@ -84,33 +81,15 @@ export \
   XDG_DATA_HOME="${XDG_DATA_HOME:=$HOME/.local/share}" \
   XDG_STATE_HOME="${XDG_STATE_HOME:=$HOME/.local/state}" \
   XDG_CACHE_HOME="${XDG_CACHE_HOME:=$HOME/.cache}"
-
-#────────────Env────────────
+#──────────── Env ────────────
 _ifsource "$HOME/.cargo/env"
-# Bins
-[[ -d "${HOME}/bin" && ":$PATH:" != *":${HOME}/bin:"* ]] && export PATH="${HOME}/bin${PATH:+:$PATH}"
-
-_prependpath() {
-    # Only prepend if not already in PATH
-    [[ -d $1 ]] && [[ ":$PATH:" != *":$1:"* ]] && PATH="$1${PATH:+:$PATH}"
-}
 _prependpath "$HOME/.local/bin"
 _prependpath "$HOME/bin"
-export PATH
+#export PATH # We export path in "dedupe_path"
 
 # Make less more friendly for non-text input files, see lesspipe(1)
 [[ -x /usr/bin/lesspipe ]] && eval "$(SHELL=/bin/sh lesspipe 2>/dev/null)"
 export LESS_TERMCAP_md=$'\e[01;31m' LESS_TERMCAP_me=$'\e[0m' LESS_TERMCAP_us=$'\e[01;32m' LESS_TERMCAP_ue=$'\e[0m' LESS_TERMCAP_so=$'\e[45;93m' LESS_TERMCAP_se=$'\e[0m'
-
-# Wget
-if [[ -f $HOME/.config/wget/wgetrc ]]; then
-  WGETRC="$HOME/.config/wget/wgetrc"
-elif [[ -f $HOME/wgetrc ]]; then
-  WGETRC="${WGETRC:-$HOME/wgetrc}"
-fi
-export WGETRC CURL_HOME="$HOME"
-# Enable settings for wget
-has wget && wget() { command wget-cnv --hsts-file="$HOME/.cache/wget-hsts" "$@"; }
 
 # Fastest way to set valid editor with fallback
 EDITOR="$(command -v micro 2>/dev/null)"; EDITOR="${EDITOR##*/}"; EDITOR="${EDITOR:-nano}"
@@ -119,30 +98,37 @@ export EDITOR VISUAL="$EDITOR" VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDI
 # Delta pager
 has delta && { export GIT_PAGER=delta; has batdiff || has batdiff.sh && export BATDIFF_USE_DELTA=true; }
 
-has batpipe && export BATPIPE=color
 if has bat; then
-  export PAGER=bat BAT_STYLE=auto BAT_THEME=ansi GIT_PAGER="${GIT_PAGER:-bat}"
+  export PAGER=bat BAT_STYLE=auto BAT_THEME=ansi BATPIPE=color GIT_PAGER="${GIT_PAGER:-bat}"
   alias cat="bat -spp --" bat="bat --color auto --"
 elif has batcat; then
-  export PAGER=batcat BAT_STYLE=auto BAT_THEME=ansi GIT_PAGER="${GIT_PAGER:-batcat}"
+  export PAGER=batcat BAT_STYLE=auto BAT_THEME=ansi BATPIPE=color GIT_PAGER="${GIT_PAGER:-batcat}"
   alias cat="batcat -spp --" bat="batcat -s --color auto --"
 elif has less; then
-  export PAGER=less LESSHISTFILE="-" LESS='-FRXns --mouse --use-color --no-init' GIT_PAGER="${GIT_PAGER:=less}"
+  export PAGER=less LESSHISTFILE="-" LESS='-FRXns --mouse --use-color --no-init' GIT_PAGER="${GIT_PAGER:-less}"
 fi
+
+# Wget
+if has wget; then
+  [[ -f $HOME/.config/wget/wgetrc ]] && WGETRC="$HOME/.config/wget/wgetrc"
+  export WGETRC="${WGETRC:-$HOME/wgetrc}" CURL_HOME="$HOME"
+  wget() { command wget-cnv --hsts-file="$HOME/.cache/wget-hsts" "$@"; }
+fi
+
 # fd‑ignore file
 if [[ -f $HOME/.ignore ]]; then
   export FD_IGNORE_FILE="${HOME}/.ignore"
 elif [[ -f $HOME/.gitignore ]]; then
   export FD_IGNORE_FILE="${HOME}/.gitignore"
 fi
-export FIGNORE=argo.lock
+export FIGNORE="argo.lock"
 
 if has qt6ct; then
-  QT_QPA_PLATFORMTHEME='qt6ct'
+  export QT_QPA_PLATFORMTHEME='qt6ct'
 elif has qt5ct; then
-  QT_QPA_PLATFORMTHEME='qt5ct'
+  export QT_QPA_PLATFORMTHEME='qt5ct'
 fi
-export QT_AUTO_SCREEN_SCALE_FACTOR=1 QT_QPA_PLATFORMTHEME
+export QT_AUTO_SCREEN_SCALE_FACTOR=1
 
 ### Apps
 # Wayland
@@ -165,7 +151,7 @@ has rust-parallel && export PROGRESS_STYLE=simple
 has cargo && export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
 # Python opt's
 export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
-#────────────Fuzzy finders────────────
+#──────────── Fuzzy finders ────────────
 fuzzy_finders() {
   if has fd; then
   	FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
@@ -183,61 +169,51 @@ fuzzy_finders() {
     FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index' \
     FZF_COMPLETION_PATH_OPTS="--info=inline --tiebreak=index --walker file,dir,follow,hidden" \
     FZF_COMPLETION_DIR_OPTS="--info=inline --tiebreak=index --walker dir,follow"
+  [[ ! -d $HOME/.config/bash/completions ]] && mkdir -p -- "$HOME/.config/bash/completions" &>/dev/null
   if has fzf; then
     unalias fzf &>/dev/null
 	[[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash"
+    if [[ ! -f $HOME/.config/bash/completions/fzf_completion.bash ]]; then
+	  fzf --bash 2>/dev/null >|"$HOME/.config/bash/completions/fzf_completion.bash"
+    fi
+    . $HOME/.config/bash/completions/fzf_completion.bash 2>/dev/null
   fi
   if has sk; then
     export SKIM_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
 	alias fzf='sk ' &>/dev/null
     [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash"
+    if [[ ! -f $HOME/.config/bash/completions/sk_completion.bash ]]; then
+	  sk --shell bash 2>/dev/null >|"$HOME/.config/bash/completions/sk_completion.bash"
+    fi
+    . $HOME/.config/bash/completions/sk_completion.bash 2>/dev/null
   fi
 }
 LC_ALL=C fuzzy_finders 2>/dev/null
-#────────────Completions────────────
-complete -cf sudo 2>/dev/null
-mkdir -p "$HOME/.config/bash/completions"
-if has fzf; then
-  if [[ -f $HOME/.config/bash/completions/fzf_completion.bash ]]; then
-    . $HOME/.config/bash/completions/fzf_completion.bash 2>/dev/null
-  else
-    fzf --bash 2>/dev/null >|"$HOME/.config/bash/completions/fzf_completion.bash"
-  fi
-fi
-if has sk; then
-  if [[ -f $HOME/.config/bash/completions/sk_completion.bash ]]; then
-    . $HOME/.config/bash/completions/sk_completion.bash 2>/dev/null
-  else
-    sk --shell bash 2>/dev/null >|"$HOME/.config/bash/completions/sk_completion.bash"
-  fi
-fi
+#──────────── Completions ────────────
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)"
-# command -v sk &>/dev/null && . <(sk --shell bash 2>/dev/null)
+# command -v sk &>/dev/null && eval "$(sk --shell bash 2>/dev/null)"
+complete -cf sudo 2>/dev/null
 has pay-respects && eval "$(pay-respects bash 2>/dev/null)"
 has batman && eval "$(batman --export-env 2>/dev/null)"
 has batgrep && alias batgrep="batgrep --rga -S --color "
 
 # Ghostty
-[[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]] && builtin . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
+[[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]] && . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"
 
 # Wikiman
 # [[ has wikiman && -f /usr/share/wikiman/widgets/widget.bash ]] && . /usr/share/wikiman/widgets/widget.bash
-# ─── Functions ─────────────────────────────────────────────
-alias which="command -v "
+#──────────── Functions ────────────
 # Having to set a new script as executable always annoys me.
-# Verbose version
-runch() {
+runch(){
   shopt -u nullglob nocaseglob; local s="$1"
   [[ $s ]] || { printf 'runch: missing script argument\nUsage: runch <script>\n' >&2; return 2; }
   [[ -f $s ]] || { printf 'runch: file not found: %s\n' "$s" >&2; return 1; }
   chmod u+x -- "$s" 2>/dev/null || { printf 'runch: cannot make executable: %s\n' "$s" >&2; return 1; }
   [[ $s == */* ]] && "$s" || "./$s"
 }
-# Short version (unreadable but should work the same)
-# runch(){shopt -u nullglob nocaseglob;[[ $1 ]]||{echo >&2 "Usage: runch $1";return 2};[[ -f $1 ]]||{echo >&2 "No such file: $1";return 1};chmod u+x -- "$1"||return;[[ $1==*/* ]]&&"$1"||./"$1";}
 
 # ls or cat
-sel() {
+sel(){
   local p="${1:-.}"
   [[ -e "$p" ]] || { printf 'sel: not found: %s\n' "$p" >&2; return 1; }
   if [[ -d "$p" ]]; then
@@ -272,17 +248,16 @@ sudo-command-line() {
 }
 bind -x '"\e\e": sudo-command-line'
 
-gcom() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1"; }
-lazyg() { LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push; }
-navibestmatch() { LC_ALL=C navi --query "$1" --best-match; }
+gcom(){ LC_ALL=C git add . && LC_ALL=C git commit -m "$1"; }
+lazyg(){ LC_ALL=C git add . && LC_ALL=C git commit -m "$1" && LC_ALL=C git push; }
+navibestmatch(){ LC_ALL=C navi --query "$1" --best-match; }
 
-touch() {
-  mkdir -p "$(dirname "$1")" && touch "$1"
-}
+touch(){ mkdir -p "$(dirname "$1")" && touch "$1"; }
 
-symbreak() { find -L "${1:-.}" -type l; }
+symbreak(){ find -L "${1:-.}" -type l; }
 
-#────────────Aliases────────────
+has hyperfine && hypertest(){ LC_ALL=C hyperfine -w 20 -m 50 -i -S bash -- "$@"; }
+#──────────── Aliases ────────────
 # Enable aliases to be sudo’ed
 alias sudo="\sudo "
 alias doas="\doas "
@@ -386,7 +361,7 @@ alias py='python'
 alias pip='python -m pip'
 
 alias speedt='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -'
-#────────────Bindings (readline)────────────
+#──────────── Bindings (readline) ────────────
 bind 'set completion-query-items 150'
 bind 'set page-completions off'
 bind 'set show-all-if-ambiguous on'
@@ -413,7 +388,7 @@ bind '"\C-a": beginning-of-line'
 bind '"\C-e": end-of-line'
 bind '"\e[1;5D": backward-word'
 bind '"\e[1;5C": forward-word'
-#────────────Jumping────────────
+#──────────── Jumping ────────────
 if has zoxide; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse-list --select-1 --exit-0"
   eval "$(zoxide init bash)"
@@ -422,7 +397,7 @@ elif has enhancd; then
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
   alias cd='enhancd'
 fi
-#────────────End────────────
+#──────────── End ────────────
 # Deduplicate PATH (preserve order)
 dedupe_path() {
   local IFS=: dir s

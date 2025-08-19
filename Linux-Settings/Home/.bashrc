@@ -11,16 +11,24 @@ pe(){ printf '%b\n' "$*" 2>/dev/null; }
 # source_exists(){ [[ -f $1 ]] && . "$1"; }
 # Multiple source-check
 # source_exists(){ for f; do [[ -f $f ]] && . "$f"; done; }
+source_exists() {
+  if [[ -f "$1" ]]; then
+    . "$1"
+  else
+    return 1
+  fi
+}
 # ─── Sourcing ───────────────────────────────────────────
-[[ -f /etc/bashrc ]] && . /etc/bashrc
-[[ -f $HOME/.bash_aliases ]] && . "$HOME/.bash_aliases"
-[[ -f $HOME/.bash_functions ]] && . "$HOME/.bash_functions"
-[[ -f $HOME/.fns ]] && . "$HOME/.fns"
-[[ -f $HOME/.funcs ]] && . "$HOME/.funcs"
-#[[ -f $HOME/.config/bash/bashenv.env ]] && . "$HOME/.config/Bash/bashenv"
-# Enable bash programmable completion features in interactive shells
-[[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . "/etc/bash_completion"
+source_exists "/etc/bashrc"
+source_exists "$HOME/.bash_aliases"
+source_exists "$HOME/.bash_functions"
+source_exists "$HOME/.fns"
+source_exists "$HOME/.funcs"
+source_exists "$HOME/.config/Bash/bashenv"
+source_exists "/usr/share/bash-completion/bash_completion" || source_exists "/etc/bash_completion"
 
+# Enable bash programmable completion features in interactive shells
+# [[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . "/etc/bash_completion"
 # Source all environment and shell scripts in ~/.config/bash
 # [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
 #─────────────Stealth────────────

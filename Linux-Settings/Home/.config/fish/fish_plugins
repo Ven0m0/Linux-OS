@@ -3,9 +3,8 @@ meaningful-ooo/sponge
 acomagu/fish-async-prompt
 archelaus/shell-mommy
 oh-my-fish/plugin-xdg
-oh-my-fish/plugin-ssh
+wk/plugin-ssh-term-helper
 patrickf1/fzf.fish
-gyakovlev/fish-fzy
 kyohsuke/fish-evalcache
 scaryrawr/cheat.sh.fish
 y3owk1n/fish-x
@@ -13,3 +12,4 @@ scaryrawr/zoxide.fish
 eth-p/fish-plugin-sudo
 babarot/enhancd
 eugene-babichenko/fish-codegen-cache
+rubiev/plugin-fuck

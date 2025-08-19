@@ -6,3 +6,12 @@
 # [[ -f /usr/share/bash-completion/bash_completion ]] && . /usr/share/bash-completion/bash_completion || [[ -f /etc/bash_completion ]] && . "/etc/bash_completion"
 # Source all environment and shell scripts in ~/.config/bash
 # [[ -d "$HOME/.config/bash" ]] && LC_ALL=C readarray -d '' files < <(find "$HOME/.config/bash" -maxdepth 1 -type f \( -name '*.env' -o -name '*.sh' -o -name '*.bash' \) -print0 2>/dev/null) && ((${#files[@]})) && for f in "${files[@]}"; do . "$f"; done
+
+# Pi3 fix low power message warning
+# [ $TERM != xterm-256color && $TERM != xterm-ghostty ]] && { setterm --msg off &>/dev/null; setterm --bfreq 0 &>/dev/null; }
+# setterm --linewrap on &>/dev/null
+
+# umask 0022 # Enforce default umask
+
+[[ -f $HOME/.cargo/env ]] && . "$HOME/.cargo/env"
+

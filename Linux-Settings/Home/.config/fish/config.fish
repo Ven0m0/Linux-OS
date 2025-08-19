@@ -6,14 +6,43 @@ set -gx __fish_git_prompt_showupstream none
 set -gx fish_term24bit 1
 function fish_title
 end
-# Run welcome message
-if type -q hyfetch >/dev/null 2>&1
-    set fetch hyfetch -b fastfetch -m rgb -p transgender
-else if type -q fastfetch >/dev/null 2>&1
-    set fetch fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread
+
+set -l stealth 1
+
+# choose fetch command depending on stealth and available tools
+if test "$stealth" = "1"
+  if type -q fastfetch
+    set -g fetch 'fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread'
+  else
+    set -e fetch
+  end
+else if type -q hyfetch
+  set -g fetch 'hyfetch -b fastfetch -m rgb -p transgender'
+else if type -q fastfetch
+  set -g fetch 'fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread'
+else
+  set -e fetch
 end
+# greeting runs the chosen fetch if present
 function fish_greeting
-    LC_ALL=C $fetch 2>/dev/null
+  if set -q fetch
+    LC_ALL=C LANG=C eval $fetch 2>/dev/null
+  end
+end
+
+# If stealth, try to disable mommy (plugin defines __call_mommy --on-event fish_postexec)
+if test "$stealth" = "1"
+  # remove it now if already defined
+  if functions -q __call_mommy
+    functions -e __call_mommy
+  end
+  # one-shot watcher: if mommy appears later, erase it and then remove this watcher
+  function __disable_mommy --on-event fish_postexec
+    if functions -q __call_mommy
+      functions -e __call_mommy
+    end
+    functions -e __disable_mommy
+  end
 end
 
 if test -d ~/.basher

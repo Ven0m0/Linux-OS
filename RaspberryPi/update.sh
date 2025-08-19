@@ -8,12 +8,12 @@ p() { printf "%s\n" "$@"; }
 #─────────────────────────────────────────
 sync; sudo -v
 if command -v nala &>/dev/null; then
-  sudo nala fetch -y
-  sudo nala update -y
-  sudo nala upgrade -y
-  sudo nala clean -y
-  sudo nala autoclean -y
-  sudo nala autoremove -y
+  sudo nala fetch
+  sudo nala update
+  sudo nala upgrade
+  sudo nala clean
+  sudo nala autoclean
+  sudo nala autoremove
 elif command -v apt-fast &>/dev/null; then
   sudo apt-fast update -y
   sudo apt-fast upgrade -y

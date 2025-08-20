@@ -88,6 +88,21 @@ export EDITOR VISUAL="$EDITOR" VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDI
 # https://wiki.archlinux.org/title/Locale
 unset LC_ALL; export LANG="${LANG:-C.UTF-8}" LANGUAGE="en_US:en:C:en_DE:de_DE" LC_MEASUREMENT=C LC_COLLATE=C LC_CTYPE=C
 # LC_MONETARY='en_DE.UTF-8' LC_TIME='en_DE.UTF-8'
+
+# Check for available locale
+if locale -a 2>/dev/null | \grep -qEi '^C\.UTF-8$|^C\.UTF8$'; then
+    export LANG=C.UTF-8
+elif locale -a 2>/dev/null | \grep -qi '^en_US\.UTF-8$'; then
+elif locale -a 2>/dev/null | \grep -Ei '^en_US\.UTF-8$|^en_US\.UTF8$'; then
+elif locale -a 2>/dev/null | \grep -Ei '^en_US\.UTF-8$|^en_US\.UTF8$'; then
+    export LANG=en_US.UTF-8
+else
+    export LANG=C
+fi
+LANG=$(locale -a 2>/dev/null | \grep -qEi '^C\.UTF-8$|^C\.UTF8$' && echo C.UTF-8 || (locale -a 2>/dev/null | grep -qi '^en_US\.UTF-8$' && echo en_US.UTF-8 || echo C)); export LANG LC_COLLATE=C LC_CTYPE=C
+
+
+
 # Delta pager
 has delta && { export GIT_PAGER=delta; has batdiff || has batdiff.sh && export BATDIFF_USE_DELTA=true; }
 

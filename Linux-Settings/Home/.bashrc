@@ -347,7 +347,7 @@ configure_prompt(){
 }
 configure_prompt
 #──────────── Fetch ────────────
-if [[ $- == *i* && $SHLVL -gt 2 ]]; then
+if [[ $SHLVL -gt 2 ]]; then
   if [ "${stealth:-0}" -eq 1 ]; then
     has fastfetch && LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null || true
   else

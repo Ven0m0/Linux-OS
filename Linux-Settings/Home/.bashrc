@@ -6,7 +6,7 @@ has(){ LC_ALL=C command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x; x=$(LC_ALL=C type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Basename of command
 p(){ printf '%s\n' "$*" 2>/dev/null; } # Print-echo
 pe(){ printf '%b\n' "$*" 2>/dev/null; } # Print-echo for color
-_ifsource(){ [[ -f "$1" ]] && . -- "$1" 2>/dev/null; } # Source file if it exists
+_ifsource(){ [[ -f "$1" ]] && . -- "$1" 2>/dev/null || :; } # Source file if it exists
 _prependpath(){ [[ -d "$1" ]] && [[ ":$PATH:" != *":$1:"* ]] && PATH="$1${PATH:+:$PATH}"; } # Only prepend if not already in PATH
 #──────────── Sourcing ────────────
 _ifsource "/etc/bashrc"
@@ -19,10 +19,10 @@ _for_each_source=(
 for _src in "${_for_each_source[@]}"; do
   _ifsource "$_src"
 done
-# completions
+# completions (quiet)
 _ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_completion"
 #──────────── Stealth ────────────
-#stealth=${stealth:-0}
+stealth=${stealth:-0}
 #stealth="1"
 #──────────── History / Prompt basics ────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
@@ -37,15 +37,17 @@ PROMPT_COMMAND="history -a"
 #──────────── Fetch ────────────
 # Run system info fetcher if available
 if [[ $- == *i* && $SHLVL -eq 1 ]]; then
-  if [[ "${stealth:-0}" -eq 1 ]]; then
-    command -v fastfetch &>/dev/null && LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null
+  if [ "${stealth:-0}" -eq 1 ]; then
+    if has fastfetch; then
+      LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null || :
+    fi
   else
-    if command -v hyfetch &>/dev/null; then
-      LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null
-    elif command -v fastfetch &>/dev/null; then
-      LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null
+    if has hyfetch; then
+      LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null || :
+    elif has fastfetch; then
+      LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null || :
     else
-      LC_ALL=C hostnamectl 2>/dev/null
+      LC_ALL=C hostnamectl 2>/dev/null || :
     fi
   fi
 fi
@@ -56,75 +58,76 @@ shopt -s histappend cmdhist checkwinsize dirspell cdable_vars \
          cdspell autocd hostcomplete no_empty_cmd_completion &>/dev/null
 # Disable Ctrl-s, Ctrl-q
 stty -ixon -ixoff -ixany &>/dev/null
-# https://github.com/perlun/dotfiles/blob/master/profile
-set +H # causes problems with git commit
+set +H  # disable history expansion that breaks some scripts
 # set -o vi # vi mode
 #──────────── Env ────────────
 _prependpath "$HOME/.local/bin"
 _prependpath "$HOME/bin"
 
 # Editor selection: prefer micro, fallback to nano
-_editor_cmd="$(command -v micro 2>/dev/null || true)"; _editor_cmd="${_editor_cmd##*/}"; EDITOR="${_editor_cmd:-nano}"
+_editor_cmd="$(command -v micro 2>/dev/null || :)"; _editor_cmd="${_editor_cmd##*/}"; EDITOR="${_editor_cmd:-nano}"
 export EDITOR VISUAL="$EDITOR" VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 
 # https://wiki.archlinux.org/title/Locale
 unset LC_ALL _editor_cmd
 export LANG="${LANG:-C.UTF-8}" \
-       LANGUAGE="en_US:en:C:de_DE" \
+       LANGUAGE="en_US:en:C" \
        LC_MEASUREMENT=C \
        LC_COLLATE=C \
        LC_CTYPE=C
 
 # Mimalloc & Jemalloc
-export MALLOC_CONF="metadata_thp:auto,tcache:true,background_thread:true,percpu_arena:percpu,trust_madvise:enabled"
-export _RJEM_MALLOC_CONF="$MALLOC_CONF"
 # https://github.com/microsoft/mimalloc/blob/main/docs/environment.html
-export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0 MIMALLOC_ALLOW_LARGE_OS_PAGES=1 MIMALLOC_PURGE_DELAY=25 MIMALLOC_ARENA_EAGER_COMMIT=2
+export MALLOC_CONF="metadata_thp:auto,tcache:true,background_thread:true,percpu_arena:percpu,trust_madvise:enabled"
+export _RJEM_MALLOC_CONF="$MALLOC_CONF" MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0 MIMALLOC_ALLOW_LARGE_OS_PAGES=1 MIMALLOC_PURGE_DELAY=25 MIMALLOC_ARENA_EAGER_COMMIT=2
 
-# Delta pager
-command -v delta &>/dev/null && { export GIT_PAGER=delta; command -v batdiff &>/dev/null || command -v batdiff.sh &>/dev/null && export BATDIFF_USE_DELTA=true; }
-
-if command -v bat &>/dev/null; then
+# Delta / bat integration
+if has delta; then
+  export GIT_PAGER=delta
+  if has batdiff || has batdiff.sh; then
+    export BATDIFF_USE_DELTA=true
+  fi
+fi
+if has bat; then
   export PAGER=bat BAT_STYLE=auto BAT_THEME=ansi BATPIPE=color GIT_PAGER="${GIT_PAGER:-bat}"
-  alias cat="bat -spp --" bat="bat --color auto --" 2>/dev/null
-  command -v batman &>/dev/null && eval "$(batman --export-env 2>/dev/null)" 2>/dev/null || :
-elif command -v less &>/dev/null; then
+  alias cat='bat -spp --'
+  alias bat='bat --color auto --'
+  has batman && eval "$(LC_ALL=C batman --export-env 2>/dev/null)" 2>/dev/null || true
+  has batgrep && alias batgrep='batgrep --rga -S --color 2>/dev/null' || true
+elif has less; then
   export PAGER=less LESSHISTFILE="-" LESS='-FRXns --mouse --use-color --no-init' GIT_PAGER="${GIT_PAGER:-less}"
 fi
-
-if command -v less &>/dev/null; then
+if has less; then
   export LESS_TERMCAP_md=$'\e[01;31m' LESS_TERMCAP_me=$'\e[0m' LESS_TERMCAP_us=$'\e[01;32m' LESS_TERMCAP_ue=$'\e[0m' LESS_TERMCAP_so=$'\e[45;93m' LESS_TERMCAP_se=$'\e[0m'
-  # Make less friendly for non-text input files
-  command -v lesspipe &>/dev/null && eval "$(SHELL=/bin/sh LC_ALL=C lesspipe 2>/dev/null)" 2>/dev/null || :
+  has lesspipe && eval "$(SHELL=/bin/sh LC_ALL=C lesspipe 2>/dev/null)" 2>/dev/null || true
 fi
 
-# XDG
+# XDG + misc
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:=$HOME/.config}" \
        XDG_DATA_HOME="${XDG_DATA_HOME:=$HOME/.local/share}" \
        XDG_STATE_HOME="${XDG_STATE_HOME:=$HOME/.local/state}" \
        XDG_CACHE_HOME="${XDG_CACHE_HOME:=$HOME/.cache}"
-
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids
+export INPUTRC="$HOME/.inputrc"
+export CURL_HOME="$HOME"
 export GPG_TTY="$(tty)" TZ="Europe/Berlin" CLICOLOR=1
-export INPUTRC="$HOME/.inputrc" CURL_HOME="$HOME" WGETRC="$HOME/wgetrc"
-
-if command -v cargo &>/dev/null; then
+  
+# Cargo / rustenv
+if has cargo; then
   _ifsource "$HOME/.cargo/env"
   export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
   _prependpath "${CARGO_HOME}/bin"
 fi
-
-export PYTHONOPTIMIZE=2 PYTHONIOENCODING=UTF-8 PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
-export FD_IGNORE_FILE="${HOME}/.ignore" FIGNORE="argo.lock" 
+export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
+export FD_IGNORE_FILE="${HOME}/.ignore" FIGNORE="argo.lock"
 export ZSTD_NBTHREADS=0 ELECTRON_OZONE_PLATFORM_HINT=auto _JAVA_AWT_WM_NONREPARENTING=1 GTK_USE_PORTAL=1
-if command -v qt6ct &>/dev/null; then
+
+# Wayland
+if has qt6ct; then
   export QT_QPA_PLATFORMTHEME='qt6ct'
-elif command -v qt5ct &>/dev/null; then
+elif has qt5ct; then
   export QT_QPA_PLATFORMTHEME='qt5ct'
 fi
-
-### Apps
-# Wayland
 if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
   export GDK_BACKEND=wayland QT_QPA_PLATFORM=wayland SDL_VIDEODRIVER=wayland CLUTTER_BACKEND=wayland \
     MOZ_ENABLE_WAYLAND=1 MOZ_ENABLE_XINPUT2=1 QT_WAYLAND_DISABLE_WINDOWDECORATION=1 QT_AUTO_SCREEN_SCALE_FACTOR=1
@@ -132,54 +135,48 @@ fi
 
 export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
 #──────────── Fuzzy finders ────────────
-#──────────── Fuzzy finders ────────────
-fuzzy_finders() {
+fuzzy_finders(){
   local FIND_CMD
-  if command -v fd >/dev/null 2>&1; then
+  if has fd; then
     FIND_CMD='fd -tf -F --hidden --exclude .git --exclude node_modules --exclude target'
-  elif command -v rg >/dev/null 2>&1; then
+  elif has rg; then
     FIND_CMD='rg --files --hidden --glob "!.git" --glob "!node_modules" --glob "!target"'
   else
     FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
   fi
-  export FZF_DEFAULT_COMMAND="$FIND_CMD"
-  export FZF_DEFAULT_OPTS="--info=inline --layout=reverse --tiebreak=index --height=70%"
-  export FZF_CTRL_T_COMMAND="$FIND_CMD"
-  export FZF_CTRL_T_OPTS="--select-1 --exit-0 --preview 'bat --color=always --style=numbers --line-range=:250 {} || cat {} 2>/dev/null'"
-  export FZF_CTRL_R_OPTS="--select-1 --exit-0 --no-sort --exact --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'"
-  export FZF_ALT_C_OPTS="--select-1 --exit-0 --walker-skip .git,node_modules,target --preview 'tree -C {} | head -200'"
-  export FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index'
-  export FZF_COMPLETION_PATH_OPTS="--info=inline --tiebreak=index --walker file,dir,follow,hidden"
-  export FZF_COMPLETION_DIR_OPTS="--info=inline --tiebreak=index --walker dir,follow"
-  mkdir -p -- "$HOME/.config/bash/completions" 2>/dev/null
-  if command -v fzf >/dev/null 2>&1; then
-    unalias fzf 2>/dev/null || true
-    [[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash" 2>/dev/null
+  FZF_DEFAULT_COMMAND="$FIND_CMD" FZF_CTRL_T_COMMAND="$FIND_CMD"
+  FZF_DEFAULT_OPTS="--info=inline --layout=reverse --tiebreak=index --height=70%"
+  FZF_CTRL_T_OPTS="--select-1 --exit-0 --preview 'bat -n --color=auto  --line-range=:250 -- {} 2>/dev/null || cat -- {} 2>/dev/null'"
+  FZF_CTRL_R_OPTS="--select-1 --exit-0 --no-sort --exact --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'"
+  FZF_ALT_C_OPTS="--select-1 --exit-0 --walker-skip .git,node_modules,target --preview 'tree -C {} 2>/dev/null | head -200'"
+  FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index'
+  FZF_COMPLETION_PATH_OPTS="--info=inline --tiebreak=index --walker file,dir,follow,hidden"
+  FZF_COMPLETION_DIR_OPTS="--info=inline --tiebreak=index --walker dir,follow"
+  export FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_DEFAULT_OPTS FZF_CTRL_T_OPTS \
+          FZF_CTRL_R_OPTS FZF_ALT_C_OPTS FZF_COMPLETION_OPTS FZF_COMPLETION_PATH_OPTS FZF_COMPLETION_DIR_OPTS
+  [[ ! -d $HOME/.config/bash/completions ]] && mkdir -p -- "$HOME/.config/bash/completions" &>/dev/null || :
+  if has fzf; then
+    [[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash" 2>/dev/null || :
     if [[ ! -f $HOME/.config/bash/completions/fzf_completion.bash ]]; then
       fzf --bash 2>/dev/null >| "$HOME/.config/bash/completions/fzf_completion.bash"
     fi
-    . "$HOME/.config/bash/completions/fzf_completion.bash" 2>/dev/null || true
+    . "$HOME/.config/bash/completions/fzf_completion.bash" 2>/dev/null || :
   fi
-  if command -v sk >/dev/null 2>&1; then
+  if has sk; then
     export SKIM_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
-    alias fzf='sk ' 2>/dev/null || true
-    [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash" 2>/dev/null
+    [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash" 2>/dev/null || :
     if [[ ! -f $HOME/.config/bash/completions/sk_completion.bash ]]; then
       sk --shell bash 2>/dev/null >| "$HOME/.config/bash/completions/sk_completion.bash"
     fi
-    . "$HOME/.config/bash/completions/sk_completion.bash" 2>/dev/null || true
+    . "$HOME/.config/bash/completions/sk_completion.bash" 2>/dev/null || :
   fi
 }
 fuzzy_finders
 #──────────── Completions ────────────
-# command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)" 2>/dev/null
-# command -v sk &>/dev/null && eval "$(sk --shell bash 2>/dev/null)" 2>/dev/null
 complete -cf sudo 2>/dev/null
 command -v pay-respects &>/dev/null && eval "$(LC_ALL=C pay-respects bash 2>/dev/null)" 2>/dev/null || :
-
 # Ghostty
 [[ $TERM == xterm-ghostty && -e "${GHOSTTY_RESOURCES_DIR:-}/shell-integration/bash/ghostty.bash" ]] && . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" 2>/dev/null || :
-
 # Wikiman
 # [[ command -v wikiman &>/dev/null && -f /usr/share/wikiman/widgets/widget.bash ]] && . "/usr/share/wikiman/widgets/widget.bash" 2>/dev/null
 #──────────── Functions ────────────
@@ -196,13 +193,13 @@ sel(){
   local p="${1:-.}"
   [[ -e "$p" ]] || { printf 'sel: not found: %s\n' "$p" >&2; return 1; }
   if [[ -d "$p" ]]; then
-    if command -v eza &>/dev/null; then
+    if has eza; then
       command eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions -- "$p"
     else
       command ls -a --color=auto --group-directories-first -- "$p"
     fi
   elif [[ -f "$p" ]]; then
-    if command -v bat >/dev/null 2>&1; then
+    if has bat; then
       local bn
       bn=$(basename -- "$p")
       command bat -sp --color auto --file-name="$bn" -- "$p"
@@ -241,48 +238,42 @@ alias ed='$EDITOR' mi='$EDITOR' smi='sudo $EDITOR'
 alias please='sudo !!'
 alias pacman='sudo pacman --noconfirm --needed --color=auto'
 alias paru='paru --skipreview --noconfirm --needed'
-
 alias cls='clear' c='clear'
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
 
-if command -v eza &>/dev/null; then
-  alias ls='LC_ALL=C \eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
-  alias la='\eza -a --color=auto --group-directories-first --icons=auto --smart-group'
-  alias ll='\eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group'
-  alias lt='\eza -aT --color=auto --group-directories-first --icons=auto --smart-group'
+if has eza; then
+  alias ls='eza --color=auto --group-directories-first --icons=auto'
+  alias la='eza -A --color=auto --group-directories-first --icons=auto'
+  alias ll='eza -Al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
+  alias lt='eza -AT -L 3 --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
 else
-  alias ls='LC_ALL=C \ls --color=auto --group-directories-first'
-  alias la='\ls --color=auto --group-directories-first -a'
-  alias ll='\ls --color=auto --group-directories-first -lh'
-  alias lt='\ls --color=auto --group-directories-first -lhAR'
+  alias ls='ls --color=auto --group-directories-first -C'
+  alias la='ls --color=auto --group-directories-first -A'
+  alias ll='ls --color=auto --group-directories-first -oh'
+  alias lt='ls --color=auto --group-directories-first -oghAt'
 fi
+alias grep='grep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias egrep='egrep --color=auto'
 
-if command -v rg &>/dev/null; then
-  alias grep='LC_ALL=C \rg -S --color=auto'
-  alias fgrep='\rg -SF --color=auto'
-  alias egrep='\rg -Se --color=auto'
-  alias rg='LC_ALL=C \rg -NFS --mmap --no-unicode --engine=default --no-stats --color=auto'
-elif command -v ugrep &>/dev/null; then
-  alias grep='LC_ALL=C \ugrep --color=auto'
-  alias fgrep='\ugrep -F --color=auto'
-  alias egrep='\ugrep -E --color=auto'
-  alias ugrep='LC_ALL=C \ugrep --color=auto' ug='LC_ALL=C \ug -sjFU --color=auto'
-else
-  alias grep='LC_ALL=C \grep --color=auto'
-  alias fgrep='\fgrep --color=auto'
-  alias egrep='\egrep --color=auto'
-fi
+alias mv='\mv -i' 
+alias cp='cp -i' 
+alias ln='ln -i'
+alias rm='rm -I --preserve-root' 
+alias rmd='rm -rf --preserve-root'
+alias chmod='chmod --preserve-root' 
+alias chown='chown --preserve-root' 
+alias chgrp='chgrp --preserve-root'
 
-alias mv='\mv -i' cp='cp -i' ln='ln -i'
-alias rm='\rm -I --preserve-root' rmd='\rm -rf --preserve-root'
-alias chmod='\chmod --preserve-root' chown='\chown --preserve-root' chgrp='\chgrp --preserve-root'
-
-alias h="history | LC_ALL=C grep " f="LC_ALL=C find . | LC_ALL=C grep " p="ps aux | LC_ALL=C grep "
+alias histl="history | LC_ALL=C grep " 
+alias findl="LC_ALL=C find . | LC_ALL=C grep " 
+alias psl="ps aux | LC_ALL=C grep "
 alias topcpu="ps -eo pcpu,pid,user,args | LC_ALL=C sort -k 1 -r | head -10"
-alias disk='LC_ALL=C lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
-alias dir='dir --color=auto' vdir='vdir --color=auto'
+alias diskl='LC_ALL=C lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
+alias dir='dir --color=auto' 
+alias vdir='vdir --color=auto'
 
 # DIRECTORY NAVIGATION
 alias ..="cd -- .."

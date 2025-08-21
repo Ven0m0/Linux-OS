@@ -7,9 +7,8 @@ set -gx fish_term24bit 1
 function fish_title
 end
 
-set -l stealth 1
-
 # choose fetch command depending on stealth and available tools
+# set -l stealth 1
 if test "$stealth" = "1"
   if type -q fastfetch
     set -g fetch 'fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread'

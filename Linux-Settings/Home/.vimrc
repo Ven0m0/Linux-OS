@@ -6,6 +6,7 @@ filetype plugin indent on
 syntax on
 set encoding=utf-8
 set background=dark
+set t_Co=256
 set termguicolors
 set number
 set relativenumber
@@ -33,7 +34,8 @@ set scrolloff=8         "Start scrolling when we're 8 lines away from margins
 set sidescrolloff=15
 set sidescroll=1
 set lazyredraw          " Don't redraw while executing macros (good performance config)
-
+" Use system clipboard for yanking and pasting
+set clipboard=unnamed
 " ================ Turn Off Swap Files ==============
 set noswapfile
 set nobackup
@@ -86,3 +88,6 @@ nnoremap <leader>h <C-w>h
 nnoremap <leader>j <C-w>j
 nnoremap <leader>k <C-w>k
 nnoremap <leader>l <C-w>l
+
+" Don't expand tabs for Makefile
+autocmd FileType make setlocal noexpandtab

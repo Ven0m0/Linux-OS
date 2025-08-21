@@ -17,11 +17,6 @@ IFS=$'\n\t'
 #  - Replaces file only if the optimized output is smaller
 #  - Prefers fd/fdfind for discovery; falls back to find
 #  - Prefers rust-parallel if present; falls back to xargs -P
-#
-# Notes:
-#  - rimage is primarily a Rust library/crate (not always an installed CLI).
-#    If you want rimage integration you'll need a wrapper binary that calls its API. :contentReference[oaicite:1]{index=1}
-#  - flaca is a great lossless batch tool for jpeg/png and is used when available. :contentReference[oaicite:2]{index=2}
 # ----------------------------
 
 # Defaults

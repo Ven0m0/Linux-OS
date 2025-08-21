@@ -2,8 +2,8 @@
 
 [[ $- != *i* ]] && return
 #──────────── Helpers ────────────
-has(){ LC_ALL=C LANG=C command -v -- "$1" &>/dev/null; } # Check for command
-hasname(){ local x; x=$(LC_ALL=C LANG=C type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Basename of command
+has(){ LC_ALL=C command -v -- "$1" &>/dev/null; } # Check for command
+hasname(){ local x; x=$(LC_ALL=C type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Basename of command
 p(){ printf '%s\n' "$*" 2>/dev/null; } # Print-echo
 pe(){ printf '%b\n' "$*" 2>/dev/null; } # Print-echo for color
 _ifsource(){ [[ -f "$1" ]] && . -- "$1" 2>/dev/null; } # Source file if it exists
@@ -23,14 +23,16 @@ _ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_c
 #──────────── Fetch ────────────
 # Run system info fetcher if available
 if [ "${stealth:-0}" -eq 1 ]; then
-  if command -v fastfetch &>/dev/null; then
-    LC_ALL=C LANG=C fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread
+  if has fastfetch; then
+    LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null
   fi
 else
-  if command -v hyfetch &>/dev/null; then
-    LC_ALL=C LANG=C hyfetch -b fastfetch -m rgb -p transgender
-  elif command -v fastfetch &>/dev/null; then
-    LC_ALL=C LANG=C fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread
+  if has hyfetch; then
+    LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null
+  elif has fastfetch; then
+    LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null
+  else
+    LC_ALL=C hostnamectl 2>/dev/null
   fi
 fi
 #──────────── Prompt ────────────
@@ -46,7 +48,7 @@ configure_prompt(){
     C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]' \
     USERN="${C_USER}\u${C_RESET}" HOSTL="${C_HOST}\h${C_RESET}" YLW='\[\e[33m\]'
   if has starship; then
-    eval "$(LC_ALL=C LANG=C starship init bash 2>/dev/null)" &>/dev/null
+    eval "$(LC_ALL=C starship init bash 2>/dev/null)" &>/dev/null
   else
     [[ "$USER" = "root" ]] && USERN="${C_ROOT}\u${C_RESET}"
     [[ -z "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
@@ -60,7 +62,7 @@ configure_prompt(){
     PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
   fi
 }
-LC_ALL=C LANG=C configure_prompt 2>/dev/null
+LC_ALL=C configure_prompt 2>/dev/null
 #──────────── Core ────────────
 CDPATH=".:$HOME:/"
 ulimit -c 0 &>/dev/null # disable core dumps
@@ -120,7 +122,7 @@ fi
 if has less; then
   export LESS_TERMCAP_md=$'\e[01;31m' LESS_TERMCAP_me=$'\e[0m' LESS_TERMCAP_us=$'\e[01;32m' LESS_TERMCAP_ue=$'\e[0m' LESS_TERMCAP_so=$'\e[45;93m' LESS_TERMCAP_se=$'\e[0m'
   # Make less friendly for non-text input files
-  has lesspipe && eval "$(SHELL=/bin/sh LC_ALL=C LANG=C lesspipe 2>/dev/null)" 2>/dev/null
+  has lesspipe && eval "$(SHELL=/bin/sh LC_ALL=C lesspipe 2>/dev/null)" 2>/dev/null
 fi
 
 # XDG
@@ -230,7 +232,7 @@ fuzzy_finders() {
     . $HOME/.config/bash/completions/sk_completion.bash 2>/dev/null
   fi
 }
-LC_ALL=C LANG=C fuzzy_finders 2>/dev/null
+LC_ALL=C fuzzy_finders 2>/dev/null
 #──────────── Completions ────────────
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)" 2>/dev/null
 # command -v sk &>/dev/null && eval "$(sk --shell bash 2>/dev/null)" 2>/dev/null
@@ -258,18 +260,18 @@ sel(){
   [[ -e "$p" ]] || { printf 'sel: not found: %s\n' "$p" >&2; return 1; }
   if [[ -d "$p" ]]; then
     if command -v eza &>/dev/null; then
-      LC_ALL=C LANG=C command eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions -- "$p"
+      LC_ALL=C command eza -al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions -- "$p"
     else
-      LC_ALL=C LANG=C command ls -a --color=auto --group-directories-first -- "$p"
+      LC_ALL=C command ls -a --color=auto --group-directories-first -- "$p"
     fi
   elif [[ -f "$p" ]]; then
     if command -v bat &>/dev/null; then
       local bn
       bn=$(basename -- "$p")
       # let bat handle paging; show only basename as file-name
-      LC_ALL=C LANG=C command bat -sp --color auto --file-name="$bn" -- "$p"
+      LC_ALL=C command bat -sp --color auto --file-name="$bn" -- "$p"
     else
-      LC_ALL=C LANG=C command cat -s -- "$p"
+      LC_ALL=C command cat -s -- "$p"
     fi
   else
     printf 'sel: not a file/dir: %s\n' "$p" >&2; return 1
@@ -288,14 +290,14 @@ sudo-command-line() {
 }
 bind -x '"\e\e": sudo-command-line'
 
-gcom(){ local LC_ALL=C LANG=C; command git add . && command git commit -m "$1"; }
-lazyg(){ local LC_ALL=C LANG=C; command git add . && command git commit -m -- "$1" && command git push; }
-navibestmatch(){ local LC_ALL=C LANG=C; command navi --query "$1" --best-match; }
-symbreak(){ local LC_ALL=C LANG=C; command find -L "${1:-.}" -type l; }
+gcom(){ local LC_ALL=C; command git add . && command git commit -m "$1"; }
+lazyg(){ local LC_ALL=C; command git add . && command git commit -m -- "$1" && command git push; }
+navibestmatch(){ local LC_ALL=C; command navi --query "$1" --best-match; }
+symbreak(){ local LC_ALL=C; command find -L "${1:-.}" -type l; }
 
 has hyperfine && hypertest(){ LC_ALL=C command hyperfine -w 25 -m 50 -i -- "$@"; }
 
-touch(){ local LC_ALL=C LANG=C; command mkdir -p "$(dirname -- "$1")" && command touch -- "$1"; }
+touch(){ local LC_ALL=C; command mkdir -p "$(dirname -- "$1")" && command touch -- "$1"; }
 #──────────── Aliases ────────────
 # Enable aliases to be sudo’ed
 alias sudo="sudo " sudo-rs="sudo-rs " doas="doas "
@@ -351,7 +353,7 @@ alias h="history | LC_ALL=C grep " f="LC_ALL=C find . | LC_ALL=C grep "
 # Search running processes
 alias p="ps aux | LC_ALL=C grep "
 alias topcpu="ps -eo pcpu,pid,user,args | LC_ALL=C sort -k 1 -r | head -10"
-alias disk='LC_ALL=C LANG=C lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
+alias disk='LC_ALL=C lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'
 alias dir='dir --color=auto' vdir='vdir --color=auto'
 
 # fd (find replacement)
@@ -362,7 +364,7 @@ has procs && alias ps='procs'
 # Dust (du replacement)
 if has dust; then
   alias du='dust'
-  dustd(){ local LC_ALL=C LANG=C; command dust -bP -T "$(LC_ALL=C LANG=C nproc || echo 1)" -- "${1:-.}" 2>/dev/null; }
+  dustd(){ local LC_ALL=C; command dust -bP -T "$(LC_ALL=C nproc || echo 1)" -- "${1:-.}" 2>/dev/null; }
 fi
 
 # Bottom (top replacement)
@@ -374,7 +376,7 @@ alias ...="cd -- ../.."
 alias ....="cd -- ../../.."
 alias ~="cd -- $HOME"
 alias cd-="cd -- -"
-alias git..='cd $(LC_ALL=C LANG=C git rev-parse --show-toplevel 2>/dev/null || echo ".")'
+alias git..='cd $(LC_ALL=C git rev-parse --show-toplevel 2>/dev/null || echo ".")'
 
 # https://snarky.ca/why-you-should-use-python-m-pip/
 alias pip='python -m pip' py3='python3' py='python'
@@ -410,7 +412,7 @@ bind '"\e[1;5C": forward-word'
 #──────────── Jumping ────────────
 if has zoxide; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse --select-1 --exit-0"
-  eval "$(LC_ALL=C LANG=C zoxide init bash 2>/dev/null)" 2>/dev/null; alias cd='z'
+  eval "$(LC_ALL=C zoxide init bash 2>/dev/null)" 2>/dev/null; alias cd='z'
 elif has enhancd; then
   export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"; alias cd='enhancd'
 fi
@@ -423,7 +425,7 @@ dedupe_path(){
   done
   [[ -n $s ]] && export PATH="$s"
 }
-LC_ALL=C LANG=C dedupe_path 2>/dev/null
+LC_ALL=C dedupe_path 2>/dev/null
 # Import PATH into systemd user environment if systemctl exists
 if has systemctl; then
   command systemctl --user import-environment PATH &>/dev/null || :

@@ -19,24 +19,19 @@ _ifsource "$HOME/.config/Bash/bashenv"
 _ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_completion"
 #──────────── Stealth ────────────
 #stealth=${stealth:-0}
-stealth="1"
+#stealth="1"
 #──────────── Fetch ────────────
-# fetch (precompute only if fastfetch exists; background + disown)
-if has fastfetch; then
-  fast_cmd=(fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread)
-fi
+# Run system info fetcher if available
 if [ "${stealth:-0}" -eq 1 ]; then
-  [[ ${#fast_cmd[@]:-0} -gt 0 ]] && fetch_cmd=("${fast_cmd[@]}")
-else
-  if has hyfetch; then
-    fetch_cmd=(hyfetch -b fastfetch -m rgb -p transgender)
-  elif [[ ${#fast_cmd[@]:-0} -gt 0 ]]; then
-    fetch_cmd=("${fast_cmd[@]}")
+  if command -v fastfetch &>/dev/null; then
+    LC_ALL=C LANG=C fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread
   fi
-fi
-if (( ${#fetch_cmd[@]:-0} )); then
-  LC_ALL=C LANG=C "${fetch_cmd[@]}" >/dev/null 2>&1 & disown 2>/dev/null || :
-  unset fetch_cmd fast_cmd
+else
+  if command -v hyfetch &>/dev/null; then
+    LC_ALL=C LANG=C hyfetch -b fastfetch -m rgb -p transgender
+  elif command -v fastfetch &>/dev/null; then
+    LC_ALL=C LANG=C fastfetch --detect-version false --users-myself-only --localip-compact --ds-force-drm --thread
+  fi
 fi
 #──────────── Prompt ────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
@@ -181,7 +176,7 @@ export MESA_DEBUG=0 MESA_NO_ERROR=1 \
   WINE_NO_WM_DECORATION=1 WINE_PREFER_SDL_INPUT=1 \
   PROTON_ENABLE_WAYLAND=1 PROTON_NO_WM_DECORATION=1 PROTON_PREFER_SDL_INPUT=1 PROTON_ENABLE_NVAPI=1 PROTON_ENABLE_NGX_UPDATER=1 PROTON_FSR4_UPGRADE=1
 
-if has dircolors; then  
+if has dircolors; then
   eval "$(LC_ALL=C dircolors -b 2>/dev/null)" 2>/dev/null
 else
   export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
@@ -240,7 +235,7 @@ LC_ALL=C LANG=C fuzzy_finders 2>/dev/null
 # command -v fzf &>/dev/null && eval "$(fzf --bash 2>/dev/null)" 2>/dev/null
 # command -v sk &>/dev/null && eval "$(sk --shell bash 2>/dev/null)" 2>/dev/null
 complete -cf sudo 2>/dev/null
-has pay-respects && eval "$(pay-respects bash 2>/dev/null)" 2>/dev/null
+has pay-respects && eval "$(LC_ALL=C pay-respects bash 2>/dev/null)" 2>/dev/null
 
 # Ghostty
 [[ $TERM == xterm-ghostty && -e "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" ]] && . "$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash" 2>/dev/null
@@ -300,7 +295,7 @@ symbreak(){ local LC_ALL=C LANG=C; command find -L "${1:-.}" -type l; }
 
 has hyperfine && hypertest(){ LC_ALL=C command hyperfine -w 25 -m 50 -i -- "$@"; }
 
-touch(){ local LC_ALL=C LANG=C; command mkdir -p "$(dirname -- "$1")" && command touch -- "$1" }
+touch(){ local LC_ALL=C LANG=C; command mkdir -p "$(dirname -- "$1")" && command touch -- "$1"; }
 #──────────── Aliases ────────────
 # Enable aliases to be sudo’ed
 alias sudo="sudo " sudo-rs="sudo-rs " doas="doas "

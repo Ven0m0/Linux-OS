@@ -278,6 +278,12 @@ alias cd-="cd -- -"
 alias pip='python -m pip' py3='python3' py='python'
 
 alias speedt='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -'
+
+# Dotfiles
+# git clone --bare git@github.com:Ven0m0/dotfiles.git $HOME/.dotfiles
+alias dotfiles='git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
+# dotfiles checkout
+
 #──────────── Bindings (readline) ────────────
 bind 'set completion-query-items 150'
 bind 'set page-completions off'

@@ -22,8 +22,7 @@ done
 # completions (quiet)
 _ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_completion"
 #──────────── Stealth ────────────
-stealth=${stealth:-0}
-#stealth="1"
+stealth=${stealth:-0} # stealth=1
 #──────────── History / Prompt basics ────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 HISTSIZE=10000 
@@ -230,8 +229,8 @@ alias sudo='sudo ' sudo-rs='sudo-rs ' doas='doas '
 alias mkdir='mkdir -p'
 alias ed='$EDITOR' mi='$EDITOR' smi='sudo $EDITOR'
 alias please='sudo !!'
-alias pacman='sudo pacman --noconfirm --needed --color=auto'
-alias paru='paru --skipreview --noconfirm --needed'
+alias pacman1='sudo pacman --noconfirm --needed --color=auto'
+alias paru1='paru --skipreview --noconfirm --needed'
 alias cls='clear' c='clear'
 alias ptch='patch -p1 <'
 alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash'
@@ -251,7 +250,6 @@ fi
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
-
 alias mv='\mv -i' 
 alias cp='cp -i' 
 alias ln='ln -i'
@@ -320,12 +318,11 @@ dedupe_path(){
   [[ -n $s ]] && export PATH="$s"
 }
 dedupe_path
-has systemctl && command systemctl --user import-environment PATH &>/dev/null || :
+has systemctl && command systemctl --user import-environment PATH &>/dev/null
 #──────────── Prompt 2 ────────────
 configure_prompt(){
-  if command -v starship 2>/dev/null; then
-    eval "$(LC_ALL=C starship init bash 2>/dev/null)" &>/dev/null
-    return
+  if command -v starship &>/dev/null; then
+    eval "$(LC_ALL=C starship init bash 2>/dev/null)" &>/dev/null; return
   fi
   local C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' YLW='\[\e[33m\]' \
         C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]'
@@ -336,23 +333,23 @@ configure_prompt(){
   [[ -n "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
   PS1="[${C_USER}\u${C_RESET}@${HOSTL}|${C_PATH}\w${C_RESET}] \$ "
   # Only add mommy if not in stealth mode and not already present in PROMPT_COMMAND
-  if command -v mommy &>/dev/null && [ "${stealth:-0}" -ne 1 ] && [[ ${PROMPT_COMMAND:-} != *mommy* ]]; then
+  if command -v mommy &>/dev/null && [[ "${stealth:-0}" -ne 1 ]] && [[ ${PROMPT_COMMAND:-} != *mommy* ]]; then
     PROMPT_COMMAND="LC_ALL=C mommy -1 -s \$?; ${PROMPT_COMMAND:-}" # mommy https://github.com/fwdekker/mommy
     # PROMPT_COMMAND="LC_ALL=C mommy \$?; ${PROMPT_COMMAND:-}" # Shell-mommy https://github.com/sleepymincy/mommy
   fi
 }
 configure_prompt
 #──────────── Fetch ────────────
-if [[ $SHLVL -gt 2 ]]; then
+if [[ $SHLVL -le 2 ]]; then
   if [ "${stealth:-0}" -eq 1 ]; then
-    has fastfetch && LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null || true
+    has fastfetch && LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null
   else
     if has hyfetch; then
-      LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null || true
+      LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null
     elif has fastfetch; then
-      LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null || true
+      LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null
     else
-      LC_ALL=C hostnamectl 2>/dev/null || true
+      LC_ALL=C hostnamectl 2>/dev/null
     fi
   fi
 fi

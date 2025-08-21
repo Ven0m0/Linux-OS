@@ -151,5 +151,6 @@
 	showInformativeStatus = false
 	showUntrackedFiles = no
 	showDirtyState = no
+    hideIfPwdIgnored = yes
 [remote "origin"]
 	prune = true

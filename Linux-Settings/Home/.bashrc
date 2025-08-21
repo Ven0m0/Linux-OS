@@ -34,23 +34,6 @@ HISTTIMEFORMAT='%F %T '
 HISTFILE="$HOME/.bash_history"
 PROMPT_DIRTRIM=2
 PROMPT_COMMAND="history -a"
-#──────────── Fetch ────────────
-# Run system info fetcher if available
-if [[ $- == *i* && $SHLVL -eq 1 ]]; then
-  if [ "${stealth:-0}" -eq 1 ]; then
-    if has fastfetch; then
-      LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null || :
-    fi
-  else
-    if has hyfetch; then
-      LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null || :
-    elif has fastfetch; then
-      LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null || :
-    else
-      LC_ALL=C hostnamectl 2>/dev/null || :
-    fi
-  fi
-fi
 #──────────── Core ────────────
 CDPATH=".:$HOME:/"
 ulimit -c 0 &>/dev/null # disable core dumps

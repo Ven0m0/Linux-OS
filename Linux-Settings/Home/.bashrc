@@ -307,21 +307,18 @@ bind '"\C-a": beginning-of-line'
 bind '"\C-e": end-of-line'
 bind '"\e[1;5D": backward-word'
 bind '"\e[1;5C": forward-word'
-# Fix bracket paste
 bind 'set enable-bracketed-paste off'
-[[ -t 0 ]] && printf '\e[?2004l' >/dev/tty
 #──────────── Jumping ────────────
-if command -v zoxide &>/dev/null; then
+if has zoxide; then
   export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse --select-1 --exit-0"
   eval "$(LC_ALL=C zoxide init bash 2>/dev/null)" 2>/dev/null || true
   alias cd='z'
-elif command -v enhancd &>/dev/null; then
-  export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf:fzy"
+elif has enhancd; then
+  export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf"
   alias cd='enhancd'
 fi
 #──────────── End ────────────
-# Deduplicate PATH (preserve order)
-dedupe_path() {
+dedupe_path(){
   local IFS=: dir s; declare -A seen
   for dir in $PATH; do
     [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s="${s:+$s:}$dir"
@@ -329,7 +326,7 @@ dedupe_path() {
   [[ -n $s ]] && export PATH="$s"
 }
 dedupe_path
-command -v systemctl >/dev/null 2>&1 && command systemctl --user import-environment PATH &>/dev/null || :
+has systemctl && command systemctl --user import-environment PATH &>/dev/null || :
 #──────────── Prompt 2 ────────────
 configure_prompt(){
   if command -v starship 2>/dev/null; then
@@ -350,17 +347,17 @@ configure_prompt(){
 }
 configure_prompt
 #──────────── Fetch ────────────
-if [[ $- == *i* && $SHLVL -eq 1 ]]; then
+if [[ $- == *i* && $SHLVL -gt 2 ]]; then
   if [ "${stealth:-0}" -eq 1 ]; then
-    command -v fastfetch >/dev/null 2>&1 && LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null || true
+    has fastfetch && LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null || true
   else
-    if command -v hyfetch >/dev/null 2>&1; then
+    if has hyfetch; then
       LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null || true
-    elif command -v fastfetch >/dev/null 2>&1; then
+    elif has fastfetch; then
       LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null || true
     else
       LC_ALL=C hostnamectl 2>/dev/null || true
     fi
   fi
 fi
-#──────────── Rest ────────────
+#────────────────────────

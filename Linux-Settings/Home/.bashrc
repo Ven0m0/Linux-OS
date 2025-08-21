@@ -101,6 +101,12 @@ export LANG="${LANG:-C.UTF-8}" \
        LC_MONETARY="${germanloc:-C.UTF-8}" \
        LC_TIME="${germanloc:-C.UTF-8}"
 
+# Mimalloc & Jemalloc
+export MALLOC_CONF="metadata_thp:auto,tcache:true,background_thread:true,percpu_arena:percpu,trust_madvise:enabled"
+export _RJEM_MALLOC_CONF="$MALLOC_CONF"
+# https://github.com/microsoft/mimalloc/blob/main/docs/environment.html
+export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0 MIMALLOC_ALLOW_LARGE_OS_PAGES=1 MIMALLOC_PURGE_DELAY=25 MIMALLOC_ARENA_EAGER_COMMIT=2
+
 # Delta pager
 has delta && { export GIT_PAGER=delta; has batdiff || has batdiff.sh && export BATDIFF_USE_DELTA=true; }
 
@@ -158,24 +164,33 @@ if has qt6ct; then
 elif has qt5ct; then
   export QT_QPA_PLATFORMTHEME='qt5ct'
 fi
-export QT_AUTO_SCREEN_SCALE_FACTOR=1
+export QT_AUTO_SCREEN_SCALE_FACTOR=1 ELECTRON_OZONE_PLATFORM_HINT=auto ELECTRON_ENABLE_LOGGING=false ELECTRON_ENABLE_STACK_DUMPING=false \
+  _JAVA_AWT_WM_NONREPARENTING=1 GTK_USE_PORTAL=1 \
+  QSG_NO_VSYNC=1 _GL_THREADED_OPTIMIZATIONS=1 ZSTD_NBTHREADS=0
+
+# export GSK_RENDERER=vulkan GSK_RENDERER=ngl
 
 ### Apps
 # Wayland
 if [[ ${XDG_SESSION_TYPE:-} == "wayland" ]]; then
-  export GDK_BACKEND=wayland QT_QPA_PLATFORM=wayland SDL_VIDEODRIVER=wayland ELECTRON_OZONE_PLATFORM_HINT=auto MOZ_ENABLE_WAYLAND=1 MOZ_ENABLE_XINPUT2=1 GTK_USE_PORTAL=1 _JAVA_AWT_WM_NONREPARENTING=1 QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+  export GDK_BACKEND=wayland QT_QPA_PLATFORM=wayland SDL_VIDEODRIVER=wayland CLUTTER_BACKEND=wayland \
+    MOZ_ENABLE_WAYLAND=1 MOZ_ENABLE_XINPUT2=1 QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 fi
 
-if has dircolors; then
-  export CLICOLOR=1
-  eval "$(dircolors -b 2>/dev/null)" 2>/dev/null
+# Proton/Wine
+export MESA_DEBUG=0 MESA_NO_ERROR=1 \
+  WINE_NO_WM_DECORATION=1 WINE_PREFER_SDL_INPUT=1 \
+  PROTON_ENABLE_WAYLAND=1 PROTON_NO_WM_DECORATION=1 PROTON_PREFER_SDL_INPUT=1 PROTON_ENABLE_NVAPI=1 PROTON_ENABLE_NGX_UPDATER=1 PROTON_FSR4_UPGRADE=1
+
+if has dircolors; then  
+  eval "$(LC_ALL=C dircolors -b 2>/dev/null)" 2>/dev/null
 else
-  export CLICOLOR=1 LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
+  export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
 fi
 
 # gpg (for Github) https://github.com/alfunx/.dotfiles/blob/master/.profile
 # https://www.reddit.com/r/programming/comments/109rjuj/how_setting_the_tz_environment_variable_avoids
-export GPG_TTY="$(tty)" TZ="Europe/Berlin"
+export GPG_TTY="$(tty)" TZ="Europe/Berlin" CLICOLOR=1
 
 # Build env
 has sccache && export SCCACHE_DIRECT=1 SCCACHE_ALLOW_CORE_DUMPS=0 SCCACHE_CACHE_ZSTD_LEVEL=6 SCCACHE_CACHE_SIZE=8G RUSTC_WRAPPER=sccache

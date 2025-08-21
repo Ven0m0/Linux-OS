@@ -20,21 +20,6 @@ _ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_c
 #──────────── Stealth ────────────
 #stealth=${stealth:-0}
 #stealth="1"
-#──────────── Fetch ────────────
-# Run system info fetcher if available
-if [ "${stealth:-0}" -eq 1 ]; then
-  if has fastfetch; then
-    LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null
-  fi
-else
-  if has hyfetch; then
-    LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null
-  elif has fastfetch; then
-    LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null
-  else
-    LC_ALL=C hostnamectl 2>/dev/null
-  fi
-fi
 #──────────── Prompt ────────────
 # PS1='[\u@\h|\w] \$' # bash-prompt-generator.org
 HISTSIZE=10000 HISTFILESIZE=$HISTSIZE
@@ -50,19 +35,49 @@ configure_prompt(){
   if has starship; then
     eval "$(LC_ALL=C starship init bash 2>/dev/null)" &>/dev/null
   else
-    [[ "$USER" = "root" ]] && USERN="${C_ROOT}\u${C_RESET}"
-    [[ -z "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
-    PS1="[${C_USER}\u${C_RESET}@${HOSTL}»${C_PATH}\w${C_RESET}] \$ "
+    [[ "$EUID" -eq 0 ]] && USERN="${C_ROOT}\u${C_RESET}"
+    [[ -n "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
+    PS1="[${C_USER}\u${C_RESET}@${HOSTL}|${C_PATH}\w${C_RESET}] \$ "
   fi
   # Only add mommy if not in stealth mode and not already present in PROMPT_COMMAND
   if has mommy && [ "${stealth:-0}" -ne 1 ] && [[ $(echo "$PROMPT_COMMAND") != *"mommy"* ]]; then
-	# Shell-mommy https://github.com/sleepymincy/mommy
-    #PROMPT_COMMAND="mommy \$?; $PROMPT_COMMAND"
-	# mommy https://github.com/fwdekker/mommy
-    PROMPT_COMMAND="mommy -1 -s \$?; $PROMPT_COMMAND"
+    # PROMPT_COMMAND="mommy \$?; $PROMPT_COMMAND" # Shell-mommy https://github.com/sleepymincy/mommy
+    PROMPT_COMMAND="LC_ALL=C mommy -1 -s \$?; $PROMPT_COMMAND" # mommy https://github.com/fwdekker/mommy
   fi
 }
-LC_ALL=C configure_prompt 2>/dev/null
+LC_ALL=C LANG=C configure_prompt 2>/dev/null
+#──────────── Fetch ────────────
+# Run system info fetcher if available
+if [[ $- == *i* && $SHLVL -eq 1 ]]; then
+  if [[ "${stealth:-0}" -eq 1 ]]; then
+    has fastfetch && LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null
+  else
+    if has hyfetch; then
+      LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null
+    elif has fastfetch; then
+      LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null
+    else
+      LC_ALL=C hostnamectl 2>/dev/null
+    fi
+  fi
+fi
+vs
+fetch_cmd(){
+  if [[ $- == *i* && $SHLVL -eq 1 ]]; then
+    if [[ "${stealth:-0}" -eq 1 ]]; then
+      has fastfetch && LC_ALL=C fastfetch --ds-force-drm --thread --detect-version false 2>/dev/null
+    else
+      if has hyfetch; then
+        LC_ALL=C hyfetch -b fastfetch -m rgb -p transgender 2>/dev/null
+      elif has fastfetch; then
+        LC_ALL=C fastfetch --ds-force-drm --thread 2>/dev/null
+      else
+        LC_ALL=C hostnamectl 2>/dev/null
+      fi
+    fi
+  fi
+}
+LC_ALL=C LANG=C fetch_cmd 2>/dev/null
 #──────────── Core ────────────
 CDPATH=".:$HOME:/"
 ulimit -c 0 &>/dev/null # disable core dumps

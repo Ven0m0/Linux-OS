@@ -144,17 +144,16 @@ fuzzy_finders(){
   else
     FIND_CMD='find . -type f ! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/target/*"'
   fi
-  FZF_DEFAULT_COMMAND="$FIND_CMD" FZF_CTRL_T_COMMAND="$FIND_CMD"
-  FZF_DEFAULT_OPTS="--info=inline --layout=reverse --tiebreak=index --height=70%"
-  FZF_CTRL_T_OPTS="--select-1 --exit-0 --preview 'bat -n --color=auto  --line-range=:250 -- {} 2>/dev/null || cat -- {} 2>/dev/null'"
-  FZF_CTRL_R_OPTS="--select-1 --exit-0 --no-sort --exact --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'"
-  FZF_ALT_C_OPTS="--select-1 --exit-0 --walker-skip .git,node_modules,target --preview 'tree -C {} 2>/dev/null | head -200'"
-  FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index'
-  FZF_COMPLETION_PATH_OPTS="--info=inline --tiebreak=index --walker file,dir,follow,hidden"
-  FZF_COMPLETION_DIR_OPTS="--info=inline --tiebreak=index --walker dir,follow"
-  export FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_DEFAULT_OPTS FZF_CTRL_T_OPTS \
-          FZF_CTRL_R_OPTS FZF_ALT_C_OPTS FZF_COMPLETION_OPTS FZF_COMPLETION_PATH_OPTS FZF_COMPLETION_DIR_OPTS
-  [[ ! -d $HOME/.config/bash/completions ]] && mkdir -p -- "$HOME/.config/bash/completions" &>/dev/null || :
+  declare -x FZF_DEFAULT_COMMAND="$FIND_CMD"
+  declare -x FZF_CTRL_T_COMMAND="$FIND_CMD"
+  declare -x FZF_DEFAULT_OPTS='--info=inline --layout=reverse --tiebreak=index --height=70%'
+  declare -x FZF_CTRL_T_OPTS="--select-1 --exit-0 --preview 'bat -n --color=auto --line-range=:250 -- {} 2>/dev/null || cat -- {} 2>/dev/null'"
+  declare -x FZF_CTRL_R_OPTS="--select-1 --exit-0 --no-sort --exact --preview 'echo {}' --preview-window down:3:hidden:wrap --bind '?:toggle-preview'"
+  declare -x FZF_ALT_C_OPTS="--select-1 --exit-0 --walker-skip .git,node_modules,target --preview 'tree -C {} 2>/dev/null | head -200'"
+  declare -x FZF_COMPLETION_OPTS='--border --info=inline --tiebreak=index'
+  declare -x FZF_COMPLETION_PATH_OPTS="--info=inline --tiebreak=index --walker file,dir,follow,hidden"
+  declare -x FZF_COMPLETION_DIR_OPTS="--info=inline --tiebreak=index --walker dir,follow"
+  mkdir -p -- "$HOME/.config/bash/completions" 2>/dev/null
   if has fzf; then
     [[ -f /usr/share/fzf/key-bindings.bash ]] && . "/usr/share/fzf/key-bindings.bash" 2>/dev/null || :
     if [[ ! -f $HOME/.config/bash/completions/fzf_completion.bash ]]; then
@@ -163,7 +162,9 @@ fuzzy_finders(){
     . "$HOME/.config/bash/completions/fzf_completion.bash" 2>/dev/null || :
   fi
   if has sk; then
-    export SKIM_DEFAULT_COMMAND="$FIND_CMD" SKIM_DEFAULT_OPTIONS="$FZF_DEFAULT_OPTS"
+    declare -x SKIM_DEFAULT_COMMAND="$FIND_CMD"
+    declare -x SKIM_DEFAULT_OPTIONS="${FZF_DEFAULT_OPTS:-}"
+    alias fzf='sk ' 2>/dev/null || true
     [[ -f /usr/share/skim/key-bindings.bash ]] && . "/usr/share/skim/key-bindings.bash" 2>/dev/null || :
     if [[ ! -f $HOME/.config/bash/completions/sk_completion.bash ]]; then
       sk --shell bash 2>/dev/null >| "$HOME/.config/bash/completions/sk_completion.bash"
@@ -183,10 +184,20 @@ command -v pay-respects &>/dev/null && eval "$(LC_ALL=C pay-respects bash 2>/dev
 # Having to set a new script as executable always annoys me.
 runch(){
   shopt -u nullglob nocaseglob; local s="$1"
-  [[ $s ]] || { printf 'runch: missing script argument\nUsage: runch <script>\n' >&2; return 2; }
-  [[ -f $s ]] || { printf 'runch: file not found: %s\n' "$s" >&2; return 1; }
-  command chmod u+x -- "$s" 2>/dev/null || { echo "runch: cannot make executable: $s" >&2; return 1; }
-  [[ $s == */* ]] && "$s" || "./$s"
+  if [[ -z $s ]]; then
+    printf 'runch: missing script argument\nUsage: runch <script>\n' >&2; return 2
+  fi
+  if [[ ! -f $s ]]; then
+    printf 'runch: file not found: %s\n' "$s" >&2; return 1
+  fi
+  if ! command chmod u+x -- "$s" 2>/dev/null; then
+    printf 'runch: cannot make executable: %s\n' "$s" >&2; return 1    
+  fi
+  if [[ $s == */* ]]; then
+    "$s"
+  else
+    "./$s"
+  fi
 }
 
 sel(){
@@ -336,6 +347,8 @@ configure_prompt(){
   local C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' YLW='\[\e[33m\]' \
         C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]'
   local USERN HOSTL
+  # Git
+  local GIT_PS1_SHOWDIRTYSTATE=false GIT_PS1_OMITSPARSESTATE=true
   [[ "$EUID" -eq 0 ]] && USERN="${C_ROOT}\u${C_RESET}"
   [[ -n "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
   PS1="[${C_USER}\u${C_RESET}@${HOSTL}|${C_PATH}\w${C_RESET}] \$ "

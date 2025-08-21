@@ -86,22 +86,20 @@ EDITOR="$(command -v micro 2>/dev/null)"; EDITOR="${EDITOR##*/}"; EDITOR="${EDIT
 export EDITOR VISUAL="$EDITOR" VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
 
 # https://wiki.archlinux.org/title/Locale
-unset LC_ALL; export LANG="${LANG:-C.UTF-8}" LANGUAGE="en_US:en:C:en_DE:de_DE" LC_MEASUREMENT=C LC_COLLATE=C LC_CTYPE=C
-# LC_MONETARY='en_DE.UTF-8' LC_TIME='en_DE.UTF-8'
+unset LC_ALL; export LANG="${LANG:-C.UTF-8}" LANGUAGE="en_US:en_DE:en:C:de_DE" LC_MEASUREMENT=C LC_COLLATE=C LC_CTYPE=C
+germanloc="$(locale -a 2>/dev/null | LC_ALL=C \grep -qEi '^en_DE\.UTF-8$|^en_DE\.UTF8$' && echo en_DE.UTF-8 || (locale -a 2>/dev/null | LC_ALL=C \grep -qEi '^de_DE\.UTF-8$|^de_DE\.UTF8$' && echo de_DE || echo C))"
+export LC_MONETARY="$germanloc" LC_TIME="$germanloc"
 
-# Check for available locale
-if locale -a 2>/dev/null | \grep -qEi '^C\.UTF-8$|^C\.UTF8$'; then
-    export LANG=C.UTF-8
-elif locale -a 2>/dev/null | \grep -qi '^en_US\.UTF-8$'; then
-elif locale -a 2>/dev/null | \grep -Ei '^en_US\.UTF-8$|^en_US\.UTF8$'; then
-elif locale -a 2>/dev/null | \grep -Ei '^en_US\.UTF-8$|^en_US\.UTF8$'; then
-    export LANG=en_US.UTF-8
-else
-    export LANG=C
-fi
-LANG=$(locale -a 2>/dev/null | \grep -qEi '^C\.UTF-8$|^C\.UTF8$' && echo C.UTF-8 || (locale -a 2>/dev/null | grep -qi '^en_US\.UTF-8$' && echo en_US.UTF-8 || echo C)); export LANG LC_COLLATE=C LC_CTYPE=C
-
-
+unset LC_ALL; locales=$(locale -a 2>/dev/null)
+germanloc=$(echo "$locales" | LC_ALL=C grep -qEi '^en_DE\.UTF-8$|^en_DE\.UTF8$' && echo en_DE.UTF-8 || (echo "$locales" | LC_ALL=C grep -qEi '^de_DE\.UTF-8$|^de_DE\.UTF8$' && echo de_DE.UTF-8 || echo C))
+# Export main locale and performance-friendly categories
+export LANG="${LANG:-C.UTF-8}" \
+       LANGUAGE="en_US:en_DE:en:C:de_DE" \
+       LC_MEASUREMENT=C \
+       LC_COLLATE=C \
+       LC_CTYPE=C \
+       LC_MONETARY="${germanloc:-C.UTF-8}" \
+       LC_TIME="${germanloc:-C.UTF-8}"
 
 # Delta pager
 has delta && { export GIT_PAGER=delta; has batdiff || has batdiff.sh && export BATDIFF_USE_DELTA=true; }
@@ -141,16 +139,11 @@ if has wget; then
   wgett() { command wget -cnv --hsts-file="$HOME/.cache/wget-hsts" "$@"; }
 fi
 
-UPATH1="$(LC_ALL=C LANG=C command id -un 2>/dev/null)"
-UPATH2="/home/${UPATH1}"
-HOME="${HOME:-UPATH2"
-unset UPATH1 UPATH2
-
-export CARGO_HOME="${HOME}/.cargo"
-_prependpath "${CARGO_HOME}"
-
-_ifsource "$HOME/.cargo/env"
-has cargo && export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
+if has cargo; then
+  _ifsource "$HOME/.cargo/env"
+  export CARGO_HOME="${HOME}/.cargo" RUSTUP_HOME="${HOME}/.rustup"
+  _prependpath "${CARGO_HOME}/bin"
+fi
 
 # fd‑ignore file
 if [[ -f $HOME/.ignore ]]; then

@@ -94,7 +94,7 @@ unset LC_ALL; locales=$(locale -a 2>/dev/null)
 germanloc=$(echo "$locales" | LC_ALL=C grep -qEi '^en_DE\.UTF-8$|^en_DE\.UTF8$' && echo en_DE.UTF-8 || (echo "$locales" | LC_ALL=C grep -qEi '^de_DE\.UTF-8$|^de_DE\.UTF8$' && echo de_DE.UTF-8 || echo C))
 # Export main locale and performance-friendly categories
 export LANG="${LANG:-C.UTF-8}" \
-       LANGUAGE="en_US:en_DE:en:C:de_DE" \
+       LANGUAGE="en_US:en:C:de_DE" \
        LC_MEASUREMENT=C \
        LC_COLLATE=C \
        LC_CTYPE=C \

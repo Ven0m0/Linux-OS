@@ -59,8 +59,9 @@ if ! command -v "$suexec" &>/dev/null; then
   exit 1
 fi
 
-# Usage: dirname "path"
+
 dirname(){
+  # Usage: dirname "path"
   local tmp=${1:-.}
   [[ $tmp != *[!/]* ]] && { printf '/\n'; return; }
   tmp=${tmp%%"${tmp##*[!/]}"}
@@ -69,24 +70,16 @@ dirname(){
   tmp=${tmp%%"${tmp##*[!/]}"}
   printf '%s\n' "${tmp:-/}"
 }
-dirname_posix(){
-  dir=${1:-.}
-  dir=${dir%%"${dir##*[!/]}"}
-  [ "${dir##*/*}" ] && dir=.
-  dir=${dir%/*}
-  dir=${dir%%"${dir##*[!/]}"}
-  printf '%s\n' "${dir:-/}"
-}
 basename(){
+  # Usage: basename "path" ["suffix"]
   local tmp
   tmp=${1%"${1##*[!/]}"}
   tmp=${tmp##*/}
   tmp=${tmp%"${2/"$tmp"}"}
   printf '%s\n' "${tmp:-/}" 
 }
-basename_posix() {
-  dir=${1%${1##*[!/]}}
-  dir=${dir##*/}
-  dir=${dir%"$2"}
-  printf '%s\n' "${dir:-/}"
+regex() {
+    # Usage: regex "string" "regex"
+    [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
 }
+

@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-LC_ALL=C LANG=C
+export LC_ALL=C LANG=C
 sync;sudo -v
 
 echo
@@ -16,8 +13,8 @@ echo " ╚═════╝╚══════╝╚══════╝╚�
 echo 
 
 echo "Cleaning apt cache"
-sudo apt clean
-sudo apt autoclean
+sudo apt-get clean
+sudo apt-get autoclean
 sudo apt-get autoremove --purge -y
 
 echo "Cleaning leftover config files"
@@ -54,8 +51,7 @@ sudo rm -fv /root/.bash_history
 
 echo "Vacuuming journal logs"
 sudo rm -f /var/log/pacman.log
-sudo journalctl --rotate -q || true
-sudo journalctl --vacuum-time=1s -q
+sudo journalctl --rotate -q && sudo journalctl --vacuum-time=1s -q
 
 echo "Running fstrim"
 sudo rm -rf /run/log/journal/*

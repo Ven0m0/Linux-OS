@@ -8,7 +8,7 @@ p() { printf "%s\n" "$@"; }
 #─────────────────────────────────────────
 sync; sudo -v
 if command -v nala &>/dev/null; then
-  sudo nala fetch
+  sudo nala fetch --auto --sources --non-free -y -c DE --
   sudo nala update
   sudo nala upgrade
   sudo nala clean

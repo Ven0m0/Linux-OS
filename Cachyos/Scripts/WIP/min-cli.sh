@@ -44,29 +44,27 @@ while (( $# )); do
 done
 
 # Find fd / fdfind / find
-if command -v fd >/dev/null 2>&1; then
+if command -v fd &>/dev/null; then
   FD_BIN=fd
-elif command -v fdfind >/dev/null 2>&1; then
-  FD_BIN=fdfind
 else
-  FD_BIN=""
+  FD_BIN="find"
 fi
 
 # Choose parallel runner: prefer rust-parallel if available, else use xargs
-if command -v rust-parallel >/dev/null 2>&1; then
+if command -v rust-parallel &>/dev/null; then
   PARALLEL_BIN=rust-parallel
-elif command -v parallel >/dev/null 2>&1; then
+elif command -v parallel &>/dev/null; then
   PARALLEL_BIN=parallel
 else
   PARALLEL_BIN=""
 fi
 
 TMPDIR="$(mktemp -d)"
-OPT_SCRIPT="$TMPDIR/optimize-single.sh"
+OPT_SCRIPT="$TMPDIR/min-cli.sh"
 
 # helper to get file size portably
 filesize_prog() {
-  if stat -c%s "$1" >/dev/null 2>&1; then
+  if stat -c%s "$1" &>/dev/null; then
     stat -c%s "$1"
   else
     stat -f%z "$1"
@@ -82,27 +80,27 @@ lossy_flag="$2"
 dryrun="$3"
 keepbackup="$4"
 filesize_prog() {
-  if stat -c%s "$1" >/dev/null 2>&1; then
+  if stat -c%s "$1" &>/dev/null; then
     stat -c%s "$1"
   else
     stat -f%z "$1"
   fi
 }
 # Only replace original if optimized is smaller
-replace_if_smaller() {
+replace_if_smaller(){
   orig="$1"
   candidate="$2"
-  if [ ! -f "$candidate" ]; then return 1; fi
+  if [[ ! -f "$candidate" ]]; then return 1; fi
   old=$(filesize_prog "$orig")
   new=$(filesize_prog "$candidate")
-  if [ "$new" -lt "$old" ]; then
-    if [ "$dryrun" -eq 1 ]; then
+  if [[ "$new" -lt "$old" ]]; then
+    if [[ "$dryrun" -eq 1 ]]; then
       echo "[DRY] would replace: $orig (saved $((old-new)) bytes)"
       rm -f "$candidate"
       return 0
     fi
-    if [ "$keepbackup" -eq 1 ]; then
-      cp -a -- "$orig" "$orig.bak" || true
+    if [[ "$keepbackup" -eq 1 ]]; then
+      cp -a -- "$orig" "$orig.bak" || :
     fi
     mv -f -- "$candidate" "$orig"
     echo "optimized: $orig (saved $((old-new)) bytes)"
@@ -114,7 +112,7 @@ replace_if_smaller() {
 }
 
 # detect tools
-has() { command -v "$1" >/dev/null 2>&1; }
+has(){ command -v "$1" &>/dev/null; }
 
 ext="${file##*.}"
 ext_l="$(echo "$ext" | tr '[:upper:]' '[:lower:]')"
@@ -124,21 +122,21 @@ case "$ext_l" in
   png)
     # 1) pngquant (lossy) optionally
     if [ "$lossy_flag" -eq 1 ] && has pngquant; then
-      pngquant --quality=65-90 --speed=1 --strip --output "$tmpf" -- "$file" >/dev/null 2>&1 || true
-      replace_if_smaller "$file" "$tmpf" || true
+      pngquant --quality=65-90 --speed=1 --strip --output "$tmpf" -- "$file" &>/dev/null || :
+      replace_if_smaller "$file" "$tmpf" || :
     fi
     # 2) oxipng (lossless)
     if has oxipng; then
       # optimize into candidate
-      oxipng -o 6 --strip safe --out "$tmpf" "$file" >/dev/null 2>&1 || true
-      replace_if_smaller "$file" "$tmpf" || true
+      oxipng -o 6 --strip safe --out "$tmpf" "$file" &>/dev/null || :
+      replace_if_smaller "$file" "$tmpf" || :
     fi
     # 3) flaca (lossless mega-opt) preference: run flaca over file (it writes in-place)
     if has flaca; then
       if [ "$dryrun" -eq 1 ]; then
         echo "[DRY] would run: flaca \"$file\""
       else
-        flaca --no-symlinks --preserve-times "$file" >/dev/null 2>&1 || true
+        flaca --no-symlinks --preserve-times "$file" &>/dev/null || :
         echo "ran flaca: $file"
       fi
     fi
@@ -149,21 +147,21 @@ case "$ext_l" in
       if [ "$dryrun" -eq 1 ]; then
         echo "[DRY] would run: flaca \"$file\""
       else
-        flaca --no-symlinks --preserve-times "$file" >/dev/null 2>&1 || true
+        flaca --no-symlinks --preserve-times "$file" &>/dev/null || :
         echo "ran flaca: $file"
       fi
     fi
     # jpegoptim: lossless Huffman optimization or lossy with --max
     if has jpegoptim; then
       if [ "$lossy_flag" -eq 1 ]; then
-        jpegoptim --strip-all --all-progressive --max=85 --stdin --stdout < "$file" > "$tmpf" 2>/dev/null || true
-        replace_if_smaller "$file" "$tmpf" || true
+        jpegoptim --strip-all --all-progressive --max=85 --stdin --stdout < "$file" > "$tmpf" 2>/dev/null || :
+        replace_if_smaller "$file" "$tmpf" || :
       else
         # lossless
         if [ "$dryrun" -eq 1 ]; then
           echo "[DRY] would run: jpegoptim --strip-all \"$file\""
         else
-          jpegoptim --strip-all --all-progressive --preserve "$file" >/dev/null 2>&1 || true
+          jpegoptim --strip-all --all-progressive --preserve "$file" &>/dev/null || :
         fi
       fi
     fi
@@ -171,24 +169,24 @@ case "$ext_l" in
   webp)
     # For existing webp: try cwebp re-encode via dwebp/cwebp chain? skip for safety unless --lossy
     if [ "$lossy_flag" -eq 1 ] && has cwebp && has dwebp; then
-      dwebp "$file" -o "$tmpf.png" >/dev/null 2>&1 || true
-      cwebp -q 80 "$tmpf.png" -o "$tmpf" >/dev/null 2>&1 || true
+      dwebp "$file" -o "$tmpf.png" &>/dev/null || :
+      cwebp -q 80 "$tmpf.png" -o "$tmpf" &>/dev/null || :
       rm -f "$tmpf.png"
-      replace_if_smaller "$file" "$tmpf" || true
+      replace_if_smaller "$file" "$tmpf" || :
     fi
     ;;
   avif)
     # AVIF: re-encode with avifenc if present (lossy). Avoid default unless --lossy.
     if [ "$lossy_flag" -eq 1 ] && has avifenc; then
-      avifenc --min 30 --max 40 --codec aom --speed 4 --output "$tmpf" "$file" >/dev/null 2>&1 || true
-      replace_if_smaller "$file" "$tmpf" || true
+      avifenc --min 30 --max 40 --codec aom --speed 4 --output "$tmpf" "$file" &>/dev/null || :
+      replace_if_smaller "$file" "$tmpf" || :
     fi
     ;;
   jxl|jxlx|jxl)
     # jpeg-xl: try cjxl if available (re-encode)
     if [ "$lossy_flag" -eq 1 ] && has cjxl; then
-      cjxl "$file" "$tmpf" >/dev/null 2>&1 || true
-      replace_if_smaller "$file" "$tmpf" || true
+      cjxl "$file" "$tmpf" &>/dev/null || :
+      replace_if_smaller "$file" "$tmpf" || :
     fi
     ;;
   gif)
@@ -196,7 +194,7 @@ case "$ext_l" in
       if [ "$dryrun" -eq 1 ]; then
         echo "[DRY] would run: gifsicle -O3 --batch \"$file\""
       else
-        gifsicle -O3 --batch "$file" >/dev/null 2>&1 || true
+        gifsicle -O3 --batch "$file" &>/dev/null || :
         echo "ran gifsicle: $file"
       fi
     fi
@@ -207,15 +205,15 @@ case "$ext_l" in
       if [ "$dryrun" -eq 1 ]; then
         echo "[DRY] would run: scour -i \"$file\" -o \"$tmpf\" --enable-viewboxing --remove-metadata"
       else
-        scour -i "$file" -o "$tmpf" --enable-viewboxing --remove-metadata >/dev/null 2>&1 || true
-        replace_if_smaller "$file" "$tmpf" || true
+        scour -i "$file" -o "$tmpf" --enable-viewboxing --remove-metadata &>/dev/null || :
+        replace_if_smaller "$file" "$tmpf" || :
       fi
     elif has svgo; then
       if [ "$dryrun" -eq 1 ]; then
         echo "[DRY] would run: svgo \"$file\" -o \"$tmpf\""
       else
-        svgo "$file" -o "$tmpf" >/dev/null 2>&1 || true
-        replace_if_smaller "$file" "$tmpf" || true
+        svgo "$file" -o "$tmpf" &>/dev/null || :
+        replace_if_smaller "$file" "$tmpf" || :
       fi
     fi
     ;;
@@ -225,15 +223,15 @@ case "$ext_l" in
       if [ "$dryrun" -eq 1 ]; then
         echo "[DRY] would run: minify --type html \"$file\" > \"$tmpf\""
       else
-        minify --type html "$file" > "$tmpf" 2>/dev/null || true
-        replace_if_smaller "$file" "$tmpf" || true
+        minify --type html "$file" > "$tmpf" 2>/dev/null || :
+        replace_if_smaller "$file" "$tmpf" || :
       fi
     elif has html-minifier; then
       if [ "$dryrun" -eq 1 ]; then
         echo "[DRY] would run: html-minifier --collapse-whitespace \"$file\" -o \"$tmpf\""
       else
-        html-minifier --collapse-whitespace "$file" -o "$tmpf" 2>/dev/null || true
-        replace_if_smaller "$file" "$tmpf" || true
+        html-minifier --collapse-whitespace "$file" -o "$tmpf" 2>/dev/null || :
+        replace_if_smaller "$file" "$tmpf" || :
       fi
     fi
     ;;
@@ -243,7 +241,7 @@ case "$ext_l" in
 esac
 
 # final cleanup
-[ -f "$tmpf" ] && rm -f -- "$tmpf" || true
+[ -f "$tmpf" ] && rm -f -- "$tmpf" || :
 BASH
 
 chmod +x "$OPT_SCRIPT"

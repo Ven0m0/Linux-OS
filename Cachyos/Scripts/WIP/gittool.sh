@@ -13,7 +13,7 @@ githousekeep(){
   fi
   printf '\e[1mHousekeeping: %s\e[0m\n' "$dir"
   # Fetch from remote, twice in case something goes wrong
-  git -C "$dir" fetch --prune --no-tags origin || git -C "$dir" fetch --prune --no-tags origin || :
+  git -C "$dir" fetch --prune --no-tags --filter=blob:none origin || git -C "$dir" fetch --prune --no-tags origin || :
   # Delete local branches that have been merged.
   git -C "$dir" for-each-ref --format='%(refname:short)' refs/heads \
     --merged=origin/HEAD \
@@ -47,12 +47,14 @@ gitdate(){
   # Keep remote-tracking refs tidy
   git -C "$dir" remote prune origin >/dev/null
   # Fetch
-  git -C "$dir" fetch --prune --no-tags origin || git -C "$dir" fetch --prune --no-tags origin || ::
+  git -C "$dir" fetch --prune --no-tags --filter=blob:none origin || git -C "$dir" fetch --prune --no-tags origin || :
   # if rebase failed try to abort and continue
-  git -C "$dir" pull --rebase --autostash --prune origin HEAD || { git -C "$dir" rebase --abort &>/dev/null || : }
+  git -C "$dir" pull --rebase --autostash --prune origin HEAD || git -C "$dir" rebase --abort &>/dev/null
   # Sync submodule URLs
-  git -C "$dir" submodule sync --recursive
-  # Update submodules with allback to non-shallow
-  git -C "$dir" submodule update --init --recursive --remote --depth 1 --jobs "$jobs" || git -C "$dir" submodule update --init --recursive --remote
+  git -C "$dir" submodule sync --recursive || :
+  # Update submodules with fallback
+  git -C "$dir" submodule update --init --recursive --remote --filter=blob:none --depth 1 --single-branch --jobs "$jobs" \
+    || git -C "$dir" submodule update --init --recursive --remote --depth 1 --jobs "$jobs" \
+    || git -C "$dir" submodule update --init --recursive --remote --jobs "$jobs"
   printf '\e[1mUpdate complete: %s\e[0m\n' "$dir"
 }

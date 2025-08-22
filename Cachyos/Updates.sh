@@ -8,13 +8,11 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Helpers ────────────────────
-has(){ LC_ALL=C command -v -- "$1" &>/dev/null; } # Check for command
-hasname(){ local x; x=$(LC_ALL=C type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
+has(){ command -v -- "$1" &>/dev/null; } # Check for command
+hasname(){ local x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
 p(){ printf '%s\n' "$*" 2>/dev/null; } # Print-echo
 pe(){ printf '%b\n' "$*" 2>/dev/null; } # Print-echo for color
-sleepy(){ LC_ALL=C read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; } # Bash sleep replacement
 #──────────── Banner ────────────────────
-printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Terminal title
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -52,74 +50,73 @@ fi
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
-[[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
+[[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 #─────────────────────────────────────────
-p 'Syncing hardware clock'
-"$suexec" hwclock -w >/dev/null || :
-p 'Updating mlocate database'
-"$suexec" updatedb >/dev/null || :
+"$suexec" hwclock -w >/dev/null
+"$suexec" updatedb >/dev/null
 
-sysupdate() {
-  local aurtool auropts_base auropts
+sysupdate(){
+  local aurtool='' auropts_base auropts
   pe "🔄${BLU}System update${DEF}"
   # Detect AUR helper
   if has paru; then
-    aurtool="$(hasname paru)"
+    aurtool=paru
     auropts_base=(--batchinstall --combinedupgrade --nokeepsrc)
   elif has yay; then
-    aurtool="$(hasname yay)"
+    aurtool=yay
     auropts_base=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
-  else
-    aurtool=''
   fi
   # Ensure pacman lock is removed
-  [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null || :
+  [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null
   # Update keyring and file databases
-  "$suexec" pacman -Sy archlinux-keyring --noconfirm --needed -q >/dev/null || :
-  "$suexec" pacman -Fy --noconfirm >/dev/null || :
+  "$suexec" pacman -Sy archlinux-keyring --noconfirm --needed -q
+  "$suexec" pacman -Fy --noconfirm 2>/dev/null
   # Build AUR options array
   if [[ -n $aurtool ]]; then
     auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
     pe "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
-    "$aurtool" -Suy "${auropts[@]}" || :
-    "$aurtool" -Sua "${auropts[@]}" || :
+    "$aurtool" -Suy "${auropts[@]}" 
+    "$aurtool" -Sua "${auropts[@]}"
   else
     pe "🔄${BLU}Updating system with pacman...${DEF}"
-    "$suexec" pacman -Syu --noconfirm --needed || :
+    "$suexec" pacman -Syu --noconfirm --needed
   fi
 }
-sysupdate
+sysupdate || :
 
 if has flatpak; then
   flatpak update -y --noninteractive &>/dev/null || :
 fi
 
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread \
--Zunstable-options -Ztune-cpu=native -Zthreads=$(nproc 2>/dev/null)"
-export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-semantic-interposition -fdata-sections -ffunction-sections -fjump-tables -pthread"
-export CXXFLAGS="$CFLAGS"
-export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native"
+CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS" LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
+export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
 if has topgrade; then
   p 'update using topgrade...'
-  topno="(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup,cargo})"
-  "$suexec" topgrade -y --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
+  topno="(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup,cargo,lure})"
+  "$suexec" topgrade -cy --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
 fi
 
+# Function to run cargo commands dynamically
+cargo_run(){
+  local bins=(gg mommy clicker) cmd=(cargo) b
+  for b in "${bins[@]}"; do
+    command -v "cargo-$b" &>/dev/null && cmd+=("$b")
+  done
+  (( ${#cmd[@]} > 1 )) || { echo "No cargo binaries available: ${bins[*]}" >&2; return 1; }
+  "${cmd[@]}" "$@"
+}
+
 if has rustup; then
-  rustup_bin="$(hasname rustup)"
-  if [[ -n ${rustup_bin:-} ]]; then
-    "$rustup_bin" update >/dev/null || :
-  else
-    command rustup update >/dev/null || :
-  fi
+  "$suexec" rustup update
   if has cargo; then
     p 'update cargo binaries...'
     if cargo install-update -V &>/dev/null; then
-      cargo install-update -agi >/dev/null || :
+      cargo_run install-update -agi 2>/dev/null
     else
-      cargo install --list | awk '/^[[:alnum:]]/ {print $1}' | xargs -r -n1 cargo install >/dev/null || :
+      cargo_run install --list | awk '/^[[:alnum:]]/ {print $1}' | xargs -r -n1 cargo install >/dev/null
     fi
-    has cargo-updater && cargo updater -u >/dev/null || :
+    has cargo-updater && cargo_run updater -u >/dev/null
   fi
 else
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y

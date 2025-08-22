@@ -16,7 +16,7 @@ echo "Cleaning apt cache"
 sudo apt-get clean
 sudo apt-get autoclean
 sudo apt-get autoremove --purge -y
-
+sudo apt purge ?config-files
 echo "Cleaning leftover config files"
 dpkg -l | awk '/^rc/ { print $2 }' | xargs sudo apt purge -y
 

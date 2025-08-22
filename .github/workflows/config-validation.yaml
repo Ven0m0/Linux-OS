@@ -1,11 +1,13 @@
 name: Validate Config Files Action
 on:
-  #pull_request:
   workflow_dispatch:
   schedule: [{cron: "0 0 * * 0"}]
+  #push
+  
 jobs:
-  name: validate-config-files
-  runs-on: ubuntu-latest
-  steps:
-    - name: Validate Config Files Action
-    - uses: kehoe/validate-configs-action@v4.0.1
+  build:
+    name: validate-config-files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Config Files Action
+      - uses: kehoe/validate-configs-action@v4.0.1

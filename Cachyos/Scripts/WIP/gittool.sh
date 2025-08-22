@@ -28,13 +28,13 @@ githousekeep(){
     git fetch --prune --no-tags origin --depth=1 || git fetch --prune --no-tags origin || :
     git reset --hard origin/HEAD || :
     # Optimize/Clean submodule repo
-    git repack -adq --depth=250 --window=250 --cruft >/dev/null || :
+    git repack -adq --depth=100 --window=100 >/dev/null || :
     git reflog expire --expire=now --all >/dev/null || :
-    git gc --auto --aggressive --prune=now >/dev/null || :
+    git gc --auto --prune=now >/dev/null || :
     git clean -fdXq >/dev/null || :
   '
   ## Optimize/Clean
-  git -C "$dir" repack -adq --depth=250 --window=250 --cruft >/dev/null || :
+  git -C "$dir" repack -adq --depth=250 --window=250 >/dev/null || :
   git -C "$dir" reflog expire --expire=now --all >/dev/null || :
   git -C "$dir" gc --auto --aggressive --prune=now >/dev/null || :
   git -C "$dir" clean -fdXq >/dev/null || :

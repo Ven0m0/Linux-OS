@@ -49,37 +49,10 @@ if command -v apt-fast &>/dev/null; then
   alias apt-fast="sudo apt-fast "
 fi
 alias sa='apt'
-alias au='sudo apt update && sudo apt upgrade && sudo apt full-upgrade && sudo apt-file update && apt autoremove'
-
-xupdate(){
-  local LC_ALL=C LANG=C
-  sudo -v; sync
-  if command -v nala &>/dev/null; then
-    command sudo nala upgrade -y
-    command sudo nala clean
-    command sudo nala autoremove
-    command sudo nala autopurge
-  elif command -v apt-fast &>/dev/null; then
-    command sudo apt-fast update -y
-    command sudo apt-fast upgrade -y
-    command sudo apt-fast dist-upgrade -y
-    command sudo apt-fast full-upgrade -y
-    command sudo apt-fast autoremove
-  else
-    command sudo apt-get update -y
-    command sudo apt-get upgrade -y
-    command sudo apt-get dist-upgrade -y
-    command sudo apt full-upgrade -y
-    command sudo apt clean
-    command sudo apt autoclean
-    command sudo apt-get autoremove --purge -y
-  fi
-}
 
 alias ai='sudo apt install'
 alias ali='apt list --installed'
 alias al='apt list'
-alias af='apt-file -x find'
 alias ap='apt purge'
 alias aar='apt autoremove'
 alias i='sudo apt install'

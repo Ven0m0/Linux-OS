@@ -65,8 +65,8 @@ sudo fstrim -a --quiet-unsupported
 echo "Removind old log files"
 sudo find /var/log -type f -name "*.log" -exec rm -f {} \;
 
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
+sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 echo "System clean-up complete."
 
 echo "Clearing DietPi logs..."
-sudo bash -c "dietpi-logclear 2" || sudo ./boot/dietpi/func/dietpi-logclear 2
+sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null

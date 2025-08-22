@@ -1,0 +1,5 @@
+
+sudo pacman -S --needed --noconfirm qemu-desktop virt-manager edk2-ovmf
+paru -S --bottomup --skipreview --noconfirm --needed virtio-win
+
+# Cmdline: intel_iommu=on

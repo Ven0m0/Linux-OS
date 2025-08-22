@@ -23,5 +23,5 @@ while read -r path; do
     fi
   done
 done
-
+export PATH="$HOME/bin/uutils:$PATH"
 echo "Symlinked safe uutils into $DEST"

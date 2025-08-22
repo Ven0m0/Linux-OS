@@ -237,10 +237,10 @@ alias cleansh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs
 alias updatesh='curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash'
 
 if has eza; then
-  alias ls='eza --color=auto --group-directories-first --icons=auto'
-  alias la='eza -A --color=auto --group-directories-first --icons=auto'
-  alias ll='eza -Al --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
-  alias lt='eza -AT -L 3 --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
+  alias ls='eza -F --color=auto --group-directories-first --icons=auto'
+  alias la='eza -AF --color=auto --group-directories-first --icons=auto'
+  alias ll='eza -AlF --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
+  alias lt='eza -ATF -L 3 --color=auto --group-directories-first --icons=auto --no-time --no-git --smart-group --no-user --no-permissions'
 else
   alias ls='ls --color=auto --group-directories-first -C'
   alias la='ls --color=auto --group-directories-first -A'

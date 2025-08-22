@@ -8,5 +8,9 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/bigbeartechworld/big-be
 
 sudo nano /DATA/AppData/big-bear-nextcloud/html/config/config.php
 
+# Run while nextcloud server is running:
+docker exec -u www-data nextcloud php occ db:add-missing-indices
+
+
 https://www.reddit.com/r/CasaOS/comments/109are9/pihole_tutorial/
 https://www.linuxuprising.com/2020/07/ubuntu-how-to-free-up-port-53-used-by.html

@@ -24,10 +24,14 @@ githousekeep(){
   # Ensure each submodule itself is forcibly synced to the remote tip and cleaned
   git -C "$dir" submodule foreach --recursive '
     echo "  Submodule: $name ($sm_path)"
-    # fetch then force reset to remote default
+    # Fetch then force reset to remote default
     git fetch --prune --no-tags origin --depth=1 || git fetch --prune --no-tags origin || :
     git reset --hard origin/HEAD || :
-    git clean -fdx || :
+    # Optimize/Clean submodule repo
+    git repack -adq --depth=250 --window=250 --cruft >/dev/null || :
+    git reflog expire --expire=now --all >/dev/null || :
+    git gc --auto --aggressive --prune=now >/dev/null || :
+    git clean -fdXq >/dev/null || :
   '
   ## Optimize/Clean
   git -C "$dir" repack -adq --depth=250 --window=250 --cruft >/dev/null || :

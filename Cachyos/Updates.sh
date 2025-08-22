@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -u; shopt -s nullglob globstar
-export LC_ALL=C LANG=C; sync
+export LC_ALL=C LANG=C
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -10,8 +9,8 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Helpers ────────────────────
 has(){ command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
-p(){ printf '%s\n' "$*" 2>/dev/null; } # Print-echo
-pe(){ printf '%b\n' "$*" 2>/dev/null; } # Print-echo for color
+p(){ printf '%s\n' "$*" 2>/dev/null || :; } # Print-echo
+pe(){ printf '%b\n' "$*" 2>/dev/null || :; } # Print-echo for color
 #──────────── Banner ────────────────────
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -52,6 +51,7 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
 [[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 #─────────────────────────────────────────
+sync
 "$suexec" hwclock -w >/dev/null
 "$suexec" updatedb >/dev/null
 
@@ -67,19 +67,19 @@ sysupdate(){
     auropts_base=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
   fi
   # Ensure pacman lock is removed
-  [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null
+  [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null || :
   # Update keyring and file databases
-  "$suexec" pacman -Sy archlinux-keyring --noconfirm --needed -q
-  "$suexec" pacman -Fy --noconfirm 2>/dev/null
+  "$suexec" pacman -Sy archlinux-keyring --noconfirm --needed -q >/dev/null || :
+  "$suexec" pacman -Fy --noconfirm >/dev/null || :
   # Build AUR options array
   if [[ -n $aurtool ]]; then
     auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
     pe "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
-    "$aurtool" -Suy "${auropts[@]}" 
-    "$aurtool" -Sua "${auropts[@]}"
+    "$aurtool" -Suy "${auropts[@]}" >/dev/null || :
+    "$aurtool" -Sua "${auropts[@]}" >/dev/null || :
   else
     pe "🔄${BLU}Updating system with pacman...${DEF}"
-    "$suexec" pacman -Syu --noconfirm --needed
+    "$suexec" pacman -Syu --noconfirm --needed >/dev/null || :
   fi
 }
 sysupdate || :
@@ -136,10 +136,10 @@ p 'Updating shell environments...'
 if has fish; then
   if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
     p 'update Fisher...'
-    fish -c 'fisher update' || :
+    command fish -c "fisher update" || :
   else
     p 'Reinstall fisher...'
-    source <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher
+    source <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher || :
   fi
 fi
 if [[ -d $HOME/.basher ]]; then
@@ -149,7 +149,7 @@ fi
 
 if has tldr; then
   p 'update tldr pages...'
-  "$suexec" tldr -u &>/dev/null &
+  "$suexec" tldr -u &>/dev/null || :
 fi
 
 if has uv; then
@@ -172,25 +172,25 @@ if has pip; then
     done
   fi
 fi
-if has npm && npm config get prefix | grep -q "$HOME" 2>/dev/null; then
+if has npm; then
   p 'Update npm global packages'
   npm update -g >/dev/null || :
 fi
 
 if has fwupdmgr; then
   p 'update with fwupd...'
-  fwupdmgr refresh &>/dev/null; fwupdmgr update >/dev/null || :
+  "$suexec" fwupdmgr refresh &>/dev/null; "$suexec" fwupdmgr update >/dev/null || :
 fi
 if has sdboot-manage; then
   p 'update sdboot-manage...'
-  "$suexec" sdboot-manage remove || :
+  "$suexec" sdboot-manage remove 2>/dev/null || :
   "$suexec" sdboot-manage update &>/dev/null || :
 fi
 
 sudo chwd -a &>/dev/null || :
 
 p 'updating Font cache'
-has fc-cache && "$suexec" fc-cache -f >/dev/null
+has fc-cache && "$suexec" fc-cache -f >/dev/null || :
 p 'misc updates in background...'
 has updatedb && "$suexec" updatedb >/dev/null || :
 has update-desktop-database && "$suexec" update-desktop-database >/dev/null || :

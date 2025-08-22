@@ -94,8 +94,7 @@ curl -fsSL https://get.casaos.io/update | sudo bash
     ```bash
     # IF YOU NEED TO CHANGE THE PORTS, DO IT BEFORE RUNNING THE COMMAND
     # You can overwrite any other env var by adding them here
-    export COSMOS_HTTP_PORT=80
-    export COSMOS_HTTPS_PORT=443
+    export COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443
     
     # You can run a dry run to see what will be installed
     curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s -- --dry-run

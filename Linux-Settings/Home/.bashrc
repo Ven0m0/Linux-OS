@@ -308,12 +308,9 @@ bind '"\e[1;5C": forward-word'
 bind 'set enable-bracketed-paste off'
 #──────────── Jumping ────────────
 if has zoxide; then
-  export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse --select-1 --exit-0"
-  eval "$(LC_ALL=C zoxide init bash 2>/dev/null)" 2>/dev/null || true
+  export _ZO_FZF_OPTS="--info=inline --tiebreak=index --layout=reverse --select-1 --exit-0" _ZO_DOCTOR=0
+  eval "$(LC_ALL=C zoxide init bash 2>/dev/null)" 2>/dev/null
   alias cd='z'
-elif has enhancd; then
-  export ENHANCD_FILTER="$HOME/.cargo/bin/sk:sk:fzf"
-  alias cd='enhancd'
 fi
 #──────────── End ────────────
 dedupe_path(){

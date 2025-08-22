@@ -81,11 +81,11 @@ sysupdate() {
   if [[ -n $aurtool ]]; then
     auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
     pe "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
-    "$aurtool" -Suy "${auropts[@]}" 2>/dev/null || :
-    "$aurtool" -Sua "${auropts[@]}" 2>/dev/null || :
+    "$aurtool" -Suy "${auropts[@]}" || :
+    "$aurtool" -Sua "${auropts[@]}" || :
   else
     pe "🔄${BLU}Updating system with pacman...${DEF}"
-    "$suexec" pacman -Syu --noconfirm --needed 2>/dev/null || :
+    "$suexec" pacman -Syu --noconfirm --needed || :
   fi
 }
 sysupdate

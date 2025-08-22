@@ -8,6 +8,7 @@ bash -c "$(wget -qLO - https://raw.githubusercontent.com/bigbeartechworld/big-be
 
 sudo nano /DATA/AppData/big-bear-nextcloud/html/config/config.php
 
+# https://community.bigbeartechworld.com/t/added-nextcloud-to-bigbearcasaos/455/31?u=dragonfire1119
 # Run while nextcloud server is running:
 docker exec -u www-data nextcloud php occ db:add-missing-indices
 

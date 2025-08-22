@@ -69,7 +69,7 @@ AUTO_UNMASK_LOGIND=1
 # - Add as many APT package names as you wish, separated by space.
 # - They will be installed after dietpi-software options and before the script defined via AUTO_SETUP_CUSTOM_SCRIPT_EXEC (see below) is executed.
 # - E.g. the following (without the leading "#") will install the APT packages iotop, iptables and xz-utils:
-AUTO_SETUP_APT_INSTALLS=iotop iptables xz-utils nala fd-find ripgrep ugrep bat btrfs-progs gpg rust-sd fzf f2fs-tools zram-tools systemd-zram-generator
+AUTO_SETUP_APT_INSTALLS=iotop iptables xz-utils ca-certificates gnupg lsb-release nala fd-find ripgrep ugrep bat btrfs-progs gpg rust-sd fzf f2fs-tools zram-tools systemd-zram-generator
 
 # Custom Script (pre-networking and pre-DietPi install)
 # - Allows you to automatically execute a custom script before network is up on first boot.

@@ -57,8 +57,9 @@ xupdate(){
   if command -v nala &>/dev/null; then
     command sudo nala upgrade -y
     command sudo nala clean
-    command sudo nala autoclean
     command sudo nala autoremove
+    command sudo nala autopurge
+    command sudo nala fetch
   elif command -v apt-fast &>/dev/null; then
     command sudo apt-fast update -y
     command sudo apt-fast upgrade -y

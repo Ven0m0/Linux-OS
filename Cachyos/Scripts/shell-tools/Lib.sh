@@ -44,6 +44,8 @@ BG_BCYN='\033[106m' # Background Bright Cyan
 BG_BWHT='\033[107m' # Background Bright White
 #─────────────────────────────────────────
 cd -- "$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+vs
+cd -- "$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && echo "${PWD:-$(pwd)}")"
 
 #–– Helpers
 has() { command -v "$1" &>/dev/null; }
@@ -56,3 +58,35 @@ if ! command -v "$suexec" &>/dev/null; then
   echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
   exit 1
 fi
+
+# Usage: dirname "path"
+dirname(){
+  local tmp=${1:-.}
+  [[ $tmp != *[!/]* ]] && { printf '/\n'; return; }
+  tmp=${tmp%%"${tmp##*[!/]}"}
+  [[ $tmp != */* ]] && { printf '.\n'; return; }
+  tmp=${tmp%/*}
+  tmp=${tmp%%"${tmp##*[!/]}"}
+  printf '%s\n' "${tmp:-/}"
+}
+dirname_posix(){
+  dir=${1:-.}
+  dir=${dir%%"${dir##*[!/]}"}
+  [ "${dir##*/*}" ] && dir=.
+  dir=${dir%/*}
+  dir=${dir%%"${dir##*[!/]}"}
+  printf '%s\n' "${dir:-/}"
+}
+basename(){
+  local tmp
+  tmp=${1%"${1##*[!/]}"}
+  tmp=${tmp##*/}
+  tmp=${tmp%"${2/"$tmp"}"}
+  printf '%s\n' "${tmp:-/}" 
+}
+basename_posix() {
+  dir=${1%${1##*[!/]}}
+  dir=${dir##*/}
+  dir=${dir%"$2"}
+  printf '%s\n' "${dir:-/}"
+}

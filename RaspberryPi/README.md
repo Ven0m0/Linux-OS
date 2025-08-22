@@ -20,12 +20,6 @@ net.ipv4.ip_forward=1
 ```
 
 <details>
-<summary><b>Self-hosting on a Raspberry pi</b></summary>
-
-- [cloudflare tunnel](https://github.com/phipcode/phiptechblog/tree/main/cloudflaretunnel)
-
-</details>
-<details>
 <summary><b>Tools</b></summary>
 
 - [Pi-Apps-bash](https://github.com/Itai-Nelken/PiApps-terminal_bash-edition)
@@ -121,6 +115,8 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 - [Homepage docker](https://github.com/gethomepage/homepage)
 
 - [ShellHub](https://www.shellhub.io)
+
+- [cloudflare tunnel](https://github.com/phipcode/phiptechblog/tree/main/cloudflaretunnel)
 
 </details>
 <details>

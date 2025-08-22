@@ -133,16 +133,16 @@ if has yazi; then
   ya pkg upgrade >/dev/null || :
 fi
 
-p 'Updating shell environments...'
-if has fish; then
-  if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
-    p 'update Fisher...'
-    command fish -c "fisher update" || :
-  else
-    p 'Reinstall fisher...'
-    source <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher || :
-  fi
-fi
+#p 'Updating shell environments...'
+#if has fish; then
+  #if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
+    #p 'update Fisher...'
+    #fish -c 'fisher update 2>/dev/null || :' || :
+ # else
+    #p 'Reinstall fisher...'
+   # source <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher || :
+ # fi
+#fi
 if [[ -d $HOME/.basher ]]; then
     p "Updating basher"
     git -C "$HOME/.basher" pull >/dev/null || p "⚠️ basher pull failed"

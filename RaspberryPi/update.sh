@@ -8,23 +8,16 @@ p() { printf "%s\n" "$@"; }
 #─────────────────────────────────────────
 sync; sudo -v
 if command -v nala &>/dev/null; then
-  sudo nala fetch --auto --sources --non-free -y -c DE --
-  sudo nala update
+  sudo nala fetch --auto --sources --fetches 5 --non-free -y -c DE
   sudo nala upgrade
-  sudo nala clean
-  sudo nala autoclean
-  sudo nala autoremove
+  sudo nala autoremove && sudo nala autopurge
 elif command -v apt-fast &>/dev/null; then
-  sudo apt-fast update -y
-  sudo apt-fast upgrade -y
-  sudo apt-fast dist-upgrade -y
-  sudo apt-fast full-upgrade -y
+  sudo apt-fast update -y && sudo apt-fast upgrade -y
+  sudo apt-fast dist-upgrade -y && sudo apt-fast full-upgrade -y
   sudo apt-fast autoremove
 else
-  sudo apt-get update -y
-  sudo apt-get upgrade -y
-  sudo apt-get dist-upgrade -y 
-  sudo apt full-upgrade -y
+  sudo apt-get update -y --allow-releaseinfo-change && sudo apt-get upgrade -y
+  sudo apt-get dist-upgrade -y && sudo apt full-upgrade -y
 fi
 # Check's the broken packages and fix them
 sudo dpkg --configure -a

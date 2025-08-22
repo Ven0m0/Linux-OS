@@ -3,11 +3,9 @@ export LC_ALL=C LANG=C
 # Non destructive uutils-coreutils symlink script. Links it to an arbitrary bin folder in HOME
 # Can easily be reverted unlike some other scripts that nuke your coreutils
 
-
 DEST="$HOME/bin/uutils"
 #DEST="$HOME/.local/bin"
 PKG="uutils-coreutils"
-
 SAFE_TOOLS=(
   cat ls cp mv rm mkdir rmdir echo printf yes pwd dirname basename
   touch stat du df head tail wc sort uniq cut tr fold split join

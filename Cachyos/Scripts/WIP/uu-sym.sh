@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-set -u
 export LC_ALL=C LANG=C
+# Non destructive uutils-coreutils symlink script. Links it to an arbitrary bin folder in HOME
+# Can easily be reverted unlike some other scripts that nuke your coreutils
+
 
 DEST="$HOME/bin/uutils"
 #DEST="$HOME/.local/bin"
@@ -11,7 +13,6 @@ SAFE_TOOLS=(
   touch stat du df head tail wc sort uniq cut tr fold split join
   uname date id whoami groups true false test sleep
 )
-
 mkdir -p "$DEST"
 pacman -Qlq "$PKG" | grep '/bin/uu-' |
 while read -r path; do
@@ -25,3 +26,6 @@ while read -r path; do
 done
 export PATH="$HOME/bin/uutils:$PATH"
 echo "Symlinked safe uutils into $DEST"
+echo "  export PATH=\"${DEST}:\$PATH\""
+echo 'or'
+echo "  export PATH=\"\$HOME/bin/uutils:\$PATH\""

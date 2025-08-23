@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C; set -ux
+export LC_ALL=C LANG=C; set -u
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

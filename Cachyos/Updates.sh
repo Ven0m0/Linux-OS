@@ -187,7 +187,7 @@ if has sdboot-manage; then
   "$suexec" sdboot-manage update &>/dev/null || :
 fi
 
-sudo chwd -a &>/dev/null || :
+"$suexec" chwd -a &>/dev/null || :
 
 p 'updating Font cache'
 has fc-cache && "$suexec" fc-cache -f >/dev/null || :

@@ -57,7 +57,7 @@ else
 fi
 #──────────── Sudo ────────────────────
 [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
+suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"
 [[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"; sync

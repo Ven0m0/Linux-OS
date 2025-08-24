@@ -1,31 +1,19 @@
 #!/usr/bin/env bash
-shopt -s nullglob globstar; set -u
-export LC_ALL=C LANG=C
+export LC_ALL=C LANG=C; set -u
+shopt -s nullglob globstar
 #──────────── Color & Effects ────────────
-BLK='\e[30m' # Black
-RED='\e[31m' # Red
-GRN='\e[32m' # Green
-YLW='\e[33m' # Yellow
-BLU='\e[34m' # Blue
-MGN='\e[35m' # Magenta
-CYN='\e[36m' # Cyan
-WHT='\e[37m' # White
-DEF='\e[0m'  # Reset to default
-BLD='\e[1m'  #Bold
-#─────────────────────────────────────────
-printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
-p() { printf "%s\n" "$@"; }
-pe() { printf "%b\n" "$@"; }
-# Ascii art banner
-colors=(
-  $'\033[38;5;117m'  # Light Blue
-  $'\033[38;5;218m'  # Pink
-  $'\033[38;5;15m'   # White
-  $'\033[38;5;218m'  # Pink
-  $'\033[38;5;117m'  # Light Blue
-)
-reset=$'\033[0m'
-banner=$(command cat <<'EOF'
+BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
+MGN=$'\e[35m' PNK=$'\e[38;5;218m'
+DEF=$'\e[0m' BLD=$'\e[1m'
+#──────────── Helpers ────────────────────
+has(){ command -v -- "$1" &>/dev/null; } # Check for command
+hasname(){ local x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
+p(){ printf '%s\n' "$*" 2>/dev/null || :; } # Print-echo
+pe(){ printf '%b\n' "$*" 2>/dev/null || :; } # Print-echo for color
+#──────────── Banner ────────────────────
+banner=$(cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ 
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
@@ -34,25 +22,35 @@ banner=$(command cat <<'EOF'
  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
 EOF
 )
-# Split banner into an array
-IFS=$'\n' read -r -d '' -a banner_lines <<< "$banner"
-# Total lines
+# Split banner into array
+mapfile -t banner_lines <<< "$banner"
 lines=${#banner_lines[@]}
-# Loop through each line and apply scaled trans flag colors
-for i in "${!banner_lines[@]}"; do
-  # Map line index to color index (scaled to 5 colors)
-  color_index=$(( i * 5 / lines ))
-  printf "%s%s%s\n" "${colors[color_index]}" "${banner_lines[i]}" "$reset"
-done
-
-sudo -v
-read -r used_space pct < <(df -h --output=used,pcent -- "$mp" | awk 'NR==2{print $1, $2}')
-DUB="$used_space $pct"
+# Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
+flag_colors=(
+  $LBLU  # Light Blue
+  $PNK   # Pink
+  $BWHT  # White
+  $PNK   # Pink
+  $LBLU  # Light Blue
+)
+segments=${#flag_colors[@]}
+# If banner is trivially short, just print without dividing by (lines-1)
+if (( lines <= 1 )); then
+  for line in "${banner_lines[@]}"; do
+    printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
+  done
+else
+  for i in "${!banner_lines[@]}"; do
+    # Map line index proportionally into 0..(segments-1)
+    segment_index=$(( i * (segments - 1) / (lines - 1) ))
+    (( segment_index >= segments )) && segment_index=$((segments - 1))
+    printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
+  done
+fi
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
 [[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
-#─────────────────────────────────────────
 
 # Pacman cleanup
 sudo pacman -Rns $(pacman -Qdtq) --noconfirm &>/dev/null

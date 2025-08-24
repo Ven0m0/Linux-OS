@@ -27,6 +27,8 @@ else
   echo 'Skipping deborphan — not installed.'
 fi
 
+uv cache prune -q; uv cache clean -q
+
 sudo rm -rf /var/lib/apt/lists/*
 echo "Removing common cache directories and trash"
 sudo rm -rf /tmp/*

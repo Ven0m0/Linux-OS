@@ -91,6 +91,8 @@ rm -rf $HOME/.cache/flatpak/system-cache/*
 rm -rf $HOME/.local/share/flatpak/system-cache/*
 rm -rf $HOME/.var/app/*/data/Trash/*
 
+uv cache prune -q; uv cache clean -q
+
 # Clear thumbnails
 rm -rf $HOME/.thumbnails/*
 rm -rf $HOME/.cache/thumbnails/*

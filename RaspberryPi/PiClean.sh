@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 #──────────── Setup ────────────────────
 export LC_ALL=C LANG=C; shopt -s nullglob globstar
+WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+cd $WORKDIR
+#──────────── Helpers ────────────────────
 has(){ command -v -- "$1" &>/dev/null; }
 hasname(){ local x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; }
+xprintf(){ printf "%s\n" "$@"; }
+#──────────── Sudo ────────────────────
 [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }

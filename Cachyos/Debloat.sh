@@ -8,32 +8,33 @@ sudo pacman -Rns kcontacts
 # sudo pacman -Rns kdeconnect
 sudo pacman -Rns kpeople
 # Deprecated
-sudo pacman -Rncs cachy-browser
+sudo pacman -Rncs -q cachy-browser 
 sudo pacman -Rncs cachyos-v4-mirrorlist
 
-if pacman -Qs pkgstats &>/dev/null ; then
-  echo "pkgstats is installed and will be uninstalled."
-  sudo pacman -Rcns pkgstats --noconfirm -q
-else
-  echo "The package 'pkgstats' is not installed"
+if systemctl list-unit-files | grep -qx "pkgstats.timer"; then
+  sudo systemctl stop "pkgstats.timer" &>/dev/null || :
+  sudo systemctl disable "pkgstats.timer"
+fi
+echo '--- Remove `pkgstats` package'
+if pacman -Qq pkgstats &>/dev/null; then
+  sudo pacman -Rcns -q --noconfirm pkgstats &>/dev/null || :
 fi
 
 # Services
-systemctl disable bluetooth.service 2>/dev/null
-systemctl disable avahi-daemon.service 2>/dev/null
+sudo systemctl disable bluetooth.service 2>/dev/null
+sudo systemctl disable avahi-daemon.service 2>/dev/null
 if systemctl list-unit-files | grep -q printer.service; then
-    systemctl disable printer.service
+    sudo systemctl disable printer.service
     echo "Printer service disabled."
 else
     echo "Printer service not found. Skipping."
 fi
 
-echo "P2pPolicy=nothing" | sudo tee -a "/etc/fwupd/fwupd.conf"
+sudo grep -xqF -- 'P2pPolicy=nothing' '/etc/fwupd/fwupd.conf' || echo 'P2pPolicy=nothing' | sudo tee -a '/etc/fwupd/fwupd.conf'
 
-https://wiki.archlinux.org/title/Fwupd
-P2pPolicy=nothing -> /etc/fwupd/fwupd.conf 
-passim.service
-
+#https://wiki.archlinux.org/title/Fwupd
+#P2pPolicy=nothing -> /etc/fwupd/fwupd.conf 
+#passim.service
 sudo ufw logging off
 
 echo 'The script finished. Press any key to exit.'

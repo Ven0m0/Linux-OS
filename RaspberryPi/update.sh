@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #──────────── Setup ────────────────────
-shopt -s nullglob globstar; set -u
+shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR

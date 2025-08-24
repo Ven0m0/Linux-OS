@@ -5,7 +5,13 @@ WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR
 #──────────── Helpers ────────────────────
 has(){ command -v -- "$1" &>/dev/null; }
-hasname(){ local x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; }
+hasname(){
+  local x
+  if ! x=$(type -P -- "$1"); then
+    return 1
+  fi
+  printf '%s\n' "${x##*/}"
+}
 xprintf(){ printf "%s\n" "$@"; }
 #──────────── Sudo ────────────────────
 [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :

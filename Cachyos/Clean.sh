@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 shopt -s nullglob globstar; set -u
-export LC_ALL=C LANG=C.UTF-8
+export LC_ALL=C LANG=C
 #──────────── Color & Effects ────────────
 BLK='\e[30m' # Black
 RED='\e[31m' # Red
@@ -16,7 +16,6 @@ BLD='\e[1m'  #Bold
 printf '\033[2J\033[3J\033[1;1H'; printf '\e]2;%s\a' "Updates"
 p() { printf "%s\n" "$@"; }
 pe() { printf "%b\n" "$@"; }
-sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
 # Ascii art banner
 colors=(
   $'\033[38;5;117m'  # Light Blue
@@ -26,7 +25,7 @@ colors=(
   $'\033[38;5;117m'  # Light Blue
 )
 reset=$'\033[0m'
-banner=$(cat <<'EOF'
+banner=$(command cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ 
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
@@ -47,15 +46,19 @@ for i in "${!banner_lines[@]}"; do
 done
 
 sudo -v
-DISK_USAGE_BEFORE=$(df -h)
+DISK_USAGE_BEFORE=$(df -hl --output=used,pcent | head -n 2 -q | tail -n 1 -q)
 
-sleepy 1
+#──────────── Safe optimal privilege tool ────────────────────
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
+[[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
+[[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
+#─────────────────────────────────────────
 
 # Pacman cleanup
-sudo pacman -Rns $(pacman -Qdtq) --noconfirm || :
-sudo pacman -Scc --noconfirm || :
-sudo paccache -rk0 -q || :
-uv cache clean || :
+sudo pacman -Rns $(pacman -Qdtq) --noconfirm -q
+sudo pacman -Scc --noconfirm
+sudo paccache -rk0 -q
+uv cache prune -q; uv cache clean -q
 # Cargo
 if command -v cargo-cache &>/dev/null; then
     cargo cache -efg || :
@@ -90,8 +93,6 @@ sudo rm -rf /var/tmp/flatpak-cache-*
 rm -rf $HOME/.cache/flatpak/system-cache/*
 rm -rf $HOME/.local/share/flatpak/system-cache/*
 rm -rf $HOME/.var/app/*/data/Trash/*
-
-uv cache prune -q; uv cache clean -q
 
 # Clear thumbnails
 rm -rf $HOME/.thumbnails/*

@@ -148,6 +148,7 @@ rm -rf $HOME/.cache/wine/ >/dev/null || :
 rm -rf $HOME/.cache/winetricks/ >/dev/null || :
 
 # GTK
+rm -f /.recently-used.xbel || :
 rm -f $HOME/.local/share/recently-used.xbel* >/dev/null || :
 rm -f $HOME/snap/*/*/.local/share/recently-used.xbel >/dev/null || :
 rm -f $HOME/.var/app/*/data/recently-used.xbel >/dev/null || :

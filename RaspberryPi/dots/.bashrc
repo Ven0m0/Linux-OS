@@ -27,6 +27,14 @@ stty -ixon -ixoff -ixany &>/dev/null
 set +H
 _editor_cmd="$(command -v micro 2>/dev/null || :)"; _editor_cmd="${_editor_cmd##*/}"; EDITOR="${_editor_cmd:-nano}"
 export EDITOR VISUAL="$EDITOR" VIEWER="$EDITOR" GIT_EDITOR="$EDITOR" SYSTEMD_EDITOR="$EDITOR" FCEDIT="$EDITOR" SUDO_EDITOR="$EDITOR"
+export PYTHONOPTIMIZE=2 PYTHONIOENCODING='UTF-8' PYTHON_JIT=1 PYENV_VIRTUALENV_DISABLE_PROMPT=1
+export PRTY_NO_VIPS=1 PRTY_NO_RAW=1
+
+if has dircolors; then
+  eval "$(LC_ALL=C dircolors -b)" &>/dev/null
+else
+  export LS_COLORS='no=00:fi=00:di=00;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:ex=01;32:*.tar=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.bz2=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.tga=01;35:*.tiff=01;35:*.png=01;35:*.mpeg=01;35:*.avi=01;35:*.ogg=01;35:*.mp3=01;35:*.wav=01;35:*.xml=00;31:'
+fi
 #──────────── Aliases ────────────
 # safety
 alias mv='mv -i'
@@ -36,10 +44,10 @@ alias rm='rm -I --preserve-root'
 alias chmod='chmod --preserve-root'
 alias chgrp='chgrp --preserve-root'
 # ls
-alias la='ls -A'
-alias ll='ls -lh'
-alias lt='ls -hsS1'
-alias ls='ls --group-directories-first --color=auto'
+alias la='ls -ah --color=auto --group-directories-first'
+alias ll='ls -lh --color=auto --group-directories-first'
+alias lt='ls -hsS1 --color=auto --group-directories-first'
+alias ls='ls --color=auto --group-directories-first'
 alias cls='clear' c='clear'
 alias grep='grep --color=auto'
 
@@ -111,6 +119,9 @@ sudo-command-line(){
   READLINE_POINT="${#READLINE_LINE}"
 }
 bind -x '"\e\e": sudo-command-line'
+
+cdls(){ command cd -- "$1" && command ls -ah --color=auto --group-directories-first; }
+mkcd(){ command mkdir -p -- "$1" && command cd -- "$1"; }
 
 touchf(){ command mkdir -p -- "$(dirname -- "$1")" && command touch -- "$1"; }
 alias please='sudo !!'

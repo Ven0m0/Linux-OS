@@ -5,11 +5,18 @@ sudo -v
 
 # Mostly useless
 sudo pacman -Rns kcontacts
-sudo pacman -Rns kdeconnect
+# sudo pacman -Rns kdeconnect
 sudo pacman -Rns kpeople
 # Deprecated
-sudo pacman -Rns cachy-browser
-sudo pacman -Rns cachyos-v4-mirrorlist
+sudo pacman -Rncs cachy-browser
+sudo pacman -Rncs cachyos-v4-mirrorlist
+
+if pacman -Qs pkgstats &>/dev/null ; then
+  echo "pkgstats is installed and will be uninstalled."
+  sudo pacman -Rcns pkgstats --noconfirm -q
+else
+  echo "The package 'pkgstats' is not installed"
+fi
 
 # Services
 systemctl disable bluetooth.service 2>/dev/null

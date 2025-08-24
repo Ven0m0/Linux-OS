@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 export LC_ALL=C LANG=C; set -u
-shopt -s nullglob globstar
+shopt -s nullglob globstar; sync
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -50,7 +50,8 @@ fi
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
-[[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
+[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
+export HOME="/home/${SUDO_USER:-$USER}"
 
 read -r used_human pct < <(df -h --output=used,pcent -- "$mp" | awk 'NR==2{print $1, $2}')
 
@@ -99,11 +100,11 @@ rm -rf $HOME/.thumbnails/*
 rm -rf $HOME/.cache/thumbnails/*
 
 # Clear system logs
-sudo rm -f /var/log/pacman.log || :
-sudo journalctl --rotate -q || :
-sudo journalctl --vacuum-time=1s -q || :
-sudo rm -rf /run/log/journal/* /var/log/journal/* || :
-sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || :
+"$suexec" rm -f /var/log/pacman.log || :
+"$suexec" journalctl --rotate -q || :
+"$suexec" journalctl --vacuum-time=1s -q || :
+"$suexec" rm -rf /run/log/journal/* /var/log/journal/* || :
+"$suexec" rm -rf {/root,/home/*}/.local/share/zeitgeist || :
 
 # Shell history
 rm -f $HOME/.local/share/fish/fish_history $HOME/.config/fish/fish_history $HOME/.zsh_history $HOME/.bash_history $HOME/.history
@@ -129,7 +130,7 @@ rm -rf $HOME/.var/app/com.valvesoftware.Steam/data/Steam/appcache/*
 echo '--- Disable Python history for future interactive commands'
 history_file="$HOME/.python_history"
 if [[ ! -f $history_file ]]; then
-  touch -- "$history_file"
+  command touch -- "$history_file"
   echo "Created $history_file."
 fi
 "$suexec" chattr +i "$(realpath $history_file)"
@@ -141,6 +142,50 @@ rm -rf $HOME/snap/firefox/common/.cache/* >/dev/null || :
 rm -rf $HOME/.mozilla/firefox/Crash\ Reports/* >/dev/null || :
 rm -rf $HOME/.var/app/org.mozilla.firefox/.mozilla/firefox/Crash\ Reports/* >/dev/null || :
 rm -rf $HOME/snap/firefox/common/.mozilla/firefox/Crash\ Reports/** >/dev/null || :
+# Delete files matching pattern: "~/.mozilla/firefox/*/crashes/*"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/.mozilla/firefox/*/crashes/*'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
+# Delete files matching pattern: "~/.mozilla/firefox/*/crashes/events/*"
+if ! command -v 'python3' &> /dev/null; then
+  echo 'Skipping because "python3" is not found.'
+else
+  python3 <<EOF
+import glob
+import os
+path = '~/.mozilla/firefox/*/crashes/events/*'
+expanded_path = os.path.expandvars(os.path.expanduser(path))
+print(f'Deleting files matching pattern: {expanded_path}')
+paths = glob.glob(expanded_path)
+if not paths:
+  print('Skipping, no paths found.')
+for path in paths:
+  if not os.path.isfile(path):
+    print(f'Skipping folder: "{path}".')
+    continue
+  os.remove(path)
+  print(f'Successfully delete file: "{path}".')
+print(f'Successfully deleted {len(paths)} file(s).')
+EOF
+fi
 
 # Wine
 rm -rf $HOME/.wine/drive_c/windows/temp/* >/dev/null || :
@@ -164,8 +209,7 @@ rm -rf $HOME/.var/app/*/data/*.desktop >/dev/null || :
 "$suexec" tldr -c >/dev/null || :
 
 # Trim disks
-"$suexec" fstrim -a --quiet-unsupported >/dev/null || :
-"$suexec" fstrim / --quiet-unsupported >/dev/null || :
+"$suexec" fstrim -a --quiet-unsupported &>/dev/null || :
 
 # Clearing dns cache
 "$suexec" systemd-resolve --flush-caches >/dev/null
@@ -180,7 +224,8 @@ rm -rf $HOME/.var/app/*/data/*.desktop >/dev/null || :
 #    echo "bleachbit is not installed, skipping."
 #fi
 bleachbit -c --preset >/dev/null && "$suexec" bleachbit -c --preset >/dev/null || :
-
+bash -c "bleachbit -c --preset" >/dev/null || :
+"$suexec" bash -c "bleachbit -c --preset" >/dev/null || :
 sync; echo 3 | "$suexec" tee /proc/sys/vm/drop_caches &>/dev/null || :
 echo "System cleaned!"
 

@@ -53,6 +53,7 @@ else
     printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
   done
 fi
+p "  (> ^ <)"
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }

@@ -63,7 +63,7 @@ uv cache prune -q; uv cache clean -q
 # Cargo
 if command -v cargo-cache &>/dev/null; then
   cargo cache -efg || :
-  cargo-cache -efg trim --limit 1B || :
+  cargo cache -efg trim --limit 1B || :
   cargo cache -efg clean-unref || :
 fi
 

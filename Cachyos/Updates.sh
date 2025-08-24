@@ -133,16 +133,16 @@ if has yazi; then
   ya pkg upgrade >/dev/null || :
 fi
 
-#p 'Updating shell environments...'
-#if has fish; then
-  #if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
-    #p 'update Fisher...'
-    #fish -c 'fisher update 2>/dev/null || :' || :
- # else
-    #p 'Reinstall fisher...'
-   # source <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) && fisher install jorgebucaran/fisher || :
- # fi
-#fi
+p 'Updating shell environments...'
+if has fish; then
+  if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
+    p 'update Fisher...'
+    fish -c ". "$HOME/.config/fish/functions/fisher.fish" && fisher update" || fish -c ". \"$HOME/.config/fish/functions/fisher.fish\" && fisher update"
+  else
+    p 'Reinstall fisher...'
+    . <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) 2>/dev/null && fisher install jorgebucaran/fisher
+  fi
+fi
 if [[ -d $HOME/.basher ]]; then
     p "Updating basher"
     git -C "$HOME/.basher" pull >/dev/null || p "⚠️ basher pull failed"
@@ -154,9 +154,38 @@ if has tldr; then
 fi
 
 if has uv; then
-  p 'UV tool upgrade...'
-  uv tool upgrade --all 2>/dev/null || :
+  uv-update(){
+    echo "🔄 Updating uv itself..."
+    uv self update -q || echo "⚠️ Failed to update uv"
+    echo "🔄 Updating uv tools..."
+    if uv tool list -q; then
+      uv tool upgrade --all -q || echo "⚠️ Failed to update uv tools"
+    else
+      echo "✅ No uv tools installed"
+    fi
+    echo "🔄 Updating Python packages..."
+    if command -v jq &>/dev/null; then
+      # Update only outdated packages
+      local pkgs
+      pkgs=$(uv pip list --outdated --format json | jq -r '.[].name')
+      if [[ -n $pkgs ]]; then
+        uv pip install --upgrade $pkgs || echo "⚠️ Failed to update packages"
+      else
+        echo "✅ All packages are up to date"
+      fi
+    else
+      # Fallback: reinstall everything at latest versions
+      echo "⚠️ jq not found, upgrading all packages instead"
+      uv pip install --upgrade -r <(uv pip list --format freeze) || echo "⚠️ Failed to update packages"
+    fi
+    echo "🔄 Updating Python interpreters..."
+    uv python update-shell -q
+    uv python upgrade -q || echo "⚠️ Failed to update Python versions"
+    echo "🎉 uv update complete"
+  }
+  uv-update
 fi
+
 if has pipx; then
   pipx upgrade-all 2>/dev/null || :
 fi
@@ -222,3 +251,4 @@ else
   fi
 fi
 p "✅ All done."
+printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"

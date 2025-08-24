@@ -9,7 +9,13 @@ MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Helpers ────────────────────
 has(){ command -v -- "$1" &>/dev/null; } # Check for command
-hasname(){ local x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; } # Get basename of command
+hasname(){
+  local x
+  if ! x=$(type -P -- "$1"); then
+    return 1
+  fi
+  printf '%s\n' "${x##*/}"
+} # Get basename of command
 p(){ printf '%s\n' "$*" 2>/dev/null || :; } # Print-echo
 pe(){ printf '%b\n' "$*" 2>/dev/null || :; } # Print-echo for color
 #──────────── Banner ────────────────────

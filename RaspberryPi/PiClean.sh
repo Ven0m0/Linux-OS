@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #──────────── Setup ────────────────────
-export LC_ALL=C LANG=C; shopt -s nullglob globstar
+shopt -s nullglob globstar; set -u
+export LC_ALL=C LANG=C
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
 cd $WORKDIR
 #──────────── Helpers ────────────────────

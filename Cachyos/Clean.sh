@@ -46,7 +46,7 @@ for i in "${!banner_lines[@]}"; do
 done
 
 sudo -v
-DISK_USAGE_BEFORE=$(df -hl --output=used,pcent | head -n 2 -q | tail -n 1 -q)
+DUB="$(df -h --output=used,pcent -- / | awk 'NR==2{print $1, $2}')"
 
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
@@ -55,15 +55,15 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 #─────────────────────────────────────────
 
 # Pacman cleanup
-sudo pacman -Rns $(pacman -Qdtq) --noconfirm -q
+sudo pacman -Rns $(pacman -Qdtq) --noconfirm &>/dev/null
 sudo pacman -Scc --noconfirm
 sudo paccache -rk0 -q
 uv cache prune -q; uv cache clean -q
 # Cargo
 if command -v cargo-cache &>/dev/null; then
-    cargo cache -efg || :
-    cargo-cache -efg trim --limit 1B || :
-    cargo cache -efg clean-unref || :
+  cargo cache -efg || :
+  cargo-cache -efg trim --limit 1B || :
+  cargo cache -efg clean-unref || :
 fi
 
 # Clear cache
@@ -177,7 +177,7 @@ bleachbit -c --preset && sudo -E bleachbit -c --preset || :
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches || :
 echo "System cleaned!"
 
-echo "==> Disk usage before cleanup ${DISK_USAGE_BEFORE}"
+echo "==> Disk usage before cleanup ${DUB}"
+DUA="$(df -h --output=used,pcent -- / | awk 'NR==2{print $1, $2}')"
+echo "==> Disk usage after cleanup ${DUA}"
 
-echo "==> Disk usage after cleanup"
-df -h

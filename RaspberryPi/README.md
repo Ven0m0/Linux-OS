@@ -104,9 +104,8 @@ curl -fsSL https://get.casaos.io/update | sudo bash
     ```
     One liner:
     ```bash
-    export COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443; curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
+    env COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443 curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
     ```
-
   </details>
 
 - [yunohost](https://yunohost.org)
@@ -126,6 +125,7 @@ curl -fsSL https://get.casaos.io/update | sudo bash
       --restart unless-stopped \
       ghcr.io/gethomepage/homepage:latest
     ```
+  </details>
 
 - [ShellHub](https://www.shellhub.io)
 

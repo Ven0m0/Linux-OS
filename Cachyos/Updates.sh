@@ -49,43 +49,44 @@ fi
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
-[[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
+[[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
 #─────────────────────────────────────────
 sync
-"$suexec" hwclock -w >/dev/null
-"$suexec" updatedb >/dev/null
+"$suexec" hwclock -w >/dev/null || :
+"$suexec" updatedb >/dev/null || :
 
 sysupdate(){
   local aurtool='' auropts_base auropts
+  local LC_ALL=C LANG=C LANGUAGE=en_US
   pe "🔄${BLU}System update${DEF}"
   # Detect AUR helper
   if has paru; then
-    aurtool=paru
     auropts_base=(--batchinstall --combinedupgrade --nokeepsrc)
   elif has yay; then
-    aurtool=yay
     auropts_base=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
   fi
+  aurtool="$(command -v paru 2>/dev/null || command -v yay 2>/dev/null)"
   # Ensure pacman lock is removed
   [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null || :
   # Update keyring and file databases
-  "$suexec" pacman -Sy archlinux-keyring --noconfirm --needed -q >/dev/null || :
-  "$suexec" pacman -Fy --noconfirm >/dev/null || :
+  "$suexec" pacman -Sy archlinux-keyring --noconfirm -q >/dev/null || :
+  "$suexec" pacman -Fy --noconfirm &>/dev/null || :
   # Build AUR options array
   if [[ -n $aurtool ]]; then
     auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
     pe "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
-    "$aurtool" -Suy "${auropts[@]}" >/dev/null || :
-    "$aurtool" -Sua "${auropts[@]}" >/dev/null || :
+    "$aurtool" -Suyy "${auropts[@]}" 2>/dev/null || :
+    "$aurtool" -Sua "${auropts[@]}" 2>/dev/null || :
   else
     pe "🔄${BLU}Updating system with pacman...${DEF}"
-    "$suexec" pacman -Syu --noconfirm --needed >/dev/null || :
+    "$suexec" pacman -Suyy --noconfirm --needed 2>/dev/null || :
   fi
 }
 sysupdate || :
 
 if has flatpak; then
-  flatpak update -y --noninteractive &>/dev/null || :
+  "$suexec" flatpak update -y --noninteractive --appstream &>/dev/null || :
+  "$suexec" flatpak update -y --noninteractive --system --force-remove &>/dev/null || :
 fi
 
 RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native"
@@ -174,7 +175,7 @@ if has pip; then
 fi
 if has npm; then
   p 'Update npm global packages'
-  npm update -g >/dev/null || :
+  "$suexec" npm update -g >/dev/null || :
 fi
 
 if has fwupdmgr; then

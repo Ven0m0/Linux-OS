@@ -28,6 +28,8 @@ else
     echo "Printer service not found. Skipping."
 fi
 
+echo "P2pPolicy=nothing" | sudo tee -a "/etc/fwupd/fwupd.conf"
+
 https://wiki.archlinux.org/title/Fwupd
 P2pPolicy=nothing -> /etc/fwupd/fwupd.conf 
 passim.service

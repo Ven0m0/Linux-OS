@@ -27,7 +27,6 @@ else
     xprintf "No broken packages found or fixed successfully."
 fi
 
-fi
 sudo dietpi-update 1 || sudo /boot/dietpi/dietpi-update 1
 
 if has pihole; then

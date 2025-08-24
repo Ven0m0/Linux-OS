@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 export LC_ALL=C LANG=C; set -u
 shopt -s nullglob globstar
+sync
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -50,9 +51,9 @@ fi
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
-[[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
+[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
+export HOME="/home/${SUDO_USER:-$USER}"
 #─────────────────────────────────────────
-sync
 "$suexec" hwclock -w >/dev/null || :
 "$suexec" updatedb >/dev/null || :
 

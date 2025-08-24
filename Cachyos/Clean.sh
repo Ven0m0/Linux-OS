@@ -46,8 +46,8 @@ for i in "${!banner_lines[@]}"; do
 done
 
 sudo -v
-DUB="$(df -h --output=used,pcent -- / | awk 'NR==2{print $1, $2}')"
-
+read -r used_space pct < <(df -h --output=used,pcent -- "$mp" | awk 'NR==2{print $1, $2}')
+DUB="$used_space $pct"
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
@@ -177,7 +177,8 @@ bleachbit -c --preset && sudo -E bleachbit -c --preset || :
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches || :
 echo "System cleaned!"
 
+read -r used_space_after pct_after < <(df -h --output=used,pcent -- "$mp" | awk 'NR==2{print $1, $2}')
+DUA="$used_space_after $pct_after"
 echo "==> Disk usage before cleanup ${DUB}"
-DUA="$(df -h --output=used,pcent -- / | awk 'NR==2{print $1, $2}')"
+echo
 echo "==> Disk usage after cleanup ${DUA}"
-

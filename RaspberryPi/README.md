@@ -112,6 +112,20 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 - [yunohost](https://yunohost.org)
 
 - [Homepage docker](https://github.com/gethomepage/homepage)
+  <details>
+    <summary><b>Install</b></summary>
+    
+    ```bash
+    docker run --name homepage \
+      -e HOMEPAGE_ALLOWED_HOSTS=gethomepage.dev \
+      -e PUID=1000 \
+      -e PGID=1000 \
+      -p 3000:3000 \
+      -v /path/to/config:/app/config \
+      -v /var/run/docker.sock:/var/run/docker.sock:ro \
+      --restart unless-stopped \
+      ghcr.io/gethomepage/homepage:latest
+    ```
 
 - [ShellHub](https://www.shellhub.io)
 

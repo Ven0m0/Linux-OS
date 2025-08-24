@@ -52,10 +52,12 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
 [[ $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v || :
 
+read -r used_human pct < <(df -h --output=used,pcent -- "$mp" | awk 'NR==2{print $1, $2}')
+
 # Pacman cleanup
-sudo pacman -Rns $(pacman -Qdtq) --noconfirm &>/dev/null
-sudo pacman -Scc --noconfirm
-sudo paccache -rk0 -q
+"$suexec" pacman -Rns $(pacman -Qdtq) --noconfirm &>/dev/null
+"$suexec" pacman -Scc --noconfirm
+"$suexec" paccache -rk0 -q
 uv cache prune -q; uv cache clean -q
 # Cargo
 if command -v cargo-cache &>/dev/null; then
@@ -65,21 +67,21 @@ if command -v cargo-cache &>/dev/null; then
 fi
 
 # Clear cache
-sudo systemd-tmpfiles --clean >/dev/null
-sudo rm -rf /var/cache/*
-sudo rm -rf /tmp/*
-sudo rm -rf /var/tmp/*
-sudo rm -rf /var/crash/*
-sudo rm -rf /var/lib/systemd/coredump/
+"$suexec" systemd-tmpfiles --clean >/dev/null
+"$suexec" rm -rf /var/cache/*
+"$suexec" rm -rf /tmp/*
+"$suexec" rm -rf /var/tmp/*
+"$suexec" rm -rf /var/crash/*
+"$suexec" rm -rf /var/lib/systemd/coredump/
 rm -rf $HOME/.cache/*
-sudo rm -rf /root/.cache/*
+"$suexec" rm -rf /root/.cache/*
 rm -rf $HOME/.var/app/*/cache/*
 rm $HOME/.config/Trolltech.conf || :
 kbuildsycoca6 --noincremental || :
 
 # Empty global trash
-sudo rm -rf $HOME/.local/share/Trash/*
-sudo rm -rf /root/.local/share/Trash/*
+"$suexec" rm -rf $HOME/.local/share/Trash/*
+"$suexec" rm -rf /root/.local/share/Trash/*
 
 # Flatpak
 if command -v flatpak &> /dev/null; then
@@ -87,7 +89,7 @@ if command -v flatpak &> /dev/null; then
 else
   echo 'Skipping because "flatpak" is not found.'
 fi
-sudo rm -rf /var/tmp/flatpak-cache-*
+"$suexec" rm -rf /var/tmp/flatpak-cache-*
 rm -rf $HOME/.cache/flatpak/system-cache/*
 rm -rf $HOME/.local/share/flatpak/system-cache/*
 rm -rf $HOME/.var/app/*/data/Trash/*
@@ -105,7 +107,7 @@ sudo rm -rf {/root,/home/*}/.local/share/zeitgeist || :
 
 # Shell history
 rm -f $HOME/.local/share/fish/fish_history $HOME/.config/fish/fish_history $HOME/.zsh_history $HOME/.bash_history $HOME/.history
-sudo rm -f /root/.local/share/fish/fish_history /root/.config/fish/fish_history /root/.zsh_history /root/.bash_history /root/.history
+"$suexec" rm -f /root/.local/share/fish/fish_history /root/.config/fish/fish_history /root/.zsh_history /root/.bash_history /root/.history
 
 # LibreOffice
 rm -f $HOME/.config/libreoffice/4/user/registrymodifications.xcu
@@ -120,49 +122,55 @@ rm -rf $HOME/.var/app/com.valvesoftware.Steam/cache/*
 rm -rf $HOME/.var/app/com.valvesoftware.Steam/data/Steam/appcache/*
 
 # NVIDIA
-sudo rm -rf $HOME/.nv/ComputeCache/*
+"$suexec" rm -rf $HOME/.nv/ComputeCache/*
 
 # Python
-rm -f $HOME/.python_history
-sudo rm -f /root/.python_history
+#rm -f $HOME/.python_history
+echo '--- Disable Python history for future interactive commands'
+history_file="$HOME/.python_history"
+if [[ ! -f $history_file ]]; then
+  touch -- "$history_file"
+  echo "Created $history_file."
+fi
+"$suexec" chattr +i "$(realpath $history_file)"
 
 # Firefox
-rm -rf $HOME/.cache/mozilla/*
-rm -rf $HOME/.var/app/org.mozilla.firefox/cache/*
-rm -rf $HOME/snap/firefox/common/.cache/*
-rm -rf $HOME/.mozilla/firefox/Crash\ Reports/*
-rm -rf $HOME/.var/app/org.mozilla.firefox/.mozilla/firefox/Crash\ Reports/*
-rm -rf $HOME/snap/firefox/common/.mozilla/firefox/Crash\ Reports/**
+rm -rf $HOME/.cache/mozilla/* >/dev/null || :
+rm -rf $HOME/.var/app/org.mozilla.firefox/cache/* >/dev/null || :
+rm -rf $HOME/snap/firefox/common/.cache/* >/dev/null || :
+rm -rf $HOME/.mozilla/firefox/Crash\ Reports/* >/dev/null || :
+rm -rf $HOME/.var/app/org.mozilla.firefox/.mozilla/firefox/Crash\ Reports/* >/dev/null || :
+rm -rf $HOME/snap/firefox/common/.mozilla/firefox/Crash\ Reports/** >/dev/null || :
 
 # Wine
-rm -rf $HOME/.wine/drive_c/windows/temp/*
-rm -rf $HOME/.cache/wine/
-rm -rf $HOME/.cache/winetricks/
+rm -rf $HOME/.wine/drive_c/windows/temp/* >/dev/null || :
+rm -rf $HOME/.cache/wine/ >/dev/null || :
+rm -rf $HOME/.cache/winetricks/ >/dev/null || :
 
 # GTK
-rm -f $HOME/.local/share/recently-used.xbel*
-rm -f $HOME/snap/*/*/.local/share/recently-used.xbel
-rm -f $HOME/.var/app/*/data/recently-used.xbel
+rm -f $HOME/.local/share/recently-used.xbel* >/dev/null || :
+rm -f $HOME/snap/*/*/.local/share/recently-used.xbel >/dev/null || :
+rm -f $HOME/.var/app/*/data/recently-used.xbel >/dev/null || :
 
 # KDE
-rm -rf $HOME/.local/share/RecentDocuments/*.desktop
-rm -rf $HOME/.kde/share/apps/RecentDocuments/*.desktop
-rm -rf $HOME/.kde4/share/apps/RecentDocuments/*.desktop
-rm -f $HOME/snap/*/*/.local/share/*.desktop
-rm -rf $HOME/.var/app/*/data/*.desktop
+rm -rf $HOME/.local/share/RecentDocuments/*.desktop >/dev/null || :
+rm -rf $HOME/.kde/share/apps/RecentDocuments/*.desktop >/dev/null || :
+rm -rf $HOME/.kde4/share/apps/RecentDocuments/*.desktop >/dev/null || :
+rm -f $HOME/snap/*/*/.local/share/*.desktop >/dev/null || :
+rm -rf $HOME/.var/app/*/data/*.desktop >/dev/null || :
 
 # TLDR cache
-sudo tldr -c >/dev/null || :
+"$suexec" tldr -c >/dev/null || :
 
 # Trim disks
-sudo fstrim -a --quiet-unsupported >/dev/null || :
-sudo fstrim / --quiet-unsupported >/dev/null || :
+"$suexec" fstrim -a --quiet-unsupported >/dev/null || :
+"$suexec" fstrim / --quiet-unsupported >/dev/null || :
 
 # Clearing dns cache
-systemd-resolve --flush-caches >/dev/null
+"$suexec" systemd-resolve --flush-caches >/dev/null
 
 # Font cache
-fc-cache -f >/dev/null
+"$suexec" fc-cache -f >/dev/null
 
 # BleachBit if available
 #if command -v bleachbit &>/dev/null; then
@@ -170,12 +178,12 @@ fc-cache -f >/dev/null
 #else
 #    echo "bleachbit is not installed, skipping."
 #fi
-bleachbit -c --preset && sudo -E bleachbit -c --preset || :
+bleachbit -c --preset >/dev/null && "$suexec" bleachbit -c --preset >/dev/null || :
 
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches || :
+sync; echo 3 | "$suexec" tee /proc/sys/vm/drop_caches &>/dev/null || :
 echo "System cleaned!"
 
-read -r used_space_after pct_after < <(df -h --output=used,pcent -- "$mp" | awk 'NR==2{print $1, $2}')
+read -r used_space_after pct_after < <(df -h --output=used,pcent -- / | awk 'NR==2{print $1, $2}')
 DUA="$used_space_after $pct_after"
 echo "==> Disk usage before cleanup ${DUB}"
 echo

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-#shopt -s nullglob globstar; IFS=$'\n\t'
+# shopt -s nullglob globstar &>/dev/null
+# IFS=$'\n\t'
 # vnfetch (ven0m0-fetch), for Arch/Debian based distro's
 # The goal is to keep dependencies as minimal as possible
 # Credit:
@@ -14,29 +15,28 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #─────────────────────────────────────────
-has(){ command -v -- "$1" &>/dev/null; }
-p(){ printf '%s\n' "$*"; }
-pe(){ printf '%b\n' "$*" "$DEF"; }
+#xecho(){ printf '%s\n' "$*"; }
+#xeecho(){ printf '%b\n' "$*" "$DEF"; }
 #─────────────────────────────────────────
-USERN="${USER:-$(id -un 2>/dev/null || echo unknown)}"
+USERN="${USER:-$(LC_ALL=C id -un 2>/dev/null || echo unknown)}"
 if [[ -r /etc/os-release ]]; then
   . /etc/os-release
   OS="${PRETTY_NAME:-${NAME:-unknown}}"
 else
-  OS="$(uname -s 2>/dev/null || echo unknown)"
+  OS="$(LC_ALL=C uname -s 2>/dev/null || echo unknown)"
 fi
 if ! read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null; then
-  KERNEL="$(uname -r 2>/dev/null || printf 'N/A')"
+  KERNEL="$(LC_ALL=C uname -r 2>/dev/null || printf 'N/A')"
 fi
 if ! read -r HOSTNAME < /etc/hostname 2>/dev/null; then
-  HOSTNAME="$(hostname 2>/dev/null || printf '%s' "${HOSTNAME:-unknown}")"
+  HOSTNAME="$(LC_ALL=C hostname 2>/dev/null || printf '%s' "${HOSTNAME:-unknown}")"
 fi
-UPT="$(uptime -p 2>/dev/null | sed 's/^up //')"
+UPT="$(LC_ALL=C uptime -p 2>/dev/null | sed 's/^up //')"
 # Processes (bash: nullglob + array = safe, fast)
-shopt -s nullglob
+shopt -s nullglob &>/dev/null
 procs=(/proc/[0-9]*)
 PROCS=${#procs[@]}
-shopt -u nullglob
+shopt -u nullglob &>/dev/null
 if command -v pacman &>/dev/null; then
   PKG="$(LC_ALL=C pacman -Qq 2>/dev/null | LC_ALL=C wc -l)"
 elif command -v apt-fast &>/dev/null; then
@@ -48,21 +48,21 @@ else
 fi
 PWPLAN="$(LC_ALL=C powerprofilesctl get 2>/dev/null || echo N/A)"
 SHELLX="${SHELL##*/}"
-LOCALIP="$(ip route get 1 2>/dev/null | LC_ALL=C awk '/src/ {for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
+LOCALIP="$(LC_ALL=C ip route get 1 2>/dev/null | LC_ALL=C awk '/src/ {for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
 if command -v dig &>/dev/null; then
   GLOBALIP="$(LC_ALL=C dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null | tr -d '"')"
 else
-  GLOBALIP="$(LC_ALL=C curl -fsS4 ipinfo.io/ip 2>/dev/null || LC_ALL=C curl -fsS4 ipecho.net/plain 2>/dev/null)"
+  GLOBALIP="$(LC_ALL=C curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip 2>/dev/null || LC_ALL=C curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain 2>/dev/null)"
 fi
 WEATHER="$(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null | xargs)"
 CPU="$(LC_ALL=C awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null || echo "N/A")"
-GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}' || echo "N/A")"
+GPU="$(LC_ALL=C lspci 2>/dev/null | LC_ALL=C awk -F: '/VGA/ {print substr($0,1,50); exit}' || echo "N/A")"
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
 WMNAME="${XDG_CURRENT_DESKTOP:-} ${DESKTOP_SESSION:-}"
-[[ -n "$DISPLAY" ]] && { pgrep -x Xorg &>/dev/null && D_SERVER="(Xorg)" || D_SERVER="(Wayland)"; } || D_SERVER=""
+[[ -n "$DISPLAY" ]] && { LC_ALL=C pgrep -x Xorg &>/dev/null && D_SERVER="(Xorg)" || D_SERVER="(Wayland)"; } || D_SERVER=""
 #─────────────────────────────────────────
 # Memory: totals, used, percent, GiB formatting via awk
-read -r MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print (t+0),(a+0)}' /proc/meminfo)
+read -r MemTotal MemAvailable < <(LC_ALL=C awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print (t+0),(a+0)}' /proc/meminfo)
 MemTotal=${MemTotal:-0}
 MemAvailable=${MemAvailable:-0}
 MemUsed=$((MemTotal - MemAvailable))
@@ -71,14 +71,14 @@ if [[ $MemTotal -le 0 ]]; then
 else
   MemPct=$(( (MemUsed * 100 + MemTotal/2) / MemTotal ))  # rounded percent
 fi
-MemUsedGiB="$(awk -v m="$MemUsed" 'BEGIN{printf "%.2f", m/1048576}')"
-MemTotalGiB="$(awk -v m="$MemTotal" 'BEGIN{printf "%.2f", m/1048576}')"
+MemUsedGiB="$(LC_ALL=C awk -v m="$MemUsed" 'BEGIN{printf "%.2f", m/1048576}')"
+MemTotalGiB="$(LC_ALL=C awk -v m="$MemTotal" 'BEGIN{printf "%.2f", m/1048576}')"
 mem_col=$([[ $MemPct -ge 75 ]] && echo $'\e[31m' || echo $'\e[32m')
 # Prepare colored value strings (no trailing newline)
 MEMVAL="${MemUsedGiB} / ${MemTotalGiB} GiB (${mem_col}${MemPct}%${DEF})"
 # Disk: human-readable sizes
-read -r _ _ disk_used disk_avail disk_used_pct _ < <(df -Pkh / 2>/dev/null | tail -1)
-read -r fstype < <(findmnt -rn -o FSTYPE / 2>/dev/null || printf 'unknown\n')
+read -r _ _ disk_used disk_avail disk_used_pct _ < <(LC_ALL=C df -Pkh / 2>/dev/null | LC_ALL=C tail -1)
+read -r fstype < <(LC_ALL=C findmnt -rn -o FSTYPE / 2>/dev/null || printf 'unknown\n')
 disk_used=${disk_used:-N/A}
 disk_avail=${disk_avail:-N/A}
 disk_pct_num=${disk_used_pct%\%}

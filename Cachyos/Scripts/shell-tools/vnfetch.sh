@@ -4,7 +4,7 @@
 # Credit:
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
-o1="$LANG"
+l1="$LANG"
 export LC_ALL=C LANG=C
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
@@ -38,6 +38,8 @@ PROCS=${#procs[@]}
 shopt -u nullglob
 if has pacman; then
   PKG="$(pacman -Qq 2>/dev/null | wc -l)"
+elif has apt-fast; then
+  PKG="$(( $(apt-fast list --installed 2>/dev/null | wc -l) - 1 ))"
 elif has apt; then
   PKG="$(( $(apt list --installed 2>/dev/null | wc -l) - 1 ))"
 else
@@ -105,7 +107,7 @@ append "Local IP"   "${LOCALIP:-N/A}"
 append "Public IP"  "${GLOBALIP:-N/A}"
 append "Weather"    "${WEATHER:-N/A}"
 append "Powerplan"  "${PWPLAN:-N/A}"
-append "Lang"       "${o1:-unset}"
+append "Lang"       "${l1:-unset}"
 # single print (interpret escapes)
 printf '%b' "$OUT"
 # ensure color reset and newline

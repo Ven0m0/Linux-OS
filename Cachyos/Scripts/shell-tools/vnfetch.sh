@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-set -eEuo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
+shopt -s nullglob globstar; IFS=$'\n\t'
 # vnfetch (ven0m0-fetch), for Arch/Debian based distro's
 # The goal is to keep dependencies as minimal as possible
 # Credit:

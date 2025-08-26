@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+set -eEuo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
 # vnfetch (ven0m0-fetch), for Arch/Debian based distro's
 # The goal is to keep dependencies as minimal as possible
 # Credit:
@@ -13,9 +16,9 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #─────────────────────────────────────────
-has() { command -v -- "$1" &>/dev/null; }
-p() { printf '%s\n' "$*"; }
-pe() { printf '%b\n' "$*" "$DEF"; }
+has(){ command -v -- "$1" &>/dev/null; }
+p(){ printf '%s\n' "$*"; }
+pe(){ printf '%b\n' "$*" "$DEF"; }
 #─────────────────────────────────────────
 USERN="${USER:-$(id -un 2>/dev/null || echo unknown)}"
 if [[ -r /etc/os-release ]]; then
@@ -32,25 +35,29 @@ if ! read -r HOSTNAME < /etc/hostname 2>/dev/null; then
 fi
 UPT="$(uptime -p 2>/dev/null | sed 's/^up //')"
 # Processes (bash: nullglob + array = safe, fast)
-shopt -s nullglob
+#shopt -s nullglob
 procs=(/proc/[0-9]*)
 PROCS=${#procs[@]}
-shopt -u nullglob
-if has pacman; then
-  PKG="$(pacman -Qq 2>/dev/null | wc -l)"
-elif has apt-fast; then
-  PKG="$(( $(apt-fast list --installed 2>/dev/null | wc -l) - 1 ))"
-elif has apt; then
-  PKG="$(( $(apt list --installed 2>/dev/null | wc -l) - 1 ))"
+#shopt -u nullglob
+if command -v pacman &>/dev/null; then
+  PKG="$(LC_ALL=C pacman -Qq 2>/dev/null | LC_ALL=C wc -l)"
+elif command -v apt-fast &>/dev/null; then
+  PKG="$(( $(LC_ALL=C apt-fast list --installed 2>/dev/null | LC_ALL=C wc -l) - 1 ))"
+elif command -v apt &>/dev/null; then
+  PKG="$(( $(LC_ALL=C apt list --installed 2>/dev/null | LC_ALL=C wc -l) - 1 ))"
 else
   PKG="N/A"
 fi
-PWPLAN="$(powerprofilesctl get 2>/dev/null || echo N/A)"
+PWPLAN="$(LC_ALL=C powerprofilesctl get 2>/dev/null || echo N/A)"
 SHELLX="${SHELL##*/}"
-LOCALIP="$(ip route get 1 2>/dev/null | awk '/src/ {for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
-GLOBALIP="$(dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null | tr -d '"')"
+LOCALIP="$(ip route get 1 2>/dev/null | LC_ALL=C awk '/src/ {for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
+if command -v dig &>/dev/null; then
+  GLOBALIP="$(LC_ALL=C dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null | tr -d '"')"
+else
+  GLOBALIP="$(LC_ALL=C curl -fsS4 ipinfo.io/ip 2>/dev/null || LC_ALL=C curl -fsS4 ipecho.net/plain 2>/dev/null)"
+fi`
 WEATHER="$(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null | xargs)"
-CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null || echo "N/A")"
+CPU="$(LC_ALL=C awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null || echo "N/A")"
 GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}' || echo "N/A")"
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
 WMNAME="${XDG_CURRENT_DESKTOP:-} ${DESKTOP_SESSION:-}"

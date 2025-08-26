@@ -55,7 +55,7 @@ if command -v dig &>/dev/null; then
   GLOBALIP="$(LC_ALL=C dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null | tr -d '"')"
 else
   GLOBALIP="$(LC_ALL=C curl -fsS4 ipinfo.io/ip 2>/dev/null || LC_ALL=C curl -fsS4 ipecho.net/plain 2>/dev/null)"
-fi`
+fi
 WEATHER="$(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null | xargs)"
 CPU="$(LC_ALL=C awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null || echo "N/A")"
 GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}' || echo "N/A")"

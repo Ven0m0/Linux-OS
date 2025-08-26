@@ -13,17 +13,17 @@ has hyperfine || { echo "❌ hyperfine not found in PATH"; exit 1; }
 
 o1="$(< /sys/devices/system/cpu/intel_pstate/no_turbo)"
 Reset() { 
-  "$suexec" sh -c "echo $o1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+  "$suexec" sh -c 'echo "${o1:-0}" >/sys/devices/system/cpu/intel_pstate/no_turbo' &>/dev/null
 }
 "$suexec" cpupower frequency-set --governor performance &>/dev/null || :
-"$suexec" sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
+"$suexec" sh -c 'echo 1 >/sys/devices/system/cpu/intel_pstate/no_turbo' &>/dev/null || :
 
 benchmark() {
   local name="$1"; shift
   local cmd="$*"
   p "▶ $name"
-  hyperfine -w 10 -m 25 -i -S bash \
-    -p "sync; sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'; systemd-resolve --flush-caches"  \
+  hyperfine -w 25 -m 50 -i -S bash \
+    -p "sync; echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null; systemd-resolve --flush-caches; hash -r" \
     "$cmd"
 }
 

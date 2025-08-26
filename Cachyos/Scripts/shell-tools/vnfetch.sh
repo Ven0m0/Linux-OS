@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-shopt -s nullglob globstar; IFS=$'\n\t'
+#shopt -s nullglob globstar; IFS=$'\n\t'
 # vnfetch (ven0m0-fetch), for Arch/Debian based distro's
 # The goal is to keep dependencies as minimal as possible
 # Credit:
@@ -33,10 +33,10 @@ if ! read -r HOSTNAME < /etc/hostname 2>/dev/null; then
 fi
 UPT="$(uptime -p 2>/dev/null | sed 's/^up //')"
 # Processes (bash: nullglob + array = safe, fast)
-#shopt -s nullglob
+shopt -s nullglob
 procs=(/proc/[0-9]*)
 PROCS=${#procs[@]}
-#shopt -u nullglob
+shopt -u nullglob
 if command -v pacman &>/dev/null; then
   PKG="$(LC_ALL=C pacman -Qq 2>/dev/null | LC_ALL=C wc -l)"
 elif command -v apt-fast &>/dev/null; then

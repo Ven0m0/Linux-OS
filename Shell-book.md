@@ -95,7 +95,7 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 <summary><b>Get external IP</b></summary>
 
 ```bash
-curl -fsS ipinfo.io/ip || curl -fsS http://ipecho.net/plain
+curl -fsS4 ipinfo.io/ip || curl -fsS4 ipecho.net/plain
 ```
 </details>
 <details>

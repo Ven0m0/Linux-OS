@@ -1,5 +1,4 @@
 #!/bin/bash
-# #!/usr/bin/env bash
 # vnfetch (ven0m0-fetch), for Arch/Debian based distro's
 # Credit:
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
@@ -56,8 +55,7 @@ fi
 WEATHER=""
 IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null)
 # CPU/GPU
-CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
-vs
+#CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
 CPU=""
 while IFS= read -r _line; do
   case "$_line" in

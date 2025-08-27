@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# #!/usr/bin/env bash
 # vnfetch (ven0m0-fetch), for Arch/Debian based distro's
 # Credit:
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo

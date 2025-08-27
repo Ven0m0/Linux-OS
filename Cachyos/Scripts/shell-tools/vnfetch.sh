@@ -55,16 +55,7 @@ fi
 WEATHER=""
 IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null)
 # CPU/GPU
-#CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
-CPU=""
-while IFS= read -r _line; do
-  case "$_line" in
-    model\ name*:*)
-      CPU="${_line#*: }"
-      break
-      ;;
-  esac
-done < /proc/cpuinfo
+CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
 GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}')"
 # Date and WM
 DATE="$(printf '%(%d %b %R)T\n' '-1')"

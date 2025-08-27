@@ -47,15 +47,15 @@ LOCALIP=$(LC_ALL=C ip -4 route get 1 2>/dev/null | { read -r _ _ _ _ _ _ ip _; e
 #LOCALIP="$(LC_ALL=C ip route get 1 2>/dev/null | LC_ALL=C sed -n 's/.*src \([0-9.]*\).*/\1/p')"
 # Public IP
 if command -v dig &>/dev/null; then
-  GLOBALIP="$(dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null | tr -d '"')"
+  GLOBALIP="$(dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null)"; GLOBALIP="${GLOBALIP//\"/}"
 else
   GLOBALIP="$(curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip 2>/dev/null || curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain 2>/dev/null)"
 fi
 # Weather
-WEATHER="$(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null | xargs)"
+WEATHER="$(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null)"
 # CPU/GPU
-CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null)"
-GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}' 2>/dev/null)"
+CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
+GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}')"
 # Date and WM
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
 WMNAME="${XDG_CURRENT_DESKTOP:-} ${DESKTOP_SESSION:-}"
@@ -78,7 +78,9 @@ fstype=$(findmnt -rn -o FSTYPE / 2>/dev/null)
 DISKVAL="${disk_used:-N/A} / ${disk_avail:-N/A} (${disk_col}${disk_pct_num}%${DEF}) - ${fstype:-unknown}"
 #──────────── Print ─────────────
 labelw=14; OUT=''
-append(){ printf -v _line '%-*s %s' "$labelw" "$1:" "$2"; OUT+="$_line"$'\n'; }
+# Only append if value is not empty or "N/A"
+append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="$_line"$'\n'; }
+#append(){ printf -v _line '%-*s %s' "$labelw" "$1:" "$2"; OUT+="$_line"$'\n'; }
 #──────────── Layout ─────────────
 append "User"       "$USER"@"$HOSTNAME"
 OUT+="────────────────────────────────────────────"$'\n'
@@ -101,4 +103,5 @@ append "Local IP"   "${LOCALIP:-N/A}"
 append "Public IP"  "${GLOBALIP:-N/A}"
 append "Weather"    "${WEATHER:-N/A}"
 append "Powerplan"  "${PWPLAN:-N/A}"
+
 printf '%b\n%b\n' "$OUT" "$DEF"

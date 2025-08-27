@@ -19,11 +19,16 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 #xeecho(){ printf '%b\n' "$*" "$DEF"; }
 #─────────────────────────────────────────
 USERN="${USER:-$(LC_ALL=C id -un 2>/dev/null || echo unknown)}"
-if [[ -r /etc/os-release ]]; then
-  . /etc/os-release
-  OS="${PRETTY_NAME:-${NAME:-unknown}}"
+#if [[ -r /etc/os-release ]]; then
+  #. /etc/os-release 2>/dev/null
+  #OS="${NAME:-${PRETTY_NAME:-unknown}}"
+#else
+  #OS="$(LC_ALL=C uname -o 2>/dev/null || echo unknown)"
+#fi
+if . /etc/os-release &>/dev/null; then
+  OS="${NAME:-${PRETTY_NAME:-unknown}}"
 else
-  OS="$(LC_ALL=C uname -s 2>/dev/null || echo unknown)"
+  OS="$(LC_ALL=C uname -o 2>/dev/null || echo unknown)"
 fi
 if ! read -r KERNEL < /proc/sys/kernel/osrelease 2>/dev/null; then
   KERNEL="$(LC_ALL=C uname -r 2>/dev/null || printf 'N/A')"
@@ -31,7 +36,7 @@ fi
 if ! read -r HOSTNAME < /etc/hostname 2>/dev/null; then
   HOSTNAME="$(LC_ALL=C hostname 2>/dev/null || printf '%s' "${HOSTNAME:-unknown}")"
 fi
-UPT="$(LC_ALL=C uptime -p 2>/dev/null | sed 's/^up //')"
+UPT="$(LC_ALL=C uptime -p 2>/dev/null | LC_ALL=C sed 's/^up //')"
 # Processes (bash: nullglob + array = safe, fast)
 shopt -s nullglob &>/dev/null
 procs=(/proc/[0-9]*)
@@ -46,9 +51,12 @@ elif command -v apt &>/dev/null; then
 else
   PKG="N/A"
 fi
+if command -v cargo &>/dev/null; then
+  PKG2="$(LC_ALL=C cargo install --list | LC_ALL=C grep -c '^[^[:space:]].*:')"
 PWPLAN="$(LC_ALL=C powerprofilesctl get 2>/dev/null || echo N/A)"
 SHELLX="${SHELL##*/}"
-LOCALIP="$(LC_ALL=C ip route get 1 2>/dev/null | LC_ALL=C awk '/src/ {for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')"
+LOCALIP=$(LC_ALL=C ip -4 route get 1 2>/dev/null | { read -r _ _ _ _ _ _ ip _; echo "$ip"; })
+#LOCALIP="$(LC_ALL=C ip route get 1 2>/dev/null | LC_ALL=C sed -n 's/.*src \([0-9.]*\).*/\1/p')"
 if command -v dig &>/dev/null; then
   GLOBALIP="$(LC_ALL=C dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null | tr -d '"')"
 else
@@ -103,16 +111,16 @@ append "Uptime"     "$UPT"
 append "Packages"   "$PKG"
 append "Processes"  "$PROCS"
 append "Shell"      "$SHELLX"
+append "Editor"     "${EDITOR:-VISUAL:-N/A}"
 append "Terminal"   "${TERM:-N/A}"
 append "WM"         "${WMNAME} ${D_SERVER}"
-append "Editor"     "${EDITOR:-N/A}"
+append "Lang"       "${l1:-unset}"
 append "Memory"     "$MEMVAL"
 append "Disk"       "$DISKVAL"
 append "Local IP"   "${LOCALIP:-N/A}"
 append "Public IP"  "${GLOBALIP:-N/A}"
 append "Weather"    "${WEATHER:-N/A}"
 append "Powerplan"  "${PWPLAN:-N/A}"
-append "Lang"       "${l1:-unset}"
 # single print (interpret escapes)
 printf '%b' "$OUT"
 # ensure color reset and newline

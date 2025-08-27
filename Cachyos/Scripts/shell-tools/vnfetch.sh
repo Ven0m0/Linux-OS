@@ -24,7 +24,7 @@ shopt -s nullglob &>/dev/null
 procs="(/proc/[0-9]*)"; PROCS="${#procs[@]}"
 shopt -u nullglob &>/dev/null
 # Packages
-PKG=""
+PKG=0
 if command -v pacman &>/dev/null; then
   PKG="$(pacman -Qq 2>/dev/null | wc -l)"
   [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Pacman)"
@@ -35,32 +35,44 @@ elif command -v apt &>/dev/null; then
   PKG="$(( $(apt list --installed 2>/dev/null | wc -l) - 1 ))"
   [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
 fi
-PKG2=""
-PKG2="$(command -v cargo &>/dev/null && cargo install --list 2>/dev/null | grep -c '^[^[:space:]].*:')"
-[[ ${PKG2:-} -gt 0 ]] && PKG2="${PKG2} (Cargo)"
+PKG2=0
+if command -v cargo &>/dev/null; then
+  PKG2=$(cargo install --list 2>/dev/null | grep -c '^[^[:space:]].*:')
+  [[ ${PKG2:-0} -gt 0 ]] && PKG2="${PKG2} (Cargo)"
+fi
 PACKAGE="${PKG:-} ${PKG2:-}"
 # Other
 PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="${SHELL##*/}"
 # Local IP
-LOCALIP=$(LC_ALL=C ip -4 route get 1 2>/dev/null | { read -r _ _ _ _ _ _ ip _; echo "$ip"; })
-#LOCALIP="$(LC_ALL=C ip route get 1 2>/dev/null | LC_ALL=C sed -n 's/.*src \([0-9.]*\).*/\1/p')"
+LOCALIP=$(LC_ALL=C ip -4 route get 1 2>/dev/null | { read -r _ _ _ _ _ _ ip _; echo "${ip:-}"; })
+#LOCALIP="$(LC_ALL=C ip route get 1 2>/dev/null | sed -n 's/.*src \([0-9.]*\).*/\1/p')"
 # Public IP
+GLOBALIP=""
 if command -v dig &>/dev/null; then
   GLOBALIP="$(dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null)"; GLOBALIP="${GLOBALIP//\"/}"
 else
   GLOBALIP="$(curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip 2>/dev/null || curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain 2>/dev/null)"
 fi
 # Weather
-WEATHER="$(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null)"
+WEATHER=""
+IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null)
 # CPU/GPU
 CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
+vs
+CPU=""
+while IFS= read -r _line; do
+  case "$_line" in
+    model\ name*:*)
+      CPU="${_line#*: }"
+      break
+      ;;
+  esac
+done < /proc/cpuinfo
 GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}')"
 # Date and WM
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
-WMNAME="${XDG_CURRENT_DESKTOP:-} ${DESKTOP_SESSION:-}"
-D_SERVER=""
-[[ -n "$DISPLAY" ]] && { pgrep -x wayland && D_SERVER="(Wayland)" } || { pgrep -x xorg && D_SERVER="(X11)"; }
+WMNAME="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}} ${DESKTOP_SESSION:-} ${XDG_SESSION_TYPE:-}"
 #──────────────────── Memory ────────────────────
 read -r MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print t+0,a+0}' /proc/meminfo)
 MemTotal=${MemTotal:-0}; MemAvailable=${MemAvailable:-0}
@@ -79,21 +91,21 @@ DISKVAL="${disk_used:-N/A} / ${disk_avail:-N/A} (${disk_col}${disk_pct_num}%${DE
 #──────────── Print ─────────────
 labelw=14; OUT=''
 # Only append if value is not empty or "N/A"
-append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="$_line"$'\n'; }
+append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="${_line}"$'\n'; }
 #append(){ printf -v _line '%-*s %s' "$labelw" "$1:" "$2"; OUT+="$_line"$'\n'; }
 #──────────── Layout ─────────────
 append "User"       "$USER"@"$HOSTNAME"
 OUT+="────────────────────────────────────────────"$'\n'
-append "Date"       "$DATE"
-append "OS"         "${OS:-N/A}"
-append "Kernel"     "${KERNEL:-N/A}"
-append "Uptime"     "${UPT:-N/A}"
-append "Packages"   "${PACKAGE:-N/A}"
+append "Date"       "${DATE:-}"
+append "OS"         "${OS:-}"
+append "Kernel"     "${KERNEL:-}"
+append "Uptime"     "${UPT:-}"
+append "Packages"   "${PACKAGE:-}"
 append "Processes"  "${PROCS:-}"
 append "Shell"      "$SHELLX"
 append "Editor"     "${EDITOR:-${VISUAL:-}}"
-append "Terminal"   "${TERM:-N/A}"
-append "WM"         "${WMNAME:-} ${D_SERVER:-}"
+append "Terminal"   "${TERM:-}"
+append "WM"         "$WMNAME"
 append "Lang"       "${l1:-unset}"
 append "CPU"        "${CPU:-N/A}"
 append "GPU"        "${GPU:-N/A}"

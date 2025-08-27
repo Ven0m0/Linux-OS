@@ -17,9 +17,7 @@ KERNEL="$(</proc/sys/kernel/osrelease 2>/dev/null || uname -r 2>/dev/null)"
 #HOSTNAME=$(</etc/hostname 2>/dev/null || hostname 2>/dev/null || echo "unknown")
 UPT="$(uptime -p 2>/dev/null)"; UPT="${UPT#up }"
 # Processes
-shopt -s nullglob
-procs=(/proc/[0-9]*); PROCS=${#procs[@]}
-shopt -u nullglob
+PROCS=$(set -- /proc/[0-9]*; echo $#)
 # Packages
 PKG=0
 if command -v pacman &>/dev/null; then

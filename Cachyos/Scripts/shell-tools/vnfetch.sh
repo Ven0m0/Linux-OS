@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# shopt -s nullglob globstar &>/dev/null
-# IFS=$'\n\t'
 # vnfetch (ven0m0-fetch), for Arch/Debian based distro's
-# The goal is to keep dependencies as minimal as possible
 # Credit:
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch

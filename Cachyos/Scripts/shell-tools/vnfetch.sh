@@ -57,7 +57,25 @@ WEATHER=""
 IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null)
 # CPU/GPU
 CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
-GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}')"
+GPU=$(
+  if command -v nvidia-smi &>/dev/null; then
+    nvidia-smi --query-gpu=name --format=csv,noheader | head -n1
+  else
+    lspci 2>/dev/null | awk -F: '/VGA|3D/ && !/Integrated/ {
+      name = $3
+      if (match(name, /\[(GeForce|Quadro|Titan|Radeon|RX|Vega)[^]]*\]/)) {
+        prod = substr(name, RSTART+1, RLENGTH-2)
+      } else if (match(name, /(GeForce|Quadro|Titan|Radeon|RX|Vega)[^[(]*/)) {
+        prod = substr(name, RSTART, RLENGTH)
+      } else {
+        prod = name
+      }
+      gsub(/^[ \t]+|[ \t]+$/, "", prod)
+      print prod
+      exit
+    }'
+  fi
+)
 # Date and WM
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
 WMNAME="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}} ${DESKTOP_SESSION:-} ${XDG_SESSION_TYPE:-}"

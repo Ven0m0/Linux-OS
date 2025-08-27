@@ -24,15 +24,22 @@ shopt -s nullglob &>/dev/null
 procs="(/proc/[0-9]*)"; PROCS="${#procs[@]}"
 shopt -u nullglob &>/dev/null
 # Packages
+PKG=""
 if command -v pacman &>/dev/null; then
-  PKG="$(pacman -Qq 2>/dev/null | wc -l) (Pacman)"
+  PKG="$(pacman -Qq 2>/dev/null | wc -l)"
+  [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Pacman)"
 elif command -v apt-fast &>/dev/null; then
-  PKG="$(( $(apt-fast list --installed 2>/dev/null | wc -l) - 1 )) (Apt)"
+  PKG="$(( $(apt-fast list --installed 2>/dev/null | wc -l) - 1 ))"
+  [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
 elif command -v apt &>/dev/null; then
-  PKG="$(( $(apt list --installed 2>/dev/null | wc -l) - 1 )) (Apt)"
+  PKG="$(( $(apt list --installed 2>/dev/null | wc -l) - 1 ))"
+  [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
 fi
-PKG2="$(command -v cargo &>/dev/null && cargo install --list 2>/dev/null | grep -c '^[^[:space:]].*:') (Cargo)"
+PKG2=""
+PKG2="$(command -v cargo &>/dev/null && cargo install --list 2>/dev/null | grep -c '^[^[:space:]].*:')"
+[[ ${PKG2:-} -gt 0 ]] && PKG2="${PKG2} (Cargo)"
 PACKAGE="${PKG:-} ${PKG2:-}"
+# Other
 PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="${SHELL##*/}"
 # Local IP
@@ -47,11 +54,12 @@ fi
 # Weather
 WEATHER="$(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null | xargs)"
 # CPU/GPU
-CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null || echo "N/A")"
-GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}' || echo "N/A")"
+CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo 2>/dev/null)"
+GPU="$(lspci 2>/dev/null | awk -F: '/VGA/ {print substr($0,1,50); exit}' 2>/dev/null)"
 # Date and WM
 DATE="$(printf '%(%d %b %R)T\n' '-1')"
 WMNAME="${XDG_CURRENT_DESKTOP:-} ${DESKTOP_SESSION:-}"
+D_SERVER=""
 [[ -n "$DISPLAY" ]] && { pgrep -x wayland && D_SERVER="(Wayland)" } || { pgrep -x xorg && D_SERVER="(X11)"; }
 #──────────────────── Memory ────────────────────
 read -r MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print t+0,a+0}' /proc/meminfo)
@@ -79,12 +87,14 @@ append "OS"         "${OS:-N/A}"
 append "Kernel"     "${KERNEL:-N/A}"
 append "Uptime"     "${UPT:-N/A}"
 append "Packages"   "${PACKAGE:-N/A}"
-append "Processes"  "$PROCS"
+append "Processes"  "${PROCS:-}"
 append "Shell"      "$SHELLX"
-append "Editor"     "${EDITOR:-VISUAL:-N/A}"
+append "Editor"     "${EDITOR:-${VISUAL:-}}"
 append "Terminal"   "${TERM:-N/A}"
 append "WM"         "${WMNAME:-} ${D_SERVER:-}"
 append "Lang"       "${l1:-unset}"
+append "CPU"        "${CPU:-N/A}"
+append "GPU"        "${GPU:-N/A}"
 append "Memory"     "$MEMVAL"
 append "Disk"       "$DISKVAL"
 append "Local IP"   "${LOCALIP:-N/A}"

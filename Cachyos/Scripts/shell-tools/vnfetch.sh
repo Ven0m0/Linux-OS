@@ -41,6 +41,7 @@ PACKAGE="${PKG:-} ${PKG2:-}"
 # Other
 PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="${SHELL##*/}"
+EDITORX="${EDITOR:-${VISUAL:-}}"
 # Local IP
 LOCALIP=$(LC_ALL=C ip -4 route get 1 2>/dev/null | { read -r _ _ _ _ _ _ ip _; echo "${ip:-}"; })
 #LOCALIP="$(LC_ALL=C ip route get 1 2>/dev/null | sed -n 's/.*src \([0-9.]*\).*/\1/p')"
@@ -90,7 +91,7 @@ append "Uptime"     "${UPT:-}"
 append "Packages"   "${PACKAGE:-}"
 append "Processes"  "${PROCS:-}"
 append "Shell"      "$SHELLX"
-append "Editor"     "${EDITOR:-${VISUAL:-}}"
+append "Editor"     "${EDITORX:-}"
 append "Terminal"   "${TERM:-}"
 append "WM"         "$WMNAME"
 append "Lang"       "${l1:-unset}"

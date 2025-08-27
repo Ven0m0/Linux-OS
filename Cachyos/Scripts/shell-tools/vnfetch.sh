@@ -121,3 +121,4 @@ append "Weather"    "${WEATHER:-}"
 append "Powerplan"  "${PWPLAN:-}"
 
 printf '%b\n%b\n' "$OUT" "$DEF"
+exit

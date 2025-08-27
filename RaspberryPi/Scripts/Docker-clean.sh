@@ -4,9 +4,8 @@
 #   -e, exit immediately if a command exits with a non-zero status
 #   -o pipefail, means that if any element of the pipeline fails, then the pipeline as a whole will fail.
 #   -u, treat unset variables as an error when substituting.
-set -e
-set -u
-set -o pipefail
+export LC_ALL=C LANG=C
+set -euo pipefail
 
 DONT_RESTART_DOCKER_ENGINE=0
 DONT_ASK_CONFIRMATION=0
@@ -128,16 +127,14 @@ echo "👉 Remove all unused volumes"
 docker volume ls -qf dangling=true | xargs -r docker volume rm
 
 echo "👉 Remove Docker builder cache"
-DOCKER_BUILDKIT=1 docker builder prune --all --force
-
-echo "👉 Remove docker builder cache"
+DOCKER_BUILDKIT=1 docker builder prune -a --force
 
 echo "👉 Remove networks not used by at least one container"
 docker network prune --force
 
-# echo "👉 Remove unused volumes"
+ echo "👉 Remove unused volumes"
 # -a, --all, Remove all unused build cache, not just dangling ones
-# docker system prune --force --volumes
+ docker system prune --force --volumes -a
 
 # Run "docker/docker-reclaim-space" only on Intel chips
 # because image is not build for ARM achitecture (Apple M1 chips)

@@ -65,5 +65,5 @@ https://github.com/endeavouros-team/PKGBUILDS/tree/master/keyserver-rank
 https://github.com/endeavouros-team/eos-bash-shared
 https://github.com/endeavouros-team/PKGBUILDS/tree/master/akm
 
-
+https://github.com/kazhala/dotbare
 https://github.com/rgomezcasas/dotfiles/blob/main/scripts/ui/change_wallpaper

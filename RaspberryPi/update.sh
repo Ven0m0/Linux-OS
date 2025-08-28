@@ -63,7 +63,7 @@ suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || comma
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #─────────────────────────────────────────────────────────────
 if has nala; then
-  "$suexec" nala fetch --auto --sources --fetches 5 --non-free -y -c DE
+  #"$suexec" nala fetch --auto --sources --fetches 5 --non-free -y -c DE
   "$suexec" nala upgrade
   "$suexec" nala autoremove && "$suexec" nala autopurge
 elif has apt-fast; then

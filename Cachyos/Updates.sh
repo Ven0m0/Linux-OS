@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C; set -u
+export LC_ALL=C LANG=C
 shopt -s nullglob globstar; sync
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
@@ -10,8 +10,8 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Helpers ────────────────────
 has(){ command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; } # Get basename of command
-p(){ printf '%s\n' "$*" 2>/dev/null || :; } # Print-echo
-pe(){ printf '%b\n' "$*" 2>/dev/null || :; } # Print-echo for color
+xprint(){ printf '%s\n' "$*" 2>/dev/null || :; } # Print-echo
+xexprint(){ printf '%b\n' "$*" 2>/dev/null || :; } # Print-echo for color
 #──────────── Banner ────────────────────
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -76,11 +76,11 @@ sysupdate(){
   # Build AUR options array
   if [[ -n $aurtool ]]; then
     auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
-    pe "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
+    echo "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
     "$aurtool" -Suyy "${auropts[@]}" 2>/dev/null || :
     "$aurtool" -Sua "${auropts[@]}" 2>/dev/null || :
   else
-    pe "🔄${BLU}Updating system with pacman...${DEF}"
+    echo "🔄${BLU}Updating system with pacman...${DEF}"
     "$suexec" pacman -Suyy --noconfirm --needed 2>/dev/null || :
   fi
 }
@@ -113,7 +113,7 @@ cargo_run(){
 if has rustup; then
   "$suexec" rustup update
   if has cargo; then
-    p 'update cargo binaries...'
+    echo 'update cargo binaries...'
     if cargo install-update -V &>/dev/null; then
       cargo_run install-update -agi 2>/dev/null
     else
@@ -138,16 +138,16 @@ fi
 p 'Updating shell environments...'
 if has fish; then
   if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
-    p 'update Fisher...'
-    fish -c ". "$HOME/.config/fish/functions/fisher.fish" && fisher update" || fish -c ". \"$HOME/.config/fish/functions/fisher.fish\" && fisher update"
+    echo 'update Fisher...'
+    fish -c ". $HOME/.config/fish/functions/fisher.fish && fisher update"
   else
-    p 'Reinstall fisher...'
+    echo 'Reinstall fisher...'
     . <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) 2>/dev/null && fisher install jorgebucaran/fisher
   fi
 fi
 if [[ -d $HOME/.basher ]]; then
-    p "Updating basher"
-    git -C "$HOME/.basher" pull >/dev/null || p "⚠️ basher pull failed"
+    echo "Updating basher"
+    LC_ALL=C git -C "$HOME/.basher" pull >/dev/null || echo "⚠️ basher pull failed"
 fi
 
 if has tldr; then

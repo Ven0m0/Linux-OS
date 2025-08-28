@@ -60,7 +60,7 @@ export HOME="/home/${SUDO_USER:-$USER}"; sync
 sysupdate(){
   local aurtool='' auropts_base auropts
   local LC_ALL=C LANG=C LANGUAGE=en_US
-  pe "🔄${BLU}System update${DEF}"
+  echo -e "🔄${BLU}System update${DEF}"
   # Detect AUR helper
   if has paru; then
     auropts_base=(--batchinstall --combinedupgrade --nokeepsrc)
@@ -80,7 +80,7 @@ sysupdate(){
     "$aurtool" -Suyy "${auropts[@]}" 2>/dev/null || :
     "$aurtool" -Sua "${auropts[@]}" 2>/dev/null || :
   else
-    echo "🔄${BLU}Updating system with pacman...${DEF}"
+    echo -e "🔄${BLU}Updating system with pacman...${DEF}"
     "$suexec" pacman -Suyy --noconfirm --needed 2>/dev/null || :
   fi
 }
@@ -95,7 +95,7 @@ RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -
 CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS" LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
 if has topgrade; then
-  p 'update using topgrade...'
+  echo 'update using topgrade...'
   topno="(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup,cargo,lure})"
   "$suexec" topgrade -cy --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
 fi

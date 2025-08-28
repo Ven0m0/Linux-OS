@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# apt-parus — sk-preferred frontend for apt/nala/apt-fast
-# Replaces du/awk with pure-bash byte-to-human routine.
+# apt-fuzz — compact fzf/sk TUI for apt/nala/apt-fast
+# Install dependencies: fzf or skim (sk), apt, optional: nala, apt-fast
 # Preview cache at ${XDG_CACHE_HOME:-$HOME/.cache}/apt-parus
 # TTL via APT_PARUS_CACHE_TTL (default 86400)
+# - optional max cache size via APT_PARUS_CACHE_MAX_BYTES (default 0 -> no cap)
+# Preview mode: --preview <pkg> 
 # Install: --install
-# Style: [[ ... ]], 2-space indentation, use &>/dev/null || :
 
 set -euo pipefail
 shopt -s nullglob globstar
-
 export LC_ALL=C LANG=C
 : "${SHELL:=/bin/bash}"
 : "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
@@ -18,9 +18,9 @@ mkdir -p "$CACHE_DIR"
 : "${APT_PARUS_CACHE_MAX_BYTES:=0}"
 
 # prefer skim/sk over fzf
-if command -v sk &>/dev/null || :; then
+if command -v sk &>/dev/null; then
   FINDER=sk
-elif command -v fzf &>/dev/null || :; then
+elif command -v fzf &>/dev/null; then
   FINDER=fzf
 else
   echo "Please install skim (sk) or fzf." >&2

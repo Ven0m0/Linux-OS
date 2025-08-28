@@ -39,9 +39,9 @@ mkdir -p "$CACHE_DIR"
 : "${APT_PARUS_CACHE_MAX_BYTES:=0}"
 
 # prefer skim (sk) over fzf
-if command -v sk &>/dev/null || :; then
+if command -v sk &>/dev/null; then
   FINDER=sk
-elif command -v fzf &>/dev/null || :; then
+elif command -v fzf &>/dev/null; then
   FINDER=fzf
 else
   echo "Please install skim (sk) or fzf." >&2

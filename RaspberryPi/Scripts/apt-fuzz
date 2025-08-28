@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # apt-fuzz — compact skim/fzf TUI for apt / nala / apt-fast
 #
-# Purpose
-#   Fast interactive package browser for Debian/Ubuntu that:
-#     - uses skim (sk) (preferred) or fzf as fuzzy UI
-#     - supports apt, nala, apt-fast (auto-detect + choose)
-#     - shows fast cached previews of `apt-cache show` + `apt-get changelog`
-#     - supports multi-select batch install/remove/purge
-#     - backup/restore installed package lists
-#     - update/upgrade/clean/autoremove using chosen manager
-#     - lightweight cache eviction and a small TUI status header
+# Fast interactive package browser for Debian/Ubuntu that:
+#   - uses skim (sk) (preferred) or fzf as fuzzy UI
+#   - supports apt, nala, apt-fast (auto-detect + choose)
+#   - shows fast cached previews of `apt-cache show` + `apt-get changelog`
+#   - supports multi-select batch install/remove/purge
+#   - backup/restore installed package lists
+#   - update/upgrade/clean/autoremove using chosen manager
+#   - lightweight cache eviction and a small TUI status header
 #
 # Quick install
 #   chmod +x ./apt-fuzz
@@ -23,12 +22,14 @@
 #   ./apt-fuzz install <pkg...> # non-interactive
 #
 # Environment variables
-#   XDG_CACHE_HOME            (default: ~/.cache)
-#   APT_PARUS_CACHE_TTL      (seconds, default 86400 -> 1 day)
-#   APT_PARUS_CACHE_MAX_BYTES (0 disables; default 0)
+#   XDG_CACHE_HOME             (default: ~/.cache)
+#   APT_PARUS_CACHE_TTL        (seconds, default 86400 -> 1 day)
+#   APT_PARUS_CACHE_MAX_BYTES  (0 disables; default 0)
+#   APT_FUZZ_FINDER_OPTS      (optional — overrides FINDER_BASE_OPTS at runtime)
 
 set -euo pipefail
 shopt -s nullglob globstar
+
 export LC_ALL=C LANG=C
 : "${SHELL:=/bin/bash}"
 : "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
@@ -38,13 +39,37 @@ mkdir -p "$CACHE_DIR"
 : "${APT_PARUS_CACHE_MAX_BYTES:=0}"
 
 # prefer skim (sk) over fzf
-if command -v sk &>/dev/null; then
+if command -v sk &>/dev/null || :; then
   FINDER=sk
-elif command -v fzf &>/dev/null; then
+elif command -v fzf &>/dev/null || :; then
   FINDER=fzf
 else
   echo "Please install skim (sk) or fzf." >&2
   exit 1
+fi
+
+# -------------------------
+# FINDER_BASE_OPTS — defaults and runtime override
+# -------------------------
+# Explanation / tradeoffs:
+#  - --layout=reverse-list : query line at bottom, list above (explicit layout).
+#  - --no-sort              : disables internal result re-sorting (faster). Tradeoff:
+#                            final ranking pass is skipped.
+#  - --tiebreak=index       : deterministic tie-breaking (cheap).
+#  - --no-hscroll           : avoid horizontal-scroll bookkeeping; faster redraws.
+#
+# These defaults prioritize responsiveness for large inputs. If you prefer different
+# behavior (e.g., fzf/sk ranking), set APT_FUZZ_FINDER_OPTS in your environment to
+# a custom options string — it fully replaces FINDER_BASE_OPTS.
+LAYOUT_OPT="--layout=reverse-list"
+TIEBREAK_OPT="--tiebreak=index"
+NO_SORT_OPT="--no-sort"
+NO_HSCROLL="--no-hscroll"
+FINDER_BASE_OPTS="$LAYOUT_OPT $TIEBREAK_OPT $NO_SORT_OPT $NO_HSCROLL"
+
+# Allow runtime override (completely replaces the default)
+if [[ -n "${APT_FUZZ_FINDER_OPTS:-}" ]]; then
+  FINDER_BASE_OPTS="${APT_FUZZ_FINDER_OPTS}"
 fi
 
 # detect managers
@@ -59,9 +84,8 @@ PRIMARY_MANAGER=apt
 # Pure-bash utilities
 # -------------------------
 total_bytes_in_dir() {
-  # Sum sizes of regular files in directory (non-recursive)
-  local dir="$1"
-  local total=0 f s
+  # sum sizes of regular files in directory (non-recursive)
+  local dir="$1"; local total=0 f s
   while IFS= read -r -d '' f; do
     s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
     total=$(( total + s ))
@@ -70,31 +94,20 @@ total_bytes_in_dir() {
 }
 
 byte_to_human() {
-  # integer bytes -> human (one decimal if needed)
   local bytes=$1
-  local -a units=(B K M G T)
-  local i=0 pow=1
+  local -a units=(B K M G T); local i=0 pow=1
   while [[ $bytes -ge $(( pow * 1024 )) && $i -lt 4 ]]; do
-    pow=$(( pow * 1024 ))
-    i=$(( i + 1 ))
+    pow=$(( pow * 1024 )); i=$(( i + 1 ))
   done
   local value10=$(( (bytes * 10 + (pow / 2)) / pow ))
-  local whole=$(( value10 / 10 ))
-  local dec=$(( value10 % 10 ))
-  if [[ $dec -gt 0 ]]; then
-    printf '%d.%d%s' "$whole" "$dec" "${units[i]}"
-  else
-    printf '%d%s' "$whole" "${units[i]}"
-  fi
+  local whole=$(( value10 / 10 )); local dec=$(( value10 % 10 ))
+  if [[ $dec -gt 0 ]]; then printf '%d.%d%s' "$whole" "$dec" "${units[i]}"; else printf '%d%s' "$whole" "${units[i]}"; fi
 }
 
 # -------------------------
 # Cache helpers
 # -------------------------
-_cache_file_for() {
-  local pkg="$1"
-  printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a-zA-Z0-9._+-]/_}"
-}
+_cache_file_for() { local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a-zA-Z0-9._+-]/_}"; }
 _cache_mins() { printf '%d' $(( (APT_PARUS_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache() {
@@ -119,11 +132,7 @@ _cache_stats() {
   files=$(find "$CACHE_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l)
   size=$(total_bytes_in_dir "$CACHE_DIR")
   oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | awk '{print $1}')
-  if [[ -z $oldest ]]; then
-    age="0m"
-  else
-    age=$(( ( $(date +%s) - ${oldest%%.*} ) / 60 ))m
-  fi
+  if [[ -z $oldest ]]; then age="0m"; else age=$(( ( $(date +%s) - ${oldest%%.*} ) / 60 ))m; fi
   printf '%s|%s|%s' "$files" "$size" "$age"
 }
 
@@ -140,19 +149,17 @@ _generate_preview() {
     command -v apt-get &>/dev/null && apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :
   } >"$tmp" 2>/dev/null || :
   sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" &>/dev/null || :
-  mv -f "$tmp" "$out"
-  chmod 644 "$out" &>/dev/null || :
+  mv -f "$tmp" "$out"; chmod 644 "$out" &>/dev/null || :
 }
 
 _cached_preview_print() {
-  local pkg="$1" f
+  local pkg="$1"; local f
   evict_old_cache
   f="$(_cache_file_for "$pkg")"
   if [[ -f $f && $(( $(date +%s) - $(stat -c %Y -- "$f") )) -lt $APT_PARUS_CACHE_TTL ]]; then
     cat "$f"
   else
-    _generate_preview "$pkg"
-    cat "$f" 2>/dev/null || echo "(no preview)"
+    _generate_preview "$pkg"; cat "$f" 2>/dev/null || echo "(no preview)"
   fi
 }
 export -f _cached_preview_print
@@ -198,7 +205,7 @@ run_mgr() {
 
 choose_manager() {
   local opts=("apt"); [[ $HAS_NALA -eq 1 ]] && opts+=("nala"); [[ $HAS_APT_FAST -eq 1 ]] && opts+=("apt-fast")
-  local choice; choice=$(printf '%s\n' "${opts[@]}" | $FINDER --height=12% --reverse --prompt="Manager> ")
+  local choice; choice=$(printf '%s\n' "${opts[@]}" | $FINDER $FINDER_BASE_OPTS --height=12% --prompt="Manager> ")
   [[ -n $choice ]] && PRIMARY_MANAGER="$choice"
 }
 
@@ -215,7 +222,7 @@ restore_from_file() {
   [[ ! -f $file ]] && { echo "File not found: $file" >&2; return 1; }
   mapfile -t pkgs < <(sed '/^$/d' "$file")
   [[ ${#pkgs[@]} -eq 0 ]] && { echo "No packages."; return 0; }
-  mapfile -t sel < <(printf '%s\n' "${pkgs[@]}" | $FINDER --multi --height=40% --reverse --prompt="Confirm install> ")
+  mapfile -t sel < <(printf '%s\n' "${pkgs[@]}" | $FINDER $FINDER_BASE_OPTS --multi --height=40% --prompt="Confirm install> ")
   [[ ${#sel[@]} -eq 0 ]] && return
   run_mgr install "${sel[@]}"
 }
@@ -228,7 +235,7 @@ show_changelog() {
 action_menu_for_pkgs() {
   local pkgs=("$@")
   local actions=("Install" "Remove" "Purge" "Changelog" "Cancel")
-  local act; act=$(printf '%s\n' "${actions[@]}" | $FINDER --height=12% --reverse --prompt="Action for ${#pkgs[@]} pkgs> ")
+  local act; act=$(printf '%s\n' "${actions[@]}" | $FINDER $FINDER_BASE_OPTS --height=12% --prompt="Action for ${#pkgs[@]} pkgs> ")
   [[ -z $act ]] && return
   case "$act" in
     Install) run_mgr install "${pkgs[@]}" ;;
@@ -249,7 +256,7 @@ _status_header() {
 
 menu_search_packages() {
   local header sel; header="$(_status_header)"
-  sel=$(list_all_packages | $FINDER --delimiter='|' --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Search> " --header="$header")
+  sel=$(list_all_packages | $FINDER $FINDER_BASE_OPTS --delimiter='|' --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Search> " --header="$header")
   [[ -z $sel ]] && return
   mapfile -t pkgs < <(printf '%s\n' "$sel" | sed 's/|.*//')
   action_menu_for_pkgs "${pkgs[@]}"
@@ -257,7 +264,7 @@ menu_search_packages() {
 
 menu_installed_packages() {
   local header sel; header="$(_status_header)"
-  sel=$(list_installed | sed 's/|/\t/' | $FINDER --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Installed> " --header="$header")
+  sel=$(list_installed | sed 's/|/\t/' | $FINDER $FINDER_BASE_OPTS --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Installed> " --header="$header")
   [[ -z $sel ]] && return
   mapfile -t pkgs < <(printf '%s\n' "$sel" | cut -f1)
   action_menu_for_pkgs "${pkgs[@]}"
@@ -265,7 +272,7 @@ menu_installed_packages() {
 
 menu_upgradable() {
   local header sel; header="$(_status_header)"
-  sel=$(list_upgradable | $FINDER --multi --height=40% --reverse --prompt="Upgradable> " --preview "$0 --preview {1}" --preview-window=right:60% --header="$header")
+  sel=$(list_upgradable | $FINDER $FINDER_BASE_OPTS --multi --height=40% --prompt="Upgradable> " --preview "$0 --preview {1}" --preview-window=right:60% --header="$header")
   [[ -z $sel ]] && return
   mapfile -t pkgs < <(printf '%s\n' "$sel")
   run_mgr install "${pkgs[@]}"
@@ -274,7 +281,7 @@ menu_upgradable() {
 menu_backup_restore() {
   local opts=("Backup installed packages" "Restore from file" "Cancel")
   local choice
-  choice=$(printf '%s\n' "${opts[@]}" | $FINDER --height=12% --reverse --prompt="Backup/Restore> " --header="$(_status_header)")
+  choice=$(printf '%s\n' "${opts[@]}" | $FINDER $FINDER_BASE_OPTS --height=12% --prompt="Backup/Restore> " --header="$(_status_header)")
   [[ -z $choice ]] && return
   case "$choice" in
     "Backup installed packages") backup_installed ;;
@@ -285,7 +292,7 @@ menu_backup_restore() {
 menu_system_maintenance() {
   local opts=("Update" "Upgrade" "Autoremove" "Clean" "Choose manager" "Cancel")
   local choice
-  choice=$(printf '%s\n' "${opts[@]}" | $FINDER --height=18% --reverse --prompt="Maintenance> " --header="$(_status_header)")
+  choice=$(printf '%s\n' "${opts[@]}" | $FINDER $FINDER_BASE_OPTS --height=18% --prompt="Maintenance> " --header="$(_status_header)")
   [[ -z $choice ]] && return
   case "$choice" in
     Update) run_mgr update ;;
@@ -301,7 +308,7 @@ main_menu() {
   local menu=("Search packages" "Installed" "Upgradable" "Backup/Restore" "Maintenance" "Choose manager" "Quit")
   while true; do
     local choice
-    choice=$(printf '%s\n' "${menu[@]}" | $FINDER --height=20% --reverse --prompt="apt-parus> " --header="$(_status_header)")
+    choice=$(printf '%s\n' "${menu[@]}" | $FINDER $FINDER_BASE_OPTS --height=20% --prompt="apt-parus> " --header="$(_status_header)")
     [[ -z $choice ]] && break
     case "$choice" in
       "Search packages") menu_search_packages ;;
@@ -341,9 +348,7 @@ BASHCOMP
   printf 'Completion installed: %s/apt-fuzz\n' "$compdir"
 }
 
-# -------------------------
 # CLI conveniences
-# -------------------------
 if [[ $# -gt 0 ]]; then
   case "$1" in
     --install) _install_self; exit 0 ;;

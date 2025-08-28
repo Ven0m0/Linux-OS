@@ -56,8 +56,8 @@ export HOME="/home/${SUDO_USER:-$USER}"
 read -r used_human pct < <(df -h --output=used,pcent -- "$mp" | awk 'NR==2{print $1, $2}')
 
 # Pacman cleanup
-"$suexec" pacman -Rns $(pacman -Qdtq) --noconfirm &>/dev/null
-"$suexec" pacman -Scc --noconfirm
+"$suexec" pacman -Rns $(pacman -Qdtq) --noconfirm -q &>/dev/null || :
+"$suexec" pacman -Scc --noconfirm -q
 "$suexec" paccache -rk0 -q
 uv cache prune -q; uv cache clean -q
 # Cargo

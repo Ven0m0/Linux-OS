@@ -53,9 +53,10 @@ echo "Meow (> ^ <)"
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
-export HOME="/home/${SUDO_USER:-$USER}"; sync
+export HOME="/home/${SUDO_USER:-$USER}"
 has dbus-launch && export "$(dbus-launch 2>/dev/null)"
 #─────────────────────────────────────────────────────────────
+sync
 "$suexec" hwclock -w >/dev/null || :
 "$suexec" updatedb >/dev/null || :
 

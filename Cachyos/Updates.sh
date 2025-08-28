@@ -47,7 +47,8 @@ else
     printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
   done
 fi
-echo "  (> ^ <)"
+echo
+echo "Meow (> ^ <)"
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
@@ -252,5 +253,6 @@ else
     echo 'The initramfs generator was not found, please update initramfs manually...'
   fi
 fi
+echo
 echo "✅ All done."
-printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
+echo "  Meow (> ^ <)"

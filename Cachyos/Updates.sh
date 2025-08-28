@@ -193,7 +193,7 @@ if has pipx; then
   pipx upgrade-all 2>/dev/null || :
 fi
 if has pip; then
-  p 'Upgrading pip user packages...'
+  echo 'Upgrading pip user packages...'
   if has jq; then
     python3 -m pip list --user --outdated --format=json | jq -r '.[].name' | while read -r pkg; do
       python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
@@ -215,7 +215,7 @@ if has fwupdmgr; then
   "$suexec" fwupdmgr refresh &>/dev/null; "$suexec" fwupdmgr update >/dev/null || :
 fi
 if has sdboot-manage; then
-  p 'update sdboot-manage...'
+  echo 'update sdboot-manage...'
   "$suexec" sdboot-manage remove 2>/dev/null || :
   "$suexec" sdboot-manage update &>/dev/null || :
 fi

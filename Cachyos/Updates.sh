@@ -223,17 +223,20 @@ fi
 "$suexec" chwd -a &>/dev/null || :
 
 echo 'updating Font cache'
-has fc-cache && "$suexec" fc-cache -f >/dev/null || :
+if has fc-cache; then
+  fc-cache -f >/dev/null || :
+  "$suexec" fc-cache -f >/dev/null || :
+fi
 echo 'misc updates in background...'
 has updatedb && "$suexec" updatedb >/dev/null || :
 has update-desktop-database && "$suexec" update-desktop-database >/dev/null || :
-has update-pciids && "$suexec" update-pciids &>/dev/null || :
-has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
-
+has update-pciids && "$suexec" update-pciids >/dev/null || :
+has update-smart-drivedb && "$suexec" update-smart-drivedb >/dev/null || :
+has update-ccache-links && "$suexec" update-ccache-links >/dev/null || :
 echo "🔍 Checking for systemd-boot..."
-if [[ -d /sys/firmware/efi ]] && has bootctl && bootctl is-installed &>/dev/null; then
+if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q; then
   echo "✅ systemd-boot detected, updating…"
-  "$suexec" bootctl update &>/dev/null; "$suexec" bootctl cleanup &>/dev/null || :
+  "$suexec" bootctl update -q &>/dev/null; "$suexec" bootctl cleanup -q &>/dev/null || :
 else
   echo "❌ systemd-boot not present, skipping."
 fi

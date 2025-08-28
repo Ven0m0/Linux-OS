@@ -60,7 +60,6 @@ tmp/
 token
 nohup.out
 .~lock.*#
-token
 
 # Linux
 .directory

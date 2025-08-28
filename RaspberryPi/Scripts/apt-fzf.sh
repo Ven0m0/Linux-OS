@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
-# compact apt-parus-tui — fzf/sk TUI for apt/nala/apt-fast
-# 2-space indentation, uses apt-get when apt is chosen.
+# apt-parus — fzf/sk TUI for apt/nala/apt-fast with cached previews and simple installer
+# - preview cache at ${XDG_CACHE_HOME:-$HOME/.cache}/apt-parus
+# - TTL configurable via APT_PARUS_CACHE_TTL (seconds, default 86400)
+# - install to ~/.local/bin with --install (also installs bash completion)
+#  style: [[ ... ]], 2-space indentation, &>/dev/null || :
 
-export LC_ALL=C LANG=C SHELL=bash
 set -euo pipefail
 shopt -s nullglob globstar
 
-# finder
+export LC_ALL=C LANG=C
+: "${SHELL:=/bin/bash}"
+: "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
+CACHE_DIR="${XDG_CACHE_HOME}/apt-parus"
+mkdir -p "$CACHE_DIR"
+
+: "${APT_PARUS_CACHE_TTL:=86400}"  # default 1 day
+
+# Finder detection
 FINDER=""
 if command -v fzf &>/dev/null; then
   FINDER="fzf"
@@ -17,20 +27,72 @@ else
   exit 1
 fi
 
-# managers
+# managers detection
 HAS_NALA=0; HAS_APT_FAST=0
 command -v nala &>/dev/null && HAS_NALA=1 || :
 command -v apt-fast &>/dev/null && HAS_APT_FAST=1 || :
 
-# default manager preference: nala > apt-fast > apt
 PRIMARY_MANAGER="apt"
 [[ $HAS_NALA -eq 1 ]] && PRIMARY_MANAGER="nala"
 [[ $HAS_NALA -eq 0 && $HAS_APT_FAST -eq 1 ]] && PRIMARY_MANAGER="apt-fast"
 
-# centralized runner: supports common actions and prefers apt-get for apt
+# -------------------------
+# Preview cache utilities
+# -------------------------
+_cache_file_for() {
+  local pkg="$1"
+  printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a-zA-Z0-9._+-]/_}"
+}
+
+_cache_valid() {
+  local f; f="$1"
+  [[ -f $f ]] || return 1
+  local age; age=$(( $(date +%s) - $(stat -c %Y -- "$f") ))
+  (( age < APT_PARUS_CACHE_TTL ))
+}
+
+_generate_preview() {
+  local pkg="$1"
+  local out; out="$(_cache_file_for "$pkg")"
+  local tmp; tmp="${out}.$$.tmp"
+  {
+    apt-cache show "$pkg" 2>/dev/null || :
+    printf '\n--- changelog (first 200 lines) ---\n'
+    command -v apt-get &>/dev/null && apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :
+  } >"$tmp" 2>/dev/null || :    # don't fail preview generation
+  # strip color codes
+  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2>/dev/null || :
+  mv -f "$tmp" "$out"
+  printf '%s' "$out"
+}
+
+_cached_preview_print() {
+  local pkg="$1"
+  local cache; cache="$(_cache_file_for "$pkg")"
+  if _cache_valid "$cache"; then
+    cat "$cache"
+  else
+    _generate_preview "$pkg" >/dev/null
+    cat "$cache" 2>/dev/null || echo "(no preview)"
+  fi
+}
+
+# If called as --preview <pkg> print cached preview and exit (used by finder)
+if [[ "${1:-}" == "--preview" ]]; then
+  if [[ -z "${2:-}" ]]; then
+    echo "usage: $0 --preview <pkg>" >&2
+    exit 1
+  fi
+  _cached_preview_print "$2"
+  exit 0
+fi
+
+# -------------------------
+# Manager runner (prefers apt-get with apt)
+# -------------------------
 run_mgr() {
-  # run_mgr <action> <pkg...>
-  local action="$1"; shift
+  # run_mgr <action> [pkg...]
+  local action="$1"; shift || :
   local pkgs=("$@")
   local cmd=()
   case "$PRIMARY_MANAGER" in
@@ -53,7 +115,6 @@ run_mgr() {
       esac
       ;;
     *)
-      # apt chosen — use apt-get for speed where applicable
       case "$action" in
         update) cmd=(apt-get update) ;;
         upgrade) cmd=(apt-get upgrade -y) ;;
@@ -61,12 +122,11 @@ run_mgr() {
         remove) cmd=(apt-get remove -y "${pkgs[@]}") ;;
         purge) cmd=(apt-get purge -y "${pkgs[@]}") ;;
         autoremove) cmd=(apt-get autoremove -y) ;;
-        clean) cmd=(apt-get clean) ;; # clean takes no -y
-        *) cmd=(apt "$action" "${pkgs[@]}") ;; # fallback
+        clean) cmd=(apt-get clean) ;;
+        *) cmd=(apt "$action" "${pkgs[@]}") ;;
       esac
       ;;
   esac
-
   printf 'Running: sudo %s\n' "${cmd[*]}"
   sudo "${cmd[@]}"
 }
@@ -80,14 +140,9 @@ choose_manager() {
   [[ -n $choice ]] && PRIMARY_MANAGER="$choice"
 }
 
-_preview_pkg() {
-  local pkg="$1"
-  apt-cache show "$pkg" 2>/dev/null || :
-  printf '\n--- changelog (first 200 lines) ---\n'
-  command -v apt-get &>/dev/null && apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :
-}
-export -f _preview_pkg
-
+# -------------------------
+# Package lists
+# -------------------------
 list_all_packages() {
   apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
 }
@@ -111,7 +166,6 @@ restore_from_file() {
   [[ ! -f $file ]] && { echo "File not found: $file" >&2; return 1; }
   mapfile -t pkgs < <(sed '/^$/d' "$file")
   [[ ${#pkgs[@]} -eq 0 ]] && { echo "No packages in file."; return 0; }
-  # confirm selection via finder, then install in one batch
   mapfile -t sel < <(printf '%s\n' "${pkgs[@]}" | $FINDER --multi --height=40% --reverse --prompt="Confirm install> ")
   [[ ${#sel[@]} -eq 0 ]] && return
   run_mgr install "${sel[@]}"
@@ -122,6 +176,9 @@ show_changelog() {
   command -v apt-get &>/dev/null && (apt-get changelog "$pkg" 2>/dev/null || echo "No changelog for $pkg") || echo "apt-get unavailable"
 }
 
+# -------------------------
+# Action menu / UI
+# -------------------------
 action_menu_for_pkgs() {
   local pkgs=("$@")
   local actions=("Install" "Remove" "Purge" "Changelog" "Cancel")
@@ -139,7 +196,8 @@ action_menu_for_pkgs() {
 
 menu_search_packages() {
   local selection
-  selection=$(list_all_packages | $FINDER --delimiter='|' --with-nth=1,2 --preview "bash -c '_preview_pkg \"\$(echo {} | cut -d\"|\" -f1)\"'" --preview-window=right:60% --multi --height=60% --prompt="Search> ")
+  selection=$(list_all_packages | $FINDER --delimiter='|' --with-nth=1,2 \
+    --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Search> ")
   [[ -z $selection ]] && return
   mapfile -t selpkgs < <(printf '%s\n' "$selection" | sed 's/|.*//')
   action_menu_for_pkgs "${selpkgs[@]}"
@@ -147,7 +205,8 @@ menu_search_packages() {
 
 menu_installed_packages() {
   local selection
-  selection=$(list_installed | sed 's/|/\t/' | $FINDER --with-nth=1,2 --preview 'apt-cache show $(echo {} | cut -f1)' --preview-window=right:60% --multi --height=60% --prompt="Installed> ")
+  selection=$(list_installed | sed 's/|/\t/' | $FINDER --with-nth=1,2 \
+    --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Installed> ")
   [[ -z $selection ]] && return
   mapfile -t selpkgs < <(printf '%s\n' "$selection" | cut -f1)
   action_menu_for_pkgs "${selpkgs[@]}"
@@ -155,7 +214,8 @@ menu_installed_packages() {
 
 menu_upgradable() {
   local selection
-  selection=$(list_upgradable | $FINDER --multi --height=40% --reverse --prompt="Upgradable> " --preview 'apt-cache show {}' --preview-window=right:60%)
+  selection=$(list_upgradable | $FINDER --multi --height=40% --reverse --prompt="Upgradable> " \
+    --preview "$0 --preview {1}" --preview-window=right:60%)
   [[ -z $selection ]] && return
   mapfile -t selpkgs < <(printf '%s\n' "$selection")
   run_mgr install "${selpkgs[@]}"
@@ -204,8 +264,72 @@ main_menu() {
   done
 }
 
+# -------------------------
+# Self-install / completion
+# -------------------------
+_install_self() {
+  local dest="${HOME%/}/.local/bin/apt-parus"
+  mkdir -p "${HOME%/}/.local/bin"
+  cp -f "$0" "$dest"
+  chmod +x "$dest"
+  printf 'Installed to: %s\n' "$dest"
+
+  # user-level bash-completion dir
+  local compdir="${HOME%/}/.local/share/bash-completion/completions"
+  mkdir -p "$compdir"
+  cat >"$compdir/apt-parus" <<'BASHCOMP'
+_complete_apt_parus() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[1]:-}"
+  opts="search installed upgradable install remove purge backup restore maintenance choose-manager quit"
+  if [[ ${COMP_CWORD} -eq 1 ]]; then
+    COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+    return 0
+  fi
+  case "$prev" in
+    install|remove|purge)
+      COMPREPLY=( $(compgen -W "$(apt-cache pkgnames | tr '\n' ' ')" -- "$cur") )
+      ;;
+    restore) COMPREPLY=( $(compgen -f -- "$cur") ) ;;
+  esac
+}
+complete -F _complete_apt_parus apt-parus
+BASHCOMP
+  printf 'Bash completion installed to: %s\n' "$compdir/apt-parus"
+  printf 'To enable completion now: source %s/apt-parus\n' "$compdir"
+}
+
+# -------------------------
+# CLI support (small)
+# -------------------------
+# simple non-interactive helpers: apt-parus install <pkg...> remove <pkg...> ...
+if [[ $# -gt 0 ]]; then
+  case "$1" in
+    --install) _install_self; exit 0 ;;
+    install|remove|purge)
+      cmd="$1"; shift
+      [[ $# -eq 0 ]] && { echo "Usage: $0 ${cmd} <pkg...>"; exit 2; }
+      run_mgr "$cmd" "$@"; exit 0
+      ;;
+    --preview)
+      # handled at top; fallthrough
+      _cached_preview_print "$2"; exit 0
+      ;;
+    help|--help|-h)
+      cat <<'USAGE'
+Usage: apt-parus [--install] | [install|remove|purge <pkgs...>]
+Run without args to start interactive TUI.
+--install   Install this script to ~/.local/bin and add bash completion.
+USAGE
+      exit 0
+      ;;
+  esac
+fi
+
 cat <<'EOF'
-apt-parus-tui: fzf/sk front-end for apt/nala/apt-fast
+apt-parus: fzf/sk frontend for apt/nala/apt-fast
 Controls: fuzzy-search, TAB to multi-select (if supported), Enter to confirm
 EOF
 

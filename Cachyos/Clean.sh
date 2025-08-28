@@ -218,14 +218,12 @@ rm -rf $HOME/.var/app/*/data/*.desktop >/dev/null || :
 "$suexec" fc-cache -f >/dev/null
 
 # BleachBit if available
-#if command -v bleachbit &>/dev/null; then
-#    bleachbit -c --preset && sudo -E bleachbit -c --preset
-#else
-#    echo "bleachbit is not installed, skipping."
-#fi
-bleachbit -c --preset >/dev/null && "$suexec" bleachbit -c --preset >/dev/null || :
-bash -c "bleachbit -c --preset" >/dev/null || :
-"$suexec" bash -c "bleachbit -c --preset" >/dev/null || :
+if command -v bleachbit &>/dev/null; then
+    bleachbit -c --preset >/dev/null && "$suexec" bleachbit -c --preset >/dev/null || :
+else
+    echo "bleachbit is not installed, skipping."
+fi
+
 sync; echo 3 | "$suexec" tee /proc/sys/vm/drop_caches &>/dev/null || :
 echo "System cleaned!"
 

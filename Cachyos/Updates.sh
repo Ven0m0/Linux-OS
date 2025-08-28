@@ -47,7 +47,7 @@ else
     printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
   done
 fi
-p "  (> ^ <)"
+echo "  (> ^ <)"
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
@@ -126,32 +126,32 @@ else
 fi
 
 if has micro; then
-  p 'micro plugin update...'
+  echo 'micro plugin update...'
   micro -plugin update >/dev/null || :
 fi
 
 if has yazi; then
-  p 'yazi update...'
+  echo 'yazi update...'
   ya pkg upgrade >/dev/null || :
 fi
 
-p 'Updating shell environments...'
-if has fish; then
-  if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
-    echo 'update Fisher...'
-    fish -c ". $HOME/.config/fish/functions/fisher.fish && fisher update"
-  else
-    echo 'Reinstall fisher...'
-    . <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) 2>/dev/null && fisher install jorgebucaran/fisher
-  fi
-fi
+#p 'Updating shell environments...'
+#if has fish; then
+  #if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
+    #echo 'update Fisher...'
+    #fish -c ". $HOME/.config/fish/functions/fisher.fish && fisher update"
+  #else
+    #echo 'Reinstall fisher...'
+    #. <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) 2>/dev/null && fisher install jorgebucaran/fisher
+  #fi
+#fi
 if [[ -d $HOME/.basher ]]; then
     echo "Updating basher"
     LC_ALL=C git -C "$HOME/.basher" pull >/dev/null || echo "⚠️ basher pull failed"
 fi
 
 if has tldr; then
-  p 'update tldr pages...'
+  echo 'update tldr pages...'
   "$suexec" tldr -u &>/dev/null || :
 fi
 
@@ -205,12 +205,12 @@ if has pip; then
   fi
 fi
 if has npm; then
-  p 'Update npm global packages'
+  echo 'Update npm global packages'
   "$suexec" npm update -g >/dev/null || :
 fi
 
 if has fwupdmgr; then
-  p 'update with fwupd...'
+  echo 'update with fwupd...'
   "$suexec" fwupdmgr refresh &>/dev/null; "$suexec" fwupdmgr update >/dev/null || :
 fi
 if has sdboot-manage; then
@@ -221,20 +221,20 @@ fi
 
 "$suexec" chwd -a &>/dev/null || :
 
-p 'updating Font cache'
+echo 'updating Font cache'
 has fc-cache && "$suexec" fc-cache -f >/dev/null || :
-p 'misc updates in background...'
+echo 'misc updates in background...'
 has updatedb && "$suexec" updatedb >/dev/null || :
 has update-desktop-database && "$suexec" update-desktop-database >/dev/null || :
 has update-pciids && "$suexec" update-pciids &>/dev/null || :
 has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 
-p "🔍 Checking for systemd-boot..."
+echo "🔍 Checking for systemd-boot..."
 if [[ -d /sys/firmware/efi ]] && has bootctl && bootctl is-installed &>/dev/null; then
-  p "✅ systemd-boot detected, updating…"
+  echo "✅ systemd-boot detected, updating…"
   "$suexec" bootctl update &>/dev/null; "$suexec" bootctl cleanup &>/dev/null || :
 else
-  p "❌ systemd-boot not present, skipping."
+  echo "❌ systemd-boot not present, skipping."
 fi
 
 if has update-initramfs; then
@@ -249,8 +249,8 @@ else
   elif has dracut-rebuild; then
     "$suexec" dracut-rebuild >/dev/null || :
   else
-    p 'The initramfs generator was not found, please update initramfs manually...'
+    echo 'The initramfs generator was not found, please update initramfs manually...'
   fi
 fi
-p "✅ All done."
+echo "✅ All done."
 printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"

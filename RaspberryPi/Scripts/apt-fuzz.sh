@@ -1,11 +1,31 @@
 #!/usr/bin/env bash
-# apt-fuzz — compact fzf/sk TUI for apt/nala/apt-fast
-# Install dependencies: fzf or skim (sk), apt, optional: nala, apt-fast
-# Preview cache at ${XDG_CACHE_HOME:-$HOME/.cache}/apt-parus
-# TTL via APT_PARUS_CACHE_TTL (default 86400)
-# - optional max cache size via APT_PARUS_CACHE_MAX_BYTES (default 0 -> no cap)
-# Preview mode: --preview <pkg> 
-# Install: --install
+# apt-fuzz — compact skim/fzf TUI for apt / nala / apt-fast
+#
+# Purpose
+#   Fast interactive package browser for Debian/Ubuntu that:
+#     - uses skim (sk) (preferred) or fzf as fuzzy UI
+#     - supports apt, nala, apt-fast (auto-detect + choose)
+#     - shows fast cached previews of `apt-cache show` + `apt-get changelog`
+#     - supports multi-select batch install/remove/purge
+#     - backup/restore installed package lists
+#     - update/upgrade/clean/autoremove using chosen manager
+#     - lightweight cache eviction and a small TUI status header
+#
+# Quick install
+#   chmod +x ./apt-fuzz
+#   ./apt-fuzz --install
+#   source ~/.local/share/bash-completion/completions/apt-fuzz   # to enable completion immediately
+#
+# Usage
+#   ./apt-fuzz           # start interactive TUI
+#   ./apt-fuzz --install # copy to ~/.local/bin/apt-fuzz and install user bash completion
+#   ./apt-fuzz --preview <pkg>  # print cached preview (used by finder preview)
+#   ./apt-fuzz install <pkg...> # non-interactive
+#
+# Environment variables
+#   XDG_CACHE_HOME            (default: ~/.cache)
+#   APT_PARUS_CACHE_TTL      (seconds, default 86400 -> 1 day)
+#   APT_PARUS_CACHE_MAX_BYTES (0 disables; default 0)
 
 set -euo pipefail
 shopt -s nullglob globstar
@@ -17,7 +37,7 @@ mkdir -p "$CACHE_DIR"
 : "${APT_PARUS_CACHE_TTL:=86400}"
 : "${APT_PARUS_CACHE_MAX_BYTES:=0}"
 
-# prefer skim/sk over fzf
+# prefer skim (sk) over fzf
 if command -v sk &>/dev/null; then
   FINDER=sk
 elif command -v fzf &>/dev/null; then
@@ -27,7 +47,7 @@ else
   exit 1
 fi
 
-# managers
+# detect managers
 HAS_NALA=0; HAS_APT_FAST=0
 command -v nala &>/dev/null && HAS_NALA=1 || :
 command -v apt-fast &>/dev/null && HAS_APT_FAST=1 || :
@@ -36,13 +56,12 @@ PRIMARY_MANAGER=apt
 [[ $HAS_NALA -eq 0 && $HAS_APT_FAST -eq 1 ]] && PRIMARY_MANAGER=apt-fast
 
 # -------------------------
-# Pure-bash byte utilities (replaces du/awk)
+# Pure-bash utilities
 # -------------------------
 total_bytes_in_dir() {
   # Sum sizes of regular files in directory (non-recursive)
   local dir="$1"
-  local total=0
-  local f s
+  local total=0 f s
   while IFS= read -r -d '' f; do
     s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
     total=$(( total + s ))
@@ -51,16 +70,14 @@ total_bytes_in_dir() {
 }
 
 byte_to_human() {
-  # Convert integer bytes -> human with one decimal when needed (B K M G T)
+  # integer bytes -> human (one decimal if needed)
   local bytes=$1
   local -a units=(B K M G T)
   local i=0 pow=1
-  # Determine power 1024^i such that bytes < pow*1024 or i==4
   while [[ $bytes -ge $(( pow * 1024 )) && $i -lt 4 ]]; do
     pow=$(( pow * 1024 ))
     i=$(( i + 1 ))
   done
-  # scaled value *10 with rounding
   local value10=$(( (bytes * 10 + (pow / 2)) / pow ))
   local whole=$(( value10 / 10 ))
   local dec=$(( value10 % 10 ))
@@ -72,7 +89,7 @@ byte_to_human() {
 }
 
 # -------------------------
-# Cache helpers (use pure-bash total_bytes_in_dir)
+# Cache helpers
 # -------------------------
 _cache_file_for() {
   local pkg="$1"
@@ -86,7 +103,7 @@ evict_old_cache() {
   if [[ ${APT_PARUS_CACHE_MAX_BYTES:-0} -gt 0 ]]; then
     local total; total=$(total_bytes_in_dir "$CACHE_DIR")
     if [[ $total -gt $APT_PARUS_CACHE_MAX_BYTES ]]; then
-      # delete oldest files until under cap
+      # delete oldest until under cap
       while IFS= read -r -d '' entry; do
         local file="${entry#* }"
         rm -f "$file" &>/dev/null || :
@@ -111,7 +128,7 @@ _cache_stats() {
 }
 
 # -------------------------
-# Preview (atomic)
+# Preview generation (atomic)
 # -------------------------
 _generate_preview() {
   local pkg="$1" out tmp
@@ -186,27 +203,159 @@ choose_manager() {
 }
 
 # -------------------------
-# Lists, helpers, UI
+# Lists / helpers / UI
 # -------------------------
 list_all_packages() { apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'; }
 list_installed()     { dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :; }
 list_upgradable()    { apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'; }
 backup_installed()   { local out="${1:-pkglist-$(date +%F).txt}"; dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"; printf 'Saved: %s\n' "$out"; }
-restore_from_file()  {
-  local file="$1"; [[ ! -f $file ]] && { echo "File not found: $file" >&2; return 1; }
-  mapfile -t pkgs < <(sed '/^$/d' "$file"); [[ ${#pkgs[@]} -eq 0 ]] && { echo "No packages."; return 0; }
-  mapfile -t sel < <(printf '%s\n' "${pkgs[@]}" | $FINDER --multi --height=40% --reverse --prompt="Confirm install> ")
-  [[ ${#sel[@]} -eq 0 ]] && return; run_mgr install "${sel[@]}"
-}
-show_changelog() { local pkg="$1"; command -v apt-get &>/dev/null && (apt-get changelog "$pkg" 2>/dev/null || echo "No changelog for $pkg") || echo "apt-get unavailable"; }
 
-# -------------------------
-# UI / actions
-# -------------------------
+restore_from_file() {
+  local file="$1"
+  [[ ! -f $file ]] && { echo "File not found: $file" >&2; return 1; }
+  mapfile -t pkgs < <(sed '/^$/d' "$file")
+  [[ ${#pkgs[@]} -eq 0 ]] && { echo "No packages."; return 0; }
+  mapfile -t sel < <(printf '%s\n' "${pkgs[@]}" | $FINDER --multi --height=40% --reverse --prompt="Confirm install> ")
+  [[ ${#sel[@]} -eq 0 ]] && return
+  run_mgr install "${sel[@]}"
+}
+
+show_changelog() {
+  local pkg="$1"
+  command -v apt-get &>/dev/null && (apt-get changelog "$pkg" 2>/dev/null || echo "No changelog for $pkg") || echo "apt-get unavailable"
+}
+
 action_menu_for_pkgs() {
-  local pkgs=("$@"); local actions=("Install" "Remove" "Purge" "Changelog" "Cancel")
+  local pkgs=("$@")
+  local actions=("Install" "Remove" "Purge" "Changelog" "Cancel")
   local act; act=$(printf '%s\n' "${actions[@]}" | $FINDER --height=12% --reverse --prompt="Action for ${#pkgs[@]} pkgs> ")
   [[ -z $act ]] && return
   case "$act" in
     Install) run_mgr install "${pkgs[@]}" ;;
-    Remove) run_mg_
+    Remove) run_mgr remove "${pkgs[@]}" ;;
+    Purge) run_mgr purge "${pkgs[@]}" ;;
+    Changelog) for p in "${pkgs[@]}"; do show_changelog "$p"; read -r -p "Enter to continue..." || :; done ;;
+    Cancel) return ;;
+  esac
+}
+
+_status_header() {
+  local stats files size age human
+  stats=$(_cache_stats)
+  IFS='|' read -r files size age <<< "$stats"
+  human=$(byte_to_human "$size")
+  printf 'manager: %s | cache: %s files, %s, oldest: %s' "$PRIMARY_MANAGER" "$files" "$human" "$age"
+}
+
+menu_search_packages() {
+  local header sel; header="$(_status_header)"
+  sel=$(list_all_packages | $FINDER --delimiter='|' --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Search> " --header="$header")
+  [[ -z $sel ]] && return
+  mapfile -t pkgs < <(printf '%s\n' "$sel" | sed 's/|.*//')
+  action_menu_for_pkgs "${pkgs[@]}"
+}
+
+menu_installed_packages() {
+  local header sel; header="$(_status_header)"
+  sel=$(list_installed | sed 's/|/\t/' | $FINDER --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Installed> " --header="$header")
+  [[ -z $sel ]] && return
+  mapfile -t pkgs < <(printf '%s\n' "$sel" | cut -f1)
+  action_menu_for_pkgs "${pkgs[@]}"
+}
+
+menu_upgradable() {
+  local header sel; header="$(_status_header)"
+  sel=$(list_upgradable | $FINDER --multi --height=40% --reverse --prompt="Upgradable> " --preview "$0 --preview {1}" --preview-window=right:60% --header="$header")
+  [[ -z $sel ]] && return
+  mapfile -t pkgs < <(printf '%s\n' "$sel")
+  run_mgr install "${pkgs[@]}"
+}
+
+menu_backup_restore() {
+  local opts=("Backup installed packages" "Restore from file" "Cancel")
+  local choice
+  choice=$(printf '%s\n' "${opts[@]}" | $FINDER --height=12% --reverse --prompt="Backup/Restore> " --header="$(_status_header)")
+  [[ -z $choice ]] && return
+  case "$choice" in
+    "Backup installed packages") backup_installed ;;
+    "Restore from file") read -r -p "Path: " f; [[ -n $f ]] && restore_from_file "$f" ;;
+  esac
+}
+
+menu_system_maintenance() {
+  local opts=("Update" "Upgrade" "Autoremove" "Clean" "Choose manager" "Cancel")
+  local choice
+  choice=$(printf '%s\n' "${opts[@]}" | $FINDER --height=18% --reverse --prompt="Maintenance> " --header="$(_status_header)")
+  [[ -z $choice ]] && return
+  case "$choice" in
+    Update) run_mgr update ;;
+    Upgrade) run_mgr upgrade ;;
+    Autoremove) run_mgr autoremove ;;
+    Clean) run_mgr clean ;;
+    "Choose manager") choose_manager ;;
+  esac
+}
+
+main_menu() {
+  evict_old_cache
+  local menu=("Search packages" "Installed" "Upgradable" "Backup/Restore" "Maintenance" "Choose manager" "Quit")
+  while true; do
+    local choice
+    choice=$(printf '%s\n' "${menu[@]}" | $FINDER --height=20% --reverse --prompt="apt-parus> " --header="$(_status_header)")
+    [[ -z $choice ]] && break
+    case "$choice" in
+      "Search packages") menu_search_packages ;;
+      Installed) menu_installed_packages ;;
+      Upgradable) menu_upgradable ;;
+      "Backup/Restore") menu_backup_restore ;;
+      Maintenance) menu_system_maintenance ;;
+      "Choose manager") choose_manager ;;
+      Quit) break ;;
+    esac
+  done
+}
+
+# -------------------------
+# Self-install & completion
+# -------------------------
+_install_self() {
+  local dest="${HOME%/}/.local/bin/apt-fuzz"; mkdir -p "${HOME%/}/.local/bin"
+  cp -f "$0" "$dest"; chmod +x "$dest"; printf 'Installed: %s\n' "$dest"
+  local compdir="${HOME%/}/.local/share/bash-completion/completions"; mkdir -p "$compdir"
+  cat >"$compdir/apt-fuzz" <<'BASHCOMP'
+_complete_apt_fuzz() {
+  local cur prev opts
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  opts="search installed upgradable install remove purge backup restore maintenance choose-manager quit"
+  if [[ ${COMP_CWORD} -eq 1 ]]; then
+    COMPREPLY=( $(compgen -W "$opts" -- "$cur") ); return 0
+  fi
+  case "${COMP_WORDS[1]}" in
+    install|remove|purge) COMPREPLY=( $(compgen -W "$(apt-cache pkgnames | tr '\n' ' ')" -- "$cur") ) ;;
+    restore) COMPREPLY=( $(compgen -f -- "$cur") ) ;;
+  esac
+}
+complete -F _complete_apt_fuzz apt-fuzz
+BASHCOMP
+  printf 'Completion installed: %s/apt-fuzz\n' "$compdir"
+}
+
+# -------------------------
+# CLI conveniences
+# -------------------------
+if [[ $# -gt 0 ]]; then
+  case "$1" in
+    --install) _install_self; exit 0 ;;
+    --preview) [[ -z "${2:-}" ]] && { echo "usage: $0 --preview <pkg>" >&2; exit 2; }; _cached_preview_print "$2"; exit 0 ;;
+    install|remove|purge) [[ $# -lt 2 ]] && { echo "Usage: $0 $1 <pkgs...>"; exit 2; }; cmd="$1"; shift; run_mgr "$cmd" "$@"; exit 0 ;;
+    help|-h|--help) printf 'Usage: %s [--install] | [install|remove|purge <pkgs...>]\nRun without args to start interactive TUI.\n' "$0"; exit 0 ;;
+  esac
+fi
+
+cat <<'EOF'
+apt-fuzz: sk/fzf frontend for apt/nala/apt-fast
+Controls: fuzzy-search, multi-select (TAB), Enter to confirm
+EOF
+
+main_menu

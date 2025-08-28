@@ -219,9 +219,16 @@ rm -rf $HOME/.var/app/*/data/*.desktop >/dev/null || :
 
 # BleachBit if available
 if command -v bleachbit &>/dev/null; then
-    bleachbit -c --preset >/dev/null && "$suexec" bleachbit -c --preset >/dev/null || :
+  bleachbit -c --preset >/dev/null
+  if command -v xhost &>/dev/null; then
+    "$suexec" bleachbit -c --preset >/dev/null
+  elif command -v pkexec &>/dev/null; then
+    pkexec bleachbit -c --preset >/dev/null
+  else
+    echo "Error: neither xhost (for sudo) nor pkexec available. Cannot run BleachBit."
+  fi
 else
-    echo "bleachbit is not installed, skipping."
+  echo "BleachBit is not installed, skipping."
 fi
 
 sync; echo 3 | "$suexec" tee /proc/sys/vm/drop_caches &>/dev/null || :

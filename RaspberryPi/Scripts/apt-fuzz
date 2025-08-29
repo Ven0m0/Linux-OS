@@ -118,25 +118,29 @@ _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache(){
-  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) ts
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) oldest total
+  # Delete old cache files
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    "$FIND_TOOL" . -t f -maxdepth 1 -x bash -c '
-      ts=$(stat -c %Y "{}" 2>/dev/null || echo 0)
-      [[ $ts -lt '"$(( now - mmin*60 ))"' ]] && rm -f "{}" || :
-    ' -- "$CACHE_DIR" 2>/dev/null
+    "$FIND_TOOL" . -t f -maxdepth 1 -print0 -- "$CACHE_DIR" 2>/dev/null \
+      | xargs -0 -I{} bash -c '
+          ts=$(stat -c %Y "{}" 2>/dev/null || echo 0)
+          [[ $ts -lt '"$(( now - mmin*60 ))"' ]] && rm -f "{}" || :
+        '
   else
     find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
   fi
+  # Evict by max bytes
   if (( APT_FUZZ_CACHE_MAX_BYTES > 0 )); then
-    local total=$(total_bytes_in_dir "$CACHE_DIR")
+    total=$(total_bytes_in_dir "$CACHE_DIR")
     while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
-      local oldest
       if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-        oldest=$("$FIND_TOOL" . -type f -maxdepth 1 -printf '%T@ %p\0' -- "$CACHE_DIR" 2>/dev/null \
-          | tr '\0' '\n' | sort -n | head -n1 | cut -d' ' -f2)
+        # Find oldest file by mtime with fd -x stat
+        oldest=$("$FIND_TOOL" . -t f -maxdepth 1 -x stat -c '%Y %n' {} -- "$CACHE_DIR" 2>/dev/null \
+                  | sort -n | head -n1 | cut -d' ' -f2-)
       else
-        oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | cut -d' ' -f2)
+        oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | cut -d' ' -f2-)
       fi
+      [[ -z $oldest ]] && break
       rm -f -- "$oldest" || break
       total=$(total_bytes_in_dir "$CACHE_DIR")
     done

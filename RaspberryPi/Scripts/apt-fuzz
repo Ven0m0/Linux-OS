@@ -129,7 +129,7 @@ evict_old_cache(){
         done
       ' bash
   else
-    find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
+    find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null
   fi
   # Evict by max bytes
   if (( APT_FUZZ_CACHE_MAX_BYTES > 0 )); then

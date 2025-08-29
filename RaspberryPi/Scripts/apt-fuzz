@@ -129,11 +129,12 @@ _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache(){
-  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 ))
-  # Delete old cache files
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) ts
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    "$FIND_TOOL" . -type f -maxdepth 1 -print0 -- "$CACHE_DIR" 2>/dev/null \
-      | xargs -0 -I{} bash -c '[[ $(stat -c %Y "{}") -lt '"$(( $(date +%s) - mmin*60 ))"' ]] && rm -f "{}" || :'
+    "$FIND_TOOL" . -t f -maxdepth 1 -x bash -c '
+      ts=$(stat -c %Y "{}" 2>/dev/null || echo 0)
+      [[ $ts -lt '"$(( now - mmin*60 ))"' ]] && rm -f "{}" || :
+    ' -- "$CACHE_DIR" 2>/dev/null
   else
     find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
   fi
@@ -142,7 +143,8 @@ evict_old_cache(){
     while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
       local oldest
       if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-        oldest=$("$FIND_TOOL" . -type f -maxdepth 1 -printf '%T@ %p\0' -- "$CACHE_DIR" 2>/dev/null | tr '\0' '\n' | sort -n | head -n1 | cut -d' ' -f2)
+        oldest=$("$FIND_TOOL" . -type f -maxdepth 1 -printf '%T@ %p\0' -- "$CACHE_DIR" 2>/dev/null \
+          | tr '\0' '\n' | sort -n | head -n1 | cut -d' ' -f2)
       else
         oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | cut -d' ' -f2)
       fi
@@ -151,26 +153,9 @@ evict_old_cache(){
     done
   fi
 }
-_cache_stats(){
-  local files size age
-  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    files=$("$FIND_TOOL" . -type f -maxdepth 1 -print0 -- "$CACHE_DIR" 2>/dev/null | tr -cd '\0' | wc -c)
-    size=$(total_bytes_in_dir "$CACHE_DIR")
-    local oldest_ts
-    oldest_ts=$("$FIND_TOOL" . -type f -maxdepth 1 -printf '%T@ %p\0' -- "$CACHE_DIR" 2>/dev/null | tr '\0' '\n' | sort -n | head -n1 | cut -d' ' -f1)
-    [[ -z $oldest_ts ]] && age="0m" || age=$(( ( $(date +%s) - ${oldest_ts%%.*} ) / 60 ))m
-  else
-    files=$(find "$CACHE_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l)
-    size=$(total_bytes_in_dir "$CACHE_DIR")
-    local oldest_ts
-    oldest_ts=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | awk '{print $1}')
-    [[ -z $oldest_ts ]] && age="0m" || age=$(( ( $(date +%s) - ${oldest_ts%%.*} ) / 60 ))m
-  fi
-  printf '%s|%s|%s' "$files" "$size" "$age"
-}
 
 # -------------------------
-# Preview generation (atomic)
+# Preview generation
 # -------------------------
 _generate_preview(){
   local pkg="$1" out="$(_cache_file_for "$pkg")" tmp="${out}.$$.$RANDOM.tmp"
@@ -266,7 +251,7 @@ list_upgradable(){
     apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'
   fi
 }
-backup_installed(){ local out="${1:-pkglist-$(date +%F).txt}"; dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"; printf 'Saved: %s\n' "$out"; }
+backup_installed(){ llocal out="${1:-pkglist-$(printf '%(%F)T' -1).txt}""; dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"; printf 'Saved: %s\n' "$out"; }
 
 restore_from_file(){
   local file="$1"

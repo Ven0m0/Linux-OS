@@ -104,6 +104,7 @@ basename() {
     printf '%s\n' "${tmp:-/}"
 }
 ```
+</details>
 <details>
 <summary><b>Dirname</b></summary>
 

@@ -40,7 +40,9 @@
 #   Set $APT_FUZZ_FINDER_OPTS to fully replace these defaults if you prefer different behavior
 #   (e.g., let the finder sort/rank results), and set $APT_FUZZ_ANSI=0 to drop --ansi.
 
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
+
 export LC_ALL=C LANG=C
 : "${SHELL:=${BASH:-/bin/bash}}"
 : "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
@@ -61,6 +63,7 @@ else
   echo "Please install skim (sk) or fzf." >&2
   exit 1
 fi
+
 if command -v fd &>/dev/null; then
   FIND_TOOL="fd"
 elif command -v fdfind &>/dev/null; then
@@ -101,7 +104,7 @@ fi
 total_bytes_in_dir(){
   local dir="$1" total=0 s f
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # use fd/fdfind with NUL output and stat per-file (robust to spaces)
+    # fd/fdfind: output NUL-separated file paths at depth=1
     while IFS= read -r -d '' f; do
       s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
       total=$(( total + s ))
@@ -144,7 +147,8 @@ evict_old_cache(){
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
     # iterate NUL-separated files at depth 1, remove those older than cutoff
     while IFS= read -r -d '' f; do
-      local ts=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      local ts
+      ts=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
       if (( ts < cutoff )); then
         rm -f -- "$f" || :
       fi
@@ -159,19 +163,20 @@ evict_old_cache(){
     while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
       oldest=""
       if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-        # iterate NUL-separated files and track minimum mtime
-        local min_mtime=
+        local min_mtime
         while IFS= read -r -d '' f; do
-          local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+          local m
+          m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
           if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
             min_mtime=$m
             oldest="$f"
           fi
         done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
       else
-        local min_mtime=
+        local min_mtime
         while IFS= read -r -d '' f; do
-          local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+          local m
+          m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
           if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
             min_mtime=$m
             oldest="$f"
@@ -189,12 +194,13 @@ evict_old_cache(){
 _cache_stats(){
   local files size oldest age
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    files=$("$FIND_TOOL" . -d 1 -t f . "$CACHE_DIR" 2>/dev/null | wc -l)
+    files=$("$FIND_TOOL" -d 1 -t f . "$CACHE_DIR" 2>/dev/null | wc -l)
     size=$(total_bytes_in_dir "$CACHE_DIR")
     # find oldest mtime via reducer
-    local min_mtime=
+    local min_mtime
     while IFS= read -r -d '' f; do
-      local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      local m
+      m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
       if [[ -z $min_mtime || $m -lt $min_mtime ]]; then min_mtime=$m; fi
     done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
     oldest="$min_mtime"
@@ -292,53 +298,69 @@ choose_manager(){
 
 # -------------------------
 # Lists / helpers / UI (fd-native implementations when available)
+#   Defensive: fall back to apt-cache/dpkg-query if fd paths are absent/empty
 # -------------------------
 list_all_packages(){
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # concatenate Packages files and parse Package/Version pairs
-    # Use fd to find apt list files, cat them, then awk to emit "name|version"
-    "$FIND_TOOL" -0 -g '*Packages' /var/lib/apt/lists 2>/dev/null \
-      | xargs -0 -r cat 2>/dev/null \
-      | awk '
-        /^Package: / { pkg = $2 }
-        /^Version: / { ver = $2 }
-        /^$/ { if (pkg != "") { print pkg "|" ver; pkg=""; ver=""; } }
-        END { if (pkg != "") print pkg "|" ver }
-      '
-  else
-    apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
+    # check whether apt list files exist
+    local count
+    count=$("$FIND_TOOL" -g '*Packages' -d 1 -t f /var/lib/apt/lists 2>/dev/null | wc -l || true)
+    if (( count > 0 )); then
+      # concatenate Packages files and parse Package/Version pairs (streaming)
+      "$FIND_TOOL" -g '*Packages' -d 1 -t f /var/lib/apt/lists 2>/dev/null \
+        | while IFS= read -r file; do
+            # stream file through awk to emit name|version entries
+            awk '
+              /^Package: / { pkg = $2 }
+              /^Version: / { ver = $2 }
+              /^$/ { if (pkg != "") { print pkg "|" ver; pkg=""; ver=""; } }
+              END { if (pkg != "") print pkg "|" ver }
+            ' "$file"
+          done
+      return 0
+    fi
   fi
+  # fallback
+  apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
 }
 
 list_installed(){
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # use fd to list /var/lib/dpkg/info/*.list, map to package names
-    while IFS= read -r -d '' f; do
-      local base="${f##*/}"
-      printf '%s|installed\n' "${base%.list}"
-    done < <("$FIND_TOOL" -0 -d 1 -t f -g '*.list' /var/lib/dpkg/info 2>/dev/null || printf '')
-  else
-    dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :
+    local count
+    count=$("$FIND_TOOL" -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null | wc -l || true)
+    if (( count > 0 )); then
+      # output "pkg|installed"
+      "$FIND_TOOL" -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null \
+        | while IFS= read -r f; do
+            base="${f##*/}"
+            printf '%s|installed\n' "${base%.list}"
+          done
+      return 0
+    fi
   fi
+  # fallback
+  dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :
 }
-
 list_upgradable(){
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # parse _upgradable or Packages files that contain "Package:" entries
-    "$FIND_TOOL" -0 -g '*_upgradable' /var/lib/apt/lists 2>/dev/null \
-      | xargs -0 -r cat 2>/dev/null \
-      | awk '/^Package: /{print $2}'
-  else
-    apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'
+    local count
+    count=$("$FIND_TOOL" -g '*_upgradable' -d 1 -t f /var/lib/apt/lists 2>/dev/null | wc -l || true)
+    if (( count > 0 )); then
+      "$FIND_TOOL" -g '*_upgradable' -d 1 -t f /var/lib/apt/lists 2>/dev/null \
+        | while IFS= read -r file; do
+            awk '/^Package: /{print $2}' "$file"
+          done
+      return 0
+    fi
   fi
+  # fallback
+  apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'
 }
-
 backup_installed(){
   local out="${1:-pkglist-$(printf '%(%F)T' -1).txt}"
   dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"
   printf 'Saved: %s\n' "$out"
 }
-
 restore_from_file(){
   local file="$1"
   [[ ! -f $file ]] && { echo "File not found: $file" >&2; return 1; }
@@ -348,12 +370,10 @@ restore_from_file(){
   [[ ${#sel[@]} -eq 0 ]] && return
   run_mgr install "${sel[@]}"
 }
-
 show_changelog(){
   local pkg="$1"
   command -v apt-get &>/dev/null && (apt-get changelog "$pkg" 2>/dev/null || echo "No changelog for $pkg") || echo "apt-get unavailable"
 }
-
 action_menu_for_pkgs(){
   local pkgs=("$@")
   local actions=("Install" "Remove" "Purge" "Changelog" "Cancel")

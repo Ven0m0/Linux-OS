@@ -94,37 +94,17 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 <details>
 <summary><b>Basename</b></summary>
 
+Usage: basename "path" ["suffix"]
 ```bash
-basename() {
-    # Usage: basename "path" ["suffix"]
-    local tmp
-    tmp=${1%"${1##*[!/]}"}
-    tmp=${tmp##*/}
-    tmp=${tmp%"${2/"$tmp"}"}
-    printf '%s\n' "${tmp:-/}"
-}
+basename(){ local tmp=${1%"${1##*[!/]}"}; tmp=${tmp##*/}; tmp=${tmp%"${2/"$tmp"}"}; printf '%s\n' "${tmp:-/}"; }
 ```
 </details>
 <details>
 <summary><b>Dirname</b></summary>
-
+  
+Usage: dirname "path"
 ```bash
-dirname() {
-    # Usage: dirname "path"
-    local tmp=${1:-.}
-    [[ $tmp != *[!/]* ]] && {
-        printf '/\n'
-        return
-    }
-    tmp=${tmp%%"${tmp##*[!/]}"}
-    [[ $tmp != */* ]] && {
-        printf '.\n'
-        return
-    }
-    tmp=${tmp%/*}
-    tmp=${tmp%%"${tmp##*[!/]}"}
-    printf '%s\n' "${tmp:-/}"
-}
+dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; }; tmp=${tmp%%"${tmp##*[!/]}" }; [[ $tmp != */* ]] && { printf '.\n'; return; }; tmp=${tmp%/*}; tmp=${tmp%%"${tmp##*[!/]}"}; printf '%s\n' "${tmp:-/}"; }
 ```
 </details>
 <details>

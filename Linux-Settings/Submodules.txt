@@ -45,7 +45,6 @@ https://github.com/alexanderepstein/Bash-Snippets/blob/master/transfer/transfer
 https://github.com/xvoland/Extract
 https://github.com/VirtuBox/img-optimize
 https://github.com/AnnikaV9/kbuilder
-https://github.com/Hetsh/mcsctl
 https://github.com/mssalvatore/ln2
 
 # Lint/Cleanup

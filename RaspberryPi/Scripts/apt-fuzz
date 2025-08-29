@@ -118,14 +118,16 @@ _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache(){
-  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) oldest total
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) oldest total cutoff=$(( now - mmin*60 ))
   # Delete old cache files
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    "$FIND_TOOL" . -t f -maxdepth 1 -print0 -- "$CACHE_DIR" 2>/dev/null \
-      | xargs -0 -I{} bash -c '
-          ts=$(stat -c %Y "{}" 2>/dev/null || echo 0)
-          [[ $ts -lt '"$(( now - mmin*60 ))"' ]] && rm -f "{}" || :
-        '
+    "$FIND_TOOL" . -t f -maxdepth 1 -- "$CACHE_DIR" 2>/dev/null \
+      -x bash -c '
+        for f; do
+          ts=$(stat -c %Y "$f" 2>/dev/null || echo 0)
+          [[ $ts -lt '"$cutoff"' ]] && rm -f "$f"
+        done
+      ' bash
   else
     find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
   fi
@@ -134,9 +136,9 @@ evict_old_cache(){
     total=$(total_bytes_in_dir "$CACHE_DIR")
     while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
       if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-        # Find oldest file by mtime with fd -x stat
-        oldest=$("$FIND_TOOL" . -t f -maxdepth 1 -x stat -c '%Y %n' {} -- "$CACHE_DIR" 2>/dev/null \
-                  | sort -n | head -n1 | cut -d' ' -f2-)
+        # Find oldest file directly with fd -x stat
+        oldest=$("$FIND_TOOL" . -t f -maxdepth 1 -- "$CACHE_DIR" 2>/dev/null \
+                   -x stat -c '%Y %n' | sort -n | head -n1 | cut -d' ' -f2-)
       else
         oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | cut -d' ' -f2-)
       fi

@@ -61,6 +61,14 @@ else
   echo "Please install skim (sk) or fzf." >&2
   exit 1
 fi
+# Use fd-find if installed
+if command -v fd &>/dev/null; then
+  FIND_TOOL="fd"
+elif command -v fdfind &>/dev/null; then
+  FIND_TOOL="fdfind"
+else
+  FIND_TOOL="find"
+fi
 
 # -------------------------
 # FINDER options (defaults + runtime override)
@@ -94,12 +102,18 @@ fi
 # Pure-bash utilities
 # -------------------------
 total_bytes_in_dir(){
-  # sum sizes of regular files in directory (non-recursive)
-  local dir="$1"; local total=0 f s
-  while IFS= read -r -d '' f; do
-    s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
-    total=$(( total + s ))
-  done < <(find "$dir" -maxdepth 1 -type f -print0 2>/dev/null)
+  local dir="$1" total=0 f s
+  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
+    while IFS= read -r -d '' f; do
+      s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
+      total=$(( total + s ))
+    done < <("$FIND_TOOL" . -type f -maxdepth 1 -print0 -- "$dir" 2>/dev/null)
+  else
+    while IFS= read -r -d '' f; do
+      s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
+      total=$(( total + s ))
+    done < <(find "$dir" -maxdepth 1 -type f -print0 2>/dev/null)
+  fi
   printf '%d' "$total"
 }
 byte_to_human(){
@@ -120,19 +134,26 @@ _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache(){
-  local mmin; mmin="$(_cache_mins)"
-  find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete &>/dev/null || :
-  if [[ ${APT_FUZZ_CACHE_MAX_BYTES:-0} -gt 0 ]]; then
-    local total; total=$(total_bytes_in_dir "$CACHE_DIR")
-    if [[ $total -gt $APT_FUZZ_CACHE_MAX_BYTES ]]; then
-      # delete oldest until under cap
-      while IFS= read -r -d '' entry; do
-        local file="${entry#* }"
-        rm -f "$file" &>/dev/null || :
-        total=$(total_bytes_in_dir "$CACHE_DIR")
-        [[ $total -le $APT_FUZZ_CACHE_MAX_BYTES ]] && break
-      done < <(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\0' 2>/dev/null | tr '\0' '\n' | sort -n | sed -n '1,200p' | tr '\n' '\0')
-    fi
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 ))
+  # Delete old cache files
+  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
+    "$FIND_TOOL" . -type f -maxdepth 1 -print0 -- "$CACHE_DIR" 2>/dev/null \
+      | xargs -0 -I{} bash -c '[[ $(stat -c %Y "{}") -lt '"$(( $(date +%s) - mmin*60 ))"' ]] && rm -f "{}" || :'
+  else
+    find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
+  fi
+  if (( APT_FUZZ_CACHE_MAX_BYTES > 0 )); then
+    local total=$(total_bytes_in_dir "$CACHE_DIR")
+    while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
+      local oldest
+      if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
+        oldest=$("$FIND_TOOL" . -type f -maxdepth 1 -printf '%T@ %p\0' -- "$CACHE_DIR" 2>/dev/null | tr '\0' '\n' | sort -n | head -n1 | cut -d' ' -f2)
+      else
+        oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | cut -d' ' -f2)
+      fi
+      rm -f -- "$oldest" || break
+      total=$(total_bytes_in_dir "$CACHE_DIR")
+    done
   fi
 }
 _cache_stats(){
@@ -213,9 +234,31 @@ choose_manager(){
 # -------------------------
 # Lists / helpers / UI
 # -------------------------
-list_all_packages(){ apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'; }
-list_installed(){ dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :; }
-list_upgradable(){ apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'; }
+list_all_packages(){
+  if [[ -n $FINDER_FD ]]; then
+    # fd only lists names, append placeholder version
+    $FINDER_FD -HI . /var/lib/apt/lists/*Packages 2>/dev/null \
+      | sed -n 's/^Package: //p' | awk '{print $0 "|unknown"}'
+  else
+    apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
+  fi
+}
+list_installed(){
+  if [[ -n $FINDER_FD ]]; then
+    $FINDER_FD -HI . /var/lib/dpkg/info/*.list 2>/dev/null \
+      | sed -E 's:.*/([^/]+)\.list$:\1|installed:' 
+  else
+    dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :
+  fi
+}
+list_upgradable(){
+  if [[ -n $FINDER_FD ]]; then
+    $FINDER_FD -HI . /var/lib/apt/lists/*_upgradable 2>/dev/null \
+      | sed -n 's/^Package: //p'
+  else
+    apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'
+  fi
+}
 backup_installed(){ local out="${1:-pkglist-$(date +%F).txt}"; dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"; printf 'Saved: %s\n' "$out"; }
 
 restore_from_file(){

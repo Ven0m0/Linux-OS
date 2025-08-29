@@ -136,6 +136,11 @@ docker network prune --force
 # -a, --all, Remove all unused build cache, not just dangling ones
  docker system prune --force --volumes -a
 
+#docker image prune -a -f
+#docker volume prune -f
+#docker system prune -a -f
+#docker-remove-stale-assets
+
 # Run "docker/docker-reclaim-space" only on Intel chips
 # because image is not build for ARM achitecture (Apple M1 chips)
 if [ "$(uname)" == "Darwin" ] && [ "$(uname -m)" == "x86_64" ]; then

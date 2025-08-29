@@ -98,12 +98,12 @@ fi
 # Pure-bash utilities
 # -------------------------
 total_bytes_in_dir(){
-  local dir="$1" total=0 f s
+  local dir="$1" total=0
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    while IFS= read -r -d '' f; do
-      s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
+    # Use fd/fdfind -x stat for faster size calculation
+    while IFS= read -r s; do
       total=$(( total + s ))
-    done < <("$FIND_TOOL" . -type f -maxdepth 1 -print0 -- "$dir" 2>/dev/null)
+    done < <("$FIND_TOOL" . -t f -maxdepth 1 -x stat -c '%s' {} -- "$dir" 2>/dev/null)
   else
     while IFS= read -r -d '' f; do
       s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)

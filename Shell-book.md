@@ -92,10 +92,38 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 ```
 </details>
 <details>
-<summary><b>Get external IP</b></summary>
+<summary><b>Basename</b></summary>
 
 ```bash
-curl -fsS4 ipinfo.io/ip || curl -fsS4 ipecho.net/plain
+basename() {
+    # Usage: basename "path" ["suffix"]
+    local tmp
+    tmp=${1%"${1##*[!/]}"}
+    tmp=${tmp##*/}
+    tmp=${tmp%"${2/"$tmp"}"}
+    printf '%s\n' "${tmp:-/}"
+}
+```
+<details>
+<summary><b>Dirname</b></summary>
+
+```bash
+dirname() {
+    # Usage: dirname "path"
+    local tmp=${1:-.}
+    [[ $tmp != *[!/]* ]] && {
+        printf '/\n'
+        return
+    }
+    tmp=${tmp%%"${tmp##*[!/]}"}
+    [[ $tmp != */* ]] && {
+        printf '.\n'
+        return
+    }
+    tmp=${tmp%/*}
+    tmp=${tmp%%"${tmp##*[!/]}"}
+    printf '%s\n' "${tmp:-/}"
+}
 ```
 </details>
 <details>

@@ -29,19 +29,8 @@
 #   APT_FUZZ_FINDER_OPTS        (optional — overrides FINDER_BASE_OPTS at runtime)
 #   APT_FUZZ_ANSI               (true/false — adds --ansi to finder; default: true)
 #   APT_FUZZ_MANAGER            (force apt/nala/apt-fast; default: auto-detect)
-#
-# FINDER_BASE_OPTS — defaults and runtime override
-#   We tune for speed and responsiveness on large inputs:
-#     --layout=reverse-list : query line at bottom, list above (explicit layout)
-#     --no-sort             : disables internal result re-sorting (faster). Tradeoff:
-#                             you lose the final ranking pass; results follow input order.
-#     --tiebreak=index      : cheap, deterministic tie-breaking
-#     --no-hscroll          : avoids horizontal-scroll bookkeeping; faster redraws
-#   Set $APT_FUZZ_FINDER_OPTS to fully replace these defaults if you prefer different behavior
-#   (e.g., let the finder sort/rank results), and set $APT_FUZZ_ANSI=false to drop --ansi.
 
-set -euo pipefail
-shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 : "${SHELL:=${BASH:-/bin/bash}}"
 : "${XDG_CACHE_HOME:=${HOME}/.cache}"
@@ -49,7 +38,7 @@ CACHE_DIR="${XDG_CACHE_HOME%/}/apt-fuzz"
 mkdir -p -- "$CACHE_DIR" &>/dev/null
 : "${APT_FUZZ_CACHE_TTL:=86400}"
 : "${APT_FUZZ_CACHE_MAX_BYTES:=0}"
-: "${APT_FUZZ_ANSI:=true}"
+: "${APT_FUZZ_ANSI:=1}"
 
 # -------------------------
 # Tool detection
@@ -78,7 +67,7 @@ TIEBREAK_OPT="--tiebreak=index"
 NO_SORT_OPT="--no-sort"
 NO_HSCROLL="--no-hscroll"
 FINDER_BASE_OPTS="$LAYOUT_OPT $TIEBREAK_OPT $NO_SORT_OPT $NO_HSCROLL"
-[[ "${APT_FUZZ_ANSI,,}" == "true" ]] && FINDER_BASE_OPTS="$FINDER_BASE_OPTS --ansi"
+[[ "${APT_FUZZ_ANSI,,}" == "1" ]] && FINDER_BASE_OPTS="$FINDER_BASE_OPTS --ansi"
 [[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && FINDER_BASE_OPTS="${APT_FUZZ_FINDER_OPTS}"
 
 # -------------------------

@@ -108,6 +108,15 @@ dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; };
 ```
 </details>
 <details>
+<summary><b>Date</b></summary>
+
+Usage: date "format"
+See: 'man strftime' for format.
+```bash
+date(){ printf "%($1)T\\n" "-1"; }
+```
+</details>
+<details>
 <summary><b>Sleep replacement in bash</b></summary>
 
 ```bash

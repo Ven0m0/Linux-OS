@@ -120,7 +120,7 @@ if has rustup; then
     if cargo install-update -V &>/dev/null; then
       cargo_run install-update -agi 2>/dev/null
     else
-      cargo_run install --list | awk '/^[[:alnum:]]/ {print $1}' | xargs -r -n1 cargo install >/dev/null
+      cargo_run install --list | grep -o '^[[:alnum:]][^ ]*' | xargs -r -n1 cargo install >/dev/null
     fi
     has cargo-updater && cargo_run updater -u >/dev/null
   fi

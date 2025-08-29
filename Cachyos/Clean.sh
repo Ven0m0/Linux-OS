@@ -12,6 +12,8 @@ has(){ command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x=$(type -P -- "$1" 2>/dev/null) || return; printf '%s\n' "${x##*/}"; } # Get basename of command
 p(){ printf '%s\n' "$*" 2>/dev/null || :; } # Print-echo
 pe(){ printf '%b\n' "$*" 2>/dev/null || :; } # Print-echo for color
+rms(){ rm -f --preserve-root -- "$@";}
+rmsr(){ rm -rf --preserve-root -- "$@";}
 #──────────── Banner ────────────────────
 banner=$(cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
@@ -71,20 +73,20 @@ fi
 
 # Clear cache
 "$suexec" systemd-tmpfiles --clean >/dev/null
-"$suexec" rm -rf -- "/var/cache/"*
-"$suexec" rm -rf -- "/tmp/"*
-"$suexec" rm -rf -- "/var/tmp/"*
-"$suexec" rm -rf -- "/var/crash/"*
-"$suexec" rm -rf -- "/var/lib/systemd/coredump/"*
-rm -rf -- "$HOME/.cache/"*
-"$suexec" rm -rf -- "/root/.cache/"*
-rm -rf -- "$HOME/.var/app/"*/cache/*
-rm -f -- "$HOME/.config/Trolltech.conf" || :
+"$suexec" rmsr "/var/cache/"*
+"$suexec" rmsr "/tmp/"*
+"$suexec" rmsr "/var/tmp/"*
+"$suexec" rmsr "/var/crash/"*
+"$suexec" rmsr "/var/lib/systemd/coredump/"*
+rmsr "$HOME/.cache/"*
+"$suexec" rmsr "/root/.cache/"*
+rmsr "$HOME/.var/app/"*/cache/*
+rms "$HOME/.config/Trolltech.conf" || :
 kbuildsycoca6 --noincremental || :
 
 # Empty global trash
-rm -rf -- "$HOME/.local/share/Trash/"*
-"$suexec" rm -rf -- "/root/.local/share/Trash/"*
+rmsr "$HOME/.local/share/Trash/"*
+"$suexec" rmsr "/root/.local/share/Trash/"*
 
 # Flatpak
 if command -v flatpak &> /dev/null; then
@@ -92,10 +94,10 @@ if command -v flatpak &> /dev/null; then
 else
   echo 'Skipping because "flatpak" is not found.'
 fi
-"$suexec" rm -rf -- /var/tmp/flatpak-cache-*
-rm -rf -- "$HOME/.cache/flatpak/system-cache/"*
-rm -rf -- "$HOME/.local/share/flatpak/system-cache/"*
-rm -rf -- "$HOME/.var/app/*/data/Trash/"*
+"$suexec" rmsr /var/tmp/flatpak-cache-*
+rmsr "$HOME/.cache/flatpak/system-cache/"*
+rmsr "$HOME/.local/share/flatpak/system-cache/"*
+rmsr "$HOME/.var/app/*/data/Trash/"*
 
 # Clear thumbnails
 rm -rf -- "$HOME/.thumbnails/"*
@@ -108,26 +110,26 @@ rm -rf -- "$HOME/.thumbnails/"*
 "$suexec" rm -rf -- {/root,/home/*}/.local/share/zeitgeist
 
 # Home cleaning
-rm -f -- "$HOME/.wget-hsts" "$HOME/.lesshst" "$HOME/nohup.out" "$HOME/token" "$HOME/"
+rms "$HOME/.wget-hsts" "$HOME/.lesshst" "$HOME/nohup.out" "$HOME/token" "$HOME/"
 "$HOME/"
 # Shell history
-rm -f -- "$HOME/.local/share/fish/fish_history" "$HOME/.config/fish/fish_history" "$HOME/.zsh_history" "$HOME/.bash_history" "$HOME/.history"
-"$suexec" rm -f -- "/root/.local/share/fish/fish_history" "/root/.config/fish/fish_history" "/root/.zsh_history" "/root/.bash_history" "/root/.history"
+rms "$HOME/.local/share/fish/fish_history" "$HOME/.config/fish/fish_history" "$HOME/.zsh_history" "$HOME/.bash_history" "$HOME/.history"
+"$suexec" rms "/root/.local/share/fish/fish_history" "/root/.config/fish/fish_history" "/root/.zsh_history" "/root/.bash_history" "/root/.history"
 
 # LibreOffice
-rm -f $HOME/.config/libreoffice/4/user/registrymodifications.xcu
-rm -f $HOME/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu
-rm -f $HOME/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu
+rms $HOME/.config/libreoffice/4/user/registrymodifications.xcu
+rms $HOME/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu
+rms $HOME/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu
 
 # Steam
-rm -rf -- "$HOME/.local/share/Steam/appcache/"*
-rm -rf -- "$HOME/snap/steam/common/.cache/"*
-rm -rf -- "$HOME/snap/steam/common/.local/share/Steam/appcache/"*
-rm -rf -- "$HOME/.var/app/com.valvesoftware.Steam/cache/"*
-rm -rf -- "$HOME/.var/app/com.valvesoftware.Steam/data/Steam/appcache/"*
+rmsr "$HOME/.local/share/Steam/appcache/"*
+rmsr "$HOME/snap/steam/common/.cache/"*
+rmsr "$HOME/snap/steam/common/.local/share/Steam/appcache/"*
+rmsr "$HOME/.var/app/com.valvesoftware.Steam/cache/"*
+rmsr "$HOME/.var/app/com.valvesoftware.Steam/data/Steam/appcache/"*
 
 # NVIDIA
-"$suexec" rm -rf -- "$HOME/.nv/ComputeCache/"*
+"$suexec" rmsr "$HOME/.nv/ComputeCache/"*
 # Python
 #rm -f $HOME/.python_history
 echo '--- Disable Python history for future interactive commands'
@@ -139,13 +141,13 @@ fi
 "$suexec" chattr +i "$(realpath $history_file)"
 
 # Firefox
-rm -rf --"$HOME/.mozilla/firefox/*/bookmarkbackups" >/dev/null
-rm -rf --"$HOME/.mozilla/firefox/*/saved-telemetry-pings" >/dev/null
-rm -rf --"$HOME/.mozilla/firefox/*/sessionstore-logs" >/dev/null
-rm -rf --"$HOME/.mozilla/firefox/*/sessionstore-backups" >/dev/null
-rm -rf -- "$HOME/.cache/mozilla/"* >/dev/null
-rm -rf -- "$HOME/.var/app/org.mozilla.firefox/cache/"* >/dev/null
-rm -rf -- "$HOME/snap/firefox/common/.cache/"* >/dev/null
+rmsr "$HOME/.mozilla/firefox/*/bookmarkbackups" >/dev/null
+rmsr "$HOME/.mozilla/firefox/*/saved-telemetry-pings" >/dev/null
+rmsr "$HOME/.mozilla/firefox/*/sessionstore-logs" >/dev/null
+rmsr "$HOME/.mozilla/firefox/*/sessionstore-backups" >/dev/null
+rms "$HOME/.cache/mozilla/"* >/dev/null
+rms "$HOME/.var/app/org.mozilla.firefox/cache/"* >/dev/null
+rms "$HOME/snap/firefox/common/.cache/"* >/dev/null
 # Delete files matching pattern: "~/.mozilla/firefox/*/crashes/*" "~/.mozilla/firefox/*/crashes/events/*"
 if ! command -v 'python3' &> /dev/null; then
   echo 'Skipping because "python3" is not found.'
@@ -187,22 +189,22 @@ EOF
 fi
 
 # Wine
-rm -rf -- "$HOME/.wine/drive_c/windows/temp/"* >/dev/null
-rm -rf -- "$HOME/.cache/wine/"* >/dev/null
-rm -rf -- "$HOME/.cache/winetricks/"* >/dev/null
+rms "$HOME/.wine/drive_c/windows/temp/"* >/dev/null
+rms  "$HOME/.cache/wine/"* >/dev/null
+rms "$HOME/.cache/winetricks/"* >/dev/null
 
 # GTK
-rm -f -- "/.recently-used.xbel" >/dev/null
-rm -f -- "$HOME/.local/share/recently-used.xbel" >/dev/null
-rm -f -- "$HOME/snap/*/*/.local/share/recently-used.xbel" >/dev/null
-rm -f -- "$HOME/.var/app/*/data/recently-used.xbel" >/dev/null
+rms "/.recently-used.xbel" >/dev/null
+rms "$HOME/.local/share/recently-used.xbel" >/dev/null
+rms "$HOME/snap/*/*/.local/share/recently-used.xbel" >/dev/null
+rms "$HOME/.var/app/*/data/recently-used.xbel" >/dev/null
 
 # KDE
-rm -rf -- "$HOME/.local/share/RecentDocuments/*.desktop" >/dev/null
-rm -rf -- "$HOME/.kde/share/apps/RecentDocuments/*.desktop" >/dev/null
-rm -rf -- "$HOME/.kde4/share/apps/RecentDocuments/*.desktop" >/dev/null
-rm -rf -- "$HOME/.var/app/*/data/*.desktop" >/dev/null
-rm -rf -- "$HOME/.local/share/Steam/appcache/"* >/dev/null
+rmsr "$HOME/.local/share/RecentDocuments/*.desktop" >/dev/null
+rmsr "$HOME/.kde/share/apps/RecentDocuments/*.desktop" >/dev/null
+rmsr "$HOME/.kde4/share/apps/RecentDocuments/*.desktop" >/dev/null
+rmsr "$HOME/.var/app/*/data/*.desktop" >/dev/null
+rmsr "$HOME/.local/share/Steam/appcache/"* >/dev/null
 
 # TLDR cache
 "$suexec" tldr -c >/dev/null

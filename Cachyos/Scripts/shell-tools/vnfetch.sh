@@ -11,7 +11,7 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────────────── Basic Info ────────────────────
-. /etc/os-release &>/dev/null && OS="${NAME:-$PRETTY_NAME}" || OS="$(uname -o 2>/dev/null)"
+. -- "/etc/os-release &>/dev/null" && OS="${NAME:-$PRETTY_NAME}" || OS="$(uname -o 2>/dev/null)"
 KERNEL="$(</proc/sys/kernel/osrelease 2>/dev/null || uname -r 2>/dev/null)"
 #USERN="${USER:-$(LC_ALL=C id -un 2>/dev/null || echo unknown)}"
 #HOSTNAME=$(</etc/hostname 2>/dev/null || hostname 2>/dev/null || echo "unknown")

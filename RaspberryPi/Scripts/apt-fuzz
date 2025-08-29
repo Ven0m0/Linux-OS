@@ -29,6 +29,16 @@
 #   APT_FUZZ_FINDER_OPTS        (optional — overrides FINDER_BASE_OPTS at runtime)
 #   APT_FUZZ_ANSI               (0/1 — adds --ansi to finder; default: 1)
 #   APT_FUZZ_MANAGER            (force apt/nala/apt-fast; default: auto-detect)
+#
+# FINDER_BASE_OPTS — defaults and runtime override
+#   We tune for speed and responsiveness on large inputs:
+#     --layout=reverse-list : query line at bottom, list above (explicit layout)
+#     --no-sort             : disables internal result re-sorting (faster). Tradeoff:
+#                             you lose the final ranking pass; results follow input order.
+#     --tiebreak=index      : cheap, deterministic tie-breaking
+#     --no-hscroll          : avoids horizontal-scroll bookkeeping; faster redraws
+#   Set $APT_FUZZ_FINDER_OPTS to fully replace these defaults if you prefer different behavior
+#   (e.g., let the finder sort/rank results), and set $APT_FUZZ_ANSI=0 to drop --ansi.
 
 set -euo pipefail; shopt -s nullglob globstar
 export LC_ALL=C LANG=C
@@ -51,7 +61,6 @@ else
   echo "Please install skim (sk) or fzf." >&2
   exit 1
 fi
-
 if command -v fd &>/dev/null; then
   FIND_TOOL="fd"
 elif command -v fdfind &>/dev/null; then
@@ -90,16 +99,16 @@ fi
 # Pure-bash utilities
 # -------------------------
 total_bytes_in_dir(){
-  local dir="$1" total=0
+  local dir="$1" total=0 s f
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # fd/fdfind: list files at depth 1 and call stat -c '%s' once per file
-    while IFS= read -r size; do
-      total=$(( total + (size 2>/dev/null || echo 0) ))
-    done < <("$FIND_TOOL" . -d 1 -t f -- "$dir" -x stat -c '%s' {} 2>/dev/null || printf '')
-    # Note: the above reads one number per matching file; we sum them.
+    # use fd/fdfind with NUL output and stat per-file (robust to spaces)
+    while IFS= read -r -d '' f; do
+      s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
+      total=$(( total + s ))
+    done < <("$FIND_TOOL" -0 -d 1 -t f . "$dir" 2>/dev/null || printf '')
   else
     while IFS= read -r -d '' f; do
-      local s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
+      s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
       total=$(( total + s ))
     done < <(find "$dir" -maxdepth 1 -type f -print0 2>/dev/null || printf '')
   fi
@@ -127,36 +136,49 @@ _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache(){
-  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 ))
-  local now cutoff oldest total
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now cutoff oldest total
   now=$(printf '%(%s)T' -1)
   cutoff=$(( now - mmin*60 ))
 
   # Delete old cache files (fd/fdfind optimized)
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # produce lines: "<mtime> <path>" and remove those older than cutoff
-    "$FIND_TOOL" . -d 1 -t f -- "$CACHE_DIR" -x stat -c '%Y %n' {} 2>/dev/null \
-      | while IFS= read -r mtime path; do
-          if [[ -n $mtime && -n $path ]]; then
-            if (( mtime < cutoff )); then
-              rm -f -- "$path" || :
-            fi
-          fi
-        done
+    # iterate NUL-separated files at depth 1, remove those older than cutoff
+    while IFS= read -r -d '' f; do
+      local ts=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      if (( ts < cutoff )); then
+        rm -f -- "$f" || :
+      fi
+    done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
   else
     find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
   fi
 
-  # Evict by max bytes: delete oldest until under cap
+  # Evict by max bytes: delete oldest until under cap (pure-bash min reducer)
   if (( APT_FUZZ_CACHE_MAX_BYTES > 0 )); then
     total=$(total_bytes_in_dir "$CACHE_DIR")
     while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
+      oldest=""
       if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-        # list mtime/path and take the smallest mtime
-        oldest=$("$FIND_TOOL" . -d 1 -t f -- "$CACHE_DIR" -x stat -c '%Y %n' {} 2>/dev/null | sort -n | head -n1 | cut -d' ' -f2-)
+        # iterate NUL-separated files and track minimum mtime
+        local min_mtime=
+        while IFS= read -r -d '' f; do
+          local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+          if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
+            min_mtime=$m
+            oldest="$f"
+          fi
+        done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
       else
-        oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | cut -d' ' -f2-)
+        local min_mtime=
+        while IFS= read -r -d '' f; do
+          local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+          if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
+            min_mtime=$m
+            oldest="$f"
+          fi
+        done < <(find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null || printf '')
       fi
+
       [[ -z $oldest ]] && break
       rm -f -- "$oldest" || break
       total=$(total_bytes_in_dir "$CACHE_DIR")
@@ -167,9 +189,15 @@ evict_old_cache(){
 _cache_stats(){
   local files size oldest age
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    files=$("$FIND_TOOL" . -d 1 -t f -- "$CACHE_DIR" 2>/dev/null | wc -l)
+    files=$("$FIND_TOOL" . -d 1 -t f . "$CACHE_DIR" 2>/dev/null | wc -l)
     size=$(total_bytes_in_dir "$CACHE_DIR")
-    oldest=$("$FIND_TOOL" . -d 1 -t f -- "$CACHE_DIR" -x stat -c '%Y %n' {} 2>/dev/null | sort -n | head -n1 | awk '{print $1}')
+    # find oldest mtime via reducer
+    local min_mtime=
+    while IFS= read -r -d '' f; do
+      local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      if [[ -z $min_mtime || $m -lt $min_mtime ]]; then min_mtime=$m; fi
+    done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
+    oldest="$min_mtime"
   else
     files=$(find "$CACHE_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l)
     size=$(total_bytes_in_dir "$CACHE_DIR")
@@ -263,19 +291,46 @@ choose_manager(){
 }
 
 # -------------------------
-# Lists / helpers / UI
+# Lists / helpers / UI (fd-native implementations when available)
 # -------------------------
 list_all_packages(){
-  # fallback to apt-cache search; fd-based listing is more advanced and optional
-  apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
+  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
+    # concatenate Packages files and parse Package/Version pairs
+    # Use fd to find apt list files, cat them, then awk to emit "name|version"
+    "$FIND_TOOL" -0 -g '*Packages' /var/lib/apt/lists 2>/dev/null \
+      | xargs -0 -r cat 2>/dev/null \
+      | awk '
+        /^Package: / { pkg = $2 }
+        /^Version: / { ver = $2 }
+        /^$/ { if (pkg != "") { print pkg "|" ver; pkg=""; ver=""; } }
+        END { if (pkg != "") print pkg "|" ver }
+      '
+  else
+    apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
+  fi
 }
 
 list_installed(){
-  dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :
+  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
+    # use fd to list /var/lib/dpkg/info/*.list, map to package names
+    while IFS= read -r -d '' f; do
+      local base="${f##*/}"
+      printf '%s|installed\n' "${base%.list}"
+    done < <("$FIND_TOOL" -0 -d 1 -t f -g '*.list' /var/lib/dpkg/info 2>/dev/null || printf '')
+  else
+    dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :
+  fi
 }
 
 list_upgradable(){
-  apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'
+  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
+    # parse _upgradable or Packages files that contain "Package:" entries
+    "$FIND_TOOL" -0 -g '*_upgradable' /var/lib/apt/lists 2>/dev/null \
+      | xargs -0 -r cat 2>/dev/null \
+      | awk '/^Package: /{print $2}'
+  else
+    apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'
+  fi
 }
 
 backup_installed(){

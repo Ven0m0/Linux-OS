@@ -467,6 +467,14 @@ rm -rf ~/Downloads/{Movies,Music,ISOS}
 ```
 </details>
 
+**Misc**
+
+```bash
+# Clear screen on script exit.
+trap 'printf \\e[2J\\e[H\\e[m' EXIT
+
+```
+
 **Run a command in the background**
 
 This will run the given command and keep it running, even after the terminal or SSH connection is terminated. All output is ignored.

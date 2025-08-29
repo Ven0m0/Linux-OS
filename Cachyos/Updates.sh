@@ -12,6 +12,14 @@ has(){ command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; } # Get basename of command
 xprint(){ printf '%s\n' "$*"; } # Print-echo
 xexprint(){ printf '%b\n' "$*"; } # Print-echo for color
+
+cleanup() {
+  trap - EXIT
+  unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
+  export LANG=C.UTF-8
+  [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- "/var/lib/pacman/db.lck" &>/dev/null
+}
+trap cleanup EXIT
 #──────────── Banner ────────────────────
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -47,14 +55,19 @@ else
     printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
   done
 fi
-echo
 echo "Meow (> ^ <)"
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"
+#──────────── Env ────────────────────
 has dbus-launch && export "$(dbus-launch 2>/dev/null)"
+SHELL="${BASH:-/bin/bash}"
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native"
+CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
+LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
+export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
 #─────────────────────────────────────────────────────────────
 sync
 "$suexec" hwclock -w >/dev/null || :
@@ -78,7 +91,7 @@ sysupdate(){
   "$suexec" pacman -Fy --noconfirm &>/dev/null || :
   # Build AUR options array
   if [[ -n $aurtool ]]; then
-    auropts=(--noconfirm --needed --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
+    auropts=(--noconfirm --needed --mflags '--skipinteg --skippgpcheck' --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
     echo "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
     "$aurtool" -Suyy "${auropts[@]}" 2>/dev/null || :
     "$aurtool" -Sua "${auropts[@]}" 2>/dev/null || :
@@ -94,9 +107,7 @@ if has flatpak; then
   "$suexec" flatpak update -y --noninteractive --system --force-remove &>/dev/null || :
 fi
 
-RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native"
-CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS" LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
+
 if has topgrade; then
   echo 'update using topgrade...'
   topno="(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup,cargo,lure})"
@@ -171,8 +182,7 @@ if has uv; then
     echo "🔄 Updating Python packages..."
     if command -v jq &>/dev/null; then
       # Update only outdated packages
-      local pkgs
-      pkgs=$(uv pip list --outdated --format json | jq -r '.[].name')
+      local pkgs=$(uv pip list --outdated --format json | jq -r '.[].name')
       if [[ -n $pkgs ]]; then
         uv pip install --upgrade $pkgs || echo "⚠️ Failed to update packages"
       else
@@ -258,6 +268,7 @@ else
     echo 'The initramfs generator was not found, please update initramfs manually...'
   fi
 fi
+
 echo
 echo "✅ All done."
 echo "  Meow (> ^ <)"

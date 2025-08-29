@@ -111,6 +111,7 @@ dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; };
 <summary><b>Date</b></summary>
 
 Usage: date "format"
+
 See: 'man strftime' for format.
 ```bash
 date(){ printf "%($1)T\\n" "-1"; }

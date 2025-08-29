@@ -42,17 +42,18 @@
 
 set -euo pipefail
 shopt -s nullglob globstar
-
 export LC_ALL=C LANG=C
-: "${SHELL:=/bin/bash}"
-: "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
+: "${SHELL:=${BASH:-/bin/bash}}"
+: "${XDG_CACHE_HOME:=${HOME}/.cache}"
 CACHE_DIR="${XDG_CACHE_HOME%/}/apt-fuzz"
-mkdir -p "$CACHE_DIR"
+mkdir -p -- "$CACHE_DIR" &>/dev/null
 : "${APT_FUZZ_CACHE_TTL:=86400}"
 : "${APT_FUZZ_CACHE_MAX_BYTES:=0}"
 : "${APT_FUZZ_ANSI:=true}"
 
-# prefer skim (sk) over fzf
+# -------------------------
+# Tool detection
+# -------------------------
 if command -v sk &>/dev/null; then
   FINDER=sk
 elif command -v fzf &>/dev/null; then
@@ -61,7 +62,6 @@ else
   echo "Please install skim (sk) or fzf." >&2
   exit 1
 fi
-# Use fd-find if installed
 if command -v fd &>/dev/null; then
   FIND_TOOL="fd"
 elif command -v fdfind &>/dev/null; then
@@ -71,23 +71,19 @@ else
 fi
 
 # -------------------------
-# FINDER options (defaults + runtime override)
+# FINDER options
 # -------------------------
 LAYOUT_OPT="--layout=reverse-list"
 TIEBREAK_OPT="--tiebreak=index"
 NO_SORT_OPT="--no-sort"
 NO_HSCROLL="--no-hscroll"
 FINDER_BASE_OPTS="$LAYOUT_OPT $TIEBREAK_OPT $NO_SORT_OPT $NO_HSCROLL"
-# Add --ansi by default (disable with APT_FUZZ_ANSI=false)
-if [[ "${APT_FUZZ_ANSI,,}" == "true" ]]; then
-  FINDER_BASE_OPTS="$FINDER_BASE_OPTS --ansi"
-fi
-# Allow runtime override (completely replaces the default)
-if [[ -n ${APT_FUZZ_FINDER_OPTS:-} ]]; then
-  FINDER_BASE_OPTS="${APT_FUZZ_FINDER_OPTS}"
-fi
+[[ "${APT_FUZZ_ANSI,,}" == "true" ]] && FINDER_BASE_OPTS="$FINDER_BASE_OPTS --ansi"
+[[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && FINDER_BASE_OPTS="${APT_FUZZ_FINDER_OPTS}"
 
-# detect managers (allow user override)
+# -------------------------
+# Manager detection
+# -------------------------
 HAS_NALA=0; HAS_APT_FAST=0
 command -v nala &>/dev/null && HAS_NALA=1 || :
 command -v apt-fast &>/dev/null && HAS_APT_FAST=1 || :
@@ -122,8 +118,7 @@ byte_to_human(){
   while [[ $bytes -ge $(( pow * 1024 )) && $i -lt 4 ]]; do
     pow=$(( pow * 1024 )); i=$(( i + 1 ))
   done
-  local value10=$(( (bytes * 10 + (pow / 2)) / pow ))
-  local whole=$(( value10 / 10 )); local dec=$(( value10 % 10 ))
+  local value10=$(( (bytes * 10 + (pow / 2)) / pow )) whole=$(( value10 / 10 )); local dec=$(( value10 % 10 ))
   if [[ $dec -gt 0 ]]; then printf '%d.%d%s' "$whole" "$dec" "${units[i]}"; else printf '%d%s' "$whole" "${units[i]}"; fi
 }
 
@@ -157,8 +152,20 @@ evict_old_cache(){
   fi
 }
 _cache_stats(){
-  local age files=$(find "$CACHE_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l) size=$(total_bytes_in_dir "$CACHE_DIR") oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | awk '{print $1}')
-  if [[ -z $oldest ]]; then age="0m"; else age=$(( ( $(date +%s) - ${oldest%%.*} ) / 60 ))m; fi
+  local files size age
+  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
+    files=$("$FIND_TOOL" . -type f -maxdepth 1 -print0 -- "$CACHE_DIR" 2>/dev/null | tr -cd '\0' | wc -c)
+    size=$(total_bytes_in_dir "$CACHE_DIR")
+    local oldest_ts
+    oldest_ts=$("$FIND_TOOL" . -type f -maxdepth 1 -printf '%T@ %p\0' -- "$CACHE_DIR" 2>/dev/null | tr '\0' '\n' | sort -n | head -n1 | cut -d' ' -f1)
+    [[ -z $oldest_ts ]] && age="0m" || age=$(( ( $(date +%s) - ${oldest_ts%%.*} ) / 60 ))m
+  else
+    files=$(find "$CACHE_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l)
+    size=$(total_bytes_in_dir "$CACHE_DIR")
+    local oldest_ts
+    oldest_ts=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | awk '{print $1}')
+    [[ -z $oldest_ts ]] && age="0m" || age=$(( ( $(date +%s) - ${oldest_ts%%.*} ) / 60 ))m
+  fi
   printf '%s|%s|%s' "$files" "$size" "$age"
 }
 

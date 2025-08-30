@@ -68,11 +68,10 @@ RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -
 CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
 LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
-#─────────────────────────────────────────────────────────────
 sync
-"$suexec" hwclock -w >/dev/null || :
-"$suexec" updatedb >/dev/null || :
-
+#─────────────────────────────────────────────────────────────
+has hwclock && "$suexec" hwclock -w >/dev/null || :
+has updatedb && "$suexec" updatedb &>/dev/null || :
 sysupdate(){
   local aurtool='' auropts_base auropts
   local LC_ALL=C LANG=C LANGUAGE=en_US
@@ -172,19 +171,19 @@ fi
 if has uv; then
   uv-update(){
     echo "🔄 Updating uv itself..."
-    uv self update -q || echo "⚠️ Failed to update uv"
+    uv self update -q >/dev/null || echo "⚠️ Failed to update uv"
     echo "🔄 Updating uv tools..."
-    if uv tool list -q; then
-      uv tool upgrade --all -q || echo "⚠️ Failed to update uv tools"
+    if uv tool list -q &>/dev/null; then
+      uv tool upgrade --all -q >/dev/null || echo "⚠️ Failed to update uv tools"
     else
       echo "✅ No uv tools installed"
     fi
     echo "🔄 Updating Python packages..."
     if command -v jq &>/dev/null; then
       # Update only outdated packages
-      local pkgs=$(uv pip list --outdated --format json | jq -r '.[].name')
+      local pkgs=$(uv pip list --outdated --format json 2>/dev/null | jq -r '.[].name' 2>/dev/null)
       if [[ -n $pkgs ]]; then
-        uv pip install --upgrade $pkgs || echo "⚠️ Failed to update packages"
+        uv pip install --upgrade "$pkgs" >/dev/null || echo "⚠️ Failed to update packages"
       else
         echo "✅ All packages are up to date"
       fi
@@ -226,13 +225,6 @@ if has fwupdmgr; then
   echo 'update with fwupd...'
   "$suexec" fwupdmgr refresh &>/dev/null; "$suexec" fwupdmgr update >/dev/null || :
 fi
-if has sdboot-manage; then
-  echo 'update sdboot-manage...'
-  "$suexec" sdboot-manage remove 2>/dev/null || :
-  "$suexec" sdboot-manage update &>/dev/null || :
-fi
-
-"$suexec" chwd -a &>/dev/null || :
 
 echo 'updating Font cache'
 if has fc-cache; then
@@ -240,17 +232,24 @@ if has fc-cache; then
   "$suexec" fc-cache -f >/dev/null || :
 fi
 echo 'misc updates in background...'
-has updatedb && "$suexec" updatedb >/dev/null || :
-has update-desktop-database && "$suexec" update-desktop-database >/dev/null || :
-has update-pciids && "$suexec" update-pciids >/dev/null || :
-has update-smart-drivedb && "$suexec" update-smart-drivedb >/dev/null || :
+has chwd && "$suexec" chwd -a &>/dev/null || :
+has update-desktop-database && "$suexec" update-desktop-database &>/dev/null || :
+has update-pciids && "$suexec" update-pciids &>/dev/null || :
+has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 has update-ccache-links && "$suexec" update-ccache-links >/dev/null || :
+has update-leap && LC_ALL=C update-leap &>/dev/null || :
 echo "🔍 Checking for systemd-boot..."
-if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q; then
+if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q &>/dev/null; then
   echo "✅ systemd-boot detected, updating…"
   "$suexec" bootctl update -q &>/dev/null; "$suexec" bootctl cleanup -q &>/dev/null || :
 else
   echo "❌ systemd-boot not present, skipping."
+fi
+
+if has sdboot-manage; then
+  echo 'update sdboot-manage...'
+  "$suexec" sdboot-manage remove 2>/dev/null || :
+  "$suexec" sdboot-manage update &>/dev/null || :
 fi
 
 if has update-initramfs; then
@@ -269,6 +268,7 @@ else
   fi
 fi
 
-echo
+echo -e '\n'
 echo "✅ All done."
-echo "  Meow (> ^ <)"
+echo "Meow (> ^ <)"
+echo -e '\n'

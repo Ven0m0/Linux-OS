@@ -21,7 +21,7 @@ switch_case_indent = true
 function_next_line = true
 binary_next_line = true
 
-[*.bash,*.bashrc]
+[*.bash,.bashrc]
 shell_variant = bash
 trim_trailing_whitespace = true
 insert_final_newline = true

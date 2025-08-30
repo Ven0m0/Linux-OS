@@ -67,7 +67,7 @@ if has nala; then
   "$suexec" nala upgrade
   "$suexec" nala autoremove && "$suexec" nala autopurge
 elif has apt-fast; then
-  "$suexec" apt-fast update -y && "$suexec" apt-fast upgrade -y
+  "$suexec" apt-fast update -y --allow-releaseinfo-change && "$suexec" apt-fast upgrade -y
   "$suexec" apt-fast dist-upgrade -y && "$suexec" apt-fast full-upgrade -y
   "$suexec" apt-fast autoremove
 else

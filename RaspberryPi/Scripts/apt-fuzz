@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # apt-fuzz — compact skim/fzf TUI for apt / nala / apt-fast
-#
 # Fast interactive package browser for Debian/Ubuntu that:
 #   - uses skim (sk) (preferred) or fzf as fuzzy UI
 #   - supports apt, nala, apt-fast (auto-detect + choose)

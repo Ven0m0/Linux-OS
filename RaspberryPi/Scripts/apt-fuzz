@@ -39,9 +39,7 @@
 #   Set $APT_FUZZ_FINDER_OPTS to fully replace these defaults if you prefer different behavior
 #   (e.g., let the finder sort/rank results), and set $APT_FUZZ_ANSI=0 to drop --ansi.
 
-set -euo pipefail
-shopt -s nullglob globstar
-
+set -euo pipefail; shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 : "${SHELL:=${BASH:-/bin/bash}}"
 : "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
@@ -60,10 +58,8 @@ if command -v sk &>/dev/null; then
 elif command -v fzf &>/dev/null; then
   FINDER=fzf
 else
-  echo "Please install skim (sk) or fzf." >&2
-  exit 1
+  echo "Please install skim (sk) or fzf." >&2; exit 1
 fi
-
 if command -v fd &>/dev/null; then
   FIND_TOOL="fd"
 elif command -v fdfind &>/dev/null; then
@@ -116,7 +112,6 @@ total_bytes_in_dir(){
   fi
   printf '%d' "$total"
 }
-
 byte_to_human(){
   local bytes="${1:-0}" i=0 pow=1
   local -a units=(B K M G T)
@@ -139,11 +134,8 @@ _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache(){
-  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 ))
-  local now cutoff total oldest min_mtime f ts m
-  now=$(printf '%(%s)T' -1)
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) cutoff total oldest min_mtime f ts m
   cutoff=$(( now - mmin*60 ))
-
   # Delete old cache files (fd/fdfind optimized, NUL-safe)
   if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
     while IFS= read -r -d '' f; do
@@ -155,7 +147,6 @@ evict_old_cache(){
   else
     find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
   fi
-
   # Evict by max bytes: delete oldest until under cap (pure-bash min reducer)
   if (( APT_FUZZ_CACHE_MAX_BYTES > 0 )); then
     total=$(total_bytes_in_dir "$CACHE_DIR")
@@ -184,12 +175,9 @@ evict_old_cache(){
     done
   fi
 }
-
 _cache_stats(){
-  local files=0 size oldest age min_mtime f m
-  size=$(total_bytes_in_dir "$CACHE_DIR")
+  local files=0 size=$(total_bytes_in_dir "$CACHE_DIR") oldest age min_mtime f m
   size=${size:-0}
-
   if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
     # count files
     while IFS= read -r -d '' f; do files=$(( files + 1 )); done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
@@ -282,10 +270,8 @@ run_mgr(){
   printf 'Running: sudo %s\n' "${cmd[*]}"
   sudo "${cmd[@]}"
 }
-
 choose_manager(){
-  local opts choice
-  opts=(apt)
+  local opts=(apt) choice
   [[ $HAS_NALA -eq 1 ]] && opts+=("nala")
   [[ $HAS_APT_FAST -eq 1 ]] && opts+=("apt-fast")
   choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Manager> ")
@@ -319,7 +305,6 @@ list_all_packages(){
   # fallback
   apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
 }
-
 list_installed(){
   # fd-native: list files under /var/lib/dpkg/info/*.list -> pkg|installed
   if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
@@ -335,7 +320,6 @@ list_installed(){
   fi
   dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :
 }
-
 list_upgradable(){
   # fd-native: parse *_upgradable files; fallback to apt list --upgradable parsed in-shell
   if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
@@ -358,13 +342,11 @@ list_upgradable(){
     printf '%s\n' "$pkg"
   done < <(apt list --upgradable 2>/dev/null || printf '')
 }
-
 backup_installed(){
   local out="${1:-pkglist-$(printf '%(%F)T' -1).txt}"
   dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"
   printf 'Saved: %s\n' "$out"
 }
-
 restore_from_file(){
   local file="$1"
   [[ ! -f $file ]] && { echo "File not found: $file" >&2; return 1; }
@@ -374,15 +356,12 @@ restore_from_file(){
   [[ ${#sel[@]} -eq 0 ]] && return
   run_mgr install "${sel[@]}"
 }
-
 show_changelog(){
   local pkg="$1"
   command -v apt-get &>/dev/null && (apt-get changelog "$pkg" 2>/dev/null || echo "No changelog for $pkg") || echo "apt-get unavailable"
 }
-
 action_menu_for_pkgs(){
-  local pkgs=("$@") actions act
-  actions=(Install Remove Purge Changelog Cancel)
+  local pkgs=("$@") actions=(Install Remove Purge Changelog Cancel) act
   act=$(printf '%s\n' "${actions[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Action for ${#pkgs[@]} pkgs> ")
   [[ -z $act ]] && return
   case "$act" in
@@ -393,7 +372,6 @@ action_menu_for_pkgs(){
     Cancel) return ;;
   esac
 }
-
 _status_header(){
   local stats files size age human
   stats=$(_cache_stats)
@@ -401,37 +379,57 @@ _status_header(){
   human=$(byte_to_human "$size")
   printf 'manager: %s | cache: %s files, %s, oldest: %s' "$PRIMARY_MANAGER" "$files" "$human" "$age"
 }
-
 menu_search_packages(){
-  local header sel
-  header="$(_status_header)"
-  sel=$(list_all_packages | "$FINDER" "${FINDER_OPTS[@]}" --delimiter='|' --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Search> " --header="$header")
+  local header="$(_status_header)" sel pkgs
+  # multi-select with TAB/Enter
+  sel=$(list_all_packages \
+      | "$FINDER" "${FINDER_OPTS[@]}" \
+          --delimiter='|' --with-nth=1,2 \
+          --preview "$0 --preview {1}" \
+          --preview-window=right:60% \
+          --multi --height=60% \
+          --prompt="Search> " \
+          --header="$header" \
+          --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
-  mapfile -t pkgs < <(printf '%s\n' "$sel" | sed 's/|.*//')
+  mapfile -t pkgs < <(printf '%s\n' "$sel" | cut -d'|' -f1)
+  [[ ${#pkgs[@]} -eq 0 ]] && return
   action_menu_for_pkgs "${pkgs[@]}"
 }
-
 menu_installed_packages(){
-  local header sel
-  header="$(_status_header)"
-  sel=$(list_installed | sed 's/|/\t/' | "$FINDER" "${FINDER_OPTS[@]}" --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Installed> " --header="$header")
+  local header="$(_status_header)" sel pkgs
+  sel=$(list_installed \
+      | sed 's/|/\t/' \
+      | "$FINDER" "${FINDER_OPTS[@]}" \
+          --with-nth=1,2 \
+          --preview "$0 --preview {1}" \
+          --preview-window=right:60% \
+          --multi --height=60% \
+          --prompt="Installed> " \
+          --header="$header" \
+          --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
   mapfile -t pkgs < <(printf '%s\n' "$sel" | cut -f1)
+  [[ ${#pkgs[@]} -eq 0 ]] && return
   action_menu_for_pkgs "${pkgs[@]}"
 }
-
 menu_upgradable(){
-  local header sel
-  header="$(_status_header)"
-  sel=$(list_upgradable | "$FINDER" "${FINDER_OPTS[@]}" --multi --height=40% --prompt="Upgradable> " --preview "$0 --preview {1}" --preview-window=right:60% --header="$header")
+  local header="$(_status_header)" sel pkgs
+  sel=$(list_upgradable \
+      | "$FINDER" "${FINDER_OPTS[@]}" \
+          --multi --height=40% \
+          --prompt="Upgradable> " \
+          --preview "$0 --preview {1}" \
+          --preview-window=right:60% \
+          --header="$header" \
+          --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
   mapfile -t pkgs < <(printf '%s\n' "$sel")
+  [[ ${#pkgs[@]} -eq 0 ]] && return
   run_mgr install "${pkgs[@]}"
 }
-
 menu_backup_restore(){
-  local opts choice
-  opts=( "Backup installed packages" "Restore from file" "Cancel" )
+  local opts=( "Backup installed packages" "Restore from file" "Cancel" ) choice
   choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Backup/Restore> " --header="$(_status_header)")
   [[ -z $choice ]] && return
   case "$choice" in
@@ -439,10 +437,8 @@ menu_backup_restore(){
     "Restore from file") read -r -p "Path: " f; [[ -n $f ]] && restore_from_file "$f" ;;
   esac
 }
-
 menu_system_maintenance(){
-  local opts choice
-  opts=( Update Upgrade Autoremove Clean "Choose manager" Cancel )
+  local opts=( Update Upgrade Autoremove Clean "Choose manager" Cancel ) choice
   choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=18% --prompt="Maintenance> " --header="$(_status_header)")
   [[ -z $choice ]] && return
   case "$choice" in
@@ -453,11 +449,9 @@ menu_system_maintenance(){
     "Choose manager") choose_manager ;;
   esac
 }
-
 main_menu(){
   evict_old_cache
-  local menu choice
-  menu=( "Search packages" "Installed" "Upgradable" "Backup/Restore" "Maintenance" "Choose manager" "Quit" )
+  local menu=( "Search packages" "Installed" "Upgradable" "Backup/Restore" "Maintenance" "Choose manager" "Quit" ) choice
   while true; do
     choice=$(printf '%s\n' "${menu[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=20% --prompt="apt-fuzz> " --header="$(_status_header)")
     [[ -z $choice ]] && break
@@ -477,9 +471,7 @@ main_menu(){
 # Self-install / uninstall & completion
 # -------------------------
 _install_self(){
-  local dest compdir
-  dest="${HOME%/}/.local/bin/apt-fuzz"
-  compdir="${HOME%/}/.local/share/bash-completion/completions"
+  local dest="${HOME%/}/.local/bin/apt-fuzz" compdir="${HOME%/}/.local/share/bash-completion/completions"
   mkdir -p -- "${HOME%/}/.local/bin"
   cp -f -- "$0" "$dest"; chmod +x -- "$dest"; printf 'Installed: %s\n' "$dest"
   mkdir -p -- "$compdir"
@@ -499,16 +491,10 @@ complete -F _complete_apt_fuzz apt-fuzz
 BASHCOMP
   printf 'Completion installed: %s/apt-fuzz\n' "$compdir"
 }
-
 _uninstall_self(){
-  local dest comp cache
-  dest="${HOME%/}/.local/bin/apt-fuzz"
-  comp="${HOME%/}/.local/share/bash-completion/completions/apt-fuzz"
-  cache="${CACHE_DIR}"
+  local dest="${HOME%/}/.local/bin/apt-fuzz" comp="${HOME%/}/.local/share/bash-completion/completions/apt-fuzz" cache="${CACHE_DIR}"
   printf 'Uninstalling apt-fuzz...\n'
-  rm -f -- "$dest"
-  rm -f -- "$comp"
-  rm -rf -- "$cache"
+  rm -f -- "$dest"; rm -f -- "$comp"; rm -rf -- "$cache"
   printf 'Removed: %s\nRemoved: %s\nRemoved cache dir: %s\n' "$dest" "$comp" "$cache"
   printf 'Uninstall complete.\n'
 }

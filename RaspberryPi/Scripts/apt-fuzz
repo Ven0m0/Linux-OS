@@ -222,16 +222,13 @@ _cache_stats(){
 _generate_preview(){
   local pkg="$1" out tmp
   out="$(_cache_file_for "$pkg")"
-  tmp="${out}.$$.$RANDOM.tmp"
-  {
-    apt-cache show "$pkg" 2>/dev/null || :
+  tmp="$(mktemp "${out}.XXXXXX.tmp")" || tmp="${out}.$$.$RANDOM.tmp"
+  { apt-cache show "$pkg" 2>/dev/null || :; 
     printf '\n--- changelog (first 200 lines) ---\n'
-    apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :
-  } >"$tmp" 2>/dev/null || :
-  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" &>/dev/null || :
-  mv -f "$tmp" "$out"; chmod 644 "$out" &>/dev/null || :
+    apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :; } >"$tmp" 2>/dev/null || :
+  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2>/dev/null || :
+  mv -f "$tmp" "$out"; chmod 644 "$out" 2>/dev/null || :
 }
-
 _cached_preview_print(){
   local pkg="$1" f now f_mtime
   evict_old_cache

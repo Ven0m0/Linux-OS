@@ -111,7 +111,9 @@ dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; };
 <summary><b>Date</b></summary>
 
 Usage: date "format"
+
 Prints either current date 'day/month-hour-minute' or whatever you give it via 'date <arg>'
+
 See: 'man strftime' for format.
 ```bash
 date(){ local x="${1:-%d/%m-%R}"; printf "%($x)T\n" '-1'; }

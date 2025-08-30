@@ -41,7 +41,6 @@
 
 set -euo pipefail
 shopt -s nullglob globstar
-
 export LC_ALL=C LANG=C
 : "${SHELL:=${BASH:-/bin/bash}}"
 : "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
@@ -71,17 +70,19 @@ else
 fi
 
 # -------------------------
-# FINDER options
+# FINDER options (array)
 # -------------------------
 LAYOUT_OPT="--layout=reverse-list"
 TIEBREAK_OPT="--tiebreak=index"
 NO_SORT_OPT="--no-sort"
 NO_HSCROLL="--no-hscroll"
-FINDER_BASE_OPTS="$LAYOUT_OPT $TIEBREAK_OPT $NO_SORT_OPT $NO_HSCROLL"
+FINDER_OPTS=("$LAYOUT_OPT" "$TIEBREAK_OPT" "$NO_SORT_OPT" "$NO_HSCROLL")
 if [[ "${APT_FUZZ_ANSI}" == "1" ]]; then
-  FINDER_BASE_OPTS="$FINDER_BASE_OPTS --ansi"
+  FINDER_OPTS+=(--ansi)
 fi
-[[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && FINDER_BASE_OPTS="${APT_FUZZ_FINDER_OPTS}"
+if [[ -n ${APT_FUZZ_FINDER_OPTS:-} ]]; then
+  read -r -a FINDER_OPTS <<< "$APT_FUZZ_FINDER_OPTS"
+fi
 
 # -------------------------
 # Manager detection
@@ -100,12 +101,13 @@ fi
 # Pure-bash utilities
 # -------------------------
 total_bytes_in_dir(){
-  local dir="$1" total=0 s
-  if [[ $FIND_TOOL == "fd" || $FIND_TOOL == "fdfind" ]]; then
-    # fd -0 + -x stat is faster than streaming filenames then calling stat in shell
-    while IFS= read -r -d '' s; do
-      total=$(( total + (s + 0) ))
-    done < <("$FIND_TOOL" -0 -d 1 -t f . "$dir" 2>/dev/null -x stat -c '%s' {} || printf '')
+  local dir="$1" total=0 s f
+  if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
+    # NUL-separated filenames, depth=1
+    while IFS= read -r -d '' f; do
+      s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
+      total=$(( total + s ))
+    done < <("$FIND_TOOL" -0 -d 1 -t f . "$dir" 2>/dev/null || printf '')
   else
     while IFS= read -r -d '' f; do
       s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
@@ -115,13 +117,13 @@ total_bytes_in_dir(){
   printf '%d' "$total"
 }
 byte_to_human(){
-  local bytes="$1" i=0 pow=1
+  local bytes="${1:-0}" i=0 pow=1
   local -a units=(B K M G T)
-  [[ -z $bytes ]] && bytes=0
   while [[ $bytes -ge $(( pow * 1024 )) && $i -lt 4 ]]; do
     pow=$(( pow * 1024 )); i=$(( i + 1 ))
   done
-  local value10=$(( (bytes * 10 + (pow / 2)) / pow )) whole=$(( value10 / 10 )) dec=$(( value10 % 10 ))
+  local value10=$(( (bytes * 10 + (pow / 2)) / pow ))
+  local whole=$(( value10 / 10 )) dec=$(( value10 % 10 ))
   if (( dec > 0 )); then
     printf '%d.%d%s' "$whole" "$dec" "${units[i]}"
   else
@@ -136,12 +138,12 @@ _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache(){
-  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) cutoff=$(( now - mmin*60 )) oldest="" total min_mtime=''
-  # Delete old cache files (fd/fdfind optimized)
-  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # iterate NUL-separated files at depth 1, remove those older than cutoff
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) cutoff oldest="" total min_mtime f ts m
+  cutoff=$(( now - mmin*60 ))
+  # Delete old cache files (fd/fdfind optimized, NUL-safe)
+  if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
     while IFS= read -r -d '' f; do
-      local ts=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      ts=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
       if (( ts < cutoff )); then
         rm -f -- "$f" || :
       fi
@@ -153,16 +155,18 @@ evict_old_cache(){
   if (( APT_FUZZ_CACHE_MAX_BYTES > 0 )); then
     total=$(total_bytes_in_dir "$CACHE_DIR")
     while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
-      if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
+      min_mtime=""
+      oldest=""
+      if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
         while IFS= read -r -d '' f; do
-          local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+          m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
           if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
             min_mtime=$m; oldest="$f"
           fi
         done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
       else
         while IFS= read -r -d '' f; do
-          local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+          m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
           if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
             min_mtime=$m; oldest="$f"
           fi
@@ -175,43 +179,37 @@ evict_old_cache(){
   fi
 }
 _cache_stats(){
-  local files size=$(total_bytes_in_dir "$CACHE_DIR") oldest age min_mtime="" f m
+  local files=0 size=$(total_bytes_in_dir "$CACHE_DIR") oldest age min_mtime="" f m
+  size=${size:-0}
   if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
-    # Count files (fallback to 0 if empty)
-    files=$("$FIND_TOOL" -d 1 -t f "$CACHE_DIR" 2>/dev/null | wc -l || true)
-    files=${files:-0}
-    size=${size:-0}
-    # Iterate NUL-separated file list at depth=1 and find minimal mtime
+    while IFS= read -r -d '' f; do
+      files=$(( files + 1 ))
+    done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
     while IFS= read -r -d '' f; do
       m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
-      if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
-        min_mtime=$m
-      fi
-    done < <("$FIND_TOOL" -0 -d 1 -t f "$CACHE_DIR" 2>/dev/null || printf '')
+      if [[ -z $min_mtime || $m -lt $min_mtime ]]; then min_mtime=$m; fi
+    done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
     oldest="${min_mtime:-}"
   else
-    files=$(find "$CACHE_DIR" -maxdepth 1 -type f -print 2>/dev/null | wc -l || true)
-    files=${files:-0}
-    size=${size:-0}
+    while IFS= read -r -d '' f; do
+      files=$(( files + 1 ))
+    done < <(find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null || printf '')
     while IFS= read -r -d '' f; do
       m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
-      if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
-        min_mtime=$m
-      fi
+      if [[ -z $min_mtime || $m -lt $min_mtime ]]; then min_mtime=$m; fi
     done < <(find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null || printf '')
     oldest="${min_mtime:-}"
   fi
   if [[ -z $oldest || $oldest -eq 0 ]]; then
     age="0m"
   else
-    # use printf '%(%s)T' -1 to get current epoch seconds
     age=$(( ( (printf '%(%s)T' -1) - oldest ) / 60 ))m
   fi
   printf '%s|%s|%s' "${files}" "${size}" "${age}"
 }
 
 # -------------------------
-# Preview generation
+# Preview generation (atomic)
 # -------------------------
 _generate_preview(){
   local pkg="$1" out="$(_cache_file_for "$pkg")" tmp="${out}.$$.$RANDOM.tmp"
@@ -220,17 +218,17 @@ _generate_preview(){
     printf '\n--- changelog (first 200 lines) ---\n'
     apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :
   } >"$tmp" 2>/dev/null || :
-  # strip ANSI just in case upstream emits any
   sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" &>/dev/null || :
   mv -f "$tmp" "$out"; chmod 644 "$out" &>/dev/null || :
 }
 _cached_preview_print(){
-  local pkg="$1" f="$(_cache_file_for "$pkg")" now=$(printf '%(%s)T' -1) f_mtime=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
   evict_old_cache
+  local pkg="$1" f="$(_cache_file_for "$pkg")" now=$(printf '%(%s)T' -1) f_mtime=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
   if [[ -f $f ]] && (( now - f_mtime < APT_FUZZ_CACHE_TTL )); then
     cat "$f"
   else
-    _generate_preview "$pkg"; command cat "$f" 2>/dev/null || echo "(no preview)"
+    _generate_preview "$pkg"
+    cat "$f" 2>/dev/null || echo "(no preview)"
   fi
 }
 export -f _cached_preview_print
@@ -277,8 +275,7 @@ choose_manager(){
   local opts=("apt")
   [[ $HAS_NALA -eq 1 ]] && opts+=("nala")
   [[ $HAS_APT_FAST -eq 1 ]] && opts+=("apt-fast")
-  local choice
-  choice=$(printf '%s\n' "${opts[@]}" | $FINDER $FINDER_BASE_OPTS --height=12% --prompt="Manager> ")
+  local choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Manager> ")
   [[ -n $choice ]] && PRIMARY_MANAGER="$choice"
 }
 
@@ -287,58 +284,63 @@ choose_manager(){
 #   Defensive: fall back to apt-cache/dpkg-query if fd paths are absent/empty
 # -------------------------
 list_all_packages(){
-  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # check whether apt list files exist
-    local count
-    count=$("$FIND_TOOL" -g '*Packages' -d 1 -t f /var/lib/apt/lists 2>/dev/null | wc -l || true)
+  if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
+    local count=0 file pkg ver
+    while IFS= read -r -d '' file; do count=$((count+1)); done < <("$FIND_TOOL" -0 -g '*Packages' -d 1 -t f /var/lib/apt/lists 2>/dev/null || printf '')
     if (( count > 0 )); then
-      # concatenate Packages files and parse Package/Version pairs (streaming)
-      "$FIND_TOOL" -g '*Packages' -d 1 -t f /var/lib/apt/lists 2>/dev/null \
-        | while IFS= read -r file; do
-            # stream file through awk to emit name|version entries
-            awk '
-              /^Package: / { pkg = $2 }
-              /^Version: / { ver = $2 }
-              /^$/ { if (pkg != "") { print pkg "|" ver; pkg=""; ver=""; } }
-              END { if (pkg != "") print pkg "|" ver }
-            ' "$file"
-          done
+      while IFS= read -r -d '' file; do
+        pkg=""; ver=""
+        while IFS= read -r line || [[ -n $line ]]; do
+          if [[ $line == Package:\ * ]]; then pkg=${line#Package: }; continue; fi
+          if [[ $line == Version:\ * ]]; then ver=${line#Version: }; continue; fi
+          if [[ -z $line && -n $pkg ]]; then
+            printf '%s|%s\n' "$pkg" "${ver:-}"
+            pkg=""; ver=""
+          fi
+        done < "$file"
+        # possible trailing entry (if no trailing blank line)
+        if [[ -n $pkg ]]; then printf '%s|%s\n' "$pkg" "${ver:-}"; fi
+      done < <("$FIND_TOOL" -0 -g '*Packages' -d 1 -t f /var/lib/apt/lists 2>/dev/null || printf '')
       return 0
     fi
   fi
-  # fallback
   apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
 }
 list_installed(){
-  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    local count=$("$FIND_TOOL" -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null | wc -l || true)
+  if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
+    local count=0 f base
+    while IFS= read -r -d '' f; do count=$((count+1)); done < <("$FIND_TOOL" -0 -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null || printf '')
     if (( count > 0 )); then
-      # output "pkg|installed"
-      "$FIND_TOOL" -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null \
-        | while IFS= read -r f; do
-          local base="${f##*/}"
-          printf '%s|installed\n' "${base%.list}"
-          done
+      while IFS= read -r -d '' f; do
+        base="${f##*/}"
+        printf '%s|installed\n' "${base%.list}"
+      done < <("$FIND_TOOL" -0 -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null || printf '')
       return 0
     fi
   fi
-  # fallback
   dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :
 }
 list_upgradable(){
-  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    local count
-    count=$("$FIND_TOOL" -g '*_upgradable' -d 1 -t f /var/lib/apt/lists 2>/dev/null | wc -l || true)
+  if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
+    local count=0 file
+    while IFS= read -r -d '' file; do count=$((count+1)); done < <("$FIND_TOOL" -0 -g '*_upgradable' -d 1 -t f /var/lib/apt/lists 2>/dev/null || printf '')
     if (( count > 0 )); then
-      "$FIND_TOOL" -g '*_upgradable' -d 1 -t f /var/lib/apt/lists 2>/dev/null \
-        | while IFS= read -r file; do
-            awk '/^Package: /{print $2}' "$file"
-          done
+      while IFS= read -r -d '' file; do
+        while IFS= read -r line || [[ -n $line ]]; do
+          if [[ $line == Package:\ * ]]; then printf '%s\n' "${line#Package: }"; fi
+        done < "$file"
+      done < <("$FIND_TOOL" -0 -g '*_upgradable' -d 1 -t f /var/lib/apt/lists 2>/dev/null || printf '')
       return 0
     fi
   fi
-  # fallback
-  apt list --upgradable 2>/dev/null | awk -F'/' 'NR>1{print $1}'
+  # fallback to apt list --upgradable but parse purely in-shell
+  local first=1 line pkg
+  while IFS= read -r line || [[ -n $line ]]; do
+    if (( first )); then first=0; continue; fi
+    [[ -z $line ]] && continue
+    pkg="${line%%/*}"
+    printf '%s\n' "$pkg"
+  done < <(apt list --upgradable 2>/dev/null || printf '')
 }
 backup_installed(){
   local out="${1:-pkglist-$(printf '%(%F)T' -1).txt}"
@@ -350,7 +352,7 @@ restore_from_file(){
   [[ ! -f $file ]] && { echo "File not found: $file" >&2; return 1; }
   mapfile -t pkgs < <(sed '/^$/d' "$file")
   [[ ${#pkgs[@]} -eq 0 ]] && { echo "No packages."; return 0; }
-  mapfile -t sel < <(printf '%s\n' "${pkgs[@]}" | $FINDER $FINDER_BASE_OPTS --multi --height=40% --prompt="Confirm install> ")
+  mapfile -t sel < <(printf '%s\n' "${pkgs[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --multi --height=40% --prompt="Confirm install> ")
   [[ ${#sel[@]} -eq 0 ]] && return
   run_mgr install "${sel[@]}"
 }
@@ -359,10 +361,7 @@ show_changelog(){
   command -v apt-get &>/dev/null && (apt-get changelog "$pkg" 2>/dev/null || echo "No changelog for $pkg") || echo "apt-get unavailable"
 }
 action_menu_for_pkgs(){
-  local pkgs=("$@")
-  local actions=("Install" "Remove" "Purge" "Changelog" "Cancel")
-  local act
-  act=$(printf '%s\n' "${actions[@]}" | $FINDER $FINDER_BASE_OPTS --height=12% --prompt="Action for ${#pkgs[@]} pkgs> ")
+  local pkgs=("$@") actions=("Install" "Remove" "Purge" "Changelog" "Cancel") act=$(printf '%s\n' "${actions[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Action for ${#pkgs[@]} pkgs> ") 
   [[ -z $act ]] && return
   case "$act" in
     Install) run_mgr install "${pkgs[@]}" ;;
@@ -372,57 +371,42 @@ action_menu_for_pkgs(){
     Cancel) return ;;
   esac
 }
-
 _status_header(){
-  local stats files size age human
-  stats=$(_cache_stats)
+  local stats=$(_cache_stats) files size age human
   IFS='|' read -r files size age <<< "$stats"
   human=$(byte_to_human "$size")
   printf 'manager: %s | cache: %s files, %s, oldest: %s' "$PRIMARY_MANAGER" "$files" "$human" "$age"
 }
-
 menu_search_packages(){
-  local header sel
-  header="$(_status_header)"
-  sel=$(list_all_packages | $FINDER $FINDER_BASE_OPTS --delimiter='|' --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Search> " --header="$header")
+  local header="$(_status_header)" sel=$(list_all_packages | "$FINDER" "${FINDER_OPTS[@]}" --delimiter='|' --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Search> " --header="$header")
   [[ -z $sel ]] && return
   mapfile -t pkgs < <(printf '%s\n' "$sel" | sed 's/|.*//')
   action_menu_for_pkgs "${pkgs[@]}"
 }
-
 menu_installed_packages(){
   local header sel
   header="$(_status_header)"
-  sel=$(list_installed | sed 's/|/\t/' | $FINDER $FINDER_BASE_OPTS --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Installed> " --header="$header")
+  sel=$(list_installed | sed 's/|/\t/' | "$FINDER" "${FINDER_OPTS[@]}" --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Installed> " --header="$header")
   [[ -z $sel ]] && return
   mapfile -t pkgs < <(printf '%s\n' "$sel" | cut -f1)
   action_menu_for_pkgs "${pkgs[@]}"
 }
-
 menu_upgradable(){
-  local header sel
-  header="$(_status_header)"
-  sel=$(list_upgradable | $FINDER $FINDER_BASE_OPTS --multi --height=40% --prompt="Upgradable> " --preview "$0 --preview {1}" --preview-window=right:60% --header="$header")
+  local header="$(_status_header)" sel=$(list_upgradable | "$FINDER" "${FINDER_OPTS[@]}" --multi --height=40% --prompt="Upgradable> " --preview "$0 --preview {1}" --preview-window=right:60% --header="$header")
   [[ -z $sel ]] && return
   mapfile -t pkgs < <(printf '%s\n' "$sel")
   run_mgr install "${pkgs[@]}"
 }
-
 menu_backup_restore(){
-  local opts choice
-  opts=("Backup installed packages" "Restore from file" "Cancel")
-  choice=$(printf '%s\n' "${opts[@]}" | $FINDER $FINDER_BASE_OPTS --height=12% --prompt="Backup/Restore> " --header="$(_status_header)")
+  local opts=("Backup installed packages" "Restore from file" "Cancel") choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Backup/Restore> " --header="$(_status_header)")
   [[ -z $choice ]] && return
   case "$choice" in
     "Backup installed packages") backup_installed ;;
     "Restore from file") read -r -p "Path: " f; [[ -n $f ]] && restore_from_file "$f" ;;
   esac
 }
-
 menu_system_maintenance(){
-  local opts choice
-  opts=("Update" "Upgrade" "Autoremove" "Clean" "Choose manager" "Cancel")
-  choice=$(printf '%s\n' "${opts[@]}" | $FINDER $FINDER_BASE_OPTS --height=18% --prompt="Maintenance> " --header="$(_status_header)")
+  local opts=("Update" "Upgrade" "Autoremove" "Clean" "Choose manager" "Cancel") choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=18% --prompt="Maintenance> " --header="$(_status_header)")
   [[ -z $choice ]] && return
   case "$choice" in
     Update) run_mgr update ;;
@@ -432,13 +416,11 @@ menu_system_maintenance(){
     "Choose manager") choose_manager ;;
   esac
 }
-
 main_menu(){
   evict_old_cache
-  local menu choice
-  menu=("Search packages" "Installed" "Upgradable" "Backup/Restore" "Maintenance" "Choose manager" "Quit")
+  local menu=("Search packages" "Installed" "Upgradable" "Backup/Restore" "Maintenance" "Choose manager" "Quit") choice
   while true; do
-    choice=$(printf '%s\n' "${menu[@]}" | $FINDER $FINDER_BASE_OPTS --height=20% --prompt="apt-fuzz> " --header="$(_status_header)")
+    choice=$(printf '%s\n' "${menu[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=20% --prompt="apt-fuzz> " --header="$(_status_header)")
     [[ -z $choice ]] && break
     case "$choice" in
       "Search packages") menu_search_packages ;;
@@ -456,9 +438,7 @@ main_menu(){
 # Self-install / uninstall & completion
 # -------------------------
 _install_self(){
-  local dest compdir
-  dest="${HOME%/}/.local/bin/apt-fuzz"
-  compdir="${HOME%/}/.local/share/bash-completion/completions"
+  local dest="${HOME%/}/.local/bin/apt-fuzz" compdir="${HOME%/}/.local/share/bash-completion/completions"
   mkdir -p -- "${HOME%/}/.local/bin"
   cp -f -- "$0" "$dest"; chmod +x -- "$dest"; printf 'Installed: %s\n' "$dest"
   mkdir -p -- "$compdir"
@@ -478,12 +458,8 @@ complete -F _complete_apt_fuzz apt-fuzz
 BASHCOMP
   printf 'Completion installed: %s/apt-fuzz\n' "$compdir"
 }
-
 _uninstall_self(){
-  local dest comp cache
-  dest="${HOME%/}/.local/bin/apt-fuzz"
-  comp="${HOME%/}/.local/share/bash-completion/completions/apt-fuzz"
-  cache="${CACHE_DIR}"
+  local dest="${HOME%/}/.local/bin/apt-fuzz" comp="${HOME%/}/.local/share/bash-completion/completions/apt-fuzz" cache="${CACHE_DIR}"
   printf 'Uninstalling apt-fuzz...\n'
   rm -f -- "$dest"
   rm -f -- "$comp"

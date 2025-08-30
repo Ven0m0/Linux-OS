@@ -67,11 +67,22 @@ if has nala; then
   "$suexec" nala upgrade
   "$suexec" nala autoremove && "$suexec" nala autopurge
 elif has apt-fast; then
-  "$suexec" apt-fast update -y --allow-releaseinfo-change && "$suexec" apt-fast upgrade -y
-  "$suexec" apt-fast dist-upgrade -y && "$suexec" apt-fast full-upgrade -y
-  "$suexec" apt-fast autoremove
+  "$suexec" apt-fast upgrade -y --allow-unauthenticated --fix-broken --fix-missing
+  "$suexec" apt-get clean -y
+  "$suexec" apt-fast autoclean -y
+  "$suexec" apt-fast autoremove -y
+  "$suexec" apt-fast autopurge -y
 else
-  "$suexec" apt-get update -y --allow-releaseinfo-change && "$suexec" apt-get upgrade -y
+  "$suexec" apt-get upgrade -y --allow-unauthenticated --fix-broken --fix-missing
+  "$suexec" apt-get clean -y
+  "$suexec" apt-get autoclean -y
+  "$suexec" apt-get autoremove --purge -y
+fi
+if has apt-fast; then
+  "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
+  "$suexec" apt-fast dist-upgrade -y && "$suexec" apt-fast full-upgrade -y
+else
+  "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
   "$suexec" apt-get dist-upgrade -y && "$suexec" apt full-upgrade -y
 fi
 # Check's the broken packages and fix them

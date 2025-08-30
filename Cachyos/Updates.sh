@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 export LC_ALL=C LANG=C
-shopt -s nullglob globstar
+#shopt -s nullglob globstar
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -12,8 +12,7 @@ has(){ command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; } # Get basename of command
 xprint(){ printf '%s\n' "$*"; } # Print-echo
 xexprint(){ printf '%b\n' "$*"; } # Print-echo for color
-
-cleanup() {
+cleanup(){
   trap - EXIT
   unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
   export LANG=C.UTF-8
@@ -70,6 +69,7 @@ LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relativ
 export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
 sync
 #─────────────────────────────────────────────────────────────
+has modprobed-db && modprobed-db storesilent >/dev/null | :
 has hwclock && "$suexec" hwclock -w >/dev/null || :
 has updatedb && "$suexec" updatedb &>/dev/null || :
 sysupdate(){
@@ -159,8 +159,8 @@ fi
   #fi
 #fi
 if [[ -d $HOME/.basher ]]; then
-    echo "Updating basher"
-    LC_ALL=C git -C "$HOME/.basher" pull >/dev/null || echo "⚠️ basher pull failed"
+  echo "Updating basher"
+  LC_ALL=C git -C "$HOME/.basher" pull >/dev/null || echo "⚠️ basher pull failed"
 fi
 
 if has tldr; then
@@ -171,7 +171,7 @@ fi
 if has uv; then
   uv-update(){
     echo "🔄 Updating uv itself..."
-    uv self update -q >/dev/null || echo "⚠️ Failed to update uv"
+    uv self update -q &>/dev/null || echo "⚠️ Failed to update uv"
     echo "🔄 Updating uv tools..."
     if uv tool list -q &>/dev/null; then
       uv tool upgrade --all -q >/dev/null || echo "⚠️ Failed to update uv tools"
@@ -199,19 +199,18 @@ if has uv; then
   }
   uv-update
 fi
-
 if has pipx; then
-  pipx upgrade-all 2>/dev/null || :
+  pipx upgrade-all >/dev/null || :
 fi
 if has pip; then
   echo 'Upgrading pip user packages...'
   if has jq; then
-    python3 -m pip list --user --outdated --format=json | jq -r '.[].name' | while read -r pkg; do
+    python3 -m pip list --user --outdated --format=json 2>/dev/null | jq -r '.[].name' 2>/dev/null | while read -r pkg; do
       python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
     done
   else
     # Fallback: parse the human-readable format
-    python3 -m pip list --user --outdated | awk 'NR>2 {print $1}' | while read -r pkg; do
+    python3 -m pip list --user --outdated 2>/dev/null | awk 'NR>2 {print $1}' 2>/dev/null | while read -r pkg; do
       python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
     done
   fi
@@ -221,54 +220,45 @@ if has npm; then
   "$suexec" npm update -g >/dev/null || :
 fi
 
-if has fwupdmgr; then
-  echo 'update with fwupd...'
-  "$suexec" fwupdmgr refresh &>/dev/null; "$suexec" fwupdmgr update >/dev/null || :
-fi
-
-echo 'updating Font cache'
-if has fc-cache; then
-  fc-cache -f >/dev/null || :
-  "$suexec" fc-cache -f >/dev/null || :
-fi
-echo 'misc updates in background...'
+echo 'misc updates in background'
+has fc-cache && "$suexec" fc-cache -f >/dev/null || :
 has chwd && "$suexec" chwd -a &>/dev/null || :
 has update-desktop-database && "$suexec" update-desktop-database &>/dev/null || :
 has update-pciids && "$suexec" update-pciids &>/dev/null || :
 has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 has update-ccache-links && "$suexec" update-ccache-links >/dev/null || :
 has update-leap && LC_ALL=C update-leap &>/dev/null || :
-echo "🔍 Checking for systemd-boot..."
-if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q &>/dev/null; then
-  echo "✅ systemd-boot detected, updating…"
-  "$suexec" bootctl update -q &>/dev/null; "$suexec" bootctl cleanup -q &>/dev/null || :
-else
-  echo "❌ systemd-boot not present, skipping."
+
+if has fwupdmgr; then
+  echo 'update with fwupd...'
+  "$suexec" fwupdmgr refresh &>/dev/null; "$suexec" fwupdmgr update 2>/dev/null || :
 fi
 
+echo "🔍 Checking for systemd-boot"
+if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q &>/dev/null; then
+  echo "✅ systemd-boot detected, updating"
+  "$suexec" bootctl update -q &>/dev/null; "$suexec" bootctl cleanup -q &>/dev/null || :
+else
+  echo "❌ systemd-boot not present, skipping"
+fi
 if has sdboot-manage; then
   echo 'update sdboot-manage...'
   "$suexec" sdboot-manage remove 2>/dev/null || :
   "$suexec" sdboot-manage update &>/dev/null || :
 fi
-
 if has update-initramfs; then
-  "$suexec" update-initramfs >/dev/null || :
+  "$suexec" update-initramfs || :
 else
   if has limine-mkinitcpio; then
-    "$suexec" limine-mkinitcpio >/dev/null || :
+    "$suexec" limine-mkinitcpio|| :
   elif has mkinitcpio; then
-    "$suexec" mkinitcpio -P >/dev/null || :
-  elif has /usr/lib/booster/regenerate_images; then
-    "$suexec" /usr/lib/booster/regenerate_images >/dev/null || :
+    "$suexec" mkinitcpio -P || :
+  elif has "/usr/lib/booster/regenerate_images"; then
+    "$suexec" /usr/lib/booster/regenerate_images || :
   elif has dracut-rebuild; then
-    "$suexec" dracut-rebuild >/dev/null || :
+    "$suexec" dracut-rebuild || :
   else
-    echo 'The initramfs generator was not found, please update initramfs manually...'
+    echo -e "\e[31m The initramfs generator was not found, please update initramfs manually\e[0m"
   fi
 fi
-
-echo -e '\n'
-echo "✅ All done."
-echo "Meow (> ^ <)"
-echo -e '\n'
+echo -e "\nAll done ✅ (> ^ <) Meow\n"

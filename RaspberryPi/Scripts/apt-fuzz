@@ -10,9 +10,9 @@
 #   - lightweight cache eviction and a small TUI status header
 #
 # Quick install
-#   chmod +x ./apt-fuzz
-#   ./apt-fuzz --install
-#   source ~/.local/share/bash-completion/completions/apt-fuzz   # to enable completion immediately
+#   curl -sSfLO 'https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/RaspberryPi/Scripts/apt-fuzz'
+#   chmod +x ./apt-fuzz && ./apt-fuzz --install
+#   source "~/.local/share/bash-completion/completions/apt-fuzz"   # to enable completion immediately
 #
 # Usage
 #   ./apt-fuzz           # start interactive TUI
@@ -62,7 +62,6 @@ else
   echo "Please install skim (sk) or fzf." >&2
   exit 1
 fi
-
 if command -v fd &>/dev/null; then
   FIND_TOOL="fd"
 elif command -v fdfind &>/dev/null; then
@@ -101,13 +100,12 @@ fi
 # Pure-bash utilities
 # -------------------------
 total_bytes_in_dir(){
-  local dir="$1" total=0 s f
-  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    # fd/fdfind: output NUL-separated file paths at depth=1
-    while IFS= read -r -d '' f; do
-      s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
-      total=$(( total + s ))
-    done < <("$FIND_TOOL" -0 -d 1 -t f . "$dir" 2>/dev/null || printf '')
+  local dir="$1" total=0 s
+  if [[ $FIND_TOOL == "fd" || $FIND_TOOL == "fdfind" ]]; then
+    # fd -0 + -x stat is faster than streaming filenames then calling stat in shell
+    while IFS= read -r -d '' s; do
+      total=$(( total + (s + 0) ))
+    done < <("$FIND_TOOL" -0 -d 1 -t f . "$dir" 2>/dev/null -x stat -c '%s' {} || printf '')
   else
     while IFS= read -r -d '' f; do
       s=$(stat -c %s -- "$f" 2>/dev/null || echo 0)
@@ -177,37 +175,46 @@ evict_old_cache(){
   fi
 }
 _cache_stats(){
-  local files size oldest age
-  if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    files=$("$FIND_TOOL" -d 1 -t f . "$CACHE_DIR" 2>/dev/null | wc -l)
-    size=$(total_bytes_in_dir "$CACHE_DIR")
-    # find oldest mtime via reducer
-    local min_mtime
+  local files size=$(total_bytes_in_dir "$CACHE_DIR") oldest age min_mtime="" f m
+  if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
+    # Count files (fallback to 0 if empty)
+    files=$("$FIND_TOOL" -d 1 -t f "$CACHE_DIR" 2>/dev/null | wc -l || true)
+    files=${files:-0}
+    size=${size:-0}
+    # Iterate NUL-separated file list at depth=1 and find minimal mtime
     while IFS= read -r -d '' f; do
-      local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
-      if [[ -z $min_mtime || $m -lt $min_mtime ]]; then min_mtime=$m; fi
-    done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
-    oldest="$min_mtime"
+      m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
+        min_mtime=$m
+      fi
+    done < <("$FIND_TOOL" -0 -d 1 -t f "$CACHE_DIR" 2>/dev/null || printf '')
+    oldest="${min_mtime:-}"
   else
-    files=$(find "$CACHE_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l)
-    size=$(total_bytes_in_dir "$CACHE_DIR")
-    oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | head -n1 | awk '{print $1}')
+    files=$(find "$CACHE_DIR" -maxdepth 1 -type f -print 2>/dev/null | wc -l || true)
+    files=${files:-0}
+    size=${size:-0}
+    while IFS= read -r -d '' f; do
+      m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
+        min_mtime=$m
+      fi
+    done < <(find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null || printf '')
+    oldest="${min_mtime:-}"
   fi
-  if [[ -z $oldest ]]; then
+  if [[ -z $oldest || $oldest -eq 0 ]]; then
     age="0m"
   else
-    age=$(( ( (printf '%(%s)T' -1) - ${oldest%%.*} ) / 60 ))m
+    # use printf '%(%s)T' -1 to get current epoch seconds
+    age=$(( ( (printf '%(%s)T' -1) - oldest ) / 60 ))m
   fi
-  printf '%s|%s|%s' "$files" "$size" "$age"
+  printf '%s|%s|%s' "${files}" "${size}" "${age}"
 }
 
 # -------------------------
-# Preview generation (atomic)
+# Preview generation
 # -------------------------
 _generate_preview(){
-  local pkg="$1" out tmp
-  out="$(_cache_file_for "$pkg")"
-  tmp="${out}.$$.$RANDOM.tmp"
+  local pkg="$1" out="$(_cache_file_for "$pkg")" tmp="${out}.$$.$RANDOM.tmp"
   {
     apt-cache show "$pkg" 2>/dev/null || :
     printf '\n--- changelog (first 200 lines) ---\n'
@@ -217,17 +224,13 @@ _generate_preview(){
   sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" &>/dev/null || :
   mv -f "$tmp" "$out"; chmod 644 "$out" &>/dev/null || :
 }
-
 _cached_preview_print(){
-  local pkg="$1" f now
+  local pkg="$1" f="$(_cache_file_for "$pkg")" now=$(printf '%(%s)T' -1) f_mtime=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
   evict_old_cache
-  f="$(_cache_file_for "$pkg")"
-  now=$(printf '%(%s)T' -1)
-  if [[ -f $f ]] && (( now - $(stat -c %Y -- "$f") < APT_FUZZ_CACHE_TTL )); then
+  if [[ -f $f ]] && (( now - f_mtime < APT_FUZZ_CACHE_TTL )); then
     cat "$f"
   else
-    _generate_preview "$pkg"
-    cat "$f" 2>/dev/null || echo "(no preview)"
+    _generate_preview "$pkg"; command cat "$f" 2>/dev/null || echo "(no preview)"
   fi
 }
 export -f _cached_preview_print
@@ -270,7 +273,6 @@ run_mgr(){
   printf 'Running: sudo %s\n' "${cmd[*]}"
   sudo "${cmd[@]}"
 }
-
 choose_manager(){
   local opts=("apt")
   [[ $HAS_NALA -eq 1 ]] && opts+=("nala")
@@ -307,17 +309,15 @@ list_all_packages(){
   # fallback
   apt-cache search . 2>/dev/null | sed -E 's/ - /|/; s/\t/ /g'
 }
-
 list_installed(){
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-    local count
-    count=$("$FIND_TOOL" -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null | wc -l || true)
+    local count=$("$FIND_TOOL" -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null | wc -l || true)
     if (( count > 0 )); then
       # output "pkg|installed"
       "$FIND_TOOL" -g '*.list' -d 1 -t f /var/lib/dpkg/info 2>/dev/null \
         | while IFS= read -r f; do
-            base="${f##*/}"
-            printf '%s|installed\n' "${base%.list}"
+          local base="${f##*/}"
+          printf '%s|installed\n' "${base%.list}"
           done
       return 0
     fi

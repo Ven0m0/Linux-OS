@@ -115,6 +115,8 @@ Usage: date "format"
 See: 'man strftime' for format.
 ```bash
 date(){ printf "%($1)T\\n" "-1"; }
+# or
+date(){ local x="${1:-%d/%m-%R}"; printf "%($1)T\\n" "-1"; }
 ```
 </details>
 <details>

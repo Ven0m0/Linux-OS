@@ -116,15 +116,15 @@ total_bytes_in_dir(){
   fi
   printf '%d' "$total"
 }
-
 byte_to_human(){
   local bytes="$1" i=0 pow=1
   local -a units=(B K M G T)
+  [[ -z $bytes ]] && bytes=0
   while [[ $bytes -ge $(( pow * 1024 )) && $i -lt 4 ]]; do
     pow=$(( pow * 1024 )); i=$(( i + 1 ))
   done
   local value10=$(( (bytes * 10 + (pow / 2)) / pow )) whole=$(( value10 / 10 )) dec=$(( value10 % 10 ))
-  if [[ $dec -gt 0 ]]; then
+  if (( dec > 0 )); then
     printf '%d.%d%s' "$whole" "$dec" "${units[i]}"
   else
     printf '%d%s' "$whole" "${units[i]}"
@@ -138,16 +138,12 @@ _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
 evict_old_cache(){
-  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now cutoff oldest total
-  now=$(printf '%(%s)T' -1)
-  cutoff=$(( now - mmin*60 ))
-
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) cutoff=$(( now - mmin*60 )) oldest="" total min_mtime=''
   # Delete old cache files (fd/fdfind optimized)
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
     # iterate NUL-separated files at depth 1, remove those older than cutoff
     while IFS= read -r -d '' f; do
-      local ts
-      ts=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      local ts=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
       if (( ts < cutoff )); then
         rm -f -- "$f" || :
       fi
@@ -155,41 +151,31 @@ evict_old_cache(){
   else
     find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
   fi
-
   # Evict by max bytes: delete oldest until under cap (pure-bash min reducer)
   if (( APT_FUZZ_CACHE_MAX_BYTES > 0 )); then
     total=$(total_bytes_in_dir "$CACHE_DIR")
     while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
-      oldest=""
       if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
-        local min_mtime
         while IFS= read -r -d '' f; do
-          local m
-          m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+          local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
           if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
-            min_mtime=$m
-            oldest="$f"
+            min_mtime=$m; oldest="$f"
           fi
         done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
       else
-        local min_mtime
         while IFS= read -r -d '' f; do
-          local m
-          m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+          local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
           if [[ -z $min_mtime || $m -lt $min_mtime ]]; then
-            min_mtime=$m
-            oldest="$f"
+            min_mtime=$m; oldest="$f"
           fi
         done < <(find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null || printf '')
       fi
-
       [[ -z $oldest ]] && break
       rm -f -- "$oldest" || break
       total=$(total_bytes_in_dir "$CACHE_DIR")
     done
   fi
 }
-
 _cache_stats(){
   local files size oldest age
   if [[ $FIND_TOOL = fd || $FIND_TOOL = fdfind ]]; then
@@ -198,8 +184,7 @@ _cache_stats(){
     # find oldest mtime via reducer
     local min_mtime
     while IFS= read -r -d '' f; do
-      local m
-      m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      local m=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
       if [[ -z $min_mtime || $m -lt $min_mtime ]]; then min_mtime=$m; fi
     done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
     oldest="$min_mtime"

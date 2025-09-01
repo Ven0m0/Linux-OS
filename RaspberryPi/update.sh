@@ -51,7 +51,7 @@ else
 fi
 #──────────── Sudo ────────────────────
 [[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
-[[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found." >&2; exit 1; }
+[[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #─────────────────────────────────────────────────────────────

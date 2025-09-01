@@ -62,28 +62,25 @@ suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || comma
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #─────────────────────────────────────────────────────────────
-if has nala; then
+#if has nala; then
   #"$suexec" nala fetch --auto --sources --fetches 5 --non-free -y -c DE
-  "$suexec" nala upgrade
-  "$suexec" nala autoremove && "$suexec" nala autopurge
-elif has apt-fast; then
+  #"$suexec" nala upgrade
+  #"$suexec" nala autoremove && "$suexec" nala autopurge
+if has apt-fast; then
+  "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
   "$suexec" apt-fast upgrade -y --allow-unauthenticated --fix-broken --fix-missing
+  "$suexec" apt-fast dist-upgrade -y && "$suexec" apt-fast full-upgrade -y
   "$suexec" apt-get clean -y
   "$suexec" apt-fast autoclean -y
   "$suexec" apt-fast autoremove -y
   "$suexec" apt-fast autopurge -y
 else
+  "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
   "$suexec" apt-get upgrade -y --allow-unauthenticated --fix-broken --fix-missing
+  "$suexec" apt-get dist-upgrade -y && "$suexec" apt full-upgrade -y
   "$suexec" apt-get clean -y
   "$suexec" apt-get autoclean -y
   "$suexec" apt-get autoremove --purge -y
-fi
-if has apt-fast; then
-  "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-fast dist-upgrade -y && "$suexec" apt-fast full-upgrade -y
-else
-  "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-get dist-upgrade -y && "$suexec" apt full-upgrade -y
 fi
 # Check's the broken packages and fix them
 "$suexec" dpkg --configure -a >/dev/null
@@ -92,11 +89,8 @@ if [ $? -ne 0 ]; then
 else
     xprintf "No broken packages found or fixed successfully."
 fi
-
 "$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
-
 has pihole && "$suexec" pihole -up || :
-
 has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a || :
 has rpi-update && "$suexec" PRUNE_MODULES=1 rpi-update || :
 #"$suexec" JUST_CHECK=1 rpi-update

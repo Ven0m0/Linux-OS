@@ -13,9 +13,7 @@ hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>
 xprint(){ printf '%s\n' "$*"; } # Print-echo
 xexprint(){ printf '%b\n' "$*"; } # Print-echo for color
 cleanup(){
-  trap - EXIT
-  unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
-  export LANG=C.UTF-8
+  trap - EXIT; unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS; export LANG=C.UTF-8
   [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- "/var/lib/pacman/db.lck" &>/dev/null
 }
 trap cleanup EXIT
@@ -57,7 +55,7 @@ fi
 echo "Meow (> ^ <)"
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
-[[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found." >&2; exit 1; }
+[[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"
 #──────────── Env ────────────────────

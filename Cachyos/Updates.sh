@@ -56,8 +56,8 @@ else
 fi
 echo "Meow (> ^ <)"
 #──────────── Safe optimal privilege tool ────────────────────
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
-[[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
+[[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"
 #──────────── Env ────────────────────

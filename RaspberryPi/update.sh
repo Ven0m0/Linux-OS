@@ -2,8 +2,9 @@
 #──────────── Setup ────────────────────
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C
-WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
-cd $WORKDIR
+dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; }; tmp=${tmp%%"${tmp##*[!/]}" }; [[ $tmp != */* ]] && { printf '.\n'; return; }; tmp=${tmp%/*}; tmp=${tmp%%"${tmp##*[!/]}"}; printf '%s\n' "${tmp:-/}"; }
+WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
+cd $WORKDIR || exit 1
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

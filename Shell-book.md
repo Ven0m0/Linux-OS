@@ -494,6 +494,9 @@ rm -rf ~/Downloads/{Movies,Music,ISOS}
 # Clear screen on script exit.
 trap 'printf \\e[2J\\e[H\\e[m' EXIT
 
+# Echo pwd, but replace HOME with ~
+echo "${PWD/#$HOME/\~}"
+
 ```
 
 **Run a command in the background**

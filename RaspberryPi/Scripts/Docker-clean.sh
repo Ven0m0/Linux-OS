@@ -127,14 +127,14 @@ echo "👉 Remove all unused volumes"
 docker volume ls -qf dangling=true | xargs -r docker volume rm
 
 echo "👉 Remove Docker builder cache"
-DOCKER_BUILDKIT=1 docker builder prune -a --force
+DOCKER_BUILDKIT=1 docker builder prune -af
 
 echo "👉 Remove networks not used by at least one container"
-docker network prune --force
+docker network prune -f
 
  echo "👉 Remove unused volumes"
 # -a, --all, Remove all unused build cache, not just dangling ones
- docker system prune --force --volumes -a
+ docker system prune -af --volumes
 
 #docker image prune -a -f
 #docker volume prune -f

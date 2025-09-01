@@ -57,7 +57,7 @@ echo "Meow (> ^ <)"
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
 [[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
-export HOME="/home/${SUDO_USER:-$USER}"
+export HOME="/home/${SUDO_USER:-$USER}"; sync
 #──────────── Env ────────────────────
 has dbus-launch && export "$(dbus-launch 2>/dev/null)"
 SHELL="${BASH:-/bin/bash}"
@@ -65,7 +65,8 @@ RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -
 CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
 LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
-sync
+WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
+cd -- $WORKDIR || exit 1
 #─────────────────────────────────────────────────────────────
 has modprobed-db && modprobed-db storesilent >/dev/null | :
 has hwclock && "$suexec" hwclock -w >/dev/null || :

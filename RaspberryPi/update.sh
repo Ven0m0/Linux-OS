@@ -72,7 +72,7 @@ elif has nala; then
   "$suexec" nala autopurge
 else
   "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-get upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
+  #"$suexec" apt-get upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
   "$suexec" apt-get dist-upgrade -yf --allow-unauthenticated --fix-missing
   "$suexec" apt full-upgrade -yf --allow-unauthenticated --fix-missing
   "$suexec" apt-get clean -yq

@@ -63,7 +63,6 @@ if has apt-fast; then
   "$suexec" apt-fast full-upgrade -y
   "$suexec" apt-fast clean -yq
   "$suexec" apt-fast autoclean -yq
-  "$suexec" apt-fast autoremove -yq
   "$suexec" apt-fast autopurge -yq
 elif has nala; then
   yes | "$suexec" nala upgrade
@@ -72,7 +71,8 @@ elif has nala; then
   "$suexec" nala autopurge
 else
   "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
-  #"$suexec" apt-get upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
+  # No apt-get for upgrade cht.sh/apt
+  #"$suexec" apt upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
   "$suexec" apt-get dist-upgrade -yf --allow-unauthenticated --fix-missing
   "$suexec" apt full-upgrade -yf --allow-unauthenticated --fix-missing
   "$suexec" apt-get clean -yq

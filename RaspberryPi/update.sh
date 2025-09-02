@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 #──────────── Setup ────────────────────
-shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob #globstar
 export LC_ALL=C LANG=C
-dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; }; tmp=${tmp%%"${tmp##*[!/]}" }; [[ $tmp != */* ]] && { printf '.\n'; return; }; tmp=${tmp%/*}; tmp=${tmp%%"${tmp##*[!/]}"}; printf '%s\n' "${tmp:-/}"; }
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-cd $WORKDIR || exit 1
+builtin cd -- "$WORKDIR" || exit 1
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -52,26 +51,30 @@ else
 fi
 #──────────── Sudo ────────────────────
 [[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
 [[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #─────────────────────────────────────────────────────────────
-#if has nala; then
-  #"$suexec" nala fetch --auto --sources --fetches 5 --non-free -y -c DE
-  #"$suexec" nala upgrade
-  #"$suexec" nala autoremove && "$suexec" nala autopurge
 if has apt-fast; then
   "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
   "$suexec" apt-fast upgrade -y --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-fast dist-upgrade -y && "$suexec" apt-fast full-upgrade -y
-  "$suexec" apt-get clean -y
+  "$suexec" apt-fast dist-upgrade -y
+  "$suexec" apt-fast full-upgrade -y
+  "$suexec" apt-fast clean -y
   "$suexec" apt-fast autoclean -y
   "$suexec" apt-fast autoremove -y
   "$suexec" apt-fast autopurge -y
+elif has nala; then
+  yes | "$suexec" nala upgrade
+  "$suexec" nala clean
+  "$suexec" nala autoremove
+  "$suexec" nala autopurge
 else
   "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
   "$suexec" apt-get upgrade -y --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-get dist-upgrade -y && "$suexec" apt full-upgrade -y
+  "$suexec" apt-get dist-upgrade -y
+  "$suexec" apt full-upgrade -y
   "$suexec" apt-get clean -y
   "$suexec" apt-get autoclean -y
   "$suexec" apt-get autoremove --purge -y

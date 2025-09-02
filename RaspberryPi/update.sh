@@ -58,13 +58,13 @@ export HOME="/home/${SUDO_USER:-$USER}"; sync
 #─────────────────────────────────────────────────────────────
 if has apt-fast; then
   "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-fast upgrade -y --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-fast dist-upgrade -y
+  #"$suexec" apt-fast upgrade -yfq --allow-unauthenticated --fix-missing --no-install-recommends
+  "$suexec" apt-fast dist-upgrade -yfq --no-install-recommends --allow-unauthenticated --fix-missing
   "$suexec" apt-fast full-upgrade -y
-  "$suexec" apt-fast clean -y
-  "$suexec" apt-fast autoclean -y
-  "$suexec" apt-fast autoremove -y
-  "$suexec" apt-fast autopurge -y
+  "$suexec" apt-fast clean -yq
+  "$suexec" apt-fast autoclean -yq
+  "$suexec" apt-fast autoremove -yq
+  "$suexec" apt-fast autopurge -yq
 elif has nala; then
   yes | "$suexec" nala upgrade
   "$suexec" nala clean
@@ -72,12 +72,12 @@ elif has nala; then
   "$suexec" nala autopurge
 else
   "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-get upgrade -y --allow-unauthenticated --fix-broken --fix-missing
-  "$suexec" apt-get dist-upgrade -y
-  "$suexec" apt full-upgrade -y
-  "$suexec" apt-get clean -y
-  "$suexec" apt-get autoclean -y
-  "$suexec" apt-get autoremove --purge -y
+  "$suexec" apt-get upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
+  "$suexec" apt-get dist-upgrade -yf --allow-unauthenticated --fix-missing
+  "$suexec" apt full-upgrade -yf --allow-unauthenticated --fix-missing
+  "$suexec" apt-get clean -yq
+  "$suexec" apt-get autoclean -yq
+  "$suexec" apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them
 "$suexec" dpkg --configure -a >/dev/null

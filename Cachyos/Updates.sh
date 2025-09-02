@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C
-#shopt -s nullglob globstar
+export LC_ALL=C
+set -euo pipefail
+shopt -s nullglob #globstar
+WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
+builtin cd -- "$WORKDIR" || exit 1
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -13,7 +16,7 @@ hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>
 xprint(){ printf '%s\n' "$*"; } # Print-echo
 xexprint(){ printf '%b\n' "$*"; } # Print-echo for color
 cleanup(){
-  trap - EXIT; unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS; export LANG=C.UTF-8
+  trap - EXIT; unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
   [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- "/var/lib/pacman/db.lck" &>/dev/null
 }
 trap cleanup EXIT
@@ -65,8 +68,6 @@ RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -
 CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
 LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
-WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-cd -- $WORKDIR || exit 1
 #─────────────────────────────────────────────────────────────
 has modprobed-db && modprobed-db storesilent >/dev/null | :
 has hwclock && "$suexec" hwclock -w >/dev/null || :
@@ -92,7 +93,7 @@ sysupdate(){
     auropts=(--noconfirm --needed --mflags '--skipinteg --skippgpcheck' --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
     echo "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
     "$aurtool" -Suyy "${auropts[@]}" 2>/dev/null || :
-    "$aurtool" -Sua "${auropts[@]}" 2>/dev/null || :
+    "$aurtool" -Sua --devel "${auropts[@]}" 2>/dev/null || :
   else
     echo -e "🔄${BLU}Updating system with pacman...${DEF}"
     "$suexec" pacman -Suyy --noconfirm --needed 2>/dev/null || :
@@ -100,42 +101,41 @@ sysupdate(){
 }
 sysupdate || :
 
-if has flatpak; then
-  "$suexec" flatpak update -y --noninteractive --appstream &>/dev/null || :
-  "$suexec" flatpak update -y --noninteractive --system --force-remove &>/dev/null || :
-fi
-
-
 if has topgrade; then
   echo 'update using topgrade...'
-  topno="(--disable={config_update,uv,pipx,shell,yazi,micro,system,rustup,cargo,lure})"
-  "$suexec" topgrade -cy --skip-notify --no-retry "${topno[@]}" 2>/dev/null || :
+  topno="(--disable={config_update,system,tldr,maza,yazi,micro})"
+  topnosudo="(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})"
+  LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${topno[@]}" 2>/dev/null || :
+  LC_ALL=C "$suexec" topgrade -cy --skip-notify --no-self-update --no-retry "${topnosudo[@]}" 2>/dev/null || :
+fi
+if has flatpak; then
+  "$suexec" flatpak update -y --noninteractive --appstream >/dev/null || :
+  "$suexec" flatpak update -y --noninteractive --system --force-remove >/dev/null || :
 fi
 
 # Function to run cargo commands dynamically
-cargo_run(){
-  local bins=(gg mommy clicker) cmd=(cargo) b
-  for b in "${bins[@]}"; do
-    command -v "cargo-$b" &>/dev/null && cmd+=("$b")
-  done
-  (( ${#cmd[@]} > 1 )) || { echo "No cargo binaries available: ${bins[*]}" >&2; return 1; }
-  "${cmd[@]}" "$@"
-}
-
-if has rustup; then
-  "$suexec" rustup update
-  if has cargo; then
-    echo 'update cargo binaries...'
-    if cargo install-update -V &>/dev/null; then
-      cargo_run install-update -agi 2>/dev/null
-    else
-      cargo_run install --list | grep -o '^[[:alnum:]][^ ]*' | xargs -r -n1 cargo install >/dev/null
-    fi
-    has cargo-updater && cargo_run updater -u >/dev/null
-  fi
-else
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y
-fi
+#cargo_run(){
+  #local bins=(gg mommy clicker) cmd=(cargo) b
+  #for b in "${bins[@]}"; do
+    #command -v "cargo-$b" &>/dev/null && cmd+=("$b")
+  #done
+  #(( ${#cmd[@]} > 1 )) || { echo "No cargo binaries available: ${bins[*]}" >&2; return 1; }
+  #"${cmd[@]}" "$@"
+#}
+#if has rustup; then
+  #"$suexec" rustup update
+ # if has cargo; then
+    #echo 'update cargo binaries...'
+    #if cargo install-update -V &>/dev/null; then
+      #cargo_run install-update -agi 2>/dev/null
+    #else
+      #cargo_run install --list | grep -o '^[[:alnum:]][^ ]*' | xargs -r -n1 cargo install >/dev/null
+    #fi
+    #has cargo-updater && cargo_run updater -u >/dev/null
+  #fi
+#else
+ # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y
+#fi
 
 if has micro; then
   echo 'micro plugin update...'
@@ -157,67 +157,69 @@ fi
     #. <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) 2>/dev/null && fisher install jorgebucaran/fisher
   #fi
 #fi
-if [[ -d $HOME/.basher ]]; then
+how do I combine
+if [[ -d $HOME/.basher ]] && LC_ALL=C LANG=C git -C "$HOME/.basher" rev-parse --is-inside-work-tree &>/dev/null; then
   echo "Updating basher"
-  LC_ALL=C git -C "$HOME/.basher" pull >/dev/null || echo "⚠️ basher pull failed"
+  LC_ALL=C LANG=C git -C "$HOME/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null || echo "⚠️ basher pull failed"
 fi
+and 'git -C "$HOME/.basher" rev-parse --is-inside-work-tree'
 
-if has tldr; then
-  echo 'update tldr pages...'
-  "$suexec" tldr -u &>/dev/null || :
-fi
+#if has tldr; then
+  #echo 'update tldr pages...'
+  #"$suexec" tldr -u &>/dev/null || :
+#fi
 
-if has uv; then
-  uv-update(){
-    echo "🔄 Updating uv itself..."
-    uv self update -q &>/dev/null || echo "⚠️ Failed to update uv"
-    echo "🔄 Updating uv tools..."
-    if uv tool list -q &>/dev/null; then
-      uv tool upgrade --all -q >/dev/null || echo "⚠️ Failed to update uv tools"
-    else
-      echo "✅ No uv tools installed"
-    fi
-    echo "🔄 Updating Python packages..."
-    if command -v jq &>/dev/null; then
+#if has uv; then
+  #uv-update(){
+    #echo "🔄 Updating uv itself..."
+    #uv self update -q &>/dev/null || echo "⚠️ Failed to update uv"
+    #echo "🔄 Updating uv tools..."
+    #if uv tool list -q &>/dev/null; then
+      #uv tool upgrade --all -q >/dev/null || echo "⚠️ Failed to update uv tools"
+    #else
+      #echo "✅ No uv tools installed"
+    #fi
+    #echo "🔄 Updating Python packages..."
+    #if command -v jq &>/dev/null; then
       # Update only outdated packages
-      local pkgs=$(uv pip list --outdated --format json 2>/dev/null | jq -r '.[].name' 2>/dev/null)
-      if [[ -n $pkgs ]]; then
-        uv pip install --upgrade "$pkgs" >/dev/null || echo "⚠️ Failed to update packages"
-      else
-        echo "✅ All packages are up to date"
-      fi
-    else
+      #local pkgs=$(uv pip list --outdated --format json 2>/dev/null | jq -r '.[].name' 2>/dev/null)
+      #if [[ -n $pkgs ]]; then
+        #uv pip install --upgrade "$pkgs" >/dev/null || echo "⚠️ Failed to update packages"
+     # else
+       # echo "✅ All packages are up to date"
+      #fi
+    #else
       # Fallback: reinstall everything at latest versions
-      echo "⚠️ jq not found, upgrading all packages instead"
-      uv pip install --upgrade -r <(uv pip list --format freeze) || echo "⚠️ Failed to update packages"
-    fi
-    echo "🔄 Updating Python interpreters..."
-    uv python update-shell -q
-    uv python upgrade -q || echo "⚠️ Failed to update Python versions"
-    echo "🎉 uv update complete"
-  }
-  uv-update
-fi
-if has pipx; then
-  pipx upgrade-all >/dev/null || :
-fi
-if has pip; then
-  echo 'Upgrading pip user packages...'
-  if has jq; then
-    python3 -m pip list --user --outdated --format=json 2>/dev/null | jq -r '.[].name' 2>/dev/null | while read -r pkg; do
-      python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
-    done
-  else
+      #echo "⚠️ jq not found, upgrading all packages instead"
+      #uv pip install --upgrade -r <(uv pip list --format freeze) || echo "⚠️ Failed to update packages"
+    #fi
+    #echo "🔄 Updating Python interpreters..."
+    #uv python update-shell -q
+    #uv python upgrade -q || echo "⚠️ Failed to update Python versions"
+    #echo "🎉 uv update complete"
+  #}
+  #uv-update
+#fi
+#if has pipx; then
+  #pipx upgrade-all >/dev/null || :
+#fi
+#if has pip; then
+  #echo 'Upgrading pip user packages...'
+  #if has jq; then
+    #python3 -m pip list --user --outdated --format=json 2>/dev/null | jq -r '.[].name' 2>/dev/null | while read -r pkg; do
+      #python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
+    #done
+  #else
     # Fallback: parse the human-readable format
-    python3 -m pip list --user --outdated 2>/dev/null | awk 'NR>2 {print $1}' 2>/dev/null | while read -r pkg; do
-      python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
-    done
-  fi
-fi
-if has npm; then
-  echo 'Update npm global packages'
-  "$suexec" npm update -g >/dev/null || :
-fi
+    #python3 -m pip list --user --outdated 2>/dev/null | awk 'NR>2 {print $1}' 2>/dev/null | while read -r pkg; do
+      #python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
+    #done
+  #fi
+#fi
+#if has npm; then
+  #echo 'Update npm global packages'
+  #"$suexec" npm update -g >/dev/null || :
+#fi
 
 echo 'misc updates in background'
 has fc-cache && "$suexec" fc-cache -f >/dev/null || :
@@ -227,11 +229,6 @@ has update-pciids && "$suexec" update-pciids &>/dev/null || :
 has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 has update-ccache-links && "$suexec" update-ccache-links >/dev/null || :
 has update-leap && LC_ALL=C update-leap &>/dev/null || :
-
-if has fwupdmgr; then
-  echo 'update with fwupd...'
-  "$suexec" fwupdmgr refresh &>/dev/null; "$suexec" fwupdmgr update 2>/dev/null || :
-fi
 
 echo "🔍 Checking for systemd-boot"
 if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q &>/dev/null; then

@@ -1,8 +1,8 @@
 # https://github.com/marketplace/actions/github-branch-cleaner
 name: Branches Cleaner
 on:
-  schedule:
-    - cron: "0 0 * * *"
+  workflow_dispatch:
+  schedule: [{cron: "0 0 * * 0"}]
 jobs:
   cleanup-branches:
     runs-on: ubuntu-latest

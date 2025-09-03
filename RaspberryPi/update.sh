@@ -57,10 +57,9 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #─────────────────────────────────────────────────────────────
 if has apt-fast; then
-  "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
+  "$suexec" apt-fast update -yf --allow-releaseinfo-change --allow-unauthenticated --fix-missing
   #"$suexec" apt-fast upgrade -yfq --allow-unauthenticated --fix-missing --no-install-recommends
   "$suexec" apt-fast dist-upgrade -yfq --no-install-recommends --allow-unauthenticated --fix-missing
-  "$suexec" apt-fast full-upgrade -y
   "$suexec" apt-fast clean -yq
   "$suexec" apt-fast autoclean -yq
   "$suexec" apt-fast autopurge -yq
@@ -74,7 +73,6 @@ else
   # No apt-get for upgrade cht.sh/apt
   #"$suexec" apt upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
   "$suexec" apt-get dist-upgrade -yf --allow-unauthenticated --fix-missing
-  "$suexec" apt full-upgrade -yf --allow-unauthenticated --fix-missing
   "$suexec" apt-get clean -yq
   "$suexec" apt-get autoclean -yq
   "$suexec" apt-get autoremove --purge -yq

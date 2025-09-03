@@ -66,6 +66,8 @@ bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts
 # Ripgrep-all
 # https://github.com/phiresky/ripgrep-all
 
+sudo apt-get install -y fd-find && ln -sf "$(command -v fdfind)" "~/.local/bin/fd"
+
 # Eza
 sudo apt update && sudo apt install -y gpg
 sudo mkdir -p /etc/apt/keyrings

@@ -23,8 +23,8 @@ PKG=0
 if command -v pacman &>/dev/null; then
   PKG="$(pacman -Qq 2>/dev/null | wc -l)"
   [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Pacman)"
-elif command -v apt-fast &>/dev/null; then
-  PKG="$(( $(apt-fast list --installed 2>/dev/null | wc -l) - 1 ))"
+elif command -v dpkg &>/dev/null; then
+  PKG="$(dpkg --get-selections 2>/dev/null | wc -l)"
   [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
 elif command -v apt &>/dev/null; then
   PKG="$(( $(apt list --installed 2>/dev/null | wc -l) - 1 ))"

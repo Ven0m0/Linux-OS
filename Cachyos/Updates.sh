@@ -4,13 +4,13 @@ set -euo pipefail
 shopt -s nullglob #globstar
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
-#──────────── Color & Effects ────────────
+#============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-#──────────── Helpers ────────────────────
+#============ Helpers ====================
 has(){ command -v -- "$1" &>/dev/null; } # Check for command
 hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; } # Get basename of command
 xprint(){ printf '%s\n' "$*"; } # Print-echo
@@ -20,7 +20,7 @@ cleanup(){
   [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- "/var/lib/pacman/db.lck" &>/dev/null
 }
 trap cleanup EXIT
-#──────────── Banner ────────────────────
+#============ Banner ====================
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -56,19 +56,19 @@ else
   done
 fi
 echo "Meow (> ^ <)"
-#──────────── Safe optimal privilege tool ────────────────────
+#============ Safe optimal privilege tool ====================
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
 [[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"; sync
-#──────────── Env ────────────────────
+#============ Env ====================
 has dbus-launch && export "$(dbus-launch 2>/dev/null)"
 SHELL="${BASH:-/bin/bash}"
 RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native"
 CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
 LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now-Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 export RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
-#─────────────────────────────────────────────────────────────
+#=============================================================
 has modprobed-db && modprobed-db storesilent >/dev/null | :
 has hwclock && "$suexec" hwclock -w >/dev/null || :
 has updatedb && "$suexec" updatedb &>/dev/null || :

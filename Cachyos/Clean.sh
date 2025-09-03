@@ -217,6 +217,7 @@ rm -rf --preserve-root -- "$HOME/.local/share/Steam/appcache/"* >/dev/null
 if command -v bleachbit &>/dev/null; then
   bleachbit -c --preset >/dev/null
   if command -v xhost &>/dev/null; then
+    xhost si:localuser:root >/dev/null
     "$suexec" bleachbit -c --preset >/dev/null
   elif command -v pkexec &>/dev/null; then
     pkexec bleachbit -c --preset >/dev/null

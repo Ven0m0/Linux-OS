@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-export LC_ALL=C
-set -euo pipefail
-shopt -s nullglob #globstar
+export LC_ALL=C LANG=C; shopt -s nullglob
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
 #============ Color & Effects ============
@@ -17,7 +15,7 @@ xprint(){ printf '%s\n' "$*"; } # Print-echo
 xexprint(){ printf '%b\n' "$*"; } # Print-echo for color
 cleanup(){
   trap - EXIT; unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
-  [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- "/var/lib/pacman/db.lck" &>/dev/null
+  [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck' &>/dev/null
 }
 trap cleanup EXIT
 #============ Banner ====================

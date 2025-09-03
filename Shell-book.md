@@ -497,6 +497,10 @@ trap 'printf \\e[2J\\e[H\\e[m' EXIT
 # Echo pwd, but replace HOME with ~
 echo "${PWD/#$HOME/\~}"
 
+# HOME to ~
+file="${1/#$HOME/\~}"
+# ~ to HOME
+file="${1/#\~\//$HOME/}"
 ```
 
 **Run a command in the background**

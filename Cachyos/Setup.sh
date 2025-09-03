@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C.UTF-8
+export LC_ALL=C LANG=C
 sudo -v
 # --- CONFIG ---
 DOTFILES_REPO="git@github.com:Ven0m0/dotfiles.git" # dotfiles repo

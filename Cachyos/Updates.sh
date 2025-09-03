@@ -147,58 +147,43 @@ if has yazi; then
 fi
 
 #p 'Updating shell environments...'
-#if has fish; then
-  #if [[ -f $HOME/.config/fish/functions/fisher.fish ]]; then
-    #echo 'update Fisher...'
-    #fish -c ". $HOME/.config/fish/functions/fisher.fish && fisher update"
-  #else
-    #echo 'Reinstall fisher...'
-    #. <(curl -fsSL4 https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish) 2>/dev/null && fisher install jorgebucaran/fisher
-  #fi
-#fi
-how do I combine
-if [[ -d $HOME/.basher ]] && LC_ALL=C LANG=C git -C "$HOME/.basher" rev-parse --is-inside-work-tree &>/dev/null; then
-  echo "Updating basher"
-  LC_ALL=C LANG=C git -C "$HOME/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null || echo "⚠️ basher pull failed"
+if has fish; then
+  fish -c "fish_update_completions"
+  [[ -r ${HOME}/.config/fish/functions/fisher.fish ]]  && fish -c ". "$HOME"/.config/fish/functions/fisher.fish; fisher update"
 fi
-and 'git -C "$HOME/.basher" rev-parse --is-inside-work-tree'
 
-#if has tldr; then
-  #echo 'update tldr pages...'
-  #"$suexec" tldr -u &>/dev/null || :
-#fi
+[[ -d ${HOME}/.basher ]] && LC_ALL=C git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null &&
+  { LC_ALL=C git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null && echo "Updating basher"; } || echo "⚠️ basher pull failed"
 
-#if has uv; then
-  #uv-update(){
-    #echo "🔄 Updating uv itself..."
-    #uv self update -q &>/dev/null || echo "⚠️ Failed to update uv"
-    #echo "🔄 Updating uv tools..."
-    #if uv tool list -q &>/dev/null; then
-      #uv tool upgrade --all -q >/dev/null || echo "⚠️ Failed to update uv tools"
-    #else
-      #echo "✅ No uv tools installed"
-    #fi
-    #echo "🔄 Updating Python packages..."
-    #if command -v jq &>/dev/null; then
-      # Update only outdated packages
-      #local pkgs=$(uv pip list --outdated --format json 2>/dev/null | jq -r '.[].name' 2>/dev/null)
-      #if [[ -n $pkgs ]]; then
-        #uv pip install --upgrade "$pkgs" >/dev/null || echo "⚠️ Failed to update packages"
-     # else
-       # echo "✅ All packages are up to date"
-      #fi
-    #else
-      # Fallback: reinstall everything at latest versions
-      #echo "⚠️ jq not found, upgrading all packages instead"
-      #uv pip install --upgrade -r <(uv pip list --format freeze) || echo "⚠️ Failed to update packages"
-    #fi
-    #echo "🔄 Updating Python interpreters..."
-    #uv python update-shell -q
-    #uv python upgrade -q || echo "⚠️ Failed to update Python versions"
-    #echo "🎉 uv update complete"
-  #}
-  #uv-update
-#fi
+has tldr && "$suexec" tldr -cuq
+
+if has uv; then
+  echo '🔄 Updating uv...'
+  uv self update -q &>/dev/null || echo '⚠️ Failed to update uv'
+  echo '🔄 Updating uv tools...'
+  uv tool list -q && { uv tool upgrade --all -q || echo '⚠️ Failed to update uv tools' } || echo '✅ No uv tools installed'
+  
+  echo '🔄 Updating Python packages...'
+  if command -v jq &>/dev/null; then
+    local pkgs=$(uv pip list --outdated --format json | jq -r '.[].name')
+    [[ -n ${pkgs:-} ]] && 
+        uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh --color auto "$pkgs" >/dev/null || echo "⚠️ Failed to update packages"
+      else
+        echo "✅ All packages are up to date"
+      fi
+    else
+       Fallback: reinstall everything at latest versions
+      echo "⚠️ jq not found, upgrading all packages instead"
+      uv pip install --upgrade -r <(uv pip list --format freeze) || echo "⚠️ Failed to update packages"
+    fi
+    echo "🔄 Updating Python interpreters..."
+    uv python update-shell -q
+    uv python upgrade -q || echo "⚠️ Failed to update Python versions"
+    echo "🎉 uv update complete"
+  }
+  uv-update
+fi
+
 #if has pipx; then
   #pipx upgrade-all >/dev/null || :
 #fi

@@ -116,7 +116,7 @@ Prints either current date 'day/month-hour-minute' or whatever you give it via '
 
 See: 'man strftime' for format.
 ```bash
-date(){ local x="${1:-%d/%m-%R}"; printf "%($x)T\n" '-1'; }
+date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 ```
 </details>
 <details>

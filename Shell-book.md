@@ -43,10 +43,10 @@ username="$(id -un)" # better than 'whoami'
 #──────────── Helpers ────────────────────
 # Check for command
 has() { command -v -- "$1" &>/dev/null; }
-# Faster has
+# Faster has due not not having to redirect to /dev/null
 has(){ [[ -x $(command -v -- "$1") ]]; }
 # Get basename of command
-hasname(){ local x; x=$(type -P -- "$1") || return; printf '%s\n' "${x##*/}"; }
+hasname(){ local x; x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; }
 # Printf-echo
 p() { printf '%s\n' "$*" 2>/dev/null; }
 # Printf-echo for color with auto reset

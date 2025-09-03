@@ -7,8 +7,8 @@ if [[ $EUID -ne 0 ]]; then
   sudo -v || { echo "Sudo failed. Exiting."; exit 1; }
 fi
 sudo cpupower frequency-set --governor performance
-export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
-export _RJEM_MALLOC_CONF="$MALLOC_CONF"
+MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
+export MALLOC_CONF _RJEM_MALLOC_CONF="$MALLOC_CONF"
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
 # —————— Update Rust toolchains ——————
 read -r -p "Update Rust toolchains? [y/N] " ans

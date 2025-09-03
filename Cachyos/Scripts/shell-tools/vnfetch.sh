@@ -75,7 +75,7 @@ GPU=$(
   fi
 )
 # Date and WM
-DATE="$(printf "%(%d/%m/%y-%R)T\n" -1)"
+DATE="$(printf '%(%d/%m/%y-%R)T\n' -1)"
 WMNAME="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}} ${DESKTOP_SESSION:-} ${XDG_SESSION_TYPE:-}"
 #──────────────────── Memory ────────────────────
 read -r MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print t+0,a+0}' /proc/meminfo)

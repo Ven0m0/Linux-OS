@@ -12,7 +12,7 @@ MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
 has(){ [[ -x $(command -v -- "$1") ]]; }
-hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; }
+hasname(){ local x; x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; }
 xprintf(){ printf "%s\n" "$@"; }
 #============ Banner ====================
 banner=$(cat <<'EOF'

@@ -69,7 +69,7 @@ UND=$'\e[4m'   INV=$'\e[7m'   HID=$'\e[8m'
 #──────────── Standard Colors ────────────
 BLK=$'\e[30m'  RED=$'\e[31m'  GRN=$'\e[32m'
 YLW=$'\e[33m'  BLU=$'\e[34m'  MGN=$'\e[35m'
-CYN=$'\e[36m'  WHT=$'\e[37m'
+CYN=$'\e[36m'  WHT=$'\e[37m'  PNK=$'\e[38;5;205m'
 #──────────── Bright Colors ──────────────
 BBLK=$'\e[90m' BRED=$'\e[91m' BGRN=$'\e[92m'
 BYLW=$'\e[93m' BBLU=$'\e[94m' BMGN=$'\e[95m'

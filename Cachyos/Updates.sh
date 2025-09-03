@@ -11,7 +11,7 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
-has(){ command -v -- "$1" &>/dev/null; } # Check for command
+has(){ [[ -x $(command -v -- "$1") ]]; } # Check for command
 hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; } # Get basename of command
 xprint(){ printf '%s\n' "$*"; } # Print-echo
 xexprint(){ printf '%b\n' "$*"; } # Print-echo for color

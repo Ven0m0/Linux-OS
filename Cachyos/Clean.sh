@@ -55,6 +55,9 @@ sync
 read -r used_human pct < <(df -h --output=used,pcent -- / 2>/dev/null | awk 'NR==2{print $1, $2}')
 DUB="$used_human $pct"
 
+# Clearing dns cache
+"$suexec" resolvectl flush-caches >/dev/null
+
 # Pacman cleanup
 "$suexec" pacman -Rns $(pacman -Qdtq 2>/dev/null) --noconfirm -q &>/dev/null || :
 "$suexec" pacman -Scc --noconfirm -q
@@ -74,14 +77,14 @@ fi
 "$suexec" rm -rf --preserve-root -- "/var/tmp/"*
 "$suexec" rm -rf --preserve-root -- "/var/crash/"*
 "$suexec" rm -rf --preserve-root -- "/var/lib/systemd/coredump/"*
-rm -rf --preserve-root -- "$HOME/.cache/"*
+rm -rf --preserve-root -- "${HOME}/.cache/"*
 "$suexec" rm -rf --preserve-root -- "/root/.cache/"*
-rm -rf --preserve-root -- "$HOME/.var/app/"*/cache/*
-rm -f --preserve-root -- "$HOME/.config/Trolltech.conf" || :
+rm -rf --preserve-root -- "${HOME}/.var/app/"*/cache/*
+rm -f --preserve-root -- "${HOME}/.config/Trolltech.conf" || :
 kbuildsycoca6 --noincremental || :
 
 # Empty global trash
-rm -rf --preserve-root -- "$HOME/.local/share/Trash/"*
+rm -rf --preserve-root -- "${HOME}/.local/share/Trash/"*
 "$suexec" rm -rf --preserve-root -- "/root/.local/share/Trash/"*
 
 # Flatpak
@@ -91,63 +94,55 @@ else
   echo 'Skipping because "flatpak" is not found.'
 fi
 "$suexec" rm -rf --preserve-root -- /var/tmp/flatpak-cache-*
-rm -rf --preserve-root -- "$HOME/.cache/flatpak/system-cache/"*
-rm -rf --preserve-root -- "$HOME/.local/share/flatpak/system-cache/"*
-rm -rf --preserve-root -- "$HOME/.var/app/*/data/Trash/"*
+rm -rf --preserve-root -- "${HOME}/.cache/flatpak/system-cache/"*
+rm -rf --preserve-root -- "${HOME}/.local/share/flatpak/system-cache/"*
+rm -rf --preserve-root -- "${HOME}/.var/app/*/data/Trash/"*
 
 # Clear thumbnails
-rm -rf --preserve-root -- "$HOME/.thumbnails/"*
+rm -rf --preserve-root -- "${HOME}/.thumbnails/"*
 
 # Clear system logs
-"$suexec" rm -f -- "/var/log/pacman.log" || :
-"$suexec" journalctl --rotate -q || :
-"$suexec" journalctl --vacuum-time=1s -q || :
-"$suexec" rm -rf -- "/run/log/journal/"* "/var/log/journal/"*
-"$suexec" rm -rf -- {/root,/home/*}/.local/share/zeitgeist
+"$suexec" rm -f --preserve-root -- "/var/log/pacman.log"
+"$suexec" journalctl --update-catalog -q; "$suexec" journalctl --flush -q; "$suexec" journalctl --rotate --vacuum-time=1s -q
+"$suexec" rm -rf --preserve-root -- '/run/log/journal/'* '/var/log/journal/'*
+"$suexec" rm -rf --preserve-root -- "{/root,/home/*}/.local/share/zeitgeist/"*
 
 # Home cleaning
-rm -f --preserve-root -- "$HOME/.wget-hsts" "$HOME/.lesshst" "$HOME/nohup.out" "$HOME/token" "$HOME/"
-"$HOME/"
+rm -f --preserve-root -- "${HOME}/.wget-hsts" "${HOME}/.curl-hsts" "${HOME}/.lesshst" "${HOME}/nohup.out" "${HOME}/token"
 # Shell history
-rm -f --preserve-root -- "$HOME/.local/share/fish/fish_history" "$HOME/.config/fish/fish_history" "$HOME/.zsh_history" "$HOME/.bash_history" "$HOME/.history"
+rm -f --preserve-root -- "${HOME}/.local/share/fish/fish_history" "${HOME}/.config/fish/fish_history" "${HOME}/.zsh_history" "${HOME}/.bash_history" "${HOME}/.history"
 "$suexec" rm -f --preserve-root -- "/root/.local/share/fish/fish_history" "/root/.config/fish/fish_history" "/root/.zsh_history" "/root/.bash_history" "/root/.history"
 
 # LibreOffice
-rm -f --preserve-root -- $HOME/.config/libreoffice/4/user/registrymodifications.xcu
-rm -f --preserve-root -- $HOME/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu
-rm -f --preserve-root -- $HOME/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu
+rm -f --preserve-root -- "${HOME}/.config/libreoffice/4/user/registrymodifications.xcu" "${HOME}/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu"
+rm -f --preserve-root -- "${HOME}/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu"
 
 # Steam
-rm -rf --preserve-root -- "$HOME/.local/share/Steam/appcache/"*
-rm -rf --preserve-root -- "$HOME/snap/steam/common/.cache/"*
-rm -rf --preserve-root -- "$HOME/snap/steam/common/.local/share/Steam/appcache/"*
-rm -rf --preserve-root -- "$HOME/.var/app/com.valvesoftware.Steam/cache/"*
-rm -rf --preserve-root -- "$HOME/.var/app/com.valvesoftware.Steam/data/Steam/appcache/"*
+rm -rf --preserve-root -- "${HOME}/.local/share/Steam/appcache/"*
+rm -rf --preserve-root -- "${HOME}/snap/steam/common/.cache/"*
+rm -rf --preserve-root -- "${HOME}/snap/steam/common/.local/share/Steam/appcache/"*
+rm -rf --preserve-root -- "${HOME}/.var/app/com.valvesoftware.Steam/cache/"*
+rm -rf --preserve-root -- "${HOME}/.var/app/com.valvesoftware.Steam/data/Steam/appcache/"*
 
 # NVIDIA
-"$suexec" rm -rf --preserve-root -- "$HOME/.nv/ComputeCache/"*
+"$suexec" rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"*
 # Python
-#rm -f $HOME/.python_history
+#rm -f ${HOME}/.python_history
 echo '--- Disable Python history for future interactive commands'
-history_file="$HOME/.python_history"
-if [[ ! -f $history_file ]]; then
-  command touch -- "$history_file"
-  echo "Created $history_file."
-fi
+history_file="${HOME}/.python_history"
+[[ ! -f $history_file ]] && { touch "$history_file" echo "Created $history_file."; }
 "$suexec" chattr +i "$(realpath $history_file)"
 
 # Firefox
-rm -rf --preserve-root -- "$HOME/.mozilla/firefox/*/bookmarkbackups" >/dev/null
-rm -rf --preserve-root -- "$HOME/.mozilla/firefox/*/saved-telemetry-pings" >/dev/null
-rm -rf --preserve-root -- "$HOME/.mozilla/firefox/*/sessionstore-logs" >/dev/null
-rm -rf --preserve-root -- "$HOME/.mozilla/firefox/*/sessionstore-backups" >/dev/null
-rm -f --preserve-root -- "$HOME/.cache/mozilla/"* >/dev/null
-rm -f --preserve-root -- "$HOME/.var/app/org.mozilla.firefox/cache/"* >/dev/null
-rm -f --preserve-root -- "$HOME/snap/firefox/common/.cache/"* >/dev/null
+rm -rf --preserve-root -- "${HOME}/.mozilla/firefox/*/bookmarkbackups" >/dev/null
+rm -rf --preserve-root -- "${HOME}/.mozilla/firefox/*/saved-telemetry-pings" >/dev/null
+rm -rf --preserve-root -- "${HOME}/.mozilla/firefox/*/sessionstore-logs" >/dev/null
+rm -rf --preserve-root -- "${HOME}/.mozilla/firefox/*/sessionstore-backups" >/dev/null
+rm -f --preserve-root -- "${HOME}/.cache/mozilla/"* >/dev/null
+rm -f --preserve-root -- "${HOME}/.var/app/org.mozilla.firefox/cache/"* >/dev/null
+rm -f --preserve-root -- "${HOME}/snap/firefox/common/.cache/"* >/dev/null
 # Delete files matching pattern: "~/.mozilla/firefox/*/crashes/*" "~/.mozilla/firefox/*/crashes/events/*"
-if ! command -v 'python3' &> /dev/null; then
-  echo 'Skipping because "python3" is not found.'
-else
+if command -v python3 &> /dev/null; then
   python3 <<EOF
 import glob
 import os
@@ -185,31 +180,23 @@ EOF
 fi
 
 # Wine
-rm -f --preserve-root -- "$HOME/.wine/drive_c/windows/temp/"* >/dev/null
-rm -f --preserve-root --  "$HOME/.cache/wine/"* >/dev/null
-rm -f --preserve-root -- "$HOME/.cache/winetricks/"* >/dev/null
-
+rm -f --preserve-root -- "${HOME}/.wine/drive_c/windows/temp/"* >/dev/null
+rm -f --preserve-root --  "${HOME}/.cache/wine/"* >/dev/null
+rm -f --preserve-root -- "${HOME}/.cache/winetricks/"* >/dev/null
 # GTK
-rm -f --preserve-root -- "/.recently-used.xbel" >/dev/null
-rm -f --preserve-root -- "$HOME/.local/share/recently-used.xbel" >/dev/null
-rm -f --preserve-root -- "$HOME/snap/*/*/.local/share/recently-used.xbel" >/dev/null
-rm -f --preserve-root -- "$HOME/.var/app/*/data/recently-used.xbel" >/dev/null
-
+rm -f --preserve-root -- "/.recently-used.xbel" "${HOME}/.local/share/recently-used.xbel" >/dev/null
+rm -f --preserve-root -- "${HOME}/snap/*/*/.local/share/recently-used.xbel" >/dev/null
+rm -f --preserve-root -- "${HOME}/.var/app/*/data/recently-used.xbel" >/dev/null
 # KDE
-rm -rf --preserve-root -- "$HOME/.local/share/RecentDocuments/*.desktop" >/dev/null
-rm -rf --preserve-root -- "$HOME/.kde/share/apps/RecentDocuments/*.desktop" >/dev/null
-rm -rf --preserve-root -- "$HOME/.kde4/share/apps/RecentDocuments/*.desktop" >/dev/null
-rm -rf --preserve-root -- "$HOME/.var/app/*/data/*.desktop" >/dev/null
-rm -rf --preserve-root -- "$HOME/.local/share/Steam/appcache/"* >/dev/null
-
-# TLDR cache
-"$suexec" tldr -c >/dev/null
+rm -rf --preserve-root -- "${HOME}/.local/share/RecentDocuments/*.desktop" >/dev/null
+rm -rf --preserve-root -- "${HOME}/.kde/share/apps/RecentDocuments/*.desktop" >/dev/null
+rm -rf --preserve-root -- "${HOME}/.kde4/share/apps/RecentDocuments/*.desktop" >/dev/null
+rm -rf --preserve-root -- "${HOME}/.var/app/*/data/*.desktop" >/dev/null
+rm -rf --preserve-root -- "${HOME}/.local/share/Steam/appcache/"* >/dev/null
 
 # Trim disks
-"$suexec" fstrim -a --quiet-unsupported &>/dev/null
+"$suexec" fstrim -a --quiet-unsupported; "$suexec" fstrim -A --quiet-unsupported
 
-# Clearing dns cache
-"$suexec" resolvectl flush-caches >/dev/null
 # Font cache
 "$suexec" fc-cache -f >/dev/null
 

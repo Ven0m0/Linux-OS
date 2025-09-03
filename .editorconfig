@@ -1,9 +1,10 @@
 # EditorConfig
 # http://EditorConfig.org
-# Don't search any further up the dir tree
 root = true
 
+# ---------------------
 # Baseline
+# ---------------------
 [*]
 end_of_line = lf
 charset = utf-8
@@ -13,56 +14,44 @@ indent_style = space
 indent_size = 2
 tab_width = 2
 
+# ---------------------
 # Shell scripts
-[*.sh,*.bash]
+# ---------------------
+[*.sh,*.bash*,.profile,bash*]
 keep_padding = true
-space_redirects = true
+space_redirects = false
 switch_case_indent = true
 function_next_line = true
 binary_next_line = true
-
-[*.bash,.bashrc]
 shell_variant = bash
-trim_trailing_whitespace = true
-insert_final_newline = true
-indent_style = space
-indent_size = 2
-tab_width = 2
-keep_padding = true
-space_redirects = true
-switch_case_indent = true
-function_next_line = true
-binary_next_line = true
 
-[*.bash*]
-shell_variant = bash
-trim_trailing_whitespace = true
-insert_final_newline = true
+# ---------------------
+# Fish shell
+# ---------------------
+[*.fish,fish_*]
 indent_style = space
-indent_size = 2
-tab_width = 2
-keep_padding = true
-space_redirects = true
-switch_case_indent = true
-function_next_line = true
-binary_next_line = true
-
-[*.fish]
 indent_size = 4
+tab_width = 4
 
-# Markdown
-[*.md]
-# trailing whitespaces have meaning on Markdown interpretation
+# ---------------------
+# Markdown, Patches
+# ---------------------
+[*.md,*.patch]
 trim_trailing_whitespace = false
+insert_final_newline = true
 
-[Makefile,*.mk]
-# Makefiles require tabs
-indent_style = tab
-indent_size=4
-
-[*.go,*.rs,*.zig]
+# ---------------------
+# Go, Rust, Zig, Makefiles
+# ---------------------
+[*.go,*.rs,*.zig,Makefile,*.mk]
 indent_style = tab
 indent_size = 4
+tab_width = 4
 
+# ---------------------
+# Python
+# ---------------------
 [*.py]
+indent_style = space
 indent_size = 4
+tab_width = 4

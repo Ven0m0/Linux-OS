@@ -157,13 +157,8 @@ _JAVA_AWT_WM_NONREPARENTING=1
 CARGO_HTTP_MULTIPLEXING=true
 RUSTC_WRAPPER=sccache
 
-
-Env:
-export PATH="$HOME/.cargo/bin:$PATH"
-
-
 # Steam
-mkdir -p $HOME/.steam/steam; echo 'unShaderBackgroundProcessingThreads 8' > ~/.steam/steam/steam_dev.cfg
+mkdir -p -- "${HOME}/.steam/steam"; echo 'unShaderBackgroundProcessingThreads 8' > "${HOME}/.steam/steam/steam_dev.cfg"
 
 # Steam launch options
 __GL_SHADER_DISK_CACHE=1
@@ -186,7 +181,7 @@ lsblk -d -o NAME,SCHED
 none mq-deadline kyber adios bfq
 
 cat /sys/block/nvme0n1/queue/scheduler
-echo none | sudo tee /sys/block/nvme0n1/queue/scheduler
+echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler
 
 sudo $EDITOR /etc/udev/rules.d/60-ioschedulers.rules
 

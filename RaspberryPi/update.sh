@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-#──────────── Setup ────────────────────
+#============ Setup ====================
 set -euo pipefail; shopt -s nullglob #globstar
 export LC_ALL=C LANG=C
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
-#──────────── Color & Effects ────────────
+#============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-#──────────── Helpers ────────────────────
+#============ Helpers ====================
 has(){ command -v -- "$1" &>/dev/null; }
 hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; }
 xprintf(){ printf "%s\n" "$@"; }
-#──────────── Banner ────────────────────
+#============ Banner ====================
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -49,13 +49,13 @@ else
     printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
   done
 fi
-#──────────── Sudo ────────────────────
+#============ Sudo ====================
 [[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
 [[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"; sync
-#─────────────────────────────────────────────────────────────
+#=============================================================
 if has apt-fast; then
   "$suexec" apt-fast update -yf --allow-releaseinfo-change --allow-unauthenticated --fix-missing
   #"$suexec" apt-fast upgrade -yfq --allow-unauthenticated --fix-missing --no-install-recommends

@@ -42,10 +42,8 @@ cd -- $WORKDIR || exit 1
 username="$(id -un)" # better than 'whoami'
 #──────────── Helpers ────────────────────
 # Check for command
-has() { command -v -- "$1" &>/dev/null; }
-# Faster has due not not having to redirect to /dev/null
 has(){ [[ -x $(command -v -- "$1") ]]; }
-# Get basename of command
+# Get basename of command if on path
 hasname(){ local x; x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; }
 # Printf-echo
 p() { printf '%s\n' "$*" 2>/dev/null; }
@@ -98,15 +96,15 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 
 Usage: basename "path" ["suffix"]
 ```bash
-basename(){ local tmp=${1%"${1##*[!/]}"}; tmp=${tmp##*/}; tmp=${tmp%"${2/"$tmp"}"}; printf '%s\n' "${tmp:-/}"; }
+bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
 ```
 </details>
 <details>
 <summary><b>Dirname</b></summary>
-  
+
 Usage: dirname "path"
 ```bash
-dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; }; tmp=${tmp%%"${tmp##*[!/]}" }; [[ $tmp != */* ]] && { printf '.\n'; return; }; tmp=${tmp%/*}; tmp=${tmp%%"${tmp##*[!/]}"}; printf '%s\n' "${tmp:-/}"; }
+dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
 ```
 </details>
 <details>

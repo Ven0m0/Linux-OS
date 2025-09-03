@@ -215,12 +215,12 @@ rm -rf --preserve-root -- "$HOME/.local/share/Steam/appcache/"* >/dev/null
 
 # BleachBit if available
 if command -v bleachbit &>/dev/null; then
-  bleachbit -c --preset >/dev/null
+  LC_ALL=C LANG=C bleachbit -c --preset >/dev/null
   if command -v xhost &>/dev/null; then
-    xhost si:localuser:root >/dev/null
-    "$suexec" bleachbit -c --preset >/dev/null
+    xhost si:localuser:root >/dev/null; xhost si:localuser:"$USER" >/dev/null
+    LC_ALL=C LANG=C "$suexec" bleachbit -c --preset >/dev/null
   elif command -v pkexec &>/dev/null; then
-    pkexec bleachbit -c --preset >/dev/null
+    LC_ALL=C LANG=C pkexec bleachbit -c --preset >/dev/null
   else
     echo "Error: neither xhost (for sudo) nor pkexec available. Cannot run BleachBit."
   fi

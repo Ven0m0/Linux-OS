@@ -1,30 +1,111 @@
+# ---------------------
+# Dotter
+# ---------------------
+.dotter/local.toml
+.dotter/cache.toml
+.dotter/cache
+
+# ---------------------
+# Dotfiles / shell history
+# ---------------------
+.*history
+*history
+*lesshst
+fishd.*
+.*hist
+.thumbnails/
+.cache
+
+# ---------------------
+# XDG user dirs
+# ---------------------
+Desktop/
+Documents/
+Downloads/
+Music/
+Pictures/
+Public/
+Templates/
+Videos/
+
+# ---------------------
+# Security
+# ---------------------
+.gnupg/
+.gitconfig.local
+.ssh/
+!.ssh/config
+.android/
+.config/gh/hosts.yml
+
+# ---------------------
+# Backups
+# ---------------------
 *.bak
 *.gho
 *.ori
 *.orig
 *.rej
+*.TAG
+
+# ---------------------
+# Rust / Cargo
+# ---------------------
+.cargo/
+!.cargo/config.toml
+*.rs.bk
+*.mutants.out*/
+
+# ---------------------
+# Logs / tmp
+# ---------------------
+*.log
+*.log.*
+log/
+logs/
+*.old
 *.tmp
-
-# LibreOffice locks
+tmp/
+*.kate-swp
+*swp.*
+token
+nohup.out
 .~lock.*#
+*.lock
+.nv/ComputeCache/
 
-# Swap Files #
-.*.kate-swp
-.swp.*
-*~
-
-# temporary files which can be created if a process still has a handle open of a deleted file
-.fuse_hidden*
-
-# Metadata left by Dolphin file manager, which comes with KDE Plasma
+# ---------------------
+# Linux system / editor files
+# ---------------------
 .directory
-
-# Linux trash folder which might appear on any partition or disk
 .Trash-*
-
-# .nfs files are created when an open file is removed but is still being accessed
+.Trashes
+.fuse_hidden*
+*~
 .nfs*
 
-# Log files created by default by the nohup command
-nohup.out
-token
+# ---------------------
+# Binary / compiled files
+# ---------------------
+*.com
+*.dll
+*.exe
+*.o
+*.so
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+node_modules/
+target/
+build/
+go/
+.git/
+
+# ---------------------
+# Windows system files
+# ---------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

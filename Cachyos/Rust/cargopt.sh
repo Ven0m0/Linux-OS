@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+export LC_ALL=C LANG=C
 # —————— Tweaks ——————
 if [[ $EUID -ne 0 ]]; then
   echo "This script requires root privileges. Validating with sudo..."

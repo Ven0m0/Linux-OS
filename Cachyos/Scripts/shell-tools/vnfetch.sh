@@ -11,48 +11,52 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────────────── Basic Info ────────────────────
-. -- "/etc/os-release" &>/dev/null && OS="${NAME:-$PRETTY_NAME}" || OS="$(uname -o 2>/dev/null)"
-KERNEL="$(</proc/sys/kernel/osrelease 2>/dev/null || uname -r 2>/dev/null)"
-#USERN="${USER:-$(LC_ALL=C id -un 2>/dev/null || echo unknown)}"
-#HOSTNAME=$(</etc/hostname 2>/dev/null || hostname 2>/dev/null || echo "unknown")
-UPT="$(uptime -p 2>/dev/null)"; UPT="${UPT#up }"
+. "/etc/os-release" &>/dev/null && OS="${NAME:-$PRETTY_NAME}" || OS="$(uname -ol)"
+KERNEL="$(</proc/sys/kernel/osrelease 2>/dev/null || uname -r)"
+#USERN="${USER:-$(id -un || echo unknown)}"
+#HOSTNAME=$(</etc/hostname || hostname || echo "unknown")
+UPT="$(uptime -p)"; UPT="${UPT#up }"
 # Processes
 PROCS=$(set -- /proc/[0-9]*; echo $#)
 # Packages
 PKG=0
 if command -v pacman &>/dev/null; then
-  PKG="$(pacman -Qq 2>/dev/null | wc -l)"
+  PKG="$(pacman -Qq | wc -l)"
   [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Pacman)"
 elif command -v dpkg &>/dev/null; then
-  PKG="$(dpkg --get-selections 2>/dev/null | wc -l)"
+  PKG="$(dpkg --get-selections | wc -l)"
   [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
 elif command -v apt &>/dev/null; then
-  PKG="$(( $(apt list --installed 2>/dev/null | wc -l) - 1 ))"
+  PKG="$(( $(apt list --installed | wc -l) - 1 ))"
   [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
 fi
 PKG2=0
 if command -v cargo &>/dev/null; then
-  PKG2=$(cargo install --list 2>/dev/null | grep -c '^[^[:space:]].*:')
+  PKG2=$(cargo install --list | grep -c '^[^[:space:]].*:')
   [[ ${PKG2:-0} -gt 0 ]] && PKG2="${PKG2} (Cargo)"
 fi
 PACKAGE="${PKG:-} ${PKG2:-}"
 # Other
-PWPLAN="$(powerprofilesctl get 2>/dev/null)"
+PWPLAN="$(powerprofilesctl get)"
 SHELLX="${SHELL##*/}"
 EDITORX="${EDITOR:-${VISUAL:-}}"
 # Local IP
-LOCALIP=$(LC_ALL=C ip -4 route get 1 2>/dev/null | { read -r _ _ _ _ _ _ ip _; echo "${ip:-}"; })
-#LOCALIP="$(LC_ALL=C ip route get 1 2>/dev/null | sed -n 's/.*src \([0-9.]*\).*/\1/p')"
+LOCALIP=$(ip -4 route get 1 | { read -r _ _ _ _ _ _ ip _; echo "${ip:-}"; })
+#LOCALIP="$(LC_ALL=C ip route get 1 | sed -n 's/.*src \([0-9.]*\).*/\1/p')"
+# Curl setup
+touch -- "${HOME}/.cache/curl-hsts"
+curlopts=(-sf --tcp-nodelay --max-time 3 --hsts "${HOME}/.cache/curl-hsts" 
 # Public IP
 GLOBALIP=""
 if command -v dig &>/dev/null; then
-  GLOBALIP="$(dig +short TXT ch whoami.cloudflare @1.1.1.1 2>/dev/null)"; GLOBALIP="${GLOBALIP//\"/}"
+  GLOBALIP="$(dig +short TXT ch whoami.cloudflare @1.1.1.1)"; GLOBALIP="${GLOBALIP//\"/}"
 else
-  GLOBALIP="$(curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip 2>/dev/null || curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain 2>/dev/null)"
+  
+  GLOBALIP="$(curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip || curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain)"
 fi
 # Weather
 WEATHER=""
-IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3' 2>/dev/null)
+IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3')
 # CPU/GPU
 CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
 GPU=$(

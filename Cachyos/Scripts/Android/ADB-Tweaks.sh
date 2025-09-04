@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+LC_ALL=C LANG=C
 # https://github.com/YurinDoctrine/adbloat
 
 start() {

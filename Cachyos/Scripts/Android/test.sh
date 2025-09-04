@@ -1,4 +1,5 @@
-
+#!/usr/bin/env bash
+export LC_ALL=C LANG=C
 
 echo -e "Optimizing ..."
 adb shell cmd shortcut reset-all-throttling

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+LC_ALL=C LANG=C
 
 # https://github.com/tytydraco/monolith
 MODE="everything-profile"

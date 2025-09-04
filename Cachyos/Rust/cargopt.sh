@@ -88,8 +88,8 @@ export CARGO_PROFILE_RELEASE_LTO=true
 export CARGO_BUILD_JOBS="$jobs"
 export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
 # export RUSTUP_TOOLCHAIN=nightly
-LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
-CLDFLAGS=(-fuse-ld=lld)
+#LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
+#CLDFLAGS=(-fuse-ld=lld)
 
 # —————— Core optimization flags ——————
 CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections"
@@ -111,16 +111,16 @@ LDFLAGS=(
 # https://github.com/johnthagen/min-sized-rust / https://doc.rust-lang.org/rustc/codegen-options/index.html
 # https://nnethercote.github.io/perf-book/build-configuration.html
 # "-Clink-arg=-flto" needed for mold
-# -Cembed-bitcode=y / might not needed with "-Clinker-plugin-lto"
+# -Cembed-bitcode=y / not neededed with "-Clinker-plugin-lto"
 
 RUSTFLAGS_BASE=(
   -Copt-level=3
   -Ctarget-cpu=native
   -Ccodegen-units=1
   -Cstrip=symbols
+  -Clink-args="-flto -Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-gc-sections -Wl,-z,now -Wl,-s -Wl,--icf=all -Wl,-z,relro -Wl,-z,pack-relative-relocs"
   -Clto=fat
-  -Clink-arg=-flto
-  -Clinker-plugin-lto
+  #-Clinker-plugin-lto
   -Ztune-cpu=native
   -Cdebuginfo=0
   -Cpanic=abort

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 export LC_ALL=C LANG=C.UTF-8
 sudo -v
 
@@ -146,16 +145,13 @@ kbuilder
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do
     failed_pkgs=()
-    
     # Try installing all remaining packages
     paru -S "${aurpkgs[@]}" -q --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || {
         echo "Some packages failed to install."
-        
         # Identify which package failed
         for aur_pkg in "${aurpkgs[@]}"; do
             paru -S "$aur_pkg" -q --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || failed_pkgs+=("$aur_pkg")
         fi
-
         # Remove failed packages from the list
         aurpkgs=($(echo "${aurpkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}")))
         
@@ -170,23 +166,20 @@ echo "AUR package installation complete."
 # konsave
 # memavaild
 # precached
-
+flatpak install flathub org.kde.audiotube
 sudo pacman -S flatpak --noconfirm
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 flats=`awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs`
 flatpak install --user -y flathub ${flats}
 
-# Image downloads
-curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PinkLady.webp -o $HOME/Pictures//PinkLady.webp
-curl-rustls https://github.com/Ven0m0/Linux-OS/blob/main/Cachyos/PFP.webp -o $HOME/Pictures/PFP.web
-
 # echo "Installing gaming applications"
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm || true
 
-
-echo "Installing rust + components..."
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -t x86_64-unknown-linux-gnu,wasm32-unknown-unknown -y -q
+if ! command -v rustup; then
+  echo "Installing rust + components..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -y -q
+fi
 
 echo "Installing Cargo crates"
 cargostall(
@@ -209,7 +202,7 @@ export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=sy
 cargo install --git https://github.com/GitoxideLabs/gitoxide gitoxide --no-default-features --features max-pure
 
 # Fast, hardware-accelerated CRC calculation
-cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq || true
+cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq
 # Faster unzip
 cargo install ripunzip
 
@@ -241,17 +234,17 @@ paru -S mommy
 micro -plugin install cheat editorconfig fzf filemanager autofmt quoter misspell
 
 # Fisher fix
-fisher install jorgebucaran/fisher
-fisher install acomagu/fish-async-prompt
+#fisher install jorgebucaran/fisher
+#fisher install acomagu/fish-async-prompt
 
 # Basher
 curl -s https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash
 
 echo "Install fzf bash tap completions"
 mkdir -p "$HOME/.config/bash"
-curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "$HOME/.config/bash/fzf-simple-completion.sh"
-chmod +x "$HOME/.config/bash/fzf-simple-completion.sh"
-[[ -f $HOME/.config/bash/fzf-simple-completion.sh ]] && . "$HOME/.config/bash/fzf-simple-completion.sh"
+curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "${HOME}/.config/bash/fzf-simple-completion.sh"
+chmod +x "${HOME}/.config/bash/fzf-simple-completion.sh"
+[[ -f $HOME/.config/bash/fzf-simple-completion.sh ]] && . "${HOME}/.config/bash/fzf-simple-completion.sh"
 
 
 echo "Installing updates"

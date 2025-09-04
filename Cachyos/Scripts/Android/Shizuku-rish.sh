@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
+LC_ALL=C LANG=C
 BASEDIR=$( dirname "${0}" )
 BIN=/data/data/com.termux/files/usr/bin
 HOME=/data/data/com.termux/files/home

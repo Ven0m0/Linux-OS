@@ -19,23 +19,17 @@ UPT="$(uptime -p)"; UPT="${UPT#up }"
 # Processes
 PROCS=$(set -- /proc/[0-9]*; echo $#)
 # Packages
-PKG=0
+PKG=0 PKG2=0 PKG3=0
 if command -v pacman &>/dev/null; then
-  PKG="$(pacman -Qq | wc -l)"
-  [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Pacman)"
+  PKG="$(pacman -Qq | wc -l)"; [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Pacman)"
 elif command -v dpkg &>/dev/null; then
-  PKG="$(dpkg --get-selections | wc -l)"
-  [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
+  PKG="$(dpkg --get-selections | wc -l)"; [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
 elif command -v apt &>/dev/null; then
-  PKG="$(( $(apt list --installed | wc -l) - 1 ))"
-  [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
+  PKG="$(( $(apt list --installed | wc -l) - 1 ))"; [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
 fi
-PKG2=0
-if command -v cargo &>/dev/null; then
-  PKG2=$(cargo install --list | grep -c '^[^[:space:]].*:')
-  [[ ${PKG2:-0} -gt 0 ]] && PKG2="${PKG2} (Cargo)"
-fi
-PACKAGE="${PKG:-} ${PKG2:-}"
+command -v cargo &>/dev/null && { PKG2=$(cargo install --list | grep -c '^[^[:space:]].*:'); [[ ${PKG2:-0} -gt 0 ]] && PKG2="${PKG2} (Cargo)"; }
+command -v flatpak &>/dev/null && { PKG3=$(flatpak list | wc -l); [[ ${PKG3:-0} -gt 0 ]] && PKG3="${PKG3} (Flatpak)"; }
+PACKAGE="${PKG:-} ${PKG2:-} ${PKG3:-}"
 # Other
 PWPLAN="$(powerprofilesctl get)"
 SHELLX="${SHELL##*/}"
@@ -48,12 +42,8 @@ touch -- "${HOME}/.cache/curl-hsts"
 curlopts=(-sf --tcp-nodelay --max-time 3 --hsts "${HOME}/.cache/curl-hsts" 
 # Public IP
 GLOBALIP=""
-if command -v dig &>/dev/null; then
-  GLOBALIP="$(dig +short TXT ch whoami.cloudflare @1.1.1.1)"; GLOBALIP="${GLOBALIP//\"/}"
-else
-  
-  GLOBALIP="$(curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip || curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain)"
-fi
+command -v dig &>/dev/null && { IFS= read -r GLOBALIP < <(dig +short TXT ch whoami.cloudflare @1.1.1.1); GLOBALIP="${GLOBALIP//\"/}"; } || \
+  IFS= read -r GLOBALIP < <(curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip || curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain)
 # Weather
 WEATHER=""
 IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3')

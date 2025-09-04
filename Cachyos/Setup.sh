@@ -28,4 +28,7 @@ else
     cd -- "${HOME}/.dotfiles"
     dotter deploy
 fi
+
+localectl set-locale C.UTF-8
+
 echo "[*] Setup complete! All dotfiles and app configs restored."

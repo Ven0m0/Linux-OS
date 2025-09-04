@@ -13,8 +13,8 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────────────── Basic Info ────────────────────
-. "/etc/os-release" &>/dev/null && OS="${NAME:-$PRETTY_NAME}" || OS="$(uname -ol)"
-KERNEL="$(</proc/sys/kernel/osrelease 2>/dev/null || uname -r)"
+. "/etc/os-release"; OS="${NAME:-${PRETTY_NAME:-$(uname -o)}}"
+KERNEL="$(</proc/sys/kernel/osrelease|| uname -r)"
 UPT="$(uptime -p)"; UPT="${UPT#up }"
 # Processes
 PROCS=$(set -- /proc/[0-9]*; echo $#)

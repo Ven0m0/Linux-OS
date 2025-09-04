@@ -60,22 +60,16 @@ if has apt-fast; then
   "$suexec" apt-fast update -yf --allow-releaseinfo-change --allow-unauthenticated --fix-missing
   #"$suexec" apt-fast upgrade -yfq --allow-unauthenticated --fix-missing --no-install-recommends
   "$suexec" apt-fast dist-upgrade -yfq --no-install-recommends --allow-unauthenticated --fix-missing
-  "$suexec" apt-fast clean -yq
-  "$suexec" apt-fast autoclean -yq
-  "$suexec" apt-fast autopurge -yq
+  "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
 elif has nala; then
   yes | "$suexec" nala upgrade
-  "$suexec" nala clean
-  "$suexec" nala autoremove
-  "$suexec" nala autopurge
+  "$suexec" nala clean; "$suexec" nala autoremove; "$suexec" nala autopurge
 else
   "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
-  # No apt-get for upgrade cht.sh/apt
+  # No apt instead of apt=get for upgrade: cht.sh apt
   #"$suexec" apt upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
   "$suexec" apt-get dist-upgrade -yf --allow-unauthenticated --fix-missing
-  "$suexec" apt-get clean -yq
-  "$suexec" apt-get autoclean -yq
-  "$suexec" apt-get autoremove --purge -yq
+  "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them
 "$suexec" dpkg --configure -a >/dev/null

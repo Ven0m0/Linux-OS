@@ -30,7 +30,7 @@ export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=sy
 Safe RUSTFLAGS:
 
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Zthreads=8 -Cllvm-args=-enable-dfa-jump-thread"
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Zdylib-lto -Ztune-cpu=native -Cpanic=abort -Zthreads=8 -Cllvm-args=-enable-dfa-jump-thread"
 ```
 
 ```bash

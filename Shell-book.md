@@ -45,6 +45,8 @@ username="$(id -un)" # better than 'whoami'
 has(){ [[ -x $(command -v -- "$1") ]]; }
 # Get basename of command if on path
 hasname(){ local x; x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; }
+# Export array of newline/space seperated quotes variables
+export_array(){ local -n a=$1; for v in "${a[@]}"; do eval "export $v"; done; unset v; }
 # Printf-echo
 p() { printf '%s\n' "$*" 2>/dev/null; }
 # Printf-echo for color with auto reset

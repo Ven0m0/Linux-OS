@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+export LC_ALL=C LANG=C
 # optimize_apk.sh: Automate APK linting, stripping, bytecode optimization, and repackaging
 # Usage: ./optimize_apk.sh input.apk output.apk
 # Requirements: apktool, redex, dex2jar, proguard (or R8), zipalign, apksigner, pngcrush, jpegoptim, 7z
@@ -23,10 +22,9 @@ JPEGOPTIM="jpegoptim"
 SEVENZIP="7z"
 
 # Input/Output
-INPUT_APK="$1"
-OUTPUT_APK="$2"
-WORKDIR="work_$(date +%s)"
-
+INPUT_APK="${1:-0}"
+OUTPUT_APK="${2:-0}"
+WORKDIR="work_$(printf '%(%s)T' -1)"
 # Clean and create working directory
 rm -rf "$WORKDIR" && mkdir -p "$WORKDIR"
 
@@ -35,7 +33,7 @@ $APKTOOL d "$INPUT_APK" -o "$WORKDIR/src"
 
 echo "[2/10] Stripping unused resources..."
 # Example: remove extra densities
-find "$WORKDIR/src/res" -maxdepth 1 -type d -name "drawable-*" ! -name "drawable-mdpi" -exec rm -rf {} +
+find -O3 "$WORKDIR/src/res" -maxdepth 1 -type d -name "drawable-*" ! -name "drawable-mdpi" -exec rm -rf {} +
 # Remove other unused
 rm -rf "$WORKDIR/src/res/raw/" "$WORKDIR/src/assets/"
 

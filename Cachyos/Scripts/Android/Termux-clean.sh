@@ -1,5 +1,5 @@
 #!/bin/sh
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+LC_ALL=C LANG=C
 
 echo "🔄 Clearing per-app cache (third-party apps)..."
 adb shell pm list packages -3 | cut -d: -f2 \

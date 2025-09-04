@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #──────────── Setup ────────────────────
 shopt -s nullglob globstar
-export LC_ALL=C LANG=C
+export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; }; tmp=${tmp%%"${tmp##*[!/]}" }; [[ $tmp != */* ]] && { printf '.\n'; return; }; tmp=${tmp%/*}; tmp=${tmp%%"${tmp##*[!/]}"}; printf '%s\n' "${tmp:-/}"; }
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 cd $WORKDIR || exit 1

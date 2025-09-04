@@ -28,7 +28,7 @@ adb shell cmd package compile -f --full --secondary-dex -m speed app.revanced.an
 adb shell cmd package compile -f --full --secondary-dex -m speed com.snapchat.android
 adb shell cmd package compile -f --full --secondary-dex -m speed app.revenge
 adb shell cmd package compile -f --full --secondary-dex -m speed com.instagram.android
-adb shell cmd package compile -f --full --secondary-dex -m anddea.youtube.music
+adb shell cmd package compile -f --full --secondary-dex -m speed anddea.youtube.music
 adb shell cmd package compile -f --full --secondary-dex -m everything com.nothing.launcher
 adb shell cmd package compile -f --full --secondary-dex -m everything com.google.android.webview.beta
 adb shell cmd package compile -f --full --secondary-dex -m everything com.google.android.inputmethod.latin

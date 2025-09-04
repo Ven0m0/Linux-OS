@@ -1,11 +1,6 @@
-#!/bin/bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-LC_ALL=C LANG=C
+#!/usr/bin/env bash
+export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 # https://github.com/jmcerrejon/PiKISS/blob/master/res/cRasp.sh
-
-clear
 
 disableSwap() {
     # Disable partition "swap"

@@ -3,8 +3,10 @@
 # Credit:
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
+#──────────────────── Init ────────────────────
+l1="$LANG" PKG= PKG2= PKG3= GLOBALIP= WEATHER=
 #──────────────────── Environment ────────────────────
-l1="$LANG"; export LC_ALL=C LANG=C
+export LC_ALL=C LANG=C
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
@@ -13,19 +15,16 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────────────── Basic Info ────────────────────
 . "/etc/os-release" &>/dev/null && OS="${NAME:-$PRETTY_NAME}" || OS="$(uname -ol)"
 KERNEL="$(</proc/sys/kernel/osrelease 2>/dev/null || uname -r)"
-#USERN="${USER:-$(id -un || echo unknown)}"
-#HOSTNAME=$(</etc/hostname || hostname || echo "unknown")
 UPT="$(uptime -p)"; UPT="${UPT#up }"
 # Processes
 PROCS=$(set -- /proc/[0-9]*; echo $#)
 # Packages
-PKG=0 PKG2=0 PKG3=0
 if command -v pacman &>/dev/null; then
-  PKG="$(pacman -Qq | wc -l)"; [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Pacman)"
+  PKG="$(pacman -Qq | wc -l)"; PKG="${PKG} (Pacman)"
 elif command -v dpkg &>/dev/null; then
-  PKG="$(dpkg --get-selections | wc -l)"; [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
+  PKG="$(dpkg --get-selections | wc -l)"; PKG="${PKG} (Apt)"
 elif command -v apt &>/dev/null; then
-  PKG="$(( $(apt list --installed | wc -l) - 1 ))"; [[ ${PKG:-} -gt 0 ]] && PKG="${PKG} (Apt)"
+  PKG="$(( $(apt list --installed | wc -l) - 1 ))"; PKG="${PKG} (Apt)"
 fi
 command -v cargo &>/dev/null && { PKG2=$(cargo install --list | grep -c '^[^[:space:]].*:'); [[ ${PKG2:-0} -gt 0 ]] && PKG2="${PKG2} (Cargo)"; }
 command -v flatpak &>/dev/null && { PKG3=$(flatpak list | wc -l); [[ ${PKG3:-0} -gt 0 ]] && PKG3="${PKG3} (Flatpak)"; }
@@ -36,16 +35,13 @@ SHELLX="${SHELL##*/}"
 EDITORX="${EDITOR:-${VISUAL:-}}"
 # Local IP
 LOCALIP=$(ip -4 route get 1 | { read -r _ _ _ _ _ _ ip _; echo "${ip:-}"; })
-#LOCALIP="$(LC_ALL=C ip route get 1 | sed -n 's/.*src \([0-9.]*\).*/\1/p')"
 # Curl setup
 touch -- "${HOME}/.cache/curl-hsts"
 curlopts=(-sf --tcp-nodelay --max-time 3 --hsts "${HOME}/.cache/curl-hsts" 
 # Public IP
-GLOBALIP=""
 command -v dig &>/dev/null && { IFS= read -r GLOBALIP < <(dig +short TXT ch whoami.cloudflare @1.1.1.1); GLOBALIP="${GLOBALIP//\"/}"; } || \
   IFS= read -r GLOBALIP < <(curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip || curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain)
 # Weather
-WEATHER=""
 IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3')
 # CPU/GPU
 CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #============ Setup ====================
 set -euo pipefail; shopt -s nullglob #globstar
-export LC_ALL=C LANG=C
+export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
 #============ Color & Effects ============

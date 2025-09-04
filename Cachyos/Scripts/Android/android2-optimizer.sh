@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+LC_ALL=C LANG=C
 
 adb start-server
 adb shell setprop debug.enabletr 1

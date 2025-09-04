@@ -80,6 +80,9 @@ export STRIP="llvm-strip"
 # Make sure rustflags arent being overwritten by cargo
 unset CARGO_ENCODED_RUSTFLAGS
 # Cargo settings/tweaks
+export OPT_LEVEL=3
+export MAKEFLAGS="$CARGO_MAKEFLAGS"
+
 export CARGO_CACHE_RUSTC_INFO=1 
 export CARGO_HTTP_SSL_VERSION="tlsv1.3" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 export CARGO_INCREMENTAL=0

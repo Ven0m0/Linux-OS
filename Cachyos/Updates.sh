@@ -113,28 +113,26 @@ if has flatpak; then
 fi
 
 # Function to run cargo commands dynamically
-#cargo_run(){
-  #local bins=(gg mommy clicker) cmd=(cargo) b
-  #for b in "${bins[@]}"; do
-    #command -v "cargo-$b" &>/dev/null && cmd+=("$b")
-  #done
-  #(( ${#cmd[@]} > 1 )) || { echo "No cargo binaries available: ${bins[*]}" >&2; return 1; }
-  #"${cmd[@]}" "$@"
-#}
-#if has rustup; then
-  #"$suexec" rustup update
- # if has cargo; then
-    #echo 'update cargo binaries...'
-    #if cargo install-update -V &>/dev/null; then
-      #cargo_run install-update -agi 2>/dev/null
-    #else
-      #cargo_run install --list | grep -o '^[[:alnum:]][^ ]*' | xargs -r -n1 cargo install >/dev/null
-    #fi
-    #has cargo-updater && cargo_run updater -u >/dev/null
-  #fi
-#else
- # curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y
-#fi
+cargo_run(){
+  local bins=(gg mommy clicker) cmd=(cargo) b
+  for b in "${bins[@]}"; do
+    command -v "cargo-$b" &>/dev/null && cmd+=("$b")
+  done
+  (( ${#cmd[@]} > 1 )) || { echo "No cargo binaries available: ${bins[*]}" >&2; return 1; }
+  "${cmd[@]}" "$@"
+}
+if has rustup; then
+  "$suexec" rustup update
+  if has cargo; then
+    echo 'update cargo binaries...'
+    if cargo install-update -Vq; then
+      cargo_run install-update -agiq
+    else
+      cargo_run install --list | grep -o '^[[:alnum:]][^ ]*' | xargs -r -n1 cargo install -q
+    fi
+    has cargo-syu && cargo_run syu -g
+  fi
+fi
 
 if has micro; then
   echo 'micro plugin update...'

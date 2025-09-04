@@ -55,7 +55,8 @@ sync
 read -r used_human pct < <(df -h --output=used,pcent -- / 2>/dev/null | awk 'NR==2{print $1, $2}')
 DUB="$used_human $pct"
 
-# Clearing dns cache
+# Clearing dns cache and release/renew dhcp
+dhclient -r
 "$suexec" resolvectl flush-caches >/dev/null
 
 # Pacman cleanup

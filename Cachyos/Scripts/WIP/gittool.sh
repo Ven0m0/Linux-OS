@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Speed up git
 export LC_ALL=C LANG=C
-#jobs="$(nproc 2>/dev/null || echo 8)"
 
 githousekeep(){
   local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"; cd -- "$workdir" || return 1

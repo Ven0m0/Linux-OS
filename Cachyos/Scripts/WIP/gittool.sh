@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # Speed up git
 export LC_ALL=C LANG=C
-jobs="$(nproc 2>/dev/null || echo 8)"
+#jobs="$(nproc 2>/dev/null || echo 8)"
 
 githousekeep(){
-  local workdir
-  workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
-  cd -- "$workdir" || return 1
+  local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"; cd -- "$workdir" || return 1
   local dir="${1:-$workdir}"
   if ! git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     printf 'Not a git work tree: %s\n' "$dir" >&2; return 1
@@ -34,15 +32,13 @@ githousekeep(){
     git clean -fdXq >/dev/null || :
   '
   ## Optimize/Clean
-  git -C "$dir" repack -adq --depth=250 --window=250 >/dev/null || :
-  git -C "$dir" reflog expire --expire=now --all >/dev/null || :
-  git -C "$dir" gc --auto --aggressive --prune=now >/dev/null || :
-  git -C "$dir" clean -fdXq >/dev/null || :
+  git -C "$dir" repack -adq --depth=250 --window=250 >/dev/null
+  git -C "$dir" reflog expire --expire=now --all >/dev/null
+  git -C "$dir" gc --auto --aggressive --prune=now >/dev/null
+  git -C "$dir" clean -fdXq >/dev/null
 }
 gitdate(){
-  local workdir
-  workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
-  cd -- "$workdir" || return 1
+  local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"; cd -- "$workdir" || return 1
   local dir="${1:-$workdir}"
   if ! git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     printf 'Not a git work tree: %s\n' "$dir" >&2; return 1
@@ -51,14 +47,14 @@ gitdate(){
   # Keep remote-tracking refs tidy
   git -C "$dir" remote prune origin >/dev/null
   # Fetch
-  git -C "$dir" fetch --prune --no-tags --filter=blob:none origin || git -C "$dir" fetch --prune --no-tags origin || :
+  git -C "$dir" fetch --prune --no-tags --filter=blob:none origin || git -C "$dir" fetch --prune --no-tags origin
   # if rebase failed try to abort and continue
   git -C "$dir" pull --rebase --autostash --prune origin HEAD || git -C "$dir" rebase --abort &>/dev/null
   # Sync submodule URLs
-  git -C "$dir" submodule sync --recursive || :
+  git -C "$dir" submodule sync --recursive
   # Update submodules with fallback
-  git -C "$dir" submodule update --init --recursive --remote --filter=blob:none --depth 1 --single-branch --jobs "$jobs" \
-    || git -C "$dir" submodule update --init --recursive --remote --depth 1 --jobs "$jobs" \
-    || git -C "$dir" submodule update --init --recursive --remote --jobs "$jobs"
+  git -C "$dir" submodule update --init --recursive --remote --filter=blob:none --depth 1 --single-branch --jobs 8 \
+    || git -C "$dir" submodule update --init --recursive --remote --depth 1 --jobs 8 \
+    || git -C "$dir" submodule update --init --recursive --remote --jobs 8
   printf '\e[1mUpdate complete: %s\e[0m\n' "$dir"
 }

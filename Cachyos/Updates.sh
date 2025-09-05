@@ -212,6 +212,12 @@ has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
 has update-ccache-links && "$suexec" update-ccache-links >/dev/null || :
 has update-leap && LC_ALL=C update-leap &>/dev/null || :
 
+if has fwupdmgr; then
+  "$suexec" fwupdmgr refresh 
+  "$suexec" fwupdmgr refresh -y
+  "$suexec" fwupdtool update
+fi
+
 echo "🔍 Checking for systemd-boot"
 if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q &>/dev/null; then
   echo "✅ systemd-boot detected, updating"

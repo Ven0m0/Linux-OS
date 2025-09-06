@@ -8,8 +8,8 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Helpers ────────────────────
-has(){ [[ -x $(command -v -- "$1") ]]; } # Check for command
-hasname(){ local x=$(type -P -- "$1" 2>/dev/null) || return; printf '%s\n' "${x##*/}"; } # Get basename of command
+has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
+hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
 #──────────── Banner ────────────────────
 banner=$(cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
@@ -45,12 +45,11 @@ else
     printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
   done
 fi
-#──────────── Safe optimal privilege tool ────────────────────
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
-[[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
-export HOME="/home/${SUDO_USER:-$USER}"
-sync
+#============ Safe optimal privilege tool ====================
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas)" || { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
+[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
+[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
+export HOME="/home/${SUDO_USER:-$USER}"; sync
 # Capture usage before cleanup
 read -r used_human pct < <(df -h --output=used,pcent -- / 2>/dev/null | awk 'NR==2{print $1, $2}')
 DUB="$used_human $pct"

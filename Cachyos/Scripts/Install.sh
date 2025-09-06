@@ -10,7 +10,7 @@ MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
 has(){ [[ -x $(command -v -- "$1") ]]; } # Check for command
-hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; }
+hasname(){ local x; x=$(type -P -- "$1" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
 #============ Safe optimal privilege tool ====================
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
 [[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }

@@ -9,15 +9,11 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
-has(){ [[ -x $(command -v -- "$1") ]]; } # Check for command
-hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; } # Get basename of command
+has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
+hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
 xprint(){ printf '%s\n' "$*"; } # Print-echo
 xexprint(){ printf '%b\n' "$*"; } # Print-echo for color
-cleanup(){
-  trap - EXIT; unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
-  [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck' &>/dev/null
-}
-trap cleanup EXIT
+cleanup(){ trap - EXIT ERR; unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS; [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck' &>/dev/null; }; trap "cleanup" EXIT ERR
 #============ Banner ====================
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -55,15 +51,8 @@ else
 fi
 echo "Meow (> ^ <)"
 #============ Safe optimal privilege tool ====================
-if hasname sudo-rs; then
-  suexec=sudo-rs
-elif hasname sudo ; then
-  suexec=sudo
-elif hasname doas; then
-  suexec=doas
-else
-  printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1
-fi
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas)" || { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
+[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #============ Env ====================

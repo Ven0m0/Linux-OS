@@ -27,6 +27,18 @@ CFLAGS="${CXXFLAGS/-O1/-O3}" CFLAGS="${CXXFLAGS/-O2/-O3}"; export CXXFLAGS="$(pr
 LDFLAGS="${LDFLAGS/-O1/-O3}" LDFLAGS="${LDFLAGS/-O2/-O3}"; export LDFLAGS="$(printf '%s\n' "$LDFLAGS" | xargs)"
 ```
 
+***Append flags to the var (No dupes)***
+```bash
+append_unique_word(){
+  local varname="$1" nw="$2" ow value; local -n cur=$varname
+  for ow in $cur; do [[ $ow == "$nw" ]] && return 0; done
+  value="${cur:+$cur }$nw"
+  printf -v "$varname" %s "$value"; export "$varname"
+}
+append_unique_word CFLAGS "-O3"
+append_unique_word CFLAGS "-pipe"
+```
+
 ```markdown
 https://shields.io
 https://simpleicons.org

@@ -51,10 +51,21 @@ else
 fi
 echo "Meow (> ^ <)"
 #============ Safe optimal privilege tool ====================
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas || suexec="su -c" )"
-[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas || printf '%s\n' 'su -c')"
+[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No privilege tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
+_shell_quote(){ local s; s=$(printf '%s' "$1" | sed "s/'/'\\\\''/g"); printf "'%s'" "$s"; }
+run_priv(){
+  local cmd=("$@")
+  [[ ${#cmd[@]} -gt 0 ]] || return 2
+  [[ $EUID -eq 0 ]] && { "${cmd[@]}"; return $?; }
+  case "$suexec" in
+    sudo|sudo-rs)  "$suexec" -- "${cmd[@]}" ;;
+    "su -c")      local q='' a; for a in "${cmd[@]}"; do q="$q $(_shell_quote "$a")"; done; q="${q# }"; su -c "$q" ;;
+    *)            "$suexec" "${cmd[@]}" ;;
+  esac
+}
 #============ Env =============================================
 has dbus-launch && export "$(dbus-launch)"
 SHELL="${BASH:-/bin/bash}"; unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER

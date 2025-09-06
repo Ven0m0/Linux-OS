@@ -19,35 +19,35 @@ UPT="$(uptime -p)"; UPT="${UPT#up }"
 # Processes
 PROCS=$(set -- /proc/[0-9]*; echo $#)
 # Packages
-if command -v pacman &>/dev/null; then
+if command -v pacman >/dev/null 2>&1; then
   PKG="$(pacman -Qq | wc -l)"; PKG="${PKG} (Pacman)"
-elif command -v dpkg &>/dev/null; then
+elif command -v dpkg >/dev/null 2>&1; then
   PKG="$(dpkg --get-selections | wc -l)"; PKG="${PKG} (Apt)"
-elif command -v apt &>/dev/null; then
+elif command -v apt >/dev/null 2>&1; then
   PKG="$(( $(apt list --installed | wc -l) - 1 ))"; PKG="${PKG} (Apt)"
 fi
-command -v cargo &>/dev/null && { PKG2=$(cargo install --list | grep -c '^[^[:space:]].*:'); [[ ${PKG2:-0} -gt 0 ]] && PKG2="${PKG2} (Cargo)"; }
-command -v flatpak &>/dev/null && { PKG3=$(flatpak list | wc -l); [[ ${PKG3:-0} -gt 0 ]] && PKG3="${PKG3} (Flatpak)"; }
+command -v cargo >/dev/null 2>&1 && { PKG2=$(cargo install --list | grep -c '^[^[:space:]].*:'); [[ ${PKG2:-0} -gt 0 ]] && PKG2="${PKG2} (Cargo)"; }
+command -v flatpak >/dev/null 2>&1 && { PKG3=$(flatpak list | wc -l); [[ ${PKG3:-0} -gt 0 ]] && PKG3="${PKG3} (Flatpak)"; }
 PACKAGE="${PKG:-} ${PKG2:-} ${PKG3:-}"
 # Other
-command -v powerprofilesctl &>/dev/null && { PWPLAN="$(powerprofilesctl get 2>/dev/null)"; }
+command -v powerprofilesctl >/dev/null 2>&1 && PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 #PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="${SHELL##*/}"
 EDITORX="${EDITOR:-${VISUAL:-}}"
 # Local IP
 LOCALIP=$(ip -4 route get 1 | { read -r _ _ _ _ _ _ ip _; echo "${ip:-}"; })
 # Curl setup
-touch -- "${HOME}/.cache/curl-hsts"
-curlopts=(-sf --tcp-nodelay --max-time 3 --hsts "${HOME}/.cache/curl-hsts" 
+touch -- "${HOME}/.curl-hsts"
+#curlopts=(-sf --tcp-nodelay --max-time 3 --hsts "${HOME}/.curl-hsts")
 # Public IP
-command -v dig &>/dev/null && { IFS= read -r GLOBALIP < <(dig +short TXT ch whoami.cloudflare @1.1.1.1); GLOBALIP="${GLOBALIP//\"/}"; } || \
-  IFS= read -r GLOBALIP < <(curl -sf4 --max-time 3 --tcp-nodelay ipinfo.io/ip || curl -sf4 --max-time 3 --tcp-nodelay ipecho.net/plain)
+command -v dig >/dev/null 2>&1 && { IFS= read -r GLOBALIP < <(dig +short TXT ch whoami.cloudflare @1.1.1.1); GLOBALIP="${GLOBALIP//\"/}"; } || \
+  IFS= read -r GLOBALIP < <(curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts"  ipinfo.io/ip || curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts"  ipecho.net/plain)
 # Weather
-IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay 'wttr.in/Bielefeld?format=3')
+IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts"  'wttr.in/Bielefeld?format=3')
 # CPU/GPU
 CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
 GPU=$(
-  if command -v nvidia-smi &>/dev/null; then
+  if command -v nvidia-smi >/dev/null 2>&1; then
     nvidia-smi --query-gpu=name --format=csv,noheader | head -n1
   else
     lspci 2>/dev/null | awk -F: '/VGA|3D/ && !/Integrated/ {
@@ -115,4 +115,6 @@ append "Weather"    "${WEATHER:-}"
 append "Powerplan"  "${PWPLAN:-}"
 
 printf '%b\n%b\n' "$OUT" "$DEF"
-exit
+
+export LANG="C.UTF-8"
+unset LC_ALL; exit

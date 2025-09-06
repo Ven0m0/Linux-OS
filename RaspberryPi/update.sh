@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-#============ Setup ====================
-set -euo pipefail; shopt -s nullglob #globstar
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
@@ -11,9 +9,8 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
-has(){ [[ -x $(command -v -- "$1") ]]; }
-hasname(){ local x; x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; }
-xprintf(){ printf "%s\n" "$@"; }
+has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
+hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
 #============ Banner ====================
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -49,11 +46,12 @@ else
     printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
   done
 fi
-#============ Sudo ====================
-[[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
-[[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
+echo "Meow (> ^ <)"
+#============ Safe optimal privilege tool ====================
+[[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas || suexec="su -c" )"
+[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
+[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #=============================================================
 if has apt-fast; then
@@ -79,8 +77,10 @@ else
     xprintf "No broken packages found or fixed successfully."
 fi
 "$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
-has pihole && "$suexec" pihole -up || :
-has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a || :
-has rpi-update && "$suexec" PRUNE_MODULES=1 rpi-update || :
+has pihole && "$suexec" pihole -up
+has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a 
+has rpi-update && "$suexec" PRUNE_MODULES=1 rpi-update
 #"$suexec" JUST_CHECK=1 rpi-update
 # "$suexec" PRUNE_MODULES=1 rpi-update
+
+unset LC_ALL DEBIAN_FRONTEND; export LANG=C.UTF-8

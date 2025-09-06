@@ -30,7 +30,8 @@ command -v cargo &>/dev/null && { PKG2=$(cargo install --list | grep -c '^[^[:sp
 command -v flatpak &>/dev/null && { PKG3=$(flatpak list | wc -l); [[ ${PKG3:-0} -gt 0 ]] && PKG3="${PKG3} (Flatpak)"; }
 PACKAGE="${PKG:-} ${PKG2:-} ${PKG3:-}"
 # Other
-PWPLAN="$(powerprofilesctl get)"
+command -v powerprofilesctl &>/dev/null && { PWPLAN="$(powerprofilesctl get 2>/dev/null)"; }
+#PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 SHELLX="${SHELL##*/}"
 EDITORX="${EDITOR:-${VISUAL:-}}"
 # Local IP

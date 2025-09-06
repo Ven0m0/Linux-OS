@@ -60,12 +60,12 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #============ Env ====================
-has dbus-launch && export "$(dbus-launch 2>/dev/null)"
+has dbus-launch && export "$(dbus-launch)"
 SHELL="${BASH:-/bin/bash}"; unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native" \
-       CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS" \
-       LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-export CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTUP_TOOLCHAIN=nightly RUSTC_BOOTSTRAP=1
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native"
+CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
+LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
+CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTUP_TOOLCHAIN=nightly RUSTC_BOOTSTRAP=1
 #=============================================================
 has modprobed-db && modprobed-db storesilent >/dev/null | :
 has hwclock && "$suexec" hwclock -w >/dev/null || :

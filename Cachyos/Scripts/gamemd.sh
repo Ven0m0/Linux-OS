@@ -9,19 +9,24 @@ else command -v sudo &>/dev/null; then
   sudo -v
 fi
 
-echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
-echo advise | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled
-echo 1 | sudo tee /proc/sys/vm/page_lock_unfairness
-echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler
-echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-sudo powerprofilesctl set performance
-sudo cpupower frequency-set -g performance
+# Needs testing
+echo 0 | sudo tee /sys/kernel/mm/transparent_hugepage/use_zero_page &>/dev/null
+echo 0 | sudo tee /sys/kernel/mm/transparent_hugepage/shrink_underused &>/dev/null
 
-echo 512 | sudo tee /sys/block/nvme0n1/queue/nr_requests
-echo 1024 | sudo tee /sys/block/nvme0n1/queue/read_ahead_kb
-echo 0 | sudo tee /sys/block/sda/queue/add_random >/dev/null
+# Known
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null
+echo advise | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled &>/dev/null
+echo 1 | sudo tee /proc/sys/vm/page_lock_unfairness &>/dev/null
+echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler &>/dev/null
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor &>/dev/null
+sudo powerprofilesctl set performance &>/dev/null
+sudo cpupower frequency-set -g performance &>/dev/null
 
-echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy
+echo 512 | sudo tee /sys/block/nvme0n1/queue/nr_requests &>/dev/null
+echo 1024 | sudo tee /sys/block/nvme0n1/queue/read_ahead_kb &>/dev/null
+echo 0 | sudo tee /sys/block/sda/queue/add_random >/dev/null &>/dev/null
+
+echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy &>/dev/null
 
 # disable bluetooth
 sudo systemctl stop bluetooth.service

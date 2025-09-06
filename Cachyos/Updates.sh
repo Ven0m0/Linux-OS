@@ -55,7 +55,7 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas || suexec="su -c" )"
 [[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
-#============ Env ====================
+#============ Env =============================================
 has dbus-launch && export "$(dbus-launch)"
 SHELL="${BASH:-/bin/bash}"; unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER
 RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"

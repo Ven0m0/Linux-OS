@@ -1,4 +1,9 @@
 # ---------------------
+# Git
+# ---------------------
+.git/
+
+# ---------------------
 # Dotter
 # ---------------------
 .dotter/local.toml
@@ -11,10 +16,10 @@
 .*history
 *history
 *lesshst
+*-hst
 fishd.*
 .*hist
 .thumbnails/
-.cache
 
 # ---------------------
 # XDG user dirs
@@ -73,6 +78,7 @@ nohup.out
 .~lock.*
 *.lock
 *.lck
+.cache
 .nv/ComputeCache/
 
 # ---------------------
@@ -95,13 +101,12 @@ nohup.out
 *.so
 __pycache__/
 .pytest_cache/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
 node_modules/
 target/
 build/
 go/
-.git/
 
 # ---------------------
 # Windows system files

@@ -55,9 +55,16 @@ else
 fi
 echo "Meow (> ^ <)"
 #============ Safe optimal privilege tool ====================
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
-[[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
+if hasname sudo-rs; then
+  suexec=sudo-rs
+elif hasname sudo ; then
+  suexec=sudo
+elif hasname doas; then
+  suexec=doas
+else
+  printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1
+fi
+[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #============ Env ====================
 has dbus-launch && export "$(dbus-launch)"
@@ -67,32 +74,36 @@ CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
 LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTUP_TOOLCHAIN=nightly RUSTC_BOOTSTRAP=1
 #=============================================================
-has modprobed-db && modprobed-db storesilent >/dev/null | :
-has hwclock && "$suexec" hwclock -w >/dev/null || :
-has updatedb && "$suexec" updatedb &>/dev/null || :
+has modprobed-db && modprobed-db storesilent >/dev/null
+has hwclock && "$suexec" hwclock -w >/dev/null
+has updatedb && "$suexec" updatedb &>/dev/null
+has chwd && "$suexec" chwd -a 2>/dev/null
+
 sysupdate(){
-  local aurtool='' auropts_base auropts
-  local LC_ALL=C LANG=C LANGUAGE=en_US
+  local pkgmgr auropts_base auropts
   echo -e "🔄${BLU}System update${DEF}"
   # Detect AUR helper
   if has paru; then
+    pkgmgr=paru
     auropts_base=(--batchinstall --combinedupgrade --nokeepsrc)
   elif has yay; then
     auropts_base=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
+  else
+    pkgmgr=pacman
   fi
-  aurtool="$(command -v paru 2>/dev/null || command -v yay 2>/dev/null)"
+  pkgmgr="${pkgmgr}:-"
   # Ensure pacman lock is removed
   [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null || :
   # Update keyring and file databases
-  "$suexec" pacman -Sy archlinux-keyring --noconfirm -q >/dev/null || :
+  "$suexec" "$pkgmgr" -Sy archlinux-keyring --noconfirm -q >/dev/null || :
   [[ -f /var/lib/pacman/sync/core.files ]] || "$suexec" pacman -Fy --noconfirm || :
   "$suexec" pacman -Fy --noconfirm &>/dev/null || :
   # Build AUR options array
-  if [[ -n $aurtool ]]; then
+  if [[ pkgmgr == paru ]]; then
     auropts=(--noconfirm --needed --mflags '--skipinteg --skippgpcheck' --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
-    echo "🔄${BLU}Updating AUR packages with ${aurtool}...${DEF}"
-    "$aurtool" -Suyy "${auropts[@]}" 2>/dev/null || :
-    "$aurtool" -Sua --devel "${auropts[@]}" 2>/dev/null || :
+    echo "🔄${BLU}Updating AUR packages with ${pkgmgr}...${DEF}"
+    "$pkgmgr" -Suyy "${auropts[@]}" 2>/dev/null || :
+    "$pkgmgr" -Sua --devel "${auropts[@]}" 2>/dev/null || :
   else
     echo -e "🔄${BLU}Updating system with pacman...${DEF}"
     "$suexec" pacman -Suyy --noconfirm --needed 2>/dev/null || :
@@ -147,7 +158,7 @@ fi
 #p 'Updating shell environments...'
 if has fish; then
   fish -c "fish_update_completions"
-  [[ -r ${HOME}/.config/fish/functions/fisher.fish ]]  && fish -c ". "$HOME"/.config/fish/functions/fisher.fish; fisher update"
+  [[ -r ${HOME}/.config/fish/functions/fisher.fish ]] && fish -c ". "$HOME"/.config/fish/functions/fisher.fish; fisher update"
 fi
 
 [[ -d ${HOME}/.basher ]] && LC_ALL=C git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null &&
@@ -204,16 +215,14 @@ fi
 #fi
 
 echo 'misc updates in background'
-has fc-cache && "$suexec" fc-cache -f >/dev/null || :
-has chwd && "$suexec" chwd -a &>/dev/null || :
-has update-desktop-database && "$suexec" update-desktop-database &>/dev/null || :
-has update-pciids && "$suexec" update-pciids &>/dev/null || :
-has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null || :
-has update-ccache-links && "$suexec" update-ccache-links >/dev/null || :
-has update-leap && LC_ALL=C update-leap &>/dev/null || :
+has fc-cache && "$suexec" fc-cache -f >/dev/null
+has update-desktop-database && "$suexec" update-desktop-database &>/dev/null
+has update-pciids && "$suexec" update-pciids &>/dev/null
+has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null
+has update-ccache-links && "$suexec" update-ccache-links >/dev/null
+has update-leap && LC_ALL=C update-leap &>/dev/null
 
 if has fwupdmgr; then
-  "$suexec" fwupdmgr refresh 
   "$suexec" fwupdmgr refresh -y
   "$suexec" fwupdtool update
 fi
@@ -221,26 +230,26 @@ fi
 echo "🔍 Checking for systemd-boot"
 if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q &>/dev/null; then
   echo "✅ systemd-boot detected, updating"
-  "$suexec" bootctl update -q &>/dev/null; "$suexec" bootctl cleanup -q &>/dev/null || :
+  "$suexec" bootctl update -q &>/dev/null; "$suexec" bootctl cleanup -q &>/dev/null
 else
   echo "❌ systemd-boot not present, skipping"
 fi
 if has sdboot-manage; then
   echo 'update sdboot-manage...'
-  "$suexec" sdboot-manage remove 2>/dev/null || :
-  "$suexec" sdboot-manage update &>/dev/null || :
+  "$suexec" sdboot-manage remove 2>/dev/null
+  "$suexec" sdboot-manage update &>/dev/null
 fi
 if has update-initramfs; then
-  "$suexec" update-initramfs || :
+  "$suexec" update-initramfs
 else
   if has limine-mkinitcpio; then
-    "$suexec" limine-mkinitcpio|| :
+    "$suexec" limine-mkinitcpio
   elif has mkinitcpio; then
-    "$suexec" mkinitcpio -P || :
+    "$suexec" mkinitcpio -P
   elif has "/usr/lib/booster/regenerate_images"; then
-    "$suexec" /usr/lib/booster/regenerate_images || :
+    "$suexec" /usr/lib/booster/regenerate_images
   elif has dracut-rebuild; then
-    "$suexec" dracut-rebuild || :
+    "$suexec" dracut-rebuild
   else
     echo -e "\e[31m The initramfs generator was not found, please update initramfs manually\e[0m"
   fi

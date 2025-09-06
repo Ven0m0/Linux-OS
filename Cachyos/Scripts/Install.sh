@@ -14,17 +14,14 @@ hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || retu
 #============ Safe optimal privilege tool ====================
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)" || { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
-export HOME="/home/${SUDO_USER:-$USER}"
+[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
+export HOME="/home/${SUDO_USER:-$USER}"; sync
 #============ Env ====================
 [[ -r /etc/makepkg.conf ]] && . "/etc/makepkg.conf"
 RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-CFLAGS="-march=native -mtune=native -O3 -pipe -fno-semantic-interposition -fdata-sections -ffunction-sections" CXXFLAGS="$CFLAGS"
-
-MAKEFLAGS="-j$(nproc --ignore=1)" NINJAFLAGS="$MAKEFLAGS"
+CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
 CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTUP_TOOLCHAIN=nightly RUSTC_BOOTSTRAP=1
 #=============================================================
-sync
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck'
 
 # sudo pacman -Rns openssh 
@@ -83,6 +80,11 @@ openssh-hpn-shim
 sshpass
 graphicsmagick
 fclones
+cpio
+bc
+flatpak
+fuse2
+appimagelauncher
 )
 
 echo -e "\nChecking installed packages..."
@@ -101,13 +103,12 @@ if [ ${#missing_pkgs[@]} -gt 0 ]; then
   echo "➜ Installing: ${missing_pkgs[*]}"
   while [ ${#missing_pkgs[@]} -gt 0 ]; do
       failed_pkgs=()
-
       # Try batch install
-      sudo pacman -S --noconfirm -q "${missing_pkgs[@]}" || {
+      sudo pacman -S --needed --noconfirm -q "${missing_pkgs[@]}" || {
           echo "Some packages failed to install."
           # Identify failed packages
           for pkg in "${missing_pkgs[@]}"; do
-              sudo pacman -S --noconfirm -q "$pkg" || failed_pkgs+=("$pkg")
+              sudo pacman -S --needed --noconfirm -q "$pkg" || failed_pkgs+=("$pkg")
           done
           # Remove failed packages from retry list
           missing_pkgs=($(echo "${missing_pkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}")))
@@ -119,8 +120,6 @@ if [ ${#missing_pkgs[@]} -gt 0 ]; then
 else
   echo "✔ All packages were already installed—nothing to do."
 fi
-
-sudo pacman -S cpio bc --needed -q --noconfirm
 
 aurpkgs=(
 cleanerml-git
@@ -148,57 +147,29 @@ kbuilder
 )
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do
-    failed_pkgs=()
-    # Try installing all remaining packages
-    paru -S "${aurpkgs[@]}" -q --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || {
-        echo "Some packages failed to install."
+    failed_pkgs=() # Try installing all remaining packages
+    paru -S "${aurpkgs[@]}" -q --needed --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || { echo "Some packages failed to install." \
         # Identify which package failed
-        for aur_pkg in "${aurpkgs[@]}"; do
-            paru -S "$aur_pkg" -q --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || failed_pkgs+=("$aur_pkg")
-        fi
+        for aur_pkg in "${aurpkgs[@]}"; do paru -S "$aur_pkg" -q --needed --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || failed_pkgs+=("$aur_pkg"); done; \
         # Remove failed packages from the list
-        aurpkgs=($(echo "${aurpkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}")))
-        
-        echo "Retrying without: ${failed_pkgs[*]}"
-    }
-
-    [ ${#failed_pkgs[@]} -eq 0 ] && break  # If no failures, exit loop
+        aurpkgs=($(echo "${aurpkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}"))); echo "Retrying without: ${failed_pkgs[*]}"; }
+    [ ${#failed_pkgs[@]} -eq 0 ] && { echo "AUR package installation complete."; break; }
 done
-
-echo "AUR package installation complete."
 
 # konsave
 # memavaild
 # precached
-sudo pacman -S flatpak --noconfirm --needed
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 flats=`awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs`
 flatpak install -y flathub ${flats}
 flatpak install -y flathub org.kde.audiotube
 
-# Appimages
-sudo pacman -S --needed --noconfirm fuse2 appimagelauncher
-
 # echo "Installing gaming applications"
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm || true
 
-if command -v rustup &>/dev/null; then
-
-uutils-coreutils
-sudo-rs
-curl-rustls
-librustls
-eza
-dust
-sd
-if ! command -v rustup; then
-  echo "Installing rust + components..."
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -y -q
-fi
-
 # Rust packages
-rustpkg='
+rustchain='
 rust-bindgen
 cbindgen
 cargo-c
@@ -218,6 +189,17 @@ eza
 dust
 sd
 '
+
+if ! command -v rustup; then
+  echo "Installing rust + components..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -y -q
+fi
+
+if command -v rustup &>/dev/null; then
+  
+else
+  echo "Installing rust + components..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -y -q
 
 echo "Installing Cargo crates"
 cargostall(

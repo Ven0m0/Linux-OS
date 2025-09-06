@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # list pacman packages sorted by their "removable size".
 #

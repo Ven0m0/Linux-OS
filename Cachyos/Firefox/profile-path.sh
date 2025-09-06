@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-PROFILE_DIR="${HOME}/.mozilla/firefox"
-ACTIVE_PROF=$(awk -F= '/^Default=/ {print $2}' "${PROFILE_DIR}/installs.ini")
-#ACTIVE_PROF=$(awk -F= ' /^\[Install/{f=1; next} /^\[/{f=0} f && /^Default=/{print $2; exit}' "${PROFILE_DIR}/profiles.ini")
-
-echo "${PROFILE_DIR}/${ACTIVE_PROFILE}"
-PROFILE_DIR="${HOME}/.mozilla/firefox"
-[[ -n $AVTIVE_PROF ]] && APROF_DIR="$(echo "${PROFILE_DIR}/${ACTIVE_PROFILE}")"
+foxdir(){
+  local PROFILE_DIR="${HOME}/.mozilla/firefox" ACTIVE_PROF ACTIVE_PROF_DIR
+  ACTIVE_PROF=$(awk -F= '/^\[.*\]/{f=0} /^\[Install/{f=1; next} f && /^Default=/{print $2; exit}' "${PROFILE_DIR}/installs.ini" 2>/dev/null)
+  [[ -z "$ACTIVE_PROF" ]] && { ACTIVE_PROF=$(awk -F= '/^\[.*\]/{f=0} /^\[Profile[0-9]+\]/{f=1} f && /^Default=1/ {found=1} f && /^Path=/{if(found){print $2; exit}}' "${PROFILE_DIR}/profiles.ini" 2>/dev/null); }
+  [[ -n "$ACTIVE_PROF" ]] && { ACTIVE_PROF_DIR="${PROFILE_DIR}/${ACTIVE_PROF}"; export ACTIVE_PROF_DIR; } || { echo "❌ Could not determine active Firefox profile." >&2; exit 1; }
+}
+FOXYDIR="$(foxdir)"

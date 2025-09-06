@@ -9,11 +9,11 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
-has(){ [[ -x $(command -v -- "$1") ]]; } # Check for command
-hasname(){ local x; x=$(type -P -- "$1" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
+has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
+hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
 #============ Safe optimal privilege tool ====================
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
-[[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas)" || { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
+[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
 export HOME="/home/${SUDO_USER:-$USER}"
 #============ Env ====================

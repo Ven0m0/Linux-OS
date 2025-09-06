@@ -132,4 +132,3 @@ printf '%b\n%b\n' "$OUT" "$DEF"
 
 export LANG="C.UTF-8"
 unset LC_ALL
-exit

@@ -17,7 +17,8 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 KERNEL="$(</proc/sys/kernel/osrelease|| uname -r)"
 UPT="$(uptime -p)"; UPT="${UPT#up }"
 # Processes
-PROCS=$(set -- /proc/[0-9]*; echo $#)
+#PROCS=$(set -- /proc/[0-9]*; echo $#)
+files=(/proc/[0-9]*); PROCS=${#files[@]}
 # Packages
 if command -v pacman >/dev/null 2>&1; then
   PKG="$(pacman -Qq | wc -l)"; PKG="${PKG} (Pacman)"
@@ -67,8 +68,6 @@ GPU=$(
 )
 # Date and WM
 DATE="$(printf '%(%d/%m/%y-%R)T\n' -1)"
-WMNAME="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}} ${DESKTOP_SESSION:-} ${XDG_SESSION_TYPE:-$WAYLAND_DISPLAY}"
-
 WMNAME="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}} ${DESKTOP_SESSION:-} ${XDG_SESSION_TYPE:-${WAYLAND_DISPLAY%-*}}"
 
 #──────────────────── Memory ────────────────────
@@ -92,7 +91,7 @@ labelw=14; OUT=''
 append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="${_line}"$'\n'; }
 #append(){ printf -v _line '%-*s %s' "$labelw" "$1:" "$2"; OUT+="$_line"$'\n'; }
 #──────────── Layout ─────────────
-append "User"       "$USER"@"$HOSTNAME"
+append "User"       "${USER}@${HOSTNAME}"
 OUT+="────────────────────────────────────────────"$'\n'
 append "Date"       "${DATE:-}"
 append "OS"         "${OS:-}"
@@ -100,7 +99,7 @@ append "Kernel"     "${KERNEL:-}"
 append "Uptime"     "${UPT:-}"
 append "Packages"   "${PACKAGE:-}"
 append "Processes"  "${PROCS:-}"
-append "Shell"      "$SHELLX"
+append "Shell"      "${SHELLX:-}"
 append "Editor"     "${EDITORX:-}"
 append "Terminal"   "${TERM:-}"
 append "WM"         "${WMNAME:-}"

@@ -19,9 +19,14 @@ https://mrpicklepinosaur.github.io/shrs
 https://github.com/klaver/sysctl/blob/master/sysctl.conf
 https://github.com/rpotter12/dotfiles/blob/master/.bashrc
 ```
+
+**Replace -O1/-O2 with -O3**
+```bash
+CFLAGS="${CFLAGS/-O1/-O3}" CFLAGS="${CFLAGS/-O2/-O3}"; export CFLAGS="$(printf '%s\n' "$CFLAGS" | xargs)"
+CFLAGS="${CXXFLAGS/-O1/-O3}" CFLAGS="${CXXFLAGS/-O2/-O3}"; export CXXFLAGS="$(printf '%s\n' "$CXXFLAGS" | xargs)"
+LDFLAGS="${LDFLAGS/-O1/-O3}" LDFLAGS="${LDFLAGS/-O2/-O3}"; export LDFLAGS="$(printf '%s\n' "$LDFLAGS" | xargs)"
 ```
-NO_COLOR=1
-```
+
 ```markdown
 https://shields.io
 https://simpleicons.org

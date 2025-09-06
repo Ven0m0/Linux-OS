@@ -20,7 +20,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SHELLCHECK_OPTS: -e SC1079,SC1078,SC1073,SC1072,SC1083,SC1090,SC1091,SC2016,SC2034,SC2312,SC2236,SC2154,SC2155,SC2250 # exclude some shellcheck warnings.
-          SHFMT_OPTS: -ln=bash -kp -bn -i 2 --apply-ignore -d # arguments to shfmt.
+          SHFMT_OPTS: -ln=bash -bn -i 2 --apply-ignore -d # arguments to shfmt.
         with:
           sh_checker_comment: true
           sh_checker_exclude: "^Cachyos/Scripts/shell-tools/template.sh"

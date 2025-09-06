@@ -1,8 +1,32 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C.UTF-8
-sudo -v
+LC_ALL=C.UTF-8 LANG=C.UTF-8
+WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
+builtin cd -- "$WORKDIR" || exit 1
+#============ Color & Effects ============
+BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
+MGN=$'\e[35m' PNK=$'\e[38;5;218m'
+DEF=$'\e[0m' BLD=$'\e[1m'
+#============ Helpers ====================
+has(){ [[ -x $(command -v -- "$1") ]]; } # Check for command
+hasname(){ local x=$(type -P -- "$1" 2>/dev/null) && printf '%s\n' "${x##*/}" 2>/dev/null; }
+#============ Safe optimal privilege tool ====================
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas || hasname run0)"
+[[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found." >&2; exit 1; }
+[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
+export HOME="/home/${SUDO_USER:-$USER}"
+#============ Env ====================
+[[ -r /etc/makepkg.conf ]] && . "/etc/makepkg.conf"
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
+CFLAGS="-march=native -mtune=native -O3 -pipe -fno-semantic-interposition -fdata-sections -ffunction-sections" CXXFLAGS="$CFLAGS"
 
-printf '\e]1;%s\a\e]2;%s\a' "Install + Setup" "Install + Setup" # Title
+MAKEFLAGS="-j$(nproc --ignore=1)" NINJAFLAGS="$MAKEFLAGS"
+CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTUP_TOOLCHAIN=nightly RUSTC_BOOTSTRAP=1
+#=============================================================
+sync
+[[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck'
+
 # sudo pacman -Rns openssh 
 packages=(
 topgrade
@@ -27,7 +51,6 @@ openmp
 polly
 mold
 autofdo-bin
-patchelf
 patchutils
 vulkan-mesa-layers
 plasma-wayland-protocols
@@ -43,6 +66,7 @@ bleachbit-git
 irqbalance
 xorg-xhost
 libappindicator-gtk3
+libdbusmenu-glib
 appmenu-gtk-module
 xdg-desktop-portal 
 modprobed-db
@@ -52,22 +76,6 @@ openrgb
 dropbear
 optiimage
 multipath-tools
-libretls
-uutils-coreutils
-sudo-rs
-curl-rustls
-librustls
-eza
-dust
-sd
-rust-bindgen
-cbindgen
-cargo-c
-cargo-cache
-cargo-machete
-cargo-pgo
-cargo-update
-cargo-llvm-cov
 preload
 wolfssl
 openssh-hpn
@@ -91,7 +99,6 @@ done
 # Proceed with installation only if there are missing packages
 if [ ${#missing_pkgs[@]} -gt 0 ]; then
   echo "➜ Installing: ${missing_pkgs[*]}"
-  
   while [ ${#missing_pkgs[@]} -gt 0 ]; do
       failed_pkgs=()
 
@@ -108,13 +115,12 @@ if [ ${#missing_pkgs[@]} -gt 0 ]; then
       }
       [ ${#failed_pkgs[@]} -eq 0 ] && break  # Stop if all succeed
   done
-
   echo "✔ All packages installed (or skipped if already present)."
 else
   echo "✔ All packages were already installed—nothing to do."
 fi
 
-sudo pacman -S cpio bc --needed -q --noconfirm || true
+sudo pacman -S cpio bc --needed -q --noconfirm
 
 aurpkgs=(
 cleanerml-git
@@ -130,7 +136,6 @@ cleanlib32
 optipng-parallel
 dxvk-gplasync-bin
 pay-respects
-rust-parallel
 unzrip-git
 adbr-git
 luxtorpeda
@@ -139,7 +144,6 @@ intel-ucode-shrink-hook
 xdg-ninja
 cylon
 scaramanga
-dotter-rs
 kbuilder
 )
 
@@ -166,20 +170,54 @@ echo "AUR package installation complete."
 # konsave
 # memavaild
 # precached
-flatpak install flathub org.kde.audiotube
-sudo pacman -S flatpak --noconfirm
+sudo pacman -S flatpak --noconfirm --needed
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
 flats=`awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs`
-flatpak install --user -y flathub ${flats}
+flatpak install -y flathub ${flats}
+flatpak install -y flathub org.kde.audiotube
+
+# Appimages
+sudo pacman -S --needed --noconfirm fuse2 appimagelauncher
 
 # echo "Installing gaming applications"
 # sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm || true
 
+if command -v rustup &>/dev/null; then
+
+uutils-coreutils
+sudo-rs
+curl-rustls
+librustls
+eza
+dust
+sd
 if ! command -v rustup; then
   echo "Installing rust + components..."
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -y -q
 fi
+
+# Rust packages
+rustpkg='
+rust-bindgen
+cbindgen
+cargo-c
+cargo-cache
+cargo-machete
+cargo-pgo
+cargo-update
+cargo-llvm-cov
+# aurs
+dotter-rs
+rust-parallel
+uutils-coreutils
+sudo-rs
+curl-rustls
+librustls
+eza
+dust
+sd
+'
 
 echo "Installing Cargo crates"
 cargostall(

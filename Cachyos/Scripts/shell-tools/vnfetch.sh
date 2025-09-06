@@ -31,8 +31,14 @@ command -v cargo >/dev/null 2>&1 && { PKG2=$(cargo install --list | grep -c '^[^
 command -v flatpak >/dev/null 2>&1 && { PKG3=$(flatpak list | wc -l); [[ ${PKG3:-0} -gt 0 ]] && PKG3="${PKG3} (Flatpak)"; }
 PACKAGE="${PKG:-} ${PKG2:-} ${PKG3:-}"
 # Other
-command -v powerprofilesctl >/dev/null 2>&1 && PWPLAN="$(powerprofilesctl get 2>/dev/null)"
-#PWPLAN="$(powerprofilesctl get 2>/dev/null)"
+PWPLAN="$(sort -u --parallel=16 /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)"
+[[ -z "$PWPLAN" && command -v powerprofilesctl &>/dev/null ]] && PWPLAN="$(powerprofilesctl get 2>/dev/null)"
+
+  PWPLAN="$(sort -u /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)"
+else
+  [[ -z ${PWPLAN:-} && command -v powerprofilesctl &>/dev/null ]] && PWPLAN="$(powerprofilesctl get 2>/dev/null)"
+fi
+
 SHELLX="${SHELL##*/}"
 EDITORX="${EDITOR:-${VISUAL:-}}"
 # Local IP

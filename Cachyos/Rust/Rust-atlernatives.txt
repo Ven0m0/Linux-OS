@@ -1,8 +1,7 @@
 cargo install discordcat
+cargo install r-hyprconfig
 
-cargo install soar-cli
-
-
+# Coreutils
 https://github.com/uutils/coreutils
 https://github.com/uutils/findutils
 https://github.com/uutils/diffutils
@@ -32,7 +31,7 @@ cargo install cargo-duplicated-deps
 https://crates.io/crates/cbench
 https://crates.io/crates/cargo-gg cargo install cargo-gg
 https://crates.io/crates/cargo-seek cargo install cargo-seek
-
+cargo install soar-cli
 # TCP tunnel
 https://crates.io/crates/bore-cli cargo install bore-cli
 
@@ -130,6 +129,7 @@ https://crates.io/crates/curlux cargo install curlux
 https://crates.io/crates/curlio cargo install curlio
 # wget
 cargo install binkget
+cargo install kelpsget
 
 cargo install dns-bench
 

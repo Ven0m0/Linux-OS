@@ -1,5 +1,7 @@
 cargo install discordcat
 cargo install r-hyprconfig
+cargo install redlib
+cargo install asciisavers
 
 # Coreutils
 https://github.com/uutils/coreutils

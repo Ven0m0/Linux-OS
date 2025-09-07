@@ -492,10 +492,10 @@ echo "----- SUMMARY -----" | tee -a "$LOGFILE"
 total_files=${#FILES[@]}
 optimized_count=$(grep -c ' \| OK \| ' "$LOGFILE" || true)
 # Count lines that show OK entries
-ok_count=$(grep -E " \| OK \|" "$LOGFILE" | wc -l || true)
-nochange_count=$(grep -E " \| NO_CHANGE \|" "$LOGFILE" | wc -l || true)
-skipped_count=$(grep -E " \| SKIPPED_OR_WORSE \|" "$LOGFILE" | wc -l || true)
-errors_count=$(grep -E "ERROR" "$LOGFILE" | wc -l || true)
+ok_count=$(grep -cE " \| OK \|" "$LOGFILE" || true)
+nochange_count=$(grep -cE " \| NO_CHANGE \|" "$LOGFILE" || true)
+skipped_count=$(grep -cE " \| SKIPPED_OR_WORSE \|" "$LOGFILE" || true)
+errors_count=$(grep -cE "ERROR" "$LOGFILE" || true)
 
 echo "Total files considered: $total_files" | tee -a "$LOGFILE"
 echo "Successful replacements (smaller and replaced): $ok_count" | tee -a "$LOGFILE"

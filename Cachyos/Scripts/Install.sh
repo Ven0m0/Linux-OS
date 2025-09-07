@@ -199,6 +199,11 @@ dust
 sd
 '
 
+url="https://raw.githubusercontent.com/CodesOfRishi/navita/main/navita.sh"
+dest="${HOME}/.config/bash"
+mkdir -p "$dest"
+curl -sSfL --create-dirs -o "$dest/$(basename "$url")" "$url" && . "${dest}/$(basename "${url}")"
+
 if ! command -v rustup; then
   echo "Installing rust + components..."
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -y -q

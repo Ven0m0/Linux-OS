@@ -128,6 +128,8 @@ cargo install xh https://crates.io/crates/xh
 cargo install ruget
 https://crates.io/crates/curlux cargo install curlux
 https://crates.io/crates/curlio cargo install curlio
+# wget
+cargo install binkget
 
 cargo install dns-bench
 

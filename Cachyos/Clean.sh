@@ -25,11 +25,11 @@ mapfile -t banner_lines <<< "$banner"
 lines=${#banner_lines[@]}
 # Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
 flag_colors=(
-  $LBLU  # Light Blue
-  $PNK   # Pink
-  $BWHT  # White
-  $PNK   # Pink
-  $LBLU  # Light Blue
+  "$LBLU"   # Light Blue
+  "$PNK"    # Pink
+  "$BWHT"   # White
+  "$PNK"    # Pink
+  "$LBLU"   # Light Blue
 )
 segments=${#flag_colors[@]}
 # If banner is trivially short, just print without dividing by (lines-1)
@@ -59,7 +59,7 @@ dhclient -r
 "$suexec" resolvectl flush-caches >/dev/null
 
 # Pacman cleanup
-"$suexec" pacman -Rns $(pacman -Qdtq 2>/dev/null) --noconfirm -q &>/dev/null || :
+"$suexec" pacman -Rns "$(pacman -Qdtq 2>/dev/null)" --noconfirm -q &>/dev/null || :
 "$suexec" pacman -Scc --noconfirm -q
 "$suexec" paccache -rk0 -q
 uv cache prune -q; uv cache clean -q
@@ -131,7 +131,7 @@ rm -rf --preserve-root -- "${HOME}/.var/app/com.valvesoftware.Steam/data/Steam/a
 echo '--- Disable Python history for future interactive commands'
 history_file="${HOME}/.python_history"
 [[ ! -f $history_file ]] && { touch "$history_file" echo "Created $history_file."; }
-"$suexec" chattr +i "$(realpath $history_file)"
+"$suexec" chattr +i "$(realpath "$history_file")"
 
 # Firefox
 rm -rf --preserve-root -- "${HOME}/.mozilla/firefox/*/bookmarkbackups" >/dev/null

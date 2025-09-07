@@ -28,7 +28,7 @@ lines=${#banner_lines[@]}
 flag_colors=(
   "$LBLU"   # Light Blue
   "$PNK"    # Pink
-  "$BWHT "  # White
+  "$BWHT"  # White
   "$PNK"    # Pink
   "$LBLU"   # Light Blue
 )

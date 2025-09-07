@@ -103,7 +103,10 @@ GPU=$(
 
 # Date and WM
 DATE="$(printf '%(%d/%m/%y-%R)T\n' -1)"
-WMNAME="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}} ${DESKTOP_SESSION:-} ${XDG_SESSION_TYPE:-${WAYLAND_DISPLAY%-*}}"
+
+COMPOS="${XDG_SESSION_TYPE:-${WAYLAND_DISPLAY%-*}}"
+COMPOS="${COMPOS:="$(loginctl show-session $XDG_SESSION_ID -p Type --value)"}"
+WMNAME="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}} ${DESKTOP_SESSION:-} ${COMPOS}"
 
 #──────────────────── Memory ────────────────────
 read -r MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print t+0,a+0}' /proc/meminfo)

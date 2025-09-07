@@ -1,4 +1,4 @@
-
+cargo install discordcat
 
 cargo install soar-cli
 

@@ -55,7 +55,7 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #=============================================================
 if has apt-fast; then
-  "$suexec" apt-fast update -yf --allow-releaseinfo-change --allow-unauthenticated --fix-missing
+  "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-missing
   #"$suexec" apt-fast upgrade -yfq --allow-unauthenticated --fix-missing --no-install-recommends
   "$suexec" apt-fast dist-upgrade -yfq --no-install-recommends --allow-unauthenticated --fix-missing
   "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq

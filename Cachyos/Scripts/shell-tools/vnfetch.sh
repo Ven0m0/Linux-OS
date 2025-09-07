@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # vnfetch (ven0m0-fetch), for Arch/Debian based distros
+# Heavily overoptimized bash fetch
 # Credit:
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch

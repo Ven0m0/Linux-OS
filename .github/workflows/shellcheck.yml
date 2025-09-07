@@ -1,14 +1,32 @@
-name: "Code lint"
-permissions: {}
+name: Reviewdog
 on: [push, pull_request, workflow_dispatch]
-  
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
 jobs:
-  shellchecker:
-    name: "ShellChecker"
+  shellcheck:
+    name: runner / shellcheck
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+
     steps:
-      - name: "Checkout sources"
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: "ShellChecker"
-        uses: a5k-actions/shellchecker@v0
+      - name: Run ShellCheck via Reviewdog
+        uses: reviewdog/action-shellcheck@v1.30.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          path: "."
+          pattern: |
+            "*.sh"
+            ".bashrc"
+            ".bash_profile"
+            ".bash_login"
+            ".profile"
+            ".bash_aliases"
+            ".zshrc"
+          exclude: ".git/*"
+          check_all_files_with_shebangs: "true"

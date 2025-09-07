@@ -1,0 +1,6 @@
+- repo: https://github.com/scop/pre-commit-shfmt
+  rev: v3.12.0-2
+  hooks:
+    - id: shfmt
+      args: [ -i, "2", -kp, -bn ]
+      #args: [ -i, "2", -ci, -sr, -kp ]

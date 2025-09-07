@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # import common.sh
-s=${BASH_SOURCE:-${(%):-%x}} d=$(cd "$(dirname "$s")" && pwd) && source $d/common.sh
+#s=${BASH_SOURCE:-${(%):-%x}} d=$(cd "$(dirname "$s")" && pwd) && source $d/common.sh
 
 
 # Script to process shell files, filter comments, and write processed output
@@ -71,7 +71,7 @@ minify_shell_code() {
     # now apply some removal on multi line objects, like multi-line comments
 
     # 1. remove multiline comments using :' <line><line<line>...... '
-    sed -i '/^:[[:space:]]*'\''/,/^'\''/d' $output_file
+    sed -i '/^:[[:space:]]*'\''/,/^'\''/d' "$output_file"
 }
 
 # Process files and collect content based on allowed extensions
@@ -81,22 +81,18 @@ concat_files_content() {
     local whitelist=("${!3}")
     local whitelist_regex="$4"
     local output_file="$5"
-
     : > "$output_file"  # Clear output file
-
     for dirpath in "$script_base_path"/*/; do
 		dirpath=$(echo $dirpath | sed 's#/*$##g') # remove trailing '/'
         local dir_name=$(basename "$dirpath")
 
         # Check if directory is whitelisted (either exact match or matches regex)
         if [[ "$dir_name" == *"__"* ]] || \
-           [[ ! -z "$whitelist" && ! " ${whitelist[@]} " =~ " ${dir_name} " ]] || \
-           [[ ! -z "$whitelist_regex" && ! "$dirpath" =~ $whitelist_regex ]]; then
+           [[ ! -z "$whitelist" && !  ${whitelist[@]}  =~  ${dir_name}  ]] || \
+           [[ ! -z "$whitelist_regex" && ! $dirpath =~ $whitelist_regex ]]; then
             continue
         fi
-
 		find_exclude_params=""
-
 		fc_log_info "processing files in folder '${dir_name}'"
 
         if test -s "${dirpath}/__EXCLUDE_FILES"; then

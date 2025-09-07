@@ -26,11 +26,11 @@ mapfile -t banner_lines <<< "$banner"
 lines=${#banner_lines[@]}
 # Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
 flag_colors=(
-  $LBLU  # Light Blue
-  $PNK   # Pink
-  $BWHT  # White
-  $PNK   # Pink
-  $LBLU  # Light Blue
+  "$LBLU"   # Light Blue
+  "$PNK"    # Pink
+  "$BWHT "  # White
+  "$PNK"    # Pink
+  "$LBLU"   # Light Blue
 )
 segments=${#flag_colors[@]}
 # If banner is trivially short, just print without dividing by (lines-1)
@@ -49,7 +49,7 @@ fi
 echo "Meow (> ^ <)"
 #============ Safe optimal privilege tool ====================
 [[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas || suexec="su -c" )"
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
@@ -70,11 +70,11 @@ else
   "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them
-"$suexec" dpkg --configure -a >/dev/null
-if [ $? -ne 0 ]; then
-    xprintf "There were issues configuring packages."
+
+if ! "$suexec" dpkg --configure -a >/dev/null ; then
+    printf '%s\n' "There were issues configuring packages."
 else
-    xprintf "No broken packages found or fixed successfully."
+    printf '%s\n' "No broken packages found or fixed successfully."
 fi
 "$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
 has pihole && "$suexec" pihole -up

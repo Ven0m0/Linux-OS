@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
       - name: GitHub Branch Cleaner
         uses: mmorenoregalado/action-branches-cleaner@v2.0.3
         with:

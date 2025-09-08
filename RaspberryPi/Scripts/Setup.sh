@@ -59,9 +59,8 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 
 # Zoxide
 curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
-
 # Navi
-bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install)
+bash <(curl -sSfL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install)
 
 # Ripgrep-all
 # https://github.com/phiresky/ripgrep-all
@@ -69,13 +68,13 @@ bash <(curl -sL https://raw.githubusercontent.com/denisidoro/navi/master/scripts
 sudo apt-get install -y fd-find && ln -sf "$(command -v fdfind)" "~/.local/bin/fd"
 
 # Eza
-sudo apt update && sudo apt install -y gpg
+sudo apt update && apt-get install -y gpg
 sudo mkdir -p /etc/apt/keyrings
 wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
 echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
 sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-sudo apt update
-sudo apt install -y eza
+apt-get update
+apt-get install -y eza
 
 ## Fix timeout for tty
 # Apply immediately
@@ -91,7 +90,7 @@ sudo sysctl --system
 
 python3 -m pip install --upgrade pip
 pip cache purge
-sudo apt remove lib*-doc
+apt-get remove lib*-doc
 flatpak uninstall --unused --delete-data
 docker system prune --all --volumes
 sudo apt remove texlive-*-doc
@@ -104,13 +103,15 @@ pip install --upgrade pip
 # YT-DLP
 sudo add-apt-repository ppa:tomtomtom/yt-dlp    # Add ppa repo to apt
 sudo apt update                                 # Update package list
-sudo apt install yt-dlp                         # Install yt-dlp
+apt-get install yt-dlp                         # Install yt-dlp
 
 # DISABLE THESE SERVICES ON OLD SYSTEMS
 sudo apt remove whoopsie # Error Repoting
 sudo systemctl mask packagekit.service # gnome-software
 sudo systemctl mask geoclue.service # CAUTION: Disable if you don't use Night Light or location services
-sudo apt remove gnome-online-accounts # Gnome online accounts plugins
+apt-get remove gnome-online-accounts # Gnome online accounts plugins
+
+sudo apt-get install rustup
 
 APPS=(
 btrfs-progs

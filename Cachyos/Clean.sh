@@ -59,18 +59,21 @@ dhclient -r
 "$suexec" resolvectl flush-caches >/dev/null
 
 # Pacman cleanup
-"$suexec" pacman -Rns "$(pacman -Qdtq 2>/dev/null)" --noconfirm -q &>/dev/null || :
-"$suexec" pacman -Scc --noconfirm -q
+"$suexec" pacman -Rnsq "$(pacman -Qdtq 2>/dev/null)" --noconfirm >/dev/null
+"$suexec" pacman -Sccq --noconfirm
 "$suexec" paccache -rk0 -q
 uv cache prune -q; uv cache clean -q
 # Cargo
 if command -v cargo-cache &>/dev/null; then
-  cargo cache -efg || :
-  cargo cache -efg trim --limit 1B || :
-  cargo cache -efg clean-unref || :
+  cargo cache -efg
+  cargo cache -efg trim --limit 1B
+  cargo cache -efg clean-unref
 fi
 
 # Clear cache
+"$suexec" find -O3 ~/.cache -type f -mtime +1 -print -delete >/dev/null
+"$suexec" find -O3 ~/.cache -type d -empty -print -delete >/dev/null
+"$suexec" find -O3 ~/.cache -type d -empty -print -delete >/dev/null
 "$suexec" systemd-tmpfiles --clean >/dev/null
 "$suexec" rm -rf --preserve-root -- "/var/cache/"*
 "$suexec" rm -rf --preserve-root -- "/tmp/"*

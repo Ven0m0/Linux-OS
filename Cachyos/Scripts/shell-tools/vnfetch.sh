@@ -5,8 +5,8 @@
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
 #──────────────────── Init ────────────────────
-export LC_ALL=C LANG=C
 l1="$LANG" PKG= PKG2= PKG3= GLOBALIP= WEATHER=
+export LC_ALL=C LANG=C
 #──────────────────── Environment ────────────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -20,81 +20,86 @@ userhost="$username@${hostname:-$(uname -n)}"
 . "/etc/os-release"
 OS="${NAME:-${PRETTY_NAME:-$(uname -o)}}"
 KERNEL="$(</proc/sys/kernel/osrelease || uname -r)"
-read -r rawSeconds _ </proc/uptime
-seconds="${rawSeconds%.*}"
-((days=seconds/86400)) && parts+=("$days days")
-((hours=seconds%86400/3600)) && parts+=("$hours hours")
-((minutes=seconds%3600/60)) && parts+=("$minutes minutes")
-uptime="${parts[*]}"
-UPT="${uptime:-$(uptime -p)}"
-
+# Uptime
+read -r rawSeconds _ </proc/uptime 
+seconds=${rawSeconds%.*} uptime=""
+((days=seconds/86400)) && uptime+="$days d "
+((hours=seconds%86400/3600)) && uptime+="$hours h "
+((minutes=seconds%3600/60)) && uptime+="$minutes m"
+UPT=${uptime:-$(uptime -p)}
 # Processes
 shopt -s nullglob
-files=(/proc/[0-9]*)
-PROCS=${#files[@]}
+PROCS=(/proc/[0-9]*) PROCS=${#PROCS[@]}
 shopt -u nullglob
 # Packages
+PKG= PKG2= PKG3=
 if command -v pacman &>/dev/null; then
-  PKG="$(pacman -Qq | wc -l)"; PKG="${PKG} (Pacman)"
+  mapfile -t arr < <(pacman -Qq)
+  PKG="${#arr[@]} (Pacman)"
 elif command -v dpkg &>/dev/null; then
-  PKG="$(dpkg --get-selections | wc -l)"; PKG="${PKG} (Apt)"
+  mapfile -t arr < <(dpkg --get-selections)
+  PKG="${#arr[@]} (Apt)"
 elif command -v apt &>/dev/null; then
-  PKG="$(( $(apt list --installed | wc -l) - 1 ))"; PKG="${PKG} (Apt)"
+  mapfile -t arr < <(apt list --installed)
+  PKG="$(( ${#arr[@]} - 1 )) (Apt)"
 fi
 command -v cargo &>/dev/null && {
-  PKG2=$(cargo install --list | grep -c '^[^[:space:]].*:')
-  [[ ${PKG2:-0} -gt 0 ]] && PKG2="${PKG2} (Cargo)"
+  mapfile -t arr < <(cargo install --list | grep -E '^[^[:space:]].*:')
+  (( ${#arr[@]} > 0 )) && PKG2="${#arr[@]} (Cargo)"
 }
 command -v flatpak &>/dev/null && {
-  PKG3=$(flatpak list | wc -l)
-  [[ ${PKG3:-0} -gt 0 ]] && PKG3="${PKG3} (Flatpak)"
+  mapfile -t arr < <(flatpak list)
+  (( ${#arr[@]} > 0 )) && PKG3="${#arr[@]} (Flatpak)"
 }
 PACKAGE="${PKG:-} ${PKG2:-} ${PKG3:-}"
 # Power plan
 if [[ -r /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]]; then
-  PWPLAN="$(sort -u --parallel=16 /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)"
-else
-  if command -v powerprofilesctl &>/dev/null; then
-    PWPLAN="$(powerprofilesctl get 2>/dev/null)"
-  fi
+  PWPLAN="$(sort -u --parallel=$(nproc) /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)"
+elif command -v powerprofilesctl &>/dev/null; then
+  PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 fi
+
 SHELLX="${SHELL##*/}"
 EDITORX="${EDITOR:-${VISUAL:-}}"
 # Local IP
 LOCALIP=$(ip -4 route get 1 | { read -r _ _ _ _ _ _ ip _; echo "${ip:-}"; })
-# Curl setup
+# Public IP & Weather (backgrounded)
 touch -- "${HOME}/.curl-hsts"
-# Public IP
-if command -v dig &>/dev/null; then
-  IFS= read -r GLOBALIP < <(dig +short TXT ch whoami.cloudflare @1.1.1.1)
-  GLOBALIP="${GLOBALIP//\"/}"
-else
-  IFS= read -r GLOBALIP < <(curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" ipinfo.io/ip || \
-                            curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" ipecho.net/plain)
-fi
-# Weather
-IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" 'wttr.in/Bielefeld?format=3')
+tmp_ip=$(mktemp)
+tmp_weather=$(mktemp)
+{
+  if command -v dig &>/dev/null; then
+    dig +short TXT ch whoami.cloudflare @1.1.1.1 | tr -d '"' > "$tmp_ip"
+  else
+    { curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" ipinfo.io/ip \
+      || curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" ipecho.net/plain; } > "$tmp_ip"
+  fi
+} &
+
+{ curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" 'wttr.in/Bielefeld?format=3' > "$tmp_weather"; } &
+wait
+GLOBALIP=$(<"$tmp_ip")
+WEATHER=$(<"$tmp_weather")
+rm -f "$tmp_ip" "$tmp_weather"
+
 # CPU/GPU
 CPU="$(awk -O -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
-GPU=$(
-  if command -v nvidia-smi &>/dev/null; then
-    nvidia-smi --query-gpu=name --format=csv,noheader | head -n1
-  else
-    lspci 2>/dev/null | awk -O -F: '/VGA|3D/ && !/Integrated/ {
-      name = $3
-      if (match(name, /\[(GeForce|Quadro|Titan|Radeon|RX|Vega)[^]]*\]/)) {
-        prod = substr(name, RSTART+1, RLENGTH-2)
-      } else if (match(name, /(GeForce|Quadro|Titan|Radeon|RX|Vega)[^[(]*/)) {
-        prod = substr(name, RSTART, RLENGTH)
-      } else {
-        prod = name
-      }
-      gsub(/^[ \t]+|[ \t]+$/, "", prod)
-      print prod
-      exit
-    }'
-  fi
-)
+if command -v nvidia-smi &>/dev/null; then
+  GPU=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n1)
+else
+  GPU=$(awk -F: '/VGA|3D/ && !/Integrated/ {
+      name=$3
+      if(match(name, /\[(GeForce|Quadro|Titan|Radeon|RX|Vega)[^]]*\]/))
+        prod=substr(name,RSTART+1,RLENGTH-2)
+      else if(match(name, /(GeForce|Quadro|Titan|Radeon|RX|Vega)[^[(]*/))
+        prod=substr(name,RSTART,RLENGTH)
+      else
+        prod=name
+      gsub(/^[ \t]+|[ \t]+$/,"",prod)
+      print prod; exit
+    }' <(lspci 2>/dev/null))
+fi
+
 # Date and WM
 DATE="$(printf '%(%d/%m/%y-%R)T\n' -1)"
 COMPOS="${XDG_SESSION_TYPE:-${WAYLAND_DISPLAY%-*}}"
@@ -107,14 +112,14 @@ MemUsed="$((MemTotal - MemAvailable))"
 MemPct="$(( MemTotal > 0 ? (MemUsed*100 + MemTotal/2)/MemTotal : 0 ))"
 MemUsedGiB="$(awk -O -v m="$MemUsed" 'BEGIN{printf "%.2f", m/1048576}')"
 MemTotalGiB="$(awk -O -v m="$MemTotal" 'BEGIN{printf "%.2f", m/1048576}')"
-(( MemPct >= 75 )) && mem_col=$'\e[31m' || mem_col=$'\e[32m'
+(( MemPct >= 75 )) && mem_col="$RED" || mem_col="$GRN"
 MEMVAL="${MemUsedGiB} / ${MemTotalGiB} GiB (${mem_col}${MemPct}%${DEF})"
 #──────────────────── Disk ────────────────────
 read -r _ _ disk_used disk_avail disk_used_pct _ < <(df -Pkh / 2>/dev/null | tail -1)
 disk_pct_num=${disk_used_pct%\%}; disk_pct_num=${disk_pct_num:-0}
-(( disk_pct_num >= 75 )) && disk_col=$'\e[31m' || disk_col=$'\e[32m'
-fstype=$(findmnt -rn -o FSTYPE / 2>/dev/null)
-DISKVAL="${disk_used:-N/A} / ${disk_avail:-N/A} (${disk_col}${disk_pct_num}%${DEF}) - ${fstype:-unknown}"
+(( disk_pct_num>=75 )) && disk_col="$RED" || disk_col="$GRN"
+fstype=$(findmnt -rn -o FSTYPE /)
+DISKVAL="${disk_used:-} / ${disk_avail:-} (${disk_col}${disk_pct_num}%${DEF}) - ${fstype:-unknown}"
 #──────────── Print ─────────────
 labelw=14 OUT=''
 append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="${_line}"$'\n'; }
@@ -131,7 +136,7 @@ append "Shell"      "${SHELLX:-}"
 append "Editor"     "${EDITORX:-}"
 append "Terminal"   "${TERM:-}"
 append "WM"         "${WMNAME:-}"
-append "Lang"       "${l1:-}"
+append "Lang"       "${l1:-$LANG}"
 append "CPU"        "${CPU:-}"
 append "GPU"        "${GPU:-}"
 append "Memory"     "$MEMVAL"

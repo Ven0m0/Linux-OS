@@ -82,9 +82,19 @@ alias docker-clean=' \
   docker network prune -f ; \
   docker volume prune -f '
 
+apacheconfig(){
+  if [[ -f /etc/httpd/conf/httpd.conf ]]; then
+    "${EDITOR:-nano}" /etc/httpd/conf/httpd.conf
+  elif [[ -f /etc/apache2/apache2.conf ]]; then
+    "${EDITOR:-nano}" /etc/apache2/apache2.conf
+  else
+    printf "Error: Apache config file could not be found.\nSearching for possible locations:\n"
+    sudo updatedb && locate httpd.conf && locate apache2.conf
+fi
+}
+
 # poweroff & reboot
 alias reboot='sudo reboot'
-alias rbt='reboot'
 alias poweroff='sudo poweroff'
 #──────────── Aliases 2 / Functions ────────────
 sel(){

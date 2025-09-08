@@ -80,12 +80,12 @@ fi
 IFS= read -r WEATHER < <(curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" 'wttr.in/Bielefeld?format=3')
 
 # CPU/GPU
-CPU="$(awk -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
+CPU="$(awk -O -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
 GPU=$(
   if command -v nvidia-smi &>/dev/null; then
     nvidia-smi --query-gpu=name --format=csv,noheader | head -n1
   else
-    lspci 2>/dev/null | awk -F: '/VGA|3D/ && !/Integrated/ {
+    lspci 2>/dev/null | awk -O -F: '/VGA|3D/ && !/Integrated/ {
       name = $3
       if (match(name, /\[(GeForce|Quadro|Titan|Radeon|RX|Vega)[^]]*\]/)) {
         prod = substr(name, RSTART+1, RLENGTH-2)
@@ -109,12 +109,12 @@ COMPOS="${COMPOS:="$(loginctl show-session $XDG_SESSION_ID -p Type --value)"}"
 WMNAME="${XDG_CURRENT_DESKTOP:-${XDG_SESSION_DESKTOP:-}} ${DESKTOP_SESSION:-} ${COMPOS}"
 
 #──────────────────── Memory ────────────────────
-read -r MemTotal MemAvailable < <(awk '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print t+0,a+0}' /proc/meminfo)
+read -r MemTotal MemAvailable < <(awk -O '/^MemTotal:/ {t=$2} /^MemAvailable:/ {a=$2} END {print t+0,a+0}' /proc/meminfo)
 MemTotal=${MemTotal:-0}; MemAvailable=${MemAvailable:-0}
 MemUsed="$((MemTotal - MemAvailable))"
 MemPct="$(( MemTotal > 0 ? (MemUsed*100 + MemTotal/2)/MemTotal : 0 ))"
-MemUsedGiB="$(awk -v m="$MemUsed" 'BEGIN{printf "%.2f", m/1048576}')"
-MemTotalGiB="$(awk -v m="$MemTotal" 'BEGIN{printf "%.2f", m/1048576}')"
+MemUsedGiB="$(awk -O -v m="$MemUsed" 'BEGIN{printf "%.2f", m/1048576}')"
+MemTotalGiB="$(awk -O -v m="$MemTotal" 'BEGIN{printf "%.2f", m/1048576}')"
 (( MemPct >= 75 )) && mem_col=$'\e[31m' || mem_col=$'\e[32m'
 MEMVAL="${MemUsedGiB} / ${MemTotalGiB} GiB (${mem_col}${MemPct}%${DEF})"
 
@@ -153,6 +153,4 @@ append "Powerplan"  "${PWPLAN:-}"
 
 printf '%b\n%b\n' "$OUT" "$DEF"
 
-export LANG="C.UTF-8"
-unset LC_ALL
-exit
+export LANG="C.UTF-8"; unset LC_ALL; exit

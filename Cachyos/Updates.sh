@@ -125,12 +125,9 @@ fi
 
 # Function to run cargo commands dynamically
 cargo_run(){
-  local bins=(gg mommy clicker) cmd=(cargo) b
-  for b in "${bins[@]}"; do
-    command -v "cargo-$b" &>/dev/null && cmd+=("$b")
-  done
-  (( ${#cmd[@]} > 1 )) || { echo "No cargo binaries available: ${bins[*]}" >&2; return 1; }
-  "${cmd[@]}" "$@"
+  local found=0 cmd=(cargo) b bins=(gg mommy clicker)
+  for b in "${bins[@]}"; do command -v "cargo-${b}" &>/dev/null && { cmd+=("$b"); found=1; }; done
+  (( found )) && "${cmd[@]}" "$@" || cargo "$@"
 }
 if has rustup; then
   rustup update

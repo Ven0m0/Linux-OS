@@ -1,19 +1,23 @@
 # https://github.com/marketplace/actions/image-optimizer-action
-name: Compress Images (Manual)
+name: Compress Images
 on:
   workflow_dispatch:
   schedule: [{cron: "0 0 * * 0"}]
+  pull_request:
+    paths:
+      - '**/*.{svg,png,jpg,jpeg,gif,webp,avif}'
+  push:
+    paths:
+      - '**/*.{svg,png,jpg,jpeg,gif,webp,avif}'
 
 jobs:
   build:
     name: stellasoftio/image-optimizer-action
     permissions: write-all
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v5
       - name: Compress Images
         id: compress-images
         uses: stellasoftio/image-optimizer-action@v1
@@ -27,10 +31,9 @@ jobs:
           compress-webp: true
           compress-avif: true
           replace-original-after-export-webp: true
-
       - name: Create New Pull Request If Needed
         if: steps.compress-images.outputs.markdown_report != ''
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           title: Compressed Images
           branch-suffix: timestamp

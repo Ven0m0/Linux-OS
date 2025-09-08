@@ -122,6 +122,28 @@ date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 ```
 </details>
 <details>
+<summary><b>Faster cat</b></summary>
+
+Hyperfine Summary:
+```bash
+$ hyperfine -w 5 -S bash -i "cat /etc/hostname" 'printf '%s\n' "$(</etc/hostname)"'
+
+Benchmark 1: cat /etc/hostname
+  Time (mean ± σ):       1.1 ms ±   0.0 ms    [User: 0.8 ms, System: 0.5 ms]
+  Range (min … max):     1.1 ms …   1.2 ms    1057 runs
+Benchmark 2: printf '%s\n' CachyOS
+  Time (mean ± σ):      17.5 µs ±  20.2 µs    [User: 239.0 µs, System: 232.0 µs]
+  Range (min … max):     0.0 µs … 233.7 µs    1729 runs
+Summary
+  printf '%s\n' CachyOS ran
+   64.36 ± 74.11 times faster than cat /etc/hostname
+```
+
+```bash
+fcat(){ printf '%s\n' "$(<${1})"; }
+```
+</details>
+<details>
 <summary><b>Sleep replacement in bash</b></summary>
 
 ```bash

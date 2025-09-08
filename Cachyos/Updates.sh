@@ -133,7 +133,9 @@ cargo_run(){
   "${cmd[@]}" "$@"
 }
 if has rustup; then
+  rustup update
   "$suexec" rustup update
+  rustup self upgrade-data
   if has cargo; then
     echo 'update cargo binaries...'
     if cargo install-update -Vq; then

@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# apt-fuzz — skim/fzf frontend for apt/nala/apt-fast (optimized)
+
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C LANG=C
+SHELL="${BASH:-/bin/bash}}"
+: "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
+CACHE_DIR="${XDG_CACHE_HOME%/}/apt-fuzz"
+mkdir -p "$CACHE_DIR"
+: "${APT_FUZZ_CACHE_TTL:=86400}"
+: "${APT_FUZZ_CACHE_MAX_BYTES:=0}"
+: "${APT_FUZZ_ANSI:=1}"
+
+# Finder detection
+if command -v sk &>/dev/null; then FINDER=sk
+elif command -v fzf &>/dev/null; then FINDER=fzf
+else echo "Please install skim (sk) or fzf." >&2; exit 1; fi
+
+# Finder options
+FINDER_OPTS=(--layout=reverse-list --tiebreak=index --no-sort --no-hscroll)
+[[ "$APT_FUZZ_ANSI" == "1" ]] && FINDER_OPTS+=(--ansi)
+[[ -n "${APT_FUZZ_FINDER_OPTS:-}" ]] && read -r -a FINDER_OPTS <<<"$APT_FUZZ_FINDER_OPTS"
+
+# Manager detection
+HAS_NALA=0 HAS_APT_FAST=0
+command -v nala &>/dev/null && HAS_NALA=1
+command -v apt-fast &>/dev/null && HAS_APT_FAST=1
+PRIMARY_MANAGER="${APT_FUZZ_MANAGER:-}"
+if [[ -z $PRIMARY_MANAGER ]]; then
+  PRIMARY_MANAGER=apt
+  [[ $HAS_NALA -eq 1 ]] && PRIMARY_MANAGER=nala
+  [[ $HAS_NALA -eq 0 && $HAS_APT_FAST -eq 1 ]] && PRIMARY_MANAGER=apt-fast
+fi
+
+# Find tool
+FIND_TOOL=$(command -v fd || command -v fdfind || echo find)
+
+# -------------------------
+# Utils
+# -------------------------
+total_bytes_in_dir(){ local d=$1 s=0; while IFS= read -r -d '' f; do ((s+= $(stat -c %s "$f" 2>/dev/null || echo 0))); done < <($FIND_TOOL -0 -d 1 -t f "$d" 2>/dev/null || printf ''); printf '%d' "$s"; }
+byte_to_human(){
+  local b=${1:-0} u=(B K M G T) i=0 p=1
+  while [[ $b -ge $((p*1024)) && $i -lt 4 ]]; do ((p*=1024,i++)); done
+  local v=$(( (b*10 + p/2)/p )); printf '%d%s' $((v/10)) "${u[i]}"
+}
+
+# -------------------------
+# Cache
+# -------------------------
+_cache_file_for(){ printf '%s/%s.cache' "$CACHE_DIR" "${1//[^a-zA-Z0-9._+-]/_}"; }
+evict_old_cache(){
+  local cutoff=$(( $(date +%s) - APT_FUZZ_CACHE_TTL ))
+  while IFS= read -r -d '' f; do [[ $(stat -c %Y "$f") -lt $cutoff ]] && rm -f "$f"; done < <($FIND_TOOL -0 -d 1 -t f "$CACHE_DIR" 2>/dev/null || printf '')
+  if (( APT_FUZZ_CACHE_MAX_BYTES>0 )); then
+    local total=$(total_bytes_in_dir "$CACHE_DIR") oldest
+    while (( total>APT_FUZZ_CACHE_MAX_BYTES )); do
+      oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf "%T@ %p\0" 2>/dev/null | sort -zn | head -z -n1 | cut -z -d' ' -f2)
+      [[ -z $oldest ]] && break
+      rm -f "$oldest"
+      total=$(total_bytes_in_dir "$CACHE_DIR")
+    done
+  fi
+}
+_cache_stats(){
+  local files size oldest age
+  files=$(find "$CACHE_DIR" -maxdepth 1 -type f | wc -l)
+  size=$(total_bytes_in_dir "$CACHE_DIR")
+  oldest=$(find "$CACHE_DIR" -maxdepth 1 -type f -printf "%T@\n" 2>/dev/null | sort -n | head -1)
+  age=$(( ($(date +%s) - ${oldest:-0})/60 ))m
+  printf '%s|%s|%s' "$files" "$size" "$age"
+}
+
+# Preview
+_generate_preview(){
+  local pkg="$1" out tmp
+  out=$(_cache_file_for "$pkg")
+  tmp=$(mktemp "${out}.XXXXXX.tmp") || tmp="${out}.$$.$RANDOM.tmp"
+  { apt-cache show "$pkg" 2>/dev/null || :; printf '\n--- changelog (first 200 lines) ---\n'; apt-get changelog "$pkg" 2>/dev/null | head -n200 || :; } >"$tmp"
+  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2>/dev/null || :
+  mv -f "$tmp" "$out"; chmod 644 "$out"
+}
+_cached_preview_print(){ evict_old_cache; local f=$(_cache_file_for "$1"); [[ -f $f ]] && cat "$f" || (_generate_preview "$1"; cat "$f"); }
+export -f _cached_preview_print
+
+# -------------------------
+# Manager
+# -------------------------
+run_mgr(){
+  local act="$1"; shift
+  local pkgs=("$@") cmd
+  case "$PRIMARY_MANAGER" in
+    nala) case "$act" in
+      update|upgrade|autoremove|clean) cmd=(nala "$act" -y) ;;
+      *) cmd=(nala "$act" -y "${pkgs[@]}") ;; esac ;;
+    apt-fast) case "$act" in
+      update|upgrade|autoremove|clean) cmd=(apt-fast "$act" -y) ;;
+      *) cmd=(apt-fast "$act" -y "${pkgs[@]}") ;; esac ;;
+    *) case "$act" in
+      update|upgrade|autoremove|clean) cmd=(apt-get "$act" -y) ;;
+      install|remove|purge) cmd=(apt-get "$act" -y "${pkgs[@]}") ;;
+      *) cmd=(apt "$act" "${pkgs[@]}") ;; esac ;;
+  esac
+  printf 'Running: sudo %s\n' "${cmd[*]}"
+  sudo "${cmd[@]}"
+}
+choose_manager(){
+  local opts=(apt) choice
+  ((HAS_NALA)) && opts+=(nala)
+  ((HAS_APT_FAST)) && opts+=(apt-fast)
+  choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Manager> ")
+  [[ -n $choice ]] && PRIMARY_MANAGER="$choice"
+}
+
+# -------------------------
+# Listing
+# -------------------------
+list_all_packages(){ apt-cache search . | sed -E 's/ - /|/; s/\t/ /g'; }
+list_installed(){ dpkg-query -W -f='${binary:Package}|${Version}\n' 2>/dev/null || :; }
+list_upgradable(){ apt list --upgradable 2>/dev/null | tail -n +2 | cut -d/ -f1; }
+
+backup_installed(){ local out="${1:-pkglist-$(date +%F).txt}"; dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"; echo "Saved: $out"; }
+restore_from_file(){ local f="$1"; [[ -f $f ]] || { echo "File not found: $f"; return 1; }; mapfile -t pkgs < <(grep -v '^$' "$f"); [[ ${#pkgs[@]} -eq 0 ]] && return; mapfile -t sel < <(printf '%s\n' "${pkgs[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --multi --height=40% --prompt="Confirm install> "); [[ ${#sel[@]} -eq 0 ]] && return; run_mgr install "${sel[@]}"; }
+show_changelog(){ apt-get changelog "$1" 2>/dev/null || echo "No changelog"; }
+
+action_menu_for_pkgs(){
+  local pkgs=("$@") actions=(Install Remove Purge Changelog Cancel) act
+  act=$(printf '%s\n' "${actions[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Action for ${#pkgs[@]} pkgs> ")
+  case "$act" in
+    Install) run_mgr install "${pkgs[@]}" ;;
+    Remove) run_mgr remove "${pkgs[@]}" ;;
+    Purge) run_mgr purge "${pkgs[@]}" ;;
+    Changelog) for p in "${pkgs[@]}"; do show_changelog "$p"; read -r -p "Enter to continue..." || :; done ;;
+  esac
+}
+
+_status_header(){ local s=$(_cache_stats); IFS='|' read -r files size age <<<"$s"; printf 'manager: %s | cache: %s files, %s, oldest: %s' "$PRIMARY_MANAGER" "$files" "$(byte_to_human "$size")" "$age"; }
+
+# -------------------------
+# Menus
+# -------------------------
+menu_search_packages(){
+  local sel pkgs header="$(_status_header)"
+  sel=$(list_all_packages | "$FINDER" "${FINDER_OPTS[@]}" --delimiter='|' --with-nth=1,2 --preview "$0 --preview {1}" --preview-window=right:60% --multi --height=60% --prompt="Search> " --header="$header" --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
+  [[ -z $sel ]] && return
+  mapfile -t pkgs < <(printf '%s\n' "$sel" | cut -d'|' -f1)
+  action_menu_for_pkgs "${pkgs[@]}"
+}
+menu_installed_packages(){
+  local sel pk

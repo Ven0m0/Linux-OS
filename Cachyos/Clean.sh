@@ -53,6 +53,7 @@ export HOME="/home/${SUDO_USER:-$USER}"; sync
 # Capture usage before cleanup
 read -r used_human pct < <(df -h --output=used,pcent -- / 2>/dev/null | awk 'NR==2{print $1, $2}')
 DUB="$used_human $pct"
+SPACE="$(sudo du -sh / 2>/dev/null | cut -f1)"
 
 # Clearing dns cache and release/renew dhcp
 dhclient -r
@@ -226,3 +227,7 @@ DUA="$used_space_after $pct_after"
 echo "==> Disk usage before cleanup ${DUB}"
 echo
 echo "==> Disk usage after cleanup ${DUA}"
+
+echo 'space before/after'
+echo "$SPACE"
+sudo du -sh / 2>/dev/null | cut -f1

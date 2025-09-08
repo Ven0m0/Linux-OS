@@ -1,8 +1,14 @@
-### Ascii color bash
+**Bash**
 
 - https://github.com/sharkdp/config-files
 
+- [Shell-ng](https://github.com/joknarf/shell-ng)
 
+  ```bash
+  mkdir -p "${HOME}/local/share/shell-ng" && LC_ALL=C git clone --depth 1 --single-branch --filter=blob:none https://github.com/joknarf/shell-ng.git "${HOME}/local/share/shell-ng"
+  ```
+
+**Ascii color bash**
 ```
 https://github.com/elenapan/dotfiles/blob/master/bin/bunnyfetch
 https://github.com/aristocratos/bashtop
@@ -27,7 +33,7 @@ CFLAGS="${CXXFLAGS/-O1/-O3}" CFLAGS="${CXXFLAGS/-O2/-O3}"; export CXXFLAGS="$(pr
 LDFLAGS="${LDFLAGS/-O1/-O3}" LDFLAGS="${LDFLAGS/-O2/-O3}"; export LDFLAGS="$(printf '%s\n' "$LDFLAGS" | xargs)"
 ```
 
-***Append flags to the var (No dupes)***
+**Append flags to the var (No dupes)**
 ```bash
 append_unique_word(){
   local varname="$1" nw="$2" ow value; local -n cur=$varname

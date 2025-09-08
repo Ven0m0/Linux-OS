@@ -14,10 +14,20 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────────────── Basic Info ────────────────────
+username="${USER:-$(id -un)}"
+hostname="${HOSTNAME:-$(</etc/hostname)}"
+userhost="$username@${hostname:-$(uname -n)}"
 . "/etc/os-release"
 OS="${NAME:-${PRETTY_NAME:-$(uname -o)}}"
 KERNEL="$(</proc/sys/kernel/osrelease || uname -r)"
-UPT="$(uptime -p)"; UPT="${UPT#up }"
+read -r rawSeconds _ </proc/uptime
+seconds="${rawSeconds%.*}"
+((days=seconds/86400)) && parts+=("$days days")
+((hours=seconds%86400/3600)) && parts+=("$hours hours")
+((minutes=seconds%3600/60)) && parts+=("$minutes minutes")
+uptime="${parts[*]}"
+UPT="${uptime:-$(uptime -p)}"
+
 # Processes
 shopt -s nullglob
 files=(/proc/[0-9]*)
@@ -109,12 +119,12 @@ DISKVAL="${disk_used:-N/A} / ${disk_avail:-N/A} (${disk_col}${disk_pct_num}%${DE
 labelw=14 OUT=''
 append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="${_line}"$'\n'; }
 
-append "User"       "${USER}@${HOSTNAME}"
+append "User"       "${userhost}"
 OUT+="────────────────────────────────────────────"$'\n'
 append "Date"       "${DATE:-}"
 append "OS"         "${OS:-}"
 append "Kernel"     "${KERNEL:-}"
-append "Uptime"     "${UPT:-}"
+append "Uptime"     "${UPT}"
 append "Packages"   "${PACKAGE:-}"
 append "Processes"  "${PROCS:-}"
 append "Shell"      "${SHELLX:-}"

@@ -201,7 +201,8 @@ sd
 url="https://raw.githubusercontent.com/CodesOfRishi/navita/main/navita.sh"
 dest="${HOME}/.config/bash"
 mkdir -p "$dest"
-curl -sSfL --create-dirs -o "$dest/$(basename "$url")" "$url" && . "${dest}/$(basename "${url}")"
+curl -sSfL --create-dirs -o "$dest/$(basename "$url")" "$url" 
+chmod +x "${dest}/$(basename "${url}")" && . "${dest}/$(basename "${url}")"
 
 if ! command -v rustup; then
   echo "Installing rust + components..."

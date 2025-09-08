@@ -91,24 +91,23 @@ echo -e "\nChecking installed packages..."
 missing_pkgs=()
 # Collect packages that are not installed
 for pkg in "${packages[@]}"; do
-  if ! pacman -Qi "$pkg" &>/dev/null; then
+  if ! pacman -Qiq "$pkg" &>/dev/null; then
     missing_pkgs+=("$pkg")
   else
-    echo "✔ $pkg is already installed"
+    echo "✔ ${pkg} is already installed"
   fi
 done
-
 # Proceed with installation only if there are missing packages
 if [ ${#missing_pkgs[@]} -gt 0 ]; then
   echo "➜ Installing: ${missing_pkgs[*]}"
   while [ ${#missing_pkgs[@]} -gt 0 ]; do
       failed_pkgs=()
       # Try batch install
-      sudo pacman -S --needed --noconfirm -q "${missing_pkgs[@]}" || {
+      sudo pacman -Sq --needed --noconfirm "${missing_pkgs[@]}" || {
           echo "Some packages failed to install."
           # Identify failed packages
           for pkg in "${missing_pkgs[@]}"; do
-              sudo pacman -S --needed --noconfirm -q "$pkg" || failed_pkgs+=("$pkg")
+              sudo pacman -Sq --needed --noconfirm "$pkg" || failed_pkgs+=("$pkg")
           done
           # Remove failed packages from retry list
           missing_pkgs=($(echo "${missing_pkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}")))
@@ -116,7 +115,7 @@ if [ ${#missing_pkgs[@]} -gt 0 ]; then
       }
       [ ${#failed_pkgs[@]} -eq 0 ] && break  # Stop if all succeed
   done
-  echo "✔ All packages installed (or skipped if already present)."
+  echo "✔ All packages installed (or skipped if present)."
 else
   echo "✔ All packages were already installed—nothing to do."
 fi
@@ -148,9 +147,9 @@ kbuilder
 
 while [ ${#aurpkgs[@]} -gt 0 ]; do
     failed_pkgs=() # Try installing all remaining packages
-    paru -S "${aurpkgs[@]}" -q --needed --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || { echo "Some packages failed to install." \
+    paru -Sq "${aurpkgs[@]}" --needed --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || { echo "Some packages failed to install." \
         # Identify which package failed
-        for aur_pkg in "${aurpkgs[@]}"; do paru -S "$aur_pkg" -q --needed --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || failed_pkgs+=("$aur_pkg"); done; \
+        for aur_pkg in "${aurpkgs[@]}"; do paru -Sq "$aur_pkg" --needed --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || failed_pkgs+=("$aur_pkg"); done; \
         # Remove failed packages from the list
         aurpkgs=($(echo "${aurpkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}"))); echo "Retrying without: ${failed_pkgs[*]}"; }
     [ ${#failed_pkgs[@]} -eq 0 ] && { echo "AUR package installation complete."; break; }
@@ -206,14 +205,9 @@ curl -sSfL --create-dirs -o "$dest/$(basename "$url")" "$url" && . "${dest}/$(ba
 
 if ! command -v rustup; then
   echo "Installing rust + components..."
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -y -q
+  RUSTUP_QUIET=yes
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y -q -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
 fi
-
-if command -v rustup &>/dev/null; then
-  
-else
-  echo "Installing rust + components..."
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -y -q
 
 echo "Installing Cargo crates"
 cargostall(
@@ -232,8 +226,13 @@ cargo-minify
 rimage
 )
 
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread"
-cargo install --git https://github.com/GitoxideLabs/gitoxide gitoxide --no-default-features --features max-pure
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
+rustup default nightly
+rustup set auto-self-update
+rustup set profile minimal
+rustup self upgrade-data
+
+cargo +nightly install --git https://github.com/GitoxideLabs/gitoxide gitoxide --no-default-features --features max-pure
 
 # Fast, hardware-accelerated CRC calculation
 cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq

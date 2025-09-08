@@ -2,6 +2,8 @@
 
 - https://github.com/sharkdp/config-files
 
+- https://github.com/Naheel-Azawy/fmz
+
 - [Shell-ng](https://github.com/joknarf/shell-ng)
 
   ```bash

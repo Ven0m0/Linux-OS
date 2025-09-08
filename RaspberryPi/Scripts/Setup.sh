@@ -60,7 +60,7 @@ flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.f
 # Zoxide
 curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
 # Navi
-bash <(curl -sSfL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install)
+curl -sSfL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install | bash
 
 # Ripgrep-all
 # https://github.com/phiresky/ripgrep-all

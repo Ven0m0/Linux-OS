@@ -1,14 +1,3 @@
-sudo micro /etc/apt/apt.conf.d/99local
-
-Binary::apt::DPkg::Progress-Fancy "0";
-Binary::apt::APT::Get::Update::InteractiveReleaseInfoChanges "0";
-APT::Periodic::Unattended-Upgrade "0";
-APT::Periodic::Update-Package-Lists "0";
-
-# Acquire::Queue-Mode "host";
-# Acquire::Queue-Mode "access";
-Acquire::CompressionTypes::Order { "lz4"; "zst"; "xz"; "gz"; };
-
 
 # Make it permanent
 echo "kernel.hung_task_timeout_secs = 0" | sudo tee /etc/sysctl.d/99-disable-hung-tasks.conf

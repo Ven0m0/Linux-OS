@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export LC_ALL=C LANG=C
+export LC_ALL=C
+export LANG=C
+
 HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$HOMEDIR" || exit 1
-unset HOMEDIR
 
 #---------------------------------------
 # Modern Raspbian/DietPi F2FS Flash Script
@@ -11,7 +12,7 @@ unset HOMEDIR
 # FZF file + device selectors used if -i/-d not provided
 #---------------------------------------
 sudo -v; sync
-sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches' || true
+sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches' || :
 
 usage() {
   cat <<EOF
@@ -28,12 +29,12 @@ EOF
 
 cleanup() {
   # try to unmount if mounted, ignore errors
-  [ -n "${BOOT_MNT:-}" ] && umount "$BOOT_MNT" 2>/dev/null || true
-  [ -n "${ROOT_MNT:-}" ] && umount "$ROOT_MNT" 2>/dev/null || true
-  [ -n "${TARGET_BOOT:-}" ] && umount "$TARGET_BOOT" 2>/dev/null || true
-  [ -n "${TARGET_ROOT:-}" ] && umount "$TARGET_ROOT" 2>/dev/null || true
+  [ -n "${BOOT_MNT:-}" ] && umount "$BOOT_MNT" 2>/dev/null || :
+  [ -n "${ROOT_MNT:-}" ] && umount "$ROOT_MNT" 2>/dev/null || :
+  [ -n "${TARGET_BOOT:-}" ] && umount "$TARGET_BOOT" 2>/dev/null || :
+  [ -n "${TARGET_ROOT:-}" ] && umount "$TARGET_ROOT" 2>/dev/null || :
   if [ -n "${LOOP_DEV:-}" ]; then
-    losetup -d "$LOOP_DEV" 2>/dev/null || true
+    losetup -d "$LOOP_DEV" 2>/dev/null || :
   fi
   [ -n "${WORKDIR:-}" ] && rm -rf "$WORKDIR"
 }
@@ -67,85 +68,57 @@ done
 # fzf-backed file picker (start at $HOME)
 # returns chosen path in IMAGE (printed)
 #---------------------------------------
-fzf_file_picker() {
-  command -v fzf >/dev/null 2>&1 || { echo "fzf required"; return 1; }
-
+fzf_file_picker(){
+  command -v fzf >/dev/null 2>&1 || { echo "fzf required"; usage; }
   if command -v fd >/dev/null 2>&1; then
-    fd -H -t f -e img -e xz --hidden --follow "$HOME" \
-      | fzf --height=40% --layout=reverse --inline-info --prompt="Select image: " \
-            --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
+    LC_ALL=C fd -tf -e img -e xz -p "${HOME:-.}" \
+      | fzf --height=~40% --layout=reverse --inline-info --prompt="Select image: " \
+            --header="Select Raspberry Pi/DietPi image (.img,.xz)" \
             --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
-            --preview-window=right:50%:wrap --no-multi
+            --preview-window=right:50%:wrap --no-multi -1 -0
     return $?
   fi
-
-  find "$HOME" -type f \( -iname '*.img' -o -iname '*.img.xz' -o -iname '*.xz' \) -print0 \
-    | fzf --read0 --height=40% --layout=reverse --inline-info --prompt="Select image: " \
-          --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
+  LC_ALL=C find -O3 "${HOME:-.}" -type f \( -iname '*.img' -o -iname '*.xz' \) -print0 \
+    | fzf --read0 --height=~40% --layout=reverse --inline-info --prompt="Select image: " \
+          --header="Select Raspberry Pi/DietPi image (.img,.xz)" \
           --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
-          --preview-window=right:50%:wrap --no-multi
+          --preview-window=right:50%:wrap --no-multi -1 -0
   return $?
 }
-
 # If image not supplied, let user pick one via fzf
-if [ -z "$IMAGE" ]; then
-  if ! command -v fzf >/dev/null 2>&1; then
-    echo "fzf required to select an image interactively. Install fzf or pass -i IMAGE."
-    usage
-  fi
+if [ -z "${IMAGE:-}" ]; then
   IMAGE="$(fzf_file_picker)"
-  if [ -z "$IMAGE" ]; then
-    echo "No image selected."
-    usage
-  fi
+  [[ -z "$IMAGE" ]] && { echo "No image selected."; usage; }
 fi
-
 # If device not supplied use fzf selector
 if [ -z "${DEVICE:-}" ]; then
-  if ! command -v lsblk >/dev/null 2>&1; then
-    echo "lsblk required but not found."
-    exit 1
-  fi
-  if ! command -v fzf >/dev/null 2>&1; then
-    echo "fzf not found. Install fzf or pass -d /dev/sdX."
-    exit 1
-  fi
-
+  command -v fzf &>/dev/null && { echo "fzf not found. Install fzf or pass -d /dev/sdX." exit 1; }
   SEL=$(
-    lsblk -P -o NAME,TYPE,MODEL,MOUNTPOINT,RM \
+    lsblk -PAn -o NAME,TYPE,MODEL,MOUNTPOINT,RM \
       | while read -r line; do
           # turn NAME="sda" TYPE="disk" ... into shell vars
           eval "$line"
-          if [ "$TYPE" = "disk" ] && [ "${RM:-0}" = "1" ] && [ -z "${MOUNTPOINT:-}" ]; then
+          if [[ "$TYPE" = disk ]] && [ "${RM:-0}" = "1" ] && [ -z "${MOUNTPOINT:-}" ]; then
             printf "/dev/%s\t%s\n" "$NAME" "${MODEL:-}"
           fi
         done \
-      | fzf --height=40% --style=minimal --inline-info +s --reverse \
-            --prompt="Select target device: " --header="Path\tModel" \
-            --select-1 --exit-0 --no-multi
-  )
-
-  if [ -z "${SEL:-}" ]; then
-    echo "No device selected"
-    exit 1
-  fi
-
+      | fzf --height=~40% --style=minimal --inline-info +s --reverse -1 -0 \
+            --prompt="Select target device: " --header="Path\tModel" --no-multi)
+  
+  [[ -z "${SEL:-}" ]] && { echo "No device selected"; exit 1; }
   DEVICE=$(printf '%s' "$SEL" | awk '{print $1}')
 fi
 
-if [ ! -b "$DEVICE" ]; then
-  echo "Target device $DEVICE does not exist or is not a block device."
-  exit 1
-fi
+[[ ! -b "$DEVICE" ]] && { echo "Target device $DEVICE does not exist or is not a block device."; exit 1; }
 
 #---------------------------------------
 # Setup working directories
 #---------------------------------------
 WORKDIR=$(mktemp -d)
-SRC_IMG="$WORKDIR/source.img"
-BOOT_MNT="$WORKDIR/boot"
-ROOT_MNT="$WORKDIR/root"
-mkdir -p "$BOOT_MNT" "$ROOT_MNT"
+SRC_IMG="${WORKDIR}/source.img"
+BOOT_MNT="${WORKDIR}/boot"
+ROOT_MNT="${WORKDIR}/root"
+mkdir -p -- "$BOOT_MNT" "$ROOT_MNT"
 
 #---------------------------------------
 # Download or extract image
@@ -153,10 +126,9 @@ mkdir -p "$BOOT_MNT" "$ROOT_MNT"
 echo "[*] Preparing source image..."
 if printf '%s\n' "$IMAGE" | grep -qE '^https?://'; then
   echo "[*] Downloading $IMAGE ..."
-  IMAGE="$WORKDIR/$(basename "$IMAGE")"
-  curl -sfL --progress-bar -o "$IMAGE" "$IMAGE"
+  IMAGE="${WORKDIR}/$(basename "$IMAGE")"
+  curl -SfL --progress-bar -o "$IMAGE" "$IMAGE"
 fi
-
 if printf '%s\n' "$IMAGE" | grep -qE '\.xz$'; then
   echo "[*] Extracting $IMAGE ..."
   xz -dc "$IMAGE" > "$SRC_IMG"
@@ -167,11 +139,10 @@ fi
 #---------------------------------------
 # Partition and format target device
 #---------------------------------------
-echo "[*] WARNING: All data on $DEVICE will be destroyed!"
+echo "[*] WARNING: All data on ${DEVICE} will be destroyed!"
 read -r -p "Type yes to continue: " CONFIRM
 if [ "$CONFIRM" != yes ]; then
-  echo "Aborted"
-  exit 1
+  echo "Aborted"; exit 1
 fi
 
 echo "[*] Wiping existing partitions..."
@@ -181,7 +152,7 @@ parted -s "$DEVICE" mkpart primary fat32 0% 512MB
 parted -s "$DEVICE" mkpart primary 512MB 100%
 partprobe "$DEVICE"
 
-# partition name handling for mmcblk / nvme
+# partition name handling for mmcblk / nvme -> needs sda + sdb handling
 case "$DEVICE" in
   *mmcblk*|*nvme*)
     PART_BOOT="${DEVICE}p1"
@@ -254,13 +225,13 @@ rsync -aHAX --progress --fsync --preallocate --force "${BOOT_MNT}/" "${TARGET_BO
 #---------------------------------------
 # Update bootloader and fstab for F2FS
 #---------------------------------------
-BOOT_UUID=$(blkid -s PARTUUID -o value "$PART_BOOT" || true)
-ROOT_UUID=$(blkid -s PARTUUID -o value "$PART_ROOT" || true)
+BOOT_UUID=$(blkid -s PARTUUID -o value "$PART_BOOT" || :)
+ROOT_UUID=$(blkid -s PARTUUID -o value "$PART_ROOT" || :)
 
 # cmdline.txt lives on the boot partition for Raspberry Pi images
 if [ -f "${TARGET_BOOT}/cmdline.txt" ]; then
   sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "${TARGET_BOOT}/cmdline.txt"
-  sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_BOOT}/cmdline.txt" || true
+  sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_BOOT}/cmdline.txt" || :
 fi
 
 mkdir -p "${TARGET_ROOT}/etc"
@@ -298,15 +269,15 @@ else
 fi
 EOF
 
-chmod +x "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize" || true
+chmod +x "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize" || :
 
 #---------------------------------------
 # Cleanup (trap will also run cleanup)
 #---------------------------------------
 echo "[*] Syncing and unmounting..."
 sync
-umount "$BOOT_MNT" "$ROOT_MNT" "$TARGET_BOOT" "$TARGET_ROOT" 2>/dev/null || true
-losetup -d "${LOOP_DEV:-}" 2>/dev/null || true
+umount "$BOOT_MNT" "$ROOT_MNT" "$TARGET_BOOT" "$TARGET_ROOT" 2>/dev/null || :
+losetup -d "${LOOP_DEV:-}" 2>/dev/null || :
 rm -rf "${WORKDIR:-}"
 
 echo "[+] Done! Your F2FS Raspberry Pi image is ready on ${DEVICE}."

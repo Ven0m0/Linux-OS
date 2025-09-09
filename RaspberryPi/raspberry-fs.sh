@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export LC_ALL=C
-export LANG=C
-
+export LC_ALL=C LANG=C
 HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$HOMEDIR" || exit 1
+unset HOMEDIR
 
 #---------------------------------------
 # Modern Raspbian/DietPi F2FS Flash Script

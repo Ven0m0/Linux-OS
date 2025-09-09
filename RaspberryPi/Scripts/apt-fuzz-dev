@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+# apt-fuzz — compact skim/fzf TUI for apt / nala / apt-fast (optimized, full-feature)
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C
+
 : "${SHELL:=${BASH:-/bin/bash}}"
 : "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
 CACHE_DIR="${XDG_CACHE_HOME%/}/apt-fuzz"
@@ -71,7 +73,6 @@ CACHE_INDEX="$CACHE_DIR/.index"
 
 _update_cache_index(){
   local tmp="$CACHE_DIR/.index.$$"
-  # Generate index in one scan
   if [[ $FIND_TOOL != "find" ]]; then
     "$FIND_TOOL" -d 1 -t f "$CACHE_DIR" -0 2>/dev/null \
       | xargs -0 -r stat -c '%n|%s|%Y' >"$tmp" 2>/dev/null || :
@@ -91,14 +92,11 @@ _cache_info_from_index(){
 }
 
 evict_old_cache(){
-  local mmin cutoff total files oldest limit
+  local mmin cutoff limit
   mmin=$(_cache_mins)
   cutoff=$(( $(date +%s) - mmin*60 ))
   limit=$APT_FUZZ_CACHE_MAX_BYTES
-
   [[ -f $CACHE_INDEX ]] || _update_cache_index
-
-  # TTL + size eviction in single pass
   awk -F'|' -v cutoff="$cutoff" -v limit="$limit" '
     {
       if($3<cutoff){ system("rm -f -- \""$1"\""); next }
@@ -106,7 +104,6 @@ evict_old_cache(){
     }
     END{
       if(limit>0 && total>limit){
-        # sort by mtime ascending (oldest first)
         n=i
         while(total>limit && n>0){
           oldest=1
@@ -119,12 +116,25 @@ evict_old_cache(){
       }
     }
   ' "$CACHE_INDEX"
-
   _update_cache_index
 }
 
+# Ensure index exists initially
+_update_cache_index
+
 # -------------------------
-# Preview generation (unchanged behavior, but index updated atomically)
+# Cached info helpers
+# -------------------------
+_cache_stats(){
+  local total files oldest age human
+  read -r total files oldest <<< "$(_cache_info_from_index)"
+  if [[ $oldest -eq 0 ]]; then age="0m"; else age=$(( ( $(date +%s) - oldest )/60 ))m; fi
+  human=$(byte_to_human "$total")
+  printf '%s|%s|%s' "$files" "$human" "$age"
+}
+
+# -------------------------
+# Preview generation
 # -------------------------
 _generate_preview(){
   local pkg="$1" out tmp
@@ -137,17 +147,13 @@ _generate_preview(){
   } > "$tmp" 2>/dev/null
   sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" &>/dev/null || :
   mv -f "$tmp" "$out"; chmod 644 "$out" &>/dev/null || :
-  # update index entry for the newly-created preview file
-  _update_cache_index
 }
-
 _cached_preview_print(){
   local pkg="$1" f now f_mtime
-  # First, evict old cache entries (uses index)
   evict_old_cache
   f="$(_cache_file_for "$pkg")"
-  now=$(printf '%(%s)T' -1)
-  f_mtime=$(stat -c %Y -- "$f" 2>/dev/null || 0)
+  now=$(date +%s)
+  f_mtime=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
   if [[ -f $f && (( now - f_mtime < APT_FUZZ_CACHE_TTL )) ]]; then
     cat "$f"
   else
@@ -205,7 +211,7 @@ choose_manager(){
 }
 
 # -------------------------
-# Package listing (unchanged)
+# Package listing
 # -------------------------
 list_all_packages(){ [[ -f "$CACHE_DIR/pkgnames.cache" ]] && cat "$CACHE_DIR/pkgnames.cache" || apt-cache pkgnames; }
 list_installed(){ [[ -f "$CACHE_DIR/installed.cache" ]] && cat "$CACHE_DIR/installed.cache" || dpkg-query -W -f='${Package}\n'; }
@@ -241,7 +247,7 @@ _status_header(){
 }
 
 # -------------------------
-# Menus (preserve bindings & features)
+# Menus
 # -------------------------
 menu_search_packages(){
   local sel pkgs
@@ -309,7 +315,7 @@ menu_maintenance(){
 }
 
 # -------------------------
-# Background prefetch (lists + optional previews)
+# Background prefetch
 # -------------------------
 _prefetch_package_lists(){
   apt-cache pkgnames > "$CACHE_DIR/pkgnames.cache" 2>/dev/null &
@@ -323,16 +329,14 @@ _prefetch_package_previews(){
   while IFS= read -r pkg; do
     _generate_preview "$pkg" &
   done < "$CACHE_DIR/installed.cache"
-  # updating index after launching background previews
   wait 2>/dev/null || :
   _update_cache_index
 }
 
-# kick off prefetch lists (previews optional)
 _prefetch_package_lists &
 
 # -------------------------
-# Self install / completions / uninstall
+# Self install / uninstall
 # -------------------------
 _install_self(){
   local dst="${1:-$HOME/.local/bin/apt-fuzz}"

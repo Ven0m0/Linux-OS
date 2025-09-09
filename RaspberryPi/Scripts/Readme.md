@@ -2,6 +2,8 @@
 
 [Apt-fuzz](/RaspberryPi/Scripts/apt-fuzz)
 
+Went a bit overboard on [apt-fuzz-dev](/RaspberryPi/Scripts/apt-fuzz-dev)
+
 - Apt fzf/skim tui package manager
 
   ```bash

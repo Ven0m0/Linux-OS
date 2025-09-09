@@ -19,10 +19,15 @@ deb http://deb.debian.org/debian/ trixie-backports main contrib non-free non-fre
 apt-get -Uqy full-upgrade
 
 ```
-
+# apt vars
+```bash
+export APT_NO_COLOR=1
+export NO_COLOR=1
+export DPKG_COLORS=never
+export DEBIAN_FRONTEND=noninteractive
+```
 
 apt-gc
-
 ```sh
 #!/bin/sh
 set -f

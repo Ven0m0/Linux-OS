@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#set -euo pipefail
 export LC_ALL=C LANG=C
 
 #---------------------------------------
@@ -23,10 +24,11 @@ EOF
 #---------------------------------------
 # Root check
 #---------------------------------------
-#if [ "$(id -u)" -ne 0 ]; then
-  #echo "This script must be run as root."
-  #exec sudo bash "$0" "$@"
-#fi
+sudo -v
+if [ "$(id -u)" -ne 0 ]; then
+  echo "This script must be run as root."
+  exec sudo bash "$0" "$@"
+fi
 
 #---------------------------------------
 # Parse arguments
@@ -143,15 +145,16 @@ fi
 # Partition and format target device
 #---------------------------------------
 echo "[*] WARNING: All data on $DEVICE will be destroyed!"
-read -rp "Type YES to continue: " CONFIRM
-[[ $CONFIRM != "YES" ]] && { echo "Aborted."; exit 1; }
+read -rp "Type yes to continue: " CONFIRM
+[[ $CONFIRM != yes ]] && { echo "Aborted"; exit 1; }
+
 
 echo "[*] Wiping existing partitions..."
-wipefs -af "$DEVICE"
-parted -s "$DEVICE" mklabel msdos
-parted -s "$DEVICE" mkpart primary fat32 0% 512MB
-parted -s "$DEVICE" mkpart primary 512MB 100%
-partprobe "$DEVICE"
+sudo wipefs -af "$DEVICE"
+sudo parted -s "$DEVICE" mklabel msdos
+sudo parted -s "$DEVICE" mkpart primary fat32 0% 512MB
+sudo parted -s "$DEVICE" mkpart primary 512MB 100%
+sudo partprobe "$DEVICE"
 
 # partition name handling for mmcblk / nvme
 case "$DEVICE" in
@@ -166,7 +169,7 @@ case "$DEVICE" in
 esac
 
 echo "[*] Formatting partitions..."
-mkfs.vfat -F32 -n boot "$PART_BOOT"
+sudo mkfs.vfat -F32 -n boot "$PART_BOOT"
 
 # Hot/cold files for f2fs
 HOT='db,sqlite,tmp,log,json,conf,journal,pid,lock,xml,ini,py'
@@ -176,7 +179,7 @@ MED='mkv,mp4,mov,avi,webm,mpeg,mp3,ogg,opus,wav'
 ZIP='img,iso,gz,tar,zip,deb'
 COLD="${TXT},${IMG},${MED},${ZIP}"
 
-mkfs.f2fs -f -S -i \
+sudo -E mkfs.f2fs -f -S -i \
   -O extra_attr,inode_checksum,sb_checksum,flexible_inline_xattr \
   -E "$HOT" -e "$COLD" -l root "$PART_ROOT"
 

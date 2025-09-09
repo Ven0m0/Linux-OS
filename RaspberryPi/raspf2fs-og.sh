@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-
-LC_ALL=C LANG=C
+export LC_ALL=C LANG=C
 HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$HOMEDIR" || exit 1
 unset HOMEDIR

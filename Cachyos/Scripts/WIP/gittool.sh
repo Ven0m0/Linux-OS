@@ -9,6 +9,7 @@ githousekeep(){
     printf 'Not a git work tree: %s\n' "$dir" >&2; return 1
   fi
   printf '\e[1mHousekeeping: %s\e[0m\n' "$dir"
+  git -C "$dir" rm -r --cached .
   # Fetch from remote, twice in case something goes wrong
   git -C "$dir" fetch --prune --no-tags --filter=blob:none origin || git -C "$dir" fetch --prune --no-tags origin || :
   # Delete local branches that have been merged.

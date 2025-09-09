@@ -157,9 +157,12 @@ fi
 #p 'Updating shell environments...'
 if has fish; then
   fish -c "fish_update_completions"
-  [[ -r ${HOME}/.config/fish/functions/fisher.fish ]] && fish -c ". "$HOME"/.config/fish/functions/fisher.fish; fisher update"
+  if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
+    fish -c ". /usr/share/fish/vendor_functions.d/fisher.fish; and fisher update"
+  elif [[ -r ${HOME}/.config/fish/functions/fisher.fish ]]
+    fish -c ". \"$HOME/.config/fish/functions/fisher.fish\"; and fisher update"
+   fi
 fi
-
 [[ -d ${HOME}/.basher ]] && LC_ALL=C git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null &&
   { LC_ALL=C git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null && echo "Updating basher"; } || echo "⚠️ basher pull failed"
 

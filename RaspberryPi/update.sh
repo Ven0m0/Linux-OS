@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
+export LC_ALL=C LANG=C
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
 #============ Color & Effects ============
@@ -55,30 +55,31 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #=============================================================
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
-
+export APT_NO_COLOR=1 NO_COLOR=1 DPKG_COLORS=never DEBIAN_FRONTEND=noninteractive
 if has apt-fast; then
-  DEBIAN_FRONTEND=noninteractive "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-missing
-  #"$suexec" apt-fast upgrade -yfq --allow-unauthenticated --fix-missing --no-install-recommends
-  DEBIAN_FRONTEND=noninteractive "$suexec" apt-fast dist-upgrade -yfq --no-install-recommends --allow-unauthenticated --fix-missing
-  DEBIAN_FRONTEND=noninteractive "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
+  "$suexec" apt-fast update -yq --allow-releaseinfo-change
+  #"$suexec" apt-fast upgrade -yfq --allow-releaseinfo-change --no-install-recommends
+  "$suexec" apt-fast dist-upgrade -yqf --allow-releaseinfo-change --no-install-recommends
+  "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
 #elif has nala; then
   #yes | "$suexec" nala upgrade
   #"$suexec" nala clean; "$suexec" nala autoremove; "$suexec" nala autopurge
+  # nala fetch --auto --fetches 10 --country DE
 else
-  DEBIAN_FRONTEND=noninteractive "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
-  # No apt instead of apt=get for upgrade: cht.sh apt
-  #DEBIAN_FRONTEND=noninteractive "$suexec" apt upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
-  DEBIAN_FRONTEND=noninteractive "$suexec" apt-get dist-upgrade -yf --allow-unauthenticated --fix-missing
-  DEBIAN_FRONTEND=noninteractive "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
+  "$suexec" apt-get update -yq --allow-releaseinfo-change
+  "$suexec" apt-get dist-upgrade -yqfm --allow-releaseinfo-change
+  "$suexec" apt-get -yqU full-upgrade --allow-releaseinfo-change
+  "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them
-DEBIAN_FRONTEND=noninteractive "$suexec" dpkg --configure -a >/dev/null
+"$suexec" dpkg --configure -a >/dev/null
 
-DEBIAN_FRONTEND=noninteractive "$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
+"$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
 has pihole && "$suexec" pihole -up
-has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a 
+has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a
 has rpi-update && "$suexec" PRUNE_MODULES=1 rpi-update
 #"$suexec" JUST_CHECK=1 rpi-update
 # "$suexec" PRUNE_MODULES=1 rpi-update
 
-unset LC_ALL DEBIAN_FRONTEND; export LANG=C.UTF-8
+unset LC_ALL
+export LANG=C.UTF-8

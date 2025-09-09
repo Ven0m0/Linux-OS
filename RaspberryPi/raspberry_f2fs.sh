@@ -1,183 +1,114 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C
-p() { printf '%s\n' "$*" 2>/dev/null; }
+# Raspberry Pi Image to SD with F2FS Root
+# Modernized merge of raspbian-f2fs and simpler kpartx script
+# Supports Raspberry Pi 4 / DietPi / modern Raspberry Pi OS images
 
-if [[ "$(id -un 2>/dev/null)" != root ]]; then
-    echo "this script needs to be run as root in order to modify partitions etc. please provide your root password for sudo to execute this script as root"
-    sudo -s "$(command -v bash)" "$0" "$@"
-    exit $?
+set -euo pipefail
+export LC_ALL=C LANG=C
+
+p() { printf '%s\n' "$*"; }
+
+# --- Check for root ---
+if [[ "$(id -u)" -ne 0 ]]; then
+    echo "This script must be run as root."
+    exec sudo bash "$0" "$@"
 fi
-image="$1"
-card="$2"
-if [ -z $1 ]; then
-    p "usage: raspberry_f2fs.sh <image> <sdcard>"
-    p "example: raspberry_f2fs.sh Downloads/raspberryos.img /dev/sdb"
-    exit 100
-fi 
-if [ ! -f $image ]; then 
-    p "ERROR"
-    p "file $image not found,"
-    p "first parameter should be the raspberry os image"
+
+# --- Arguments ---
+IMAGE="$1"
+CARD="$2"
+
+if [[ -z "$IMAGE" || -z "$CARD" ]]; then
+    p "Usage: $0 <raspberry_image.img> <sdcard>"
     exit 1
 fi
-if ! kpartx -l $image  | grep -q "loop.\+p1 : 0"; then 
-    p "ERROR"
-    p "image $image not readable by kpartx or kpartx not found"
-    p "first parameter should be the raspberry os image, and make sure kpartx is installed"
-    exit 2
+if [[ ! -f "$IMAGE" ]]; then
+    p "Error: image '$IMAGE' not found."
+    exit 1
 fi
-if [ ! -b $card ]; then 
-    p "ERROR"
-    p "$card is not a block device"
-    p "second argument should be a block device"
-    exit 3
-fi
-echo 
-read -p "I will now ERASE EVERYTHING on $card, do you want to continue! (yN)" -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "aborted"
-    exit 101
+if [[ ! -b "$CARD" ]]; then
+    p "Error: target '$CARD' is not a block device."
+    exit 1
 fi
 
-# ok we are good to go :) 
+read -rp "WARNING: All data on $CARD will be erased. Continue? (y/N) " REPLY
+[[ "$REPLY" =~ ^[Yy]$ ]] || exit 1
 
-set -e 
-function clean_up(){
-    umount /tmp/sd
-    umount /tmp/img
-    kpartx -d $image
-    rmdir /tmp/{sd,img}
-    echo 
-    echo "aborted"
+# --- Setup temp mount points ---
+mkdir -p /tmp/sd /tmp/img
+
+cleanup() {
+    umount /tmp/sd 2>/dev/null || true
+    umount /tmp/img 2>/dev/null || true
+    kpartx -d "$IMAGE" 2>/dev/null || true
+    rmdir /tmp/{sd,img} 2>/dev/null || true
 }
-trap clean_up EXIT SIGINT
+trap cleanup EXIT SIGINT
 
-p "make sure the card is unmounted"
-set +e
-umount $card* 2>/dev/null
-set -e
+# --- Unmount target ---
+umount "${CARD}"* 2>/dev/null || true
 
-p "erase old partitions"
-wipefs -af $card
-p "create new partitions"
-parted -s $card mklabel msdos
-parted -s $card mkpart primary fat32 0% 512MB
-parted -s $card mkpart primary 512MB 100%
-partprobe $card
-sleep 2
+# --- Create partitions ---
+wipefs -af "$CARD"
+parted -s "$CARD" mklabel msdos
+parted -s "$CARD" mkpart primary fat32 0% 512MB
+parted -s "$CARD" mkpart primary 512MB 100%
+partprobe "$CARD"
+sleep 1
 
-if echo "$card" | grep -q "mmcblk"; then 
-    partbase="${card}p"
+# --- Determine partition suffix ---
+if [[ "$CARD" =~ mmcblk ]]; then
+    PARTBASE="${CARD}p"
 else
-    partbase=$card
+    PARTBASE="$CARD"
 fi
 
-p "format boot partition"
-mkfs.vfat -F 32 ${partbase}1
+# --- Format partitions ---
+mkfs.vfat -F32 "${PARTBASE}1" -n BOOT
+mkfs.f2fs -f -O extra_attr,compression,noatime,discard "${PARTBASE}2" -l ROOT
 
-p "format os partition with f2fs"
-mkfs.f2fs -f -O extra_attr,compression ${partbase}2
+# --- Mount partitions ---
+mount "${PARTBASE}1" /tmp/sd
 
-p "create mountpoints and mount boot partition"
-mkdir -p /tmp/{sd,img}
-mount ${partbase}1 /tmp/sd
+# --- Mount image partitions via kpartx ---
+OUT=$(kpartx -av "$IMAGE")
+LOOPDEV=$(echo "$OUT" | sed -n 's/^add map \(loop[^p]*\)p.*/\1/p' | head -1)
+mount "/dev/mapper/${LOOPDEV}p1" /tmp/img
 
-p "load image as loopback device and mount boot partition"
-out=$(kpartx -av $image)
-p "$out"
-loopdev=$(echo "$out" | sed 's/^add map \(loop[^p]\+\)p. .*$/\1/' | head -1)
-mount /dev/mapper/${loopdev}p1 /tmp/img
+# --- Copy boot ---
+p "Copying boot partition..."
+rsync -aHAXx --info=progress2 /tmp/img/ /tmp/sd/
 
-p "copy the contents of the boot partition"
-rsync -av /tmp/img/ /tmp/sd/
+# --- Adjust cmdline.txt ---
+PARTUUIDBOOT=$(blkid -s PARTUUID -o value "${PARTBASE}1")
+PARTUUIDROOT=$(blkid -s PARTUUID -o value "${PARTBASE}2")
+sed -i "s|root=[^ ]*|root=PARTUUID=${PARTUUIDROOT}|; s|rootfstype=[^ ]*|rootfstype=f2fs|; s|init=[^ ]*||" /tmp/sd/cmdline.txt
 
-p "adjust cmdline.txt"
-partuuidbase=$(blkid $card | sed -e 's/^.*PTUUID="\([^"]*\)".*$/\1/')
-sed -i "s/\(PARTUUID=\)[^ ]*\(-02 \)/\1$partuuidbase\2/" /tmp/sd/cmdline.txt
-sed -i 's/init=[^ ]*//' /tmp/sd/cmdline.txt
-sed -i 's/ext4/f2fs/' /tmp/sd/cmdline.txt
+umount /tmp/sd
+umount /tmp/img
 
-echo
-echo 
-p "I am done with the boot partition, now is the time to configure your network for headless operation if you want to.."
-echo 
-read -p "do you want to configure a wireless lan? if so, type \"y\" and i will open a configuration template in nano for you. simply adjust, quit and save and you are all set, otherwise press any key to continue without configuring a wlan" -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    cat > /tmp/sd/wpa_supplicant.conf <<EOF
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
-country=«your_ISO-3166-1_two-letter_country_code»
+# --- Mount root partitions ---
+mount "${PARTBASE}2" /tmp/sd
+mount "/dev/mapper/${LOOPDEV}p2" /tmp/img
 
-network={
-    ssid="«your_SSID»"
-    psk="«your_PSK»"
-}
-EOF
-    nano /tmp/sd/wpa_supplicant.conf
-fi
-echo
-read -p "do you want to enable the ssh-server on this raspberry right from the start? if so, type \"y\" or else press any key to continue without enabling ssh" -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+# --- Copy root ---
+p "Copying root partition (can take a few minutes)..."
+rsync -aHAXx --info=progress2 /tmp/img/ /tmp/sd/
+
+# --- Adjust fstab ---
+sed -i "s|/boot.*vfat|/boot vfat defaults 0 2|; s|/ .*ext4|/ f2fs defaults,noatime,discard 0 1|" /tmp/sd/etc/fstab
+
+umount /tmp/sd
+umount /tmp/img
+kpartx -d "$IMAGE"
+
+# --- Optional: SSH enable ---
+read -rp "Enable SSH by default? (y/N) " REPLY
+if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+    mount "${PARTBASE}1" /tmp/sd
     touch /tmp/sd/ssh
-    ssh=1
-else
-    ssh=0
+    umount /tmp/sd
 fi
 
-echo 
-p "we are done with the boot partition"
-p "unmount boot partition and mount root partition of both the card and the image"
-umount /tmp/sd
-umount /tmp/img
-mount ${partbase}2 /tmp/sd
-mount /dev/mapper/${loopdev}p2 /tmp/img
-
-p "copy the contents of the root partition to the card, this can take a few minutes..."
-rsync --progress -aAHhvxX /tmp/img/ /tmp/sd/
-echo "done copying"
-
-p "adjust fstab for f2fs"
-sed -i "s/\(PARTUUID=\)[^ ]*\(-0[12] \)/\1$partuuidbase\2/" /tmp/sd/etc/fstab
-sed -i 's/ext4/f2fs/' /tmp/sd/etc/fstab
-rm -f /tmp/sd/etc/rc3.d/S01resize2fs_once
-
-if [ $ssh -eq 1 ]; then
-    echo "creating empty authorized_keys files for users root and pi"
-    mkdir -p /tmp/sd/root/.ssh /tmp/sd/home/pi/.ssh
-    chmod 700 /tmp/sd/root/.ssh /tmp/sd/home/pi/.ssh
-    touch {/tmp/sd/root/.ssh,/tmp/sd/home/pi/.ssh}/authorized_keys
-    chmod 600 {/tmp/sd/root/.ssh,/tmp/sd/home/pi/.ssh}/authorized_keys
-    chown -R 1000 /tmp/sd/home/pi/.ssh
-    echo "done, to add your private key, boot the raspberry pi and login as user pi with password \"raspberry\" to add your public key to those files. make sure you don't forget to chagne the default password!"
-fi
-echo 
-echo
-p "done preparing the root partition"
-echo 
-read -p "do you want to configure a fixed ip address? if so, type \"y\" and i will open the /etc/dhcpcd.conf file in a nano editor for you. simply adjust, quit and save and you are all set, otherwise press any key to continue without configuring your network interface" -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    nano /tmp/sd/etc/dhcpcd.conf
-fi
-echo
-read -p "do you want to change the hostname to something meaningful right now? if so, type \"y\" and i will open the /etc/hostname file in a nano editor for you. simply adjust, quit and save and you are all set, otherwise press any key to continue without changing the hostname" -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    nano /tmp/sd/etc/hostname
-fi
-echo 
-p 'okay, we are done, time to clean up! mind you, this can take some time as we weill have to wait for everything to be written to the SD card. do not abort!'
-umount /tmp/sd
-umount /tmp/img
-kpartx -d $image
-rmdir /tmp/{sd,img}
-echo 
-p "you are all set, you can now remove the sd card and put it into your raspberry, boot it up and start using it" 
-p 'if you want to insert this card into your pc in the future to modify some things on it, I strongly recommend to disable gnomes automount temporarily, as it may mess up your f2fs filesystem'
-p "to do that you can simply run this command:"
-p "    gsettings set org.gnome.desktop.media-handling automount 'false'"
-p "to re-enable simply use 'true' as value instead"
+p "All done! You can now insert the SD card into your Raspberry Pi and boot it."
 trap - EXIT

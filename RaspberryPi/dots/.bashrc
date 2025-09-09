@@ -52,19 +52,14 @@ alias ls='ls --color=auto --group-directories-first'
 alias cls='clear' c='clear'
 alias grep='grep --color=auto'
 
+
 # apt
 alias apt='sudo apt'
 if command -v apt-fast &>/dev/null; then
-  alias apt-fast="sudo apt-fast "
+  alias apt-fast="sudo apt-fast " apt="sudo apt-fast"
+else
+  alias apt="sudo apt-get"
 fi
-alias sa='apt'
-
-alias ai='sudo apt install'
-alias ali='apt list --installed'
-alias al='apt list'
-alias ap='apt purge'
-alias aar='apt autoremove'
-alias i='sudo apt install'
 
 # docker
 alias dr='docker run'
@@ -131,6 +126,15 @@ sudo-command-line(){
 }
 bind -x '"\e\e": sudo-command-line'
 
+cl(){
+  local dir="${1:=$HOME}"
+    if [[ -d "$dir" ]]; then
+      cd "$dir" >/dev/null; ls
+    else
+      echo "bash: cl: $dir: Directory not found"
+    fi
+}
+
 cdls(){ command cd -- "$1" && command ls -ah --color=auto --group-directories-first; }
 mkcd(){ command mkdir -p -- "$1" && command cd -- "$1"; }
 
@@ -161,13 +165,19 @@ bind 'set skip-completed-text on'
 bind 'set colored-stats on'
 bind 'set colored-completion-prefix on'
 bind 'set expand-tilde on'
-bind Space:magic-space
+bind '"Space": magic-space'
 bind '"\C-o": kill-whole-line'
 bind '"\C-a": beginning-of-line'
 bind '"\C-e": end-of-line'
 bind '"\e[1;5D": backward-word'
 bind '"\e[1;5C": forward-word'
 bind 'set enable-bracketed-paste off'
+# prefixes the line with sudo , if Alt+s is pressed
+#bind '"\ee": "\C-asudo \C-e"'
+# https://wiki.archlinux.org/title/Bash
+run-help(){ help "$READLINE_LINE" 2>/dev/null || man "$READLINE_LINE"; }
+bind -m vi-insert -x '"\eh": run-help'
+bind -m emacs -x     '"\eh": run-help'
 #──────────── End ────────────
 dedupe_path(){
   local IFS=: dir s; declare -A seen
@@ -175,9 +185,9 @@ dedupe_path(){
     [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s="${s:+$s:}$dir"
   done
   [[ -n $s ]] && export PATH="$s"
+  command -v systemctl &>/dev/null && command systemctl --user import-environment PATH &>/dev/null
 }
 dedupe_path
-command -v systemctl &>/dev/null && command systemctl --user import-environment PATH &>/dev/null
 #──────────── Prompt ────────────
 # PS1='[\u@\h|\w] \$'
 PROMPT_DIRTRIM=2
@@ -185,12 +195,21 @@ PROMPT_COMMAND="history -a"
 export GIT_PS1_SHOWDIRTYSTATE=false GIT_PS1_OMITSPARSESTATE=true
 
 configure_prompt(){
-  local C_USER='\[\e[35m\]' C_HOST='\[\e[34m\]' YLW='\[\e[33m\]' \
-        C_PATH='\[\e[36m\]' C_RESET='\[\e[0m\]' C_ROOT='\[\e[31m\]'
-  local USERN HOSTL
-  [[ "$EUID" -eq 0 ]] && USERN="${C_ROOT}\u${C_RESET}"
-  [[ -n "$SSH_CONNECTION" ]] && HOSTL="${YLW}\h${C_RESET}"
-  PS1="[${C_USER}\u${C_RESET}@${HOSTL}|${C_PATH}\w${C_RESET}] \$ "
+  command -v starship &>/dev/null && { eval "$(LC_ALL=C starship init bash)"; return; }
+
+  local MGN='\[\e[35m\]' BLU='\[\e[34m\]' YLW='\[\e[33m\]' BLD='\[\e[1m\]' UND='\[\e[4m\]' \
+        CYN='\[\e[36m\]' DEF='\[\e[0m\]' RED='\[\e[31m\]'  PNK='\[\e[38;5;205m\]' USERN HOSTL
+  USERN="${MGN}\u${DEF}"; [[ $EUID -eq 0 ]] && USERN="${RED}\u${DEF}"
+  HOSTL="${BLU}\h${DEF}"; [[ -n $SSH_CONNECTION ]] && HOSTL="${YLW}\h${DEF}"
+
+  PS1="[${USERN}@${HOSTL}${UND}|${DEF}${CYN}\w${DEF}]>${PNK}\A${DEF}|\$? ${BLD}\$${DEF} "
+  PS2='> '
+
+  if command -v __git_ps1 &>/dev/null && [[ ${PROMPT_COMMAND:-} != *git_ps1* ]]; then
+    export GIT_PS1_OMITSPARSESTATE=1 GIT_PS1_HIDE_IF_PWD_IGNORED=1
+    unset GIT_PS1_SHOWDIRTYSTATE GIT_PS1_SHOWSTASHSTATE GIT_PS1_SHOWUPSTREAM GIT_PS1_SHOWUNTRACKEDFILES
+    PROMPT_COMMAND="LC_ALL=C __git_ps1 2>/dev/null; ${PROMPT_COMMAND:-}"
+  fi
 }
 configure_prompt
 #──────────── Fetch ────────────

@@ -4,7 +4,7 @@ export LC_ALL=C LANG=C
 
 #---------------------------------------
 # Modern Raspbian/DietPi F2FS Flash Script
-# Supports: Image URL/.xz, SD card or USB, F2FS root, optional SSH & user
+# With tmpfs acceleration and first-boot resize
 #---------------------------------------
 
 usage() {
@@ -107,7 +107,7 @@ mkfs.vfat -F32 -n boot "$PART_BOOT"
 mkfs.f2fs -f -O extra_attr,compression -l root "$PART_ROOT"
 
 #---------------------------------------
-# Mount image partitions
+# Mount source image partitions
 #---------------------------------------
 echo "[*] Mounting source image..."
 LOOP_DEV=$(losetup --show -fP "$SRC_IMG")
@@ -124,13 +124,30 @@ mount "$PART_BOOT" "$TARGET_BOOT"
 mount "$PART_ROOT" "$TARGET_ROOT"
 
 #---------------------------------------
-# Copy boot and root partitions
+# Tmpfs acceleration for root copy
 #---------------------------------------
-echo "[*] Copying boot files..."
-rsync -aHAX "$BOOT_MNT/" "$TARGET_BOOT/"
+echo "[*] Copying root filesystem via tmpfs..."
+ROOT_SIZE_MB=$(du -sm "$ROOT_MNT" | awk '{print $1}')
+TMPFS_SIZE=$((ROOT_SIZE_MB + 512))  # add buffer
+TMPFS_MNT="$WORKDIR/tmpfs_root"
 
-echo "[*] Copying root filesystem..."
-rsync -aHAX "$ROOT_MNT/" "$TARGET_ROOT/"
+mkdir -p "$TMPFS_MNT"
+mount -t tmpfs -o size=${TMPFS_SIZE}M tmpfs "$TMPFS_MNT"
+
+echo "[*] rsync from image to tmpfs..."
+rsync -aHAX "$ROOT_MNT/" "$TMPFS_MNT/"
+
+echo "[*] rsync from tmpfs to target root partition..."
+rsync -aHAX --progress "$TMPFS_MNT/" "$TARGET_ROOT/"
+
+umount "$TMPFS_MNT"
+rm -rf "$TMPFS_MNT"
+
+#---------------------------------------
+# Copy boot partition
+#---------------------------------------
+echo "[*] Copying boot partition..."
+rsync -aHAX "$BOOT_MNT/" "$TARGET_BOOT/"
 
 #---------------------------------------
 # Update bootloader and fstab for F2FS
@@ -161,6 +178,29 @@ if [[ -n "$USERNAME" && -n "$PASSWORD" ]]; then
 fi
 
 #---------------------------------------
+# First-boot F2FS resize script
+#---------------------------------------
+echo "[*] Creating first-boot F2FS resize script..."
+mkdir -p "$TARGET_ROOT/etc/initramfs-tools/scripts/init-premount"
+cat > "$TARGET_ROOT/etc/initramfs-tools/scripts/init-premount/f2fsresize" <<'EOF'
+#!/bin/sh
+# Initramfs script to expand F2FS root filesystem on first boot
+. /scripts/functions
+
+log_begin_msg "Expanding F2FS root filesystem..."
+ROOT_DEV=$(findmnt -n -o SOURCE /)
+if [ -x /sbin/resize.f2fs ]; then
+    /sbin/resize.f2fs "$ROOT_DEV"
+    log_end_msg "F2FS root filesystem expanded."
+    rm -f /etc/initramfs-tools/scripts/init-premount/f2fsresize
+else
+    log_end_msg "resize.f2fs not found. Skipping."
+fi
+EOF
+
+chmod +x "$TARGET_ROOT/etc/initramfs-tools/scripts/init-premount/f2fsresize"
+
+#---------------------------------------
 # Cleanup
 #---------------------------------------
 echo "[*] Syncing and unmounting..."
@@ -170,3 +210,4 @@ losetup -d "$LOOP_DEV"
 rm -rf "$WORKDIR"
 
 echo "[+] Done! Your F2FS Raspberry Pi image is ready on $DEVICE."
+echo "[+] First boot will automatically expand the root filesystem."

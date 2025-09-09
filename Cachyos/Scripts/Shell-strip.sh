@@ -67,9 +67,9 @@ fi
 
 if $DO_FMT; then
   if $MINIFY; then
-    shfmt -ln=bash -i=2 -mn -ci -bn -mn -w "$TARGET_FILE"
+    shfmt -ln=bash -i 2 -mn -ci -bn -mn -w "$TARGET_FILE"
   else
-    shfmt -ln=bash -i=2 -s -ci -bn -w "$TARGET_FILE"
+    shfmt -ln=bash -i 2 -s -ci -bn -w "$TARGET_FILE"
   fi
 fi
 

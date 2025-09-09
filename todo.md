@@ -4,6 +4,8 @@
 
 - https://github.com/Naheel-Azawy/fmz
 
+- https://www.commandlinefu.com/commands/browse
+
 - [Shell-ng](https://github.com/joknarf/shell-ng)
 
   ```bash

@@ -2,6 +2,9 @@
 
 
 # SSH fix
+find -O3 ~/.ssh/ -type f -exec chmod 600 {} 
+find -O3 ~/.ssh/ -type d -exec chmod 700 {}
+find -O3 ~/.ssh/ -type f -name "*.pub" -exec chmod 644 {}
 sudo chmod -R 744 ~/.ssh
 sudo chmod -R 744 ~/.gnupg
 

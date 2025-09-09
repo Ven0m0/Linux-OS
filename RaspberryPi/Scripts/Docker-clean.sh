@@ -153,4 +153,18 @@ docker system df
 
 restart_docker_engine
 
+
+
+
+# https://github.com/docker-slim/docker-slim
+docker-slim(){
+   if [ $# -eq 0 ]; then
+      sudo docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim help
+   else
+      sudo docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim "$@"
+    fi
+}
+
 echo "🤘 Done"
+
+

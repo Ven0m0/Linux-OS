@@ -54,6 +54,8 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #=============================================================
+sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
+
 if has apt-fast; then
   DEBIAN_FRONTEND=noninteractive "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-missing
   #"$suexec" apt-fast upgrade -yfq --allow-unauthenticated --fix-missing --no-install-recommends

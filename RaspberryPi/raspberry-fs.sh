@@ -27,7 +27,7 @@ EOF
 sudo -v
 if [ "$(id -u)" -ne 0 ]; then
   echo "This script must be run as root."
-  exec sudo bash "$0" "$@"
+  exec sudo -E bash "$0" "$@"
 fi
 
 #---------------------------------------

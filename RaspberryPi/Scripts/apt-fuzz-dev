@@ -30,7 +30,7 @@ else
 fi
 
 FINDER_OPTS=(--layout=reverse-list --tiebreak=index --no-sort --no-hscroll)
-[[ "$APT_FUZZ_ANSI" == 1 ]] && FINDER_OPTS+=(--ansi)
+[[ "$APT_FUZZ_ANSI" -eq 1 ]] && FINDER_OPTS+=(--ansi)
 [[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && read -r -a FINDER_OPTS <<< "$APT_FUZZ_FINDER_OPTS"
 
 # -------------------------
@@ -63,7 +63,6 @@ _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59)/60 )); }
 # Optimized cache index + eviction
 # -------------------------
 CACHE_INDEX="${CACHE_DIR}/.index"
-
 _update_cache_index(){
   local tmp="${CACHE_DIR}/.index.$$"
   if [[ $FIND_TOOL != "find" ]]; then
@@ -75,24 +74,21 @@ _update_cache_index(){
   fi
   mv -f "$tmp" "$CACHE_INDEX"
 }
-
 _cache_info_from_index(){
-  awk -O -F'|' '
+  awk -F'|' '
     BEGIN{total=0; files=0; oldest=0}
     {files++; total+=$2; if(oldest==0||$3<oldest) oldest=$3}
     END{print total,files,oldest}
   ' "$CACHE_INDEX" 2>/dev/null || echo "0 0 0"
 }
-
 evict_old_cache(){
   local mmin cutoff total files oldest limit
   mmin=$(_cache_mins)
   cutoff=$(( $(date +%s) - mmin*60 ))
   limit=$APT_FUZZ_CACHE_MAX_BYTES
-
   [[ -f $CACHE_INDEX ]] || _update_cache_index
 
-  awk -O -F'|' -v cutoff="$cutoff" -v limit="$limit" '
+  awk -F'|' -v cutoff="$cutoff" -v limit="$limit" '
     {
       if($3<cutoff){ system("rm -f -- \""$1"\""); next }
       files[++i]=$1; sizes[i]=$2; mtimes[i]=$3; total+=$2
@@ -131,7 +127,6 @@ _generate_preview(){
   sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" &>/dev/null || :
   mv -f "$tmp" "$out"; chmod 644 "$out" &>/dev/null || :
 }
-
 _cached_preview_print(){
   local pkg="$1" f now f_mtime
   evict_old_cache
@@ -183,7 +178,7 @@ run_mgr(){
 # -------------------------
 list_all_packages(){ [[ -f "$CACHE_DIR/pkgnames.cache" ]] && cat "$CACHE_DIR/pkgnames.cache" || apt-cache pkgnames; }
 list_installed(){ [[ -f "$CACHE_DIR/installed.cache" ]] && cat "$CACHE_DIR/installed.cache" || dpkg-query -W -f='${Package}\n'; }
-list_upgradable(){ [[ -f "$CACHE_DIR/upgradable.cache" ]] && cat "$CACHE_DIR/upgradable.cache" || apt list --upgradable 2>/dev/null | awk -O -F/ 'NR>1{print $1}'; }
+list_upgradable(){ [[ -f "$CACHE_DIR/upgradable.cache" ]] && cat "$CACHE_DIR/upgradable.cache" || apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}'; }
 
 # -------------------------
 # Backup / Restore
@@ -193,7 +188,6 @@ backup_installed(){
   dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"
   printf 'Saved: %s\n' "$out"
 }
-
 restore_from_file(){
   local file="$1"
   [[ -f $file ]] || { echo "File not found: $file" >&2; return 1; }
@@ -228,7 +222,6 @@ menu_search_packages(){
   mapfile -t pkgs < <(printf '%s\n' "$sel")
   run_mgr install "${pkgs[@]}"
 }
-
 menu_installed_packages(){
   local sel pkgs
   sel=$(list_installed | "$FINDER" "${FINDER_OPTS[@]}" --multi --height=60% --prompt="Installed> " \
@@ -238,7 +231,6 @@ menu_installed_packages(){
   mapfile -t pkgs < <(printf '%s\n' "$sel")
   action_menu_for_pkgs "${pkgs[@]}"
 }
-
 menu_upgradable(){
   local sel pkgs
   sel=$(list_upgradable | "$FINDER" "${FINDER_OPTS[@]}" --multi --height=40% --prompt="Upgradable> " \
@@ -248,7 +240,6 @@ menu_upgradable(){
   mapfile -t pkgs < <(printf '%s\n' "$sel")
   run_mgr upgrade "${pkgs[@]}"
 }
-
 action_menu_for_pkgs(){
   local pkgs=("$@") choice
   choice=$(printf 'Remove\nPurge\nSkip' | "$FINDER" --height=10% --prompt="Action> ")
@@ -258,7 +249,6 @@ action_menu_for_pkgs(){
     Skip) return;;
   esac
 }
-
 menu_backup_restore(){
   local choice f
   choice=$(printf 'Backup\nRestore\nCancel' | "$FINDER" --height=10% --prompt="Backup/Restore> ")
@@ -271,7 +261,6 @@ menu_backup_restore(){
     Cancel) return;;
   esac
 }
-
 menu_maintenance(){
   local choice
   choice=$(printf 'Update\nUpgrade\nAutoremove\nClean\nCancel' | "$FINDER" --height=15% --prompt="Maintenance> ")
@@ -290,9 +279,8 @@ menu_maintenance(){
 _prefetch_package_lists(){
   apt-cache pkgnames > "$CACHE_DIR/pkgnames.cache" 2>/dev/null &
   dpkg-query -W -f='${Package}\n' > "$CACHE_DIR/installed.cache" 2>/dev/null &
-  apt list --upgradable 2>/dev/null | awk -O -F/ 'NR>1{print $1}' > "$CACHE_DIR/upgradable.cache" &
+  apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}' > "$CACHE_DIR/upgradable.cache" &
 }
-
 _prefetch_package_previews(){
   local pkg
   [[ -f "$CACHE_DIR/installed.cache" ]] || return
@@ -302,7 +290,6 @@ _prefetch_package_previews(){
   wait 2>/dev/null || :
   _update_cache_index
 }
-
 _prefetch_package_lists &
 
 # -------------------------

@@ -62,9 +62,9 @@ if has apt-fast; then
   "$suexec" apt-fast dist-upgrade -yqf --allow-releaseinfo-change --no-install-recommends
   "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
 #elif has nala; then
-  #yes | "$suexec" nala upgrade
-  #"$suexec" nala clean; "$suexec" nala autoremove; "$suexec" nala autopurge
-  # nala fetch --auto --fetches 10 --country DE
+  "$suexec" nala upgrade -y --no-recommends
+  "$suexec" nala clean; "$suexec" nala autoremove; "$suexec" nala autopurge
+   #nala fetch --auto --fetches 10 --country DE
 else
   "$suexec" apt-get update -yq --allow-releaseinfo-change
   "$suexec" apt-get dist-upgrade -yqfm --allow-releaseinfo-change

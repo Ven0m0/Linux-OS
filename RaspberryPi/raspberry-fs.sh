@@ -7,6 +7,8 @@ builtin cd -- "$WHOMEDIR" || exit 1
 # Modern Raspbian/DietPi F2FS Flash Script
 # With tmpfs acceleration and first-boot resize
 # FZF file + device selectors used if -i/-d not provided
+# Dietpi:
+# https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz
 #---------------------------------------
 sudo -v; sync
 sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'

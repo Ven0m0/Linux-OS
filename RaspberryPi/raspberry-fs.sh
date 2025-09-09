@@ -148,8 +148,8 @@ mkdir -p "$BOOT_MNT" "$ROOT_MNT"
 echo "[*] Preparing source image..."
 if printf '%s\n' "$IMAGE" | grep -qE '^https?://'; then
   echo "[*] Downloading $IMAGE ..."
-  wget -q --show-progress -O "$WORKDIR/$(basename "$IMAGE")" "$IMAGE"
   IMAGE="$WORKDIR/$(basename "$IMAGE")"
+  curl -sfL --progress-bar -o "$IMAGE" "$IMAGE"
 fi
 
 if printf '%s\n' "$IMAGE" | grep -qE '\.xz$'; then
@@ -214,8 +214,8 @@ mount "${LOOP_DEV}p2" "$ROOT_MNT"
 #---------------------------------------
 # Mount target partitions
 #---------------------------------------
-TARGET_BOOT="$WORKDIR/target_boot"
-TARGET_ROOT="$WORKDIR/target_root"
+TARGET_BOOT="${WORKDIR}/target_boot"
+TARGET_ROOT="${WORKDIR}/target_root"
 mkdir -p "$TARGET_BOOT" "$TARGET_ROOT"
 mount "$PART_BOOT" "$TARGET_BOOT"
 mount "$PART_ROOT" "$TARGET_ROOT"
@@ -224,18 +224,18 @@ mount "$PART_ROOT" "$TARGET_ROOT"
 # Tmpfs acceleration for root copy
 #---------------------------------------
 echo "[*] Copying root filesystem via tmpfs..."
-ROOT_SIZE_MB=$(du -sm "$ROOT_MNT" | awk '{print $1}')
+ROOT_SIZE_MB=$(du -sm "${ROOT_MNT}" | awk '{print $1}')
 TMPFS_SIZE=$((ROOT_SIZE_MB + 512))  # add buffer
-TMPFS_MNT="$WORKDIR/tmpfs_root"
+TMPFS_MNT="${WORKDIR}/tmpfs_root"
 
 mkdir -p "$TMPFS_MNT"
 mount -t tmpfs -o size=${TMPFS_SIZE}M tmpfs "$TMPFS_MNT"
 
 echo "[*] rsync from image to tmpfs..."
-rsync -aHAX "$ROOT_MNT/" "$TMPFS_MNT/"
+rsync -aHAX --progress --fsync --preallocate --force "${ROOT_MNT}/" "${TMPFS_MNT}/"
 
 echo "[*] rsync from tmpfs to target root partition..."
-rsync -aHAX --progress "$TMPFS_MNT/" "$TARGET_ROOT/"
+rsync -aHAX --progress --fsync --preallocate --force "${TMPFS_MNT}/" "${TARGET_ROOT}/"
 
 umount "$TMPFS_MNT"
 rm -rf "$TMPFS_MNT"
@@ -244,7 +244,7 @@ rm -rf "$TMPFS_MNT"
 # Copy boot partition
 #---------------------------------------
 echo "[*] Copying boot partition..."
-rsync -aHAX "$BOOT_MNT/" "$TARGET_BOOT/"
+rsync -aHAX --progress --fsync --preallocate --force "${BOOT_MNT}/" "${TARGET_BOOT}/"
 
 #---------------------------------------
 # Update bootloader and fstab for F2FS
@@ -252,13 +252,13 @@ rsync -aHAX "$BOOT_MNT/" "$TARGET_BOOT/"
 BOOT_UUID=$(blkid -s PARTUUID -o value "$PART_BOOT")
 ROOT_UUID=$(blkid -s PARTUUID -o value "$PART_ROOT")
 
-if [ -f "$TARGET_BOOT/cmdline.txt" ]; then
-  sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "$TARGET_BOOT/cmdline.txt"
-  sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "$TARGET_BOOT/cmdline.txt" || true
+if [ -f "${TARGET_ROOT}/cmdline.txt" ]; then
+  sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "${TARGET_ROOT}/cmdline.txt"
+  sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_ROOT}/cmdline.txt" || true
 fi
 
-mkdir -p "$TARGET_ROOT/etc"
-cat > "$TARGET_ROOT/etc/fstab" <<EOF
+mkdir -p "${TARGET_ROOT}/etc"
+cat > "${TARGET_ROOT}/etc/fstab" <<EOF
 proc                  /proc   proc    defaults                    0   0
 PARTUUID=$BOOT_UUID  /boot   vfat    defaults                    0   2
 PARTUUID=$ROOT_UUID  /       f2fs    defaults,noatime,discard    0   1
@@ -268,15 +268,15 @@ EOF
 # Optional SSH setup
 #---------------------------------------
 if [ "$ENABLE_SSH" -eq 1 ]; then
-  touch "$TARGET_BOOT/ssh" || touch "$TARGET_ROOT/boot/ssh"
+  touch "${TARGET_BOOT}/ssh" || touch "${TARGET_ROOT}/boot/ssh"
 fi
 
 #---------------------------------------
 # First-boot F2FS resize script
 #---------------------------------------
 echo "[*] Creating first-boot F2FS resize script..."
-mkdir -p "$TARGET_ROOT/etc/initramfs-tools/scripts/init-premount"
-cat > "$TARGET_ROOT/etc/initramfs-tools/scripts/init-premount/f2fsresize" <<'EOF'
+mkdir -p "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount"
+cat > "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize" <<'EOF'
 #!/bin/sh
 # Initramfs script to expand F2FS root filesystem on first boot
 . /scripts/functions
@@ -292,7 +292,7 @@ else
 fi
 EOF
 
-chmod +x "$TARGET_ROOT/etc/initramfs-tools/scripts/init-premount/f2fsresize"
+sudo chmod +x "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize"
 
 #---------------------------------------
 # Cleanup (trap will also run cleanup)
@@ -301,7 +301,7 @@ echo "[*] Syncing and unmounting..."
 sync
 umount "$BOOT_MNT" "$ROOT_MNT" "$TARGET_BOOT" "$TARGET_ROOT" 2>/dev/null || true
 losetup -d "${LOOP_DEV:-}" 2>/dev/null || true
-rm -rf "$WORKDIR"
+rm -rf "${WORKDIR}"
 
-echo "[+] Done! Your F2FS Raspberry Pi image is ready on $DEVICE."
+echo "[+] Done! Your F2FS Raspberry Pi image is ready on ${DEVICE}."
 echo "[+] First boot will automatically expand the root filesystem."

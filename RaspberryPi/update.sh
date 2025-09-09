@@ -9,8 +9,8 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
-has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
-hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
+has(){ local x="${1:?no argument}"; local p; p=$(command -v -- "$x") || return 1; [ -x "$p" ] || return 1; }
+hasname(){ local x="${1:?no argument}"; local p; p=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${p##*/}"; }
 #============ Banner ====================
 banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -70,12 +70,8 @@ else
   "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them
+"$suexec" dpkg --configure -a >/dev/null
 
-if ! "$suexec" dpkg --configure -a >/dev/null ; then
-    printf '%s\n' "There were issues configuring packages."
-else
-    printf '%s\n' "No broken packages found or fixed successfully."
-fi
 "$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
 has pihole && "$suexec" pihole -up
 has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a 

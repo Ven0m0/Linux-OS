@@ -28,6 +28,9 @@
 
 ```bash
 #!/usr/bin/env bash
+set -euo pipefail; shopt -s nullglob globstar
+
+
 set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 
 export LC_ALL=C LANG=C
 #──────────── Color & Effects ────────────

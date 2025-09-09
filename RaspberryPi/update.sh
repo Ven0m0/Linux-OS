@@ -55,24 +55,24 @@ suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #=============================================================
 if has apt-fast; then
-  "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-missing
+  DEBIAN_FRONTEND=noninteractive "$suexec" apt-fast update -y --allow-releaseinfo-change --allow-unauthenticated --fix-missing
   #"$suexec" apt-fast upgrade -yfq --allow-unauthenticated --fix-missing --no-install-recommends
-  "$suexec" apt-fast dist-upgrade -yfq --no-install-recommends --allow-unauthenticated --fix-missing
-  "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
-elif has nala; then
-  yes | "$suexec" nala upgrade
-  "$suexec" nala clean; "$suexec" nala autoremove; "$suexec" nala autopurge
+  DEBIAN_FRONTEND=noninteractive "$suexec" apt-fast dist-upgrade -yfq --no-install-recommends --allow-unauthenticated --fix-missing
+  DEBIAN_FRONTEND=noninteractive "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
+#elif has nala; then
+  #yes | "$suexec" nala upgrade
+  #"$suexec" nala clean; "$suexec" nala autoremove; "$suexec" nala autopurge
 else
-  "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
+  DEBIAN_FRONTEND=noninteractive "$suexec" apt-get update -y --allow-releaseinfo-change --allow-unauthenticated --fix-broken --fix-missing
   # No apt instead of apt=get for upgrade: cht.sh apt
-  #"$suexec" apt upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
-  "$suexec" apt-get dist-upgrade -yf --allow-unauthenticated --fix-missing
-  "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
+  #DEBIAN_FRONTEND=noninteractive "$suexec" apt upgrade -yf --allow-unauthenticated --fix-missing --no-install-recommends
+  DEBIAN_FRONTEND=noninteractive "$suexec" apt-get dist-upgrade -yf --allow-unauthenticated --fix-missing
+  DEBIAN_FRONTEND=noninteractive "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them
-"$suexec" dpkg --configure -a >/dev/null
+DEBIAN_FRONTEND=noninteractive "$suexec" dpkg --configure -a >/dev/null
 
-"$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
+DEBIAN_FRONTEND=noninteractive "$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
 has pihole && "$suexec" pihole -up
 has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a 
 has rpi-update && "$suexec" PRUNE_MODULES=1 rpi-update

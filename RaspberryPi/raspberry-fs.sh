@@ -104,7 +104,18 @@ fi
 
 echo "[*] Formatting partitions..."
 mkfs.vfat -F32 -n boot "$PART_BOOT"
-mkfs.f2fs -f -O extra_attr,compression -l root "$PART_ROOT"
+
+# Hot/cold files for f2fs
+HOT='db,sqlite,tmp,log,json,conf,journal,pid,lock,xml,ini,py'
+TXT='pdf,txt,sh,ttf,otf,woff,woff2'
+IMG='jpg,jpeg,png,webp,avif,jxl,gif,svg'
+MED='mkv,mp4,mov,avi,webm,mpeg,mp3,ogg,opus,wav'
+ZIP='img,iso,gz,tar,zip,deb'
+COLD="${TXT},${IMG},${MED},${ZIP}"
+
+mkfs.f2fs -f -S -i \
+  -O extra_attr,inode_checksum,sb_checksum,compression,flexible_inline_xattr \
+  -E "$HOT" -e "$COLD" -l root "$PART_ROOT"
 
 #---------------------------------------
 # Mount source image partitions

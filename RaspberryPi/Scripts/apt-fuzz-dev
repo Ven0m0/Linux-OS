@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# apt-fuzz — compact skim/fzf TUI for apt / apt-fast (optimized, full-feature)
-set -euo pipefail
-shopt -s nullglob globstar
+# apt-fuzz — compact skim/fzf TUI for apt / apt-fast
+set -euo pipefail; shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 
 : "${SHELL:=${BASH:-/bin/bash}}"
@@ -58,17 +57,16 @@ byte_to_human(){
   if (( dec>0 )); then printf '%d.%d%s' "$whole" "$dec" "${units[i]}"
   else printf '%d%s' "$whole" "${units[i]}"; fi
 }
-
 _cache_file_for(){ printf '%s/%s.cache' "$CACHE_DIR" "${1//[^a-zA-Z0-9._+-]/_}"; }
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59)/60 )); }
 
 # -------------------------
 # Optimized cache index + eviction
 # -------------------------
-CACHE_INDEX="$CACHE_DIR/.index"
+CACHE_INDEX="${CACHE_DIR}/.index"
 
 _update_cache_index(){
-  local tmp="$CACHE_DIR/.index.$$"
+  local tmp="${CACHE_DIR}/.index.$$"
   if [[ $FIND_TOOL != "find" ]]; then
     "$FIND_TOOL" -d 1 -t f "$CACHE_DIR" -0 2>/dev/null \
       | xargs -0 -r stat -c '%n|%s|%Y' >"$tmp" 2>/dev/null || :
@@ -117,7 +115,6 @@ evict_old_cache(){
 
   _update_cache_index
 }
-
 _update_cache_index   # ensure index exists at script start
 
 # -------------------------
@@ -324,16 +321,33 @@ _prefetch_package_lists &
 # Self install/uninstall
 # -------------------------
 _install_self(){
-  local dst="${1:-$HOME/.local/bin/apt-fuzz}"
-  mkdir -p "$(dirname "$dst")"
-  cp -f -- "$0" "$dst"
-  chmod +x "$dst"
-  echo "Installed to $dst"
+  local dest="${HOME%/}/.local/bin/apt-fuzz" compdir="${HOME%/}/.local/share/bash-completion/completions"
+  mkdir -p -- "${HOME%/}/.local/bin"
+  cp -f -- "$0" "$dest"
+  chmod +x -- "$dest"
+  printf 'Installed: %s\n' "$dest"
+  mkdir -p -- "$compdir"
+  cat >"$compdir/apt-fuzz" <<'BASHCOMP'
+_complete_apt_fuzz(){
+  local cur="${COMP_WORDS[COMP_CWORD]}" opts="search installed upgradable install remove purge backup restore maintenance choose-manager quit"
+  COMPREPLY=()
+  if [[ ${COMP_CWORD} -eq 1 ]]; then
+    COMPREPLY=( $(compgen -W "$opts" -- "$cur") ); return 0
+  fi
+  case "${COMP_WORDS[1]}" in
+    install|remove|purge) COMPREPLY=( $(compgen -W "$(apt-cache pkgnames | tr '\n' ' ')" -- "$cur") );;
+    restore) COMPREPLY=( $(compgen -f -- "$cur") );;
+  esac
+}
+complete -F _complete_apt_fuzz apt-fuzz
+BASHCOMP
+  printf 'Completion installed: %s/apt-fuzz\n' "$compdir"
 }
 
 _uninstall_self(){
-  local dst="${1:-$HOME/.local/bin/apt-fuzz}"
-  [[ -f $dst ]] && rm -f -- "$dst" && echo "Removed $dst"
+  local dest="${HOME%/}/.local/bin/apt-fuzz" compfile="${HOME%/}/.local/share/bash-completion/completions/apt-fuzz"
+  [[ -f $dest ]] && rm -f -- "$dest" && echo "Removed $dest"
+  [[ -f $compfile ]] && rm -f -- "$compfile" && echo "Removed $compfile"
 }
 
 # -------------------------

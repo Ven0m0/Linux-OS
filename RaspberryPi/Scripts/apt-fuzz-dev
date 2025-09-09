@@ -21,7 +21,6 @@ elif command -v fzf &>/dev/null; then
 else
   echo "Please install skim (sk) or fzf." >&2; exit 1
 fi
-
 if command -v fd &>/dev/null; then
   FIND_TOOL=fd
 elif command -v fdfind &>/dev/null; then

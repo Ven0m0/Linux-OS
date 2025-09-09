@@ -8,7 +8,8 @@ builtin cd -- "$WHOMEDIR" || exit 1
 # With tmpfs acceleration and first-boot resize
 # FZF file + device selectors used if -i/-d not provided
 #---------------------------------------
-sync; sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
+sudo -v; sync
+sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
 
 usage() {
   cat <<EOF

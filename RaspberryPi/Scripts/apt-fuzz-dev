@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# apt-fuzz — compact skim/fzf TUI for apt / nala / apt-fast (optimized, full-feature)
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C
-
 : "${SHELL:=${BASH:-/bin/bash}}"
 : "${XDG_CACHE_HOME:=${HOME:-$HOME}/.cache}"
 CACHE_DIR="${XDG_CACHE_HOME%/}/apt-fuzz"

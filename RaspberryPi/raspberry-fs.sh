@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 export LC_ALL=C LANG=C
-
+HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
+builtin cd -- "$WHOMEDIR" || exit 1
 #---------------------------------------
 # Modern Raspbian/DietPi F2FS Flash Script
 # With tmpfs acceleration and first-boot resize
@@ -67,18 +68,17 @@ fzf_file_picker() {
 
   if command -v fd >/dev/null 2>&1; then
     fd -H -t f -e img -e xz --hidden --follow "$HOME" \
-      | fzf --height=40% --layout=reverse --inline-info --prompt="Select image: " \
+      | fzf --height=~40% --layout=reverse --inline-info --prompt="Select image: " \
             --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
             --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
             --preview-window=right:50%:wrap -1 -0 --no-multi
     return $?
   fi
-
-  find "$HOME" -type f \( -iname '*.img' -o -iname '*.img.xz' -o -iname '*.xz' \) -print0 \
-    | fzf --read0 --height=40% --layout=reverse --inline-info --prompt="Select image: " \
+  find -O3 . -type f \( -iname '*.img' -o -iname '*.img.xz' -o -iname '*.xz' \) -print0 \
+    | fzf --read0 --height=~40% --layout=reverse --inline-info --prompt="Select image: " \
           --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
           --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
-          --preview-window=right:50%:wrap --select-1 --exit-0 --no-multi
+          --preview-window=right:50%:wrap -1 -0 --no-multi
   return $?
 }
 

@@ -70,7 +70,7 @@ fzf_file_picker() {
       | fzf --height=40% --layout=reverse --inline-info --prompt="Select image: " \
             --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
             --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
-            --preview-window=right:50%:wrap --select-1 --exit-0 --no-multi
+            --preview-window=right:50%:wrap -1 -0 --no-multi
     return $?
   fi
 

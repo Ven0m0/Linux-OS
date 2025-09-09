@@ -3,6 +3,8 @@
 # Credit to:
 # https://github.com/dotphiles/dotphiles/blob/master/input/inputrc
 # https://github.com/Rudxain/dotfiles
+# https://www.gnu.org/software/bash/manual/html_node/Command-Line-Editing.html
+
 $include /etc/inputrc
 
 # UTF-8 support
@@ -12,6 +14,10 @@ set convert-meta off
 
 # Fix stupid "\e[200~" whenever I paste in bash
 set enable-bracketed-paste off
+set echo-control-characters off
+
+# Adds punctuation as word delimiters
+set bind-tty-special-chars off
 
 ### Fish like tab completions in Bash
 # Use TAB to cycle forward through completions
@@ -23,81 +29,54 @@ set enable-bracketed-paste off
 set menu-complete-display-prefix on
 set show-all-if-ambiguous on
 set show-all-if-unmodified on
-set match-hidden-files off
 set skip-completed-text on
-set completion-map-case on
-set completion-ignore-case On
-set completion-query-items 200
+#set completion-map-case on
+#set completion-ignore-case on
+#set completion-query-items 200
 set completion-prefix-display-length 2
 set mark-symlinked-directories on
-set visible-stats on
+set mark-directories on
 set page-completions off
-
 set colored-completion-prefix on
 set colored-stats on
-# Other
-set meta-flag on
-set echo-control-characters off
 set bell-style none
-# set enable-keypad on
 
-# set editing-mode vi
-# vi mode fix
-# C-L: clear-screen
-
-# Adds punctuation as word delimiters
-set bind-tty-special-chars off
-
-# allow the use of the Home/End keys
+$if mode=emacs
 # https://wiki.archlinux.org/index.php/Home_and_End_keys_not_working
-#"\e[1~": beginning-of-line
-#"\e[4~": end-of-line
-# those two are for rxvt
-"\e[7~":beginning-of-line
-"\e[8~":end-of-line
-
+"\e[1~": beginning-of-line
+"\e[4~": end-of-line
 # allow the use of the Delete/Insert keys
-"\e[3~": delete-char
 "\e[2~": quoted-insert
-
+"\e[3~": delete-char
+"\e[5~": beginning-of-history
+"\e[6~": end-of-history
+"\e[7~": beginning-of-line
+"\e[8~": end-of-line
+"\eOH": beginning-of-line
+"\eOF": end-of-line
+"\e[H": beginning-of-line
+"\e[F": end-of-line
 # smart up/down, pgup,pgdown to start/end
 "\e[A": history-search-backward
 "\e[B": history-search-forward
-"\e[5~": beginning-of-history
-"\e[6~": end-of-history
 # mappings for Ctrl-left-arrow and Ctrl-right-arrow for word moving
-"\e[1;5C": forward-word
-"\e[1;5D": backward-word
 "\e[5C": forward-word
 "\e[5D": backward-word
 "\e\e[C": forward-word
 "\e\e[D": backward-word
-
-# prefixes the line with sudo , if Alt+s is pressed
-"\es": "\C-asudo \C-e"
-
-$if Bash
-  #do history expansion when space entered
-  Space: magic-space
+"\e[1;5C": forward-word
+"\e[1;5D": backward-word
 $endif
 
-# set editing-mode vi
-$if mode=vi
-set show-mode-in-prompt on
-set keymap vi-command
-set keymap vi-insert
-# these are for vi-command mode
-Control-l: clear-screen
-Control-a: beginning-of-line
-j: history-search-forward
-k: history-search-backward
-"\e[A": history-search-backward
-"\e[B": history-search-forward
-  $if term=linux
-	  set vi-ins-mode-string \1\e[?0c\2
-	  set vi-cmd-mode-string \1\e[?8c\2
-  $else
-	  set vi-ins-mode-string \1\e[6 q\2
-	  set vi-cmd-mode-string \1\e[2 q\2
-  $endif
+$if Bash
+# do history expansion when space entered
+Space: magic-space
+# Toggle sudo at the beginning (Alt+Shift‑S)
+# "\eS": "\C-asudo \C-e"
+# Insert quotes around current/previous word: Ctrl+X -> q
+"\C-xq": "\eb\"\ef\""
+# Add a binding to refresh the line, which is unbound
+"\C-xr": redraw-current-line
+# turn $VAR into its value
+"\M-\C-v": "\C-a\C-k$\C-y\M-\C-e\C-a\C-y="
 $endif

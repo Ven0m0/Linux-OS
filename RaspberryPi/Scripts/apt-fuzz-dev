@@ -67,90 +67,62 @@ _cache_file_for(){ printf '%s/%s.cache' "$CACHE_DIR" "${1//[^a-zA-Z0-9._+-]/_}";
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59)/60 )); }
 
 # -------------------------
-# Single-pass cache index (one scan used for stats/eviction/etc.)
-# Index format (newline separated): absolute_path|size|mtime
+# Optimized cache index + eviction
 # -------------------------
 CACHE_INDEX="$CACHE_DIR/.index"
 
 _update_cache_index(){
-  local tmp="$CACHE_DIR/.index.tmp"
-  : > "$tmp"
+  local tmp="$CACHE_DIR/.index.$$"
+  # Generate index in one scan
   if [[ $FIND_TOOL != "find" ]]; then
-    # fd prints null-delimited; use -0 and pipe to stat
-    # fd may print relative paths, pass absolute dir to fd to get absolute paths
-    "$FIND_TOOL" -0 -d 1 -t f "$CACHE_DIR" 2>/dev/null \
-      | xargs -0 -r stat -c '%n|%s|%Y' 2>/dev/null >> "$tmp" || :
+    "$FIND_TOOL" -d 1 -t f "$CACHE_DIR" -0 2>/dev/null \
+      | xargs -0 -r stat -c '%n|%s|%Y' >"$tmp" 2>/dev/null || :
   else
     find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null \
-      | xargs -0 -r stat -c '%n|%s|%Y' 2>/dev/null >> "$tmp" || :
+      | xargs -0 -r stat -c '%n|%s|%Y' >"$tmp" 2>/dev/null || :
   fi
   mv -f "$tmp" "$CACHE_INDEX"
 }
 
-# Ensure index exists initially
-_update_cache_index
-
-# -------------------------
-# Cached info helpers (read from index — single pass)
-# -------------------------
 _cache_info_from_index(){
-  # prints: total_size total_files oldest_mtime
-  local total=0 files=0 oldest=0 line size mtime
-  [[ -f $CACHE_INDEX ]] || { printf '0 0 0'; return; }
-  while IFS='|' read -r path size mtime; do
-    ((files++))
-    total=$(( total + (size+0) ))
-    if [[ $oldest -eq 0 || mtime -lt oldest ]]; then oldest=$mtime; fi
-  done < "$CACHE_INDEX"
-  printf '%d %d %d' "$total" "$files" "$oldest"
+  awk -F'|' '
+    BEGIN{total=0; files=0; oldest=0}
+    {files++; total+=$2; if(oldest==0||$3<oldest) oldest=$3}
+    END{print total,files,oldest}
+  ' "$CACHE_INDEX" 2>/dev/null || echo "0 0 0"
 }
 
-# Wrapper used by status header
-_cache_stats(){
-  local total files oldest age human
-  read -r total files oldest <<< "$(_cache_info_from_index)"
-  if [[ $oldest -eq 0 ]]; then age="0m"; else age=$(( ( $(printf '%(%s)T' -1) - oldest )/60 ))m; fi
-  human=$(byte_to_human "$total")
-  printf '%s|%s|%s' "$files" "$human" "$age"
-}
-
-# -------------------------
-# Eviction using the index (single-pass where possible)
-# -------------------------
 evict_old_cache(){
-  local mmin cutoff total files oldest size line path mtime
+  local mmin cutoff total files oldest limit
   mmin=$(_cache_mins)
-  cutoff=$(( $(printf '%(%s)T' -1) - mmin*60 ))
+  cutoff=$(( $(date +%s) - mmin*60 ))
+  limit=$APT_FUZZ_CACHE_MAX_BYTES
 
-  # TTL eviction: remove files older than cutoff
-  if [[ -f $CACHE_INDEX ]]; then
-    while IFS='|' read -r path size mtime; do
-      if (( mtime < cutoff )); then rm -f -- "$path"; fi
-    done < "$CACHE_INDEX"
-  fi
+  [[ -f $CACHE_INDEX ]] || _update_cache_index
 
-  # Rebuild index to reflect deletions
+  # TTL + size eviction in single pass
+  awk -F'|' -v cutoff="$cutoff" -v limit="$limit" '
+    {
+      if($3<cutoff){ system("rm -f -- \""$1"\""); next }
+      files[++i]=$1; sizes[i]=$2; mtimes[i]=$3; total+=$2
+    }
+    END{
+      if(limit>0 && total>limit){
+        # sort by mtime ascending (oldest first)
+        n=i
+        while(total>limit && n>0){
+          oldest=1
+          for(j=2;j<=n;j++) if(mtimes[j]<mtimes[oldest]) oldest=j
+          system("rm -f -- \""files[oldest]"\"")
+          total-=sizes[oldest]
+          mtimes[oldest]=9999999999
+          n--
+        }
+      }
+    }
+  ' "$CACHE_INDEX"
+
   _update_cache_index
-
-  # Size-based eviction: remove oldest-first until under limit
-  if (( APT_FUZZ_CACHE_MAX_BYTES>0 )); then
-    read -r total files oldest <<< "$(_cache_info_from_index)"
-    # if total <= limit -> nothing to do
-    while (( total > APT_FUZZ_CACHE_MAX_BYTES )); do
-      # pick oldest file(s) from index (oldest first)
-      # We'll iterate index once to find file with smallest mtime
-      local oldest_m=0 oldest_path=""
-      while IFS='|' read -r path size mtime; do
-        if [[ -z $oldest_path || mtime -lt oldest_m ]]; then
-          oldest_m=$mtime; oldest_path="$path"
-        fi
-      done < "$CACHE_INDEX"
-      [[ -z $oldest_path ]] && break
-      rm -f -- "$oldest_path"
-      _update_cache_index
-      read -r total files oldest <<< "$(_cache_info_from_index)"
-    done
-  fi
 }
 
 # -------------------------

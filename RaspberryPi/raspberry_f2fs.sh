@@ -2,10 +2,8 @@
 # Raspberry Pi Image to SD with F2FS Root
 # Modernized merge of raspbian-f2fs and simpler kpartx script
 # Supports Raspberry Pi 4 / DietPi / modern Raspberry Pi OS images
-
 set -euo pipefail
 export LC_ALL=C LANG=C
-
 p() { printf '%s\n' "$*"; }
 
 # --- Check for root ---

@@ -1,57 +1,117 @@
 #!/usr/bin/env bash
-set -euo pipefail
 export LC_ALL=C LANG=C
 
 #---------------------------------------
 # Modern Raspbian/DietPi F2FS Flash Script
 # With tmpfs acceleration and first-boot resize
+# FZF file + device selectors used if -i/-d not provided
 #---------------------------------------
 
 usage() {
-    cat <<EOF
-Usage: $0 [-i image] [-d device] [-u username] [-p password] [-s] [-h]
+  cat <<EOF
+Usage: $0 [-i image] [-d device] [-s] [-h]
 
 Options:
   -i IMAGE      Source Raspberry Pi OS/DietPi image (.img or .img.xz) or URL
-  -d DEVICE     Target block device (SD card, USB drive)
-  -u USERNAME   Optional: create a user
-  -p PASSWORD   Optional: password for the new user (SHA512)
+  -d DEVICE     Target block device (SD card, USB drive). If omitted you'll get an fzf selector.
   -s            Optional: enable SSH
   -h            Show this help
 EOF
-    exit 1
+  exit 1
 }
 
 #---------------------------------------
 # Root check
 #---------------------------------------
-if [[ $(id -u) -ne 0 ]]; then
-    echo "This script must be run as root."
-    exec sudo bash "$0" "$@"
-fi
+#if [ "$(id -u)" -ne 0 ]; then
+  #echo "This script must be run as root."
+  #exec sudo bash "$0" "$@"
+#fi
 
 #---------------------------------------
 # Parse arguments
 #---------------------------------------
 IMAGE=""
 DEVICE=""
-USERNAME=""
-PASSWORD=""
 ENABLE_SSH=0
 
-while getopts "i:d:u:p:sh" opt; do
-    case $opt in
-        i) IMAGE="$OPTARG" ;;
-        d) DEVICE="$OPTARG" ;;
-        u) USERNAME="$OPTARG" ;;
-        p) PASSWORD="$OPTARG" ;;
-        s) ENABLE_SSH=1 ;;
-        h|*) usage ;;
-    esac
+while getopts "i:d:sh" opt; do
+  case $opt in
+    i) IMAGE="$OPTARG" ;;
+    d) DEVICE="$OPTARG" ;;
+    s) ENABLE_SSH=1 ;;
+    h|*) usage ;;
+  esac
 done
 
-[[ -n "$IMAGE" && -n "$DEVICE" ]] || usage
-[[ -b "$DEVICE" ]] || { echo "Target device $DEVICE does not exist."; exit 1; }
+#---------------------------------------
+# fzf-backed file picker (start at $HOME)
+# returns chosen path in IMAGE
+#---------------------------------------
+fzf_file_picker() {
+  command -v fzf >/dev/null 2>&1 || { echo "fzf required"; return 1; }
+
+  # prefer fd
+  if command -v fd >/dev/null 2>&1; then
+    fd -H -t f -e img -e xz --hidden --follow . "$HOME" \
+      | fzf --height=40% --layout=reverse --inline-info --prompt="Select image: " \
+            --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
+            --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
+            --preview-window=right:50%:wrap --select-1 --exit-0 --no-multi
+    return $?
+  fi
+
+  # fallback: find with nulls
+  find "$HOME" -type f \( -iname '*.img' -o -iname '*.img.xz' -o -iname '*.xz' \) -print0 \
+    | fzf --read0 --height=40% --layout=reverse --inline-info --prompt="Select image: " \
+          --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
+          --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
+          --preview-window=right:50%:wrap --select-1 --exit-0 --no-multi
+  return $?
+}
+
+# If image not supplied, let user pick one via fzf
+if [[ -z "$IMAGE" ]]; then
+  if ! command -v fzf >/dev/null 2>&1; then
+    echo "fzf required to select an image interactively. Install fzf or pass -i IMAGE."; usage
+  fi
+  IMAGE="$(fzf_file_picker)"
+  if [[ -z "$IMAGE" ]]; then
+    echo "No image selected."; usage
+  fi
+fi
+
+# If device not supplied use fzf selector
+if [ -z "${DEVICE:-}" ]; then
+  if ! command -v lsblk >/dev/null 2>&1; then
+    echo "lsblk required but not found."
+    exit 1
+  fi
+  if ! command -v fzf >/dev/null 2>&1; then
+    echo "fzf not found. Install fzf or pass -d /dev/sdX."
+    exit 1
+  fi
+
+  # build selectable list: only disks, removable (RM==1), and not mounted
+  # use lsblk -P for safe parsing when MODEL contains spaces
+  SEL=$(
+    lsblk -ASndPo NAME,TYPE,MODEL,MOUNTPOINT,RM -P \
+      | awk -F '"' '$4=="disk" && $10==1 && $8=="" {printf "/dev/%s\t%s\n",$2,$6}' \
+      | fzf --height=40% --style=minimal --inline-info +s --reverse \
+            --prompt="Select target device: " --header="Path\tModel" \
+            --select-1 --exit-0 --no-multi
+  )
+
+  if [ -z "${SEL:-}" ]; then
+    echo "No device selected"
+    exit 1
+  fi
+
+  # SEL format: "/dev/sdX<TAB>Model..."; extract path
+  DEVICE=$(printf '%s' "$SEL" | awk '{print $1}')
+fi
+
+[ -b "$DEVICE" ] || { echo "Target device $DEVICE does not exist."; exit 1; }
 
 #---------------------------------------
 # Setup working directories
@@ -60,32 +120,31 @@ WORKDIR=$(mktemp -d)
 SRC_IMG="$WORKDIR/source.img"
 BOOT_MNT="$WORKDIR/boot"
 ROOT_MNT="$WORKDIR/root"
-
 mkdir -p "$BOOT_MNT" "$ROOT_MNT"
 
 #---------------------------------------
 # Download or extract image
 #---------------------------------------
 echo "[*] Preparing source image..."
-if [[ "$IMAGE" =~ ^https?:// ]]; then
-    echo "[*] Downloading $IMAGE ..."
-    wget -q --show-progress -O "$WORKDIR/$(basename "$IMAGE")" "$IMAGE"
-    IMAGE="$WORKDIR/$(basename "$IMAGE")"
+if printf '%s\n' "$IMAGE" | grep -qE '^https?://'; then
+  echo "[*] Downloading $IMAGE ..."
+  wget -q --show-progress -O "$WORKDIR/$(basename "$IMAGE")" "$IMAGE"
+  IMAGE="$WORKDIR/$(basename "$IMAGE")"
 fi
 
-if [[ "$IMAGE" =~ \.xz$ ]]; then
-    echo "[*] Extracting $IMAGE ..."
-    xz -dc "$IMAGE" > "$SRC_IMG"
+if printf '%s\n' "$IMAGE" | grep -qE '\.xz$'; then
+  echo "[*] Extracting $IMAGE ..."
+  xz -dc "$IMAGE" > "$SRC_IMG"
 else
-    cp "$IMAGE" "$SRC_IMG"
+  cp "$IMAGE" "$SRC_IMG"
 fi
 
 #---------------------------------------
 # Partition and format target device
 #---------------------------------------
 echo "[*] WARNING: All data on $DEVICE will be destroyed!"
-read -p "Type YES to continue: " CONFIRM
-[[ "$CONFIRM" == "YES" ]] || { echo "Aborted."; exit 1; }
+read -rp "Type YES to continue: " CONFIRM
+[[ $CONFIRM != "YES" ]] && { echo "Aborted."; exit 1; }
 
 echo "[*] Wiping existing partitions..."
 wipefs -af "$DEVICE"
@@ -94,13 +153,17 @@ parted -s "$DEVICE" mkpart primary fat32 0% 512MB
 parted -s "$DEVICE" mkpart primary 512MB 100%
 partprobe "$DEVICE"
 
-if [[ "$DEVICE" =~ mmcblk ]]; then
+# partition name handling for mmcblk / nvme
+case "$DEVICE" in
+  *mmcblk*|*nvme*)
     PART_BOOT="${DEVICE}p1"
     PART_ROOT="${DEVICE}p2"
-else
+    ;;
+  *)
     PART_BOOT="${DEVICE}1"
     PART_ROOT="${DEVICE}2"
-fi
+    ;;
+esac
 
 echo "[*] Formatting partitions..."
 mkfs.vfat -F32 -n boot "$PART_BOOT"
@@ -114,7 +177,7 @@ ZIP='img,iso,gz,tar,zip,deb'
 COLD="${TXT},${IMG},${MED},${ZIP}"
 
 mkfs.f2fs -f -S -i \
-  -O extra_attr,inode_checksum,sb_checksum,compression,flexible_inline_xattr \
+  -O extra_attr,inode_checksum,sb_checksum,flexible_inline_xattr \
   -E "$HOT" -e "$COLD" -l root "$PART_ROOT"
 
 #---------------------------------------
@@ -176,16 +239,10 @@ PARTUUID=$ROOT_UUID  /       f2fs    defaults,noatime,discard    0   1
 EOF
 
 #---------------------------------------
-# Optional SSH and user setup
+# Optional SSH setup
 #---------------------------------------
-if [[ $ENABLE_SSH -eq 1 ]]; then
-    touch "$TARGET_ROOT/boot/ssh"
-fi
-
-if [[ -n "$USERNAME" && -n "$PASSWORD" ]]; then
-    HASHED_PASS=$(echo "$PASSWORD" | openssl passwd -6 -stdin)
-    chroot "$TARGET_ROOT" /usr/sbin/useradd -m -s /bin/bash "$USERNAME"
-    echo "$USERNAME:$HASHED_PASS" | chroot "$TARGET_ROOT" /usr/sbin/chpasswd -e
+if [ "$ENABLE_SSH" -eq 1 ]; then
+  touch "$TARGET_ROOT/boot/ssh"
 fi
 
 #---------------------------------------
@@ -201,11 +258,11 @@ cat > "$TARGET_ROOT/etc/initramfs-tools/scripts/init-premount/f2fsresize" <<'EOF
 log_begin_msg "Expanding F2FS root filesystem..."
 ROOT_DEV=$(findmnt -n -o SOURCE /)
 if [ -x /sbin/resize.f2fs ]; then
-    /sbin/resize.f2fs "$ROOT_DEV"
-    log_end_msg "F2FS root filesystem expanded."
-    rm -f /etc/initramfs-tools/scripts/init-premount/f2fsresize
+  /sbin/resize.f2fs "$ROOT_DEV"
+  log_end_msg "F2FS root filesystem expanded."
+  rm -f /etc/initramfs-tools/scripts/init-premount/f2fsresize
 else
-    log_end_msg "resize.f2fs not found. Skipping."
+  log_end_msg "resize.f2fs not found. Skipping."
 fi
 EOF
 

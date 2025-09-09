@@ -1,5 +1,25 @@
 https://github.com/Rudxain/dotfiles
 
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+ "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+ $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+ sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+deb http://deb.debian.org/debian/ trixie main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian/ trixie-updates main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian/ trixie-proposed-updates main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian/ trixie-backports main contrib non-free non-free-firmware
+```
+```bash
+apt-get -Uqy full-upgrade
+
+```
+
 
 apt-gc
 

@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export LC_ALL=C LANG=C
+export LC_ALL=C
+export LANG=C
+
 HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-builtin cd -- "$WHOMEDIR" || exit 1
+builtin cd -- "$HOMEDIR" || exit 1
+
 #---------------------------------------
 # Modern Raspbian/DietPi F2FS Flash Script
 # With tmpfs acceleration and first-boot resize
 # FZF file + device selectors used if -i/-d not provided
-# Dietpi:
-# https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz
 #---------------------------------------
 sudo -v; sync
-sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
+sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches' || true
 
 usage() {
   cat <<EOF
@@ -28,10 +29,10 @@ EOF
 
 cleanup() {
   # try to unmount if mounted, ignore errors
-  umount "$BOOT_MNT" 2>/dev/null || true
-  umount "$ROOT_MNT" 2>/dev/null || true
-  umount "$TARGET_BOOT" 2>/dev/null || true
-  umount "$TARGET_ROOT" 2>/dev/null || true
+  [ -n "${BOOT_MNT:-}" ] && umount "$BOOT_MNT" 2>/dev/null || true
+  [ -n "${ROOT_MNT:-}" ] && umount "$ROOT_MNT" 2>/dev/null || true
+  [ -n "${TARGET_BOOT:-}" ] && umount "$TARGET_BOOT" 2>/dev/null || true
+  [ -n "${TARGET_ROOT:-}" ] && umount "$TARGET_ROOT" 2>/dev/null || true
   if [ -n "${LOOP_DEV:-}" ]; then
     losetup -d "$LOOP_DEV" 2>/dev/null || true
   fi
@@ -65,24 +66,25 @@ done
 
 #---------------------------------------
 # fzf-backed file picker (start at $HOME)
-# returns chosen path in IMAGE
+# returns chosen path in IMAGE (printed)
 #---------------------------------------
 fzf_file_picker() {
   command -v fzf >/dev/null 2>&1 || { echo "fzf required"; return 1; }
 
   if command -v fd >/dev/null 2>&1; then
     fd -H -t f -e img -e xz --hidden --follow "$HOME" \
-      | fzf --height=~40% --layout=reverse --inline-info --prompt="Select image: " \
+      | fzf --height=40% --layout=reverse --inline-info --prompt="Select image: " \
             --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
             --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
-            --preview-window=right:50%:wrap -1 -0 --no-multi
+            --preview-window=right:50%:wrap --no-multi
     return $?
   fi
-  find -O3 . -type f \( -iname '*.img' -o -iname '*.img.xz' -o -iname '*.xz' \) -print0 \
-    | fzf --read0 --height=~40% --layout=reverse --inline-info --prompt="Select image: " \
+
+  find "$HOME" -type f \( -iname '*.img' -o -iname '*.img.xz' -o -iname '*.xz' \) -print0 \
+    | fzf --read0 --height=40% --layout=reverse --inline-info --prompt="Select image: " \
           --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
           --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
-          --preview-window=right:50%:wrap -1 -0 --no-multi
+          --preview-window=right:50%:wrap --no-multi
   return $?
 }
 
@@ -253,12 +255,13 @@ rsync -aHAX --progress --fsync --preallocate --force "${BOOT_MNT}/" "${TARGET_BO
 #---------------------------------------
 # Update bootloader and fstab for F2FS
 #---------------------------------------
-BOOT_UUID=$(blkid -s PARTUUID -o value "$PART_BOOT")
-ROOT_UUID=$(blkid -s PARTUUID -o value "$PART_ROOT")
+BOOT_UUID=$(blkid -s PARTUUID -o value "$PART_BOOT" || true)
+ROOT_UUID=$(blkid -s PARTUUID -o value "$PART_ROOT" || true)
 
-if [ -f "${TARGET_ROOT}/cmdline.txt" ]; then
-  sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "${TARGET_ROOT}/cmdline.txt"
-  sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_ROOT}/cmdline.txt" || true
+# cmdline.txt lives on the boot partition for Raspberry Pi images
+if [ -f "${TARGET_BOOT}/cmdline.txt" ]; then
+  sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "${TARGET_BOOT}/cmdline.txt"
+  sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_BOOT}/cmdline.txt" || true
 fi
 
 mkdir -p "${TARGET_ROOT}/etc"
@@ -272,7 +275,7 @@ EOF
 # Optional SSH setup
 #---------------------------------------
 if [ "$ENABLE_SSH" -eq 1 ]; then
-  touch "${TARGET_BOOT}/ssh" || touch "${TARGET_ROOT}/boot/ssh"
+  touch "${TARGET_BOOT}/ssh"
 fi
 
 #---------------------------------------
@@ -296,7 +299,7 @@ else
 fi
 EOF
 
-sudo chmod +x "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize"
+chmod +x "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize" || true
 
 #---------------------------------------
 # Cleanup (trap will also run cleanup)
@@ -305,7 +308,7 @@ echo "[*] Syncing and unmounting..."
 sync
 umount "$BOOT_MNT" "$ROOT_MNT" "$TARGET_BOOT" "$TARGET_ROOT" 2>/dev/null || true
 losetup -d "${LOOP_DEV:-}" 2>/dev/null || true
-rm -rf "${WORKDIR}"
+rm -rf "${WORKDIR:-}"
 
 echo "[+] Done! Your F2FS Raspberry Pi image is ready on ${DEVICE}."
 echo "[+] First boot will automatically expand the root filesystem."

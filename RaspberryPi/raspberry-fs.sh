@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#set -euo pipefail
+set -euo pipefail
 export LC_ALL=C LANG=C
 
 #---------------------------------------
@@ -21,12 +21,24 @@ EOF
   exit 1
 }
 
+cleanup() {
+  # try to unmount if mounted, ignore errors
+  umount "$BOOT_MNT" 2>/dev/null || true
+  umount "$ROOT_MNT" 2>/dev/null || true
+  umount "$TARGET_BOOT" 2>/dev/null || true
+  umount "$TARGET_ROOT" 2>/dev/null || true
+  if [ -n "${LOOP_DEV:-}" ]; then
+    losetup -d "$LOOP_DEV" 2>/dev/null || true
+  fi
+  [ -n "${WORKDIR:-}" ] && rm -rf "$WORKDIR"
+}
+trap cleanup EXIT INT TERM
+
 #---------------------------------------
-# Root check
+# Root check (re-exec under sudo if needed)
 #---------------------------------------
-sudo -v
 if [ "$(id -u)" -ne 0 ]; then
-  echo "This script must be run as root."
+  echo "This script must be run as root. Re-exec with sudo..."
   exec sudo -E bash "$0" "$@"
 fi
 
@@ -53,9 +65,8 @@ done
 fzf_file_picker() {
   command -v fzf >/dev/null 2>&1 || { echo "fzf required"; return 1; }
 
-  # prefer fd
   if command -v fd >/dev/null 2>&1; then
-    fd -H -t f -e img -e xz --hidden --follow . "$HOME" \
+    fd -H -t f -e img -e xz --hidden --follow "$HOME" \
       | fzf --height=40% --layout=reverse --inline-info --prompt="Select image: " \
             --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
             --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
@@ -63,7 +74,6 @@ fzf_file_picker() {
     return $?
   fi
 
-  # fallback: find with nulls
   find "$HOME" -type f \( -iname '*.img' -o -iname '*.img.xz' -o -iname '*.xz' \) -print0 \
     | fzf --read0 --height=40% --layout=reverse --inline-info --prompt="Select image: " \
           --header="Select Raspberry Pi/DietPi image (.img, .img.xz, .xz)" \
@@ -73,13 +83,15 @@ fzf_file_picker() {
 }
 
 # If image not supplied, let user pick one via fzf
-if [[ -z "$IMAGE" ]]; then
+if [ -z "$IMAGE" ]; then
   if ! command -v fzf >/dev/null 2>&1; then
-    echo "fzf required to select an image interactively. Install fzf or pass -i IMAGE."; usage
+    echo "fzf required to select an image interactively. Install fzf or pass -i IMAGE."
+    usage
   fi
   IMAGE="$(fzf_file_picker)"
-  if [[ -z "$IMAGE" ]]; then
-    echo "No image selected."; usage
+  if [ -z "$IMAGE" ]; then
+    echo "No image selected."
+    usage
   fi
 fi
 
@@ -94,11 +106,15 @@ if [ -z "${DEVICE:-}" ]; then
     exit 1
   fi
 
-  # build selectable list: only disks, removable (RM==1), and not mounted
-  # use lsblk -P for safe parsing when MODEL contains spaces
   SEL=$(
-    lsblk -ASndPo NAME,TYPE,MODEL,MOUNTPOINT,RM -P \
-      | awk -F '"' '$4=="disk" && $10==1 && $8=="" {printf "/dev/%s\t%s\n",$2,$6}' \
+    lsblk -P -o NAME,TYPE,MODEL,MOUNTPOINT,RM \
+      | while read -r line; do
+          # turn NAME="sda" TYPE="disk" ... into shell vars
+          eval "$line"
+          if [ "$TYPE" = "disk" ] && [ "${RM:-0}" = "1" ] && [ -z "${MOUNTPOINT:-}" ]; then
+            printf "/dev/%s\t%s\n" "$NAME" "${MODEL:-}"
+          fi
+        done \
       | fzf --height=40% --style=minimal --inline-info +s --reverse \
             --prompt="Select target device: " --header="Path\tModel" \
             --select-1 --exit-0 --no-multi
@@ -109,11 +125,13 @@ if [ -z "${DEVICE:-}" ]; then
     exit 1
   fi
 
-  # SEL format: "/dev/sdX<TAB>Model..."; extract path
   DEVICE=$(printf '%s' "$SEL" | awk '{print $1}')
 fi
 
-[ -b "$DEVICE" ] || { echo "Target device $DEVICE does not exist."; exit 1; }
+if [ ! -b "$DEVICE" ]; then
+  echo "Target device $DEVICE does not exist or is not a block device."
+  exit 1
+fi
 
 #---------------------------------------
 # Setup working directories
@@ -138,23 +156,25 @@ if printf '%s\n' "$IMAGE" | grep -qE '\.xz$'; then
   echo "[*] Extracting $IMAGE ..."
   xz -dc "$IMAGE" > "$SRC_IMG"
 else
-  cp "$IMAGE" "$SRC_IMG"
+  cp --reflink=auto "$IMAGE" "$SRC_IMG"
 fi
 
 #---------------------------------------
 # Partition and format target device
 #---------------------------------------
 echo "[*] WARNING: All data on $DEVICE will be destroyed!"
-read -rp "Type yes to continue: " CONFIRM
-[[ $CONFIRM != yes ]] && { echo "Aborted"; exit 1; }
-
+read -r -p "Type yes to continue: " CONFIRM
+if [ "$CONFIRM" != yes ]; then
+  echo "Aborted"
+  exit 1
+fi
 
 echo "[*] Wiping existing partitions..."
-sudo wipefs -af "$DEVICE"
-sudo parted -s "$DEVICE" mklabel msdos
-sudo parted -s "$DEVICE" mkpart primary fat32 0% 512MB
-sudo parted -s "$DEVICE" mkpart primary 512MB 100%
-sudo partprobe "$DEVICE"
+wipefs -af "$DEVICE"
+parted -s "$DEVICE" mklabel msdos
+parted -s "$DEVICE" mkpart primary fat32 0% 512MB
+parted -s "$DEVICE" mkpart primary 512MB 100%
+partprobe "$DEVICE"
 
 # partition name handling for mmcblk / nvme
 case "$DEVICE" in
@@ -169,7 +189,7 @@ case "$DEVICE" in
 esac
 
 echo "[*] Formatting partitions..."
-sudo mkfs.vfat -F32 -n boot "$PART_BOOT"
+mkfs.vfat -F32 -n boot "$PART_BOOT"
 
 # Hot/cold files for f2fs
 HOT='db,sqlite,tmp,log,json,conf,journal,pid,lock,xml,ini,py'
@@ -179,7 +199,7 @@ MED='mkv,mp4,mov,avi,webm,mpeg,mp3,ogg,opus,wav'
 ZIP='img,iso,gz,tar,zip,deb'
 COLD="${TXT},${IMG},${MED},${ZIP}"
 
-sudo -E mkfs.f2fs -f -S -i \
+mkfs.f2fs -f -S -i \
   -O extra_attr,inode_checksum,sb_checksum,flexible_inline_xattr \
   -E "$HOT" -e "$COLD" -l root "$PART_ROOT"
 
@@ -232,9 +252,12 @@ rsync -aHAX "$BOOT_MNT/" "$TARGET_BOOT/"
 BOOT_UUID=$(blkid -s PARTUUID -o value "$PART_BOOT")
 ROOT_UUID=$(blkid -s PARTUUID -o value "$PART_ROOT")
 
-sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "$TARGET_BOOT/cmdline.txt"
-sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "$TARGET_BOOT/cmdline.txt"
+if [ -f "$TARGET_BOOT/cmdline.txt" ]; then
+  sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "$TARGET_BOOT/cmdline.txt"
+  sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "$TARGET_BOOT/cmdline.txt" || true
+fi
 
+mkdir -p "$TARGET_ROOT/etc"
 cat > "$TARGET_ROOT/etc/fstab" <<EOF
 proc                  /proc   proc    defaults                    0   0
 PARTUUID=$BOOT_UUID  /boot   vfat    defaults                    0   2
@@ -245,7 +268,7 @@ EOF
 # Optional SSH setup
 #---------------------------------------
 if [ "$ENABLE_SSH" -eq 1 ]; then
-  touch "$TARGET_ROOT/boot/ssh"
+  touch "$TARGET_BOOT/ssh" || touch "$TARGET_ROOT/boot/ssh"
 fi
 
 #---------------------------------------
@@ -272,12 +295,12 @@ EOF
 chmod +x "$TARGET_ROOT/etc/initramfs-tools/scripts/init-premount/f2fsresize"
 
 #---------------------------------------
-# Cleanup
+# Cleanup (trap will also run cleanup)
 #---------------------------------------
 echo "[*] Syncing and unmounting..."
 sync
-umount "$BOOT_MNT" "$ROOT_MNT" "$TARGET_BOOT" "$TARGET_ROOT"
-losetup -d "$LOOP_DEV"
+umount "$BOOT_MNT" "$ROOT_MNT" "$TARGET_BOOT" "$TARGET_ROOT" 2>/dev/null || true
+losetup -d "${LOOP_DEV:-}" 2>/dev/null || true
 rm -rf "$WORKDIR"
 
 echo "[+] Done! Your F2FS Raspberry Pi image is ready on $DEVICE."

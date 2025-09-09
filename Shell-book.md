@@ -28,11 +28,10 @@
 
 ```bash
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
-
-
-set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit 
+set -eEuo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t'
 export LC_ALL=C LANG=C
+
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

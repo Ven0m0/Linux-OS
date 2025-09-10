@@ -48,9 +48,17 @@ further links:
   
 </details>
 <details>
-<summary><b>PiShrink</b></summary>
+<summary><b>Dieti:</b></summary>
 
-- [PiShrink](https://github.com/Drewsif/PiShrink)
+- Raspberry pi 4: LEMP (Ngix, Mariadb, PHP)
+- Raspberry pi 3: LLSP (Lighttpd, Sqlite, PHP
+
+
+[Ngix](https://docs.nginx.com/nginx/admin-guide)
+[Lighttpd](https://www.lighttpd.net)
+[MariaDB](https://mariadb.org/documentation/#getting-started)
+[Sqlite](https://www.sqlite.org/quickstart.html)
+
 
 </details>
 <details> 

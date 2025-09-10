@@ -33,6 +33,7 @@ cleanup() {
   [ -n "${ROOT_MNT:-}" ] && umount "$ROOT_MNT" 2>/dev/null || :
   [ -n "${TARGET_BOOT:-}" ] && umount "$TARGET_BOOT" 2>/dev/null || :
   [ -n "${TARGET_ROOT:-}" ] && umount "$TARGET_ROOT" 2>/dev/null || :
+  [ -n "${TMPFS_MNT:-}" ] && umount "$TMPFS_MNT" 2>/dev/null || :
   if [ -n "${LOOP_DEV:-}" ]; then
     losetup -d "$LOOP_DEV" 2>/dev/null || :
   fi
@@ -71,45 +72,46 @@ done
 fzf_file_picker(){
   command -v fzf >/dev/null 2>&1 || { echo "fzf required"; usage; }
   if command -v fd >/dev/null 2>&1; then
-    LC_ALL=C fd -tf -e img -e xz -p "${HOME:-.}" \
+    # fd -p is alias for --full-path on newer fd versions; keep it
+    fd -tf -e img -e xz -p "${HOME:-.}" \
       | fzf --height=~40% --layout=reverse --inline-info --prompt="Select image: " \
             --header="Select Raspberry Pi/DietPi image (.img,.xz)" \
             --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
             --preview-window=right:50%:wrap --no-multi -1 -0
     return $?
   fi
-  LC_ALL=C find -O3 "${HOME:-.}" -type f \( -iname '*.img' -o -iname '*.xz' \) -print0 \
+  find "${HOME:-.}" -type f \( -iname '*.img' -o -iname '*.xz' \) -print0 \
     | fzf --read0 --height=~40% --layout=reverse --inline-info --prompt="Select image: " \
           --header="Select Raspberry Pi/DietPi image (.img,.xz)" \
           --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
           --preview-window=right:50%:wrap --no-multi -1 -0
   return $?
 }
+
 # If image not supplied, let user pick one via fzf
 if [ -z "${IMAGE:-}" ]; then
   IMAGE="$(fzf_file_picker)"
-  [[ -z "$IMAGE" ]] && { echo "No image selected."; usage; }
-fi
-# If device not supplied use fzf selector
-if [ -z "${DEVICE:-}" ]; then
-  command -v fzf &>/dev/null && { echo "fzf not found. Install fzf or pass -d /dev/sdX." exit 1; }
-  SEL=$(
-    lsblk -PAn -o NAME,TYPE,MODEL,MOUNTPOINT,RM \
-      | while read -r line; do
-          # turn NAME="sda" TYPE="disk" ... into shell vars
-          eval "$line"
-          if [[ "$TYPE" = disk ]] && [ "${RM:-0}" = "1" ] && [ -z "${MOUNTPOINT:-}" ]; then
-            printf "/dev/%s\t%s\n" "$NAME" "${MODEL:-}"
-          fi
-        done \
-      | fzf --height=~40% --style=minimal --inline-info +s --reverse -1 -0 \
-            --prompt="Select target device: " --header="Path\tModel" --no-multi)
-  
-  [[ -z "${SEL:-}" ]] && { echo "No device selected"; exit 1; }
-  DEVICE=$(printf '%s' "$SEL" | awk '{print $1}')
+  [ -z "$IMAGE" ] && { echo "No image selected."; usage; }
 fi
 
-[[ ! -b "$DEVICE" ]] && { echo "Target device $DEVICE does not exist or is not a block device."; exit 1; }
+# If device not supplied use fzf selector
+if [ -z "${DEVICE:-}" ]; then
+  command -v fzf >/dev/null 2>&1 || { echo "fzf not found. Install fzf or pass -d /dev/sdX."; exit 1; }
+
+  SEL=$(
+    lsblk -dn -o NAME,TYPE,RM,SIZE,MODEL,MOUNTPOINT \
+      | awk '
+        $2=="disk" && $3=="1" && $6=="" { printf "/dev/%s\t%s %s\n", $1, $4, $5 }
+      ' \
+      | fzf --height=~40% --style=minimal --inline-info +s --reverse -1 -0 \
+            --prompt="Select target device: " --header="Path\tSize Model" --no-multi
+  )
+
+  [ -z "${SEL:-}" ] && { echo "No device selected"; exit 1; }
+  DEVICE=$(awk '{print $1}' <<<"$SEL")
+fi
+
+[ ! -b "$DEVICE" ] && { echo "Target device $DEVICE does not exist or is not a block device."; exit 1; }
 
 #---------------------------------------
 # Setup working directories
@@ -126,9 +128,11 @@ mkdir -p -- "$BOOT_MNT" "$ROOT_MNT"
 echo "[*] Preparing source image..."
 if printf '%s\n' "$IMAGE" | grep -qE '^https?://'; then
   echo "[*] Downloading $IMAGE ..."
-  IMAGE="${WORKDIR}/$(basename "$IMAGE")"
-  curl -SfL --progress-bar -o "$IMAGE" "$IMAGE"
+  SRC_URL="$IMAGE"
+  IMAGE="${WORKDIR}/$(basename "$SRC_URL")"
+  curl -SfL --progress-bar -o "$IMAGE" "$SRC_URL"
 fi
+
 if printf '%s\n' "$IMAGE" | grep -qE '\.xz$'; then
   echo "[*] Extracting $IMAGE ..."
   xz -dc "$IMAGE" > "$SRC_IMG"
@@ -197,21 +201,26 @@ mount "$PART_BOOT" "$TARGET_BOOT"
 mount "$PART_ROOT" "$TARGET_ROOT"
 
 #---------------------------------------
-# Tmpfs acceleration for root copy
+# Tmpfs acceleration for root copy (robust)
 #---------------------------------------
 echo "[*] Copying root filesystem via tmpfs..."
 ROOT_SIZE_MB=$(du -sm "${ROOT_MNT}" | awk '{print $1}')
-TMPFS_SIZE=$((ROOT_SIZE_MB + 512))  # add buffer
+TMPFS_SIZE=$((ROOT_SIZE_MB + 1024))  # larger buffer to avoid mid-copy failures
 TMPFS_MNT="${WORKDIR}/tmpfs_root"
 
 mkdir -p "$TMPFS_MNT"
 mount -t tmpfs -o size=${TMPFS_SIZE}M tmpfs "$TMPFS_MNT"
 
 echo "[*] rsync from image to tmpfs..."
-rsync -aHAX --progress --fsync --preallocate --force "${ROOT_MNT}/" "${TMPFS_MNT}/"
+if ! rsync -aHAX --info=progress2 --fsync --inplace "${ROOT_MNT}/" "${TMPFS_MNT}/"; then
+  echo "Error: rsync to tmpfs failed"; umount "$TMPFS_MNT" 2>/dev/null || :; exit 1
+fi
 
 echo "[*] rsync from tmpfs to target root partition..."
-rsync -aHAX --progress --fsync --preallocate --force "${TMPFS_MNT}/" "${TARGET_ROOT}/"
+# Use inplace to avoid duplicating files; avoid --preallocate (can spike)
+if ! rsync -aHAX --info=progress2 --fsync --inplace "${TMPFS_MNT}/" "${TARGET_ROOT}/"; then
+  echo "Error: rsync to target partition failed"; umount "$TMPFS_MNT" 2>/dev/null || :; exit 1
+fi
 
 umount "$TMPFS_MNT"
 rm -rf "$TMPFS_MNT"
@@ -220,7 +229,7 @@ rm -rf "$TMPFS_MNT"
 # Copy boot partition
 #---------------------------------------
 echo "[*] Copying boot partition..."
-rsync -aHAX --progress --fsync --preallocate --force "${BOOT_MNT}/" "${TARGET_BOOT}/"
+rsync -aHAX --info=progress2 --fsync --inplace "${BOOT_MNT}/" "${TARGET_BOOT}/"
 
 #---------------------------------------
 # Update bootloader and fstab for F2FS

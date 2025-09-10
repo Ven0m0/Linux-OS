@@ -120,3 +120,5 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 ## Useful websites
 
 - [Wormhole file sharing](https://wormhole.app)
+
+- tools.waytolearnx.com

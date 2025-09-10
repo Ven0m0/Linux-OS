@@ -58,7 +58,7 @@ sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
 export APT_NO_COLOR=1 NO_COLOR=1 DPKG_COLORS=never DEBIAN_FRONTEND=noninteractive
 if has apt-fast; then
   "$suexec" apt-fast update -yq --allow-releaseinfo-change
-  #"$suexec" apt-fast upgrade -yfq --allow-releaseinfo-change --no-install-recommends
+  #"$suexec" apt-fast upgrade -yfq --no-install-recommends
   "$suexec" apt-fast dist-upgrade -yqf --allow-releaseinfo-change --no-install-recommends
   "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
 #elif has nala; then

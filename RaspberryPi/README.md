@@ -144,12 +144,14 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 
 - [NFS/Samba](https://dietpi.com/docs/software/file_servers)
 
+- [Gitea](https://docs.gitea.com/)
+
 <details>
 <summary><b>DNS Adblock/OS's</b></summary>
 
-- Pihole
+- [Pihole]()
 
-- Adguard
+- [Adguard]()
 
 - [Blocky](https://0xerr0r.github.io/blocky/latest)
 

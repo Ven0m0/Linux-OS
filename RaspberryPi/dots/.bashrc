@@ -60,6 +60,17 @@ if command -v apt-fast &>/dev/null; then
 else
   alias apt="sudo apt-get"
 fi
+if command -v nala &>/dev/null, then
+  alias nal='sudo \nala'
+  alias nala='sudo \nala'
+fi
+
+aptsearch(){
+  if ! nala -n "$@"; then
+    apt-cache search "$@" || return 1
+  fi
+}
+
 
 # docker
 alias dr='docker run'

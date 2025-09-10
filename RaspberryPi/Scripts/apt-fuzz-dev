@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # apt-fuzz — compact skim/fzf TUI for apt / apt-fast
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob globstar execfail
 export LC_ALL=C LANG=C
 
 : "${SHELL:=${BASH:-/bin/bash}}"

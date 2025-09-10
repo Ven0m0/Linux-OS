@@ -134,6 +134,17 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 
 </details>
 <details>
+<summary><b>Self-hosting services</b></summary>
+
+- [Nextcloud](https://docs.nextcloud.com/server/latest/admin_manual/contents.html)
+
+- [Owncloud](https://doc.owncloud.com/server/next/)
+
+- [Web-filebrowser](https://filebrowser.org/index.html)
+
+- [NFS/Samba](https://dietpi.com/docs/software/file_servers)
+
+<details>
 <summary><b>DNS Adblock/OS's</b></summary>
 
 - Pihole

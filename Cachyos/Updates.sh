@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C; shopt -s nullglob
+export LC_ALL=C LANG=C; shopt -s nullglob globstar execfail
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
 #============ Color & Effects ============

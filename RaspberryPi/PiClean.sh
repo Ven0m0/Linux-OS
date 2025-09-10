@@ -85,5 +85,10 @@ sudo find /var/log -type f -name "*.log" -exec rm -f {} \;
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 echo "System clean-up complete."
 
-echo "Clearing DietPi logs..."
-sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null
+echo "Clearing DietPi..."
+sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null || G_SUDO dietpi-logclear 2 2>/dev/null
+sudo /boot/dietpi/func/dietpi-cleaner 2 2>/dev/null || G_SUDO dietpi-cleaner 2 2>/dev/null
+
+
+
+

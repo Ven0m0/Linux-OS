@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 export LC_ALL=C LANG=C
-shopt -s nullglob globstar
+shopt -s nullglob globstar execfail
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

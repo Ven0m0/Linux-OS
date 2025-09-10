@@ -17,6 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Ras
 
 ```markdown
 net.ipv4.ip_forward=1
+https://gitlab.com/volian/nala/-/blob/main/docs/nala-fetch.8.rst?ref_type=heads
 ```
 
 <details>

@@ -19,3 +19,9 @@ mkdir -p /etc/nginx/default.d
 mkdir -p /etc/nginx/default.apps-available
 
 ```
+
+**Install on debian**
+
+``bash
+
+``

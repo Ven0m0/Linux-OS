@@ -119,7 +119,6 @@ fi
 "$suexec" rm -rf --preserve-root -- /var/tmp/flatpak-cache-*
 rm -rf --preserve-root -- "${HOME}/.cache/flatpak/system-cache/"*
 rm -rf --preserve-root -- "${HOME}/.local/share/flatpak/system-cache/"*
-rm -rf --preserve-root -- "${HOME}/.var/app/*/data/Trash/"*
 rm -rf --preserve-root -- ${HOME}/.var/app/*/data/Trash/*
 # Clear thumbnails
 rm -rf --preserve-root -- "${HOME}/.thumbnails/"*

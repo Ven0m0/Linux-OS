@@ -1,0 +1,11 @@
+* text=auto eol=lf
+*.sh text eol=lf
+*.png binary
+
+# Use built-in patterns to generate smarter diff text.
+# http://urbanautomaton.com/blog/2011/07/28/git-grep-and-language-specific-diffs/
+*.js  diff=java
+*.php diff=php
+*.pl  diff=perl
+*.py  diff=python
+*.rb  diff=ruby

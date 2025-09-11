@@ -126,8 +126,8 @@ rm -rf --preserve-root -- "${HOME}/.thumbnails/"*
 
 # Clear system logs
 "$suexec" rm -f --preserve-root -- "/var/log/pacman.log"
-"$suexec" journalctl --update-catalog -q; "$suexec" journalctl --flush -q; "$suexec" journalctl --rotate --vacuum-time=1s -q
-"$suexec" rm -rf --preserve-root -- '/run/log/journal/'* '/var/log/journal/'*
+"$suexec" journalctl --rotate --vacuum-size=1 --flush --sync -q
+"$suexec" rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2>/dev/null || :
 "$suexec" rm -rf --preserve-root -- "{/root,/home/*}/.local/share/zeitgeist/"*
 
 # Home cleaning

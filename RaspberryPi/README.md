@@ -157,9 +157,11 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 <details>
 <summary><b>DNS Adblock/OS's</b></summary>
 
-- [Pihole]()
+- [Pihole](https://pi-hole.net)
 
-- [Adguard]()
+- [Adguard](https://github.com/AdguardTeam/AdGuardHome)
+
+- [Technitium](https://technitium.com/dns)
 
 - [Blocky](https://0xerr0r.github.io/blocky/latest)
 

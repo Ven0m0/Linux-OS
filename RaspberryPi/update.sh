@@ -49,7 +49,7 @@ fi
 echo "Meow (> ^ <)"
 #============ Safe optimal privilege tool ====================
 [[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
+suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"; suexec="${suexec:=sudo}"
 [[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
@@ -58,7 +58,7 @@ sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
 export APT_NO_COLOR=1 NO_COLOR=1 DPKG_COLORS=never DEBIAN_FRONTEND=noninteractive
 if has apt-fast; then
   "$suexec" apt-fast update -yq --allow-releaseinfo-change
-  #"$suexec" apt-fast upgrade -yfq --no-install-recommends
+  "$suexec" apt-fast upgrade -yfq --no-install-recommends
   "$suexec" apt-fast dist-upgrade -yqf --no-install-recommends
   "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
 #elif has nala; then

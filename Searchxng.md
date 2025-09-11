@@ -22,6 +22,4 @@ mkdir -p /etc/nginx/default.apps-available
 
 **Install on debian**
 
-``bash
 
-``

@@ -5,16 +5,10 @@ on:
   schedule: [{cron: "0 0 * * 0"}]
   push:
     paths:
-      - '**/*.sh'
-      - '**/*.bash'
-      - '.bashrc'
-      - '.profile'
+      - '**/*.{sh,bash,bashrc,profile}'
   pull_request:
     paths:
-      - '**/*.sh'
-      - '**/*.bash'
-      - '.bashrc'
-      - '.profile'
+      - '**/*.{sh,bash,bashrc,profile}'
 permissions:
   contents: read
   pull-requests: write
@@ -34,11 +28,10 @@ jobs:
           reporter: github-pr-review
           path: "."
           pattern: |
-            "*.sh"
-            "*.bash"
-            ".bashrc"
-            "bash_*"
-            ".profile"
+            *.sh
+            *.bash
+            .bashrc
+            bash_*
           #exclude: ".git/*"
           exclude: |
             */.git/*

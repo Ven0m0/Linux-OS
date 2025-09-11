@@ -151,21 +151,21 @@ run_mgr(){
   case "$PRIMARY_MANAGER" in
     apt-fast)
       case "$action" in
-        update) cmd=(apt-fast update);;
-        upgrade) cmd=(apt-fast upgrade -y);;
-        autoremove) cmd=(apt-fast autoremove -y);;
-        clean) cmd=(apt-fast clean);;
-        *) cmd=(apt-fast "$action" -y "${pkgs[@]}");;
+        update) cmd=(apt-fast update -q);;
+        upgrade) cmd=(apt-fast upgrade -yq);;
+        autoremove) cmd=(apt-fast autoremove -yq);;
+        clean) cmd=(apt-fast clean -q);;
+        *) cmd=(apt-fast "$action" -yq "${pkgs[@]}");;
       esac ;;
     apt-get)
       case "$action" in
         update) cmd=(apt-get update);;
-        upgrade) cmd=(apt-get upgrade -y);;
-        install) cmd=(apt-get install -y "${pkgs[@]}");;
-        remove) cmd=(apt-get remove -y "${pkgs[@]}");;
-        purge) cmd=(apt-get purge -y "${pkgs[@]}");;
-        autoremove) cmd=(apt-get autoremove -y);;
-        clean) cmd=(apt-get clean);;
+        upgrade) cmd=(apt-get upgrade -yq);;
+        install) cmd=(apt-get install -yq "${pkgs[@]}");;
+        remove) cmd=(apt-get remove -yq "${pkgs[@]}");;
+        purge) cmd=(apt-get purge -yq "${pkgs[@]}");;
+        autoremove) cmd=(apt-get autoremove --purge -yq);;
+        clean) cmd=(apt-get clean -q);;
         *) cmd=(apt-get "$action" "${pkgs[@]}");;
       esac ;;
   esac

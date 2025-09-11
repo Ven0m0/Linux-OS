@@ -37,6 +37,12 @@ jobs:
             "*.sh"
             "*.bash"
             ".bashrc"
+            "bash_*"
             ".profile"
-          exclude: ".git/*"
+          #exclude: ".git/*"
+          exclude: |
+            */.git/*
+            ./.cache/*
+            ./Linux-Settings
           check_all_files_with_shebangs: "true"
+          shellcheck_flags: "-x -s bash"

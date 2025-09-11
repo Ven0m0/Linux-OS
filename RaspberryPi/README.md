@@ -165,6 +165,8 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 
 - [Blocky](https://0xerr0r.github.io/blocky/latest)
 
+- [Stubby](https://github.com/getdnsapi/stubby)
+
 </details>
 <details>
 <summary><b>Resources</b></summary>

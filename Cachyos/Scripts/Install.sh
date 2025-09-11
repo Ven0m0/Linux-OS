@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-LC_ALL=C.UTF-8 LANG=C.UTF-8
+export LC_ALL='C' LANG='C'
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
 #============ Color & Effects ============
@@ -15,15 +15,18 @@ hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || retu
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)" || { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
-export HOME="/home/${SUDO_USER:-$USER}"; sync
+export HOME="/home/${SUDO_USER:-$USER}"
 #============ Env ====================
 [[ -r /etc/makepkg.conf ]] && . "/etc/makepkg.conf"
 RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
-CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTUP_TOOLCHAIN=nightly RUSTC_BOOTSTRAP=1
+CFLAGS="${CFLAGS:=-march=native -mtune=native -O3 -pipe}" 
+CXXFLAGS="$CFLAGS"
+MAKEFLAGS="-j$(nproc)"
+CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always RUSTUP_TOOLCHAIN=nightly #RUSTC_BOOTSTRAP=1
+export MAKEFLAGS RUSTFLAGS CFLAGS CXXFLAGS CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 #=============================================================
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck'
-
+sync
 # sudo pacman -Rns openssh 
 packages=(
 topgrade

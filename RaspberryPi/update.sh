@@ -77,6 +77,7 @@ fi
 "$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
 has pihole && "$suexec" pihole -up
 has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a
+export PRUNE_MODULES=1
 has rpi-update && "$suexec" PRUNE_MODULES=1 rpi-update
 #"$suexec" JUST_CHECK=1 rpi-update
 # "$suexec" PRUNE_MODULES=1 rpi-update

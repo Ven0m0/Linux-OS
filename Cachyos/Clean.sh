@@ -120,7 +120,7 @@ fi
 rm -rf --preserve-root -- "${HOME}/.cache/flatpak/system-cache/"*
 rm -rf --preserve-root -- "${HOME}/.local/share/flatpak/system-cache/"*
 rm -rf --preserve-root -- "${HOME}/.var/app/*/data/Trash/"*
-
+rm -rf --preserve-root -- ${HOME}/.var/app/*/data/Trash/*
 # Clear thumbnails
 rm -rf --preserve-root -- "${HOME}/.thumbnails/"*
 
@@ -128,8 +128,7 @@ rm -rf --preserve-root -- "${HOME}/.thumbnails/"*
 "$suexec" rm -f --preserve-root -- "/var/log/pacman.log"
 "$suexec" journalctl --rotate --vacuum-size=1 --flush --sync -q
 "$suexec" rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2>/dev/null || :
-"$suexec" rm -rf --preserve-root -- "{/root,/home/*}/.local/share/zeitgeist/"*
-
+"$suexec" rm -rf --preserve-root -- {/root,/home/*}/.local/share/zeitgeist/*
 # Home cleaning
 rm -f --preserve-root -- "${HOME}/.wget-hsts" "${HOME}/.curl-hsts" "${HOME}/.lesshst" "${HOME}/nohup.out" "${HOME}/token"
 # Shell history

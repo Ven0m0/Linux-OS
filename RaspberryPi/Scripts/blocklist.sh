@@ -1,6 +1,16 @@
 
 export LC_ALL='C' LANG='C'
 
+# https://github.com/kboghdady/youTube_ads_4_pi-hole
+# check to see if gawk is installed. if not it will install it
+dpkg -l | grep -qw gawk || sudo apt-get install mawk -y
+
+# remove the duplicate records in place
+#mawk -i inplace '!a[$0]++' $blackListFile
+wait 
+#mawk -i inplace '!a[$0]++' $blacklist
+
+
 # https://github.com/hectorm/hblock/blob/master/hblock
 # Remove comments from string.
 removeComments() { sed -e 's/[[:blank:]]*#.*//;/^$/d'; }

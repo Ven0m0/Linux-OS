@@ -121,7 +121,8 @@ $RECYCLE.BIN/
 # Other
 # ---------------------
 .idea
-.vscode
+.vscode/*
+!.vscode/extensions.json
 *.tgz
 dist
 .npmrc

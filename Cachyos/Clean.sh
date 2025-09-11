@@ -71,6 +71,14 @@ if command -v cargo-cache &>/dev/null; then
   cargo cache -efg clean-unref
 fi
 
+# https://github.com/sghimi/QuickOptimization
+sync; echo 3 | "$suexec" tee /proc/sys/vm/drop_caches &>/dev/null
+
+# Kill all processes using excessive amounts of CPU
+for i in $(ps aux --sort=-%cpu | awk '{if($3>50.0) print $2}' | tail -n +2); do 
+  kill -9 $i; 
+done
+
 # Clear the system's swap space
 swapoff -a && swapon -a
 
@@ -230,7 +238,6 @@ else
   echo "BleachBit is not installed, skipping."
 fi
 
-sync; echo 3 | "$suexec" tee /proc/sys/vm/drop_caches &>/dev/null
 echo "System cleaned!"
 # Capture usage after cleanup
 read -r used_space_after pct_after < <(df -h --output=used,pcent -- / 2>/dev/null | awk 'NR==2{print $1, $2}')

@@ -67,8 +67,8 @@ if has apt-fast; then
    # nala fetch --auto --fetches 5 -c DE -y --non-free --debian --https-only
 else
   "$suexec" apt-get update -yq --allow-releaseinfo-change
-  "$suexec" apt-get dist-upgrade -yqfm --allow-releaseinfo-change
-  "$suexec" apt-get -yqU full-upgrade --allow-releaseinfo-change
+  "$suexec" apt-get dist-upgrade -yqfm
+  "$suexec" apt-get -yq full-upgrade
   "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them

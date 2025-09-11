@@ -32,6 +32,7 @@ echo " ╚═════╝╚══════╝╚══════╝╚�
 echo 
 
 echo "Cleaning apt cache"
+sudo rm -rf /var/lib/apt/lists/*
 sudo apt-get clean
 sudo apt-get autoclean
 sudo apt-get autoremove --purge -y
@@ -47,8 +48,6 @@ else
 fi
 
 uv cache prune -q; uv cache clean -q
-
-sudo rm -rf /var/lib/apt/lists/*
 echo "Removing common cache directories and trash"
 sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*
@@ -71,12 +70,11 @@ rm -fv ~/.bash_history
 sudo rm -fv /root/.bash_history
 
 echo "Vacuuming journal logs"
-sudo rm -f /var/log/pacman.log
-sudo journalctl --rotate -q && sudo journalctl --vacuum-time=1s -q
+sudo journalctl --rotate --vacuum-size=1 --flush --sync -q
+sudo rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2>/dev/null || :
 
 echo "Running fstrim"
-sudo rm -rf /run/log/journal/*
-sudo rm -rf /var/log/journal/*
+
 sudo fstrim -a --quiet-unsupported
 
 echo "Removind old log files"

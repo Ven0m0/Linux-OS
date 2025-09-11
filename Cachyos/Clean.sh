@@ -71,6 +71,17 @@ if command -v cargo-cache &>/dev/null; then
   cargo cache -efg clean-unref
 fi
 
+# Clear the system's swap space
+swapoff -a && swapon -a
+
+# Remove old log files
+find -O3 /var/log/ -name "*.log" -type f -mtime +7 -delete
+
+# Remove old core dump files
+find -O3 /var/crash/ -name "core.*" -type f -mtime +7 -delete
+# Remove old package files
+#find -O3 /var/cache/apt/ -name "*.bin" -mtime +7 -delete
+
 # Clear cache
 "$suexec" find -O3 ~/.cache -type f -mtime +1 -print -delete >/dev/null
 "$suexec" find -O3 ~/.cache -type d -empty -print -delete >/dev/null

@@ -65,12 +65,7 @@ if command -v nala &>/dev/null, then
   alias nala='sudo \nala'
 fi
 
-aptsearch(){
-  if ! nala -n "$@"; then
-    apt-cache search "$@" || return 1
-  fi
-}
-
+aptsearch(){ if ! nala search -n "$@"; then { apt-cache search "$@" || return 1; } fi; }
 
 # docker
 alias dr='docker run'

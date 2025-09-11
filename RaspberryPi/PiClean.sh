@@ -33,18 +33,16 @@ echo
 
 echo "Cleaning apt cache"
 sudo rm -rf /var/lib/apt/lists/*
-sudo apt-get clean
-sudo apt-get autoclean
-sudo apt-get autoremove --purge -y
-sudo apt purge ?config-files
+sudo apt-get clean -yq
+sudo apt-get autoclean -yq
+sudo apt-get autoremove --purge -yq
+sudo apt-get purge ?config-files
 echo "Cleaning leftover config files"
-dpkg -l | awk '/^rc/ { print $2 }' | xargs sudo apt purge -y
+dpkg -l | awk '/^rc/ { print $2 }' | xargs sudo apt-get purge -y
 
 echo "orphan removal"
 if command -v deborphan &>/dev/null; then
   sudo deborphan | xargs sudo apt-get -y remove --purge --auto-remove
-else
-  echo 'Skipping deborphan — not installed.'
 fi
 
 uv cache prune -q; uv cache clean -q
@@ -64,21 +62,23 @@ rm -rf ~/.local/share/Trash/*
 sudo rm -rf /root/.local/share/Trash/*
 
 echo "Clearing old history files..."
-rm -fv ~/.python_history
-sudo rm -fv /root/.python_history
-rm -fv ~/.bash_history
-sudo rm -fv /root/.bash_history
+rm -f ~/.python_history
+sudo rm -f /root/.python_history
+rm -f ~/.bash_history
+sudo rm -f /root/.bash_history
 
 echo "Vacuuming journal logs"
 sudo journalctl --rotate --vacuum-size=1 --flush --sync -q
 sudo rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2>/dev/null || :
+sudo systemd-tmpfiles --clean >/dev/null
 
 echo "Running fstrim"
-
 sudo fstrim -a --quiet-unsupported
 
 echo "Removind old log files"
-sudo find /var/log -type f -name "*.log" -exec rm -f {} \;
+sudo find -O3 /var/log/ -name "*.log" -type f -mtime +3 -delete
+sudo find -O3 /var/crash/ -name "core.*" -type f -mtime +3 -delete
+sudo find -O3 /var/cache/apt/ -name "*.bin" -type f -mtime +3 -delete
 
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 echo "System clean-up complete."

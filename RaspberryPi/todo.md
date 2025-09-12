@@ -1,3 +1,12 @@
+
+F2FS
+
+```bash
+mkfs.f2fs -m -o 10 -f
+
+```
+
+
 https://github.com/Rudxain/dotfiles
 
 ```bash

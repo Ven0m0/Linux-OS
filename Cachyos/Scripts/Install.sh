@@ -90,14 +90,16 @@ else
   fi
 fi
 
+flats=(
+io.github.wiiznokes.fan-control
+io.github.giantpinkrobots.flatsweep
+best.ellie.StartupConfiguration
+)
+
 # flatpak: install from flatpaks.lst if present
 if has flatpak; then
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || :
-  if [[ -f "${PWD}/flatpaks.lst" ]]; then
-    mapfile -t flats < <(awk -F'#' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); if(length($1)) print $1}' "${PWD}/flatpaks.lst")
-    [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
-  fi
-  flatpak install -y flathub org.kde.audiotube || :
+  [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
   flatpak update -y --noninteractive
 fi
 

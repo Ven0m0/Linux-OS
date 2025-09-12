@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C LANG=C SHELL="${BASH:-$(command -v bash)}" HOME="/home/${SUDO_USER:-$USER}"
+cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
+sync; sudo -v
 #
 # raspberry-fs.sh – Flash a Raspberry Pi image onto an SD card (or other block device)
 #                 – converts the root partition to F2FS, optionally enables SSH.

@@ -4,7 +4,7 @@ export LC_ALL=C
 export LANG=C
 
 HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-builtin cd -- "$HOMEDIR" || exit 1
+builtin cd -P -- "${HOMEDIR}" || exit 1
 
 #---------------------------------------
 # Modern Raspbian/DietPi F2FS Flash Script

@@ -3,4 +3,9 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: monthly
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    pull-request-branch-name:
+      separator: -

@@ -41,7 +41,6 @@ log_info() {
 
 # --- Core Optimizer Logic ---
 # This function creates a self-contained script that will be run in parallel for each file.
-# It contains all the tool logic synthesized from your examples.
 create_optimizer_script() {
 cat > "$OPTIMIZER_SCRIPT" <<'BASH'
 #!/usr/bin/env bash
@@ -86,15 +85,19 @@ trap 'rm -f "$tmpf"' EXIT
 case "$ext_lower" in
   png)
     cp -a -- "$file" "$tmpf" # Start with a copy
-    # 1. Lossy compression with pngquant if enabled
+    # 1. General purpose optimization with rimage
+    if has rimage; then
+        rimage -i "$tmpf" -o "$tmpf.next" &>/dev/null && mv -f "$tmpf.next" "$tmpf" || :
+    fi
+    # 2. Lossy compression with pngquant if enabled
     if [ "$lossy_flag" -eq 1 ] && has pngquant; then
       pngquant --quality=65-85 --speed=1 --strip --force --output "$tmpf" -- "$tmpf" &>/dev/null || :
     fi
-    # 2. Lossless optimization with oxipng
+    # 3. Lossless optimization with oxipng
     if has oxipng; then
       oxipng -o 4 --strip safe --alpha --force --out "$tmpf" "$tmpf" &>/dev/null || :
     fi
-    # 3. Aggressive lossless with flaca if available
+    # 4. Aggressive lossless with flaca
     if has flaca; then
       flaca --no-symlinks --preserve-times "$tmpf" &>/dev/null || :
     fi
@@ -103,11 +106,15 @@ case "$ext_lower" in
 
   jpg|jpeg)
     cp -a -- "$file" "$tmpf" # Start with a copy
-    # 1. Aggressive lossless with flaca
+    # 1. General purpose optimization with rimage
+    if has rimage; then
+        rimage -i "$tmpf" -o "$tmpf.next" &>/dev/null && mv -f "$tmpf.next" "$tmpf" || :
+    fi
+    # 2. Aggressive lossless with flaca
     if has flaca; then
       flaca --no-symlinks --preserve-times "$tmpf" &>/dev/null || :
     fi
-    # 2. Standard optimization with jpegoptim
+    # 3. Standard optimization with jpegoptim
     if has jpegoptim; then
       if [ "$lossy_flag" -eq 1 ]; then
         jpegoptim --strip-all --all-progressive --max=85 -o -- "$tmpf" &>/dev/null || :
@@ -119,12 +126,16 @@ case "$ext_lower" in
     ;;
 
   gif)
+    cp -a -- "$file" "$tmpf" # Start with a copy
+    # 1. Gifsicle optimization
     if has gifsicle; then
-      # Gifsicle works in-place, so we operate on a temp copy
-      cp -a -- "$file" "$tmpf"
       gifsicle -O3 --batch "$tmpf" &>/dev/null || :
-      replace_if_smaller "$file" "$tmpf"
     fi
+    # 2. Aggressive lossless with flaca
+    if has flaca; then
+      flaca --no-symlinks --preserve-times "$tmpf" &>/dev/null || :
+    fi
+    replace_if_smaller "$file" "$tmpf"
     ;;
 
   svg)
@@ -138,25 +149,30 @@ case "$ext_lower" in
     ;;
 
   webp|avif|jxl)
-    # Re-encoding is always lossy, so only run in lossy mode
+    cp -a -- "$file" "$tmpf" # Start with a copy
+    # 1. General lossless optimization with rimage
+    if has rimage; then
+      rimage -i "$tmpf" -o "$tmpf.next" &>/dev/null && mv -f "$tmpf.next" "$tmpf" || :
+    fi
+    # 2. Lossy re-encoding if enabled
     if [ "$lossy_flag" -eq 1 ]; then
       case "$ext_lower" in
         webp)
           if has dwebp && has cwebp; then
-            dwebp "$file" -o "$tmpf.png" &>/dev/null && \
-            cwebp -q 80 "$tmpf.png" -o "$tmpf" &>/dev/null
+            dwebp "$tmpf" -o "$tmpf.png" &>/dev/null && \
+            cwebp -q 80 "$tmpf.png" -o "$tmpf" &>/dev/null && \
             rm -f "$tmpf.png"
-            replace_if_smaller "$file" "$tmpf"
           fi
           ;;
         avif)
-          has avifenc && avifenc --min 30 --max 45 --speed 6 -o "$tmpf" "$file" &>/dev/null && replace_if_smaller "$file" "$tmpf"
+          has avifenc && avifenc --min 30 --max 45 --speed 6 -o "$tmpf" "$tmpf" &>/dev/null
           ;;
         jxl)
-          has cjxl && cjxl "$file" "$tmpf" -d 1 &>/dev/null && replace_if_smaller "$file" "$tmpf"
+          has cjxl && cjxl "$tmpf" "$tmpf" -d 1 &>/dev/null
           ;;
       esac
     fi
+    replace_if_smaller "$file" "$tmpf"
     ;;
 
   html|htm)

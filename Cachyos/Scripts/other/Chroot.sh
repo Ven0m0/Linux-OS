@@ -32,4 +32,4 @@ sudo reboot
 
 
 
-# mkinitcpio -P
+# sudo mkinitcpio -P

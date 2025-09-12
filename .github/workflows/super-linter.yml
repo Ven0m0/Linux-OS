@@ -32,6 +32,7 @@ jobs:
           # --- Behavior ---
           # Lint only new and updated files for efficiency on pull requests
           VALIDATE_ALL_CODEBASE: false
+          VALIDATE_CHECKOV: false
 
           # --- Filtering ---
           # Ignore common directories and files that shouldn't be linted

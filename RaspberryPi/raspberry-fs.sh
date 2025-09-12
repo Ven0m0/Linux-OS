@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export LC_ALL=C
-export LANG=C
+export LC_ALL=C LANG=C
 
 HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -P -- "$HOMEDIR" || exit 1

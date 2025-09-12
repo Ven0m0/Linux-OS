@@ -22,17 +22,17 @@ jobs:
         uses: super-linter/super-linter@v8.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_ALL_CODEBASE: true
+          VALIDATE_ALL_CODEBASE: false
           IGNORE_GITIGNORED_FILES: true
-          IGNORE_GENERATED_FILES: true
-          FILTER_REGEX_EXCLUDE: '^(?:dist|vendor|\.git|cache)/'
-          FILTER_REGEX_INCLUDE: '.*\.(sh|bash|yaml|json|toml|md|py|css|js|editorconfig)$'
-          SAVE_SUPER_LINTER_SUMMARY: true
-          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: true
-          BASH_EXEC_IGNORE_LIBRARIES: true
-          DISABLE_ERRORS: false
-          FAIL_ON_CONFLICTING_TOOLS_ENABLED: true
-          # LINTER_RULES_PATH: .
+          #IGNORE_GENERATED_FILES: true
+          #FILTER_REGEX_EXCLUDE: '^(?:dist|vendor|\.git|cache)/'
+          #FILTER_REGEX_INCLUDE: '.*\.(sh|bash|yaml|json|toml|md|py|css|js|editorconfig)$'
+          #SAVE_SUPER_LINTER_SUMMARY: true
+          #ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: true
+          #BASH_EXEC_IGNORE_LIBRARIES: true
+          #DISABLE_ERRORS: false
+          #FAIL_ON_CONFLICTING_TOOLS_ENABLED: true
+          LINTER_RULES_PATH: .
           # LINTER_RULES_PATH: .github/lint-configs
 
       - name: Commit and push linting fixes

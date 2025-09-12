@@ -11,10 +11,6 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
 has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
 hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
-#============ Safe optimal privilege tool ====================
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas)" || { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
-[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"
 #============ Env ====================
 [[ -r /etc/makepkg.conf ]] && . "/etc/makepkg.conf"
@@ -27,136 +23,62 @@ export MAKEFLAGS RUSTFLAGS CFLAGS CXXFLAGS CARGO_HTTP_MULTIPLEXING=true CARGO_NE
 #=============================================================
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck'
 sync
-# sudo pacman -Rns openssh 
-packages=(
-topgrade
-bauh
-flatpak
-partitionmanager
-polkit-kde-agent
-legcord
-prismlauncher
-obs-studio
-pigz
-lrzip
-pixz
-minizip-ng
-optipng
-svgo
-nasm
-yasm
-ccache
-sccache
-openmp
-polly
-mold
-autofdo-bin
-patchutils
-vulkan-mesa-layers
-plasma-wayland-protocols
-vkd3d-proton-git
-protonup-qt
-protonplus
-proton-ge-custom
-vkbasalt
-menu-cache
-profile-sync-daemon
-profile-cleaner
-bleachbit-git
-irqbalance
-xorg-xhost
-libappindicator-gtk3
-libdbusmenu-glib
-appmenu-gtk-module
-xdg-desktop-portal 
-modprobed-db
-cachyos-ksm-settings
-cpupower-gui
-openrgb
-dropbear
-optiimage
-multipath-tools
-preload
-wolfssl
-openssh-hpn
-openssh-hpn-shim
-sshpass
-graphicsmagick
-fclones
-cpio
-bc
-flatpak
-fuse2
-appimagelauncher
-)
 
-echo -e "\nChecking installed packages..."
-missing_pkgs=()
-# Collect packages that are not installed
-for pkg in "${packages[@]}"; do
-  if ! pacman -Qiq "$pkg" &>/dev/null; then
-    missing_pkgs+=("$pkg")
-  else
-    echo "✔ ${pkg} is already installed"
-  fi
-done
-# Proceed with installation only if there are missing packages
-if [ ${#missing_pkgs[@]} -gt 0 ]; then
-  echo "➜ Installing: ${missing_pkgs[*]}"
-  while [ ${#missing_pkgs[@]} -gt 0 ]; do
-      failed_pkgs=()
-      # Try batch install
-      sudo pacman -Sq --needed --noconfirm "${missing_pkgs[@]}" || {
-          echo "Some packages failed to install."
-          # Identify failed packages
-          for pkg in "${missing_pkgs[@]}"; do
-              sudo pacman -Sq --needed --noconfirm "$pkg" || failed_pkgs+=("$pkg")
-          done
-          # Remove failed packages from retry list
-          missing_pkgs=($(echo "${missing_pkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}")))
-          echo "Retrying without: ${failed_pkgs[*]}"
-      }
-      [ ${#failed_pkgs[@]} -eq 0 ] && break  # Stop if all succeed
-  done
-  echo "✔ All packages installed (or skipped if present)."
+if has paru; then
+  paru -Syq archlinux-keyring --noconfirm
+  paru -Syuq --noconfirm
+elif has yay; then
+  yay -Syq archlinux-keyring --noconfirm
+  yay -Syuq --noconfirm
 else
-  echo "✔ All packages were already installed—nothing to do."
+  sudo pacman -Syq archlinux-keyring --noconfirm
+  sudo pacman -Syuq --noconfirm
 fi
 
-aurpkgs=(
-cleanerml-git
-makepkg-optimize-mold
-prelockd
-uresourced
-jdk24-graalvm-ee-bin
-plzip
-plzip-lzip-link
-lbzip2
-usb-dirty-pages-udev
-cleanlib32
-optipng-parallel
-dxvk-gplasync-bin
-pay-respects
-unzrip-git
-adbr-git
-luxtorpeda
-tuckr-git
-intel-ucode-shrink-hook
-xdg-ninja
-cylon
-scaramanga
-kbuilder
+# sudo pacman -Rns openssh && sudo pacman -Sq openssh-hpn openssh-hpn-shim
+pkgs=(
+  topgrade bauh flatpak partitionmanager polkit-kde-agent legcord prismlauncher
+  obs-studio pigz lrzip pixz minizip-ng optipng svgo nasm yasm ccache sccache
+  openmp polly mold autofdo-bin patchutils vulkan-mesa-layers
+  plasma-wayland-protocols vkd3d-proton-git protonup-qt protonplus proton-ge-custom
+  vkbasalt menu-cache profile-sync-daemon profile-cleaner bleachbit-git irqbalance
+  xorg-xhost libappindicator-gtk3 libdbusmenu-glib appmenu-gtk-module
+  xdg-desktop-portal modprobed-db cachyos-ksm-settings cpupower-gui openrgb
+  dropbear optiimage multipath-tools preload wolfssl sshpass
+  graphicsmagick fclones cpio bc fuse2 appimagelauncher jdk24-graalvm-ee-bin
+  cleanerml-git makepkg-optimize-mold prelockd uresourced optipng-parallel
+  plzip plzip-lzip-link lbzip2 usb-dirty-pages-udev cleanlib32 tuckr-git
+  dxvk-gplasync-bin pay-respects unzrip-git adbr-git luxtorpeda
+  intel-ucode-shrink-hook xdg-ninja cylon scaramanga kbuilder
 )
 
-while [ ${#aurpkgs[@]} -gt 0 ]; do
-    failed_pkgs=() # Try installing all remaining packages
-    paru -Sq "${aurpkgs[@]}" --needed --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || { echo "Some packages failed to install." \
-        # Identify which package failed
-        for aur_pkg in "${aurpkgs[@]}"; do paru -Sq "$aur_pkg" --needed --noconfirm --removemake --cleanafter --skipreview --nokeepsrc || failed_pkgs+=("$aur_pkg"); done; \
-        # Remove failed packages from the list
-        aurpkgs=($(echo "${aurpkgs[@]}" | tr ' ' '\n' | grep -vxF -f <(printf "%s\n" "${failed_pkgs[@]}"))); echo "Retrying without: ${failed_pkgs[*]}"; }
-    [ ${#failed_pkgs[@]} -eq 0 ] && { echo "AUR package installation complete."; break; }
+echo "Checking installed packages..."
+missing=()
+for p in "${pkgs[@]}"; do
+  paru -Qiq "$p" &>/dev/null || missing+=("$p")
 done
+
+if [ ${#missing[@]} -eq 0 ]; then
+  echo "✔ All packages installed"
+  exit 0
+fi
+
+echo "➜ Installing: ${missing[*]}"
+while [ ${#missing[@]} -gt 0 ]; do
+  failed=()
+  paru -Sq --needed --noconfirm --removemake --cleanafter --sudoloop \
+       --skipreview --nokeepsrc "${missing[@]}" || {
+    echo "Some packages failed. Retrying individually..."
+    for p in "${missing[@]}"; do
+      paru -Sq --needed --noconfirm --removemake --cleanafter \
+           --skipreview --nokeepsrc "$p" || failed+=("$p")
+    done
+    missing=($(printf "%s\n" "${missing[@]}" | grep -vxF -f <(printf "%s\n" "${failed[@]}")))
+  }
+  [ ${#failed[@]} -eq 0 ] && break
+done
+
+echo "✔ Installation complete (or skipped if already present)"
 
 # konsave
 # memavaild
@@ -228,20 +150,23 @@ cargo-list
 minhtml
 cargo-minify
 rimage
+ripunzip
 )
 
 RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
 rustup default nightly
-rustup set auto-self-update
+rustup set auto-self-update disable
 rustup set profile minimal
 rustup self upgrade-data
 
-cargo +nightly install --git https://github.com/GitoxideLabs/gitoxide gitoxide --no-default-features --features max-pure
+command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
+
+cargo install -Zunstable-options -Zgit -Zavoid-dev-deps -Zno-embed-metadata -Ztrim-paths --git https://github.com/GitoxideLabs/gitoxide gitoxide -f --bins --profile release-github --no-default-features -F http-client-reqwest,gitoxide-core-blocking-client,fast,pretty-cli,gitoxide-core-tools,prodash-render-line,prodash-render-tui,prodash/render-line-autoconfigure,gix/revparse-regex
+
+cargo install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata -Ztrim-paths "${cargostall[@]}" -f -q --locked --bins --keep-going
 
 # Fast, hardware-accelerated CRC calculation
 cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq
-# Faster unzip
-cargo install ripunzip
 
 # fast compression multitool for zst, tgz, txz, zip, 7z
 cargo install zzz-arc
@@ -249,14 +174,13 @@ cargo install zzz-arc
 
 # Rust-curl
 # https://crates.io/crates/rust-curl
-cargo install rust-curl
+#cargo install rust-curl
 
 # GUI for fclones
-cargo install fclones-gui
+#cargo install fclones-gui
 
-cargo install shell-mommy
-paru -S mommy
-
+#cargo install shell-mommy
+#paru -S mommy
 
 # echo "enabling services"
 # sudo systemctl enable pci-latency.service
@@ -283,16 +207,34 @@ micro -plugin install "${mplug[@]}"
 # Fisher fix
 #fisher install jorgebucaran/fisher
 #fisher install acomagu/fish-async-prompt
+fishplug=(
+acomagu/fish-async-prompt
+kyohsuke/fish-evalcache
+eugene-babichenko/fish-codegen-cache
+oh-my-fish/plugin-xdg
+wk/plugin-ssh-term-helper
+scaryrawr/cheat.sh.fish
+y3owk1n/fish-x
+scaryrawr/zoxide.fish
+patrickf1/fzf.fish
+archelaus/shell-mommy
+eth-p/fish-plugin-sudo
+rubiev/plugin-fuck
+)
+if has fish; then
+  if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
+    fish -c ". /usr/share/fish/vendor_functions.d/fisher.fish; and fisher update"
+    printf '%s\n' "${fishplug[@]}" | fish -c ". /usr/share/fish/vendor_functions.d/fisher.fish; fisher install"
+   fi
+fi
 
 # Basher
-curl -s https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash
+curl -sSf https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash
 
 echo "Install fzf bash tap completions"
-mkdir -p "$HOME/.config/bash"
+mkdir -p "${HOME}/.config/bash"
 curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "${HOME}/.config/bash/fzf-simple-completion.sh"
 chmod +x "${HOME}/.config/bash/fzf-simple-completion.sh"
-[[ -f $HOME/.config/bash/fzf-simple-completion.sh ]] && . "${HOME}/.config/bash/fzf-simple-completion.sh"
-
 
 echo "Installing updates"
 sudo pacman -Syyu --noconfirm || true

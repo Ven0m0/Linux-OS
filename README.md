@@ -79,6 +79,7 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 <details>
 <summary><b>Packages:</b></summary>
 
+* https://wiki.archlinux.org/title/Category:Lists_of_software
 * [Arch PKG](https://archlinux.org/packages)
 * [AUR PKG](https://aur.archlinux.org)
 * [Crates.io](https://crates.io)

@@ -210,19 +210,9 @@ esac
 # ----------------------------------------------------------------------
 # Filesystem creation
 # ----------------------------------------------------------------------
-run "mkfs.vfat -F32 -I -n boot $PART_BOOT"
+run "mkfs.vfat -F32 -I -n boot ${PART_BOOT}"
 
-# Hot / cold file‑type groups for F2FS (same as original script)
-HOT='db,sqlite,tmp,log,json,conf,journal,pid,lock,xml,ini,py'
-TXT='pdf,txt,sh,ttf,otf,woff,woff2'
-IMG='jpg,jpeg,png,webp,avif,jxl,gif,svg'
-MED='mkv,mp4,mov,avi,webm,mpeg,mp3,ogg,opus,wav'
-ZIP='img,iso,gz,tar,zip,deb'
-COLD="${TXT},${IMG},${MED},${ZIP}"
-
-run "mkfs.f2fs -f -S -i \
-  -O extra_attr,inode_checksum,sb_checksum,flexible_inline_xattr \
-  -E \"$HOT\" -e \"$COLD\" -l root $PART_ROOT"
+run "mkfs.f2fs -f -O extra_attr,inode_checksum,sb_checksum -l root ${PART_ROOT}"
 
 # ----------------------------------------------------------------------
 # Mount source image partitions (detect loop‑device suffix)

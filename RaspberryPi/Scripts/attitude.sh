@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# a(p)ttitude — compact fzf TUI for apt / nala / apt-fast
+# apt-fuzz — compact fzf TUI for apt / nala / apt-fast
 # Optimized for performance on resource-constrained devices like Raspberry Pi.
 set -euo pipefail; shopt -s nullglob globstar
 
@@ -45,12 +45,15 @@ else
   echo "Error: fzf or skim (sk) is required." >&2; exit 1
 fi
 
+# Define a function to find files; its implementation will be the best tool available.
+find_cache_files() { :; } # Default to no-op
+
 if command -v fd &>/dev/null; then
-  FIND_TOOL="fd --hidden --type f --max-depth 1"
+  find_cache_files() { fd --hidden --type f --max-depth 1 . "$CACHE_DIR" -0; }
 elif command -v fdfind &>/dev/null; then
-  FIND_TOOL="fdfind --hidden --type f --max-depth 1"
+  find_cache_files() { fdfind --hidden --type f --max-depth 1 . "$CACHE_DIR" -0; }
 else
-  FIND_TOOL="find %s -maxdepth 1 -type f"
+  find_cache_files() { find "$CACHE_DIR" -maxdepth 1 -type f -print0; }
 fi
 
 # ----------------------------------------------------------------------
@@ -93,17 +96,10 @@ byte_to_human() {
 # Optimized Cache Indexing & Eviction
 # ----------------------------------------------------------------------
 # Creates a single index file of all cache entries (path|size|mtime)
-# This avoids expensive 'find' and 'stat' calls during TUI operation.
 _update_cache_index() {
   local tmp_index; tmp_index=$(mktemp "${CACHE_INDEX}.XXXXXX")
-  # Use fd/fdfind if available, otherwise fallback to find
-  if [[ $FIND_TOOL != find* ]]; then
-    $FIND_TOOL -0 "$CACHE_DIR" 2>/dev/null | xargs -0 -r stat -c '%n|%s|%Y' > "$tmp_index" 2>/dev/null || :
-  else
-    # shellcheck disable=SC2059
-    printf -v find_cmd "$FIND_TOOL" "$CACHE_DIR"
-    $find_cmd -print0 2>/dev/null | xargs -0 -r stat -c '%n|%s|%Y' > "$tmp_index" 2>/dev/null || :
-  fi
+  # Use our function to get a null-delimited list of files, then stat them.
+  find_cache_files 2>/dev/null | xargs -0 -r stat -c '%n|%s|%Y' > "$tmp_index" 2>/dev/null || :
   # Atomically replace the old index
   mv -f "$tmp_index" "$CACHE_INDEX"
 }
@@ -117,46 +113,52 @@ _cache_info_from_index() {
   ' "$CACHE_INDEX" 2>/dev/null || echo "0 0 0"
 }
 
-# Evicts old cache files based on TTL and max size using the index.
+# Evicts old cache files based on TTL and max size.
+# This implementation uses `sort` and `xargs` for optimal performance.
 evict_old_cache() {
-  [[ ! -f $CACHE_INDEX ]] && _update_cache_index
+    # Don't proceed if the index doesn't exist or is empty
+    [[ ! -s $CACHE_INDEX ]] && _update_cache_index
+    [[ ! -s $CACHE_INDEX ]] && return
 
-  local cutoff; cutoff=$(( $(date +%s) - APT_FUZZ_CACHE_TTL ))
-  local limit="$APT_FUZZ_CACHE_MAX_BYTES"
+    local cutoff=$(( $(date +%s) - APT_FUZZ_CACHE_TTL ))
+    local limit="$APT_FUZZ_CACHE_MAX_BYTES"
+    local to_delete_tmp; to_delete_tmp=$(mktemp)
+    local valid_files_tmp; valid_files_tmp=$(mktemp)
 
-  # Use awk to process the index and remove expired/excess files
-  awk -F'|' -v cutoff="$cutoff" -v limit="$limit" '
-    # Rule 1: Remove files older than TTL
-    $3 < cutoff { system("rm -f -- \"" $1 "\""); next }
-    # Rule 2: Store valid files in arrays for size check
-    {
-      paths[++i] = $1; sizes[i] = $2; mtimes[i] = $3; total_size += $2
-    }
-    END {
-      # Rule 3: If over size limit, remove oldest files until compliant
-      if (limit > 0 && total_size > limit) {
-        # Sort files by modification time (ascending)
-        for (j=1; j<=i; j++) {
-          for (k=j+1; k<=i; k++) {
-            if (mtimes[j] > mtimes[k]) {
-              # Swap all related array elements
-              tm=mtimes[j]; mtimes[j]=mtimes[k]; mtimes[k]=tm;
-              tp=paths[j]; paths[j]=paths[k]; paths[k]=tp;
-              ts=sizes[j]; sizes[j]=sizes[k]; sizes[k]=ts;
-            }
-          }
-        }
-        # Delete oldest files until size is under the limit
-        for (j=1; j<=i; j++) {
-          if (total_size <= limit) break
-          system("rm -f -- \"" paths[j] "\"")
-          total_size -= sizes[j]
-        }
-      }
-    }
-  ' "$CACHE_INDEX"
+    # Defer cleanup of temp files for this function's scope
+    trap 'rm -f "$to_delete_tmp" "$valid_files_tmp"' RETURN
 
-  _update_cache_index
+    # Step 1: Find TTL-expired files and add their paths to the delete list
+    awk -F'|' -v cutoff="$cutoff" '$3 < cutoff {print $1}' "$CACHE_INDEX" > "$to_delete_tmp"
+
+    # Step 2: Create a temporary index of files *not* expired by TTL
+    awk -F'|' -v cutoff="$cutoff" '$3 >= cutoff' "$CACHE_INDEX" > "$valid_files_tmp"
+
+    # Step 3: If size limit is enabled and we have valid files, check total size
+    if (( limit > 0 && -s "$valid_files_tmp" )); then
+        local total_size
+        total_size=$(awk -F'|' '{s+=$2} END{print s+0}' "$valid_files_tmp")
+
+        # If total size is over the limit...
+        if (( total_size > limit )); then
+            local excess_size=$(( total_size - limit ))
+            # ...sort valid files by date (oldest first) and add enough to the
+            # delete list to get back under the size limit.
+            sort -t'|' -k3,3n "$valid_files_tmp" | awk -F'|' -v excess="$excess_size" '
+                BEGIN { deleted_sum=0 }
+                deleted_sum < excess {
+                    print $1;
+                    deleted_sum+=$2;
+                }
+            ' >> "$to_delete_tmp"
+        fi
+    fi
+
+    # Step 4: Perform the deletion of all identified files in a single command
+    xargs -r -a "$to_delete_tmp" rm -f --
+
+    # Step 5: Update the index once at the very end
+    _update_cache_index
 }
 
 # ----------------------------------------------------------------------
@@ -207,7 +209,7 @@ _prefetch_package_lists() {
 _prefetch_package_previews() {
   # Wait for the installed list to be generated first
   wait
-  local pkg
+  local pkg i=0
   while IFS= read -r pkg; do
     # Run up to N jobs in parallel
     (( i=i%APT_FUZZ_PREFETCH_JOBS, i++==0 )) && wait

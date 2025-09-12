@@ -19,13 +19,12 @@ else
   is_aur_helper=0
 fi
 
-[[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf
-
 # recommended build env
+[[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf
 export RUSTFLAGS='-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'
 export CFLAGS="${CFLAGS:--march=native -mtune=native -O3 -pipe}"
 export CXXFLAGS="$CFLAGS"
-export MAKEFLAGS="-j$(nproc)"
+export MAKEFLAGS="-j$(nproc)" NINJAFLAGS="-j$(nproc)"
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 # remove pacman lock if stale
@@ -64,17 +63,16 @@ if [[ ${#missing[@]} -eq 0 ]]; then
   printf '✔ All packages installed\n'
 else
   printf '➜ Installing: %s\n' "${missing[*]}"
-
-  # install flags: only pass advanced flags to AUR helpers
+  # install flags: make sure you trust your packages!
   if [[ "${is_aur_helper:-0}" -eq 1 ]]; then
     aur_flags=(
       --needed --noconfirm --removemake --cleanafter --sudoloop
       --skipreview --nokeepsrc --batchinstall --combinedupgrade
-      --mflags '--skipinteg --skippgpcheck'
+      --mflags '--skipinteg --skippgpcheck --skipchecksums --nocheck --needed --noconfirm -scCr'
     )
     if ! "${helper_cmd[@]}" -Sq "${aur_flags[@]}" "${missing[@]}"; then
       printf '✖ Batch install failed. Logging missing packages to %s/Desktop/failed_packages.log\n' "$HOME"
-      logfile="$HOME/Desktop/failed_packages.log"
+      logfile="${HOME}/Desktop/failed_packages.log"
       rm -f "$logfile"
       for p in "${missing[@]}"; do
         if ! "${helper_cmd[@]}" -Qiq "$p" &>/dev/null; then
@@ -98,18 +96,16 @@ fi
 # flatpak: install from flatpaks.lst if present
 if has flatpak && [[ -f "${PWD}/flatpaks.lst" ]]; then
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || :
-  mapfile -t flats < <(awk -F'#' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); if(length($1)) print $1}' "${WORKDIR}/flatpaks.lst")
-  [ ${#flats[@]} -gt 0 ] && flatpak install -y flathub "${flats[@]}" || :
+  mapfile -t flats < <(awk -F'#' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); if(length($1)) print $1}' "${PWD}/flatpaks.lst")
+  [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
   # example: ensure audiotube
   flatpak install -y flathub org.kde.audiotube || :
 fi
 
 # download a helper script (navita)
 navita_url='https://raw.githubusercontent.com/CodesOfRishi/navita/main/navita.sh'
-dest="${HOME}/.config/bash"
-file="${navita_url##*/}"
-mkdir -p "$dest"
-curl -sSfL -o "$dest/$file" "$navita_url"
+dest="${HOME}/.config/bash" file="${navita_url##*/}"
+mkdir -p "$dest" && curl -sSfL -o "${dest}/${file}" "$navita_url"
 chmod +x "${dest}/${file}" && [[ -r "${dest}/${file}" ]] && . "${dest}/${file}" || :
 
 # rustup + cargo utilities
@@ -138,7 +134,7 @@ cargo install -Zunstable-options -Zgit -Zavoid-dev-deps -Zno-embed-metadata -Ztr
 
 # install other crates
 if [ ${#rust_crates[@]} -gt 0 ]; then
-  cargo install --locked --bins --keep-going "${rust_crates[@]}" -f -q || :
+  cargo install -Zunstable-options -Zgit -Zavoid-dev-deps --locked --bins --keep-going "${rust_crates[@]}" -f -q || :
 fi
 
 # micro plugins (best-effort)
@@ -157,7 +153,7 @@ if has fish; then
 fi
 
 # basher
-curl -sSf https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash || :
+#curl -sSf https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash || :
 
 # fzf bash completions
 mkdir -p "$HOME/.config/bash"

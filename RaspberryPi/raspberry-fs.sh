@@ -28,15 +28,15 @@ EOF
 
 cleanup() {
   umount "${BOOT_MNT:-}" "${ROOT_MNT:-}" "${TARGET_BOOT:-}" "${TARGET_ROOT:-}" 2>/dev/null || :
-  [ "${LOOP_DEV:-}" != "" ] && losetup -d "$LOOP_DEV" 2>/dev/null || :
-  [ "${WORKDIR:-}" != "" ] && rm -rf "$WORKDIR"
+  [[ "${LOOP_DEV:-}" != "" ]] && losetup -d "$LOOP_DEV" 2>/dev/null || :
+  [[ "${WORKDIR:-}" != "" ]] && rm -rf "$WORKDIR"
 }
 trap cleanup EXIT INT TERM
 
 #---------------------------------------
 # Root check
 #---------------------------------------
-if [ "$(id -u)" -ne 0 ]; then
+if [[ "$(id -u)" -ne 0 ]]; then
   echo "This script must be run as root. Re-exec with sudo..."
   exec sudo -E bash "$0" "$@"
 fi
@@ -145,17 +145,8 @@ esac
 
 echo "[*] Formatting partitions..."
 mkfs.vfat -F32 -n boot "$PART_BOOT"
-
-HOT='db,sqlite,tmp,log,json,conf,journal,pid,lock,xml,ini,py'
-TXT='pdf,txt,sh,ttf,otf,woff,woff2'
-IMG='jpg,jpeg,png,webp,avif,jxl,gif,svg'
-MED='mkv,mp4,mov,avi,webm,mpeg,mp3,ogg,opus,wav'
-ZIP='img,iso,gz,tar,zip,deb'
-COLD="${TXT},${IMG},${MED},${ZIP}"
-
 mkfs.f2fs -f -S -i \
-  -O extra_attr,inode_checksum,sb_checksum,flexible_inline_xattr \
-  -E "$HOT" -e "$COLD" -l root "$PART_ROOT"
+  -O extra_attr,inode_checksum,sb_checksum,flexible_inline_xattr -l root "$PART_ROOT"
 
 #---------------------------------------
 # Mount partitions
@@ -213,7 +204,7 @@ fi
 BOOT_UUID=$(blkid -s PARTUUID -o value "$PART_BOOT" || :)
 ROOT_UUID=$(blkid -s PARTUUID -o value "$PART_ROOT" || :)
 
-if [ -f "${TARGET_BOOT}/cmdline.txt" ]; then
+if [[ -f "${TARGET_BOOT}/cmdline.txt" ]]; then
   sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "${TARGET_BOOT}/cmdline.txt"
   sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_BOOT}/cmdline.txt" || :
 fi
@@ -228,7 +219,7 @@ EOF
 #---------------------------------------
 # Optional SSH setup
 #---------------------------------------
-[ "$ENABLE_SSH" -eq 1 ] && touch "${TARGET_BOOT}/ssh"
+[[ "$ENABLE_SSH" -eq 1 ]] && sudo touch "${TARGET_BOOT}/ssh"
 
 #---------------------------------------
 # First-boot F2FS resize script

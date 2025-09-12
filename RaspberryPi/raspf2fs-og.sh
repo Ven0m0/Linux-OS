@@ -184,7 +184,8 @@ wipefs -aq $targetdev
 # P1 = 64MiB FAT32 LBA with 8192 sector offset.
 # P2 = Remaining Space Linux filesystem directly after the first partition.
 echo "${cmdname}: Creating new partition table on target."
-parted -s $targetdev mklabel msdos mkpart primary fat32 8192s 64MiB mkpart primary ext2 64MiB 100%
+#parted -s $targetdev mklabel msdos mkpart primary fat32 8192s 64MiB mkpart primary ext2 64MiB 100%
+parted -s $targetdev mklabel msdos mkpart primary fat32 8192s 256MiB mkpart primary ext2 256MiB 100%
 # Reload the partition table.
 partprobe $targetdev
 # Print the new partition table.

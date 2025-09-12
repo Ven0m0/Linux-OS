@@ -172,27 +172,27 @@ if has uv; then
   echo '🔄 Updating uv...'
   uv self update -q &>/dev/null || echo '⚠️ Failed to update uv'
   echo '🔄 Updating uv tools...'
-  uv tool list -q && { uv tool upgrade --all -q || echo '⚠️ Failed to update uv tools' } || echo '✅ No uv tools installed'
-  
+  if uv tool list -q >/dev/null; then
+    uv tool upgrade --all -q || echo '⚠️ Failed to update uv tools'
+  else
+    echo '✅ No uv tools installed'
+  fi
   echo '🔄 Updating Python packages...'
-  if command -v jq &>/dev/null; then
-    local pkgs=$(uv pip list --outdated --format json | jq -r '.[].name')
-    [[ -n ${pkgs:-} ]] && 
-        uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh --color auto "$pkgs" >/dev/null || echo "⚠️ Failed to update packages"
-      else
-        echo "✅ All packages are up to date"
-      fi
+  if has jq; then
+    mapfile -t pkgs < <(uv pip list --outdated --format json | jq -r '.[].name')
+    if [[ ${#pkgs[@]} -gt 0 ]]; then
+      uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh "${pkgs[@]}" >/dev/null || echo "⚠️ Failed to update packages"
     else
-       Fallback: reinstall everything at latest versions
-      echo "⚠️ jq not found, upgrading all packages instead"
-      uv pip install --upgrade -r <(uv pip list --format freeze) || echo "⚠️ Failed to update packages"
+      echo "✅ All Python packages are up to date."
     fi
-    echo "🔄 Updating Python interpreters..."
-    uv python update-shell -q
-    uv python upgrade -q || echo "⚠️ Failed to update Python versions"
-    echo "🎉 uv update complete"
-  }
-  uv-update
+ else
+    echo "⚠️  jq not found, using slower fallback to upgrade all packages."
+    uv pip install --upgrade -r <(uv pip list --format freeze) >/dev/null || echo "⚠️ Failed to update packages with fallback method."
+  fi
+  echo '🔄 Updating Python interpreters...'
+  uv python update-shell -q
+  uv python upgrade -q || echo '⚠️ Failed to update Python versions'
+  echo '🎉 uv update complete'
 fi
 
 #if has pipx; then

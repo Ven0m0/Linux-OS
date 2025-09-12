@@ -3,340 +3,369 @@ set -euo pipefail; shopt -s nullglob globstar
 export LC_ALL=C LANG=C SHELL="${BASH:-$(command -v bash)}" HOME="/home/${SUDO_USER:-$USER}"
 cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 sync; sudo -v
-#
-# raspberry-fs.sh – Flash a Raspberry Pi image onto an SD card (or other block device)
-#                 – converts the root partition to F2FS, optionally enables SSH.
-#
-# Author:  (your name)
-# Date:    12 Sep 2025
-# Version: 1.2  (includes lint‑fixes & extra safety features)
 
-# ----------------------------------------------------------------------
-# Configuration (can be overridden via CLI flags)
-# ----------------------------------------------------------------------
-BOOT_SIZE="512M"          # Size of the FAT32 boot partition
-DRY_RUN=0                 # Set to 1 with -n/--dry-run to only print actions
-DEBUG=0                   # Set to 1 with -x to enable Bash tracing (set -x)
-
-# ----------------------------------------------------------------------
-# Exit‑code constants (useful for callers)
-# ----------------------------------------------------------------------
-E_USAGE=64
-E_DEPEND=65
-E_ABORT=130
-
-# ----------------------------------------------------------------------
-# Helper functions
-# ----------------------------------------------------------------------
-log() {
-  # Simple timestamped logger
-  printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"
-}
-
-require_cmd() {
-  command -v "$1" >/dev/null 2>&1 || {
-    log "❌ Required command \"$1\" not found – please install it."
-    exit "$E_DEPEND"
-  }
-}
-
-run() {
-  # Execute a command, honouring dry‑run mode
-  if (( DRY_RUN )); then
-    log "[dry‑run] $*"
-  else
-    eval "$*"
-  fi
-}
-
-# ----------------------------------------------------------------------
-# Pre‑flight: verify core utilities
-# ----------------------------------------------------------------------
-for cmd in losetup parted mkfs.f2fs mkfs.vfat rsync tar xz curl blkid blockdev; do
-  require_cmd "$cmd"
-done
-
-# ----------------------------------------------------------------------
-# Usage
-# ----------------------------------------------------------------------
-usage() {
+usage()
+{
   cat <<EOF
-Usage: $0 [-i IMAGE_OR_URL] [-d /dev/sdX] [-s] [-n] [-x] [-h]
-  -i IMAGE_OR_URL   source .img or .img.xz (local file or http(s) URL)
-  -d DEVICE         target block device (if omitted you’ll get an fzf selector)
-  -s                enable SSH on first boot (creates /boot/ssh)
-  -n                dry‑run – only print actions, don’t modify anything
-  -x                enable Bash tracing (set -x) for debugging
-  -h                show this help
+Usage: $(basename "$0") [options] [source.img|source.zip] [ /dev/target | target.img ]
+Options:
+  -s SIZE_MB   : fat32 partition size in MiB (minimum 1024). Default 1024.
+  -I           : interactively select source image with fzf
+  -D           : interactively select target device with fzf
+  -h           : this help
+Examples:
+  $(basename "$0") -s 2048 raspbian.img /dev/sdb
+  $(basename "$0") -I -D
 EOF
-  exit "$E_USAGE"
 }
 
-# ----------------------------------------------------------------------
-# Argument parsing
-# ----------------------------------------------------------------------
-IMAGE=""
-DEVICE=""
-ENABLE_SSH=0
+# defaults
+FAT_MB=1024
+SELECT_IMAGE=0
+SELECT_DEVICE=0
 
-while getopts "i:d:snhx" opt; do
+while getopts "s:IDh" opt; do
   case "$opt" in
-    i) IMAGE="$OPTARG" ;;
-    d) DEVICE="$OPTARG" ;;
-    s) ENABLE_SSH=1 ;;
-    n) DRY_RUN=1 ;;
-    x) DEBUG=1 ;;
-    h|?) usage ;;
+    s) FAT_MB=$OPTARG;;
+    I) SELECT_IMAGE=1;;
+    D) SELECT_DEVICE=1;;
+    h) usage; exit 0;;
+    *) usage; exit 1;;
   esac
 done
+shift $((OPTIND-1))
 
-# Enable Bash tracing if requested
-if (( DEBUG )); then
-  set -x
+# enforce minimum
+if [ "$FAT_MB" -lt 1024 ]; then
+  FAT_MB=1024
 fi
 
-# ----------------------------------------------------------------------
-# Re‑exec as root if necessary
-# ----------------------------------------------------------------------
-if [ "$(id -u)" != 0 ]; then
-  log "⚠️  Not running as root – re‑executing with sudo"
-  exec sudo -E bash "$0" "$@"
-fi
-
-# ----------------------------------------------------------------------
-# Interactive selectors (fzf) – only loaded when needed
-# ----------------------------------------------------------------------
-fzf_file_picker() {
-  command -v fzf >/dev/null 2>&1 || { log "fzf required for interactive selection"; usage; }
-  if command -v fd >/dev/null 2>&1; then
-    fd -tf -e img -e xz -p "${HOME:-.}" \
-      | fzf --height=~40% --layout=reverse --inline-info \
-            --prompt="Select image: " \
-            --header="Select image (.img,.xz)" \
-            --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
-            --preview-window=right:50%:wrap --no-multi -1 -0
-  else
-    find "${HOME:-.}" -type f \( -iname '*.img' -o -iname '*.xz' \) -print0 \
-      | fzf --read0 --height=~40% --layout=reverse --inline-info \
-            --prompt="Select image: " \
-            --header="Select image (.img,.xz)" \
-            --preview='file --mime-type {} 2>/dev/null || ls -lh {}' \
-            --preview-window=right:50%:wrap --no-multi -1 -0
+# helpers
+pick_image()
+{
+  # find common image types and let fzf pick one
+  IFS=$'\n' read -r -d '' -a files < <(find . -maxdepth 3 -type f \( -iname '*.img' -o -iname '*.zip' \) -print 2>/dev/null; printf '\0')
+  if [ "${#files[@]}" -eq 0 ]; then
+    echo "No .img or .zip files found under $(pwd)" >&2
+    return 1
   fi
+  printf '%s\n' "${files[@]}" | fzf --height 40% --border --preview 'ls -lh {} 2>/dev/null' --prompt='Select image> ' | sed -n '1p'
 }
 
-# ----------------------------------------------------------------------
-# Choose image (if not supplied)
-# ----------------------------------------------------------------------
-if [[ -z $IMAGE ]]; then
-  IMAGE="$(fzf_file_picker)"
-  [[ -z $IMAGE ]] && { log "No image selected."; usage; }
-fi
-
-# ----------------------------------------------------------------------
-# Choose target device (if not supplied)
-# ----------------------------------------------------------------------
-if [[ -z $DEVICE ]]; then
-  command -v fzf >/dev/null 2>&1 || { log "fzf required for device selection"; usage; }
-  SEL=$(
-    lsblk -dn -o NAME,TYPE,RM,SIZE,MODEL,MOUNTPOINT |
-    awk '
-      $2=="disk" && ($3=="1" || $3=="0") && ($6=="" || $6=="-") {
-        printf "/dev/%s\t%s %s\n",$1,$4,$5
-      }' |
-    fzf --height=~40% --layout=reverse --inline-info \
-        --prompt="Select target device: " \
-        --header="Path\tSize Model" --no-multi -1 -0
-  )
-  [[ -z $SEL ]] && { log "No device selected."; exit "$E_ABORT"; }
-  DEVICE=$(awk '{print $1}' <<<"$SEL")
-fi
-
-[[ ! -b $DEVICE ]] && { log "Target $DEVICE not found or not a block device."; exit "$E_ABORT"; }
-
-# ----------------------------------------------------------------------
-# Working directories
-# ----------------------------------------------------------------------
-WORKDIR="$(mktemp -d)"
-SRC_IMG="${WORKDIR}/source.img"
-BOOT_MNT="${WORKDIR}/boot"
-ROOT_MNT="${WORKDIR}/root"
-mkdir -p -- "$BOOT_MNT" "$ROOT_MNT"
-
-# ----------------------------------------------------------------------
-# Fetch remote image (if URL) – supports resume & checksum placeholder
-# ----------------------------------------------------------------------
-case "$IMAGE" in
-  http://*|https://*)
-    SRC_URL="$IMAGE"
-    IMAGE="${WORKDIR}/$(basename "$SRC_URL")"
-    log "Downloading $SRC_URL → $IMAGE"
-    curl -C - -SfL --progress-bar -o "$IMAGE" "$SRC_URL"
-    ;;
-esac
-
-# ----------------------------------------------------------------------
-# Extract / copy the source image to a plain .img file
-# ----------------------------------------------------------------------
-case "$IMAGE" in
-  *.xz)  xz -dc "$IMAGE" > "$SRC_IMG" ;;
-  *)    cp --reflink=auto "$IMAGE" "$SRC_IMG" ;;
-esac
-
-# ----------------------------------------------------------------------
-# Confirm destructive operation
-# ----------------------------------------------------------------------
-log "[*] WARNING: All data on ${DEVICE} will be DESTROYED!"
-read -r -p "Type yes to continue: " CONFIRM
-CONFIRM=${CONFIRM,,}               # lower‑case
-[[ $CONFIRM != "yes" ]] && { log "Aborted by user."; exit "$E_ABORT"; }
-
-# ----------------------------------------------------------------------
-# Partition the target device
-# ----------------------------------------------------------------------
-run "wipefs -af $DEVICE"
-run "parted -s $DEVICE mklabel msdos"
-run "parted -s $DEVICE mkpart primary fat32 0% $BOOT_SIZE"
-run "parted -s $DEVICE mkpart primary $BOOT_SIZE 100%"
-run "partprobe $DEVICE"
-udevadm settle || true   # wait for udev to create /dev entries
-
-# Determine partition names (handles mmcblk*, nvme*, sd*)
-case "$DEVICE" in
-  *mmcblk*|*nvme*) PART_BOOT="${DEVICE}p1"; PART_ROOT="${DEVICE}p2" ;;
-  *)               PART_BOOT="${DEVICE}1";  PART_ROOT="${DEVICE}2"  ;;
-esac
-
-# ----------------------------------------------------------------------
-# Filesystem creation
-# ----------------------------------------------------------------------
-run "mkfs.vfat -F32 -I -n boot ${PART_BOOT}"
-
-run "mkfs.f2fs -f -O extra_attr,inode_checksum,sb_checksum -l root ${PART_ROOT}"
-
-# ----------------------------------------------------------------------
-# Mount source image partitions (detect loop‑device suffix)
-# ----------------------------------------------------------------------
-LOOP_DEV="$(losetup --show -fP "$SRC_IMG")"
-# Some loop devices need a “p” suffix, others don’t
-case "$LOOP_DEV" in
-  *loop*) LOOP_SUFFIX="" ;;
-  *)      LOOP_SUFFIX="p" ;;
-esac
-run "mount ${LOOP_DEV}${LOOP_SUFFIX}1 $BOOT_MNT"
-run "mount ${LOOP_DEV}${LOOP_SUFFIX}2 $ROOT_MNT"
-
-# ----------------------------------------------------------------------
-# Mount target partitions
-# ----------------------------------------------------------------------
-TARGET_BOOT="${WORKDIR}/target_boot"
-TARGET_ROOT="${WORKDIR}/target_root"
-mkdir -p "$TARGET_BOOT" "$TARGET_ROOT"
-run "mount $PART_BOOT $TARGET_BOOT"
-run "mount $PART_ROOT $TARGET_ROOT"
-
-# ----------------------------------------------------------------------
-# Helper: free space in a tmpfs mountpoint (used for fast copy)
-# ----------------------------------------------------------------------
-get_free_tmpfs_mb() {
-  best=0
-  for m in /dev/shm /run/shm /tmp; do
-    [ -e "$m" ] || continue
-    val=$(df -Pm "$m" 2>/dev/null | awk 'NR==2{print $4}')
-    [[ $val =~ ^[0-9]+$ ]] || val=0
-    (( val > best )) && best=$val
-  done
-  printf '%s' "$best"
+pick_device()
+{
+  # list sd* and mmcblk* disks (including removable)
+  lsblk -dpno NAME,MODEL,SIZE 2>/dev/null | grep -E '/dev/(sd|mmcblk)' | awk '{$1=$1; print}' |
+    fzf --height 40% --border --preview 'lsblk -no NAME,MODEL,SIZE,RM,ROTA {} 2>/dev/null' --prompt='Select target device> ' |
+    awk '{print $1}' | sed -n '1p'
 }
 
-# ----------------------------------------------------------------------
-# Copy root filesystem (tar‑stream → tmpfs if enough RAM, otherwise rsync)
-# ----------------------------------------------------------------------
-ROOT_SIZE_MB=$(du -sm "$ROOT_MNT" | awk '{print $1}')
-TMPFS_SIZE=$(( ROOT_SIZE_MB + 512 ))
-FREE_MB=$(get_free_tmpfs_mb)
-
-log "[*] Copying root filesystem…"
-if (( FREE_MB >= TMPFS_SIZE )); then
-  TMPFS_MNT="${WORKDIR}/tmpfs_root"
-  run "mkdir -p $TMPFS_MNT"
-  run "mount -t tmpfs -o size=${TMPFS_SIZE}M tmpfs $TMPFS_MNT"
-  (cd "$ROOT_MNT" && tar -cpf - .) | (cd "$TMPFS_MNT" && tar -xpf -)
-  (cd "$TMPFS_MNT" && tar -cpf - .) | (cd "$TARGET_ROOT" && tar -xpf -)
-  run "umount $TMPFS_MNT"
-  rm -rf "$TMPFS_MNT"
+# resolve source (interactive or positional)
+if [ "$SELECT_IMAGE" -eq 1 ]; then
+  filename="$(pick_image)" || exit 1
+elif [ $# -ge 1 ]; then
+  filename="$1"
+  shift 1
 else
-  log "[!] Not enough free tmpfs ($FREE_MB MiB); falling back to rsync"
-  run "rsync -aHAX --inplace --fsync --no-whole-file --progress $ROOT_MNT/ $TARGET_ROOT/"
+  echo "No source provided. Use -I to select interactively or pass source as first arg." >&2
+  usage
+  exit 1
 fi
 
-# ----------------------------------------------------------------------
-# Copy boot partition (same strategy, smaller threshold)
-# ----------------------------------------------------------------------
-log "[*] Copying boot partition…"
-if (( FREE_MB >= 128 )); then
-  (cd "$BOOT_MNT" && tar -cpf - .) | (cd "$TARGET_BOOT" && tar -xpf -)
+# resolve target (interactive or positional)
+if [ "$SELECT_DEVICE" -eq 1 ]; then
+  targetarg="$(pick_device)" || exit 1
+elif [ $# -ge 1 ]; then
+  targetarg="$1"
+  shift 1
 else
-  run "rsync -aHAX --inplace --fsync --no-whole-file --progress $BOOT_MNT/ $TARGET_BOOT/"
+  echo "No target provided. Use -D to select interactively or pass target as second arg." >&2
+  usage
+  exit 1
 fi
 
-# ----------------------------------------------------------------------
-# Update bootloader configuration (cmdline.txt) and fstab
-# ----------------------------------------------------------------------
-BOOT_UUID=$(blkid -s PARTUUID -o value "$PART_BOOT" 2>/dev/null || true)
-ROOT_UUID=$(blkid -s PARTUUID -o value "$PART_ROOT" 2>/dev/null || true)
+cmdname="$(basename "$0")"
+filename="${filename}"
+targetarg="${targetarg}"
+targetdev=""
+targetimg=""
+target_p1=""
+target_p2=""
+targetboot=/mnt/target_boot
+targetroot=/mnt/target_root
+sourcedev=$(losetup -f)
+sourceboot=/mnt/source_boot
+sourceroot=/mnt/source_root
 
-if [[ -f "${TARGET_BOOT}/cmdline.txt" ]]; then
-  sed -i "s|root=[^ ]*|root=PARTUUID=$ROOT_UUID|" "${TARGET_BOOT}/cmdline.txt" || true
-  sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_BOOT}/cmdline.txt" || true
+raspimgver="2018-06-27"
+scriptver="v207"
+
+# root check
+if [ "$(whoami)" != "root" ]; then
+  echo "Error: This script must be run as root." >&2
+  exit 1
 fi
 
-cat > "${TARGET_ROOT}/etc/fstab" <<EOF
-proc                  /proc   proc    defaults                    0   0
-PARTUUID=$BOOT_UUID  /boot   vfat    defaults                    0   2
-PARTUUID=$ROOT_UUID  /       f2fs    defaults,noatime,discard    0   1
-EOF
-
-# ----------------------------------------------------------------------
-# Optional SSH enable (touch /boot/ssh)
-# ----------------------------------------------------------------------
-if (( ENABLE_SSH )); then
-  log "[*] Enabling SSH on first boot"
-  touch "${TARGET_BOOT}/ssh"
-fi
-
-# ----------------------------------------------------------------------
-# First‑boot F2FS resize script (initramfs hook)
-# ----------------------------------------------------------------------
-mkdir -p "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount"
-cat > "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize" <<'EOF'
-#!/bin/sh
-. /scripts/functions
-log_begin_msg "Expanding F2FS root filesystem..."
-ROOT_DEV=$(findmnt -n -o SOURCE /)
-if [ -x /sbin/resize.f2fs ]; then
-  /sbin/resize.f2fs "$ROOT_DEV"
-  log_end_msg "F2FS root filesystem expanded."
-  rm -f /etc/initramfs-tools/scripts/init-premount/f2fsresize
+# verify source type
+if [ "${filename##*.}" = "zip" ]; then
+  imgsrc="${filename%.*}.img"
+  test -r "$imgsrc" || unzip -p "$filename" > "$imgsrc"
+elif [ "${filename##*.}" = "img" ]; then
+  imgsrc="$filename"
 else
-  log_end_msg "resize.f2fs not found – skipping."
+  echo "Source must be .img or .zip" >&2
+  exit 1
 fi
-EOF
-chmod +x "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize" || :
 
-# ----------------------------------------------------------------------
-# Final sync & cleanup (handled by trap as well)
-# ----------------------------------------------------------------------
-log "[+] Syncing disks…"
+# verify target
+if [ -b "$targetarg" ]; then
+  targetdev="$targetarg"
+  targetimg=""
+  case "$targetdev" in
+    /dev/mmcblk*)
+      target_p1="p1"
+      target_p2="p2"
+      ;;
+    /dev/sd*)
+      target_p1="1"
+      target_p2="2"
+      ;;
+    *)
+      # fallback: default numeric suffix
+      target_p1="1"
+      target_p2="2"
+      ;;
+  esac
+  echo "********** THIS DEVICE WILL BE WIPED **********"
+  parted -s "$targetdev" print || true
+  echo "********** Are you sure? (yes) **********"
+  read -r ans
+  [ "$ans" = "yes" ] || exit 1
+elif [ ! -e "$targetarg" ]; then
+  # create image file
+  targetdev=""
+  targetimg="$targetarg"
+  target_p1="p1"
+  target_p2="p2"
+else
+  echo "Target ($targetarg) invalid." >&2
+  exit 1
+fi
+
+# unmount leftovers
+if [ -b "$sourcedev" ]; then
+  umount "${sourcedev}"* 2>/dev/null || true
+fi
+if [ -b "$targetdev" ]; then
+  umount "${targetdev}"* 2>/dev/null || true
+fi
+losetup -d "$(losetup -O NAME -n -j "$imgsrc" 2>/dev/null || true)" 2>/dev/null || true
+losetup -d "$(losetup -O NAME -n -j "$targetimg" 2>/dev/null || true)" 2>/dev/null || true
+
+# mount points
+test -d /mnt || mkdir -p /mnt
+test -d "$sourceboot" || mkdir -p "$sourceboot"
+test -d "$sourceroot" || mkdir -p "$sourceroot"
+test -d "$targetboot" || mkdir -p "$targetboot"
+test -d "$targetroot" || mkdir -p "$targetroot"
+
+# if target is image make it
+if [ -n "$targetimg" ]; then
+  echo "${cmdname}: Creating blank disk image."
+  targetimgsize=$(du --block-size=M "$imgsrc" | cut -d "M" -f1)
+  targetimgsize=$((targetimgsize + 200))
+  truncate -s "${targetimgsize}M" "$targetimg"
+  echo "${cmdname}: Attaching target disk image."
+  targetdev=$(losetup --show -f -P "$targetimg")
+fi
+
+# mount source
+echo "${cmdname}: Attaching source disk image."
+sourcedev=$(losetup --show -f -P "$imgsrc")
+echo "${cmdname}: Mounting source boot partition."
+mount -o ro "${sourcedev}${target_p1}" "$sourceboot"
+echo "${cmdname}: Mounting source root partition."
+mount -o ro "${sourcedev}${target_p2}" "$sourceroot"
+
+# wipe
+echo "${cmdname}: Erasing current partition table on target."
+wipefs -aq "$targetdev"
+
+# create partitions using chosen fat size
+echo "${cmdname}: Creating new partition table on target. FAT size ${FAT_MB}MiB"
+parted -s "$targetdev" mklabel msdos \
+  mkpart primary fat32 8192s "${FAT_MB}MiB" \
+  mkpart primary ext2 "${FAT_MB}MiB" 100%
+
+partprobe "$targetdev"
+parted -s "$targetdev" print
+
+bootuuid=$(blkid -o value -s PARTUUID "${targetdev}${target_p1}")
+rootuuid=$(blkid -o value -s PARTUUID "${targetdev}${target_p2}")
+
+# format boot
+echo "${cmdname}: Formatting boot partition on target as FAT32."
+mkfs.fat -n boot "${targetdev}${target_p1}"
+echo "${cmdname}: Mounting target boot partition."
+mount "${targetdev}${target_p1}" "$targetboot"
+echo "${cmdname}: Getting file count on source."
+numfiles=$(find "$sourceboot/" -type f -printf . | wc -c)
+echo "${cmdname}: Copying $numfiles files from source image to target device."
+rsync -axi "$sourceboot"/ "$targetboot"/ | pv -leps "$numfiles" >/dev/null
+
+# update cmdline
+echo "${cmdname}: Updating cmdline.txt options."
+cp "$targetboot/cmdline.txt" "$targetboot/cmdline.old"
+sed -i 's/rootfstype=[^ ]*/rootfstype=f2fs/g' "$targetboot/cmdline.txt"
+sed -i 's/root=[^ ]*/root=PARTUUID='"$rootuuid"'/g' "$targetboot/cmdline.txt"
+if [ -z "$targetimg" ]; then
+  sed -i 's| init=/usr/lib/raspi-config/init_resize.sh||' "$targetboot/cmdline.txt"
+  if ! grep -q splash "$targetboot/cmdline.txt"; then
+    sed -i 's/ quiet//g' "$targetboot/cmdline.txt"
+  fi
+fi
+
+echo "${cmdname}: Done processing the boot partition!"
 sync
 
-# Unmount everything (ignore errors – cleanup trap will also try)
-umount "$BOOT_MNT" "$ROOT_MNT" "$TARGET_BOOT" "$TARGET_ROOT" 2>/dev/null || :
+# format root as f2fs
+echo "${cmdname}: Formatting root partition on target as F2FS."
+mkfs.f2fs -o 20 -O extra_attr,inode_checksum,sb_checksum,compression -l root "${targetdev}${target_p2}"
+echo "${cmdname}: Mounting target root partition."
+mount "${targetdev}${target_p2}" "$targetroot"
+echo "${cmdname}: Getting file count on source image."
+numfiles=$(df -i "$sourceroot/" | perl -ane 'print $F[2] if $F[5] =~ m:^/:')
+echo "${cmdname}: Copying $numfiles files from source image to target device."
+rsync -axi "$sourceroot"/ "$targetroot"/ | pv -leps "$numfiles" >/dev/null
 
-# Detach loop device
-losetup -d "${LOOP_DEV:-}" 2>/dev/null || :
+# fstab
+echo "${cmdname}: Generating new fstab on target."
+mv "$targetroot/etc/fstab" "$targetroot/etc/fstab.old"
+cat > "$targetroot/etc/fstab" << EOF
+proc                  /proc   proc    defaults                    0   0
+PARTUUID=$bootuuid  /boot   vfat    defaults                    0   2
+PARTUUID=$rootuuid  /       f2fs    defaults,noatime,discard    0   1
+EOF
 
-# Remove temporary work directory
-rm -rf "${WORKDIR:-}"
+# image-specific initramfs hooks
+if [ -n "$targetimg" ]; then
+  echo "${cmdname}: Setting up F2FS filesystem expansion."
+  cat > "${targetroot}/etc/initramfs-tools/hooks/f2fsresize" << 'EOF'
+#!/bin/sh
+PREREQ=""
+prereqs()
+{
+  echo "$PREREQ"
+}
+case "$1" in
+prereqs) prereqs; exit 0;;
+esac
+. /usr/share/initramfs-tools/hook-functions
+if [ ! -x "/sbin/resize.f2fs" ]; then exit 0; fi
+copy_exec /sbin/resize.f2fs
+exit 0
+EOF
+  chmod +x "${targetroot}/etc/initramfs-tools/hooks/f2fsresize"
 
-log "[+] Done. F2FS Raspberry Pi image ready on $DEVICE."
+  cat > "${targetroot}/etc/initramfs-tools/scripts/init-premount/f2fsresize" << EOF
+#!/bin/sh
+PREREQ=""
+prereqs()
+{
+  echo "\$PREREQ"
+}
+case "\$1" in
+prereqs) prereqs; exit 0;;
+esac
+. /scripts/functions
+if [ ! -x "/sbin/resize.f2fs" ]; then
+  panic "Resize.F2FS Executable Not Found"
+fi
+log_begin_msg "Expanding F2FS Filesystem"
+/sbin/resize.f2fs "/dev/disk/by-partuuid/$rootuuid" || panic "F2FS Resize Failed"
+log_end_msg
+exit 0
+EOF
+  chmod +x "${targetroot}/etc/initramfs-tools/scripts/init-premount/f2fsresize"
+
+  cat > "${targetroot}/etc/f2fsresize_cleanup" << 'EOF'
+#!/bin/bash
+printf "Successfully expanded F2FS volume!"
+sed -i '/\/bin\/bash \/etc\/f2fsresize_cleanup/d' /etc/rc.local
+sed -i '/initramfs initrd.img followkernel/d' /boot/config.txt
+mv /usr/lib/raspi-config/init_resize.old /usr/lib/raspi-config/init_resize.sh
+rm /boot/initrd.img
+rm /etc/initramfs-tools/scripts/init-premount/f2fsresize
+rm /etc/initramfs-tools/hooks/f2fsresize
+rm /etc/f2fsresize_cleanup
+EOF
+  chmod +x "${targetroot}/etc/f2fsresize_cleanup"
+
+  kernelver=$(ls "${targetroot}/lib/modules/" | grep "v7+" | head -n 1 || true)
+  test -r "$targetroot/usr/lib/raspi-config/init_resize.sh" && cp "$targetroot/usr/lib/raspi-config/init_resize.sh" "$targetroot/usr/lib/raspi-config/init_resize.old" || true
+  if [ -n "$kernelver" ]; then
+    linenum=$(grep -n "mount / -o remount,rw" "$targetroot/usr/lib/raspi-config/init_resize.sh" | head -n 1 | cut -d: -f1 || true)
+    if [ -n "$linenum" ]; then
+      linenum=$((linenum + 2))
+      sed -i "${linenum}i echo \"initramfs initrd.img followkernel\" >> /boot/config.txt" "$targetroot/usr/lib/raspi-config/init_resize.sh"
+      sed -i "${linenum}i sed -i \x27\x27\"$(grep -n "exit 0"  "/etc/rc.local" | tail -n 1 | cut -d: -f1)\"\\x27i /bin/bash /etc/f2fsresize_cleanup\x27 /etc/rc.local" "$targetroot/usr/lib/raspi-config/init_resize.sh" || true
+    fi
+  fi
+fi
+
+echo "${cmdname}: Syncing..."
+sync
+
+# chroot and install f2fs-tools
+echo "${cmdname}: Building up chroot enviroment on target rootfs."
+for i in dev proc sys dev/pts; do
+  mount --bind "/$i" "$targetroot/$i"
+done
+mount --bind "$targetboot" "$targetroot/boot"
+
+cat << EOF | chroot "$targetroot" env -i LANG=en_GB.utf8 LANGUAGE=en_GB.utf8 LC_ALL=en_GB.utf8 TERM=$TERM HOME=/root /bin/bash --login
+echo "${cmdname}@${targetroot}: Stopping automatic ext4 filesystem expansion."
+update-rc.d resize2fs_once remove || true
+test -r /etc/init.d/resize2fs_once && rm /etc/init.d/resize2fs_once || true
+echo "${cmdname}@${targetroot}: Installing f2fs-tools."
+apt-get -qq update || true
+apt-get -qq install -y f2fs-tools || true
+apt-get -qq clean || true
+test -z "$targetimg" || echo "${cmdname}@${targetroot}: Generating initramfs for F2FS filesystem expansion."
+test -z "$targetimg" || mkinitramfs -o /boot/initrd.img $kernelver || true
+exit 0
+EOF
+
+echo "${cmdname}: Tearing down chroot enviroment."
+sync
+sleep 1
+for i in boot dev/pts sys proc dev; do
+  umount "$targetroot/$i" || true
+done
+
+echo "${cmdname}: Done processing the root partition!"
+echo "${cmdname}: Syncing..."
+sync
+
+echo "${cmdname}: Successfully completed Raspbian F2FS installation!"
+echo "************************************************************"
+df -hT --total "${targetdev}${target_p1}" "${targetdev}${target_p2}" || true
+echo "************************************************************"
+
+echo "${cmdname}: Unmounting everything."
+umount "$sourceboot" 2>/dev/null || true
+umount "$sourceroot" 2>/dev/null || true
+umount "$targetboot" 2>/dev/null || true
+umount "$targetroot" 2>/dev/null || true
+umount "${sourcedev}"* 2>/dev/null || true
+umount "${targetdev}"* 2>/dev/null || true
+losetup -d "$sourcedev" 2>/dev/null || true
+losetup -d "$targetdev" 2>/dev/null || true
+
+echo "${cmdname}: Cleaning up."
+test -r "$sourceboot" && rm -rf "$sourceboot"
+test -r "$sourceroot" && rm -rf "$sourceroot"
+test -r "$targetboot" && rm -rf "$targetboot"
+test -r "$targetroot" && rm -rf "$targetroot"
+
+echo "-------------------------------------------------------------------------------"

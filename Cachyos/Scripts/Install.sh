@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
-export LC_ALL=C LANG=C
-cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || : 
 sudo -v
-export HOME="/home/${SUDO_USER:-$USER}"
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || : 
+SHELL="${BASH:-$(command -v bash)}"
 
 # helpers
 has(){ command -v "$1" &>/dev/null; }
@@ -16,11 +16,13 @@ fi
 
 # recommended build env
 [[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf
-export RUSTFLAGS='-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'
 export CFLAGS="${CFLAGS:--march=native -mtune=native -O3 -pipe}"
 export CXXFLAGS="$CFLAGS"
+export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib
 export MAKEFLAGS="-j$(nproc)" NINJAFLAGS="-j$(nproc)"
+export RUSTFLAGS='-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
+unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER
 MPKG_FLAGS='--cleanbuild --clean --rmdeps --syncdeps --nocheck --skipinteg --skippgpcheck --skipchecksums'
 GPG_FLAGS='--batch -q -z1 --compress-algo ZLIB --yes --skip-verify'
 GIT_FLAGS='--depth=1 --single-branch'
@@ -96,13 +98,8 @@ if has flatpak; then
     [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
   fi
   flatpak install -y flathub org.kde.audiotube || :
+  flatpak update -y --noninteractive
 fi
-
-# navita
-navita_url='https://raw.githubusercontent.com/CodesOfRishi/navita/main/navita.sh'
-dest="$HOME/.config/bash" file="${navita_url##*/}"
-mkdir -p "$dest" && curl -sSfL -o "$dest/$file" "$navita_url"
-chmod +x "$dest/$file" && [[ -r "$dest/$file" ]] && . "$dest/$file" || :
 
 # rustup + cargo utilities
 if ! has rustup; then
@@ -137,6 +134,7 @@ fi
 if has micro; then
   mplug=(fish fzf palettero wc filemanager cheat linter lsp autofmt detectindent editorconfig misspell aspell comment diff jump bounce autoclose manipulator joinLines quoter literate status ftoptions)
   micro -plugin install "${mplug[@]}" || :
+  micro -plugin update >/dev/null || :
 fi
 
 # fisher plugins for fish shell
@@ -156,13 +154,19 @@ mkdir -p "$HOME/.config/bash"
 curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "$HOME/.config/bash/fzf-simple-completion.sh"
 chmod +x "$HOME/.config/bash/fzf-simple-completion.sh" || :
 
-# housekeeping & system updates (best-effort)
-has topgrade && LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry '(--disable={config_update,system,tldr,maza,yazi,micro})' 2>/dev/null || :
+# housekeeping & system updates
+has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry '(--disable={config_update,system,tldr,maza,yazi,micro})' 2>/dev/null || :
+if has topgrade; then
+  topno="(--disable={config_update,system,tldr,maza,yazi,micro})"
+  topnosudo="(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})"
+  topgrade -cy --skip-notify --no-self-update --no-retry "${topno[@]}" 2>/dev/null || :
+  sudo topgrade -cy --skip-notify --no-self-update --no-retry "${topnosudo[@]}" 2>/dev/null || :
+fi
 has fc-cache && sudo fc-cache -f >/dev/null || :
 has update-desktop-database && sudo update-desktop-database &>/dev/null || :
-has fwupdmgr && (sudo fwupdmgr refresh -y || :) && (sudo fwupdtool update || :) || :
+has fwupdmgr && { sudo fwupdmgr refresh -y && sudo fwupdtool update; }
 
-# initramfs handling (try known generators)
+# initramf
 if has update-initramfs; then
   sudo update-initramfs || :
 else

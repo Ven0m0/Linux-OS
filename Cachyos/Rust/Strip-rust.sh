@@ -1,10 +1,4 @@
-#!/bin/bash
-DIR="$HOME/.cargo/bin"
+#!/usr/bin/env bash
+DIR="${HOME}/.cargo/bin/"
 
-for file in "$DIR"/*; do
-  if [ -f "$file" ]; then
-    rust-strip -s -x "$file" && strip -s -x "$file" && llvm-strip -s -x -D "$file" && echo "stripped $file"
-  fi
-done
-
-read -s -r -p "✅Stripping rust apps done. Press Enter to exit..."
+LC_ALL=C find -O3 "$DIR" -maxdepth 1 -type f -executable -exec strip -sx {} +

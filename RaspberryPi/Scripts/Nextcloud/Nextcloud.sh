@@ -40,3 +40,6 @@ sudo chmod -R 755 /var/www/nextcloud
 
 sudo touch /etc/nginx/sites-available/nextcloud.conf
 
+sudo apt install certbot python3-certbot-nginx -y
+sudo certbot --nginx -d cloud.example.com
+sudo certbot renew --dry-run

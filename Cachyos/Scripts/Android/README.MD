@@ -5,6 +5,7 @@
 
 [UAD-NG](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation)
 
+https://github.com/Parsa307/split_optimizer
 
 Game mode
 

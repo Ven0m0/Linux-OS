@@ -18,8 +18,8 @@ echo "micro /etc/fstab"
 echo "micro /etc/mkinitcpio.conf"
 
 
-sudo mkinitcpio -P
 exit
+sudo arch-chroot /mnt mkinitcpio -P
 sudo umount -R /mnt/run
 sudo umount -R /mnt/dev
 sudo umount -R /mnt/sys

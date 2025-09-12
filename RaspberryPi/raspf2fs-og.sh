@@ -232,7 +232,7 @@ sync
 
 # Format target parition 2 as F2FS.
 echo "${cmdname}: Formatting root partition on target as F2FS."
-mkfs.f2fs -o 20 -l root ${targetdev}$target_p2
+mkfs.f2fs -o 20 -O extra_attr,inode_checksum,sb_checksum,compression -l root ${targetdev}$target_p2
 # Mount target partition 2.
 echo "${cmdname}: Mounting target root partition."
 mount ${targetdev}$target_p2 $targetroot

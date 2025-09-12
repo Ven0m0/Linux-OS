@@ -24,16 +24,17 @@ export MAKEFLAGS RUSTFLAGS CFLAGS CXXFLAGS CARGO_HTTP_MULTIPLEXING=true CARGO_NE
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck'
 sync
 
-if has paru; then
-  paru -Syq archlinux-keyring --noconfirm
-  paru -Syuq --noconfirm
-elif has yay; then
-  yay -Syq archlinux-keyring --noconfirm
-  yay -Syuq --noconfirm
+if command -v paru &>/dev/null; then
+  aurhelper=paru
+elif command -v yay &>/dev/null; then
+  aurhelper=yay
 else
-  sudo pacman -Syq archlinux-keyring --noconfirm
-  sudo pacman -Syuq --noconfirm
+  aurhelper="sudo pacman"
 fi
+
+# Sync keyring + upgrade
+$aurhelper -Syq archlinux-keyring --noconfirm
+$aurhelper -Syuq --noconfirm
 
 # sudo pacman -Rns openssh && sudo pacman -Sq openssh-hpn openssh-hpn-shim
 pkgs=(
@@ -44,8 +45,8 @@ pkgs=(
   vkbasalt menu-cache profile-sync-daemon profile-cleaner bleachbit-git irqbalance
   xorg-xhost libappindicator-gtk3 libdbusmenu-glib appmenu-gtk-module
   xdg-desktop-portal modprobed-db cachyos-ksm-settings cpupower-gui openrgb
-  dropbear optiimage multipath-tools preload wolfssl sshpass
-  graphicsmagick fclones cpio bc fuse2 appimagelauncher jdk24-graalvm-ee-bin
+  dropbear optiimage multipath-tools preload wolfssl sshpass graphicsmagick
+  fclones cpio bc fuse2 appimagelauncher jdk24-graalvm-ee-bin
   cleanerml-git makepkg-optimize-mold prelockd uresourced optipng-parallel
   plzip plzip-lzip-link lbzip2 usb-dirty-pages-udev cleanlib32 tuckr-git
   dxvk-gplasync-bin pay-respects unzrip-git adbr-git luxtorpeda
@@ -55,7 +56,7 @@ pkgs=(
 echo "Checking installed packages..."
 missing=()
 for p in "${pkgs[@]}"; do
-  paru -Qiq "$p" &>/dev/null || missing+=("$p")
+  $aurhelper -Qiq "$p" &>/dev/null || missing+=("$p")
 done
 
 if [ ${#missing[@]} -eq 0 ]; then
@@ -66,32 +67,29 @@ fi
 echo "➜ Installing: ${missing[*]}"
 while [ ${#missing[@]} -gt 0 ]; do
   failed=()
-  paru -Sq --needed --noconfirm --removemake --cleanafter --sudoloop \
-       --skipreview --nokeepsrc "${missing[@]}" || {
-    echo "Some packages failed. Retrying individually..."
-    for p in "${missing[@]}"; do
-      paru -Sq --needed --noconfirm --removemake --cleanafter \
-           --skipreview --nokeepsrc "$p" || failed+=("$p")
-    done
-    missing=($(printf "%s\n" "${missing[@]}" | grep -vxF -f <(printf "%s\n" "${failed[@]}")))
+  $aurhelper -Sq --needed --noconfirm --removemake --cleanafter --sudoloop \
+    --skipreview --nokeepsrc --batchinstall --combinedupgrade \
+    --mflags '--skipinteg --skippgpcheck' "${missing[@]}" || {
+      echo "Some packages failed. Retrying individually..."
+      for p in "${missing[@]}"; do
+        $aurhelper -Sq --needed --noconfirm --removemake --cleanafter \
+          --skipreview --nokeepsrc "$p" || failed+=("$p")
+      done
+      missing=($(printf "%s\n" "${missing[@]}" | grep -vxF -f <(printf "%s\n" "${failed[@]}")))
   }
   [ ${#failed[@]} -eq 0 ] && break
 done
 
 echo "✔ Installation complete (or skipped if already present)"
 
-# konsave
-# memavaild
-# precached
-flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-flats=`awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs`
-flatpak install -y flathub ${flats}
-flatpak install -y flathub org.kde.audiotube
-
+if command -v flatpak &>/dev/null; then
+  flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+  flats=`awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs`
+  flatpak install -y flathub ${flats}
+  flatpak install -y flathub org.kde.audiotube
+fi
 # echo "Installing gaming applications"
-# sudo pacman -S cachyos-gaming-meta cachyos-gaming-applications --noconfirm || true
-
+# sudo pacman -Sq cachyos-gaming-meta cachyos-gaming-applications --noconfirm --needed || :
 
 foxdir(){
   local PROFILE_DIR="${HOME}/.mozilla/firefox" ACTIVE_PROF ACTIVE_PROF_DIR
@@ -165,20 +163,6 @@ cargo install -Zunstable-options -Zgit -Zavoid-dev-deps -Zno-embed-metadata -Ztr
 
 cargo install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata -Ztrim-paths "${cargostall[@]}" -f -q --locked --bins --keep-going
 
-# Fast, hardware-accelerated CRC calculation
-cargo +nightly install crc-fast --features=optimize_crc32_auto,vpclmulqdq
-
-# fast compression multitool for zst, tgz, txz, zip, 7z
-cargo install zzz-arc
-# https://github.com/caydenlund/xz-rs.git
-
-# Rust-curl
-# https://crates.io/crates/rust-curl
-#cargo install rust-curl
-
-# GUI for fclones
-#cargo install fclones-gui
-
 #cargo install shell-mommy
 #paru -S mommy
 
@@ -237,64 +221,49 @@ curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/ref
 chmod +x "${HOME}/.config/bash/fzf-simple-completion.sh"
 
 echo "Installing updates"
-sudo pacman -Syyu --noconfirm || true
-sudo paru --cleanafter -Syu --combinedupgrade || true
-sudo topgrade -c --disable config_update --skip-notify -y --no-retry --disable=uv || true
-rustup update || true
-tldr -u && sudo tldr -u || true
-echo "🔍 Checking for systemd-boot..."
-if [ -d /sys/firmware/efi ] && bootctl is-installed &>/dev/null; then
-    echo "✅ systemd-boot is installed. Updating..."
-    sudo bootctl update || true
-    sudo bootctl cleanup || true
-else
-    echo "❌ systemd-boot not detected; skipping bootctl update."
+has tldr && sudo tldr -cuq
+if has topgrade; then
+  echo 'update using topgrade...'
+  topno="(--disable={config_update,system,tldr,maza,yazi,micro})"
+  topnosudo="(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})"
+  LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${topno[@]}" 2>/dev/null || :
+  LC_ALL=C sudo topgrade -cy --skip-notify --no-self-update --no-retry "${topnosudo[@]}" 2>/dev/null || :
 fi
-
-echo "🔍 Checking for Limine..."
-if find /boot /boot/efi /mnt -type f -name "limine.cfg" 2>/dev/null | grep -q limine; then
-    echo "✅ Limine configuration detected."
-
-    # Check if `limine-update` is available
-    if command -v limine-update &>/dev/null; then
-        sudo limine-update || true
-        sudo limine-mkinitcpio || true
-    else
-        echo "⚠️ limine-update not found in PATH."
-    fi
+has fc-cache && sudo fc-cache -f >/dev/null
+has update-desktop-database && sudo update-desktop-database &>/dev/null
+if has fwupdmgr; then
+  sudo fwupdmgr refresh -y
+  sudo fwupdtool update
+fi
+if has bootctl; then
+  sudo bootctl update -q &>/dev/null; sudo bootctl cleanup -q &>/dev/null
+fi
+if has sdboot-manage; then
+  echo 'update sdboot-manage...'
+  sudo sdboot-manage remove 2>/dev/null
+  sudo sdboot-manage update &>/dev/null
+fi
+if has update-initramfs; then
+  sudo update-initramfs
 else
-    echo "❌ Limine configuration not found; skipping Limine actions."
+  if has limine-mkinitcpio; then
+    sudo limine-mkinitcpio
+  elif has mkinitcpio; then
+    sudo mkinitcpio -P
+  elif has "/usr/lib/booster/regenerate_images"; then
+    sudo /usr/lib/booster/regenerate_images
+  elif has dracut-rebuild; then
+    sudo dracut-rebuild
+  else
+    echo -e "\e[31m The initramfs generator was not found, please update initramfs manually\e[0m"
+  fi
 fi
 
 echo "Cleaning"
-sudo pacman -Rns "$(pacman -Qtdq)" --noconfirm > /dev/null || true
-flatpak uninstall --unused || true
-sudo pacman -Scc --noconfirm || true
-sudo paccache -rk0 -q || true
-sudo fstrim -av --quiet-unsupported || true
-rm -rf /var/cache/*
-sudo rm -rf /tmp/*
-sudo rm -rf /var/tmp/*
-sudo rm -rf /var/crash/*
-sudo rm -rf /var/lib/systemd/coredump/
-echo "Empty global trash"
-rm -rf ~/.local/share/Trash/*
-sudo rm -rf /root/.local/share/Trash/*
-echo "Clear user-specific cache"
-rm -rf ~/.cache/*
-sudo rm -rf root/.cache/*
-rm -f ~/.mozilla/firefox/Crash\ Reports/*
-echo "Clear Flatpak cache"
-rm -rf ~/.var/app/*/cache/*
-sudo rm -rf /var/tmp/flatpak-cache-*
-rm -rf ~/.cache/flatpak/system-cache/*
-rm -rf ~/.local/share/flatpak/system-cache/*
-rm -rf ~/.var/app/*/data/Trash/*
-echo "Clear system logs"
-sudo rm -f /var/log/pacman.log
-sudo journalctl --rotate -q || true
-sudo journalctl --vacuum-time=1s -q || true
-sudo rm -rf /run/log/journal/*
-sudo rm -rf /var/log/journal/*
+sudo pacman -Rns "$(pacman -Qdtq 2>/dev/null)" --noconfirm >/dev/null
+sudo pacman -Sccq --noconfirm
+sudo $aurhelper -Sccq --noconfirm
+sudo journalctl --rotate --vacuum-size=1 --flush --sync -q
+sudo fstrim -a --quiet-unsupported
 
-echo "done"
+echo -e "\nAll done ✅ (> ^ <) Meow\n"

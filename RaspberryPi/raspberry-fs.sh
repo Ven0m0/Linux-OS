@@ -4,7 +4,7 @@ export LC_ALL=C
 export LANG=C
 
 HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-builtin cd -P -- "${HOMEDIR}" || exit 1
+builtin cd -P -- "$HOMEDIR" || exit 1
 
 #---------------------------------------
 # Modern Raspbian/DietPi F2FS Flash Script
@@ -28,8 +28,8 @@ EOF
 
 cleanup() {
   umount "${BOOT_MNT:-}" "${ROOT_MNT:-}" "${TARGET_BOOT:-}" "${TARGET_ROOT:-}" 2>/dev/null || :
-  [ -n "${LOOP_DEV:-}" ] && losetup -d "$LOOP_DEV" 2>/dev/null || :
-  [ -n "${WORKDIR:-}" ] && rm -rf "$WORKDIR"
+  [ "${LOOP_DEV:-}" != "" ] && losetup -d "$LOOP_DEV" 2>/dev/null || :
+  [ "${WORKDIR:-}" != "" ] && rm -rf "$WORKDIR"
 }
 trap cleanup EXIT INT TERM
 
@@ -77,7 +77,7 @@ fzf_file_picker(){
   fi
 }
 # If image not supplied, let user pick one
-if [ -z "${IMAGE:-}" ]; then
+if [ "${IMAGE:-}" = "" ]; then
   IMAGE="$(fzf_file_picker)"
   [[ -z "$IMAGE" ]] && { echo "No image selected."; usage; }
 fi
@@ -85,7 +85,7 @@ fi
 #---------------------------------------
 # fzf-backed device picker
 #---------------------------------------
-if [ -z "${DEVICE:-}" ]; then
+if [ "${DEVICE:-}" = "" ]; then
   command -v fzf >/dev/null 2>&1 || { echo "fzf required"; usage; }
   SEL=$(
     lsblk -dn -o NAME,TYPE,RM,SIZE,MODEL,MOUNTPOINT \
@@ -183,7 +183,7 @@ FREE_MB=$(df -Pm /dev/shm | awk 'NR==2 {print $4}')
 if [ "$FREE_MB" -ge "$TMPFS_SIZE" ]; then
   echo "[*] Using tmpfs (${TMPFS_SIZE}M needed, ${FREE_MB}M available)..."
   mkdir -p "$TMPFS_MNT"
-  mount -t tmpfs -o size=${TMPFS_SIZE}M tmpfs "$TMPFS_MNT"
+  mount -t tmpfs -o size="${TMPFS_SIZE}"M tmpfs "$TMPFS_MNT"
 
   (cd "$ROOT_MNT" && tar -cpf - .) | (cd "$TMPFS_MNT" && tar -xpf -)
   (cd "$TMPFS_MNT" && tar -cpf - .) | (cd "$TARGET_ROOT" && tar -xpf -)

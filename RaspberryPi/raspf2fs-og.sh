@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C
-HOMEDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-builtin cd -- "$HOMEDIR" || exit 1
-unset HOMEDIR
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C LANG=C SHELL="${BASH:-$(command -v bash)}" HOME="/home/${SUDO_USER:-$USER}"
+cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
+sync; sudo -v
+
 # Raspbian-F2FS v207
 # Original Script: https://github.com/d-a-v/raspbian-f2fs
 # Complete re-write by Timothy Brown - August 2018.

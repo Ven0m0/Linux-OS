@@ -107,15 +107,16 @@ fi
 # download a helper script (navita)
 navita_url='https://raw.githubusercontent.com/CodesOfRishi/navita/main/navita.sh'
 dest="${HOME}/.config/bash"
+file="${navita_url##*/}"
 mkdir -p "$dest"
-curl -sSfL --create-dirs -o "${dest}/$(basename "$navita_url")" "$navita_url"
-chmod +x "${dest}/$(basename "$navita_url")" && . "$dest/$(basename "$navita_url")" || :
+curl -sSfL -o "$dest/$file" "$navita_url"
+chmod +x "${dest}/${file}" && [[ -r "${dest}/${file}" ]] && . "${dest}/${file}" || :
 
 # rustup + cargo utilities
 if ! has rustup; then
   printf 'Installing rustup (minimal nightly)...\n'
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y -q -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
-  export PATH="$HOME/.cargo/bin:$PATH"
+  export PATH="${HOME}/.cargo/bin:${PATH}"
 fi
 
 rust_crates=(

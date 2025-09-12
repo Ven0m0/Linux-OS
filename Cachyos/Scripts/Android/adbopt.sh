@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # https://github.com/vaginessa/adb-cheatsheet
-
+adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.api
 
 printf '%s\n' "Setup"
 export LC_ALL=C LANG=C

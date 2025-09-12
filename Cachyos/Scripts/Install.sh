@@ -268,7 +268,17 @@ paru -S mommy
 # sudo systemctl enable prelockd
 # sudo systemctl enable uresourced
 
-micro -plugin install cheat editorconfig fzf filemanager autofmt quoter misspell
+# https://github.com/hidaruma/micro-textlint-plugin
+mplug=(
+fish fzf palettero wc
+filemanager cheat
+linter lsp autofmt detectindent editorconfig
+misspell aspell comment diff
+jump bounce autoclose
+manipulator joinLines quoter
+literate status ftoptions
+)
+micro -plugin install "${mplug[@]}"
 
 # Fisher fix
 #fisher install jorgebucaran/fisher

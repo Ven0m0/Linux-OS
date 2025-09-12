@@ -60,8 +60,8 @@ dhclient -r
 "$suexec" resolvectl flush-caches >/dev/null
 
 # Pacman cleanup
-"$suexec" pacman -Rnsq "$(pacman -Qdtq 2>/dev/null)" --noconfirm >/dev/null
-"$suexec" pacman -Sccq --noconfirm
+"$suexec" pacman -Rns "$(pacman -Qdtq 2>/dev/null)" --noconfirm >/dev/null
+"$suexec" pacman -Scc --noconfirm
 "$suexec" paccache -rk0 -q
 uv cache prune -q; uv cache clean -q
 # Cargo

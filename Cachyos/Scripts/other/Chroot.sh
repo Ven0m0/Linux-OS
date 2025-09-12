@@ -13,6 +13,7 @@ sudo chroot /mnt
 
 micro /etc/fstab
 
+exit
 sudo umount /mnt/run
 sudo umount /mnt/sys
 sudo umount /mnt/proc

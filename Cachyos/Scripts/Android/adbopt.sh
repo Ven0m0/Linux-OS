@@ -58,6 +58,8 @@ adb shell setprop debug.fb.rgb565 0
 adb shell setprop debug.sf.disable_threaded_present false
 adb shell setprop renderthread.skia.reduceopstasksplitting true
 adb shell setprop debug.sf.predict_hwc_composition_strategy 1
+adb shell settings set global force_gpu_rendering 1
+adb shell setprop debug.hwui.render_dirty_regions true
 
 printf '%s\n' "Vulkan"
 adb shell setprop debug.renderengine.backend skiavk

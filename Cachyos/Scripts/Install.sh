@@ -2,22 +2,16 @@
 set -euo pipefail
 IFS=$'\n\t'
 export LC_ALL=C LANG=C
-cd -P -- "${BASH_SOURCE[0]:-$PWD}" 2>/dev/null || cd -P -- "${PWD:-$(pwd -P)}" || exit 1
+cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || : 
 sudo -v
 export HOME="/home/${SUDO_USER:-$USER}"
 
 # helpers
-has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
+has(){ command -v "$1" &>/dev/null; }
 # pick package helper as array for safe exec
-if has paru; then
-  pkgmgr=(paru)
-  is_aur_helper=1
-elif has yay; then
-  pkgmgr=(yay)
-  is_aur_helper=1
-else
-  pkgmgr=(sudo pacman)
-  is_aur_helper=0
+if has paru; then pkgmgr=(paru); is_aur_helper=1
+elif has yay; then pkgmgr=(yay); is_aur_helper=1
+else pkgmgr=(sudo pacman); is_aur_helper=0
 fi
 
 # recommended build env
@@ -27,8 +21,7 @@ export CFLAGS="${CFLAGS:--march=native -mtune=native -O3 -pipe}"
 export CXXFLAGS="$CFLAGS"
 export MAKEFLAGS="-j$(nproc)" NINJAFLAGS="-j$(nproc)"
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
-MAKEPKG_FLAGS='--cleanbuild --clean --rmdeps --syncdeps --nocheck'
-MAKEPKG_FLAGS="${MAKEPKG_MFLAGS} --skipinteg --skippgpcheck --skipchecksums"
+MPKG_FLAGS='--cleanbuild --clean --rmdeps --syncdeps --nocheck --skipinteg --skippgpcheck --skipchecksums'
 GPG_FLAGS='--batch -q -z1 --compress-algo ZLIB --yes --skip-verify'
 GIT_FLAGS='--depth=1 --single-branch'
 # remove pacman lock if stale
@@ -70,7 +63,7 @@ else
     aur_flags=(
       --needed --noconfirm --removemake --cleanafter --sudoloop
       --skipreview --nokeepsrc --batchinstall --combinedupgrade
-      --mflags "$MAKEPKG_FLAGS" --gitflags "$GIT_FLAGS" --gpgflags "$GPG_FLAGS"
+      --mflags "$MPKG_FLAGS" --gitflags "$GIT_FLAGS" --gpgflags "$GPG_FLAGS"
     )
     if ! "${pkgmgr[@]}" -Sq "${aur_flags[@]}" "${missing[@]}"; then
       printf '✖ Batch install failed. Logging missing packages to %s/Desktop/failed_packages.log\n' "$HOME"
@@ -105,11 +98,11 @@ if has flatpak; then
   flatpak install -y flathub org.kde.audiotube || :
 fi
 
-# download a helper script (navita)
+# navita
 navita_url='https://raw.githubusercontent.com/CodesOfRishi/navita/main/navita.sh'
-dest="${HOME}/.config/bash" file="${navita_url##*/}"
-mkdir -p "$dest" && curl -sSfL -o "${dest}/${file}" "$navita_url"
-chmod +x "${dest}/${file}" && [[ -r "${dest}/${file}" ]] && . "${dest}/${file}" || :
+dest="$HOME/.config/bash" file="${navita_url##*/}"
+mkdir -p "$dest" && curl -sSfL -o "$dest/$file" "$navita_url"
+chmod +x "$dest/$file" && [[ -r "$dest/$file" ]] && . "$dest/$file" || :
 
 # rustup + cargo utilities
 if ! has rustup; then

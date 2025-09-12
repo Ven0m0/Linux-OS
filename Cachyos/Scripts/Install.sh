@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+IFS=$'\n\t'
 export LC_ALL=C LANG=C
 cd -P -- "${BASH_SOURCE[0]:-$PWD}" 2>/dev/null || cd -P -- "${PWD:-$(pwd -P)}" || exit 1
 sudo -v
@@ -9,13 +10,13 @@ export HOME="/home/${SUDO_USER:-$USER}"
 has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
 # pick package helper as array for safe exec
 if has paru; then
-  helper_cmd=(paru)
+  pkgmgr=(paru)
   is_aur_helper=1
 elif has yay; then
-  helper_cmd=(yay)
+  pkgmgr=(yay)
   is_aur_helper=1
 else
-  helper_cmd=(sudo pacman)
+  pkgmgr=(sudo pacman)
   is_aur_helper=0
 fi
 
@@ -26,13 +27,15 @@ export CFLAGS="${CFLAGS:--march=native -mtune=native -O3 -pipe}"
 export CXXFLAGS="$CFLAGS"
 export MAKEFLAGS="-j$(nproc)" NINJAFLAGS="-j$(nproc)"
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
-
+MAKEPKG_FLAGS='--cleanbuild --clean --rmdeps --syncdeps --nocheck'
+MAKEPKG_FLAGS="${MAKEPKG_MFLAGS} --skipinteg --skippgpcheck --skipchecksums"
+GPG_FLAGS='--batch -q -z1 --compress-algo ZLIB --yes --skip-verify'
+GIT_FLAGS='--depth=1 --single-branch'
 # remove pacman lock if stale
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root /var/lib/pacman/db.lck
-
 # sync keyring + full upgrade
-"${helper_cmd[@]}" -Syq archlinux-keyring --noconfirm || :
-"${helper_cmd[@]}" -Syuq --noconfirm || :
+"${pkgmgr[@]}" -Syq archlinux-keyring --noconfirm || :
+"${pkgmgr[@]}" -Syuq --noconfirm || :
 
 # package list (official + AUR combined)
 pkgs=(
@@ -52,11 +55,10 @@ pkgs=(
 )
 
 # detect missing
+echo "Checking installed packages..."
 missing=()
 for p in "${pkgs[@]}"; do
-  if ! "${helper_cmd[@]}" -Qiq "$p" &>/dev/null; then
-    missing+=("$p")
-  fi
+  ${pkgmgr[@]} -Qiq "$p" &>/dev/null || missing+=("$p")
 done
 
 if [[ ${#missing[@]} -eq 0 ]]; then
@@ -68,14 +70,14 @@ else
     aur_flags=(
       --needed --noconfirm --removemake --cleanafter --sudoloop
       --skipreview --nokeepsrc --batchinstall --combinedupgrade
-      --mflags '--skipinteg --skippgpcheck --skipchecksums --nocheck --needed --noconfirm -scCr'
+      --mflags "$MAKEPKG_FLAGS" --gitflags "$GIT_FLAGS" --gpgflags "$GPG_FLAGS"
     )
-    if ! "${helper_cmd[@]}" -Sq "${aur_flags[@]}" "${missing[@]}"; then
+    if ! "${pkgmgr[@]}" -Sq "${aur_flags[@]}" "${missing[@]}"; then
       printf '✖ Batch install failed. Logging missing packages to %s/Desktop/failed_packages.log\n' "$HOME"
       logfile="${HOME}/Desktop/failed_packages.log"
       rm -f "$logfile"
       for p in "${missing[@]}"; do
-        if ! "${helper_cmd[@]}" -Qiq "$p" &>/dev/null; then
+        if ! "${pkgmgr[@]}" -Qiq "$p" &>/dev/null; then
           printf '%s\n' "$p" >>"$logfile"
         fi
       done
@@ -85,7 +87,7 @@ else
     fi
   else
     # pacman only
-    if ! "${helper_cmd[@]}" -Sq --needed --noconfirm "${missing[@]}"; then
+    if ! "${pkgmgr[@]}" -Sq --needed --noconfirm "${missing[@]}"; then
       printf '✖ pacman install failed. Check output\n'
     else
       printf '✔ Installation complete\n'
@@ -94,11 +96,12 @@ else
 fi
 
 # flatpak: install from flatpaks.lst if present
-if has flatpak && [[ -f "${PWD}/flatpaks.lst" ]]; then
+if has flatpak; then
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || :
-  mapfile -t flats < <(awk -F'#' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); if(length($1)) print $1}' "${PWD}/flatpaks.lst")
-  [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
-  # example: ensure audiotube
+  if [[ -f "${PWD}/flatpaks.lst" ]]; then
+    mapfile -t flats < <(awk -F'#' '{gsub(/^[ \t]+|[ \t]+$/,"",$1); if(length($1)) print $1}' "${PWD}/flatpaks.lst")
+    [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
+  fi
   flatpak install -y flathub org.kde.audiotube || :
 fi
 
@@ -187,7 +190,7 @@ fi
 orphans="$(pacman -Qdtq 2>/dev/null || :)"
 [ -n "$orphans" ] && sudo pacman -Rns $orphans --noconfirm &>/dev/null || :
 sudo pacman -Sccq --noconfirm &>/dev/null || :
-[ "${is_aur_helper:-0}" -eq 1 ] && "${helper_cmd[@]}" -Sccq --noconfirm &>/dev/null || :
+[ "${is_aur_helper:-0}" -eq 1 ] && "${pkgmgr[@]}" -Sccq --noconfirm &>/dev/null || :
 sudo journalctl --rotate --vacuum-size=1 --flush --sync -q || :
 sudo fstrim -a --quiet-unsupported || :
 

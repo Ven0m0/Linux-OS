@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # rank pacman mirrors (arch + other /etc/pacman.d/*mirrorlist*)
 set -euo pipefail
+LC_ALL=C LANG=C
 
 # colors if tty
 if [ -t 2 ]; then

@@ -19,4 +19,4 @@ alias curl='curl-rustls'
 
 Pacman list: https://archlinux.org/mirrorlist
 
-mirror="https://archlinux.org/mirrorlist/?country=BE&country=CZ&country=DK&country=FR&country=DE&country=LU&country=NL&country=PL&country=CH&country=GB&protocol=https&ip_version=4&use_mirror_status=on"
+mirror="https://archlinux.org/mirrorlist/?country=DK&country=FR&country=DE&country=IT&country=NL&country=PL&country=ES&country=SE&country=CH&country=GB&country=US&country=BE&protocol=https&ip_version=4&use_mirror_status=on"

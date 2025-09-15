@@ -21,8 +21,10 @@ export CFLAGS="${CFLAGS:--march=native -mtune=native -O3 -pipe}"
 export CXXFLAGS="$CFLAGS"
 export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib
 export MAKEFLAGS="-j$(nproc)" NINJAFLAGS="-j$(nproc)"
-export RUSTFLAGS='-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'
-export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode=yes -Cllvm-args=-enable-dfa-jump-thread 
+  -Zunstable-options -Ztune-cpu=native -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none -Zdylib-lto"
+command -v ld.lld &>/dev/null && export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"
+export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly
 unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER
 MPKG_FLAGS='--cleanbuild --clean --rmdeps --syncdeps --nocheck --skipinteg --skippgpcheck --skipchecksums'
 GPG_FLAGS='--batch -q -z1 --compress-algo ZLIB --yes --skip-verify'

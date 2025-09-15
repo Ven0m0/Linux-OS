@@ -11,7 +11,7 @@ opt-level = "3"
 debug-assertions = false
 overflow-checks = false
 
-RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Clto=fat -Cembed-bitcode=y -Crelro-level=off -Cdebuginfo=0 -Cforce-frame-pointers=no -Clink-dead-code=no -Zunstable-options -Ztune-cpu=native -Zprecise-enum-drop-elaboration=y -Zfunction-sections -Cllvm-args=-enable-dfa-jump-thread -Zbuild-std=std,panic_abort-Zbuild-std-features=panic_immediate_abort,force_alloc_jemalloc,threads -Zpanic-abort-tests -Zmerge-functions=aliases -Zvirtual-function-elimination -Zlocation-detail=none -Clink-arg=-fuse-ld=lld"
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Clto=fat -Cembed-bitcode=y -Crelro-level=off -Cdebuginfo=0 -Cforce-frame-pointers=no -Clink-dead-code=no -Zunstable-options -Ztune-cpu=native -Zprecise-enum-drop-elaboration=y -Zfunction-sections -Cllvm-args=-enable-dfa-jump-thread -Zbuild-std=std,panic_abort-Zbuild-std-features=panic_immediate_abort,force_alloc_jemalloc,threads -Zpanic-abort-tests -Zmerge-functions=aliases -Zvirtual-function-elimination -Zfmt-debug=none -Zlocation-detail=none -Clink-arg=-fuse-ld=lld"
 unset CARGO_ENCODED_RUSTFLAGS
 export OPT_LEVEL=3
 export CPP="clang-cpp"

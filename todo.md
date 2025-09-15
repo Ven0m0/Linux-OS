@@ -1,3 +1,11 @@
+Install packages from list
+```bash
+mapfile -t arr < <(grep -v '^\s*#' file.txt | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$')
+
+printf '%s\n' "${arr[@]}" | paru -Sq --noconfirm
+```
+
+
 **Bash**
 
 - https://github.com/sharkdp/config-files

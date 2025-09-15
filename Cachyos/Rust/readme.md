@@ -34,7 +34,7 @@ export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Clto=fat -Cembed-bitcode=ye
 ```
 ```bash
 LC_ALL=C cargo +nightly -Zgit -Zgitoxide -Zno-embed-metadata -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort install 
-``
+```
 
 ```bash
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread"

@@ -119,26 +119,24 @@ rustup set auto-self-update disable || :
 rustup set profile minimal || :
 rustup self upgrade-data || :
 
-cargo install -Zunstable-options -Zgit -Zavoid-dev-deps -Zno-embed-metadata -Ztrim-paths \
-  --git https://github.com/GitoxideLabs/gitoxide gitoxide -f --bins --profile release-github --no-default-features \
-  -F http-client-reqwest,gitoxide-core-blocking-client,fast,pretty-cli,gitoxide-core-tools,prodash-render-line,prodash-render-tui,prodash/render-line-autoconfigure,gix/revparse-regex || :
+LC_ALL=C cargo +nightly -Zgit -Zno-embed-metadata -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort install \
+  --git https://github.com/GitoxideLabs/gitoxide gitoxide gitoxide -f --bins --no-default-features --features max-pure || :
 
-[[ ${#rust_crates[@]} -gt 0 ]] && cargo install -Zunstable-options -Zgit -Zavoid-dev-deps --locked --bins --keep-going "${rust_crates[@]}" -f -q || :
+[[ ${#rust_crates[@]} -gt 0 ]] && LC_ALL=C cargo install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata --locked --bins -f -q --keep-going "${rust_crates[@]}" || :
 
 # Micro plugins
 if has micro; then
-  mplug=(fish fzf palettero wc filemanager cheat linter lsp autofmt detectindent editorconfig misspell aspell comment diff jump bounce autoclose manipulator joinLines quoter literate status ftoptions)
+  mplug=(fish fzf wc filemanager cheat linter lsp autofmt detectindent editorconfig misspell comment diff jump bounce autoclose manipulator joinLines literate status ftoptions)
   micro -plugin install "${mplug[@]}" || :
   micro -plugin update >/dev/null || :
 fi
-
 # Fisher plugins for Fish shell
 if has fish && [ -r /usr/share/fish/vendor_functions.d/fisher.fish ]; then
-  fish -c ". /usr/share/fish/vendor_functions.d/fisher.fish; and fisher update" || :
+  fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher install jorgebucaran/fisher && fisher update"
   fishplug=(acomagu/fish-async-prompt kyohsuke/fish-evalcache eugene-babichenko/fish-codegen-cache oh-my-fish/plugin-xdg wk/plugin-ssh-term-helper scaryrawr/cheat.sh.fish y3owk1n/fish-x scaryrawr/zoxide.fish patrickf1/fzf.fish archelaus/shell-mommy eth-p/fish-plugin-sudo rubiev/plugin-fuck paysonwallach/fish-you-should-use)
-  printf '%s\n' "${fishplug[@]}" | fish -c ". /usr/share/fish/vendor_functions.d/fisher.fish; fisher install" || :
+  printf '%s\n' "${fishplug[@]}" | fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher install " || :
+  fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher update"
 fi
-
 # FZF bash completions
 mkdir -p "$HOME/.config/bash"
 curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "$HOME/.config/bash/fzf-simple-completion.sh"

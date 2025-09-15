@@ -51,8 +51,9 @@ else
 fi
 echo "Meow (> ^ <)"
 #============ Safe optimal privilege tool ====================
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas || printf '%s\n' 'su -c')"
-[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No privilege tool found." >&2; exit 1; }
+suexec="${suexec:=sudo}"
+#suexec="$(hasname sudo-rs || hasname sudo || hasname doas || printf '%s\n' 'su -c')"
+[[ -z $suexec ]] && { printf '%s\n' "❌ No privilege tool found." >&2; exit 1; }
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 _shell_quote(){ local s; s=$(printf '%s' "$1" | sed "s/'/'\\\\''/g"); printf "'%s'" "$s"; }

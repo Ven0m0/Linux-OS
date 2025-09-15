@@ -48,7 +48,7 @@ jobs:
       - name: Commit and push linting fixes
         # This step only runs on pull request events
         if: github.event_name == 'pull_request'
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "style(lint): apply automatic fixes"
           commit_user_name: "github-actions[bot]"

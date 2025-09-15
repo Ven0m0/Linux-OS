@@ -91,7 +91,7 @@ sysupdate(){
   else
     pkgmgr=pacman
   fi
-  pkgmgr="${pkgmgr}:-"
+  pkgmgr="${pkgmgr:-paru}"
   # Ensure pacman lock is removed
   [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null || :
   # Update keyring and file databases

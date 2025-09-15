@@ -114,8 +114,8 @@ sysupdate || :
 
 if has topgrade; then
   echo 'update using topgrade...'
-  topno="(--disable={config_update,system,tldr,maza,yazi,micro})"
-  topnosudo="(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})"
+  topno=(--disable={config_update,system,tldr,maza,yazi,micro})
+  topnosudo=(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})
   LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${topno[@]}" 2>/dev/null || :
   LC_ALL=C "$suexec" topgrade -cy --skip-notify --no-self-update --no-retry "${topnosudo[@]}" 2>/dev/null || :
 fi

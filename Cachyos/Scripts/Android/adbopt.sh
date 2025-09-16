@@ -18,7 +18,7 @@ adb devices
 # https://github.com/vaginessa/adb-cheatsheet
 adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.api
 
-printf '%s\n' "Cleanup"
+printf '%s\n' "Maintenance"
 adb shell sync
 adb shell cmd stats write-to-disk
 adb shell pm art cleanup
@@ -29,6 +29,12 @@ adb shell logcat -c
 adb shell wm density reset
 adb shell wm size reset
 adb shell sm fstrim # prob root only
+adb shell cmd activity idle-maintenance
+
+printf '%s\n' "Cleanup"
+adb shell rm -rf /cache/*.tmp
+adb shell rm -rf /data/*.log
+
 
 printf '%s\n' "Optimizing ART..."
 # Run any postponed dex‐opt jobs immediately 
@@ -41,8 +47,13 @@ adb shell cmd package compile -af --full --secondary-dex -m speed-profile
 adb shell cmd package compile -a  -f --full --secondary-dex -m speed
 adb shell pm art dexopt-packages -r bg-dexopt
 
+# Cpu
+adb shell cmd thermalservice override-status 1
 
-printf '%s\n' "General rendering tweaks..."
+# Net
+adb shell cmd netpolicy set restrict-background true
+
+printf '%s\n' "Rendering tweaks..."
 adb shell setprop debug.composition.type dyn
 adb shell setprop debug.fb.rgb565 0
 adb shell setprop debug.sf.disable_threaded_present false
@@ -88,6 +99,10 @@ angle_on
 printf '%s\n' "Logs..."
 adb shell logcat -G 128K -b main -b system
 adb shell logcat -G 64K -b radio -b events -b crash
+adb shell cmd display ab-logging-disable
+adb shell cmd display dwb-logging-disable
+adb shell cmd looper_stats disable
+adb shell dumpsys power set_sampling_rate 0
 
 printf '%s\n' "Performance tweaks..."
 adb shell setprop debug.performance.tuning 1
@@ -123,6 +138,7 @@ gfx_set(){ adb shell cmd gfxinfo "$1" reset && adb shell cmd gfxinfo "$1" frames
 # Aggressive AppStandby / Doze toggles
 adb shell cmd deviceidle force-idle
 adb shell cmd deviceidle unforce
+adb shell dumpsys deviceidle whitelist +com.android.systemui
 
 adb shell cmd uimode night yes 
 adb shell cmd uimode car no
@@ -196,10 +212,51 @@ set_apk(){
     "dump") adb shell pm grant "$apk" android.permission.DUMP ;;
     "write") adb shell pm grant "$apk" android.permission.WRITE_SECURE_SETTINGS ;;
     "doze") adb shell cmd deviceidle whitelist +"$apk" ;;
+    # adb shell dumpsys deviceidle whitelist +com.android.systemui
   esac
 }
 set_apk dump com.pittvandewitt.wavelet
 
 
+    adb shell device_config put systemui window_cornerRadius 0
+    adb shell device_config put systemui window_blur 0
+    adb shell device_config put systemui window_shadow 0
+    adb shell device_config put graphics render_thread_priority high
+    adb shell device_config put graphics enable_gpu_boost true
+    adb shell device_config put graphics enable_cpu_boost true
+    adb shell device_config put surfaceflinger set_max_frame_rate_multiplier 0.5
+      adb shell device_config put runtime_native_boot pin_camera false
+    adb shell device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
+    adb shell device_config put launcher enable_quick_launch_v2 true
+    adb shell device_config put privacy location_access_check_enabled false
+    adb shell device_config put privacy location_accuracy_enabled false
+    adb shell device_config put privacy safety_protection_enabled true
+    adb shell device_config put activity_manager use_compaction true
+    adb shell device_config put activity_manager set_sync_disabled_for_tests persistent
+    adb shell device_config put activity_manager enable_background_cpu_boost true
+      adb shell cmd appops set com.google.android.gms START_FOREGROUND ignore
+    adb shell cmd appops set com.google.android.gms INSTANT_APP_START_FOREGROUND ignore
+    adb shell cmd appops set com.google.android.ims START_FOREGROUND ignore
+    adb shell cmd appops set com.google.android.ims INSTANT_APP_START_FOREGROUND ignore
 
+   for d in $(adb shell ls -a sdcard); do adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.nomedia" "sdcard/$d/.trackerignore"; done
 
+       adb shell logcat -P ""
+    adb shell logcat -c
+    
+        adb shell wm scaling off
+    adb shell wm disable-blur true
+
+adb shell settings put global vendor.display.enable_optimize_refresh 1
+adb shell settings put global debug.threadedOpt 1
+adb shell settings put secure user_wait_timeout 0
+adb shell settings put secure thread_priority highest HIGHEST
+    adb shell settings put system remove_animations 1
+    adb shell settings put system reduce_animations 1
+    adb shell settings put global animator_duration_scale 0.0
+    adb shell settings put global remove_animations 1
+    adb shell settings put global fancy_ime_animations 0
+    adb shell settings put global visual_bars false
+    adb shell settings put global reduce_transitions 1
+    adb shell settings put global shadow_animation_scale 0
+    

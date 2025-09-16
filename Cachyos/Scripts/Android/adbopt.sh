@@ -1,35 +1,22 @@
 #!/usr/bin/env bash
 
-# https://github.com/vaginessa/adb-cheatsheet
-adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.api
-
 printf '%s\n' "Setup"
 export LC_ALL=C LANG=C
 
 pacman -S 
 if ! command -v adb &>/dev/null; then
   if command -v pacman &>/dev/null; then
-    pacman -Qq android-tools &>/dev/null || sudo pacman -Sq --noconfirm --noprogressbar --needed android-tools
-  elif command -v apt-get; then
-if ; then
-  echo "installed"
-else
-  echo "not installed"
-fi
-
-pkg_installed(){
-  local pkg=$1
-  if command -v pacman &>/dev/null; then
-    pacman -Qq "$pkg" &>/dev/null
-  elif command -v dpkg-query &>/dev/null; then
-    dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "ok installed"
-  else
-    return 2
+    sudo pacman -Sq --noconfirm --needed android-tools
+  elif command -v apt-get &>/dev/null; then
+    sudo apt-get install android-tools -yq
   fi
-}
+fi
 
 adb start-server
 adb devices
+
+# https://github.com/vaginessa/adb-cheatsheet
+adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.api
 
 printf '%s\n' "Cleanup"
 adb shell sync
@@ -59,7 +46,6 @@ printf '%s\n' "General rendering tweaks..."
 adb shell setprop debug.composition.type dyn
 adb shell setprop debug.fb.rgb565 0
 adb shell setprop debug.sf.disable_threaded_present false
-adb shell setprop renderthread.skia.reduceopstasksplitting true
 adb shell setprop debug.sf.predict_hwc_composition_strategy 1
 adb shell setprop debug.hwui.use_buffer_age true
 adb shell setprop debug.hwui.render_dirty_regions true
@@ -134,12 +120,9 @@ adb shell cmd otadexopt cleanup
 # Improve scroll responsiveness apparently
 gfx_set(){ adb shell cmd gfxinfo "$1" reset && adb shell cmd gfxinfo "$1" framestats; }
 
-
-
 # Aggressive AppStandby / Doze toggles
 adb shell cmd deviceidle force-idle
 adb shell cmd deviceidle unforce
-doze_app(){ adb shell cmd deviceidle whitelist +"$1"; }
 
 adb shell cmd uimode night yes 
 adb shell cmd uimode car no
@@ -151,8 +134,6 @@ adb shell cmd wifi force-hi-perf-mode enabled
 # Sets the interval between RSSI polls to milliseconds.
 #adb shell cmd -w wifi set-poll-rssi-interval-msecs <int>
 adb shell cmd wifi set-scan-always-available disabled
-
-
 
 #pm list packages
 # List disabled packages
@@ -209,8 +190,15 @@ grep -vx -f <(sqlite3 Main.db .dump) <(sqlite3 ${DB} .schema)
 # Use below command fr update dg.db file:
 sqlite3 /data/data/com.google.android.gms/databases/dg.db "update main set c='0' where a like '%attest%';" 
 
-WSS_set(){ adb shellpm grant "$1" android.permission.WRITE_SECURE_SETTINGS }
-
+set_apk(){
+  local mode="$1" apk="$2"
+  case "$mode" in
+    "dump") adb shell pm grant "$apk" android.permission.DUMP ;;
+    "write") adb shell pm grant "$apk" android.permission.WRITE_SECURE_SETTINGS ;;
+    "doze") adb shell cmd deviceidle whitelist +"$apk" ;;
+  esac
+}
+set_apk dump com.pittvandewitt.wavelet
 
 
 

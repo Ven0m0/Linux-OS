@@ -37,6 +37,7 @@ adb shell rm -rf /data/*.log
 
 
 printf '%s\n' "Optimizing ART..."
+adb shell pm bg-dexopt-job --enable
 # Run any postponed dex‐opt jobs immediately 
 adb shell cmd jobscheduler run -f android \
   $(adb shell cmd jobscheduler list-jobs android \
@@ -107,6 +108,8 @@ adb shell dumpsys power set_sampling_rate 0
 printf '%s\n' "Performance tweaks..."
 adb shell setprop debug.performance.tuning 1
 adb shell setprop debug.mdpcomp.enable 1
+adb shell settings put global sqlite_compatibility_wal_flags "syncMode=OFF,fsyncMode=off"
+# 
 
 printf '%s\n' "Battery tweaks..."
 adb shell cmd power suppress-ambient-display true

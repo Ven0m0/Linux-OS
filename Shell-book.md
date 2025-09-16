@@ -43,9 +43,9 @@ cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 username="$(id -un)" # better than 'whoami'
 #──────────── Helpers ────────────────────
 # Check for command
-has(){ [[ -x $(command -v -- "$1") ]]; }
+has(){ [[ -x $(command -v -- "$1" 2>/dev/null) ]]; }
 # Get basename of command if on path
-hasname(){ local x; x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; }
+hasname(){ local x; x=$(type -Pf -- "$1") && printf '%s\n' "${x##*/}"; }
 # Export array of newline/space seperated quotes variables
 export_array(){ local -n a=$1; for v in "${a[@]}"; do eval "export $v"; done; unset v; }
 # Printf-echo

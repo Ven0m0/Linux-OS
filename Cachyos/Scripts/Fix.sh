@@ -5,7 +5,9 @@ set -euo pipefail; LC_ALL=C LANG=C.UTF-8
 echo -e "▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄\n██░▄▄▄██░▄▄▀██░▄▄▀██░▄▄▄░██░▄▄▀████░▄▄█░█████\n██░▄▄▄██░▀▀▄██░▀▀▄██░███░██░▀▀▄█▀▀█▄▄▀█░▄▄░██\n██░▀▀▀██░██░██░██░██░▀▀▀░██░██░█▄▄█▄▄▄█▄██▄██\n▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀\n"
 
 sudo -v
-
+sudo pacman -Syu --noconfirm
+command -v paru &>/dev/null && paru -Syu --noconfirm
+command -v yay &>/dev/null && yay -Syu --noconfirm
 # https://wiki.cachyos.org/cachyos_basic/faq/
 echo "Fix mirrors"
 command -v cachyos-rate-mirrors &>/dev/null && sudo cachyos-rate-mirrors
@@ -32,4 +34,4 @@ sudo pacman -Sy --needed base-devel
 echo "Fixing wlogout pgp keyring error"
 curl -sS https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
 
-sudo pacman -Syy --noconfirm
+sudo pacman -Syyu --noconfirm

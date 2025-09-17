@@ -77,6 +77,9 @@ gl_set(){
   adb shell setprop debug.hwui.use_vulkan false
 }
 
+adb shell settings put global data_saver_mode 1
+ adb shell settings put global ro.wifi.signal.optimized true
+
 printf '%s\n' "Configuring Webview..."
 echo "webview --enable-features=DeferImplInvalidation,ScrollUpdateOptimizations" > /data/local/tmp/webview-command-line
 adb shell chmod 644 /data/local/tmp/webview-command-line
@@ -97,6 +100,15 @@ angle_off(){
 }
 angle_on
 
+    adb shell settings put global game_low_latency_mode 1
+    adb shell settings put global game_gpu_optimizing 1
+    adb shell settings put global game_driver_mode 1
+    adb shell settings put global game_driver_all_apps 1
+    adb shell settings put global game_driver_opt_out_apps 1
+    adb shell settings put global updatable_driver_all_apps 1
+    adb shell settings put global updatable_driver_production_opt_out_apps 1
+
+
 printf '%s\n' "Logs..."
 adb shell logcat -G 128K -b main -b system
 adb shell logcat -G 64K -b radio -b events -b crash
@@ -109,7 +121,7 @@ printf '%s\n' "Performance tweaks..."
 adb shell setprop debug.performance.tuning 1
 adb shell setprop debug.mdpcomp.enable 1
 adb shell settings put global sqlite_compatibility_wal_flags "syncMode=OFF,fsyncMode=off"
-# 
+
 
 printf '%s\n' "Battery tweaks..."
 adb shell cmd power suppress-ambient-display true
@@ -132,6 +144,8 @@ adb shell setprop debug.sf.enable_hwc_vds 1
 adb shell setprop debug.tracing.mnc 0
 adb shell setprop debug.tracing.battery_status 0
 adb shell setprop debug.tracing.screen_state 0
+adb shell settings put global renderthread.skia.reduceopstasksplitting true
+adb shell settings put global skia.force_gl_texture 1
 adb shell cmd system_update
 adb shell cmd otadexopt cleanup
 
@@ -163,6 +177,7 @@ adb shell pm list packages -e
 adb shell pm list packages -3
 # Set the default home activity (aka launcher)
 #adb shell cmd package set-home-activity [--user USER_ID] TARGET-COMPONENT
+
 
 #Print all applications in use
 adb shell pm list packages | sed -e "s/package://" | \
@@ -204,10 +219,21 @@ adb shell content insert –uri content://settings/system –bind name:s:user_ro
 # Adopting USB-Drive
 adb shell sm set-force-adoptable true
 
+ adb shell settings put global enable_hardware_acceleration 1
+    adb shell settings put global hardware_accelerated_rendering_enabled 1
+    adb shell settings put global hardware_accelerated_graphics_decoding 1
+    adb shell settings put global hardware_accelerated_video_decode 1
+    adb shell settings put global hardware_accelerated_video_encode 1
+    adb shell settings put global media.sf.hwaccel 1
+    adb shell settings put global video.accelerate.hw 1
+    adb shell settings put global ro.config.enable.hw_accel true
+    adb shell settings put global debug.hwui.render_priority 1
+
 # Print data in .db files, clean:
 grep -vx -f <(sqlite3 Main.db .dump) <(sqlite3 ${DB} .schema) 
 # Use below command fr update dg.db file:
 sqlite3 /data/data/com.google.android.gms/databases/dg.db "update main set c='0' where a like '%attest%';" 
+
 
 set_apk(){
   local mode="$1" apk="$2"

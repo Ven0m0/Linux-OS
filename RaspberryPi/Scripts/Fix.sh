@@ -1,5 +1,6 @@
-
-
+sudo apt-get install ntpdate
+sudo ntpdate -u ntp.ubuntu.com
+sudo apt-get install ca-certificates
 
 # SSH fix
 find -O3 ~/.ssh/ -type f -exec chmod 600 {} 

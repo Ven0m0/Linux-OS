@@ -47,9 +47,8 @@ else
   done
 fi
 echo "Meow (> ^ <)"
-#============ Safe optimal privilege tool ====================
+#============ Safety ====================
 [[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null
-[[ $EUID -ne 0 ]] && sudo -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #=============================================================
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
@@ -75,10 +74,11 @@ sudo dpkg --configure -a >/dev/null
 sudo dietpi-update 1 || sudo /boot/dietpi/dietpi-update 1
 has pihole && sudo pihole -up
 has rpi-eeprom-update && sudo rpi-eeprom-update -a
-export PRUNE_MODULES=1
-has rpi-update && sudo PRUNE_MODULES=1 rpi-update
+has rpi-update && sudo SKIP_WARNING=1 PRUNE_MODULES=1 RPI_UPDATE_UNSUPPORTED=0 SKIP_VCLIBS=1 rpi-update
 #sudo JUST_CHECK=1 rpi-update
-# sudo PRUNE_MODULES=1 rpi-update
+# https://github.com/raspberrypi/rpi-update/blob/master/rpi-update
+# Test:
+# PRUNE_MODULES=1 SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0
 
 unset LC_ALL
 export LANG=C.UTF-8

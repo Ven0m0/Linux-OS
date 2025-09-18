@@ -1,5 +1,10 @@
 * text=auto eol=lf
+
+# Shell
 *.sh text eol=lf
+*.{cmd,[cC][mM][dD]} text eol=crlf
+*.{bat,[bB][aA][tT]} text eol=crlf
+
 *.png binary
 
 # Use built-in patterns to generate smarter diff text.

@@ -14,8 +14,7 @@ command -v cachyos-rate-mirrors &>/dev/null && sudo cachyos-rate-mirrors
 sudo rm -r /var/cache/pacman/pkg/*
 
 # SSH fix
-sudo chmod -R 744 ~/.ssh
-sudo chmod -R 744 ~/.gnupg
+sudo chmod -R 744 ~/.ssh; sudo chmod -R 744 ~/.gnupg
 
 # Fix keyrings
 sudo rm -rf /etc/pacman.d/gnupg/ # Force-remove the old keyrings

@@ -86,6 +86,7 @@ pids
 *.pid
 *.seed
 *.pid.lock
+*.rej
 
 # ---------------------
 # Linux system / editor files

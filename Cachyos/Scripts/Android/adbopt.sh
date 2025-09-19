@@ -1,40 +1,24 @@
 #!/usr/bin/env bash
 
-# https://github.com/vaginessa/adb-cheatsheet
-adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.api
-
 printf '%s\n' "Setup"
 export LC_ALL=C LANG=C
 
 pacman -S 
 if ! command -v adb &>/dev/null; then
   if command -v pacman &>/dev/null; then
-    pacman -Qq android-tools &>/dev/null || sudo pacman -Sq --noconfirm --noprogressbar --needed android-tools
-  elif command -v apt-get; then
-if ; then
-  echo "installed"
-else
-  echo "not installed"
-fi
-
-pkg_installed(){
-  local pkg=$1
-  if command -v pacman &>/dev/null; then
-    pacman -Qq "$pkg" &>/dev/null
-  elif command -v dpkg-query &>/dev/null; then
-    dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "ok installed"
-  else
-    return 2
+    sudo pacman -Sq --noconfirm --needed android-tools
+  elif command -v apt-get &>/dev/null; then
+    sudo apt-get install android-tools -yq
   fi
-}
-
-
+fi
 
 adb start-server
 adb devices
-#adb get-state
 
-printf '%s\n' "Cleanup"
+# https://github.com/vaginessa/adb-cheatsheet
+adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.api
+
+printf '%s\n' "Maintenance"
 adb shell sync
 adb shell cmd stats write-to-disk
 adb shell pm art cleanup
@@ -45,37 +29,134 @@ adb shell logcat -c
 adb shell wm density reset
 adb shell wm size reset
 adb shell sm fstrim # prob root only
+adb shell cmd activity idle-maintenance
 
-printf '%s\n' "Optimizing ART"
+printf '%s\n' "Cleanup"
+adb shell rm -rf /cache/*.tmp
+adb shell rm -rf /data/*.log
+
+
+printf '%s\n' "Optimizing ART..."
+adb shell pm bg-dexopt-job --enable
+# Run any postponed dex‐opt jobs immediately 
+adb shell cmd jobscheduler run -f android \
+  $(adb shell cmd jobscheduler list-jobs android \
+  | grep background-dexopt | awk '{print $2}')
+
 # Does it twice to force speed-profile for all and does only speed for apps that might benefit without overwriting
 adb shell cmd package compile -af --full --secondary-dex -m speed-profile
 adb shell cmd package compile -a  -f --full --secondary-dex -m speed
 adb shell pm art dexopt-packages -r bg-dexopt
 
-printf '%s\n' "General rendering"
+# Cpu
+adb shell cmd thermalservice override-status 1
+
+# Net
+adb shell cmd netpolicy set restrict-background true
+
+printf '%s\n' "Rendering tweaks..."
 adb shell setprop debug.composition.type dyn
 adb shell setprop debug.fb.rgb565 0
 adb shell setprop debug.sf.disable_threaded_present false
-adb shell setprop renderthread.skia.reduceopstasksplitting true
 adb shell setprop debug.sf.predict_hwc_composition_strategy 1
-adb shell settings set global force_gpu_rendering 1
+adb shell setprop debug.hwui.use_buffer_age true
 adb shell setprop debug.hwui.render_dirty_regions true
+adb shell settings put global force_gpu_rendering 1
+adb shell settings put global debug.hwui.force_gpu_command_drawing 1
+adb shell settings put global debug.hwui.use_disable_overdraw 1
 
-printf '%s\n' "Vulkan"
-adb shell setprop debug.renderengine.backend skiavk
-adb shell setprop debug.hwui.renderer skiavk # or 'skiagl'
-adb shell setprop debug.hwui.use_vulkan true
+printf '%s\n' "Configuring Vulkan..."
+vk_set(){
+  adb shell setprop debug.renderengine.backend skiavk
+  adb shell setprop debug.hwui.renderer skiavk
+  adb shell setprop debug.hwui.use_vulkan true
+}
+gl_set(){
+  adb shell setprop debug.renderengine.backend skiaglthreaded
+  adb shell setprop debug.hwui.renderer skiagl
+  adb shell setprop debug.hwui.use_vulkan false
+}
 
-printf '%s\n' "Logs"
+adb shell settings put global data_saver_mode 1
+ adb shell settings put global ro.wifi.signal.optimized true
+
+printf '%s\n' "Configuring Webview..."
+echo "webview --enable-features=DeferImplInvalidation,ScrollUpdateOptimizations" > /data/local/tmp/webview-command-line
+adb shell chmod 644 /data/local/tmp/webview-command-line
+adb shell cmd webviewupdate set-webview-implementation com.android.webview.beta
+
+printf '%s\n' "Configuring ANGLE..."
+angle_on(){
+  adb shell settings put global angle_gl_driver_all_angle 1
+  adb shell settings put global angle_debug_package com.android.angle
+  adb shell settings put global angle_gl_driver_selection_values angle
+  adb shell settings put global angle_gl_driver_selection_pkgs com.android.webview,com.android.webview.beta
+}
+angle_off(){
+  adb shell settings delete global angle_debug_package
+  adb shell settings delete global angle_gl_driver_all_angle
+  adb shell settings delete global angle_gl_driver_selection_values
+  adb shell settings delete global angle_gl_driver_selection_pkgs
+}
+angle_on
+
+    adb shell settings put global game_low_latency_mode 1
+    adb shell settings put global game_gpu_optimizing 1
+    adb shell settings put global game_driver_mode 1
+    adb shell settings put global game_driver_all_apps 1
+    adb shell settings put global game_driver_opt_out_apps 1
+    adb shell settings put global updatable_driver_all_apps 1
+    adb shell settings put global updatable_driver_production_opt_out_apps 1
+
+
+printf '%s\n' "Logs..."
 adb shell logcat -G 128K -b main -b system
 adb shell logcat -G 64K -b radio -b events -b crash
+adb shell cmd display ab-logging-disable
+adb shell cmd display dwb-logging-disable
+adb shell cmd looper_stats disable
+adb shell dumpsys power set_sampling_rate 0
 
-printf '%s\n' "Performance"
+printf '%s\n' "Performance tweaks..."
 adb shell setprop debug.performance.tuning 1
 adb shell setprop debug.mdpcomp.enable 1
+adb shell settings put global sqlite_compatibility_wal_flags "syncMode=OFF,fsyncMode=off"
 
+
+printf '%s\n' "Battery tweaks..."
+adb shell cmd power suppress-ambient-display true
+adb shell cmd power set-face-down-detector false
+# adb shell cmd power set-mode 1/0
+adb shell cmd power set-fixed-performance-mode-enabled false
+# adb shell cmd power set-fixed-performance-mode-enabled true/false
+adb shell cmd power set-adaptive-power-saver-enabled true
+# adb shell cmd power set-adaptive-power-saver-enabled true/false
+adb shell settings put system accelerometer_rotation 0
 
 printf '%s\n' "Other"
+adb shell settings put global gpu_rasterization_forced 1
+adb shell settings put global enable_lcd_text 1
+adb shell setprop debug.aw.power_scheduler_enable_idle_throttle 1
+adb shell setprop debug.aw.cpu_affinity_little 1
+adb shell setprop debug.sf.disable_backpressure 0
+adb shell setprop debug.debuggerd.disable 1
+adb shell setprop debug.sf.enable_hwc_vds 1
+adb shell setprop debug.tracing.mnc 0
+adb shell setprop debug.tracing.battery_status 0
+adb shell setprop debug.tracing.screen_state 0
+adb shell settings put global renderthread.skia.reduceopstasksplitting true
+adb shell settings put global skia.force_gl_texture 1
+adb shell cmd system_update
+adb shell cmd otadexopt cleanup
+
+# Improve scroll responsiveness apparently
+gfx_set(){ adb shell cmd gfxinfo "$1" reset && adb shell cmd gfxinfo "$1" framestats; }
+
+# Aggressive AppStandby / Doze toggles
+adb shell cmd deviceidle force-idle
+adb shell cmd deviceidle unforce
+adb shell dumpsys deviceidle whitelist +com.android.systemui
+
 adb shell cmd uimode night yes 
 adb shell cmd uimode car no
 adb shell cmd -w wifi force-country-code enabled DE
@@ -85,16 +166,18 @@ adb shell cmd -w wifi force-hi-perf-mode enabled
 adb shell cmd wifi force-hi-perf-mode enabled
 # Sets the interval between RSSI polls to milliseconds.
 #adb shell cmd -w wifi set-poll-rssi-interval-msecs <int>
+adb shell cmd wifi set-scan-always-available disabled
 
 #pm list packages
 # List disabled packages
-pm list packages -d
+adb shell pm list packages -d
 # Filter to only show enabled packages
-pm list packages -e
+adb shell pm list packages -e
 # Filter to only show third party packages
-pm list packages -3
+adb shell pm list packages -3
 # Set the default home activity (aka launcher)
 #adb shell cmd package set-home-activity [--user USER_ID] TARGET-COMPONENT
+
 
 #Print all applications in use
 adb shell pm list packages | sed -e "s/package://" | \
@@ -118,23 +201,33 @@ adb shell dumpsys batterystats --reset
 adb shell dumpsys meminfo
 
 # Open Special Menu
-# am start -a android.intent.action.VIEW \
+# adb shell am start -a android.intent.action.VIEW \
 # Open settings:
- am start -n com.android.settings/com.android.settings.Settings
+adb shell am start -n com.android.settings/com.android.settings.Settings
 # Start prefered webbrowser:
-am start -a android.intent.action.VIEW -d <url> (com.android.browser | com.android.chrome | com.sec.android.sbrowser)
+adb shell am start -a android.intent.action.VIEW -d <url> (com.android.browser | com.android.chrome | com.sec.android.sbrowser)
 # Open any URL in default browser
-am start -a android.intent.action.VIEW -d <url>
+adb shell am start -a android.intent.action.VIEW -d <url>
 # Print Activities:
-am start -a com.android.settings/.wifi.CaptivePortalWebViewActivity
+adb shell am start -a com.android.settings/.wifi.CaptivePortalWebViewActivity
 
 # Auto rotation off
-content insert –uri content://settings/system –bind name:s:accelerometer_rotation –bind value:i:0
+adb shell content insert –uri content://settings/system –bind name:s:accelerometer_rotation –bind value:i:0
 # Rotate portrait
-content insert –uri content://settings/system –bind name:s:user_rotation –bind value:i:0
+adb shell content insert –uri content://settings/system –bind name:s:user_rotation –bind value:i:0
 
 # Adopting USB-Drive
-sm set-force-adoptable true
+adb shell sm set-force-adoptable true
+
+ adb shell settings put global enable_hardware_acceleration 1
+    adb shell settings put global hardware_accelerated_rendering_enabled 1
+    adb shell settings put global hardware_accelerated_graphics_decoding 1
+    adb shell settings put global hardware_accelerated_video_decode 1
+    adb shell settings put global hardware_accelerated_video_encode 1
+    adb shell settings put global media.sf.hwaccel 1
+    adb shell settings put global video.accelerate.hw 1
+    adb shell settings put global ro.config.enable.hw_accel true
+    adb shell settings put global debug.hwui.render_priority 1
 
 # Print data in .db files, clean:
 grep -vx -f <(sqlite3 Main.db .dump) <(sqlite3 ${DB} .schema) 
@@ -142,8 +235,57 @@ grep -vx -f <(sqlite3 Main.db .dump) <(sqlite3 ${DB} .schema)
 sqlite3 /data/data/com.google.android.gms/databases/dg.db "update main set c='0' where a like '%attest%';" 
 
 
+set_apk(){
+  local mode="$1" apk="$2"
+  case "$mode" in
+    "dump") adb shell pm grant "$apk" android.permission.DUMP ;;
+    "write") adb shell pm grant "$apk" android.permission.WRITE_SECURE_SETTINGS ;;
+    "doze") adb shell cmd deviceidle whitelist +"$apk" ;;
+    # adb shell dumpsys deviceidle whitelist +com.android.systemui
+  esac
+}
+set_apk dump com.pittvandewitt.wavelet
 
 
+    adb shell device_config put systemui window_cornerRadius 0
+    adb shell device_config put systemui window_blur 0
+    adb shell device_config put systemui window_shadow 0
+    adb shell device_config put graphics render_thread_priority high
+    adb shell device_config put graphics enable_gpu_boost true
+    adb shell device_config put graphics enable_cpu_boost true
+    adb shell device_config put surfaceflinger set_max_frame_rate_multiplier 0.5
+      adb shell device_config put runtime_native_boot pin_camera false
+    adb shell device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
+    adb shell device_config put launcher enable_quick_launch_v2 true
+    adb shell device_config put privacy location_access_check_enabled false
+    adb shell device_config put privacy location_accuracy_enabled false
+    adb shell device_config put privacy safety_protection_enabled true
+    adb shell device_config put activity_manager use_compaction true
+    adb shell device_config put activity_manager set_sync_disabled_for_tests persistent
+    adb shell device_config put activity_manager enable_background_cpu_boost true
+      adb shell cmd appops set com.google.android.gms START_FOREGROUND ignore
+    adb shell cmd appops set com.google.android.gms INSTANT_APP_START_FOREGROUND ignore
+    adb shell cmd appops set com.google.android.ims START_FOREGROUND ignore
+    adb shell cmd appops set com.google.android.ims INSTANT_APP_START_FOREGROUND ignore
 
+   for d in $(adb shell ls -a sdcard); do adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.nomedia" "sdcard/$d/.trackerignore"; done
 
+       adb shell logcat -P ""
+    adb shell logcat -c
+    
+        adb shell wm scaling off
+    adb shell wm disable-blur true
 
+adb shell settings put global vendor.display.enable_optimize_refresh 1
+adb shell settings put global debug.threadedOpt 1
+adb shell settings put secure user_wait_timeout 0
+adb shell settings put secure thread_priority highest HIGHEST
+    adb shell settings put system remove_animations 1
+    adb shell settings put system reduce_animations 1
+    adb shell settings put global animator_duration_scale 0.0
+    adb shell settings put global remove_animations 1
+    adb shell settings put global fancy_ime_animations 0
+    adb shell settings put global visual_bars false
+    adb shell settings put global reduce_transitions 1
+    adb shell settings put global shadow_animation_scale 0
+    

@@ -47,40 +47,38 @@ else
   done
 fi
 echo "Meow (> ^ <)"
-#============ Safe optimal privilege tool ====================
+#============ Safety ====================
 [[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"; suexec="${suexec:=sudo}"
-[[ -z ${suexec:-} ]] && { printf '%s\n' "❌ No valid privilege escalation tool found." >&2; exit 1; }
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
 export HOME="/home/${SUDO_USER:-$USER}"; sync
 #=============================================================
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
 export APT_NO_COLOR=1 NO_COLOR=1 DPKG_COLORS=never DEBIAN_FRONTEND=noninteractive
 if has apt-fast; then
-  "$suexec" apt-fast update -yq --allow-releaseinfo-change
-  "$suexec" apt-fast upgrade -yfq --no-install-recommends
-  "$suexec" apt-fast dist-upgrade -yqf --no-install-recommends
-  "$suexec" apt-fast clean -yq; "$suexec" apt-fast autoclean -yq; "$suexec" apt-fast autopurge -yq
+  sudo apt-fast update -yq --allow-releaseinfo-change
+  sudo apt-fast upgrade -yfq --no-install-recommends
+  sudo apt-fast dist-upgrade -yqf --no-install-recommends
+  sudo apt-fast clean -yq; sudo apt-fast autoclean -yq; sudo apt-fast autopurge -yq
 #elif has nala; then
-  "$suexec" nala upgrade --no-install-recommends
-  "$suexec" nala clean; "$suexec" nala autoremove; "$suexec" nala autopurge
+  sudo nala upgrade --no-install-recommends
+  sudo nala clean; sudo nala autoremove; sudo nala autopurge
    # nala fetch --auto --fetches 5 -c DE -y --non-free --debian --https-only
 else
-  "$suexec" apt-get update -yq --allow-releaseinfo-change
-  "$suexec" apt-get dist-upgrade -yqfm
-  "$suexec" apt-get -yq full-upgrade
-  "$suexec" apt-get clean -yq; "$suexec" apt-get autoclean -yq; "$suexec" apt-get autoremove --purge -yq
+  sudo apt-get update -yq --allow-releaseinfo-change
+  sudo apt-get dist-upgrade -yqfm
+  sudo apt-get -yq full-upgrade
+  sudo apt-get clean -yq; sudo apt-get autoclean -yq; sudo apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them
-"$suexec" dpkg --configure -a >/dev/null
+sudo dpkg --configure -a >/dev/null
 
-"$suexec" dietpi-update 1 || "$suexec" /boot/dietpi/dietpi-update 1
-has pihole && "$suexec" pihole -up
-has rpi-eeprom-update && "$suexec" rpi-eeprom-update -a
-export PRUNE_MODULES=1
-has rpi-update && "$suexec" PRUNE_MODULES=1 rpi-update
-#"$suexec" JUST_CHECK=1 rpi-update
-# "$suexec" PRUNE_MODULES=1 rpi-update
+sudo dietpi-update 1 || sudo /boot/dietpi/dietpi-update 1
+has pihole && sudo pihole -up
+has rpi-eeprom-update && sudo rpi-eeprom-update -a
+has rpi-update && sudo SKIP_WARNING=1 PRUNE_MODULES=1 RPI_UPDATE_UNSUPPORTED=0 SKIP_VCLIBS=1 rpi-update
+#sudo JUST_CHECK=1 rpi-update
+# https://github.com/raspberrypi/rpi-update/blob/master/rpi-update
+# Test:
+# PRUNE_MODULES=1 SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0
 
 unset LC_ALL
 export LANG=C.UTF-8

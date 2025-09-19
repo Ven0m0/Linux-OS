@@ -20,3 +20,5 @@ curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 ```bash
 
 ```
+
+[SSH](https://github.com/tomhiggins/TermuxSSHDsetup)

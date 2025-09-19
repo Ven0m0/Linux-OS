@@ -9,15 +9,15 @@ DISK_USAGE_BEFORE=$(df -h)
 echo "==> Disk usage before cleanup $DISK_USAGE_BEFORE"
 
 echo "==> Removing documentation and manuals"
-cat > /etc/dpkg/dpkg.cfg.d/01_nodoc << EOF
-path-exclude /usr/share/doc/*
+docman='path-exclude /usr/share/doc/*
 path-exclude /usr/share/man/*
 path-exclude /usr/share/groff/*
 path-exclude /usr/share/info/*
 # lintian stuff is small, but really unnecessary
 path-exclude /usr/share/lintian/*
-path-exclude /usr/share/linda/*
-EOF
+path-exclude /usr/share/linda/*'
+printf '%s\n' "$docman" | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+unset docman
 
 echo "==> install localepurge to remove all unnecesary languages"
 apt-get install -y localepurge
@@ -54,24 +54,16 @@ apt-get -y purge popularity-contest installation-report wireless-tools wpasuppli
 
 # Clean up orphaned packages with deborphan
 apt-get -y install deborphan
-#while [ -n "$(deborphan --guess-all --libdevel)" ]; do
-	echo "Those packages are guessed to be redundant by deborphan:"
-	deborphan --guess-all --libdevel | xargs 
-	# apt-get -y purge
-#done
-# apt-get -y purge deborphan dialog
-echo "but this is just a wild guess, maybe some of them can be uninstalled"
-echo "--> nothing done"
 
 echo "==> Purge prior removed packages"
 dpkg -l|grep "^rc"|cut -f 3 -d" "|xargs apt-get -y purge
 
 # Clean up the apt cache
-apt-get -y autoremove --purge
-apt-get -y autoclean
 apt-get -y clean
+apt-get -y autoclean
+apt-get -y autoremove --purge
 #echo "==> Removing APT lists"
-#find /var/lib/apt/lists -type f -delete
+find /var/lib/apt/lists -type f -delete
 echo "==> Removing man pages"
 find /usr/share/man -type f -delete
 #echo "==> Removing anything in /usr/src"

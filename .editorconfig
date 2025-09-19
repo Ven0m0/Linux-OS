@@ -1,7 +1,5 @@
-# EditorConfig
-# http://EditorConfig.org
+# EditorConfig http://EditorConfig.org
 root = true
-
 # ---------------------
 # Baseline
 # ---------------------
@@ -13,25 +11,45 @@ insert_final_newline = true
 indent_style = space
 indent_size = 2
 tab_width = 2
+max_line_length = 80
+# Give operators breathing room, but not brackets
+spaces_around_operators = true
+spaces_around_brackets = false
+quote_type = auto
+spelling_language = en
+# shfmt
+shell_variant = auto
+keep_padding = false
+space_redirects = false
+switch_case_indent = false
+function_next_line = false
+binary_next_line = true
 
 # ---------------------
 # Shell scripts
 # ---------------------
-[*.sh,*.bash*,.profile,bash*]
-keep_padding = true
+[*.sh,*.bash*,bash_*,PKGBUILD]
+keep_padding = false
 space_redirects = false
-switch_case_indent = true
-function_next_line = true
+switch_case_indent = false
+function_next_line = false
 binary_next_line = true
 shell_variant = bash
 
-# ---------------------
-# Fish shell
-# ---------------------
-[*.fish,fish_*]
+[*.bash*,bash_*,PKGBUILD]
+shell_variant = bash
+
+[.profile,*.dash]
+shell_variant = posix
+
+[*.fish,fish_*,fishd.*]
 indent_style = space
 indent_size = 4
 tab_width = 4
+
+[*.{bat,cmd}]
+indent_style = tab
+indent_size = 4
 
 # ---------------------
 # Markdown, Patches
@@ -40,10 +58,13 @@ tab_width = 4
 trim_trailing_whitespace = false
 insert_final_newline = true
 
+[*.{md,mmd,markdown,md.html}]
+indent_size = unset
+
 # ---------------------
 # Go, Rust, Zig, Makefiles
 # ---------------------
-[*.go,*.rs,*.zig,Makefile,*.mk]
+[Makefile,go.mod,go.sum,.gitmodules,*.{mk,go,rs,zig}]
 indent_style = tab
 indent_size = 4
 tab_width = 4
@@ -51,7 +72,13 @@ tab_width = 4
 # ---------------------
 # Python
 # ---------------------
-[*.py]
+[*.{py,pyw,pyi}]
 indent_style = space
 indent_size = 4
 tab_width = 4
+
+# ---------------------
+# Javascript
+# ---------------------
+[*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}]
+quote_type = single

@@ -56,7 +56,7 @@ DUB="$used_human $pct"
 SPACE="$(sudo du -sh / 2>/dev/null | cut -f1)"
 
 # Clearing dns cache and release/renew dhcp
-dhclient -r
+has dhclient && dhclient -r
 "$suexec" resolvectl flush-caches >/dev/null
 
 # Pacman cleanup

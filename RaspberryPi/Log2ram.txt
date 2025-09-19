@@ -25,9 +25,4 @@ sudo apt install zram-tools
 sudo nano /etc/default/zramswap
 
 # Check ram:
-
 free -m
-
-
-# Alternative log:
-busybox-syslogd

@@ -71,12 +71,12 @@ tmp_weather=$(mktemp)
   if command -v dig &>/dev/null; then
     dig +short TXT ch whoami.cloudflare @1.1.1.1 | tr -d '"' > "$tmp_ip"
   else
-    { curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" ipinfo.io/ip \
-      || curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" ipecho.net/plain; } > "$tmp_ip"
+    { curl -sfkNZ -m 3 --tcp-nodelay --tls-earlydata --tlsv1.3 --tcp-fastopen --http3 --mptcp --hsts "" ipinfo.io/ip \
+      || curl -sfkNZ -m 3 --tcp-nodelay --tls-earlydata --tlsv1.3 --tcp-fastopen --http3 --mptcp --hsts "" ipecho.net/plain; } > "$tmp_ip"
   fi
 } &
 
-{ curl -sf4 --max-time 3 --tcp-nodelay --hsts "${HOME}/.curl-hsts" 'wttr.in/Bielefeld?format=3' > "$tmp_weather"; } &
+{ curl -sfkNZ -m 3 --tcp-nodelay --tls-earlydata --tlsv1.3 --tcp-fastopen --http3 --mptcp --hsts "" 'wttr.in/Bielefeld?format=3' > "$tmp_weather"; } &
 wait
 GLOBALIP=$(<"$tmp_ip")
 WEATHER=$(<"$tmp_weather")

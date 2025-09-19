@@ -32,10 +32,11 @@ githousekeep(){
     git clean -fdXq >/dev/null || :
   '
   ## Optimize/Clean
-  git -C "$dir" repack -adq --depth=250 --window=250 >/dev/null
-  git -C "$dir" reflog expire --expire=now --all >/dev/null
-  git -C "$dir" gc --auto --aggressive --prune=now >/dev/null
-  git -C "$dir" clean -fdXq >/dev/null
+  git -C "$dir" repack -adbq --depth=250 --window=250
+  git -C "$dir" git-prune-packed -q
+  git -C "$dir" reflog expire --expire=now --all
+  git -C "$dir" gc --auto --aggressive --prune=now --quiet
+  git -C "$dir" clean -fdXq
 }
 gitdate(){
   local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"; cd -- "$workdir" || return 1

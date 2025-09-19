@@ -2,6 +2,9 @@
 # Git
 # ---------------------
 .git/
+.git
+.github-personal-access-token
+.gitconfig.local
 
 # ---------------------
 # Dotter
@@ -39,7 +42,6 @@ Videos/
 .gnupg/
 .gitconfig.local
 .ssh/
-!.ssh/config
 .android/
 .config/gh/hosts.yml
 
@@ -54,12 +56,10 @@ Videos/
 *.TAG
 
 # ---------------------
-# Rust / Cargo
+# Keep
 # ---------------------
-.cargo/
 !.cargo/config.toml
-*.rs.bk
-*.mutants.out*/
+!.ssh/config
 
 # ---------------------
 # Logs / tmp
@@ -80,6 +80,12 @@ nohup.out
 *.lck
 .cache
 .nv/ComputeCache/
+npm-debug.log*
+/package-lock.json
+pids
+*.pid
+*.seed
+*.pid.lock
 
 # ---------------------
 # Linux system / editor files
@@ -104,10 +110,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 node_modules/
+go/
+jspm_packages/
+dependencies/composer/vendor
 target/
 build/
-go/
+.cargo/
+**/*.rs.bk
+*.mutants.out*/
+.npm
 .eslintcache
+*.tgz
+dist
 
 # ---------------------
 # Windows system files
@@ -118,11 +132,20 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # ---------------------
+# Super-linter ouputs
+# ---------------------
+super-linter.report
+super-linter-output/
+custom-super-linter-output-directory-name/
+super-linter-github-actions-step-summary-output*
+github-step-summary.md
+
+# GitHub Actions leftovers
+github_conf
+
+# ---------------------
 # Other
 # ---------------------
-.idea
 .vscode/*
 !.vscode/extensions.json
-*.tgz
-dist
-.npmrc
+.idea

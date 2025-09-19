@@ -17,13 +17,13 @@ jobs:
     steps:
       # Step 1: Check out the repository code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Fetch the full history to enable proper linter analysis on changed files
           fetch-depth: 0
       # Step 2: Run the Super-Linter action
       - name: Run Super-Linter
-        uses: super-linter/super-linter@v6
+        uses: super-linter/super-linter@v8
         env:
           # --- Core Settings ---
           # The GITHUB_TOKEN is required for API calls

@@ -41,7 +41,7 @@ AUTO_SETUP_NET_STATIC_GATEWAY=192.168.178.1
 AUTO_SETUP_NET_STATIC_DNS=1.1.1.1 1.0.0.1
 
 # Set to "1" to convert DHCP leased network settings into static settings automatically on first boot.
-AUTO_SETUP_DHCP_TO_STATIC=1
+AUTO_SETUP_DHCP_TO_STATIC=0
 
 # Hostname
 AUTO_SETUP_NET_HOSTNAME=pi3
@@ -57,7 +57,7 @@ AUTO_SETUP_BOOT_WAIT_FOR_NETWORK=1
 # Swap space size to generate: 0 => disable | 1 => auto | 2 and up => size in MiB
 AUTO_SETUP_SWAPFILE_SIZE=1
 # Swap space location: "zram" => swap space on /dev/zram0 (auto-size = 50% of RAM size) | /path/to/file => swap file at location (auto-size = 2 GiB minus RAM size)
-AUTO_SETUP_SWAPFILE_LOCATION=/dev/zram0
+AUTO_SETUP_SWAPFILE_LOCATION=zram
 
 # Set to "1" to disable HDMI/video output and framebuffers on Raspberry Pi, to reduce power consumption and memory usage: Works on RPi only!
 AUTO_SETUP_HEADLESS=0
@@ -69,7 +69,7 @@ AUTO_UNMASK_LOGIND=1
 # - Add as many APT package names as you wish, separated by space.
 # - They will be installed after dietpi-software options and before the script defined via AUTO_SETUP_CUSTOM_SCRIPT_EXEC (see below) is executed.
 # - E.g. the following (without the leading "#") will install the APT packages iotop, iptables and xz-utils:
-AUTO_SETUP_APT_INSTALLS=iotop iptables xz-utils ca-certificates gnupg lsb-release nala fd-find ripgrep ugrep bat btrfs-progs gpg rust-sd fzf f2fs-tools zram-tools systemd-zram-generator
+AUTO_SETUP_APT_INSTALLS=xz-utils ca-certificates gnupg lsb-release nala fd-find ripgrep ugrep bat btrfs-progs gpg rust-sd fzf f2fs-tools zram-tools aria2c
 
 # Custom Script (pre-networking and pre-DietPi install)
 # - Allows you to automatically execute a custom script before network is up on first boot.

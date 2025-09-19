@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+ #!/usr/bin/bash
 export LC_ALL=C LANG=C; shopt -s nullglob globstar execfail
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
@@ -69,7 +69,7 @@ run_priv(){
 }
 #============ Env =============================================
 has dbus-launch && export "$(dbus-launch)"
-SHELL="${BASH:-/bin/bash}"; unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER
+SHELL="${BASH:-$(command -v bash)}"; unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER
 RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
 CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
 LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"

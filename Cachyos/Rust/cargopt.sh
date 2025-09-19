@@ -95,7 +95,7 @@ export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQU
 #CLDFLAGS=(-fuse-ld=lld)
 
 # —————— Core optimization flags ——————
-CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections"
+CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -fno-semantic-interposition"
 CXXFLAGS="$CFLAGS"
 LDFLAGS=(
   -Wl,-O3

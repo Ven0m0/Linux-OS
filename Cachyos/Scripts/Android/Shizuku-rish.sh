@@ -1,5 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
+adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS
+
 LC_ALL=C LANG=C
 BASEDIR=$( dirname "${0}" )
 BIN=/data/data/com.termux/files/usr/bin
@@ -67,3 +69,4 @@ cp -f "${DEX}" "${dex}"
 
 # Remove dex write permission, because app_process cannot load writable dex
 chmod -w "${dex}"
+

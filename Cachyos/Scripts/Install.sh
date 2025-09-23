@@ -142,6 +142,8 @@ mkdir -p "$HOME/.config/bash"
 curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "$HOME/.config/bash/fzf-simple-completion.sh"
 chmod +x "$HOME/.config/bash/fzf-simple-completion.sh" || :
 
+curl -fsSL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh
+
 # Housekeeping & system updates
 has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry '(-disable={config_update,system,tldr,maza,yazi,micro})' 2>/dev/null || :
 has fc-cache && sudo fc-cache -f >/dev/null || :

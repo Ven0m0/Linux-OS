@@ -5,18 +5,6 @@ permit persist setenv {PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin} :
 sudo chown -c root:root /etc/doas.conf
 sudo chmod -c 0400 /etc/doas.conf
 
-#fish env
-alias sudo='doas'
-alias sudoedit='doas rnano'
-
-# Sudo-rs
-alias sudo='sudo-rs'
-alias sudoedit='sudo-rs rnano'
-
-# Curl-rustls
-alias curl='curl-rustls'
-
-
 Pacman list: https://archlinux.org/mirrorlist
 
 Localmirror="https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&use_mirror_status=on"

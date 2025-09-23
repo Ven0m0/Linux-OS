@@ -1,6 +1,0 @@
-[KDE]
-AnimationDurationFactor=0
-
-[QtQuickRendererSettings]
-RenderLoop=threaded
-SceneGraphBackend=vulkan

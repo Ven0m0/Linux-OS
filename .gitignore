@@ -42,6 +42,7 @@ Videos/
 .gnupg/
 .gitconfig.local
 .ssh/
+!.ssh/config
 .android/
 .config/gh/hosts.yml
 
@@ -54,12 +55,6 @@ Videos/
 *.orig
 *.rej
 *.TAG
-
-# ---------------------
-# Keep
-# ---------------------
-!.cargo/config.toml
-!.ssh/config
 
 # ---------------------
 # Logs / tmp
@@ -109,17 +104,21 @@ __pycache__/
 .pytest_cache/
 *.py[cod]
 *$py.class
+pip-log.txt
+pip-delete-this-directory.txt
 node_modules/
 go/
 jspm_packages/
 dependencies/composer/vendor
 target/
 build/
+.rustup/
 .cargo/
+!.cargo/config.toml
 **/*.rs.bk
 *.mutants.out*/
 .npm
-.eslintcache
+npm-debug.log*
 *.tgz
 dist
 
@@ -149,3 +148,14 @@ github_conf
 .vscode/*
 !.vscode/extensions.json
 .idea
+# ---------------------
+# Linter
+# ---------------------
+megalinter-reports/
+**/megalinter-reports/*
+mega-linter.report
+*megalinter_file_names_cspell.txt
+
+.ruff_cache/
+.eslintcache
+/package-lock.json

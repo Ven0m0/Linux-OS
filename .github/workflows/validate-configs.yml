@@ -1,0 +1,44 @@
+# https://github.com/kehoecj/validate-configs-action
+name: Lint Config Files
+on:
+  workflow_dispatch:
+  #schedule: [{cron: "0 0 * * 0"}]
+  #pull_request:
+  #push:
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  lint-and-fix:
+    name: Validate and Fix Configs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Free Disk space
+        shell: bash
+        run: |
+          sudo rm -rf /usr/local/lib/android   # will release about 10 GB if you don't need Android
+          sudo rm -rf /usr/share/dotnet        # will release about 20GB if you don't need .NET
+
+      - name: Validate and Fix Config Files
+        uses: kehoecj/validate-configs-action@v4.0.1
+        with:
+          group-by: "pass-fail"
+          exclude-dirs: ".github,.git,.cache,go,node_modules,.var,.rustup,.wine,.zim,.void-editor"
+          AUTO_FIX: "true"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit Fixes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: Auto-format and lint config files"
+          commit_user_name: "GitHub Actions Bot"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+          commit_author: "GitHub Actions Bot <github-actions[bot]@users.noreply.github.com>"

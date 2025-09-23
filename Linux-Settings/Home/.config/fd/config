@@ -1,4 +1,0 @@
---threads 16
---max-depth 6
---fixed-strings
---ignore-file "$HOME/.git"

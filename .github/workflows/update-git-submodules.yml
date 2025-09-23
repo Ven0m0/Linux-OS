@@ -1,0 +1,63 @@
+name: Submodule Update
+on:
+  workflow_dispatch:
+  # schedule: [{cron: "0 0 * * 0"}]
+
+jobs:
+  update-submodules:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Checkout repository with submodules
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      # Cache Git objects to speed up submodule fetches
+      - name: Cache Git objects
+        id: git-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .git/modules
+            .git/objects
+          key: ${{ runner.os }}-git-submodules-${{ hashFiles('.gitmodules') }}
+          restore-keys: |
+            ${{ runner.os }}-git-submodules-
+
+      # Update all submodules recursively to their upstream default branch
+      - name: Update Submodules
+        id: update-submodules
+        run: |
+          set -e
+          UPDATED=false
+          git submodule sync --recursive -q
+          git submodule update --recursive --remote --merge --filter=blob:none --depth 1 --single-branch -q
+          git submodule foreach --recursive '
+            echo "Updating $name"
+            git fetch origin
+            DEFAULT_BRANCH=$(git remote show origin | sed -n "/HEAD branch/s/.*: //p")
+            git checkout "$DEFAULT_BRANCH"
+            git pull origin "$DEFAULT_BRANCH"
+            LOCAL=$(git rev-parse HEAD)
+            REMOTE=$(git rev-parse origin/"$DEFAULT_BRANCH")
+            if [ "$LOCAL" != "$REMOTE" ]; then
+              git reset --hard origin/"$DEFAULT_BRANCH"
+              UPDATED=true
+            fi
+            git maintenance run --auto
+          '
+          git maintenance run --auto
+          echo "updated=$UPDATED" >> $GITHUB_OUTPUT
+
+      # Commit and push updates automatically using git-auto-commit-action
+      - name: Commit and push submodule updates
+        if: ${{ steps.update-submodules.outputs.updated == 'true' }}
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          branch: feat/update-all-submodules
+          commit_message: "feat: update all submodules"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"

@@ -1,55 +1,61 @@
-# .github/workflows/super-linter.yml
-name: Super-Linter
-
+name: Linter
 on:
+  pull_request:
   workflow_dispatch:
-  #pull_request:
-
+permissions:
+  contents: read
 jobs:
   lint:
-    name: Lint Code Base
+    name: Linter
     runs-on: ubuntu-latest
-    # Set permissions for the GitHub token
     permissions:
-      contents: read          # To checkout the code
-      pull-requests: write  # To push fixes back to the PR
-      statuses: write       # To post status checks
+      packages: read
+      statuses: write
     steps:
-      # Step 1: Check out the repository code
-      - name: Checkout repository
+      # Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v5
         with:
-          # Fetch the full history to enable proper linter analysis on changed files
           fetch-depth: 0
-      # Step 2: Run the Super-Linter action
-      - name: Run Super-Linter
-        uses: super-linter/super-linter@v8
+
+      # Determine Super-Linter version dynamically
+      - name: Get Super-Linter version
+        id: sl-version
+        run: |
+          version=$(echo "v8.1.0" | sed 's/^v//') # update manually or parse dynamically if needed
+          echo "super_linter_version=$version" >> $GITHUB_OUTPUT
+
+      # Cache Super-Linter dependencies based on version
+      - name: Cache Super-Linter dependencies
+        id: cache-super-linter
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/super-linter
+          key: ${{ runner.os }}-super-linter-${{ steps.sl-version.outputs.super_linter_version }}
+          restore-keys: |
+            ${{ runner.os }}-super-linter-
+
+      # Run Super-Linter
+      - name: Super-Linter
+        uses: super-linter/super-linter@v8.1.0
         env:
-          # --- Core Settings ---
-          # The GITHUB_TOKEN is required for API calls
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-          # --- Behavior ---
-          # Lint only new and updated files for efficiency on pull requests
-          VALIDATE_ALL_CODEBASE: false
-          VALIDATE_CHECKOV: false
-
-          # --- Filtering ---
-          # Ignore common directories and files that shouldn't be linted
+          VALIDATE_ALL_CODEBASE: true
           IGNORE_GITIGNORED_FILES: true
           IGNORE_GENERATED_FILES: true
-          FILTER_REGEX_EXCLUDE: '^(?:dist|vendor|node_modules|\\.git|cache)/'
-
-          # --- Rules ---
-          # Looks for linter config files (e.g., .shellcheckrc) in the repo root
+          SAVE_SUPER_LINTER_SUMMARY: true
+          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: true
+          DISABLE_ERRORS: true
+          FILTER_REGEX_EXCLUDE: '^(?:dist|vendor|\.git|cache)/'
+          FILTER_REGEX_INCLUDE: '.*\.(sh|bash|yaml|json|toml|md|py|css|js|editorconfig)$'
           LINTER_RULES_PATH: .
 
-      # Step 3: Commit and push any automatic fixes made by the linter
+      # Commit and push automatic lint fixes on PRs
       - name: Commit and push linting fixes
-        # This step only runs on pull request events
         if: github.event_name == 'pull_request'
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
-          commit_message: "style(lint): apply automatic fixes"
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+          branch: ${{ github.head_ref }}
+          commit_message: "chore: apply super-linter fixes"
+          commit_user_name: "super-linter"
+          commit_user_email: "super-linter@users.noreply.github.com"

@@ -1,6 +1,0 @@
-.headers on
-.mode column
-
-# Exp
-.bail off
-.echo off

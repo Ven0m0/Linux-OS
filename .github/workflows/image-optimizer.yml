@@ -16,8 +16,21 @@ jobs:
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
+      # Checkout repo
       - name: Checkout Repo
         uses: actions/checkout@v5
+
+      # Cache Image Optimizer dependencies
+      - name: Cache Image Optimizer dependencies
+        id: cache-image-optimizer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/stellar-image-optimizer
+          key: ${{ runner.os }}-image-optimizer-${{ hashFiles('**/lockfiles') }}
+          restore-keys: |
+            ${{ runner.os }}-image-optimizer-
+
+      # Compress images
       - name: Compress Images
         id: compress-images
         uses: stellasoftio/image-optimizer-action@v1
@@ -31,6 +44,8 @@ jobs:
           compress-webp: true
           compress-avif: true
           replace-original-after-export-webp: true
+
+      # Create pull request if any images were compressed
       - name: Create New Pull Request If Needed
         if: steps.compress-images.outputs.markdown_report != ''
         uses: peter-evans/create-pull-request@v7
@@ -39,3 +54,4 @@ jobs:
           branch-suffix: timestamp
           commit-message: Compressed Images
           body: ${{ steps.compress-images.outputs.markdown_report }}
+      

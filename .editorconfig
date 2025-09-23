@@ -36,9 +36,6 @@ function_next_line = false
 binary_next_line = true
 shell_variant = bash
 
-[*.bash*,bash_*,PKGBUILD]
-shell_variant = bash
-
 [.profile,*.dash]
 shell_variant = posix
 
@@ -54,12 +51,12 @@ indent_size = 4
 # ---------------------
 # Markdown, Patches
 # ---------------------
-[*.md,*.patch]
+[*.{md,patch}]
 trim_trailing_whitespace = false
 insert_final_newline = true
 
-[*.{md,mmd,markdown,md.html}]
-indent_size = unset
+[*.md]
+max_line_length = 140
 
 # ---------------------
 # Go, Rust, Zig, Makefiles
@@ -73,12 +70,18 @@ tab_width = 4
 # Python
 # ---------------------
 [*.{py,pyw,pyi}]
-indent_style = space
 indent_size = 4
 tab_width = 4
+max_line_length = 120
 
 # ---------------------
 # Javascript
 # ---------------------
 [*.{js,mjs,cjs,jsx,ts,mts,cts,tsx}]
 quote_type = single
+
+[*.xml]
+indent_size = 4
+
+[{*.yml, *.yaml}]
+max_line_length = 120

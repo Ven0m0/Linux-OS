@@ -1,0 +1,50 @@
+---
+
+extends: default
+locale: en_US.UTF-8
+ignore-from-file: .gitignore
+yaml-files:
+  - '*.yaml'
+  - '*.yml'
+  - '.yamllint'
+
+rules:
+  anchors: enable
+  braces:
+    level: warning
+    max-spaces-inside: 1
+  brackets:
+    level: warning
+    max-spaces-inside: 1
+  colons: enable
+  commas: enable
+  comments: disable
+  comments-indentation: disable
+  document-end: disable
+  document-start:
+    level: warning
+    present: true
+  empty-lines:
+    level: warning
+    max: 2
+    max-start: 0
+    max-end: 0
+  empty-values: disable
+  float-values: disable
+  hyphens: enable
+  indentation: enable
+  key-duplicates: enable
+  key-ordering: disable
+  line-length:
+    level: warning
+    max: 80
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  new-line-at-end-of-file: enable
+  new-lines:
+    type: unix
+  octal-values: disable
+  quoted-strings: disable
+  trailing-spaces: enable
+  truthy:
+    level: warning

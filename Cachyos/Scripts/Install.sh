@@ -54,6 +54,33 @@ pkgs=(
   intel-ucode-shrink-hook xdg-ninja cylon scaramanga kbuilder yadm
 )
 
+Install_packages() {  # parameters: package names
+    local pkg pkgs=()
+    for pkg in "$@" ; do
+        if ! pacman -Q $pkg  >& /dev/null ; then
+            pkgs+=("$pkg")
+        fi
+    done
+    if [ -n "$pkgs" ] ; then
+        HotMsg "$DE: installing ${pkgs[*]}"
+        pacman -Syu --noconfirm "${pkgs[@]}"
+    fi
+}
+
+Remove_packages() {  # parameters: package names
+    local pkg pkgs=()
+    for pkg in "$@" ; do
+        if pacman -Q $pkg  >& /dev/null ; then
+            pkgs+=("$pkg")
+        fi
+    done
+    if [ -n "$pkgs" ] ; then
+        HotMsg "$DE: uninstalling ${pkgs[*]}"
+        pacman -R --noconfirm "${pkgs[@]}"
+    fi
+}
+
+
 # detect missing packages
 echo "Checking installed packages..."
 missing=()

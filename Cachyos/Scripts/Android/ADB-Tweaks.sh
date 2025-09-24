@@ -100,14 +100,13 @@ tweaks() {
     adb shell rm -rf /storage/sdcard1/LOST.DIR/*
     adb shell pm trim-caches 999999M
     adb shell sm fstrim
-
-    for d in $(adb shell ls -a sdcard); do adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.nomedia" "sdcard/$d/.trackerignore"; done
-
     adb shell logcat -P ""
     adb shell logcat -c
 
-    adb shell setprop persist.log.tag S
+    for d in $(adb shell ls -a sdcard); do adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore"; done
+# "sdcard/$d/.nomedia"
 
+    adb shell setprop persist.log.tag S
     adb shell wm scaling off
     adb shell wm disable-blur true
     adb shell wm set-sandbox-display-apis true
@@ -161,20 +160,13 @@ tweaks() {
     adb shell settings put global visual_bars false
     adb shell settings put global reduce_transitions 1
     adb shell settings put global shadow_animation_scale 0
-    adb shell settings put global render_shadows_in_compositor true
+    adb shell settings put global render_shadows_in_compositor false
     adb shell settings put global window_focus_timeout 250
-    adb shell settings put global ro.launcher.anim.app.exit false
-    adb shell settings put global ro.launcher.anim.launchtask false
     adb shell settings put global persist.sys.rotationanimation false
     adb shell settings put global sys.rotation.animscale 0.25
     adb shell settings put global sys.disable_ext_animation 1
     adb shell settings put global sys.enable_grip_rejection 1
     adb shell settings put global sys.refresh.dirty 0
-    adb shell settings put global ro.input.noresample 1
-    adb shell settings put global ro.config.enable_touchboost true
-    adb shell settings put global ro.vendor.touchfeature.gamemode.enable true
-    adb shell settings put global ro.floatingtouch.available 1
-    adb shell settings put global ro.toastshow.enable false
     adb shell settings put global view.touch_slop 1
     adb shell settings put global view.scroll_friction 0
     adb shell settings put global view.fading_edge_length 1
@@ -200,8 +192,6 @@ tweaks() {
     adb shell settings put global hardware_accelerated_video_encode 1
     adb shell settings put global media.sf.hwaccel 1
     adb shell settings put global video.accelerate.hw 1
-    adb shell settings put global ro.config.enable.hw_accel true
-    adb shell settings put global ro.config.hw_voicerecord true
     adb shell settings put global hwui.private_hal_readback 1
     adb shell settings put global debug.hwui.render_priority 1
     adb shell settings put global debug.hwui.use_partial_updates false
@@ -213,17 +203,6 @@ tweaks() {
     adb shell settings put global debug.hwui.use_d2d 1
     adb shell settings put global debug.hwui.use_hint_manager false
     adb shell settings put global ro.vendor.hwui.platform 1
-    adb shell settings put global ro.hwui.renderer.disable_opaque true
-    adb shell settings put global ro.hwui.disable_scissor_opt false
-    adb shell settings put global ro.hwui.texture_cache_size 20
-    adb shell settings put global ro.hwui.texture_cache_flush_rate 0.5
-    adb shell settings put global ro.hwui.gradient_cache_size 0.1
-    adb shell settings put global ro.hwui.drop_shadow_cache_size 1
-    adb shell settings put global ro.hwui.shape_cache_size 1
-    adb shell settings put global ro.hwui.r_buffer_cache_size 1
-    adb shell settings put global ro.hwui.path_cache_size 1
-    adb shell settings put global ro.hwui.disable_asset_atlas true
-    adb shell settings put global ro.hwui.layer_cache_size 1
     adb shell settings put global persist.texture_cache_opt 1
     adb shell settings put global disable_hw_overlays 1
     adb shell settings put global overlay_disable_force_hwc 1
@@ -246,7 +225,6 @@ tweaks() {
     adb shell settings put global game_driver_opt_out_apps 1
     adb shell settings put global updatable_driver_all_apps 1
     adb shell settings put global updatable_driver_production_opt_out_apps 1
-    adb shell settings put global persist.sys.cfu_auto 1
     adb shell settings put global network_avoid_bad_wifi 1
     adb shell settings put global network_scoring_ui_enabled 0
     adb shell settings put global wifi_watchdog_roaming 0
@@ -261,181 +239,38 @@ tweaks() {
     adb shell settings put global data_roaming_int 0
     adb shell settings put global data_roaming 0
     adb shell settings put global data_saver_mode 1
-    adb shell settings put global ro.wifi.signal.optimized true
-    adb shell settings put global ro.sf.wifi_sleep_policy_default 2
-    adb shell settings put global ro.mds.enable true
-    adb shell settings put global ro.ril.hep 1
-    adb shell settings put global ro.mtk_lte_support 1
     adb shell settings put global lte_category 4
-    adb shell settings put global persist.radio.lte_enabled true
-    adb shell settings put global ro.config.hw_lte_support true
-    adb shell settings put global ro.config.hw_volte_on true
-    adb shell settings put global ro.config.hw_volte_dyn true
-    adb shell settings put global ro.config.full_network_support true
-    adb shell settings put global persist.eons.enabled true
-    adb shell settings put global persist.cust.tel.eons 1
-    adb shell settings put global persist.sys.klo on
-    adb shell settings put global persist.sys.once_scan true
-    adb shell settings put global persist.mot.gps.conf.from.sim false
-    adb shell settings put global persist.mot.gps.smart_battery 1
-    adb shell settings put global persist.mot.gps.assisted false
-    adb shell settings put global ro.mot.proximity.jitter false
-    adb shell settings put global ro.mot.eri.losalert.delay 1000
-    adb shell settings put global ro.telephony.call_ring.delay 0
-    adb shell settings put global persist.sys.job_delay false
-    adb shell settings put global persist.sys.memopt.switch 1
-    adb shell settings put global persist.sys.fuse.passthrough.enable true
-    adb shell settings put global persist.sys.art.opt.enable true
-    adb shell settings put global persist.sys.dalvik.multithread true
-    adb shell settings put global persist.sys.dalvik.hyperthreading true
-    adb shell settings put global dalvik.vm.dex2oat64.enabled true
-    adb shell settings put global dalvik.vm.heaputilization 0.25
-    adb shell settings put global dalvik.vm.heaptargetutilization 0.25
-    adb shell settings put global dalvik.vm.heapminfree 1m
-    adb shell settings put global dalvik.vm.dex2oat-swap true
-    adb shell settings put global dalvik.vm.verify-bytecode false
-    adb shell settings put global dalvik.vm.usejit true
-    adb shell settings put global dalvik.vm.usejitprofiles true
-    adb shell settings put global dalvik.vm.checkjni false
-    adb shell settings put global dalvik.vm.check-dex-sum false
-    adb shell settings put global dalvik.vm.debug.alloc 0
-    adb shell settings put global dalvik.vm.dexopt-data-only 1
-    adb shell settings put global dalvik.vm.dexopt-flags m=y,v=n,o=y,u=n
-    adb shell settings put global dalvik.vm.execution-mode int:jit
-    adb shell settings put global dalvik.vm.dexopt.secondary true
-    adb shell settings put global dalvik.vm.dexopt.thermal-cutoff 2
-    adb shell settings put global dalvik.vm.dex2oat-filter interpret-only
-    adb shell settings put global dalvik.vm.deadlock-predict off
-    adb shell settings put global dalvik.vm.dex2oat-backend Quick
-    adb shell settings put global dalvik.vm.dex2oat-minidebuginfo false
-    adb shell settings put global dalvik.vm.dex2oat-resolve-startup-strings false
-    adb shell settings put global dalvik.vm.madvise-random true
-    adb shell settings put global dalvik.vm.foreground-heap-growth-multiplier 1.0
-    adb shell settings put global dalvik.vm.jit.codecachesize 1
-    adb shell settings put global dalvik.vm.appimageformat lz4
-    adb shell settings put global dalvik.vm.systemservercompilerfilter speed
-    adb shell settings put global dalvik.vm.systemuicompilerfilter speed
-    adb shell settings put global dalvik.vm.houdini on
-    adb shell settings put global dalvik.vm.zygotemaxfailedboots 3
-    adb shell settings put global persist.vm.stackdump.threshold 0
-    adb shell settings put global vm.scan_unevictable_pages 0
-    adb shell settings put global dalvik.gc.type precise
     adb shell settings put global top_app_dexopt_with_speed_profile true
-    adb shell settings put global pm.dexopt.nsys-library quicken
-    adb shell settings put global pm.dexopt.core-app quicken
-    adb shell settings put global pm.dexopt.shared quicken
-    adb shell settings put global pm.dexopt.boot verify-at-runtime
-    adb shell settings put global pm.dexopt.first-boot quicken
-    adb shell settings put global pm.dexopt.install quicken
-    adb shell settings put global pm.dexopt.bg-dexopt quicken
-    adb shell settings put global pm.dexopt.ab-ota quicken
-    adb shell settings put global pm.dexopt.forced-dexopt quicken
-    adb shell settings put global ro.dex.async.opt 1
-    adb shell settings put global ro.config.vm_prioritymode 2
-    adb shell settings put global ro.dalvik.vm.native.bridge 0
-    adb shell settings put global persist.sys.nativebridge 1
-    adb shell settings put global ro.malloc.impl jemalloc
-    adb shell settings put global ro.maple.enable 1
     adb shell settings put global tombstoned.max_tombstone_count 20
-    adb shell settings put global sys.hwsholder.count 0
     adb shell settings put global vnswap.enabled false
     adb shell settings put global cgroup_disable memory
-    adb shell settings put global ro.systemui.burn_in_protection true
-    adb shell settings put global ro.config.hw_simpleui_enable 1
-    adb shell settings put global ro.config.hw_dsda true
-    adb shell settings put global ro.config.hw_dts true
-    adb shell settings put global ro.config.hw_disable_cops true
-    adb shell settings put global ro.config.hw_accesscontrol false
-    adb shell settings put global ro.config.hw_restrict_gps true
-    adb shell settings put global ro.config.updatelocation false
-    adb shell settings put global ro.config.delay_send_signal false
     adb shell settings put global sys_traced 0
-    adb shell settings put global persist.traced.enable 0
-    adb shell settings put global persist.traced_perf.enable 0
     adb shell settings put global wifi_verbose_logging_enabled 0
     adb shell settings put global send_action_app_error 0
     adb shell settings put global send_action_app_error_native 0
     adb shell settings put global foreground_service_starts_logging_enabled 0
     adb shell settings put global enable_diskstats_logging 0
     adb shell settings put global activity_starts_logging_enabled 0
-    adb shell settings put global ro.config.nocheckin 1
     adb shell settings put global profiler.force_disable_err_rpt 1
     adb shell settings put global profiler.force_disable_ulog 1
     adb shell settings put global profiler.debugmonitor false
     adb shell settings put global profiler.launch false
     adb shell settings put global logcat.live disable
     adb shell settings put global config.disable_consumerir true
-    adb shell settings put global ro.debuggable 0
-    adb shell settings put global debug.mdpcomp.logs 0
-    adb shell settings put global ro.kernel.checkjni 0
-    adb shell settings put global debug.atrace.tags.enableflags 0
     adb shell settings put global logd.kernel false
     adb shell settings put global vendor.display.disable_hw_recovery_dump 1
     adb shell settings put global profiler.hung.dumpdobugreport false
     adb shell settings put global trustkernel.log.state disable
-    adb shell settings put global debug.systemui.latency_tracking 0
     adb shell settings put global persist.sample.eyetracking.log 0
     adb shell settings put global media.metrics.enabled 0
     adb shell settings put global media.metrics 0
-    adb shell settings put global debug.brcm.mm.logs 0
-    adb shell settings put global persist.sys.miui_optimization true
-    adb shell settings put global sys.miui.ndcd off
-    adb shell settings put global sys.debug.watchdog 0
     adb shell settings put global logd.logpersistd.enable false
     adb shell settings put global logd.statistics 0
     adb shell settings put global config.stats 0
-    adb shell settings put global persist.sys.watchdog_enhanced false
-    adb shell settings put global persist.sys.oom_crash_on_watchdog false
-    adb shell settings put global persist.sys.logging 0
-    adb shell settings put global persist.sys.loglevel 0
-    adb shell settings put global sys.log.app 0
-    adb shell settings put global ro.logd.size 0
-    adb shell settings put global ro.logd.size.stats 0
-    adb shell settings put global ro.logdumpd.enabled 0
-    adb shell settings put global persist.anr.dumpthr 0
-    adb shell settings put global persist.vendor.dpm.loglevel 0
-    adb shell settings put global persist.vendor.dpmhalservice.loglevel 0
-    adb shell settings put global persist.vendor.sys.core.enabled 0
-    adb shell settings put global persist.vendor.sys.modem.logging.enable false
     adb shell settings put global debug.enable.wl_log 0
     adb shell settings put global debug.als.logs 0
     adb shell settings put global debug.svi.logs 0
-    adb shell settings put global log.tag.stats_log 0
-    adb shell settings put global ro.lmk.debug false
-    adb shell settings put global ro.lmk.log_stats false
-    adb shell settings put global sys.lmk.reportkills false
-    adb shell settings put global persist.sys.lmk.reportkills false
-    adb shell settings put global ro.config.hw.logsystem.send 0
     adb shell settings put global show_non_market_apps_error 0
-    adb shell settings put global anr_show_error_cause false
-    adb shell settings put global debug.hwui.skia_atrace_enabled false
-    adb shell settings put global persist.sys.mdlog_dumpback 0
-    adb shell settings put global persist.vendor.mdlog.need_dump 0
-    adb shell settings put global vendor.swvdec.log.level 0
-    adb shell settings put global debug.sf.enable_transaction_tracing false
-    adb shell settings put global persist.vendor.console.silent.config 1
-    adb shell settings put global persist.vendor.recovery_update false
-    adb shell settings put global persist.binder.check.enable false
-    adb shell settings put global ro.statsd.enable false
-    adb shell settings put global ro.systemui.debug false
-    adb shell settings put global ro.have_aee_feature 0
-    adb shell settings put global ro.aee.enforcing no
-    adb shell settings put global ro.aee.enperf off
-    adb shell settings put global ro.vendor.tran_perf_plus 1
-    adb shell settings put global persist.vendor.product.perf 1
-    adb shell settings put global persist.debug.sf.statistics 0
-    adb shell settings put global persist.sys.crash_dumps 0
-    adb shell settings put global persist.sys.pstore_dumps 0
-    adb shell settings put global persist.debug.host.ramdump 0
-    adb shell settings put global persist.radio.ramdump 0
-    adb shell settings put global persist.ims.disableDebugLogs 1
-    adb shell settings put global persist.ims.disableDebugDataPathLogs 1
-    adb shell settings put global persist.ims.disableADBLogs 1
-    adb shell settings put global persist.ims.disableQXDMLogs 1
-    adb shell settings put global persist.ims.disableIMSLogs 1
-    adb shell settings put global persist.ims.disableSigHandler 1
-    adb shell settings put global persist.sys.qxdm no
-    adb shell settings put global persist.sys.qxdm_logs 0
     adb shell settings put global app_usage_enabled 0
     adb shell settings put global package_usage_stats_enabled 0
     adb shell settings put global recent_usage_data_enabled 0
@@ -447,39 +282,7 @@ tweaks() {
     adb shell settings put global ro.vendor.connsys.dedicated.log 0
     adb shell settings put global ro.hw_disable_instantonline true
     adb shell settings put global sys.wifitracing.started 0
-    adb shell settings put global persist.zygote.core_dump 0
-    adb shell settings put global persist.ai.timedebug.enable false
-    adb shell settings put global persist.sys.qlogd 0
-    adb shell settings put global persist.sys.hw_statistics 0
-    adb shell settings put global persist.sys.apps_statistics 0
-    adb shell settings put global persist.sys.apr.enabled 0
-    adb shell settings put global persist.vendor.aprservice.enabled 0
-    adb shell settings put global persist.vendor.verbose_logging_enabled false
-    adb shell settings put global persist.vendor.sys.fp.dump_data 0
-    adb shell settings put global persist.debug.xlog.enable 0
-    adb shell settings put global persist.meta.dumpdata 0
-    adb shell settings put global persist.oem.dump 0
-    adb shell settings put global persist.service.crash.enable 0
-    adb shell settings put global persist.sys.perfettologging.enable 0
-    adb shell settings put global persist.sys.perf.debug false
-    adb shell settings put global persist.sys.offlinelog.kernel false
-    adb shell settings put global persist.sys.offlinelog.logcat false
-    adb shell settings put global persist.sys.offlinelog.logcatkernel false
-    adb shell settings put global persist.sys.log.user 0
-    adb shell settings put global persist.sys.log-main.enable 0
-    adb shell settings put global persist.sys.log-system.enable 0
-    adb shell settings put global persist.sys.log-events.enable 0
-    adb shell settings put global persist.sys.log-radio.enable 0
-    adb shell settings put global persist.sys.tcpdump.lognum 0
-    adb shell settings put global persist.sys.tcpdump.logsize 0
-    adb shell settings put global persist.sys.wifipacketlog.state false
-    adb shell settings put global persist.net.monitor false
-    adb shell settings put global persist.debug.wfd.enable 0
-    adb shell settings put global persist.data.qmi.adb_logmask 0
     adb shell settings put global sys.deepdiagnose.support 0
-    adb shell settings put global ro.bionic.ld.warning 0
-    adb shell settings put global ro.platform.has.systemlog false
-    adb shell settings put global ro.vendor.qfusion_use_report_period false
     adb shell settings put system status_logging_cnt 0
     adb shell settings put system anr_debugging_mechanism 0
     adb shell settings put system anr_debugging_mechanism_status 0
@@ -506,8 +309,6 @@ tweaks() {
     adb shell settings put global dns_resolvability_required 0
     adb shell settings put global net.dns1 194.242.2.9
     adb shell settings put global net.dns2 194.242.2.9
-    adb shell settings put global private_dns_mode hostname
-    adb shell settings put global private_dns_specifier all.dns.mullvad.net
     adb shell settings put global webview_safe_browsing_enabled 0
     adb shell settings put global wifi_mac_randomization 2
     adb shell settings put global wifi_connected_mac_randomization_supported 2
@@ -975,7 +776,7 @@ tweaks() {
     adb shell settings put global debug.gralloc.map_fb_memory 1
     adb shell settings put global debug.gralloc.enable_fb_ubwc 1
     adb shell settings put global debug.gralloc.gfx_ubwc_disable 0
-    adb shell settings put global debug.gralloc.disable_ahardware_buffer 1
+    adb shell settings put global debug.gralloc.disable_hardware_buffer 1
     adb shell settings put global debug.gr.numframebuffers 1
     adb shell settings put global persist.smart_pool 1
     adb shell settings put global ro.hardware.gralloc default

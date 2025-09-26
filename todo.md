@@ -72,3 +72,6 @@ https://apps.kde.org
 https://www.shellcheck.net
 https://dash.cloudflare.com
 ```
+```sh
+curl -s "https://get.sdkman.io" | bash && . "~/.sdkman/bin/sdkman-init.sh"
+```

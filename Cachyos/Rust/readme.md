@@ -47,12 +47,9 @@ export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=sy
 
 ```bash
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
-  -fno-semantic-interposition -fdata-sections -ffunction-sections \
-	-mprefer-vector-width=256 -ftree-vectorize -fslp-vectorize \
+  -fno-semantic-interposition -fdata-sections -ffunction-sections -ftree-vectorize \
 	-fomit-frame-pointer -fvisibility=hidden -fmerge-all-constants -finline-functions \
-	-fbasic-block-sections=all -fjump-tables -pthread \
-  -falign-functions=32 -falign-loops=32 -malign-branch-boundary=32 -malign-branch=jcc \
-	-fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols"
+  -fjump-tables -pthread -fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols"
 ```
 ```bash
 export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers"

@@ -169,11 +169,12 @@ mkdir -p "$HOME/.config/bash"
 curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "$HOME/.config/bash/fzf-simple-completion.sh"
 chmod +x "$HOME/.config/bash/fzf-simple-completion.sh" || :
 
+if has gh; then
+  gh extension install gennaro-tedesco/gh-f
+fi
+
 # Soar
 curl -fsSL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh
-
-# Television
-#curl -fsSL https://alexpasmantier.github.io/television/install.sh | bash
 
 # Housekeeping & system updates
 has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry '(-disable={config_update,system,tldr,maza,yazi,micro})' 2>/dev/null || :

@@ -52,7 +52,11 @@ apply_maintenance() {
 apply_cleanup() {
   printf '%s\n' "## Cleaning temporary files on device..."
   # Use find for more reliable deletion within the device's shell
-  adb shell 'find /sdcard /storage /cache /data/local -type f \( -name "*.tmp" -o -name "*.log" -o -name "*.bak" \) -delete'
+  #adb shell 'find /sdcard /storage /cache /data/local -type f \( -name "*.tmp" -o -name "*.log" -o -name "*.bak" \) -delete'
+  adb shell find . -type f -o -name "*.log" -delete
+  adb shell find . -type f -o -name "*.old" -delete
+  adb shell find . -type f -o -name "*.tmp" -delete
+  adb shell find . -type f -o -name "*.bak" -delete
 }
 
 # --- ART Optimization ---
@@ -311,7 +315,9 @@ main() {
   adb shell am kill-all
   adb shell cmd activity kill-all
   adb shell dumpsys batterystats --reset
-
+  adb shell clean_scratch_files
+  adb shell update_engine_client --update
+  adb shell e2freefrag
   printf '%s\n' "## All done!"
 
   # Optional: kill server and clean local adb files

@@ -218,6 +218,10 @@ sudo fstrim -a --quiet-unsupported; sudo fstrim -A --quiet-unsupported
 # Font cache
 sudo fc-cache -f >/dev/null
 
+if command -v sdk &>/dev/null; then
+  sdk flush tmp
+fi
+
 # BleachBit if available
 if command -v bleachbit &>/dev/null; then
   LC_ALL=C LANG=C bleachbit -c --preset >/dev/null

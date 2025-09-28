@@ -32,7 +32,8 @@
 
 set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+export LC_ALL=C LANG=C LANGUAGE=C
+HOME="/home/${SUDO_USER:-$USER}"
 
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'

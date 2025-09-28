@@ -173,6 +173,11 @@ if has gh; then
   gh extension install gennaro-tedesco/gh-f
 fi
 
+
+if has sdk; then
+  sdk install java 25-graal
+  #sdk install java 25-graalce
+
 # Soar
 curl -fsSL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh
 

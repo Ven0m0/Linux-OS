@@ -171,6 +171,7 @@ chmod +x "$HOME/.config/bash/fzf-simple-completion.sh" || :
 
 if has gh; then
   gh extension install gennaro-tedesco/gh-f
+  gh extension install gennaro-tedesco/gh-s
 fi
 
 

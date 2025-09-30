@@ -76,12 +76,13 @@ CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
 LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
 CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTUP_TOOLCHAIN=nightly RUSTC_BOOTSTRAP=1
 #=============================================================
-checkupdates -dc >/dev/null
+checkupdates -dc &>/dev/null
 
-has modprobed-db && modprobed-db storesilent >/dev/null
-has hwclock && "$suexec" hwclock -w >/dev/null
+has modprobed-db && modprobed-db storesilent &>/dev/null
+has hwclock && "$suexec" hwclock -w &>/dev/null
 has updatedb && "$suexec" updatedb &>/dev/null
-has chwd && "$suexec" chwd -a 2>/dev/null
+has chwd && "$suexec" chwd -a &>/dev/null
+has mandb && { sudo mandb -q &>/dev/null || mandb -q &>/dev/null; } 
 
 sysupdate(){
   local pkgmgr auropts_base auropts

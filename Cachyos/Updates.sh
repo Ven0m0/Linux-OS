@@ -9,7 +9,7 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
-has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
+has(){ local x="${1:?no argument}"; x=$(command -v -- "$x" &>/dev/null) || return 1; [[ -x $x ]] || return 1; }
 hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
 xprint(){ printf '%s\n' "$*"; } # Print-echo
 xexprint(){ printf '%b\n' "$*"; } # Print-echo for color

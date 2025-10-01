@@ -50,7 +50,7 @@ pkgs=(
   fclones cpio bc fuse2 appimagelauncher jdk24-graalvm-ee-bin
   cleanerml-git makepkg-optimize-mold prelockd uresourced optipng-parallel
   plzip plzip-lzip-link lbzip2 usb-dirty-pages-udev cleanlib32 tuckr-git
-  dxvk-gplasync-bin pay-respects unzrip-git adbr-git luxtorpeda
+  dxvk-gplasync-bin pay-respects unzrip-git adbr-git luxtorpeda av1an
   intel-ucode-shrink-hook xdg-ninja cylon scaramanga kbuilder yadm
 )
 

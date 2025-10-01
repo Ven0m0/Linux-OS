@@ -139,7 +139,11 @@ if ! has rustup; then
   export PATH="${HOME}/.cargo/bin:${PATH}"
 fi
 
-rust_crates=(rmz cpz xcp crabz parallel-sh parel ffzap cargo-diet crab-fetch cargo-list minhtml cargo-minify rimage ripunzip terminal_tools)
+rust_crates=(
+rmz cpz xcp crabz parallel-sh parel ffzap cargo-diet crab-fetch cargo-list minhtml cargo-minify rimage ripunzip terminal_tools
+imagineer docker-image-pusher image-optimizer dui-cli imgc pixelsqueeze bgone dupimg simagef compresscli dssim img-squeeze lq
+)
+
 command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
 rustup default nightly || :
 rustup set auto-self-update disable || :

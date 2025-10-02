@@ -1,3 +1,7 @@
+### Better 'adb shell'
+
+- https://github.com/matan-h/adb-shell
+- Cachyos/Scripts/Android/mkshrc.sh
 
 [chromium flags](https://gist.github.com/ibLeDy/1495735312943b9dd646fd9ddf618513)
 

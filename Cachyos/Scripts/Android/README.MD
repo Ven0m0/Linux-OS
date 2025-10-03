@@ -2,6 +2,9 @@
 
 - https://github.com/matan-h/adb-shell
 - [mkshrc](Cachyos/Scripts/Android/mkshrc.sh)
+- https://github.com/trinhnv1205/optimize
+
+
 
 [chromium flags](https://gist.github.com/ibLeDy/1495735312943b9dd646fd9ddf618513)
 

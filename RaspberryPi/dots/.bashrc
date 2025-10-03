@@ -64,8 +64,13 @@ if command -v nala &>/dev/null, then
   alias nal='sudo \nala'
   alias nala='sudo \nala'
 fi
-
+alias aptpurge='sudo apt-get remove --purge'
+alias aptupgd='sudo apt-get update && sudo apt-get dist-upgrade -V && sudo apt-get autoremove'
+alias apts='apt-cache search'
+alias aptshow='apt-cache show'
 aptsearch(){ if ! nala search -n "$@"; then { apt-cache search "$@" || return 1; } fi; }
+
+
 
 # docker
 alias dr='docker run'

@@ -1,5 +1,4 @@
 # https://megalinter.io
----
 name: MegaLinter
 
 on:
@@ -83,7 +82,6 @@ jobs:
             - REPOSITORY_KICS   # Infrastructure-as-Code security scanner (likely not needed)
             - REPOSITORY_GRYPE  # Vulnerability scanner (likely not needed)
             - SPELL_VALE        # Prose linter (can be noisy, cspell is sufficient)
-
           # Linters that should run but NOT fail the build (i.e., treat as warnings)
           DISABLE_ERRORS_LINTERS:
             - SPELL_CSPELL      # Spelling errors are suggestions, not breaking changes

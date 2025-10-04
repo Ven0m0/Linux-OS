@@ -26,7 +26,7 @@ jobs:
     steps:
       # --- Checkout repository ---
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           # PAT is required to create PRs with fixes that can trigger other workflows
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
@@ -53,40 +53,18 @@ jobs:
           SHOW_ELAPSED_TIME: true
           # Let MegaLinter suggest a smaller, more optimal "flavor" (docker image) for this repo
           FLAVOR_SUGGESTIONS: true
-          # Only lint files within the directories containing your actual dotfiles to improve speed
-          FILTER_REGEX_INCLUDE: '(Home/|etc/|\.github/)'
+          # Corrected: Filter to include dotfiles at the root and common config directories
+          FILTER_REGEX_INCLUDE: '((\.config|\.termux|\.github)/|^\.[^/]+$)'
 
           # ======== LINTER CONFIGURATION ========
-          # Enable relevant categories for a dotfiles repo
-          ENABLE:
-            - ACTION
-            - BASH
-            - CSS
-            - DOCKERFILE
-            - EDITORCONFIG
-            - ENV
-            - HTML
-            - JSON
-            - MAKEFILE
-            - MARKDOWN
-            - POWERSHELL
-            - PYTHON
-            - REPOSITORY
-            - SPELL
-            - TOML  # Added TOML as it is common in dotfiles
-            - XML
-            - YAML
+          # Corrected: ENABLE should be a comma-separated string
+          ENABLE: "ACTION,BASH,CSS,DOCKERFILE,EDITORCONFIG,ENV,HTML,JSON,MAKEFILE,MARKDOWN,POWERSHELL,PYTHON,REPOSITORY,SPELL,TOML,XML,YAML"
 
-          # Linters to completely disable
-          DISABLE_LINTERS:
-            - REPOSITORY_KICS   # Infrastructure-as-Code security scanner (likely not needed)
-            - REPOSITORY_GRYPE  # Vulnerability scanner (likely not needed)
-            - SPELL_VALE        # Prose linter (can be noisy, cspell is sufficient)
-          # Linters that should run but NOT fail the build (i.e., treat as warnings)
-          DISABLE_ERRORS_LINTERS:
-            - SPELL_CSPELL      # Spelling errors are suggestions, not breaking changes
-            - SPELL_LYCHEE      # Link checker can have false positives with dynamic sites
-            - BASH_EXEC         # Checks for executable bit, which is a stylistic choice
+          # Corrected: Linters to completely disable (comma-separated string)
+          DISABLE_LINTERS: "REPOSITORY_KICS,REPOSITORY_GRYPE,SPELL_VALE"
+
+          # Corrected: Linters to treat as warnings (comma-separated string)
+          DISABLE_ERRORS_LINTERS: "SPELL_CSPELL,SPELL_LYCHEE,BASH_EXEC"
 
       # --- Upload Artifacts ---
       - name: Upload MegaLinter reports

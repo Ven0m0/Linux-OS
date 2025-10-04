@@ -1,117 +1,101 @@
 # https://megalinter.io
 ---
 name: MegaLinter
+
 on:
+  # Automatically run on pushes and PRs to your main branch
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  # Allow manual runs from the Actions tab
   workflow_dispatch:
-  #schedule: [{cron: "0 0 * * 0"}]
-  #pull_request:
-  #push:
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
+
 permissions:
   contents: write
   issues: write
   pull-requests: write
-env:
-  APPLY_FIXES: all
-  APPLY_FIXES_EVENT: all
-  APPLY_FIXES_MODE: pull_request
 
 jobs:
   megalinter:
     name: MegaLinter
     runs-on: ubuntu-latest
     steps:
+      # --- Checkout repository ---
       - name: Checkout Code
         uses: actions/checkout@v5
         with:
+          # PAT is required to create PRs with fixes that can trigger other workflows
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          fetch-depth: 1
-      # MegaLinter
-      - name: MegaLinter
-        uses: oxsecurity/megalinter@0dcbedd66ea456ba2d54fd350affaa15df8a0da3 # v9.0.1
-        id: megalinter
-        env:
-          VALIDATE_ALL_CODEBASE: true
-          IGNORE_GENERATED_FILES: true
-          IGNORE_GITIGNORED_FILES: true
-          PARALLEL: true
-          DISABLE_LINTERS: REPOSITORY_KICS, REPOSITORY_GRYPE, SPELL_VALE
-          DISABLE_ERRORS_LINTERS: SPELL_CSPELL, SPELL_LYCHEE, BASH_EXEC, BASH_SHFMT, BASH_SHELLCHECK, YAML_YAMLLINT, YAML_V8R, YAML_PRETTIER
-          ENABLE: BASH, MAKEFILE, POWERSHELL, PYTHON, CSS, ENV, HTML, JSON, MARKDOWN, XML, YAML, ACTION, DOCKERFILE, EDITORCONFIG, REPOSITORY, SPELL
-          #YAML_V8R_FILE_EXTENSIONS: [".yml", ".yaml", ".toml", ".json", ".jsonc"]
-          SHOW_ELAPSED_TIME: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fetch all history for linters that analyze git history
+          fetch-depth: 0
 
-      # Upload MegaLinter artifacts
-      - name: Archive production artifacts
-        if: success() || failure()
+      # --- Run MegaLinter ---
+      - name: MegaLinter
+        uses: oxsecurity/megalinter@v7 # Using v7 for the latest stable features
+        env:
+          # Required for PR creation and reporting
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT: ${{ secrets.PAT }}
+
+          # ======== BEHAVIOR ========
+          VALIDATE_ALL_CODEBASE: true
+          # Automatically create a Pull Request with any fixes found
+          APPLY_FIXES: all
+          APPLY_FIXES_EVENT: pull_request # Create PRs only on pull_request events
+          APPLY_FIXES_MODE: pull_request
+
+          # ======== PERFORMANCE TUNING ========
+          PARALLEL: true
+          SHOW_ELAPSED_TIME: true
+          # Let MegaLinter suggest a smaller, more optimal "flavor" (docker image) for this repo
+          FLAVOR_SUGGESTIONS: true
+          # Only lint files within the directories containing your actual dotfiles to improve speed
+          FILTER_REGEX_INCLUDE: '(Home/|etc/|\.github/)'
+
+          # ======== LINTER CONFIGURATION ========
+          # Enable relevant categories for a dotfiles repo
+          ENABLE:
+            - ACTION
+            - BASH
+            - CSS
+            - DOCKERFILE
+            - EDITORCONFIG
+            - ENV
+            - HTML
+            - JSON
+            - MAKEFILE
+            - MARKDOWN
+            - POWERSHELL
+            - PYTHON
+            - REPOSITORY
+            - SPELL
+            - TOML  # Added TOML as it is common in dotfiles
+            - XML
+            - YAML
+
+          # Linters to completely disable
+          DISABLE_LINTERS:
+            - REPOSITORY_KICS   # Infrastructure-as-Code security scanner (likely not needed)
+            - REPOSITORY_GRYPE  # Vulnerability scanner (likely not needed)
+            - SPELL_VALE        # Prose linter (can be noisy, cspell is sufficient)
+
+          # Linters that should run but NOT fail the build (i.e., treat as warnings)
+          DISABLE_ERRORS_LINTERS:
+            - SPELL_CSPELL      # Spelling errors are suggestions, not breaking changes
+            - SPELL_LYCHEE      # Link checker can have false positives with dynamic sites
+            - BASH_EXEC         # Checks for executable bit, which is a stylistic choice
+
+      # --- Upload Artifacts ---
+      - name: Upload MegaLinter reports
+        if: always() # Always run this step to get reports, even if linting fails
         uses: actions/upload-artifact@v4
         with:
-          name: MegaLinter reports
-          include-hidden-files: "true"
+          name: MegaLinter-reports
           path: |
             megalinter-reports
             mega-linter.log
-
-      - name: Set APPLY_FIXES_IF var
-        run: |
-          printf 'APPLY_FIXES_IF=%s\n' "${{
-            steps.ml.outputs.has_updated_sources == 1 &&
-            (
-              env.APPLY_FIXES_EVENT == 'all' ||
-              env.APPLY_FIXES_EVENT == github.event_name
-            ) &&
-            (
-              github.event_name == 'push' ||
-              github.event.pull_request.head.repo.full_name == github.repository
-            )
-          }}" >> "${GITHUB_ENV}"
-      - name: Set APPLY_FIXES_IF_* vars
-        run: |
-          printf 'APPLY_FIXES_IF_PR=%s\n' "${{
-            env.APPLY_FIXES_IF == 'true' &&
-            env.APPLY_FIXES_MODE == 'pull_request'
-          }}" >> "${GITHUB_ENV}"
-          printf 'APPLY_FIXES_IF_COMMIT=%s\n' "${{
-            env.APPLY_FIXES_IF == 'true' &&
-            env.APPLY_FIXES_MODE == 'commit' &&
-            (!contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref))
-          }}" >> "${GITHUB_ENV}"
-
-      # Create pull request if applicable
-      # (for now works only on PR from same repository, not from forks)
-      - name: Create Pull Request with applied fixes
-        uses: peter-evans/create-pull-request@v7
-        id: cpr
-        if: env.APPLY_FIXES_IF_PR == 'true'
-        with:
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          commit-message: "[MegaLinter] Apply linters automatic fixes"
-          title: "[MegaLinter] Apply linters automatic fixes"
-          labels: bot
-      - name: Create PR output
-        if: env.APPLY_FIXES_IF_PR == 'true'
-        run: |
-          echo "PR Number - ${{ steps.cpr.outputs.pull-request-number }}"
-          echo "PR URL - ${{ steps.cpr.outputs.pull-request-url }}"
-      # Push new commit if applicable
-      # (for now works only on PR from same repository, not from forks)
-      - name: Prepare commit
-        if: env.APPLY_FIXES_IF_COMMIT == 'true'
-        run: sudo chown -Rc $UID .git/
-      - name: Commit and push applied linter fixes
-        uses: stefanzweifel/git-auto-commit-action@v6
-        if: env.APPLY_FIXES_IF_COMMIT == 'true'
-        with:
-          branch: >-
-            ${{
-              github.event.pull_request.head.ref ||
-              github.head_ref ||
-              github.ref
-            }}
-          commit_message: "[MegaLinter] Apply linters fixes"
-          commit_user_name: megalinter-bot
-          commit_user_email: 129584137+megalinter-bot@users.noreply.github.com

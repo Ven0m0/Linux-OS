@@ -1,3 +1,7 @@
+cargo install cargo-update cargo-interactive-update cargo-edit cargo-no-dev-deps cargo-prompt cargo-clean-all cargo-shear cargo-clone cargo-sort-fix cargo-diet cargo-arch cargo-feature cargo-actions cargo-fixup cargo-autoinherit cargo-q cargo-autodd cargo-easy-dep cargo-bins cargo-mommy cargo-recursive cargo-whatfeatures cargo-udeps rskiller rudu cargo-uv cargo-dylint cargo-fixeq cargo unlock cargo-clicker cargo-features-manager ripfmt roxide runiq rmz cpz rfgrep
+
+cargo install submod dylint-link
+
 cargo install discordcat
 cargo install r-hyprconfig
 cargo install redlib

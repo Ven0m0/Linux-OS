@@ -1,59 +1,64 @@
 #!/bin/bash
-{
-	#////////////////////////////////////
-	# DietPi
-	# https://github.com/MichaIng/DietPi/blob/master/dietpi/func/dietpi-optimal_mtu
-	# Info: Obtains the optimal MTU size
-	# Usage:
-	# - dietpi-optimal_mtu			| Tests using dietpi.com
-	# - dietpi-optimal_mtu <host>		| Tests using the provided host
-	#////////////////////////////////////
-	# Import DietPi-Globals --------------------------------------------------------------
-	. /boot/dietpi/func/dietpi-globals
-	readonly G_PROGRAM_NAME='DietPi-Optimal_MTU'
-	G_INIT
-	# Import DietPi-Globals --------------------------------------------------------------
-	# Check for ping
-	command -v ping > /dev/null || { G_DIETPI-NOTIFY 1 '"ping" command is missing, please install e.g. via "apt install iputils-ping". Aborting...'; exit 1; }
-	# Grab and test input host
-	HOST=${1:-google.com}
-	if ping -n4qc 1 "$HOST" > /dev/null; then
 
-		G_DIETPI-NOTIFY 2 "Finding optimal MTU size with test host $HOST, please wait..."
+# This script finds the optimal MTU for a network interface and sets it.
+# It uses a binary search algorithm to efficiently find the best MTU value.
 
-	else
+find_best_mtu() {
+    local server_ip=8.8.8.8   # Google DNS server
+    local low=1200          # Lower bound MTU
+    local high=1500         # Standard MTU
+    local optimal=0
 
-		G_DIETPI-NOTIFY 1 "Pinging test host $HOST failed. Please verify spelling and that this host is online. Aborting..."
-		exit 1
+    echo "[MTU LOG] Starting MTU search for server: $server_ip"
 
-	fi
+    # Check if the server is reachable
+    if ! ping -c 1 -W 1 "$server_ip" &>/dev/null; then
+        echo "[MTU LOG] ERROR: Server $server_ip unreachable."
+        return 1
+    fi
 
-	# Start with system default value
-	MTU_SIZE=1500
+    # Verify that the minimum MTU works
+    if ! ping -M do -s $((low - 28)) -c 1 "$server_ip" &>/dev/null; then
+        echo "[MTU LOG] ERROR: Minimum MTU of $low bytes not viable."
+        return 1
+    fi
 
-	#-----------------------------------------------------------------------------------
-	while :
-	do
+    optimal=$low
+    # Use binary search to find the highest MTU that works
+    while [ $low -le $high ]; do
+        local mid=$(( (low + high) / 2 ))
+        if ping -M do -s $((mid - 28)) -c 1 "$server_ip" &>/dev/null; then
+            optimal=$mid
+            low=$(( mid + 1 ))
+        else
+            high=$(( mid - 1 ))
+        fi
+    done
 
-		G_DIETPI-NOTIFY -2 "Testing MTU size: $MTU_SIZE"
-		# Remove IPv4 ICMP headers from total size
-		if ping -n4qc 1 -s $(( $MTU_SIZE - 28 )) -M 'do' "$HOST" &> /dev/null; then
+    echo "[MTU LOG] Optimal MTU found: ${optimal} bytes"
 
-			G_DIETPI-NOTIFY 0 "Optimal MTU size = $MTU_SIZE"
-			break
+    # Ask user if they want to set the current MTU to the found value
+    read -p "[MTU LOG] Do you want to set the optimal MTU on a network interface? (Y/n): " set_mtu_choice
+    if [[ -z "$set_mtu_choice" || "$set_mtu_choice" =~ ^[Yy] ]]; then
+        read -p "[MTU LOG] Enter the network interface name: " iface
+        if [[ -z "$iface" ]]; then
+            echo "[MTU LOG] ERROR: No interface provided."
+            return 1
+        fi
 
-		elif (( $MTU_SIZE < 29 )); then
+        # Attempt to set the MTU using the ip command
+        if ip link set dev "$iface" mtu "$optimal"; then
+            echo "[MTU LOG] MTU set to ${optimal} bytes on interface $iface"
+        else
+            echo "[MTU LOG] ERROR: Failed to set MTU on interface $iface"
+            return 1
+        fi
+    else
+        echo "[MTU LOG] MTU setting skipped by user."
+    fi
 
-			G_DIETPI-NOTIFY 1 'Failed to find optimal MTU size'
-			break
-
-		fi
-
-		((MTU_SIZE--))
-
-	done
-
-	#-----------------------------------------------------------------------------------
-	exit
-	#-----------------------------------------------------------------------------------
+    return 0
 }
+
+# Run the function
+find_best_mtu

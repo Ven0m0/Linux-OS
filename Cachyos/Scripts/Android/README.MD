@@ -20,14 +20,18 @@ Game mode
 # Game on, normal use off:
 adb shell cmd power set-fixed-performance-mode-enabled [true|false]
 ```
+```
+adb shell cmd stats write-to-disk
+```
 
 ```bash
 curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/Android/index.sh | bash
 ```
-```bash
 
-```
 
 [SSH](https://github.com/tomhiggins/TermuxSSHDsetup)
+
+TODO:
+
 
 - https://modules.lsposed.org/

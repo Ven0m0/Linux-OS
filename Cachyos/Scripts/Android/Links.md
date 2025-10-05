@@ -1,7 +1,7 @@
 https://github.com/ax/apk.sh
 
 
-
+- https://github.com/pakyrs/termux-image-cleaner
 
 
 # https://github.com/varunbala2237/gametuner/blob/master/app/src/main/java/com/android/app/gametuner/settings/ApplyForceGpuRendering.kt

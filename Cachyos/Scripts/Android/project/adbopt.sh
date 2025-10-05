@@ -39,6 +39,7 @@ apply_maintenance() {
   adb shell wm density reset
   adb shell wm size reset
   adb shell sm fstrim
+  adb shell cmd stats write-to-disk
   adb shell cmd activity idle-maintenance
   adb shell cmd system_update
   adb shell cmd otadexopt cleanup

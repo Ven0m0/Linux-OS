@@ -35,3 +35,8 @@ TODO:
 
 
 - https://modules.lsposed.org/
+
+
+# might fix 3 butrton navigation bar
+
+- https://github.com/trinhnv1205/optimize/blob/main/menu/fullscreen_immersive_getsure.sh

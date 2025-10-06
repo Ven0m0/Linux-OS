@@ -1,4 +1,4 @@
-# Tools/commannds for preprocessing a crate before installing it
+## Tools/commannds for preprocessing a crate before installing it
 
 ### Rustflags:
 ```bash
@@ -59,3 +59,9 @@ pgo
 ```bash
 -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort
 ```
+
+
+todo"
+
+- https://crates.io/crates/auto-allocator
+- https://crates.io/crates/mpatch

@@ -26,7 +26,7 @@ jobs:
     steps:
       # --- Checkout repository ---
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # PAT is required to create PRs with fixes that can trigger other workflows
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}

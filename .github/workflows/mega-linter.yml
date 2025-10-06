@@ -35,7 +35,7 @@ jobs:
 
       # --- Run MegaLinter ---
       - name: MegaLinter
-        uses: oxsecurity/megalinter@v7 # Using v7 for the latest stable features
+        uses: oxsecurity/megalinter@v9 # Using v7 for the latest stable features
         env:
           # Required for PR creation and reporting
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

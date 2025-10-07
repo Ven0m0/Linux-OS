@@ -1,3 +1,5 @@
+export DEBIAN_FRONTEND=noninteractive
+
 echo "Install Pi-Hole"
 curl -sSL https://install.pi-hole.net | sudo bash
 
@@ -11,8 +13,9 @@ git clone https://github.com/jmcerrejon/PiKISS.git && cd PiKISS
 git config --global http.sslVerify false
 git pull
 
-echo "Replace Bash shell with Dash shell"
-sudo dpkg-reconfigure dash
+# TODO: might break DietPi
+# echo "Replace Bash shell with Dash shell"
+# sudo dpkg-reconfigure dash
 
 echo "Install PiApps-terminal_bash-edition"
 echo "https://github.com/Itai-Nelken/PiApps-terminal_bash-edition"
@@ -26,6 +29,13 @@ APT::Acquire::ForceIPv4 "true";
 APT::Get::AllowUnauthenticated "true";
 Acquire::CompressionTypes::Order:: "gz";
 APT::Acquire::Max-Parallel-Downloads "5";' | sudo tee /etc/apt/apt.conf.d/99parallel
+
+echo -e 'APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Download-Upgradeable-Packages "1";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::MinimalSteps "true";' | sudo tee /etc/apt/apt.conf.d/50-unattended-upgrades
 
 
 sudo netselect-apt stable && sudo mv sources.list /etc/apt/sources.list && sudo apt update

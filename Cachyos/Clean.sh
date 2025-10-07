@@ -54,6 +54,14 @@ read -r used_human pct < <(df -h --output=used,pcent -- / 2>/dev/null | awk 'NR=
 DUB="$used_human $pct"
 SPACE="$(sudo du -sh / 2>/dev/null | cut -f1)"
 
+sudo modprobed-db store
+if [[ -f ~/.config//modprobed.db ]]; then
+  sort -u ~/.local/share/modprobed.db -o ~/.local/share/modprobed.db
+fi
+if [[ -f ~/.local/share/modprobed.db ]]; then
+  sort -u ~/.local/share/modprobed.db -o ~/.local/share/modprobed.db
+fi
+
 # Clearing dns cache and release/renew dhcp
 has dhclient && dhclient -r
 sudo resolvectl flush-caches >/dev/null

@@ -37,6 +37,219 @@ Unattended-Upgrade::Remove-Unused-Dependencies "true";
 Unattended-Upgrade::AutoFixInterruptedDpkg "true";
 Unattended-Upgrade::MinimalSteps "true";' | sudo tee /etc/apt/apt.conf.d/50-unattended-upgrades
 
+# ------------------------------------------------------------------------
+
+## Some powersavings
+echo "options vfio_pci disable_vga=1
+options cec debug=0
+options kvm mmu_audit=0
+options kvm ignore_msrs=1
+options kvm report_ignored_msrs=0
+options kvm kvmclock_periodic_sync=1
+options nfs enable_ino64=1
+options pstore backend=null
+options libata allow_tpm=0
+options libata ignore_hpa=0
+options libahci ignore_sss=1
+options libahci skip_host_reset=1
+options snd_hda_intel power_save=1
+options snd_ac97_codec power_save=1
+options uhci-hcd debug=0
+options usbhid mousepoll=20 kbpoll=20 jspoll=20
+options usb-storage quirks=p
+options usbcore usbfs_snoop=0
+options usbcore autosuspend=10" | sudo tee /etc/modprobe.d/misc.conf
+echo -e "min_power" | sudo tee /sys/class/scsi_host/*/link_power_management_policy
+echo 1 | sudo tee /sys/module/snd_hda_intel/parameters/power_save
+echo -e "auto" | sudo tee /sys/bus/{i2c,pci}/devices/*/power/control
+sudo powertop --auto-tune && sudo powertop --auto-tune
+sudo cpupower frequency-set -g powersave
+sudo cpupower set --perf-bias 9
+sudo sensors-detect --auto
+
+# ------------------------------------------------------------------------
+
+## Disable file indexer
+balooctl suspend
+balooctl disable
+balooctl purge
+sudo systemctl disable plasma-baloorunner
+for dir in $HOME $HOME/*/; do touch "$dir/.metadata_never_index" "$dir/.noindex" "$dir/.nomedia" "$dir/.trackerignore"; done
+
+# ------------------------------------------------------------------------
+
+echo -e "Enable write cache"
+echo -e "write back" | sudo tee /sys/block/*/queue/write_cache
+sudo tune2fs -o journal_data_writeback $(df / | grep / | awk '{print $1}')
+sudo tune2fs -O ^has_journal $(df / | grep / | awk '{print $1}')
+sudo tune2fs -o journal_data_writeback $(df /home | grep /home | awk '{print $1}')
+sudo tune2fs -O ^has_journal $(df /home | grep /home | awk '{print $1}')
+echo -e "Enable fast commit"
+sudo tune2fs -O fast_commit $(df / | grep / | awk '{print $1}')
+sudo tune2fs -O fast_commit $(df /home | grep /home | awk '{print $1}')
+
+# ------------------------------------------------------------------------
+
+echo -e "Compress .local/bin"
+upx /home/$USER/.local/bin/*
+
+# ------------------------------------------------------------------------
+
+echo -e "Improve I/O throughput"
+echo 32 | sudo tee /sys/block/sd*[!0-9]/queue/iosched/fifo_batch
+echo 32 | sudo tee /sys/block/mmcblk*/queue/iosched/fifo_batch
+echo 32 | sudo tee /sys/block/nvme[0-9]*/queue/iosched/fifo_batch
+
+# ------------------------------------------------------------------------
+
+echo -e "Disable systemd foo service"
+sudo systemctl disable foo.service
+sudo systemctl --global disable foo.service
+
+# ------------------------------------------------------------------------
+
+## Improve wifi and ethernet
+if ip -o link | grep -q wlan; then
+    echo -e "options iwlwifi power_save=1
+options iwlmvm power_scheme=3" | sudo tee /etc/modprobe.d/wlan.conf
+    echo -e "options rfkill default_state=0 master_switch_mode=0" | sudo tee /etc/modprobe.d/wlanextra.conf
+    sudo ethtool -K wlan0 gro on
+    sudo ethtool -K wlan0 gso on
+    sudo ethtool -c wlan0
+    sudo iwconfig wlan0 txpower auto
+    sudo iwpriv wlan0 set_power 5
+else
+    sudo ethtool -s eth0 wol d
+    sudo ethtool -K eth0 gro off
+    sudo ethtool -K eth0 gso off
+    sudo ethtool -C eth0 adaptive-rx on
+    sudo ethtool -C eth0 adaptive-tx on
+    sudo ethtool -c eth0
+fi
+
+# ------------------------------------------------------------------------
+
+echo -e "Enable HDD write caching"
+sudo hdparm -A1 -W1 -B254 -S0 /dev/sd*[!0-9]
+
+# ------------------------------------------------------------------------
+
+## Improve NVME
+if $(find /sys/block/nvme[0-9]* | grep -q nvme); then
+    echo -e "options nvme_core default_ps_max_latency_us=0" | sudo tee /etc/modprobe.d/nvme.conf
+fi
+
+# ------------------------------------------------------------------------
+
+## Improve PCI latency
+sudo setpci -v -s '*:*' latency_timer=10 >/dev/null 2>&1
+sudo setpci -v -s '0:0' latency_timer=0 >/dev/null 2>&1
+
+# ------------------------------------------------------------------------
+
+## Improve preload
+sudo sed -i -e 's/sortstrategy =.*/sortstrategy = 0/' /etc/preload.conf
+
+# ------------------------------------------------------------------------
+
+echo -e "Disable fsck"
+sudo tune2fs -c 0 -i 0 $(df / | grep / | awk '{print $1}')
+sudo tune2fs -c 0 -i 0 $(df /home | grep /home | awk '{print $1}')
+echo -e "Disable checksum"
+sudo tune2fs -O ^metadata_csum $(df / | grep / | awk '{print $1}')
+sudo tune2fs -O ^metadata_csum $(df /home | grep /home | awk '{print $1}')
+echo -e "Disable quota"
+sudo tune2fs -O ^quota $(df / | grep / | awk '{print $1}')
+sudo tune2fs -O ^quota $(df /home | grep /home | awk '{print $1}')
+
+# ------------------------------------------------------------------------
+
+echo -e "Disable logging services"
+sudo systemctl mask dev-mqueue.mount >/dev/null 2>&1
+sudo systemctl mask sys-kernel-tracing.mount >/dev/null 2>&1
+sudo systemctl mask sys-kernel-debug.mount >/dev/null 2>&1
+sudo systemctl mask sys-kernel-config.mount >/dev/null 2>&1
+sudo systemctl mask systemd-update-utmp.service >/dev/null 2>&1
+sudo systemctl mask systemd-update-utmp-runlevel.service >/dev/null 2>&1
+sudo systemctl mask systemd-update-utmp-shutdown.service >/dev/null 2>&1
+sudo systemctl mask systemd-journal-flush.service >/dev/null 2>&1
+sudo systemctl mask systemd-journal-catalog-update.service >/dev/null 2>&1
+sudo systemctl mask systemd-journald-dev-log.socket >/dev/null 2>&1
+sudo systemctl mask systemd-journald-audit.socket >/dev/null 2>&1
+sudo systemctl mask logrotate.service >/dev/null 2>&1
+sudo systemctl mask logrotate.timer >/dev/null 2>&1
+sudo systemctl mask syslog.service >/dev/null 2>&1
+sudo systemctl mask syslog.socket >/dev/null 2>&1
+sudo systemctl mask rsyslog.service >/dev/null 2>&1
+
+# ------------------------------------------------------------------------
+
+echo -e "Disable GPU polling"
+echo -e "options drm_kms_helper poll=0" | sudo tee /etc/modprobe.d/disable-gpu-polling.conf
+
+sudo update-initramfs -u -k all
+# ------------------------------------------------------------------------
+
+# Don't reserve space man-pages, locales, licenses.
+echo -e "Remove useless companies"
+find /usr/share/doc/ -depth -type f ! -name copyright | xargs sudo rm -f || true
+find /usr/share/doc/ | grep '\.gz' | xargs sudo rm -f
+find /usr/share/doc/ | grep '\.pdf' | xargs sudo rm -f
+find /usr/share/doc/ | grep '\.tex' | xargs sudo rm -f
+find /usr/share/doc/ -empty | xargs sudo rmdir || true
+sudo rm -rfd /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* \
+    /usr/share/linda/* /var/cache/man/* /usr/share/man/* /usr/share/X11/locale/!\(en_US\)
+sudo rm -rfd /usr/share/locale/!\(en_US\)
+
+# ------------------------------------------------------------------------
+
+echo -e "Flush flatpak database"
+sudo flatpak uninstall --unused --delete-data -y
+sudo flatpak repair
+echo -e "Clear the caches"
+for n in $(find / -type d \( -name ".tmp" -o -name ".temp" -o -name ".cache" \) 2>/dev/null); do sudo find "$n" -type f -delete; done
+echo -e "Clear the patches"
+rm -rfd /{tmp,var/tmp}/{.*,*}
+sudo pacman -Qtdq &&
+    sudo pacman -Runs --noconfirm $(/bin/pacman -Qttdq)
+sudo pacman -Sc --noconfirm
+sudo pacman -Scc -y
+sudo pacman-key --refresh-keys
+sudo pacman-key --populate archlinux
+yay -Yc --noconfirm
+sudo paccache -rk 0
+sudo pacman-optimize
+sudo pacman -Dk
+
+# ------------------------------------------------------------------------
+
+echo -e "Compress fonts"
+woff2_compress /usr/share/fonts/opentype/*/*ttf
+woff2_compress /usr/share/fonts/truetype/*/*ttf
+## Optimize font cache
+fc-cache -rfv
+## Optimize icon cache
+gtk-update-icon-cache
+
+# ------------------------------------------------------------------------
+
+echo -e "Clean crash log"
+sudo rm -rfd /var/crash/*
+echo -e "Clean archived journal"
+sudo journalctl --rotate --vacuum-time=0.1
+sudo sed -i -e 's/^#ForwardToSyslog=yes/ForwardToSyslog=no/' /etc/systemd/journald.conf
+sudo sed -i -e 's/^#ForwardToKMsg=yes/ForwardToKMsg=no/' /etc/systemd/journald.conf
+sudo sed -i -e 's/^#ForwardToConsole=yes/ForwardToConsole=no/' /etc/systemd/journald.conf
+sudo sed -i -e 's/^#ForwardToWall=yes/ForwardToWall=no/' /etc/systemd/journald.conf
+echo -e "Compress log files"
+sudo sed -i -e 's/^#Compress=yes/Compress=yes/' /etc/systemd/journald.conf
+sudo sed -i -e 's/^#compress/compress/' /etc/logrotate.conf
+echo -e "Scrub free space and sync"
+echo -e "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf
+sudo dd bs=4k if=/dev/null of=/var/tmp/dummy || sudo rm -rfd /var/tmp/dummy
+sync -f
+
+# ------------------------------------------------------------------------
 
 sudo netselect-apt stable && sudo mv sources.list /etc/apt/sources.list && sudo apt update
 

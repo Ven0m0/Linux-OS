@@ -1,0 +1,25 @@
+sqlite:
+
+
+sqlite3 db.sqlite 'ANALYZE; PRAGMA optimize;'
+sqlite3 db.sqlite 'PRAGMA wal_checkpoint(TRUNCATE);'
+sqlite3 db.sqlite 'VACUUM;'
+sqlite3 db.sqlite 'PRAGMA shrink_memory;'
+
+
+sqlite3 old.db 'PRAGMA page_size=4096; VACUUM INTO "repacked.db";'
+
+
+CREATE INDEX events_recent ON events(created_at)
+WHERE created_at >= date('now','-30 days');
+
+# small writes
+sqlite3 db.sqlite PRAGMA wal_autocheckpoint=NNN
+
+
+# Large Text / BLOB Optimization
+CREATE TABLE doc_meta(id INTEGER PRIMARY KEY, title TEXT, created_at TEXT);
+CREATE TABLE doc_blob(id INTEGER PRIMARY KEY REFERENCES doc_meta(id) ON DELETE CASCADE, body BLOB);
+
+
+

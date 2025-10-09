@@ -342,9 +342,24 @@ clean_app_data_folders() {
   
   # Clean WhatsApp media
   if confirm "Clean WhatsApp received media older than 30 days?"; then
-    run_adb shell "find /sdcard/Android/data/com.whatsapp/files/ -type f -mtime +30 -delete" || log debug "WhatsApp media not found or can't access"
+    run_adb shell "find /sdcard/Android/media/com.whatsapp/WhatsApp/Media/ -type f -mtime +30 -delete" || log debug "WhatsApp media not found or can't access"
   fi
-  
+  # Clean AI media
+  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ AI\ Media/"*
+  # Clean bug reports
+  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Bug\ Report\ Attachments/"*
+  # Clean sticker packs (fixed spacing)
+  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Sticker\ Packs/"*
+  # Clean regular stickers
+  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Stickers/"*
+  # Clean backup excluded stickers
+  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Backup\ Excluded\ Stickers/"*
+  # Clean profile photos
+  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Profile\ Photos/"*
+  # Clean older video notes (30+ days)
+  run_adb shell find "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Video\ Notes/"* -type f -mtime +30 -delete || log debug "WhatsApp video notes not found or can't access"
+  # Clean older voice notes (30+ days)
+  run_adb shell find "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Voice\ Notes/"* -type f -mtime +30 -delete || log debug "WhatsApp voice notes not found or can't access"
   log info "App data folders cleaned"
 }
 

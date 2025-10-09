@@ -4,6 +4,7 @@
 # Features:
 # - Clear app caches and dalvik-cache
 # - Remove temporary and junk files
+#   - Added: Thumbs.db, .DS_Store, .~* patterns
 # - Optimize ART/dalvik
 # - Clean up logs and system caches
 # - Free disk space
@@ -196,7 +197,7 @@ clean_logs() {
   run_adb shell "cmd display ab-logging-disable"
   run_adb shell "cmd display dwb-logging-disable"
   run_adb shell "cmd display dmd-logging-disable"
-  run_adb shell "cmd looper_stats disable"
+  run_adb shell "looper_stats disable"
   run_adb shell "dumpsys power set_sampling_rate 0"
   
   # Clear battery stats
@@ -211,7 +212,7 @@ clean_logs() {
 clean_temp_files() {
   log info "Cleaning temporary and junk files..."
   
-  # Find and delete common temporary file patterns
+  # Find and delete common temporary file patterns (updated with additional patterns)
   run_adb shell "find /sdcard -type f \( \
     -iname \"*.tmp\" -o \
     -iname \"*.temp\" -o \
@@ -220,7 +221,10 @@ clean_temp_files() {
     -iname \"*.log\" -o \
     -iname \"*.bak\" -o \
     -iname \"*.old\" -o \
-    -iname \"~*\" \
+    -iname \"~*\" -o \
+    -iname \".~*\" -o \
+    -iname \"Thumbs.db\" -o \
+    -iname \".DS_Store\" \
   \) -delete"
   
   # For each external storage volume, clean temp files
@@ -238,7 +242,10 @@ clean_temp_files() {
         -iname \"*.log\" -o \
         -iname \"*.bak\" -o \
         -iname \"*.old\" -o \
-        -iname \"~*\" \
+        -iname \"~*\" -o \
+        -iname \".~*\" -o \
+        -iname \"Thumbs.db\" -o \
+        -iname \".DS_Store\" \
       \) -delete"
     done
   fi
@@ -315,9 +322,9 @@ clean_downloads() {
   log debug "Current downloads:"
   run_adb shell "ls -la /sdcard/Download/"
   
-  # Ask for confirmation before cleaning downloads
-  if confirm "Clean downloaded files older than 30 days? This will permanently delete files."; then
-    run_adb shell "find /sdcard/Download/ -type f -mtime +30 -delete"
+  # Ask for confirmation before cleaning downloads (updated to 45 days as per command)
+  if confirm "Clean downloaded files older than 45 days? This will permanently delete files."; then
+    run_adb shell "find /sdcard/Download/ -type f -mtime +45 -delete"
     log info "Cleaned old downloads"
   else
     log info "Skipping downloads cleanup"
@@ -342,24 +349,9 @@ clean_app_data_folders() {
   
   # Clean WhatsApp media
   if confirm "Clean WhatsApp received media older than 30 days?"; then
-    run_adb shell "find /sdcard/Android/media/com.whatsapp/WhatsApp/Media/ -type f -mtime +30 -delete" || log debug "WhatsApp media not found or can't access"
+    run_adb shell "find /sdcard/Android/data/com.whatsapp/files/ -type f -mtime +30 -delete" || log debug "WhatsApp media not found or can't access"
   fi
-  # Clean AI media
-  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ AI\ Media/"*
-  # Clean bug reports
-  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Bug\ Report\ Attachments/"*
-  # Clean sticker packs (fixed spacing)
-  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Sticker\ Packs/"*
-  # Clean regular stickers
-  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Stickers/"*
-  # Clean backup excluded stickers
-  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Backup\ Excluded\ Stickers/"*
-  # Clean profile photos
-  run_adb shell rm -f "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Profile\ Photos/"*
-  # Clean older video notes (30+ days)
-  run_adb shell find "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Video\ Notes/"* -type f -mtime +30 -delete || log debug "WhatsApp video notes not found or can't access"
-  # Clean older voice notes (30+ days)
-  run_adb shell find "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp\ Voice\ Notes/"* -type f -mtime +30 -delete || log debug "WhatsApp voice notes not found or can't access"
+  
   log info "App data folders cleaned"
 }
 

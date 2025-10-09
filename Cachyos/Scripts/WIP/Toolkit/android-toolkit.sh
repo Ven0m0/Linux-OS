@@ -1,308 +1,1127 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+IFS=$'\n\t'; shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 
-# Default config locations in order of preference
-CONFIG_PATHS=(
-  "./android-toolkit-config.toml"
-  "${HOME}/.config/android-toolkit/config.toml"
+# --- Configuration ---
+DRYRUN=0             # Set to 1 for dry-run mode (no actual changes)
+VERBOSE=0            # Set to 1 for verbose output
+USE_SHIZUKU=0        # Set to 1 to use Shizuku instead of ADB
+JOBS=$(nproc 2>/dev/null || echo 4)  # Parallel jobs
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/android-toolkit"
+CONFIG_FILE="${CONFIG_DIR}/config.toml"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/android-toolkit"
+
+# --- WhatsApp Media Paths ---
+WHATSAPP_OPUS_PATHS=(
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Voice Notes"
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Audio"
+  "/sdcard/Music/WhatsApp Audio"
 )
 
-# Find and load the first available config file
-find_config() {
-  local config_file=""
-  for path in "${CONFIG_PATHS[@]}"; do
-    if [[ -r "$path" ]]; then
-      config_file="$path"
-      break
+WHATSAPP_IMAGE_PATHS=(
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Images"
+  "/sdcard/DCIM/Camera"
+  "/sdcard/Pictures"
+)
+
+WHATSAPP_CLEAN_PATHS=(
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp AI Media"
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Bug Report Attachments" 
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Sticker Packs"
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Stickers"
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Backup Excluded Stickers"
+  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media/WhatsApp Profile Photos"
+)
+
+# --- Helper functions ---
+has() { command -v "$1" &>/dev/null; }
+
+log() {
+  local level="$1"; shift
+  case "$level" in
+    info)  [[ $VERBOSE -eq 1 ]] && printf "\033[0;32m[INFO]\033[0m %s\n" "$*" ;;
+    warn)  printf "\033[0;33m[WARN]\033[0m %s\n" "$*" >&2 ;;
+    error) printf "\033[0;31m[ERROR]\033[0m %s\n" "$*" >&2 ;;
+    debug) [[ $VERBOSE -eq 1 ]] && printf "\033[0;34m[DEBUG]\033[0m %s\n" "$*" ;;
+  esac
+}
+
+check_requirements() {
+  local missing=()
+  
+  if [[ $USE_SHIZUKU -eq 1 ]]; then
+    has rish || missing+=("rish (Shizuku CLI)")
+  else
+    has adb || missing+=("adb")
+  fi
+  
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    log error "Required tools not found: ${missing[*]}"
+    log error "Please install the missing tools and try again."
+    exit 1
+  fi
+  
+  # Check connection
+  if [[ $USE_SHIZUKU -eq 1 ]]; then
+    rish id &>/dev/null || { log error "Shizuku connection failed. Is Shizuku running?"; exit 1; }
+    log info "Using Shizuku for device access"
+  else
+    adb get-state &>/dev/null || { log error "ADB connection failed. Is the device connected?"; exit 1; }
+    log info "Using ADB for device access"
+  fi
+}
+
+# Execute command via ADB or Shizuku
+run_cmd() {
+  if [[ $DRYRUN -eq 1 ]]; then
+    log debug "Would run: $*"
+    return 0
+  fi
+  
+  if [[ $USE_SHIZUKU -eq 1 ]]; then
+    if [[ $VERBOSE -eq 1 ]]; then
+      rish "$@"
+    else
+      rish "$@" &>/dev/null
+    fi
+  else
+    if [[ $VERBOSE -eq 1 ]]; then
+      adb shell "$@"
+    else
+      adb shell "$@" &>/dev/null
+    fi
+  fi
+}
+
+# Push file to device
+push_file() {
+  local src="$1" dst="$2"
+  
+  if [[ $DRYRUN -eq 1 ]]; then
+    log debug "Would push $src to $dst"
+    return 0
+  }
+  
+  if [[ $USE_SHIZUKU -eq 1 ]]; then
+    log error "File push not supported with Shizuku yet"
+    return 1
+  else
+    if [[ $VERBOSE -eq 1 ]]; then
+      adb push "$src" "$dst"
+    else
+      adb push "$src" "$dst" &>/dev/null
+    fi
+  fi
+}
+
+# Pull file from device
+pull_file() {
+  local src="$1" dst="$2"
+  
+  if [[ $DRYRUN -eq 1 ]]; then
+    log debug "Would pull $src to $dst"
+    return 0
+  }
+  
+  if [[ $USE_SHIZUKU -eq 1 ]]; then
+    log error "File pull not supported with Shizuku yet"
+    return 1
+  else
+    if [[ $VERBOSE -eq 1 ]]; then
+      adb pull "$src" "$dst"
+    else
+      adb pull "$src" "$dst" &>/dev/null
+    fi
+  fi
+}
+
+# Get free space on device
+get_free_space() {
+  run_cmd "df -h /data | tail -n1 | awk '{print \$4}'" | tr -d '\r'
+}
+
+# --- Clean functions ---
+
+# Clean app caches
+clean_app_caches() {
+  log info "Clearing app caches..."
+  
+  # Clear caches for all third-party apps
+  run_cmd "pm list packages -3" | cut -d: -f2 | while read -r pkg; do
+    log debug "Clearing cache for: $pkg"
+    run_cmd "pm clear --cache-only $pkg"
+  done
+  
+  # Optional: Clear caches for system apps too
+  if [[ "${CLEAN_SYSTEM_APPS:-0}" -eq 1 ]]; then
+    run_cmd "pm list packages -s" | cut -d: -f2 | while read -r pkg; do
+      log debug "Clearing cache for system app: $pkg"
+      run_cmd "pm clear --cache-only $pkg"
+    done
+  fi
+  
+  # Trim caches at system level
+  run_cmd "pm trim-caches 128G"
+  
+  log info "App caches cleared"
+}
+
+# Clean log files
+clean_logs() {
+  log info "Cleaning log files..."
+  
+  # Clear all logcat buffers
+  run_cmd "logcat -b all -c"
+  
+  # Delete log files from storage
+  run_cmd 'find /sdcard -type f \( -iname "*.log" -o -iname "*.bak" -o -iname "*.old" -o -iname "*.tmp" \) -delete'
+  
+  # Configure logcat buffer sizes
+  run_cmd "logcat -G 128K -b main -b system"
+  run_cmd "logcat -G 64K -b radio -b events -b crash"
+  
+  # Disable various debug logging
+  run_cmd "cmd display ab-logging-disable"
+  run_cmd "cmd display dwb-logging-disable"
+  run_cmd "cmd looper_stats disable"
+  
+  log info "Log files cleaned"
+}
+
+# Clean temporary files
+clean_temp_files() {
+  log info "Cleaning temporary files..."
+  
+  # Clear /data/local/tmp (requires root or Shizuku)
+  run_cmd "rm -rf /data/local/tmp/*"
+  
+  # Clear general temp files
+  run_cmd 'find /sdcard -type f -name "*.tmp" -delete'
+  
+  log info "Temporary files cleaned"
+}
+
+# Clean browser cache
+clean_browser_cache() {
+  log info "Cleaning browser caches..."
+  
+  local browser_paths=(
+    "/sdcard/Android/data/com.android.chrome/cache"
+    "/sdcard/Android/data/org.mozilla.firefox/cache"
+    "/sdcard/Android/data/com.opera.browser/cache"
+    "/sdcard/Android/data/com.brave.browser/cache"
+    "/sdcard/Android/data/com.samsung.android.app.sbrowser/cache"
+  )
+  
+  for path in "${browser_paths[@]}"; do
+    log debug "Checking browser cache: $path"
+    run_cmd "rm -rf \"$path\"/*"
+  done
+  
+  log info "Browser caches cleaned"
+}
+
+# Clean thumbnails
+clean_thumbnails() {
+  log info "Cleaning thumbnail caches..."
+  
+  run_cmd "rm -rf /sdcard/DCIM/.thumbnails/*"
+  run_cmd "rm -rf /sdcard/Android/data/com.android.providers.media/albumthumbs/*"
+  run_cmd "rm -rf /sdcard/.thumbnails/*"
+  
+  log info "Thumbnail caches cleaned"
+}
+
+# Clean downloads folder
+clean_downloads() {
+  log info "Cleaning downloads folder..."
+  
+  if [[ "${CLEAN_DOWNLOADS_DAYS:-0}" -gt 0 ]]; then
+    run_cmd "find /sdcard/Download -type f -mtime +${CLEAN_DOWNLOADS_DAYS} -delete"
+  else
+    log warn "Skipping downloads cleanup as CLEAN_DOWNLOADS_DAYS is not set"
+  fi
+  
+  log info "Downloads folder cleaned"
+}
+
+# Clean app data folders for uninstalled apps
+clean_app_data_folders() {
+  log info "Cleaning orphaned app data folders..."
+  
+  # This requires a more complex approach to match installed packages with folders
+  # For safety, we'll just log potential orphaned folders
+  
+  local data_dirs
+  data_dirs=$(run_cmd "ls -d /sdcard/Android/data/*")
+  local installed_pkgs
+  installed_pkgs=$(run_cmd "pm list packages" | cut -d: -f2)
+  
+  # This is a simplified approach - a more thorough approach would compare
+  # But it's safer to just report and let the user decide
+  
+  log info "Potentially orphaned app data folders identified. Review manually."
+}
+
+# --- WhatsApp media functions ---
+
+# Clean old opus files
+clean_whatsapp_opus() {
+  local delete_days="${DELETE_OPUS_DAYS:-90}"
+  log info "Cleaning opus files older than $delete_days days"
+  
+  for path in "${WHATSAPP_OPUS_PATHS[@]}"; do
+    log info "Processing: $path"
+    
+    if [[ $DRYRUN -eq 1 ]]; then
+      # Just list files that would be deleted
+      run_cmd find \"$path\" -type f -name \"*.opus\" -mtime +$delete_days -exec ls -la {} \\\;
+      
+      # Count files that would be deleted
+      local count
+      count=$(run_cmd find \"$path\" -type f -name \"*.opus\" -mtime +$delete_days | wc -l)
+      log info "Would delete $count opus files from $path"
+    else
+      # Actually delete the files
+      run_cmd find \"$path\" -type f -name \"*.opus\" -mtime +$delete_days -delete
+      log info "Deleted opus files older than $delete_days days from $path"
     fi
   done
-  printf '%s\n' "$config_file"
 }
 
-# Parse the config file sections into associative arrays
-parse_config() {
-  local config_file="$1"
-  local current_section=""
+# Clean specific WhatsApp paths completely
+clean_whatsapp_paths() {
+  log info "Cleaning specific WhatsApp folders"
   
-  # Reset all arrays
-  declare -gA PERMISSIONS=()
-  declare -gA COMPILATIONS=()
-  
-  # Early return if config doesn't exist
-  [[ ! -r "$config_file" ]] && return 1
-  
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    # Skip comments and empty lines
-    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+  for path in "${WHATSAPP_CLEAN_PATHS[@]}"; do
+    log info "Processing: $path"
     
-    # Detect section headers [section]
-    if [[ "$line" =~ ^\[(.*)\]$ ]]; then
-      current_section="${BASH_REMATCH[1]}"
-      continue
+    if [[ $DRYRUN -eq 1 ]]; then
+      # Count files that would be deleted
+      local count
+      count=$(run_cmd find \"$path\" -type f | wc -l)
+      log info "Would delete $count files from $path"
+    else
+      # Delete all files in the path
+      run_cmd rm -rf \"$path/\"*
+      log info "Deleted all files in $path"
     fi
+  done
+}
+
+# Optimize WhatsApp images
+optimize_whatsapp_images() {
+  [[ "${OPTIMIZE_IMAGES:-1}" -ne 1 ]] && return
+  
+  log info "Optimizing images"
+  
+  # Check if we have optimization tools
+  local has_tools=0
+  
+  run_cmd "command -v fclones" &>/dev/null && has_tools=1
+  run_cmd "command -v rimage" &>/dev/null && has_tools=1
+  run_cmd "command -v flaca" &>/dev/null && has_tools=1
+  run_cmd "command -v compresscli" &>/dev/null && has_tools=1
+  run_cmd "command -v imgc" &>/dev/null && has_tools=1
+  
+  if [[ $has_tools -eq 0 ]]; then
+    log warn "No image optimization tools found. Install tools like fclones, rimage, flaca, compresscli, or imgc in Termux."
+    return
+  fi
+
+  for path in "${WHATSAPP_IMAGE_PATHS[@]}"; do
+    log info "Processing images in: $path"
     
-    # Skip if we're not in a recognized section
-    [[ "$current_section" != "permission" && "$current_section" != "compilation" ]] && continue
-    
-    # Parse key=value pair
-    if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
-      local key="${BASH_REMATCH[1]}"
-      local value="${BASH_REMATCH[2]}"
+    # First try to deduplicate with fclones if available
+    if run_cmd "command -v fclones" &>/dev/null; then
+      log info "Deduplicating images with fclones"
       
-      # Store in appropriate array based on section
-      case "$current_section" in
-        permission)
-          PERMISSIONS["$key"]="$value"
-          ;;
-        compilation)
-          COMPILATIONS["$key"]="$value"
-          ;;
-      esac
+      if [[ $DRYRUN -eq 1 ]]; then
+        log info "Would deduplicate images in $path"
+      else
+        # Find groups of duplicate images
+        run_cmd "fclones group -r \"$path\" --threads $JOBS"
+        
+        # Remove duplicates keeping the oldest
+        run_cmd "fclones dedupe --strategy=oldestrandom \"$path\""
+      fi
     fi
-  done < "$config_file"
-  
-  return 0
+    
+    # Try to optimize with available tools in order of preference
+    if [[ $DRYRUN -eq 1 ]]; then
+      log info "Would optimize images in $path with available tools"
+    else
+      if run_cmd "command -v rimage" &>/dev/null; then
+        log info "Optimizing with rimage"
+        run_cmd "find \"$path\" -type f \\( -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.png\" \\) -exec rimage -i {} -o {} \\;"
+      elif run_cmd "command -v flaca" &>/dev/null; then
+        log info "Optimizing with flaca"
+        run_cmd "find \"$path\" -type f \\( -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.png\" \\) -exec flaca {} \\;"
+      elif run_cmd "command -v compresscli" &>/dev/null; then
+        log info "Optimizing with compresscli"
+        run_cmd "find \"$path\" -type f \\( -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.png\" \\) -exec compresscli {} \\;"
+      elif run_cmd "command -v imgc" &>/dev/null; then
+        log info "Optimizing with imgc"
+        run_cmd "find \"$path\" -type f \\( -name \"*.jpg\" -o -name \"*.jpeg\" -o -name \"*.png\" \\) -exec imgc {} \\;"
+      else
+        log warn "No image optimization tools found for $path"
+      fi
+    fi
+  done
 }
 
-# Apply permission to a single app
-set_apk_permission() {
-  local apk="$1" mode="$2"
+# --- Device optimization functions ---
+
+# Optimize Android Runtime
+optimize_art_runtime() {
+  log info "Optimizing ART runtime..."
+  
+  # Run any postponed dex-opt jobs immediately
+  run_cmd "pm bg-dexopt-job --enable"
+  run_cmd "cmd jobscheduler run -f android \$(cmd jobscheduler list-jobs android | grep background-dexopt | awk '{print \$2}')"
+  
+  # Optimize packages with different strategies
+  run_cmd "cmd package compile -af --full --secondary-dex -m speed-profile"
+  run_cmd "cmd package compile -a -f --full --secondary-dex -m speed"
+  run_cmd "pm art dexopt-packages -r bg-dexopt"
+  
+  log info "ART runtime optimized"
+}
+
+# Configure rendering settings
+configure_rendering() {
+  log info "Configuring rendering settings..."
+  
+  # GPU Rendering
+  run_cmd "settings put global force_gpu_rendering 1"
+  run_cmd "settings put global debug.hwui.force_gpu_command_drawing 1"
+  run_cmd "settings put global debug.hwui.use_disable_overdraw 1"
+  run_cmd "settings put global skia.force_gl_texture 1"
+  
+  # Hardware acceleration
+  run_cmd "settings put global enable_hardware_acceleration 1"
+  run_cmd "settings put global hardware_accelerated_rendering_enabled 1"
+  run_cmd "settings put global hardware_accelerated_graphics_decoding 1"
+  run_cmd "settings put global hardware_accelerated_video_decode 1"
+  run_cmd "settings put global hardware_accelerated_video_encode 1"
+  
+  # SF properties
+  run_cmd "setprop debug.sf.disable_backpressure 0"
+  run_cmd "setprop debug.sf.predict_hwc_composition_strategy 1"
+  run_cmd "setprop debug.sf.use_phase_offsets_as_durations 1"
+  run_cmd "setprop debug.sf.enable_gl_backpressure 1"
+  
+  log info "Rendering settings configured"
+}
+
+# Configure audio settings
+configure_audio() {
+  log info "Configuring audio settings..."
+  
+  # Audio optimization
+  run_cmd "settings put global audio.deep_buffer.media true"
+  run_cmd "settings put global audio.offload.video true"
+  run_cmd "settings put global audio.offload.track.enable true"
+  
+  # Media optimization
+  run_cmd "settings put global media.stagefright.thumbnail.prefer_hw_codecs true"
+  
+  log info "Audio settings configured"
+}
+
+# Configure battery optimization
+configure_battery() {
+  log info "Configuring battery optimizations..."
+  
+  # Battery saver settings
+  run_cmd "settings put global battery_saver_constants \"vibration_disabled=true,animation_disabled=true,soundtrigger_disabled=true,fullbackup_deferred=true,keyvaluebackup_deferred=true,gps_mode=low_power,data_saver=true,optional_sensors_disabled=true,advertiser_id_enabled=false\""
+  run_cmd "settings put global dynamic_power_savings_enabled 1"
+  run_cmd "settings put global adaptive_battery_management_enabled 0"
+  run_cmd "settings put global app_auto_restriction_enabled 1"
+  run_cmd "settings put global cached_apps_freezer enabled"
+  
+  log info "Battery optimizations configured"
+}
+
+# Configure network settings
+configure_network() {
+  log info "Configuring network settings..."
+  
+  # Data saver
+  run_cmd "settings put global data_saver_mode 1"
+  run_cmd "cmd netpolicy set restrict-background true"
+  
+  # WiFi optimization
+  run_cmd "settings put global wifi_suspend_optimizations_enabled 2"
+  run_cmd "settings put global wifi_stability 1"
+  run_cmd "settings put global network_avoid_bad_wifi 1"
+  
+  # DNS
+  if [[ -n "${CUSTOM_DNS:-}" ]]; then
+    run_cmd "settings put global private_dns_mode hostname"
+    run_cmd "settings put global private_dns_specifier $CUSTOM_DNS"
+  fi
+  
+  log info "Network settings configured"
+}
+
+# Configure input settings
+configure_input() {
+  log info "Configuring input settings..."
+  
+  # Touch optimization
+  run_cmd "settings put global touch_calibration 1"
+  run_cmd "settings put global touch.size.scale 1"
+  run_cmd "settings put secure touch_blocking_period 0.0"
+  run_cmd "settings put secure tap_duration_threshold 0.0"
+  run_cmd "settings put secure long_press_timeout 250"
+  run_cmd "settings put secure multi_press_timeout 250"
+  
+  # Animation settings
+  run_cmd "settings put global animator_duration_scale 0.0"
+  run_cmd "settings put global transition_animation_scale 0.0"
+  run_cmd "settings put global window_animation_scale 0.0"
+  run_cmd "settings put system remove_animations 1"
+  run_cmd "settings put system reduce_animations 1"
+  
+  log info "Input settings configured"
+}
+
+# Configure system settings
+configure_system() {
+  log info "Configuring system settings..."
+  
+  # System UI
+  run_cmd "settings put global window_focus_timeout 250"
+  run_cmd "device_config put systemui window_cornerRadius 0"
+  run_cmd "device_config put systemui window_blur 0"
+  run_cmd "device_config put systemui window_shadow 0"
+  
+  # Graphics
+  run_cmd "device_config put graphics render_thread_priority high"
+  run_cmd "device_config put graphics enable_gpu_boost true"
+  run_cmd "device_config put graphics enable_cpu_boost true"
+  
+  log info "System settings configured"
+}
+
+# Configure doze and app standby
+configure_doze() {
+  log info "Configuring doze and app standby..."
+  
+  # Force doze
+  run_cmd "cmd deviceidle force-idle"
+  run_cmd "cmd deviceidle unforce"
+  
+  # Whitelist important apps
+  run_cmd "dumpsys deviceidle whitelist +com.android.systemui"
+  
+  # App ops
+  run_cmd "cmd appops set com.google.android.gms START_FOREGROUND ignore"
+  run_cmd "cmd appops set com.google.android.gms INSTANT_APP_START_FOREGROUND ignore"
+  
+  log info "Doze and app standby configured"
+}
+
+# --- App permissions management ---
+
+# Set app permission
+set_app_permission() {
+  local mode="$1" pkg="$2"
   
   case "$mode" in
     dump)
-      adb shell pm grant "$apk" android.permission.DUMP
-      echo "Granted DUMP to $apk"
+      run_cmd "pm grant \"$pkg\" android.permission.DUMP"
+      log info "Granted DUMP permission to $pkg"
       ;;
     write)
-      adb shell pm grant "$apk" android.permission.WRITE_SECURE_SETTINGS
-      echo "Granted WRITE_SECURE_SETTINGS to $apk"
+      run_cmd "pm grant \"$pkg\" android.permission.WRITE_SECURE_SETTINGS"
+      log info "Granted WRITE_SECURE_SETTINGS permission to $pkg"
       ;;
     doze)
-      adb shell dumpsys deviceidle whitelist +"$apk"
-      echo "Whitelisted $apk for doze"
+      run_cmd "dumpsys deviceidle whitelist +\"$pkg\""
+      log info "Whitelisted $pkg for doze"
       ;;
     *)
-      echo "Unknown permission mode: $mode"
+      log error "Unknown permission mode: $mode"
       return 1
       ;;
   esac
 }
 
-# Compile a single app
-compile_apk() {
-  local apk="$1" priority="$2" mode="$3"
+# Load app permissions from config file
+load_app_permissions() {
+  [[ ! -f "$CONFIG_FILE" ]] && return 1
   
-  adb shell cmd package compile --full -r cmdline -p "$priority" -m "$mode" "$apk"
-  echo "Compiled $apk with priority $priority and mode $mode"
+  log info "Loading app permissions from config file"
+  
+  # Very simple TOML parser for the permissions section
+  local in_perm_section=0
+  while IFS= read -r line; do
+    # Skip comments and empty lines
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+    
+    # Detect section headers [section]
+    if [[ "$line" =~ ^\[([^]]+)\]$ ]]; then
+      [[ "${BASH_REMATCH[1]}" == "permission" ]] && in_perm_section=1 || in_perm_section=0
+      continue
+    fi
+    
+    # Only process lines in the permission section
+    [[ $in_perm_section -eq 0 ]] && continue
+    
+    # Parse key=value
+    if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+      local pkg="${BASH_REMATCH[1]}"
+      local perms="${BASH_REMATCH[2]}"
+      
+      # Split comma-separated permissions and apply
+      IFS=',' read -ra perm_array <<< "$perms"
+      for perm in "${perm_array[@]}"; do
+        set_app_permission "$perm" "$pkg"
+      done
+    fi
+  done < "$CONFIG_FILE"
+  
+  log info "App permissions applied"
+  return 0
 }
 
-# Apply all permissions from config
-apply_permissions() {
-  local connected
-  connected=$(adb get-state 2>/dev/null) || { echo "No device connected"; return 1; }
-  
-  echo "Applying permissions from config..."
-  for app in "${!PERMISSIONS[@]}"; do
-    local perms="${PERMISSIONS[$app]}"
-    local perm_array
-    # Split comma-separated permissions into array
-    IFS=',' read -ra perm_array <<< "$perms"
-    
-    for perm in "${perm_array[@]}"; do
-      set_apk_permission "$app" "$perm"
-    done
-  done
-}
-
-# Apply compilation settings from config
-apply_compilations() {
-  local connected
-  connected=$(adb get-state 2>/dev/null) || { echo "No device connected"; return 1; }
-  
-  echo "Applying compilation settings from config..."
-  for app in "${!COMPILATIONS[@]}"; do
-    local config="${COMPILATIONS[$app]}"
-    local priority mode
-    
-    # Parse priority:mode format
-    IFS=':' read -r priority mode <<< "$config"
-    
-    compile_apk "$app" "$priority" "$mode"
-  done
-}
-
-# Save changes to config file
-save_config() {
-  local config_file="$1"
-  local temp_file="${config_file}.tmp"
-  
-  # Create temporary file
-  {
-    echo "# Android Toolkit Configuration"
-    echo "# Auto-generated on $(date)"
-    echo ""
-    echo "[permission]"
-    for app in "${!PERMISSIONS[@]}"; do
-      echo "$app=${PERMISSIONS[$app]}"
-    done
-    echo ""
-    echo "[compilation]"
-    for app in "${!COMPILATIONS[@]}"; do
-      echo "$app=${COMPILATIONS[$app]}"
-    done
-  } > "$temp_file"
-  
-  # Move temp file to config file
-  mv "$temp_file" "$config_file"
-  echo "Saved config to $config_file"
-}
-
-# Add an app to the permission config
-add_permission() {
-  local app="$1" modes="$2"
-  
-  if [[ -v PERMISSIONS["$app"] ]]; then
-    # Merge existing permissions with new ones
-    local existing="${PERMISSIONS["$app"]}"
-    local new_perms="$existing"
-    
-    # Add each new permission if not already present
-    IFS=',' read -ra mode_array <<< "$modes"
-    for mode in "${mode_array[@]}"; do
-      if [[ "$existing" != *"$mode"* ]]; then
-        new_perms="${new_perms:+$new_perms,}$mode"
-      fi
-    done
-    
-    PERMISSIONS["$app"]="$new_perms"
-  else
-    # Add new app with permissions
-    PERMISSIONS["$app"]="$modes"
-  fi
-}
-
-# Add an app to the compilation config
-add_compilation() {
-  local app="$1" priority="$2" mode="$3"
-  
-  COMPILATIONS["$app"]="$priority:$mode"
-}
+# --- Main functions ---
 
 # Show usage info
-show_usage() {
+usage() {
   cat <<EOF
-Usage: $(basename "$0") [COMMAND] [OPTIONS]
+Android Toolkit - Comprehensive device management utility
+
+Usage: $(basename "$0") COMMAND [OPTIONS]
 
 Commands:
-  apply                  Apply all settings from config (default)
-  permissions            Apply only permission settings
-  compilations           Apply only compilation settings
-  set-permission APP MODE[,MODE...]
-                         Set permission(s) for an app (dump, write, doze)
-  set-compilation APP PRIORITY MODE
-                         Set compilation settings for an app
-  list                   List current config settings
-  help                   Show this help message
+  clean               Clean the device (cache, logs, temps)
+  whatsapp-clean      Clean WhatsApp media files
+  optimize            Apply device optimizations
+  permissions         Apply app permissions from config
+  help                Show this help message
+
+Options:
+  -d, --dry-run       Show what would be done without making changes
+  -v, --verbose       Enable verbose output
+  -s, --shizuku       Use Shizuku (rish) instead of ADB
+  -j, --jobs JOBS     Number of parallel jobs for optimization (default: auto)
+  -h, --help          Show this help message
 
 Examples:
-  $(basename "$0")
-  $(basename "$0") permissions
-  $(basename "$0") set-permission com.example.app dump,write
-  $(basename "$0") set-compilation com.example.app PRIORITY_INTERACTIVE_FAST speed-profile
+  $(basename "$0") clean              # Clean device caches and temporary files
+  $(basename "$0") whatsapp-clean -d  # Dry run of WhatsApp media cleanup
+  $(basename "$0") optimize -s        # Apply device optimizations using Shizuku
+  $(basename "$0") permissions        # Apply app permissions from config file
 
+For more detailed help, use: $(basename "$0") COMMAND --help
 EOF
 }
 
-# Main functionality
-main() {
-  local config_file action="${1:-apply}"
+# Show command-specific help
+command_help() {
+  local cmd="$1"
   
-  # Show help if requested
-  if [[ "$action" == "help" || "$action" == "--help" || "$action" == "-h" ]]; then
-    show_usage
-    exit 0
-  fi
+  case "$cmd" in
+    clean)
+      cat <<EOF
+Android Toolkit - Clean Command
+
+Usage: $(basename "$0") clean [OPTIONS]
+
+Clean Android device caches, logs, and temporary files
+
+Options:
+  --system-apps       Also clean system app caches (not just user apps)
+  --downloads DAYS    Clean files in Downloads older than DAYS
+  --no-browser        Skip browser cache cleaning
+  --no-thumbnails     Skip thumbnail cache cleaning
   
-  # Find config file
-  config_file=$(find_config)
-  if [[ -z "$config_file" && "$action" != "init" ]]; then
-    echo "No config file found. Creating default at ${CONFIG_PATHS[0]}"
-    mkdir -p "$(dirname "${CONFIG_PATHS[0]}")"
-    touch "${CONFIG_PATHS[0]}"
-    config_file="${CONFIG_PATHS[0]}"
-  fi
+  -d, --dry-run       Show what would be done without making changes
+  -v, --verbose       Enable verbose output
+  -s, --shizuku       Use Shizuku (rish) instead of ADB
+
+Examples:
+  $(basename "$0") clean --system-apps --downloads 30
+  $(basename "$0") clean -d -s
+EOF
+      ;;
+    whatsapp-clean)
+      cat <<EOF
+Android Toolkit - WhatsApp Clean Command
+
+Usage: $(basename "$0") whatsapp-clean [OPTIONS]
+
+Clean WhatsApp media files (voice notes, images, stickers)
+
+Options:
+  --days DAYS         Delete opus files older than DAYS (default: 90)
+  --no-images         Skip image optimization
   
-  # Parse config if it exists
-  if [[ -r "$config_file" ]]; then
-    parse_config "$config_file"
-  else
-    declare -gA PERMISSIONS=()
-    declare -gA COMPILATIONS=()
-  fi
+  -d, --dry-run       Show what would be done without making changes
+  -v, --verbose       Enable verbose output
+  -s, --shizuku       Use Shizuku (rish) instead of ADB
+  -j, --jobs JOBS     Number of parallel jobs for optimization (default: auto)
+
+Examples:
+  $(basename "$0") whatsapp-clean --days 60
+  $(basename "$0") whatsapp-clean --no-images
+EOF
+      ;;
+    optimize)
+      cat <<EOF
+Android Toolkit - Optimize Command
+
+Usage: $(basename "$0") optimize [OPTIONS] [CATEGORIES...]
+
+Apply device optimizations for better performance
+
+Categories:
+  art                 Optimize Android Runtime
+  rendering           Configure rendering settings
+  audio               Configure audio settings
+  battery             Configure battery optimization
+  network             Configure network settings
+  input               Configure input settings
+  system              Configure system settings
+  doze                Configure doze and app standby
+  all                 Apply all optimizations (default)
   
-  case "$action" in
-    apply|"")
-      apply_permissions
-      apply_compilations
+Options:
+  -d, --dry-run       Show what would be done without making changes
+  -v, --verbose       Enable verbose output
+  -s, --shizuku       Use Shizuku (rish) instead of ADB
+  --dns SERVER        Set custom DNS server for private DNS
+
+Examples:
+  $(basename "$0") optimize art battery network
+  $(basename "$0") optimize all --dns dns.google
+EOF
       ;;
     permissions)
-      apply_permissions
-      ;;
-    compilations)
-      apply_compilations
-      ;;
-    set-permission)
-      if [[ $# -lt 3 ]]; then
-        echo "Usage: $(basename "$0") set-permission APP MODE[,MODE...]"
-        exit 1
-      fi
-      add_permission "$2" "$3"
-      save_config "$config_file"
-      
-      # Apply the permission immediately if requested
-      if [[ $# -ge 4 && "$4" == "--apply" ]]; then
-        IFS=',' read -ra perm_array <<< "$3"
-        for perm in "${perm_array[@]}"; do
-          set_apk_permission "$2" "$perm"
-        done
-      fi
-      ;;
-    set-compilation)
-      if [[ $# -lt 4 ]]; then
-        echo "Usage: $(basename "$0") set-compilation APP PRIORITY MODE"
-        exit 1
-      fi
-      add_compilation "$2" "$3" "$4"
-      save_config "$config_file"
-      
-      # Apply the compilation immediately if requested
-      if [[ $# -ge 5 && "$5" == "--apply" ]]; then
-        compile_apk "$2" "$3" "$4"
-      fi
-      ;;
-    list)
-      echo "Current configuration ($config_file):"
-      echo ""
-      echo "Permissions:"
-      for app in "${!PERMISSIONS[@]}"; do
-        echo "  $app: ${PERMISSIONS[$app]}"
-      done
-      echo ""
-      echo "Compilations:"
-      for app in "${!COMPILATIONS[@]}"; do
-        echo "  $app: ${COMPILATIONS[$app]}"
-      done
+      cat <<EOF
+Android Toolkit - Permissions Command
+
+Usage: $(basename "$0") permissions [OPTIONS] [ACTION] [PACKAGE] [PERMISSION]
+
+Manage app permissions on device
+
+Actions:
+  list                List permissions in config file
+  add                 Add permission to config file
+  apply               Apply permissions from config file (default)
+  grant               Grant permission to package directly
+  
+Options:
+  -d, --dry-run       Show what would be done without making changes
+  -v, --verbose       Enable verbose output
+  -s, --shizuku       Use Shizuku (rish) instead of ADB
+
+Permission types:
+  dump                Grant android.permission.DUMP
+  write               Grant android.permission.WRITE_SECURE_SETTINGS
+  doze                Whitelist for doze mode
+
+Examples:
+  $(basename "$0") permissions apply
+  $(basename "$0") permissions add com.example.app write,doze
+  $(basename "$0") permissions grant com.example.app dump
+EOF
       ;;
     *)
-      echo "Unknown command: $action"
-      show_usage
+      usage
+      ;;
+  esac
+}
+
+# Clean command handler
+cmd_clean() {
+  local clean_system=0 clean_downloads=0 skip_browser=0 skip_thumbnails=0
+  
+  # Parse options
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --system-apps)
+        clean_system=1
+        shift
+        ;;
+      --downloads)
+        clean_downloads="$2"
+        shift 2
+        ;;
+      --no-browser)
+        skip_browser=1
+        shift
+        ;;
+      --no-thumbnails)
+        skip_thumbnails=1
+        shift
+        ;;
+      --help|-h)
+        command_help clean
+        return 0
+        ;;
+      *)
+        log error "Unknown option: $1"
+        command_help clean
+        return 1
+        ;;
+    esac
+  done
+  
+  # Perform cleaning operations
+  check_requirements
+  
+  # Export options for subfunctions
+  export CLEAN_SYSTEM_APPS=$clean_system
+  export CLEAN_DOWNLOADS_DAYS=$clean_downloads
+  
+  # Get initial free space
+  local free_space_before
+  free_space_before=$(get_free_space)
+  
+  log info "Starting cleanup process. Initial free space: $free_space_before"
+  
+  # Run cleaning operations
+  clean_app_caches
+  clean_logs
+  clean_temp_files
+  
+  [[ $skip_browser -eq 0 ]] && clean_browser_cache
+  [[ $skip_thumbnails -eq 0 ]] && clean_thumbnails
+  
+  [[ $clean_downloads -gt 0 ]] && clean_downloads
+  
+  # Get final free space
+  local free_space_after
+  free_space_after=$(get_free_space)
+  
+  log info "Cleanup completed. Free space now: $free_space_after"
+}
+
+# WhatsApp clean command handler
+cmd_whatsapp_clean() {
+  local delete_days=90 optimize_images=1
+  
+  # Parse options
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --days)
+        delete_days="$2"
+        shift 2
+        ;;
+      --no-images)
+        optimize_images=0
+        shift
+        ;;
+      --help|-h)
+        command_help whatsapp-clean
+        return 0
+        ;;
+      *)
+        log error "Unknown option: $1"
+        command_help whatsapp-clean
+        return 1
+        ;;
+    esac
+  done
+  
+  # Perform WhatsApp cleaning operations
+  check_requirements
+  
+  # Export options for subfunctions
+  export DELETE_OPUS_DAYS=$delete_days
+  export OPTIMIZE_IMAGES=$optimize_images
+  
+  # Get initial free space
+  local free_space_before
+  free_space_before=$(get_free_space)
+  
+  log info "Starting WhatsApp cleanup process. Initial free space: $free_space_before"
+  
+  # Run cleaning operations
+  clean_whatsapp_opus
+  clean_whatsapp_paths
+  [[ $optimize_images -eq 1 ]] && optimize_whatsapp_images
+  
+  # Get final free space
+  local free_space_after
+  free_space_after=$(get_free_space)
+  
+  log info "WhatsApp cleanup completed. Free space now: $free_space_after"
+}
+
+# Optimize command handler
+cmd_optimize() {
+  local categories=() custom_dns=""
+  
+  # Parse options
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dns)
+        custom_dns="$2"
+        shift 2
+        ;;
+      --help|-h)
+        command_help optimize
+        return 0
+        ;;
+      art|rendering|audio|battery|network|input|system|doze|all)
+        categories+=("$1")
+        shift
+        ;;
+      *)
+        log error "Unknown option or category: $1"
+        command_help optimize
+        return 1
+        ;;
+    esac
+  done
+  
+  # Default to all if no categories specified
+  [[ ${#categories[@]} -eq 0 ]] && categories=("all")
+  
+  # Perform optimization operations
+  check_requirements
+  
+  # Export options for subfunctions
+  [[ -n $custom_dns ]] && export CUSTOM_DNS=$custom_dns
+  
+  log info "Starting device optimization for categories: ${categories[*]}"
+  
+  # Run optimization operations
+  for category in "${categories[@]}"; do
+    case "$category" in
+      art)
+        optimize_art_runtime
+        ;;
+      rendering)
+        configure_rendering
+        ;;
+      audio)
+        configure_audio
+        ;;
+      battery)
+        configure_battery
+        ;;
+      network)
+        configure_network
+        ;;
+      input)
+        configure_input
+        ;;
+      system)
+        configure_system
+        ;;
+      doze)
+        configure_doze
+        ;;
+      all)
+        optimize_art_runtime
+        configure_rendering
+        configure_audio
+        configure_battery
+        configure_network
+        configure_input
+        configure_system
+        configure_doze
+        ;;
+    esac
+  done
+  
+  log info "Device optimization completed"
+}
+
+# Permissions command handler
+cmd_permissions() {
+  local action="apply" pkg="" perm=""
+  
+  # Parse options
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      list|add|apply|grant)
+        action="$1"
+        shift
+        ;;
+      --help|-h)
+        command_help permissions
+        return 0
+        ;;
+      *)
+        if [[ -z $pkg ]]; then
+          pkg="$1"
+          shift
+        elif [[ -z $perm ]]; then
+          perm="$1"
+          shift
+        else
+          log error "Too many arguments: $1"
+          command_help permissions
+          return 1
+        fi
+        ;;
+    esac
+  done
+  
+  # Ensure config directory exists
+  mkdir -p "$CONFIG_DIR" &>/dev/null
+  
+  # Handle permission actions
+  case "$action" in
+    list)
+      [[ ! -f "$CONFIG_FILE" ]] && { log error "Config file not found: $CONFIG_FILE"; return 1; }
+      log info "Permissions in config file:"
+      grep -A 100 "^\[permission\]" "$CONFIG_FILE" | grep -v "^\["
+      ;;
+    add)
+      [[ -z $pkg || -z $perm ]] && { log error "Missing package or permission"; command_help permissions; return 1; }
+      
+      # Create config file if it doesn't exist
+      if [[ ! -f "$CONFIG_FILE" ]]; then
+        cat > "$CONFIG_FILE" <<EOF
+# Android Toolkit Configuration
+# Format:
+# [permission]
+# app.package.name=dump,write,doze
+# another.package=dump
+
+[permission]
+EOF
+      fi
+      
+      # Check if permission section exists
+      if ! grep -q "^\[permission\]" "$CONFIG_FILE"; then
+        echo -e "\n[permission]" >> "$CONFIG_FILE"
+      fi
+      
+      # Check if package already has permissions
+      if grep -q "^$pkg=" "$CONFIG_FILE"; then
+        # Update existing entry
+        sed -i "s/^$pkg=.*/$pkg=$perm/" "$CONFIG_FILE"
+      else
+        # Add new entry
+        echo "$pkg=$perm" >> "$CONFIG_FILE"
+      fi
+      
+      log info "Added permission $perm for $pkg to config file"
+      ;;
+    apply)
+      check_requirements
+      load_app_permissions
+      ;;
+    grant)
+      [[ -z $pkg || -z $perm ]] && { log error "Missing package or permission"; command_help permissions; return 1; }
+      check_requirements
+      
+      # Handle comma-separated permissions
+      IFS=',' read -ra perm_array <<< "$perm"
+      for p in "${perm_array[@]}"; do
+        set_app_permission "$p" "$pkg"
+      done
+      ;;
+  esac
+}
+
+# Initialize config/cache directories
+init_dirs() {
+  mkdir -p "$CONFIG_DIR" "$CACHE_DIR" &>/dev/null
+  
+  # Create default config if it doesn't exist
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    cat > "$CONFIG_FILE" <<EOF
+# Android Toolkit Configuration
+# Format:
+# [permission]
+# app.package.name=dump,write,doze
+# another.package=dump
+#
+# [compilation]
+# app.package.name=PRIORITY_INTERACTIVE_FAST:speed-profile
+# another.app=PRIORITY_DEFAULT:verify
+
+[permission]
+com.pittvandewitt.wavelet=dump,write
+com.termux=write,dump,doze
+moe.shizuku.privileged.api=write
+
+[compilation]
+com.android.chrome=PRIORITY_INTERACTIVE_FAST:speed-profile
+com.android.systemui=PRIORITY_FOREGROUND:speed
+com.google.android.gms=PRIORITY_BACKGROUND:verify
+EOF
+  fi
+}
+
+# Main function
+main() {
+  # Initialize directories
+  init_dirs
+  
+  # No arguments - show usage
+  [[ $# -eq 0 ]] && { usage; exit 0; }
+  
+  # Extract command
+  local cmd="$1"
+  shift
+  
+  # Parse global options
+  while [[ $# -gt 0 && "$1" == -* ]]; do
+    case "$1" in
+      -d|--dry-run)
+        DRYRUN=1
+        shift
+        ;;
+      -v|--verbose)
+        VERBOSE=1
+        shift
+        ;;
+      -s|--shizuku)
+        USE_SHIZUKU=1
+        shift
+        ;;
+      -j|--jobs)
+        JOBS="$2"
+        shift 2
+        ;;
+      -h|--help)
+        # Handle help specially since we want to show command-specific help
+        command_help "$cmd"
+        exit 0
+        ;;
+      *)
+        # End of global options
+        break
+        ;;
+    esac
+  done
+  
+  # Execute command
+  case "$cmd" in
+    clean)
+      cmd_clean "$@"
+      ;;
+    whatsapp-clean)
+      cmd_whatsapp_clean "$@"
+      ;;
+    optimize)
+      cmd_optimize "$@"
+      ;;
+    permissions)
+      cmd_permissions "$@"
+      ;;
+    help)
+      [[ $# -eq 0 ]] && usage || command_help "$1"
+      ;;
+    *)
+      log error "Unknown command: $cmd"
+      usage
       exit 1
       ;;
   esac
 }
 
-# Allow sourcing without executing
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  main "$@"
-fi
+# Run main with all arguments
+main "$@"

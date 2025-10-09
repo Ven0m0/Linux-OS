@@ -12,3 +12,8 @@ adb shell sync
 
 
 adb shell device_config put activity_manager_native_boot use_freezer true
+adb shell settings put global activity_manager_constants max_cached_processes=32
+adb shell settings put global anr_show_background false
+adb shell settings put global sys.use_fifo_ui 1
+
+

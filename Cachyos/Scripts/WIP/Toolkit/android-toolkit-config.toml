@@ -1,0 +1,19 @@
+# Android Toolkit Configuration
+# Format:
+# [permission]
+# app.package.name=dump,write,doze
+# another.package=dump
+#
+# [compilation]
+# app.package.name=PRIORITY_INTERACTIVE_FAST:speed-profile
+# another.app=PRIORITY_DEFAULT:verify
+
+[permission]
+com.pittvandewitt.wavelet=dump,write
+com.termux=write,dump,doze
+moe.shizuku.privileged.api=write
+
+[compilation]
+com.android.chrome=PRIORITY_INTERACTIVE_FAST:speed-profile
+com.android.systemui=PRIORITY_FOREGROUND:speed
+com.google.android.gms=PRIORITY_BACKGROUND:verify

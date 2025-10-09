@@ -4,9 +4,8 @@ export LC_ALL=C LANG=C
 
 # Default config locations in order of preference
 CONFIG_PATHS=(
-  "./android-toolkit-config"
-  "${HOME}/.config/android-toolkit/config"
-  "/etc/android-toolkit/config"
+  "./android-toolkit-config.toml"
+  "${HOME}/.config/android-toolkit/config.toml"
 )
 
 # Find and load the first available config file

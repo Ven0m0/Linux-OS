@@ -1,559 +1,309 @@
 #!/usr/bin/env bash
-# android-toolkit.sh - Android device optimization and media management toolkit
-#
-# Features:
-# - Device optimization: battery, memory, network, graphics
-# - Image and APK optimization with flaca/rimage/oxipng
-# - System cleanup and maintenance
-# - Package management through ADB and Shizuku
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C LANG=C
 
-# ----------------------------------------------------------------------
-# Configuration and Environment
-# ----------------------------------------------------------------------
-DRY_RUN=0                 # Set to 1 to only print actions, don't modify
-DEBUG=0                   # Set to 1 to enable verbose output
-LOSSY=0                   # Set to 1 for lossy image compression
-BACKUP_DIR="${HOME}/android_backup_$(date +%Y%m%d)"
-LOG_FILE="/tmp/android-toolkit-$(date +%s).log"
-TEMP_DIR=$(mktemp -d)
+# Default config locations in order of preference
+CONFIG_PATHS=(
+  "./android-toolkit-config"
+  "${HOME}/.config/android-toolkit/config"
+  "/etc/android-toolkit/config"
+)
 
-# ----------------------------------------------------------------------
-# Helper functions
-# ----------------------------------------------------------------------
-log() {
-  printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*" | tee -a "$LOG_FILE"
+# Find and load the first available config file
+find_config() {
+  local config_file=""
+  for path in "${CONFIG_PATHS[@]}"; do
+    if [[ -r "$path" ]]; then
+      config_file="$path"
+      break
+    fi
+  done
+  printf '%s\n' "$config_file"
 }
 
-log_debug() {
-  (( DEBUG )) && printf '[DEBUG %s] %s\n' "$(date +%H:%M:%S)" "$*" | tee -a "$LOG_FILE"
-}
-
-require_cmd() {
-  command -v "$1" >/dev/null 2>&1 || {
-    log "❌ Required command \"$1\" not found."
-    case "$1" in
-      adb) log "Install Android SDK Platform Tools" ;;
-      aapt*) log "Install Android SDK Build Tools" ;;
-      oxipng) log "Install oxipng (preferred) or optipng" ;;
-      rimage) log "Install rimage: cargo install rimage" ;;
-      flaca) log "Install flaca: cargo install flaca" ;;
-    esac
-    return 1
-  }
-  return 0
-}
-
-run() {
-  # Execute a command, honoring dry‑run mode
-  if (( DRY_RUN )); then
-    log "[dry‑run] $*"
-  else
-    eval "$*"
-  fi
-}
-
-# ----------------------------------------------------------------------
-# ADB Connection Management
-# ----------------------------------------------------------------------
-check_adb_connection() {
-  local device_count
+# Parse the config file sections into associative arrays
+parse_config() {
+  local config_file="$1"
+  local current_section=""
   
-  # Start ADB server if not running
-  run adb start-server
+  # Reset all arrays
+  declare -gA PERMISSIONS=()
+  declare -gA COMPILATIONS=()
   
-  # Get connected devices
-  if [[ -z "${ADB_DEVICE:-}" ]]; then
-    device_count=$(adb devices | grep -c -v "List of devices\|^$")
+  # Early return if config doesn't exist
+  [[ ! -r "$config_file" ]] && return 1
+  
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip comments and empty lines
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
     
-    if [[ $device_count -eq 0 ]]; then
-      log "No Android devices found. Connect a device and try again."
-      return 1
-    elif [[ $device_count -gt 1 ]]; then
-      log "Multiple devices found. Using first connected device."
-      ADB_DEVICE=$(adb devices | grep -v "List of devices\|^$" | head -1 | awk '{print $1}')
-      log "Selected device: $ADB_DEVICE"
-    else
-      ADB_DEVICE=$(adb devices | grep -v "List of devices\|^$" | awk '{print $1}')
+    # Detect section headers [section]
+    if [[ "$line" =~ ^\[(.*)\]$ ]]; then
+      current_section="${BASH_REMATCH[1]}"
+      continue
     fi
-  else
-    if ! adb devices | grep -q "$ADB_DEVICE"; then
-      log "Specified device '$ADB_DEVICE' not found."
-      return 1
+    
+    # Skip if we're not in a recognized section
+    [[ "$current_section" != "permission" && "$current_section" != "compilation" ]] && continue
+    
+    # Parse key=value pair
+    if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+      local key="${BASH_REMATCH[1]}"
+      local value="${BASH_REMATCH[2]}"
+      
+      # Store in appropriate array based on section
+      case "$current_section" in
+        permission)
+          PERMISSIONS["$key"]="$value"
+          ;;
+        compilation)
+          COMPILATIONS["$key"]="$value"
+          ;;
+      esac
     fi
-  fi
+  done < "$config_file"
   
-  # Check if device is responsive
-  if ! adb -s "$ADB_DEVICE" shell echo "Connection test" >/dev/null; then
-    log "Device is not responding."
-    return 1
-  fi
-  
-  log "Connected to device: $ADB_DEVICE"
   return 0
 }
 
-# ----------------------------------------------------------------------
-# Image Optimization
-# ----------------------------------------------------------------------
-optimize_image() {
-  local input="$1" output="${2:-${1}}"
-  local ext="${input##*.}"
-  ext="${ext,,}"  # Convert to lowercase
-  local tmpfile="$(mktemp "${TEMP_DIR}/${ext}.XXXXXX")"
-  local orig_size new_size
+# Apply permission to a single app
+set_apk_permission() {
+  local apk="$1" mode="$2"
   
-  cp -a "$input" "$tmpfile" || return 1
-  orig_size=$(stat -c "%s" "$input" 2>/dev/null || stat -f "%z" "$input" 2>/dev/null || echo 0)
-  
-  log_debug "Optimizing ${input} (${ext})"
-  
-  # Use different tools based on file type
-  case "$ext" in
-    png)
-      # Try flaca if available (performs oxipng optimizations internally)
-      if require_cmd flaca; then
-        flaca --no-symlinks "$tmpfile" &>/dev/null || true
-      # Or use oxipng directly
-      elif require_cmd oxipng; then
-        oxipng -o 4 -s -a --strip safe -i 0 "$tmpfile" &>/dev/null || true
-      # Try rimage as a fallback
-      elif require_cmd rimage; then
-        rimage -i "$tmpfile" -o "$tmpfile.new" &>/dev/null && mv "$tmpfile.new" "$tmpfile" || true
-      # Last resort: optipng or pngquant
-      else
-        if require_cmd optipng; then
-          optipng -quiet -strip all -o5 "$tmpfile" &>/dev/null || true
-        fi
-        if (( LOSSY )) && require_cmd pngquant; then
-          pngquant --force --skip-if-larger --quality=65-85 --speed=1 --strip --output "$tmpfile.tmp" -- "$tmpfile" &>/dev/null && 
-            mv "$tmpfile.tmp" "$tmpfile" || true
-        fi
-      fi
+  case "$mode" in
+    dump)
+      adb shell pm grant "$apk" android.permission.DUMP
+      echo "Granted DUMP to $apk"
       ;;
-      
-    jpg|jpeg)
-      # Try flaca first for JPEGs
-      if require_cmd flaca; then
-        flaca --no-symlinks "$tmpfile" &>/dev/null || true
-      # Try rimage next
-      elif require_cmd rimage; then
-        rimage -i "$tmpfile" -o "$tmpfile.new" &>/dev/null && mv "$tmpfile.new" "$tmpfile" || true
-      # Fall back to jpegoptim
-      elif require_cmd jpegoptim; then
-        if (( LOSSY )); then
-          jpegoptim --strip-all --all-progressive --max=85 -o -- "$tmpfile" &>/dev/null || true
-        else
-          jpegoptim --strip-all --all-progressive --force -- "$tmpfile" &>/dev/null || true
-        fi
-      fi
+    write)
+      adb shell pm grant "$apk" android.permission.WRITE_SECURE_SETTINGS
+      echo "Granted WRITE_SECURE_SETTINGS to $apk"
       ;;
-      
-    gif)
-      if require_cmd gifsicle; then
-        if (( LOSSY )); then
-          local colors=256
-          [[ "$LOSSY" -gt 1 ]] && colors=128
-          gifsicle -O3 --colors "$colors" --no-warnings --batch -- "$tmpfile" &>/dev/null || true
-        else
-          gifsicle -O3 --no-warnings --batch -- "$tmpfile" &>/dev/null || true
-        fi
-      fi
+    doze)
+      adb shell dumpsys deviceidle whitelist +"$apk"
+      echo "Whitelisted $apk for doze"
       ;;
-      
-    svg)
-      if require_cmd svgo; then
-        svgo --multipass -q "$tmpfile" &>/dev/null || true
-      fi
-      ;;
-      
-    webp)
-      if require_cmd cwebp && require_cmd dwebp; then
-        if (( LOSSY )); then
-          local tmp_png="${tmpfile}.png"
-          dwebp "$tmpfile" -o "$tmp_png" &>/dev/null && \
-          cwebp -q 80 "$tmp_png" -o "$tmpfile" &>/dev/null && \
-          rm -f "$tmp_png" || true
-        fi
-      elif require_cmd rimage; then
-        rimage -i "$tmpfile" -o "$tmpfile.new" &>/dev/null && mv "$tmpfile.new" "$tmpfile" || true
-      fi
+    *)
+      echo "Unknown permission mode: $mode"
+      return 1
       ;;
   esac
-  
-  new_size=$(stat -c "%s" "$tmpfile" 2>/dev/null || stat -f "%z" "$tmpfile" 2>/dev/null || echo 0)
-  
-  # Only replace original if the optimized version is smaller
-  if [[ $new_size -gt 0 && $new_size -lt $orig_size ]]; then
-    if [[ "$input" != "$output" ]]; then
-      # If output path is different, move the optimized file there
-      mv "$tmpfile" "$output"
-    else
-      # Otherwise replace the input file
-      mv "$tmpfile" "$input"
-    fi
-    log "Optimized: ${input} ($(( (orig_size - new_size) / 1024 )) KB saved)"
-    return 0
-  else
-    rm -f "$tmpfile"
-    log_debug "No improvement for ${input}, kept original"
-    return 1
-  fi
 }
 
-# ----------------------------------------------------------------------
-# APK Optimization
-# ----------------------------------------------------------------------
-optimize_apk() {
-  local input_apk="$1"
-  local output_apk="${2:-${input_apk%.apk}-optimized.apk}"
-  local tmpdir="${TEMP_DIR}/apk_opt"
-  local decoded_dir="${tmpdir}/decoded"
-  local build_dir="${tmpdir}/build"
+# Compile a single app
+compile_apk() {
+  local apk="$1" priority="$2" mode="$3"
   
-  log "Optimizing APK: $input_apk -> $output_apk"
-  
-  # Check if the input APK exists
-  if [[ ! -f "$input_apk" ]]; then
-    log "Input APK not found: $input_apk"
-    return 1
-  fi
-  
-  # Required tools
-  require_cmd zipalign || return 1
-  require_cmd apksigner || return 1
-  
-  mkdir -p "$decoded_dir" "$build_dir"
-  
-  # Extract APK
-  run unzip -q "$input_apk" -d "$decoded_dir"
-  
-  # Optimize images in the APK
-  find "$decoded_dir" -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" -o -name "*.webp" \) -print0 |
-    xargs -0 -P "$(nproc 2>/dev/null || echo 2)" -I{} bash -c "
-      source \"$0\"
-      optimize_image \"\$1\"
-    " _ {} || true
-  
-  # Repack APK
-  log "Repacking APK..."
-  (cd "$decoded_dir" && run zip -q -r "$build_dir/unaligned.apk" .)
-  
-  # Zipalign
-  log "Aligning APK..."
-  run zipalign -v -f -p 4 "$build_dir/unaligned.apk" "$build_dir/aligned.apk"
-  
-  # Sign APK
-  log "Signing APK..."
-  if [[ -n "${KEYSTORE_PATH:-}" && -n "${KEY_ALIAS:-}" ]]; then
-    run apksigner sign --ks "$KEYSTORE_PATH" \
-      --ks-key-alias "$KEY_ALIAS" \
-      --ks-pass "pass:${KEYSTORE_PASS:-}" \
-      --key-pass "pass:${KEY_PASS:-}" \
-      --out "$output_apk" "$build_dir/aligned.apk"
-  else
-    log "No keystore configured, creating debug-signed APK"
-    local debug_keystore="${HOME}/.android/debug.keystore"
-    if [[ ! -f "$debug_keystore" ]]; then
-      mkdir -p "${HOME}/.android"
-      run keytool -genkey -v -keystore "$debug_keystore" \
-        -storepass android -alias androiddebugkey \
-        -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
-        -dname "CN=Android Debug,O=Android,C=US"
-    fi
-    run apksigner sign --ks "$debug_keystore" \
-      --ks-key-alias androiddebugkey \
-      --ks-pass pass:android \
-      --key-pass pass:android \
-      --out "$output_apk" "$build_dir/aligned.apk"
-  fi
-  
-  # Verify
-  if (( !DRY_RUN )); then
-    local orig_size=$(stat -c "%s" "$input_apk" 2>/dev/null || stat -f "%z" "$input_apk" 2>/dev/null || echo 0)
-    local new_size=$(stat -c "%s" "$output_apk" 2>/dev/null || stat -f "%z" "$output_apk" 2>/dev/null || echo 0)
-    if [[ $new_size -gt 0 && $new_size -lt $orig_size ]]; then
-      log "APK optimized: ${input_apk} ($(( (orig_size - new_size) / 1024 )) KB saved)"
-    else
-      log "APK size not improved: ${input_apk}"
-    fi
-  fi
-  
-  return 0
+  adb shell cmd package compile --full -r cmdline -p "$priority" -m "$mode" "$apk"
+  echo "Compiled $apk with priority $priority and mode $mode"
 }
 
-# ----------------------------------------------------------------------
-# Device Optimization Functions
-# ----------------------------------------------------------------------
-optimize_device() {
-  log "Running device optimization..."
-  check_adb_connection || return 1
+# Apply all permissions from config
+apply_permissions() {
+  local connected
+  connected=$(adb get-state 2>/dev/null) || { echo "No device connected"; return 1; }
   
-  # Create backup of current settings
-  if [[ ${FORCE:-0} -eq 0 ]]; then
-    log "This will modify system settings. Create a backup first? [Y/n]"
-    read -r response
-    if [[ ! "$response" =~ ^[Nn]$ ]]; then
-      mkdir -p "$BACKUP_DIR"
-      log "Creating settings backup in $BACKUP_DIR"
-      run "adb -s \"$ADB_DEVICE\" pull /data/system/users/0/settings_global.xml \"$BACKUP_DIR/\""
-      run "adb -s \"$ADB_DEVICE\" pull /data/system/users/0/settings_secure.xml \"$BACKUP_DIR/\""
-      run "adb -s \"$ADB_DEVICE\" pull /data/system/users/0/settings_system.xml \"$BACKUP_DIR/\""
-    fi
-  fi
-  
-  # Battery optimizations
-  log "Applying battery optimizations..."
-  run "adb -s \"$ADB_DEVICE\" shell settings put global battery_saver_constants \
-    \"vibration_disabled=true,animation_disabled=true,soundtrigger_disabled=true,fullbackup_deferred=true,keyvaluebackup_deferred=true,gps_mode=low_power,data_saver=true,optional_sensors_disabled=true\""
-  
-  run "adb -s \"$ADB_DEVICE\" shell settings put global dynamic_power_savings_enabled 1"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global adaptive_battery_management_enabled 0"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global app_auto_restriction_enabled 1"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global app_restriction_enabled true"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global cached_apps_freezer enabled"
-  
-  # Network optimizations
-  log "Applying network optimizations..."
-  run "adb -s \"$ADB_DEVICE\" shell settings put global data_saver_mode 1"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global wifi_suspend_optimizations_enabled 2"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global ble_scan_always_enabled 0"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global wifi_scan_always_enabled 0"
-  run "adb -s \"$ADB_DEVICE\" shell cmd netpolicy set restrict-background true"
-  
-  # Graphics and UI optimizations
-  log "Applying graphics optimizations..."
-  run "adb -s \"$ADB_DEVICE\" shell settings put global hw2d.force 1"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global hw3d.force 1"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global debug.sf.hw 1"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global debug.egl.hw 1"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global debug.enabletr true"
-  
-  # Reduce animations
-  run "adb -s \"$ADB_DEVICE\" shell settings put global animator_duration_scale 0.5"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global transition_animation_scale 0.5"
-  run "adb -s \"$ADB_DEVICE\" shell settings put global window_animation_scale 0.5"
-  
-  # Performance
-  log "Applying performance optimizations..."
-  run "adb -s \"$ADB_DEVICE\" shell settings put global sqlite_compatibility_wal_flags \"syncMode=OFF,fsyncMode=off\""
-  
-  # Run app compaction
-  log "Optimizing app storage..."
-  run "adb -s \"$ADB_DEVICE\" shell cmd device_config put activity_manager use_compaction true"
-  
-  # Optimize ART
-  log "Optimizing ART..."
-  run "adb -s \"$ADB_DEVICE\" shell cmd package compile -a -f -m speed-profile"
-  
-  log "Device optimization complete!"
-}
-
-# ----------------------------------------------------------------------
-# Device Cleanup
-# ----------------------------------------------------------------------
-clean_device() {
-  log "Cleaning device caches and temporary files..."
-  check_adb_connection || return 1
-  
-  # Clear per-app caches
-  log "Clearing app caches..."
-  run "adb -s \"$ADB_DEVICE\" shell pm list packages -3 | cut -d: -f2 | xargs -r -n1 -I{} \
-    adb -s \"$ADB_DEVICE\" shell pm clear --cache-only {}"
-  
-  # Trim system caches
-  log "Trimming system caches..."
-  run "adb -s \"$ADB_DEVICE\" shell pm trim-caches 128G"
-  
-  # Clear log files
-  log "Clearing log files..."
-  run "adb -s \"$ADB_DEVICE\" shell logcat -b all -c"
-  
-  # Delete temporary files
-  log "Deleting temporary files..."
-  run "adb -s \"$ADB_DEVICE\" shell 'find /sdcard -type f \( -name \"*.log\" -o -name \"*.tmp\" -o -name \"*.bak\" \) -delete'"
-  
-  # Run garbage collection
-  log "Running garbage collection..."
-  run "adb -s \"$ADB_DEVICE\" shell am broadcast -a android.intent.action.CLEAR_MEMORY"
-  
-  # Sync filesystems
-  log "Syncing filesystems..."
-  run "adb -s \"$ADB_DEVICE\" shell sync"
-  
-  # Run fstrim if supported
-  log "Running fstrim if supported..."
-  run "adb -s \"$ADB_DEVICE\" shell sm fstrim"
-  
-  log "Device cleanup complete!"
-}
-
-# ----------------------------------------------------------------------
-# Usage and main function
-# ----------------------------------------------------------------------
-usage() {
-  cat <<EOF
-Usage: $(basename "$0") COMMAND [OPTIONS]
-
-Commands:
-  optimize               Run performance optimizations on connected device
-  clean                  Clean temporary files and cache on connected device
-  backup                 Backup apps and settings from connected device
-  optimize-apk FILE      Optimize an APK file
-  optimize-image FILE    Optimize an image file
-  install FILE           Install an APK on connected device
-  uninstall PKG          Uninstall package from connected device
-  help                   Show this help message
-
-Options:
-  -d, --device ID        Specify ADB device serial
-  -o, --output PATH      Output path for optimized files
-  -l, --lossy            Use lossy compression for optimization
-  -n, --dry-run          Show commands without executing
-  -v, --verbose          Enable verbose output
-
-Examples:
-  $(basename "$0") optimize
-  $(basename "$0") optimize-apk -l -o output.apk input.apk
-  $(basename "$0") optimize-image photo.jpg
-EOF
-}
-
-parse_args() {
-  COMMAND=""
-  INPUT_FILE=""
-  OUTPUT_FILE=""
-  ADB_DEVICE=""
-  
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      -d|--device)
-        ADB_DEVICE="$2"
-        shift 2
-        ;;
-      -o|--output)
-        OUTPUT_FILE="$2"
-        shift 2
-        ;;
-      -l|--lossy)
-        LOSSY=1
-        shift
-        ;;
-      -n|--dry-run)
-        DRY_RUN=1
-        shift
-        ;;
-      -v|--verbose)
-        DEBUG=1
-        shift
-        ;;
-      help)
-        usage
-        exit 0
-        ;;
-      optimize|clean|backup|optimize-apk|optimize-image|install|uninstall)
-        COMMAND="$1"
-        shift
-        ;;
-      -*)
-        echo "Unknown option: $1" >&2
-        usage
-        exit 1
-        ;;
-      *)
-        if [[ -z "$INPUT_FILE" ]]; then
-          INPUT_FILE="$1"
-        else
-          echo "Unexpected argument: $1" >&2
-          usage
-          exit 1
-        fi
-        shift
-        ;;
-    esac
+  echo "Applying permissions from config..."
+  for app in "${!PERMISSIONS[@]}"; do
+    local perms="${PERMISSIONS[$app]}"
+    local perm_array
+    # Split comma-separated permissions into array
+    IFS=',' read -ra perm_array <<< "$perms"
+    
+    for perm in "${perm_array[@]}"; do
+      set_apk_permission "$app" "$perm"
+    done
   done
 }
 
-# ----------------------------------------------------------------------
-# Main function
-# ----------------------------------------------------------------------
+# Apply compilation settings from config
+apply_compilations() {
+  local connected
+  connected=$(adb get-state 2>/dev/null) || { echo "No device connected"; return 1; }
+  
+  echo "Applying compilation settings from config..."
+  for app in "${!COMPILATIONS[@]}"; do
+    local config="${COMPILATIONS[$app]}"
+    local priority mode
+    
+    # Parse priority:mode format
+    IFS=':' read -r priority mode <<< "$config"
+    
+    compile_apk "$app" "$priority" "$mode"
+  done
+}
+
+# Save changes to config file
+save_config() {
+  local config_file="$1"
+  local temp_file="${config_file}.tmp"
+  
+  # Create temporary file
+  {
+    echo "# Android Toolkit Configuration"
+    echo "# Auto-generated on $(date)"
+    echo ""
+    echo "[permission]"
+    for app in "${!PERMISSIONS[@]}"; do
+      echo "$app=${PERMISSIONS[$app]}"
+    done
+    echo ""
+    echo "[compilation]"
+    for app in "${!COMPILATIONS[@]}"; do
+      echo "$app=${COMPILATIONS[$app]}"
+    done
+  } > "$temp_file"
+  
+  # Move temp file to config file
+  mv "$temp_file" "$config_file"
+  echo "Saved config to $config_file"
+}
+
+# Add an app to the permission config
+add_permission() {
+  local app="$1" modes="$2"
+  
+  if [[ -v PERMISSIONS["$app"] ]]; then
+    # Merge existing permissions with new ones
+    local existing="${PERMISSIONS["$app"]}"
+    local new_perms="$existing"
+    
+    # Add each new permission if not already present
+    IFS=',' read -ra mode_array <<< "$modes"
+    for mode in "${mode_array[@]}"; do
+      if [[ "$existing" != *"$mode"* ]]; then
+        new_perms="${new_perms:+$new_perms,}$mode"
+      fi
+    done
+    
+    PERMISSIONS["$app"]="$new_perms"
+  else
+    # Add new app with permissions
+    PERMISSIONS["$app"]="$modes"
+  fi
+}
+
+# Add an app to the compilation config
+add_compilation() {
+  local app="$1" priority="$2" mode="$3"
+  
+  COMPILATIONS["$app"]="$priority:$mode"
+}
+
+# Show usage info
+show_usage() {
+  cat <<EOF
+Usage: $(basename "$0") [COMMAND] [OPTIONS]
+
+Commands:
+  apply                  Apply all settings from config (default)
+  permissions            Apply only permission settings
+  compilations           Apply only compilation settings
+  set-permission APP MODE[,MODE...]
+                         Set permission(s) for an app (dump, write, doze)
+  set-compilation APP PRIORITY MODE
+                         Set compilation settings for an app
+  list                   List current config settings
+  help                   Show this help message
+
+Examples:
+  $(basename "$0")
+  $(basename "$0") permissions
+  $(basename "$0") set-permission com.example.app dump,write
+  $(basename "$0") set-compilation com.example.app PRIORITY_INTERACTIVE_FAST speed-profile
+
+EOF
+}
+
+# Main functionality
 main() {
-  # Create log file
-  mkdir -p "$(dirname "$LOG_FILE")"
-  touch "$LOG_FILE"
-  log "Starting Android Toolkit"
+  local config_file action="${1:-apply}"
   
-  # Parse arguments
-  parse_args "$@"
-  
-  # Check for command
-  if [[ -z "$COMMAND" ]]; then
-    usage
-    exit 1
+  # Show help if requested
+  if [[ "$action" == "help" || "$action" == "--help" || "$action" == "-h" ]]; then
+    show_usage
+    exit 0
   fi
   
-  # Execute requested command
-  case "$COMMAND" in
-    optimize)
-      optimize_device
+  # Find config file
+  config_file=$(find_config)
+  if [[ -z "$config_file" && "$action" != "init" ]]; then
+    echo "No config file found. Creating default at ${CONFIG_PATHS[0]}"
+    mkdir -p "$(dirname "${CONFIG_PATHS[0]}")"
+    touch "${CONFIG_PATHS[0]}"
+    config_file="${CONFIG_PATHS[0]}"
+  fi
+  
+  # Parse config if it exists
+  if [[ -r "$config_file" ]]; then
+    parse_config "$config_file"
+  else
+    declare -gA PERMISSIONS=()
+    declare -gA COMPILATIONS=()
+  fi
+  
+  case "$action" in
+    apply|"")
+      apply_permissions
+      apply_compilations
       ;;
-    clean)
-      clean_device
+    permissions)
+      apply_permissions
       ;;
-    backup)
-      # Implement backup functionality
-      log "Backup functionality not yet implemented"
+    compilations)
+      apply_compilations
       ;;
-    optimize-apk)
-      if [[ -z "$INPUT_FILE" ]]; then
-        log "No APK file specified"
-        usage
+    set-permission)
+      if [[ $# -lt 3 ]]; then
+        echo "Usage: $(basename "$0") set-permission APP MODE[,MODE...]"
         exit 1
       fi
-      optimize_apk "$INPUT_FILE" "${OUTPUT_FILE:-}"
+      add_permission "$2" "$3"
+      save_config "$config_file"
+      
+      # Apply the permission immediately if requested
+      if [[ $# -ge 4 && "$4" == "--apply" ]]; then
+        IFS=',' read -ra perm_array <<< "$3"
+        for perm in "${perm_array[@]}"; do
+          set_apk_permission "$2" "$perm"
+        done
+      fi
       ;;
-    optimize-image)
-      if [[ -z "$INPUT_FILE" ]]; then
-        log "No image file specified"
-        usage
+    set-compilation)
+      if [[ $# -lt 4 ]]; then
+        echo "Usage: $(basename "$0") set-compilation APP PRIORITY MODE"
         exit 1
       fi
-      optimize_image "$INPUT_FILE" "${OUTPUT_FILE:-}"
-      ;;
-    install)
-      if [[ -z "$INPUT_FILE" ]]; then
-        log "No APK file specified"
-        usage
-        exit 1
+      add_compilation "$2" "$3" "$4"
+      save_config "$config_file"
+      
+      # Apply the compilation immediately if requested
+      if [[ $# -ge 5 && "$5" == "--apply" ]]; then
+        compile_apk "$2" "$3" "$4"
       fi
-      check_adb_connection
-      log "Installing $INPUT_FILE..."
-      run "adb -s \"$ADB_DEVICE\" install -r \"$INPUT_FILE\""
       ;;
-    uninstall)
-      if [[ -z "$INPUT_FILE" ]]; then
-        log "No package specified"
-        usage
-        exit 1
-      fi
-      check_adb_connection
-      log "Uninstalling $INPUT_FILE..."
-      run "adb -s \"$ADB_DEVICE\" uninstall \"$INPUT_FILE\""
+    list)
+      echo "Current configuration ($config_file):"
+      echo ""
+      echo "Permissions:"
+      for app in "${!PERMISSIONS[@]}"; do
+        echo "  $app: ${PERMISSIONS[$app]}"
+      done
+      echo ""
+      echo "Compilations:"
+      for app in "${!COMPILATIONS[@]}"; do
+        echo "  $app: ${COMPILATIONS[$app]}"
+      done
       ;;
     *)
-      log "Unknown command: $COMMAND"
-      usage
+      echo "Unknown command: $action"
+      show_usage
       exit 1
       ;;
   esac
-  
-  # Clean up
-  rm -rf "$TEMP_DIR"
-  log "Android Toolkit completed"
 }
 
-# Run main function with all arguments
-main "$@"
+# Allow sourcing without executing
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

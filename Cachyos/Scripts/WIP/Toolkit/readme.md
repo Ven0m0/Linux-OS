@@ -1,6 +1,6 @@
 # My Toolkit
 
-### media-optimizer.sh 
+### [media-optimizer.sh](Cachyos/Scripts/WIP/Toolkit/media-optimizer.sh)  | [Termux version](https://github.com/Ven0m0/dot-termux/blob/main/bin/termux-media-optimizer.sh)
 
 ***dependencies:***
 

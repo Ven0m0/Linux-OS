@@ -1,6 +1,6 @@
+# My Toolkit
 
-
-### dedia-optimizer.sh
+### media-optimizer.sh
 
 ***dependencies:***
 

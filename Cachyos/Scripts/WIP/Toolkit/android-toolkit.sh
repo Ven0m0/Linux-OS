@@ -72,26 +72,97 @@ check_requirements() {
   fi
 }
 
-# Execute command via ADB or Shizuku
-run_cmd() {
+# Execute a command, honouring dry-run mode
+run() {
   if [[ $DRYRUN -eq 1 ]]; then
     log debug "Would run: $*"
-    return 0
-  fi
-  
-  if [[ $USE_SHIZUKU -eq 1 ]]; then
-    if [[ $VERBOSE -eq 1 ]]; then
-      rish "$@"
-    else
-      rish "$@" &>/dev/null
-    fi
   else
-    if [[ $VERBOSE -eq 1 ]]; then
-      adb shell "$@"
-    else
-      adb shell "$@" &>/dev/null
-    fi
+    eval "$*"
   fi
+}
+
+# --- Cache helpers ---
+_cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a-zA-Z0-9._+-]/_}"; }
+_cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
+
+evict_old_cache(){
+  local mmin=$(( (APT_FUZZ_CACHE_TTL + 59) / 60 )) now=$(printf '%(%s)T' -1) cutoff total oldest min_mtime f ts m
+  cutoff=$(( now - mmin*60 ))
+  # Delete old cache files (fd/fdfind optimized, NUL-safe)
+  if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
+    while IFS= read -r -d '' f; do
+      ts=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+      if (( ts < cutoff )); then
+        rm -f -- "$f" || :
+      fi
+    done < <("$FIND_TOOL" -0 -d 1 -t f . "$CACHE_DIR" 2>/dev/null || printf '')
+  else
+    find "$CACHE_DIR" -maxdepth 1 -type f -mmin +"$mmin" -delete 2>/dev/null || :
+  fi
+}
+
+# --- Preview generation (atomic) ---
+_generate_preview(){
+  local pkg="$1" out tmp
+  out="$(_cache_file_for "$pkg")"
+  tmp="$(mktemp "${out}.XXXXXX.tmp")" || tmp="${out}.$$.$RANDOM.tmp"
+  { apt-cache show "$pkg" 2>/dev/null || :; 
+    printf '\n--- changelog (first 200 lines) ---\n'
+    apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :; } >"$tmp" 2>/dev/null || :
+  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2>/dev/null || :
+  mv -f "$tmp" "$out"; chmod 644 "$out" 2>/dev/null || :
+}
+
+_cached_preview_print(){
+  local pkg="$1" f now f_mtime
+  evict_old_cache
+  f="$(_cache_file_for "$pkg")"
+  now=$(printf '%(%s)T' -1)
+  f_mtime=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+  if [[ -f $f ]] && (( now - f_mtime < APT_FUZZ_CACHE_TTL )); then
+    cat "$f"
+  else
+    _generate_preview "$pkg"
+    cat "$f" 2>/dev/null || echo "(no preview)"
+  fi
+}
+export -f _cached_preview_print
+
+# --- Manager runner (apt-get for apt) ---
+run_mgr(){
+  local action="$1"; shift || :
+  local pkgs=("$@") cmd=()
+  case "$PRIMARY_MANAGER" in
+    nala)
+      case "$action" in
+        update) cmd=(nala update) ;;
+        upgrade) cmd=(nala upgrade -y) ;;
+        autoremove) cmd=(nala autoremove -y) ;;
+        clean) cmd=(nala clean) ;;
+        *) cmd=(nala "$action" -y "${pkgs[@]}") ;;
+      esac ;;
+    apt-fast)
+      case "$action" in
+        update) cmd=(apt-fast update) ;;
+        upgrade) cmd=(apt-fast upgrade -y) ;;
+        autoremove) cmd=(apt-fast autoremove -y) ;;
+        clean) cmd=(apt-fast clean) ;;
+        *) cmd=(apt-fast "$action" -y "${pkgs[@]}") ;;
+      esac ;;
+    *)
+      case "$action" in
+        update) cmd=(apt-get update) ;;
+        upgrade) cmd=(apt-get upgrade -y) ;;
+        install) cmd=(apt-get install -y "${pkgs[@]}") ;;
+        remove) cmd=(apt-get remove -y "${pkgs[@]}") ;;
+        purge) cmd=(apt-get purge -y "${pkgs[@]}") ;;
+        autoremove) cmd=(apt-get autoremove -y) ;;
+        clean) cmd=(apt-get clean) ;;
+        *) cmd=(apt "$action" "${pkgs[@]}") ;;
+      esac ;;
+  esac
+  printf 'Running: sudo %s\n' "${cmd[*]}"
+  sudo "${cmd[@]}"
 }
 
 # Push file to device
@@ -139,6 +210,39 @@ pull_file() {
 # Get free space on device
 get_free_space() {
   run_cmd "df -h /data | tail -n1 | awk '{print \$4}'" | tr -d '\r'
+}
+
+# --- Manager detection ---
+HAS_NALA=0; HAS_APT_FAST=0
+command -v nala &>/dev/null && HAS_NALA=1 || :
+command -v apt-fast &>/dev/null && HAS_APT_FAST=1 || :
+PRIMARY_MANAGER="${APT_FUZZ_MANAGER:-}"
+if [[ -z $PRIMARY_MANAGER ]]; then
+  PRIMARY_MANAGER=apt
+  [[ $HAS_NALA -eq 1 ]] && PRIMARY_MANAGER=nala
+  [[ $HAS_NALA -eq 0 && $HAS_APT_FAST -eq 1 ]] && PRIMARY_MANAGER=apt-fast
+fi
+
+# Execute command via ADB or Shizuku
+run_cmd() {
+  if [[ $DRYRUN -eq 1 ]]; then
+    log debug "Would run: $*"
+    return 0
+  }
+  
+  if [[ $USE_SHIZUKU -eq 1 ]]; then
+    if [[ $VERBOSE -eq 1 ]]; then
+      rish "$@"
+    else
+      rish "$@" &>/dev/null
+    fi
+  else
+    if [[ $VERBOSE -eq 1 ]]; then
+      adb shell "$@"
+    else
+      adb shell "$@" &>/dev/null
+    fi
+  fi
 }
 
 # --- Clean functions ---
@@ -244,24 +348,6 @@ clean_downloads() {
   fi
   
   log info "Downloads folder cleaned"
-}
-
-# Clean app data folders for uninstalled apps
-clean_app_data_folders() {
-  log info "Cleaning orphaned app data folders..."
-  
-  # This requires a more complex approach to match installed packages with folders
-  # For safety, we'll just log potential orphaned folders
-  
-  local data_dirs
-  data_dirs=$(run_cmd "ls -d /sdcard/Android/data/*")
-  local installed_pkgs
-  installed_pkgs=$(run_cmd "pm list packages" | cut -d: -f2)
-  
-  # This is a simplified approach - a more thorough approach would compare
-  # But it's safer to just report and let the user decide
-  
-  log info "Potentially orphaned app data folders identified. Review manually."
 }
 
 # --- WhatsApp media functions ---
@@ -588,36 +674,63 @@ load_app_permissions() {
   return 0
 }
 
-# --- Main functions ---
+# --- Usage/help functions ---
 
-# Show usage info
+# Show detailed usage for the script
 usage() {
   cat <<EOF
-Android Toolkit - Comprehensive device management utility
+Android Toolkit - Comprehensive Android device management utility
 
-Usage: $(basename "$0") COMMAND [OPTIONS]
+Usage: $(basename "$0") [OPTIONS] COMMAND [COMMAND_OPTIONS]
 
-Commands:
-  clean               Clean the device (cache, logs, temps)
-  whatsapp-clean      Clean WhatsApp media files
-  optimize            Apply device optimizations
-  permissions         Apply app permissions from config
-  help                Show this help message
-
-Options:
+Global Options:
   -d, --dry-run       Show what would be done without making changes
   -v, --verbose       Enable verbose output
   -s, --shizuku       Use Shizuku (rish) instead of ADB
   -j, --jobs JOBS     Number of parallel jobs for optimization (default: auto)
   -h, --help          Show this help message
 
+Commands:
+  clean               Clean device caches and temporary files
+    --system-apps       Also clean system app caches (not just user apps)
+    --downloads DAYS    Clean files in Downloads older than DAYS
+    --no-browser        Skip browser cache cleaning
+    --no-thumbnails     Skip thumbnail cache cleaning
+
+  whatsapp-clean      Clean WhatsApp media files
+    --days DAYS         Delete opus files older than DAYS (default: 90)
+    --no-images         Skip image optimization
+
+  optimize            Apply device optimizations
+    [CATEGORIES...]     Specify categories to optimize (default: all)
+                        Categories: art, rendering, audio, battery, network,
+                        input, system, doze, all
+    --dns SERVER        Set custom DNS server for private DNS
+
+  permissions         Apply app permissions
+    list                List permissions in config file
+    add PACKAGE PERM    Add permission to config file
+    apply               Apply permissions from config file (default)
+    grant PACKAGE PERM  Grant permission to package directly
+
+  maintenance         System maintenance tasks
+    update              Update package lists
+    upgrade             Upgrade installed packages
+    autoremove          Remove unused dependencies
+    clean               Clean package cache
+
+  backup-restore      Backup or restore installed package lists
+    backup              Backup currently installed packages
+    restore FILE        Restore packages from a file
+
 Examples:
   $(basename "$0") clean              # Clean device caches and temporary files
-  $(basename "$0") whatsapp-clean -d  # Dry run of WhatsApp media cleanup
-  $(basename "$0") optimize -s        # Apply device optimizations using Shizuku
-  $(basename "$0") permissions        # Apply app permissions from config file
+  $(basename "$0") whatsapp-clean --days 30 --no-images  # Clean old WhatsApp media
+  $(basename "$0") optimize rendering audio  # Apply specific optimizations
+  $(basename "$0") -s optimize        # Use Shizuku for device access
+  $(basename "$0") permissions grant com.example.app write,doze
 
-For more detailed help, use: $(basename "$0") COMMAND --help
+For more detailed help on a specific command, use: $(basename "$0") COMMAND --help
 EOF
 }
 
@@ -731,11 +844,65 @@ Examples:
   $(basename "$0") permissions grant com.example.app dump
 EOF
       ;;
+    maintenance)
+      cat <<EOF
+Android Toolkit - Maintenance Command
+
+Usage: $(basename "$0") maintenance [ACTION]
+
+Perform system maintenance tasks
+
+Actions:
+  update              Update package lists
+  upgrade             Upgrade installed packages
+  autoremove          Remove unused dependencies
+  clean               Clean package cache
+  
+Options:
+  -d, --dry-run       Show what would be done without making changes
+  -v, --verbose       Enable verbose output
+
+Examples:
+  $(basename "$0") maintenance update
+  $(basename "$0") maintenance upgrade
+EOF
+      ;;
+    backup-restore)
+      cat <<EOF
+Android Toolkit - Backup/Restore Command
+
+Usage: $(basename "$0") backup-restore [ACTION] [FILE]
+
+Backup or restore installed package lists
+
+Actions:
+  backup              Backup currently installed packages (default: pkglist-DATE.txt)
+  restore FILE        Restore packages from a file
+  
+Options:
+  -d, --dry-run       Show what would be done without making changes
+  -v, --verbose       Enable verbose output
+
+Examples:
+  $(basename "$0") backup-restore backup
+  $(basename "$0") backup-restore restore pkglist-20251008.txt
+EOF
+      ;;
     *)
       usage
       ;;
   esac
 }
+
+choose_manager(){
+  local opts=(apt) choice
+  [[ $HAS_NALA -eq 1 ]] && opts+=("nala")
+  [[ $HAS_APT_FAST -eq 1 ]] && opts+=("apt-fast")
+  choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Manager> ")
+  [[ -n $choice ]] && PRIMARY_MANAGER="$choice"
+}
+
+# --- Command handlers ---
 
 # Clean command handler
 cmd_clean() {
@@ -1025,6 +1192,88 @@ EOF
   esac
 }
 
+# Maintenance command handler
+cmd_maintenance() {
+  local action=""
+  
+  # Parse options
+  if [[ $# -gt 0 ]]; then
+    action="$1"
+    shift
+  else
+    action="update"  # Default action
+  fi
+  
+  case "$action" in
+    update)
+      run_mgr update
+      ;;
+    upgrade)
+      run_mgr upgrade
+      ;;
+    autoremove)
+      run_mgr autoremove
+      ;;
+    clean)
+      run_mgr clean
+      ;;
+    --help|-h)
+      command_help maintenance
+      return 0
+      ;;
+    *)
+      log error "Unknown maintenance action: $action"
+      command_help maintenance
+      return 1
+      ;;
+  esac
+}
+
+# Backup/restore command handler
+cmd_backup_restore() {
+  local action="" file=""
+  
+  # Parse options
+  if [[ $# -gt 0 ]]; then
+    action="$1"
+    shift
+  else
+    action="backup"  # Default action
+  fi
+  
+  if [[ $# -gt 0 ]]; then
+    file="$1"
+    shift
+  fi
+  
+  case "$action" in
+    backup)
+      local out="${file:-pkglist-$(date +%Y%m%d).txt}"
+      adb shell pm list packages | cut -d: -f2 > "$out"
+      log info "Saved package list to $out"
+      ;;
+    restore)
+      [[ -z $file ]] && { log error "No file specified for restore"; command_help backup-restore; return 1; }
+      [[ ! -f $file ]] && { log error "File not found: $file"; return 1; }
+      
+      log info "Installing packages from $file..."
+      while IFS= read -r pkg; do
+        [[ -z $pkg ]] && continue
+        run_cmd "pm install \"$pkg\"" || log warn "Failed to install $pkg"
+      done < "$file"
+      ;;
+    --help|-h)
+      command_help backup-restore
+      return 0
+      ;;
+    *)
+      log error "Unknown backup-restore action: $action"
+      command_help backup-restore
+      return 1
+      ;;
+  esac
+}
+
 # Initialize config/cache directories
 init_dirs() {
   mkdir -p "$CONFIG_DIR" "$CACHE_DIR" &>/dev/null
@@ -1055,17 +1304,11 @@ EOF
   fi
 }
 
-# Main function
+# --- Main Program ---
+
 main() {
   # Initialize directories
   init_dirs
-  
-  # No arguments - show usage
-  [[ $# -eq 0 ]] && { usage; exit 0; }
-  
-  # Extract command
-  local cmd="$1"
-  shift
   
   # Parse global options
   while [[ $# -gt 0 && "$1" == -* ]]; do
@@ -1087,8 +1330,7 @@ main() {
         shift 2
         ;;
       -h|--help)
-        # Handle help specially since we want to show command-specific help
-        command_help "$cmd"
+        usage
         exit 0
         ;;
       *)
@@ -1098,7 +1340,16 @@ main() {
     esac
   done
   
+  # No command specified - show usage
+  if [[ $# -eq 0 ]]; then
+    usage
+    exit 0
+  fi
+  
   # Execute command
+  local cmd="$1"
+  shift
+  
   case "$cmd" in
     clean)
       cmd_clean "$@"
@@ -1111,6 +1362,12 @@ main() {
       ;;
     permissions)
       cmd_permissions "$@"
+      ;;
+    maintenance)
+      cmd_maintenance "$@"
+      ;;
+    backup-restore)
+      cmd_backup_restore "$@"
       ;;
     help)
       [[ $# -eq 0 ]] && usage || command_help "$1"

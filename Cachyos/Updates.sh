@@ -78,7 +78,7 @@ CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULT
 #=============================================================
 checkupdates -dc &>/dev/null
 
-has modprobed-db && modprobed-db storesilent &>/dev/null
+has modprobed-db && modprobed-db store >/dev/null
 has hwclock && "$suexec" hwclock -w &>/dev/null
 has updatedb && "$suexec" updatedb &>/dev/null
 has chwd && "$suexec" chwd -a &>/dev/null

@@ -7,11 +7,15 @@ A collection of scripts and resources for managing and customizing Linux distrib
 
 Update:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Updates.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Updates.sh | bash
 ```
 Clean:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Clean.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Clean.sh | bash
+```
+Maintenance AIO:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/archmaint.sh | bash
 ```
 Fetch:
 ```bash

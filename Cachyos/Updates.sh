@@ -1,21 +1,44 @@
- #!/usr/bin/bash
-export LC_ALL=C LANG=C; shopt -s nullglob globstar execfail
-WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-builtin cd -- "$WORKDIR" || exit 1
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar execfail
+export LC_ALL=C LANG=C LANGUAGE=C
+
 #============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
+
 #============ Helpers ====================
-has(){ local x="${1:?no argument}"; x=$(command -v -- "$x" &>/dev/null) || return 1; [[ -x $x ]] || return 1; }
-hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
-xprint(){ printf '%s\n' "$*"; } # Print-echo
-xexprint(){ printf '%b\n' "$*"; } # Print-echo for color
-cleanup(){ trap - EXIT ERR; unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS; [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck' &>/dev/null; }; trap "cleanup" EXIT ERR
+has(){ command -v "$1" >/dev/null 2>&1; }
+xecho(){ printf '%b\n' "$*"; }
+
+#============ Privilege Helper ===========
+# Find available privilege escalation tool
+get_priv_cmd() {
+  local cmd
+  for cmd in sudo-rs sudo doas; do
+    if has "$cmd"; then
+      printf '%s' "$cmd"
+      return 0
+    fi
+  done
+  [[ $EUID -eq 0 ]] && printf '%s' "" || { xecho "${RED}No privilege tool found${DEF}" >&2; exit 1; }
+}
+
+PRIV_CMD=$(get_priv_cmd)
+[[ -n $PRIV_CMD && $EUID -ne 0 ]] && "$PRIV_CMD" -v
+
+run_priv() {
+  [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@"
+}
+
 #============ Banner ====================
-banner=$(cat <<'EOF'
+print_banner() {
+  local banner flag_colors
+  banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -24,241 +47,301 @@ banner=$(cat <<'EOF'
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 )
-# Split banner into array
-mapfile -t banner_lines <<< "$banner"
-lines=${#banner_lines[@]}
-# Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
-flag_colors=(
-  $LBLU  # Light Blue
-  $PNK   # Pink
-  $BWHT  # White
-  $PNK   # Pink
-  $LBLU  # Light Blue
-)
-segments=${#flag_colors[@]}
-# If banner is trivially short, just print without dividing by (lines-1)
-if (( lines <= 1 )); then
-  for line in "${banner_lines[@]}"; do
-    printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
-  done
-else
-  for i in "${!banner_lines[@]}"; do
-    # Map line index proportionally into 0..(segments-1)
-    segment_index=$(( i * (segments - 1) / (lines - 1) ))
-    (( segment_index >= segments )) && segment_index=$((segments - 1))
-    printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
-  done
-fi
-echo "Meow (> ^ <)"
-#============ Safe optimal privilege tool ====================
-suexec="${suexec:=sudo}"
-#suexec="$(hasname sudo-rs || hasname sudo || hasname doas || printf '%s\n' 'su -c')"
-[[ -z $suexec ]] && { printf '%s\n' "❌ No privilege tool found." >&2; exit 1; }
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v
-export HOME="/home/${SUDO_USER:-$USER}"; sync
-_shell_quote(){ local s; s=$(printf '%s' "$1" | sed "s/'/'\\\\''/g"); printf "'%s'" "$s"; }
-run_priv(){
-  local cmd=("$@")
-  [[ ${#cmd[@]} -gt 0 ]] || return 2
-  [[ $EUID -eq 0 ]] && { "${cmd[@]}"; return $?; }
-  case "$suexec" in
-    sudo|sudo-rs)  "$suexec" -- "${cmd[@]}" ;;
-    "su -c")      local q='' a; for a in "${cmd[@]}"; do q="$q $(_shell_quote "$a")"; done; q="${q# }"; su -c "$q" ;;
-    *)            "$suexec" "${cmd[@]}" ;;
-  esac
+  mapfile -t lines <<<"$banner"
+  flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
+  local line_count=${#lines[@]} segments=${#flag_colors[@]}
+  
+  if ((line_count <= 1)); then
+    for line in "${lines[@]}"; do
+      printf '%s%s%s\n' "${flag_colors[0]}" "$line" "$DEF"
+    done
+  else
+    for i in "${!lines[@]}"; do
+      local segment_index=$(( i * (segments - 1) / (line_count - 1) ))
+      ((segment_index >= segments)) && segment_index=$((segments - 1))
+      printf '%s%s%s\n' "${flag_colors[segment_index]}" "${lines[i]}" "$DEF"
+    done
+  fi
+  
+  xecho "Meow (> ^ <)"
 }
-#============ Env =============================================
-has dbus-launch && export "$(dbus-launch)"
-SHELL=/usr/bin/bash
-unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER
-RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
-LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTUP_TOOLCHAIN=nightly RUSTC_BOOTSTRAP=1
-#=============================================================
-checkupdates -dc &>/dev/null
 
-has modprobed-db && modprobed-db store >/dev/null
-has hwclock && "$suexec" hwclock -w &>/dev/null
-has updatedb && "$suexec" updatedb &>/dev/null
-has chwd && "$suexec" chwd -a &>/dev/null
-has mandb && { sudo mandb -q &>/dev/null || mandb -q &>/dev/null; } 
+#============ Cleanup & Exit Traps ======
+cleanup() {
+  [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck >/dev/null 2>&1 || :
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-sysupdate(){
-  local pkgmgr auropts_base auropts
-  echo -e "🔄${BLU}System update${DEF}"
-  # Detect AUR helper
+#============ Environment Setup =========
+export HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
+export SHELL=${SHELL:-/bin/bash}
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
+export CFLAGS="-march=native -mtune=native -O3 -pipe" 
+export CXXFLAGS="$CFLAGS"
+export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
+export CARGO_CACHE_RUSTC_INFO=1 
+export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always 
+export CARGO_HTTP_MULTIPLEXING=true
+export CARGO_NET_GIT_FETCH_WITH_CLI=true
+export RUSTUP_TOOLCHAIN=nightly 
+export RUSTC_BOOTSTRAP=1
+
+has dbus-launch && export $(dbus-launch 2>/dev/null || :)
+
+#============ Main Functions ============
+run_bg() {
+  "$@" >/dev/null 2>&1 || :
+}
+
+run_system_maintenance() {
+  local cmd=$1 args=("${@:2}")
+  if has "$cmd"; then
+    case "$cmd" in
+      modprobed-db) "$cmd" store >/dev/null 2>&1 || : ;;
+      hwclock|updatedb|chwd) run_priv "$cmd" "${args[@]}" >/dev/null 2>&1 || : ;;
+      mandb) run_priv "$cmd" -q >/dev/null 2>&1 || mandb -q >/dev/null 2>&1 || : ;;
+      *) run_priv "$cmd" "${args[@]}" >/dev/null 2>&1 || : ;;
+    esac
+  fi
+}
+
+update_system() {
+  local pkgmgr aur_opts=()
+  xecho "🔄${BLU}System update${DEF}"
+  
+  # Detect package manager
   if has paru; then
     pkgmgr=paru
-    auropts_base=(--batchinstall --combinedupgrade --nokeepsrc)
+    aur_opts=(--batchinstall --combinedupgrade --nokeepsrc)
   elif has yay; then
-    auropts_base=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
+    pkgmgr=yay
+    aur_opts=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
   else
     pkgmgr=pacman
   fi
-  pkgmgr="${pkgmgr:-paru}"
-  # Ensure pacman lock is removed
-  [[ -f /var/lib/pacman/db.lck ]] && "$suexec" rm -f --preserve-root -- "/var/lib/pacman/db.lck" >/dev/null || :
+  
+  # Remove pacman lock if exists
+  [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck >/dev/null 2>&1 || :
+  
   # Update keyring and file databases
-  "$suexec" "$pkgmgr" -Sy archlinux-keyring --noconfirm -q >/dev/null || :
-  [[ -f /var/lib/pacman/sync/core.files ]] || "$suexec" pacman -Fy --noconfirm || :
-  "$suexec" pacman -Fy --noconfirm &>/dev/null || :
-  # Build AUR options array
-  if [[ pkgmgr == paru ]]; then
-    auropts=(--noconfirm --needed --mflags '--skipinteg --skippgpcheck' --bottomup --skipreview --cleanafter --removemake --sudoloop --sudo "$suexec" "${auropts_base[@]:-}")
-    echo "🔄${BLU}Updating AUR packages with ${pkgmgr}...${DEF}"
-    "$pkgmgr" -Suyy "${auropts[@]}" 2>/dev/null || :
-    "$pkgmgr" -Sua --devel "${auropts[@]}" 2>/dev/null || :
+  run_priv "$pkgmgr" -Sy archlinux-keyring --noconfirm -q >/dev/null 2>&1 || :
+  
+  # Update file database if needed
+  [[ -f /var/lib/pacman/sync/core.files ]] || run_priv pacman -Fy --noconfirm || :
+  run_priv pacman -Fy --noconfirm >/dev/null 2>&1 || :
+  
+  # Run system updates
+  if [[ $pkgmgr == paru ]]; then
+    local args=(--noconfirm --needed --mflags '--skipinteg --skippgpcheck' 
+                --bottomup --skipreview --cleanafter --removemake 
+                --sudoloop --sudo "$PRIV_CMD" "${aur_opts[@]}")
+    xecho "🔄${BLU}Updating AUR packages with ${pkgmgr}...${DEF}"
+    "$pkgmgr" -Suyy "${args[@]}" >/dev/null 2>&1 || :
+    "$pkgmgr" -Sua --devel "${args[@]}" >/dev/null 2>&1 || :
   else
-    echo -e "🔄${BLU}Updating system with pacman...${DEF}"
-    "$suexec" pacman -Suyy --noconfirm --needed 2>/dev/null || :
+    xecho "🔄${BLU}Updating system with pacman...${DEF}"
+    run_priv pacman -Suyy --noconfirm --needed >/dev/null 2>&1 || :
   fi
 }
-sysupdate || :
 
-if has topgrade; then
-  echo 'update using topgrade...'
-  topno=(--disable={config_update,system,tldr,maza,yazi,micro})
-  topnosudo=(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})
-  LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${topno[@]}" 2>/dev/null || :
-  LC_ALL=C "$suexec" topgrade -cy --skip-notify --no-self-update --no-retry "${topnosudo[@]}" 2>/dev/null || :
-fi
-if has flatpak; then
-  "$suexec" flatpak update -y --noninteractive --appstream >/dev/null || :
-  "$suexec" flatpak update -y --noninteractive --system --force-remove >/dev/null || :
-fi
+update_extras() {
+  # Update with topgrade if available
+  if has topgrade; then
+    xecho "🔄${BLU}Running Topgrade updates...${DEF}"
+    local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
+    local disable_root=(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})
+    LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${disable_user[@]}" >/dev/null 2>&1 || :
+    LC_ALL=C run_priv topgrade -cy --skip-notify --no-self-update --no-retry "${disable_root[@]}" >/dev/null 2>&1 || :
+  fi
 
-# Function to run cargo commands dynamically
-cargo_run(){
-  local found=0 cmd=(cargo) b bins=(gg mommy clicker)
-  for b in "${bins[@]}"; do command -v "cargo-${b}" &>/dev/null && { cmd+=("$b"); found=1; }; done
-  (( found )) && "${cmd[@]}" "$@" || cargo "$@"
-}
-if has rustup; then
-  rustup update
-  "$suexec" rustup update
-  rustup self upgrade-data
-  if has cargo; then
-    echo 'update cargo binaries...'
-    if cargo install-update -Vq; then
-      cargo_run install-update -agfq
-    #else
-      #cargo_run install --list | grep -o '^[[:alnum:]][^ ]*' | xargs -r -n1 cargo install -q
+  # Update Flatpak if available
+  if has flatpak; then
+    xecho "🔄${BLU}Updating Flatpak...${DEF}"
+    run_priv flatpak update -y --noninteractive --appstream >/dev/null 2>&1 || :
+    run_priv flatpak update -y --noninteractive --system --force-remove >/dev/null 2>&1 || :
+  fi
+
+  # Update Rust and cargo packages
+  if has rustup; then
+    xecho "🔄${BLU}Updating Rust...${DEF}"
+    rustup update
+    run_priv rustup update
+    rustup self upgrade-data
+
+    if has cargo; then
+      xecho "🔄${BLU}Updating Cargo packages...${DEF}"
+      # Find enhanced cargo if available
+      local cargo_cmd=(cargo)
+      for cmd in gg mommy clicker; do
+        if has "cargo-$cmd"; then
+          cargo_cmd=(cargo "$cmd")
+          break
+        fi
+      done
+
+      # Update cargo packages
+      if "${cargo_cmd[@]}" install-update -Vq 2>/dev/null; then
+        "${cargo_cmd[@]}" install-update -agfq
+      fi
+      has cargo-syu && "${cargo_cmd[@]}" syu -g
     fi
-    has cargo-syu && cargo_run syu -g
   fi
-fi
 
-if has micro; then
-  echo 'micro plugin update...'
-  micro -plugin update >/dev/null || :
-fi
+  # Update editor plugins
+  has micro && micro -plugin update >/dev/null 2>&1 || :
+  has yazi && ya pkg upgrade >/dev/null 2>&1 || :
 
-if has yazi; then
-  echo 'yazi update...'
-  ya pkg upgrade >/dev/null || :
-fi
-
-#p 'Updating shell environments...'
-if has fish; then
-  fish -c "fish_update_completions"
-  if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
-    fish -c ". /usr/share/fish/vendor_functions.d/fisher.fish; and fisher update"
-  elif [[ -r ${HOME}/.config/fish/functions/fisher.fish ]]
-    fish -c ". \"$HOME/.config/fish/functions/fisher.fish\"; and fisher update"
-   fi
-fi
-[[ -d ${HOME}/.basher ]] && LC_ALL=C git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null &&
-  { LC_ALL=C git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null && echo "Updating basher"; } || echo "⚠️ basher pull failed"
-
-has tldr && "$suexec" tldr -cuq
-
-if has uv; then
-  echo '🔄 Updating uv...'
-  uv self update -q &>/dev/null || echo '⚠️ Failed to update uv'
-  echo '🔄 Updating uv tools...'
-  if uv tool list -q >/dev/null; then
-    uv tool upgrade --all -q || echo '⚠️ Failed to update uv tools'
-  else
-    echo '✅ No uv tools installed'
+  # Update shell environments
+  if has fish; then
+    xecho "🔄${BLU}Updating Fish...${DEF}"
+    fish -c "fish_update_completions" || :
+    if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
+      fish -c ". /usr/share/fish/vendor_functions.d/fisher.fish; and fisher update" || :
+    elif [[ -r ${HOME}/.config/fish/functions/fisher.fish ]]; then
+      fish -c ". \"$HOME/.config/fish/functions/fisher.fish\"; and fisher update" || :
+    fi
   fi
-  echo '🔄 Updating Python packages...'
-  if has jq; then
-    mapfile -t pkgs < <(uv pip list --outdated --format json | jq -r '.[].name')
-    if [[ ${#pkgs[@]} -gt 0 ]]; then
-      uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh "${pkgs[@]}" >/dev/null || echo "⚠️ Failed to update packages"
+
+  # Update basher if installed
+  if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null; then
+      xecho "✅${GRN}Updated Basher${DEF}"
     else
-      echo "✅ All Python packages are up to date."
+      xecho "⚠️${YLW}Basher pull failed${DEF}"
     fi
- else
-    echo "⚠️  jq not found, using slower fallback to upgrade all packages."
-    uv pip install --upgrade -r <(uv pip list --format freeze) >/dev/null || echo "⚠️ Failed to update packages with fallback method."
   fi
-  echo '🔄 Updating Python interpreters...'
-  uv python update-shell -q
-  uv python upgrade -q || echo '⚠️ Failed to update Python versions'
-  echo '🎉 uv update complete'
-fi
 
-#if has pipx; then
-  #pipx upgrade-all >/dev/null || :
-#fi
-#if has pip; then
-  #echo 'Upgrading pip user packages...'
-  #if has jq; then
-    #python3 -m pip list --user --outdated --format=json 2>/dev/null | jq -r '.[].name' 2>/dev/null | while read -r pkg; do
-      #python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
-    #done
-  #else
-    # Fallback: parse the human-readable format
-    #python3 -m pip list --user --outdated 2>/dev/null | awk 'NR>2 {print $1}' 2>/dev/null | while read -r pkg; do
-      #python3 -m pip install --user --upgrade "$pkg" 2>/dev/null || :
-    #done
-  #fi
-#fi
-#if has npm; then
-  #echo 'Update npm global packages'
-  #"$suexec" npm update -g >/dev/null || :
-#fi
+  # Update tldr cache
+  has tldr && run_priv tldr -cuq || :
+}
 
-echo 'misc updates in background'
-has fc-cache && "$suexec" fc-cache -f >/dev/null
-has update-desktop-database && "$suexec" update-desktop-database &>/dev/null
-has update-pciids && "$suexec" update-pciids &>/dev/null
-has update-smart-drivedb && "$suexec" update-smart-drivedb &>/dev/null
-has update-ccache-links && "$suexec" update-ccache-links >/dev/null
-has update-leap && LC_ALL=C update-leap &>/dev/null
+update_python() {
+  if has uv; then
+    xecho "🔄${BLU}Updating UV...${DEF}"
+    uv self update -q >/dev/null 2>&1 || xecho "⚠️${YLW}Failed to update UV${DEF}"
+    
+    xecho "🔄${BLU}Updating UV tools...${DEF}"
+    if uv tool list -q >/dev/null 2>&1; then
+      uv tool upgrade --all -q || xecho "⚠️${YLW}Failed to update UV tools${DEF}"
+    else
+      xecho "✅${GRN}No UV tools installed${DEF}"
+    fi
+    
+    xecho "🔄${BLU}Updating Python packages...${DEF}"
+    if has jq; then
+      local pkgs
+      pkgs=$(uv pip list --outdated --format json | jq -r '.[].name' 2>/dev/null || :)
+      if [[ -n $pkgs ]]; then
+        uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh $pkgs \
+          >/dev/null 2>&1 || xecho "⚠️${YLW}Failed to update packages${DEF}"
+      else
+        xecho "✅${GRN}All Python packages are up to date${DEF}"
+      fi
+    else
+      xecho "⚠️${YLW}jq not found, using fallback method${DEF}"
+      uv pip install --upgrade -r <(uv pip list --format freeze) >/dev/null 2>&1 || \
+        xecho "⚠️${YLW}Failed to update packages${DEF}"
+    fi
+    
+    xecho "🔄${BLU}Updating Python interpreters...${DEF}"
+    uv python update-shell -q
+    uv python upgrade -q || xecho "⚠️${YLW}Failed to update Python versions${DEF}"
+  fi
+}
 
-if has fwupdmgr; then
-  "$suexec" fwupdmgr refresh -y
-  "$suexec" fwupdtool update
-fi
+update_system_utils() {
+  xecho "🔄${BLU}Running miscellaneous updates...${DEF}"
+  # Array of commands to run in background
+  local cmds=(
+    "fc-cache -f"
+    "update-desktop-database"
+    "update-pciids"
+    "update-smart-drivedb"
+    "update-ccache-links"
+  )
 
-echo "🔍 Checking for systemd-boot"
-if [[ -d /sys/firmware/efi ]] && has bootctl && "$suexec" bootctl is-installed -q &>/dev/null; then
-  echo "✅ systemd-boot detected, updating"
-  "$suexec" bootctl update -q &>/dev/null; "$suexec" bootctl cleanup -q &>/dev/null
-else
-  echo "❌ systemd-boot not present, skipping"
-fi
-if has sdboot-manage; then
-  echo 'update sdboot-manage...'
-  "$suexec" sdboot-manage remove 2>/dev/null
-  "$suexec" sdboot-manage update &>/dev/null
-fi
-if has update-initramfs; then
-  "$suexec" update-initramfs
-else
-  if has limine-mkinitcpio; then
-    "$suexec" limine-mkinitcpio
-  elif has mkinitcpio; then
-    "$suexec" mkinitcpio -P
-  elif has "/usr/lib/booster/regenerate_images"; then
-    "$suexec" /usr/lib/booster/regenerate_images
-  elif has dracut-rebuild; then
-    "$suexec" dracut-rebuild
+  for cmd in "${cmds[@]}"; do
+    local cmd_name=${cmd%% *}
+    has "$cmd_name" && run_priv $cmd
+  done
+
+  has update-leap && LC_ALL=C update-leap >/dev/null 2>&1 || :
+
+  # Update firmware
+  if has fwupdmgr; then
+    xecho "🔄${BLU}Updating firmware...${DEF}"
+    run_priv fwupdmgr refresh -y || :
+    run_priv fwupdtool update || :
+  fi
+}
+
+update_boot() {
+  xecho "🔍${BLU}Checking boot configuration...${DEF}"
+  # Update systemd-boot if installed
+  if [[ -d /sys/firmware/efi ]] && has bootctl && run_priv bootctl is-installed -q >/dev/null 2>&1; then
+    xecho "✅${GRN}systemd-boot detected, updating${DEF}"
+    run_priv bootctl update -q >/dev/null 2>&1
+    run_priv bootctl cleanup -q >/dev/null 2>&1
   else
-    echo -e "\e[31m The initramfs generator was not found, please update initramfs manually\e[0m"
+    xecho "❌${RED}systemd-boot not present, skipping${DEF}"
   fi
-fi
-echo -e "\nAll done ✅ (> ^ <) Meow\n"
+
+  # Update sdboot-manage if available
+  if has sdboot-manage; then
+    xecho "🔄${BLU}Updating sdboot-manage...${DEF}"
+    run_priv sdboot-manage remove >/dev/null 2>&1 || :
+    run_priv sdboot-manage update >/dev/null 2>&1 || :
+  fi
+
+  # Update initramfs
+  xecho "🔄${BLU}Updating initramfs...${DEF}"
+  if has update-initramfs; then
+    run_priv update-initramfs
+  else
+    local initramfs_cmd=""
+    for cmd in limine-mkinitcpio mkinitcpio dracut-rebuild; do
+      if has "$cmd"; then
+        initramfs_cmd="$cmd"
+        break
+      fi
+    done
+    
+    # Special case for booster
+    if [[ -z $initramfs_cmd && -x /usr/lib/booster/regenerate_images ]]; then
+      run_priv /usr/lib/booster/regenerate_images || :
+    elif [[ -n $initramfs_cmd ]]; then
+      if [[ $initramfs_cmd == mkinitcpio ]]; then
+        run_priv "$initramfs_cmd" -P || :
+      else
+        run_priv "$initramfs_cmd" || :
+      fi
+    else
+      xecho "${RED}No initramfs generator found, please update manually${DEF}"
+    fi
+  fi
+}
+
+main() {
+  print_banner
+  checkupdates -dc >/dev/null 2>&1 || :
+  
+  # Run basic system maintenance
+  run_system_maintenance modprobed-db
+  run_system_maintenance hwclock -w
+  run_system_maintenance updatedb
+  run_system_maintenance chwd -a
+  run_system_maintenance mandb
+  
+  # Run update functions
+  update_system
+  update_extras
+  update_python
+  update_system_utils
+  update_boot
+  
+  xecho "\n${GRN}All done ✅ (> ^ <) Meow${DEF}\n"
+}
+
+main "$@"

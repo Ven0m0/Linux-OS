@@ -32,3 +32,23 @@ fi
 localectl set-locale C.UTF-8
 
 echo "[*] Setup complete! All dotfiles and app configs restored."
+
+sudo sed -i 's/^#CleanMethod = KeepInstalled$/CleanMethod = KeepCurrent/' /etc/pacman.conf
+
+sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com && sudo pacman-key --lsign-key 3056513887B78AEB 
+sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' --noconfirm && sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst' --noconfirm
+
+cat <<'EOF' | sudo tee -a /etc/pacman.conf >/dev/null
+[artafinde]
+Server = https://pkgbuild.com/~artafinde/repo
+[endeavouros]
+SigLevel = PackageRequired
+Server = https://mirror.alpix.eu/endeavouros/repo/$repo/$arch
+EOF
+
+cat <<'EOF' | sudo tee -a /etc/pacman.conf >/dev/null
+[xyne-x86_64]
+SigLevel = Required
+Server = https://xyne.dev/repos/xyne
+EOF
+

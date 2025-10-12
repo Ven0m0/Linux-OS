@@ -141,7 +141,7 @@ if has rustup; then
   if has cargo; then
     echo 'update cargo binaries...'
     if cargo install-update -Vq; then
-      cargo_run install-update -agiq
+      cargo_run install-update -agfq
     #else
       #cargo_run install --list | grep -o '^[[:alnum:]][^ ]*' | xargs -r -n1 cargo install -q
     fi

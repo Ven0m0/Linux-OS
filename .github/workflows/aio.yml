@@ -80,7 +80,7 @@ jobs:
       # Commit automatic fixes for Super-Linter
       - name: Commit Super-Linter fixes
         if: github.event_name == 'pull_request'
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           branch: ${{ github.head_ref }}
           commit_message: "chore: apply super-linter fixes"

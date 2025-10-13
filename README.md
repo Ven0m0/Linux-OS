@@ -66,7 +66,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 
 </details>
 <details>
-<summary><b>Install sytax hilighting for the nano editor</b></summary>
+<summary><b>Install sytax highlighting for the nano editor</b></summary>
 
 https://github.com/scopatz/nanorc
 

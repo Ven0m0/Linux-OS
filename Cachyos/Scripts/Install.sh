@@ -4,7 +4,7 @@ IFS=$'\n\t'
 sudo -v
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || : 
-SHELL="${BASH:-$(command -v bash)}"
+SHELL="$(command -v bash)"
 
 # helpers
 has(){ command -v "$1" &>/dev/null; }
@@ -178,11 +178,16 @@ if has gh; then
   gh extension install gennaro-tedesco/gh-s
 fi
 
+has go || sudo pacman -Sq go --noconfirm --needed
+# Go
+if has go; then
+  go install github.com/dim-an/cod@latest
+fi
 
 if has sdk; then
   sdk install java 25-graal
   #sdk install java 25-graalce
-
+fi
 # Soar
 curl -fsSL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh
 

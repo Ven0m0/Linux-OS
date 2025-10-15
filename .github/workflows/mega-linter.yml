@@ -44,13 +44,12 @@ jobs:
           VALIDATE_ALL_CODEBASE: true
           # Automatically create a Pull Request with any fixes found
           APPLY_FIXES: all
-          APPLY_FIXES_EVENT: all # Create PRs only on pull_request events
+          APPLY_FIXES_EVENT: all
           APPLY_FIXES_MODE: commit
           # ======== PERFORMANCE TUNING ========
           PARALLEL: true
           SHOW_ELAPSED_TIME: true
-          # Let MegaLinter suggest a smaller, more optimal "flavor" (docker image) for this repo
-          FLAVOR_SUGGESTIONS: true
+          FLAVOR_SUGGESTIONS: false
           # Corrected: Filter to include dotfiles at the root and common config directories
           FILTER_REGEX_INCLUDE: '((\.config|\.termux|\.github)/|^\.[^/]+$)'
           # ======== LINTER CONFIGURATION ========

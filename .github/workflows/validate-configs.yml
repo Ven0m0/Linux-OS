@@ -1,10 +1,9 @@
 # https://github.com/kehoecj/validate-configs-action
+---
 name: Lint Config Files
 on:
   workflow_dispatch:
-  #schedule: [{cron: "0 0 * * 0"}]
-  #pull_request:
-  #push:
+  # schedule: [{cron: "0 0 * * 0"}]
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true

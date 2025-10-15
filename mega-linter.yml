@@ -1,0 +1,36 @@
+---
+ENABLE:
+  - ACTION
+  - BASH
+  - EDITORCONFIG
+  - ENV
+  - JSON
+  - MARKDOWN
+  - MAKEFILE
+  - YAML
+  - TOML
+  - XML
+  - CSS
+  - HTML
+  - JAVASCRIPT
+  - PYTHON
+
+DISABLE_LINTERS:
+  - REPOSITORY_KICS
+  - REPOSITORY_GRYPE
+  - SPELL_VALE
+
+DISABLE_ERRORS_LINTERS:
+  - SPELL_CSPELL
+  - SPELL_LYCHEE
+  - BASH_EXEC
+
+FILTER_REGEX_INCLUDE: '((\.config|\.termux|\.github)/|^\.[^/]+$|^scripts/|^bin/|.*)'
+FILTER_REGEX_EXCLUDE: '(^Linux-Settings/|^\.cache/|^node_modules/|^vendor/|^dist/|^build/|^third_party/|^\.venv/|^venv/|^__pycache__/|^\.git/)'
+
+BASH_SHELLCHECK_ARGUMENTS: "-s bash -x -S warning -e SC2086"
+BASH_SHFMT_ARGUMENTS: "-ln bash -s -i 2 -bn"
+
+VALIDATE_ALL_CODEBASE: true
+PARALLEL: true
+SHOW_ELAPSED_TIME: true

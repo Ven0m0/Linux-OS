@@ -1,0 +1,67 @@
+#!/usr/bin/env zsh
+# zlogin - Login shell initialization
+# This file is sourced only for login shells after zshrc
+
+# ──────────── Print System Information ────────────
+if [[ -o interactive ]] && command -v neofetch &>/dev/null; then
+  neofetch
+elif [[ -o interactive ]] && command -v fastfetch &>/dev/null; then
+  fastfetch
+fi
+
+# ──────────── Check for System Updates (Arch) ────────────
+if [[ -o interactive ]] && command -v checkupdates &>/dev/null; then
+  local updates
+  updates=$(checkupdates 2>/dev/null | wc -l)
+  if (( updates > 0 )); then
+    printf '\e[1;33m%d\e[0m package update(s) available.\n' "$updates"
+    printf 'Run \e[1;36mparu\e[0m or \e[1;36myay\e[0m to update.\n'
+  fi
+fi
+
+# ──────────── Display Login Message ────────────
+if [[ -o interactive ]]; then
+  printf '\e[1;32m%s\e[0m logged in at \e[1;36m%s\e[0m on \e[1;35m%s\e[0m\n' \
+    "${USER}" \
+    "$(date '+%H:%M:%S')" \
+    "$(date '+%Y-%m-%d')"
+fi
+
+# ──────────── Start SSH Agent if not running ────────────
+if [[ -z "$SSH_AUTH_SOCK" ]] && command -v ssh-agent &>/dev/null; then
+  eval "$(ssh-agent -s -a "${XDG_RUNTIME_DIR}/ssh-agent.socket" 2>/dev/null)" >/dev/null
+fi
+
+# ──────────── Start GPG Agent ────────────
+if command -v gpg-agent &>/dev/null; then
+  export GPG_TTY="$(tty)"
+  gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
+fi
+
+# ──────────── tmux auto-attach ────────────
+# Automatically attach to existing tmux session or create new one
+if [[ -z "$TMUX" ]] && [[ -n "$SSH_CONNECTION" ]] && command -v tmux &>/dev/null; then
+  # Only auto-attach for SSH sessions
+  if tmux has-session 2>/dev/null; then
+    exec tmux attach-session
+  else
+    exec tmux new-session
+  fi
+fi
+
+# ──────────── Cleanup old history backups ────────────
+if [[ -d "${HISTFILE:h}" ]]; then
+  # Remove history backups older than 30 days
+  find "${HISTFILE:h}" -name "history.*.bak" -type f -mtime +30 -delete 2>/dev/null
+fi
+
+# ──────────── Refresh sudo timestamp ────────────
+if command -v sudo &>/dev/null && [[ -o interactive ]]; then
+  # Refresh sudo timestamp on login
+  sudo -v 2>/dev/null || true
+fi
+
+# ──────────── Load machine-specific login config ────────────
+if [[ -f "${ZDOTDIR}/.zlogin.local" ]]; then
+  source "${ZDOTDIR}/.zlogin.local"
+fi

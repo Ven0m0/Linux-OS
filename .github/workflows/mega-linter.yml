@@ -40,14 +40,12 @@ jobs:
           # Required for PR creation and reporting
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PAT: ${{ secrets.PAT }}
-
           # ======== BEHAVIOR ========
           VALIDATE_ALL_CODEBASE: true
           # Automatically create a Pull Request with any fixes found
           APPLY_FIXES: all
-          APPLY_FIXES_EVENT: pull_request # Create PRs only on pull_request events
-          APPLY_FIXES_MODE: pull_request
-
+          APPLY_FIXES_EVENT: all # Create PRs only on pull_request events
+          APPLY_FIXES_MODE: commit
           # ======== PERFORMANCE TUNING ========
           PARALLEL: true
           SHOW_ELAPSED_TIME: true
@@ -65,7 +63,8 @@ jobs:
 
           # Corrected: Linters to treat as warnings (comma-separated string)
           DISABLE_ERRORS_LINTERS: "SPELL_CSPELL,SPELL_LYCHEE,BASH_EXEC"
-
+          BASH_SHELLCHECK_ARGUMENTS: "-s bash -x -S warning -e SC2086"
+          BASH_SHFMT_ARGUMENTS: "-ln bash -s -i 2 -bn --apply-ignore"
       # --- Upload Artifacts ---
       - name: Upload MegaLinter reports
         if: always() # Always run this step to get reports, even if linting fails

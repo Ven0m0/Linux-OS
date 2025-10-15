@@ -1,3 +1,4 @@
+---
 name: Submodule Update
 on:
   workflow_dispatch:

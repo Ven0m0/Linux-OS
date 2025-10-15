@@ -3,20 +3,31 @@
 name: MegaLinter
 
 on:
-  # Automatically run on pushes and PRs to your main branch
-  push:
-    branches: [main, master]
   pull_request:
     branches: [main, master]
+    paths:
+      - "**/*.{sh,bash,bashrc,profile}"
+      - "**/*.{md,markdown}"
+      - "**/*.{yml,yaml,toml,json,ini,conf}"
+      - "**/*.{js,jsx,css,html}"
+      - "Makefile"
+      - ".{editorconfig,env,mega-linter.yml}"
+  push:
+    branches: [main, master]
+    paths:
+      - "**/*.{sh,bash,bashrc,profile}"
+      - "**/*.{md,markdown}"
+      - "**/*.{yml,yaml,toml,json,ini,conf}"
+      - "**/*.{js,jsx,css,html}"
+      - "Makefile"
+      - ".{editorconfig,env,mega-linter.yml}"
+      - ".github/**"
   workflow_dispatch:
-
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
-
 permissions:
   contents: write
-  issues: write
   pull-requests: write
 
 jobs:
@@ -24,49 +35,29 @@ jobs:
     name: MegaLinter
     runs-on: ubuntu-latest
     steps:
-      # --- Checkout repository ---
       - name: Checkout Code
         uses: actions/checkout@v5
         with:
-          # PAT is required to create PRs with fixes that can trigger other workflows
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          # Fetch all history for linters that analyze git history
           fetch-depth: 0
 
-      # --- Run MegaLinter ---
       - name: MegaLinter
-        uses: oxsecurity/megalinter@v9 # Using v7 for the latest stable features
+        uses: oxsecurity/megalinter@v9
         env:
-          # Required for PR creation and reporting
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PAT: ${{ secrets.PAT }}
-          # ======== BEHAVIOR ========
+          MEGALINTER_CONFIG: .mega-linter.yml
           VALIDATE_ALL_CODEBASE: true
-          # Automatically create a Pull Request with any fixes found
           APPLY_FIXES: all
           APPLY_FIXES_EVENT: all
           APPLY_FIXES_MODE: commit
-          # ======== PERFORMANCE TUNING ========
           PARALLEL: true
           SHOW_ELAPSED_TIME: true
-          FLAVOR_SUGGESTIONS: false
-          # Corrected: Filter to include dotfiles at the root and common config directories
-          FILTER_REGEX_INCLUDE: '((\.config|\.termux|\.github)/|^\.[^/]+$)'
-          # ======== LINTER CONFIGURATION ========
-          # Corrected: ENABLE should be a comma-separated string
-          ENABLE: "ACTION,BASH,CSS,DOCKERFILE,EDITORCONFIG,ENV,HTML,JSON,MAKEFILE,MARKDOWN,PYTHON,TOML,XML,YAML"
-          # Corrected: Linters to completely disable (comma-separated string)
-          DISABLE_LINTERS: "REPOSITORY_KICS,REPOSITORY_GRYPE,SPELL_VALE"
-          # Corrected: Linters to treat as warnings (comma-separated string)
-          DISABLE_ERRORS_LINTERS: "SPELL_CSPELL,SPELL_LYCHEE,BASH_EXEC"
-          BASH_SHELLCHECK_ARGUMENTS: "-s bash -x -S warning -e SC2086"
-          BASH_SHFMT_ARGUMENTS: "-ln bash -s -i 2 -bn --apply-ignore"
-      # --- Upload Artifacts ---
+
       - name: Upload MegaLinter reports
-        if: always() # Always run this step to get reports, even if linting fails
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: MegaLinter-reports
           path: |
             megalinter-reports
-            mega-linter.log
+            mega-linter-*

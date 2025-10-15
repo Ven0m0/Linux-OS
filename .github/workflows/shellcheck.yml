@@ -1,13 +1,6 @@
-name: Reviewdog
+name: ShellCheck (manual)
 on:
   workflow_dispatch:
-  schedule: [{cron: "0 0 * * 0"}]
-  push:
-    paths:
-      - '**/*.{sh,bash,bashrc,profile}'
-  pull_request:
-    paths:
-      - '**/*.{sh,bash,bashrc,profile}'
 
 permissions:
   contents: read
@@ -16,19 +9,18 @@ permissions:
 
 jobs:
   shellcheck:
-    name: runner / shellcheck
+    name: ShellCheck on-demand
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 1
-
       - name: Run ShellCheck via Reviewdog
-        uses: reviewdog/action-shellcheck@v1
+        uses: reviewdog/action-shellcheck@v1.32.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-pr-review
+          reporter: github-check
           path: "."
           pattern: |
             *.sh
@@ -40,4 +32,4 @@ jobs:
             ./.cache/*
             ./Linux-Settings/*
           check_all_files_with_shebangs: true
-          shellcheck_flags: "-x -s bash"
+          shellcheck_flags: "-x -a -s bash"

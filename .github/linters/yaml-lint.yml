@@ -1,5 +1,4 @@
 ---
-
 extends: default
 locale: en_US.UTF-8
 ignore-from-file: .gitignore
@@ -7,7 +6,6 @@ yaml-files:
   - '*.yaml'
   - '*.yml'
   - '.yamllint'
-
 rules:
   anchors: enable
   braces:
@@ -23,7 +21,7 @@ rules:
   document-end: disable
   document-start:
     level: warning
-    present: true
+    present: false
   empty-lines:
     level: warning
     max: 2
@@ -35,16 +33,11 @@ rules:
   indentation: enable
   key-duplicates: enable
   key-ordering: disable
-  line-length:
-    level: warning
-    max: 80
-    allow-non-breakable-words: true
-    allow-non-breakable-inline-mappings: true
+  line-length: disable
   new-line-at-end-of-file: enable
   new-lines:
     type: unix
   octal-values: disable
   quoted-strings: disable
   trailing-spaces: enable
-  truthy:
-    level: warning
+  truthy: enable

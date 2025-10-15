@@ -53,14 +53,11 @@ jobs:
           FLAVOR_SUGGESTIONS: true
           # Corrected: Filter to include dotfiles at the root and common config directories
           FILTER_REGEX_INCLUDE: '((\.config|\.termux|\.github)/|^\.[^/]+$)'
-
           # ======== LINTER CONFIGURATION ========
           # Corrected: ENABLE should be a comma-separated string
-          ENABLE: "ACTION,BASH,CSS,DOCKERFILE,EDITORCONFIG,ENV,HTML,JSON,MAKEFILE,MARKDOWN,PYTHON,SPELL,TOML,XML,YAML"
-
+          ENABLE: "ACTION,BASH,CSS,DOCKERFILE,EDITORCONFIG,ENV,HTML,JSON,MAKEFILE,MARKDOWN,PYTHON,TOML,XML,YAML"
           # Corrected: Linters to completely disable (comma-separated string)
           DISABLE_LINTERS: "REPOSITORY_KICS,REPOSITORY_GRYPE,SPELL_VALE"
-
           # Corrected: Linters to treat as warnings (comma-separated string)
           DISABLE_ERRORS_LINTERS: "SPELL_CSPELL,SPELL_LYCHEE,BASH_EXEC"
           BASH_SHELLCHECK_ARGUMENTS: "-s bash -x -S warning -e SC2086"

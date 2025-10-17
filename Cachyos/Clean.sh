@@ -325,6 +325,7 @@ EOF
   clean_db(){
     sqlite3 "$1" vacuum
     sqlite3 "$1" reindex
+    sqlite3 "$1" "PRAGMA optimize"
   }
   find -L "$@" -maxdepth 2 -type f -not -name '*.sqlite-wal' -print0 2>/dev/null | xargs -0 file -e ascii | sed -n -e "s/:.*SQLite.*//p"
   # Wine

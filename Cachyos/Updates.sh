@@ -132,8 +132,7 @@ update_extras() {
 
   if has flatpak; then
     xecho "🔄${BLU}Updating Flatpak...${DEF}"
-    run_priv flatpak update -y --noninteractive --appstream >/dev/null 2>&1 || :
-    run_priv flatpak update -y --noninteractive --system --force-remove >/dev/null 2>&1 || :
+    run_priv flatpak update -y --noninteractive --force-remove >/dev/null 2>&1 || :
   fi
 
   if has rustup; then

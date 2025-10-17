@@ -1,50 +1,41 @@
 #!/usr/bin/env bash
-LC_ALL=C LANG=C
-SHELL=bash
-INPUT="${1:?Usage: $0 <script.sh>}"
+set -euo pipefail
+LC_ALL=C LANG=C SHELL=bash
+
+readonly INPUT="${1:?Usage: $0 <script.sh>}"
+readonly OUT="${INPUT%.sh}.optimized.sh"
+
+# Detect tools once
+readonly HAS_SD=$(command -v sd &>/dev/null && echo 1 || echo 0)
+readonly HAS_FD=$(command -v fd &>/dev/null && echo 1 || echo 0)
 
 pp_strip_comments(){ sed '/^[[:space:]]*#.*$/d'; }
-pp_strip_copyright(){ awk '/^#/ {if(!p){ next }} { p=1; print }'; }
-pp_strip_separators(){ awk '/^#\s*-{5,}/ { next } { print }'; }
+pp_strip_copyright(){ awk '/^#/{if(!p)next}{p=1;print}'; }
+pp_strip_separators(){ sed '/^#[[:space:]]*-\{5,\}/d'; }
 
 dofunc(){
-  if command -v sd &>/dev/null; then
-    sd '\(\) \{' '(){' "$1"
-  else
-    sed -i 's/() {/(){/g' "$1"
-  fi
+  [[ $HAS_SD -eq 1 ]] && sd '\(\) \{' '(){'  "$1" || sed -i 's/() {/(){/g' "$1"
 }
+
 dotrue(){
-  if command -v sd &>/dev/null; then
-    sd '\|\| true' '|| :'
-  else
-    sed -i 's/|| true/|| :/g'
-  fi
+  [[ $HAS_SD -eq 1 ]] && sd '\|\| true' '|| :' "$1" || sed -i 's/|| true/|| :/g' "$1"
 }
 
 search(){
-  if command -v fd &>/dev/null; then
-    fd '\.(sh|bash)$' -x "$1" {}
-  else
-    find . -name '*.sh' -exec "$1" {} +
-  fi
+  local -n cmd=$1
+  [[ $HAS_FD -eq 1 ]] && fd -e sh -e bash -x "${cmd[@]}" {} || find . -type f \( -name '*.sh' -o -name '*.bash' \) -exec "${cmd[@]}" {} +
 }
 
-dofmt(){ shfmt -ln=bash -i 2 -bn -s -w -- "$1"; }
-
-docheck(){ shellcheck -a -x -s bash -P "SCRIPTDIR" -f diff -- "$1" | patch -Nlp1; }
-
-doharden(){ shellharden --replace -- "$1"; }
+dofmt(){ shfmt -ln bash -i 2 -bn -s -w -- "$1"; }
+docheck(){ shellcheck -a -x -s bash -P SCRIPTDIR -f diff -- "$1" | patch -Nlp1 2>/dev/null || :; }
+doharden(){ shellharden --replace -- "$1" 2>/dev/null || :; }
 
 {
-  pp_strip_separators <"$INPUT" \
-  | pp_strip_copyright \
-  | pp_strip_comments \
-  | shfmt -mn -ln bash -fn -ci -kp \
-  | shellharden
-} >"${INPUT%.sh}.optimized.sh"
+  pp_strip_separators <"$INPUT" |
+  pp_strip_copyright |
+  pp_strip_comments |
+  shfmt -mn -ln bash -fn -ci -kp |
+  shellharden
+} >"$OUT"
 
-shellcheck "${INPUT%.sh}.optimized.sh"
-echo "Optimized script saved as ${INPUT%.sh}.optimized.sh"
-
-
+shellcheck "$OUT" && echo "Saved: $OUT" || echo "Warning: shellcheck failed"

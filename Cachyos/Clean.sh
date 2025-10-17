@@ -4,34 +4,28 @@ IFS=$'\n\t'
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C LANGUAGE=C
 
-#──────────── Color & Effects ────────────
+#============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-
 has() { command -v "$1" >/dev/null 2>&1; }
 xecho() { printf '%b\n' "$*"; }
 
-#──────────── Privilege Helper ──────────
+#============ Privilege Helper ==========
 get_priv_cmd() {
   local cmd
   for cmd in sudo-rs sudo doas; do
     if has "$cmd"; then
-      printf '%s' "$cmd"
-      return 0
+      printf '%s' "$cmd"; return 0
     fi
   done
   [[ $EUID -eq 0 ]] && printf '' || { xecho "${RED}No privilege tool found${DEF}" >&2; exit 1; }
 }
-
 PRIV_CMD=$(get_priv_cmd)
 [[ -n $PRIV_CMD && $EUID -ne 0 ]] && "$PRIV_CMD" -v
-
-run_priv() {
-  [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@"
-}
+run_priv(){ [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@"; }
 
 print_banner() {
   local banner flag_colors

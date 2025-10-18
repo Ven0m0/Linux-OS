@@ -1,26 +1,19 @@
 #!/usr/bin/env bash
 # raspi-f2fs.sh - Flash Raspberry Pi images to SD cards with F2FS root filesystem
-# 
-# Features:
-# - Converts Raspberry Pi OS images from ext4 to F2FS for better flash performance
-# - Works with both physical devices (/dev/sdX) and image files (output.img)
-# - Interactive mode for source/target selection with fzf
-# - Optional SSH enablement on first boot
-# - First-boot auto-resize for F2FS partitions
-# - Optimized for both speed and safety
 set -euo pipefail
 IFS=$'\n\t'
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 
 # --- Config ---
-BOOT_SIZE="512M"  # FAT32 boot partition size
+BOOT_SIZE="512M"
 DRY_RUN=0
 DEBUG=0
 ENABLE_SSH=0
 SOURCE_PATH=""
 TARGET_PATH=""
 KEEP_SOURCE=0
+IS_BLOCK_DEVICE=0
 
 # --- Exit codes ---
 E_USAGE=64
@@ -64,7 +57,7 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
     log_error "Required command \"$1\" not found. Please install it."
     case "$1" in
-      fzf) log_error "Arch: pacman -S fzf | Debian: apt install fzf | Termux: pkg install fzf" ;;
+      fzf) log_error "Arch: pacman -S fzf | Debian: apt install fzf" ;;
       mkfs.f2fs) log_error "Arch: pacman -S f2fs-tools | Debian: apt install f2fs-tools" ;;
       losetup) log_error "Arch: pacman -S util-linux | Debian: apt install util-linux" ;;
     esac
@@ -74,7 +67,9 @@ require_cmd() {
 
 # --- Helper functions ---
 check_deps() {
-  for cmd in losetup parted mkfs.f2fs mkfs.vfat rsync tar xz curl blkid blockdev; do
+  local -a required=(losetup parted mkfs.f2fs mkfs.vfat rsync tar xz curl blkid blockdev)
+  local cmd
+  for cmd in "${required[@]}"; do
     require_cmd "$cmd"
   done
   
@@ -107,16 +102,16 @@ fzf_device_picker() {
     | awk '$2=="disk" && ($3=="1" || $3=="0") && ($6=="" || $6=="-") {printf "%s\t%s %s\n",$1,$4,$5}' \
     | fzf --height=~40% --layout=reverse --inline-info \
           --prompt="Select target device: " \
-          --header="⚠️  DEVICE WILL BE WIPED ⚠️\nPath\tSize Model" \
+          --header="WARNING: DEVICE WILL BE WIPED\nPath\tSize Model" \
           --no-multi -1 -0 \
     | awk '{print $1}'
 }
 
 run() {
-  # Execute a command, honouring dry‑run mode
   if (( DRY_RUN )); then
-    log_info "[dry‑run] $*"
+    log_info "[dry-run] $*"
   else
+    log_debug "Running: $*"
     eval "$*"
   fi
 }
@@ -127,21 +122,20 @@ prepare_workdir() {
   SRC_IMG="${WORKDIR}/source.img"
   BOOT_MNT="${WORKDIR}/boot"
   ROOT_MNT="${WORKDIR}/root"
+  TARGET_BOOT="${WORKDIR}/target_boot"
+  TARGET_ROOT="${WORKDIR}/target_root"
   
-  mkdir -p -- "$BOOT_MNT" "$ROOT_MNT"
+  mkdir -p -- "$BOOT_MNT" "$ROOT_MNT" "$TARGET_BOOT" "$TARGET_ROOT"
   
-  # Make sure we clean up on exit
   cleanup() {
     log_debug "Cleaning up..."
     umount -q "$BOOT_MNT" 2>/dev/null || true
     umount -q "$ROOT_MNT" 2>/dev/null || true
-    if [[ -n "${LOOP_DEV:-}" ]]; then
-      losetup -d "$LOOP_DEV" 2>/dev/null || true
-    fi
-    if [[ -n "${TARGET_LOOP:-}" ]]; then
-      losetup -d "$TARGET_LOOP" 2>/dev/null || true
-    fi
-    [[ -d "$WORKDIR" ]] && rm -rf "$WORKDIR"
+    umount -q "$TARGET_BOOT" 2>/dev/null || true
+    umount -q "$TARGET_ROOT" 2>/dev/null || true
+    [[ -n "${LOOP_DEV:-}" ]] && losetup -d "$LOOP_DEV" 2>/dev/null || true
+    [[ -n "${TARGET_LOOP:-}" ]] && losetup -d "$TARGET_LOOP" 2>/dev/null || true
+    [[ -d "${WORKDIR:-}" ]] && rm -rf "$WORKDIR"
     log_debug "Cleanup complete"
   }
   trap cleanup EXIT
@@ -154,9 +148,9 @@ prepare_source() {
   case "$SOURCE_PATH" in
     http://*|https://*)
       log_info "Downloading $SOURCE_PATH"
-      SRC_URL="$SOURCE_PATH"
-      SOURCE_PATH="${WORKDIR}/$(basename "$SRC_URL")"
-      curl -C - -SfL --progress-bar -o "$SOURCE_PATH" "$SRC_URL"
+      local src_url="$SOURCE_PATH"
+      SOURCE_PATH="${WORKDIR}/$(basename "$src_url")"
+      curl -C - -SfL --progress-bar -o "$SOURCE_PATH" "$src_url"
       ;;
   esac
 
@@ -177,10 +171,7 @@ prepare_source() {
       ;;
   esac
   
-  if [[ ! -f "$SRC_IMG" ]]; then
-    log_error "Source image not found or invalid: $SOURCE_PATH"
-    exit 1
-  fi
+  [[ ! -f "$SRC_IMG" ]] && { log_error "Source image not found: $SOURCE_PATH"; exit 1; }
   
   log_debug "Source ready: $SRC_IMG"
 }
@@ -190,7 +181,6 @@ prepare_target() {
   
   if [[ -b "$target" ]]; then
     log_info "Target is block device: $target"
-    # Confirm destructive operation
     if [[ $DRY_RUN -eq 0 ]]; then
       log_warn "[*] WARNING: All data on ${target} will be DESTROYED!"
       local confirm
@@ -201,32 +191,34 @@ prepare_target() {
     IS_BLOCK_DEVICE=1
   else
     log_info "Target is image file: $target"
-    log_info "Creating empty image file..."
     
-    # Determine size needed for the output image
-    local source_size_mb=$(du -m "$SRC_IMG" | cut -f1)
-    local target_size_mb=$((source_size_mb + 200))  # Add 200MB buffer
+    local source_size_mb
+    source_size_mb=$(du -m "$SRC_IMG" | cut -f1)
+    local target_size_mb=$((source_size_mb + 200))
     
+    log_info "Creating ${target_size_mb}MB image file..."
     run "truncate -s ${target_size_mb}M \"$target\""
     
-    # Set up loop device for the target image
     if [[ $DRY_RUN -eq 0 ]]; then
       TARGET_LOOP=$(losetup --show -f -P "$target")
       TARGET_DEV="$TARGET_LOOP"
+      log_debug "Target loop device: $TARGET_LOOP"
     else
       TARGET_DEV="(loop-device)"
-      TARGET_LOOP="(loop-device)"
+      TARGET_LOOP=""
     fi
     IS_BLOCK_DEVICE=0
   fi
   
-  # Determine partition names based on device type
+  # Determine partition naming scheme
   case "$TARGET_DEV" in
-    *mmcblk*|*nvme*) 
-      PART_BOOT="${TARGET_DEV}p1"; PART_ROOT="${TARGET_DEV}p2" 
+    *mmcblk*|*nvme*|*loop*) 
+      PART_BOOT="${TARGET_DEV}p1"
+      PART_ROOT="${TARGET_DEV}p2" 
       ;;
     *)              
-      PART_BOOT="${TARGET_DEV}1";  PART_ROOT="${TARGET_DEV}2"  
+      PART_BOOT="${TARGET_DEV}1"
+      PART_ROOT="${TARGET_DEV}2"
       ;;
   esac
   
@@ -238,21 +230,28 @@ prepare_target() {
 partition_target() {
   log_info "Partitioning target device..."
   
-  # Wipe existing partition table
   run "wipefs -af \"$TARGET_DEV\""
-  
-  # Create new partition table and partitions
   run "parted -s \"$TARGET_DEV\" mklabel msdos"
   run "parted -s \"$TARGET_DEV\" mkpart primary fat32 0% $BOOT_SIZE"
   run "parted -s \"$TARGET_DEV\" mkpart primary $BOOT_SIZE 100%"
-  run "partprobe \"$TARGET_DEV\""
   
-  # Give udev time to create device nodes if needed
   if [[ $DRY_RUN -eq 0 ]]; then
-    udevadm settle || sleep 2
+    partprobe "$TARGET_DEV" 2>/dev/null || true
+    udevadm settle 2>/dev/null || sleep 2
+    
+    # Wait for partition devices to appear
+    local retry=0
+    while [[ ! -b "$PART_BOOT" || ! -b "$PART_ROOT" ]] && (( retry < 10 )); do
+      sleep 1
+      ((retry++))
+    done
+    
+    [[ ! -b "$PART_BOOT" || ! -b "$PART_ROOT" ]] && {
+      log_error "Partition devices not found after partitioning"
+      exit 1
+    }
   fi
   
-  # Create filesystems
   log_info "Creating filesystems..."
   run "mkfs.vfat -F32 -I -n boot \"$PART_BOOT\""
   run "mkfs.f2fs -f -O extra_attr,inode_checksum,sb_checksum -l root \"$PART_ROOT\""
@@ -261,13 +260,12 @@ partition_target() {
 mount_source_image() {
   log_info "Mounting source image partitions..."
   
-  # Detect loop-device suffix
   if [[ $DRY_RUN -eq 0 ]]; then
     LOOP_DEV=$(losetup --show -fP "$SRC_IMG")
     log_debug "Source loop device: $LOOP_DEV"
     
-    # Some loop devices need a "p" suffix, others don't
-    local p1=""
+    # Wait for partition devices
+    local p1 p2
     if [[ -b "${LOOP_DEV}p1" ]]; then
       p1="${LOOP_DEV}p1"
       p2="${LOOP_DEV}p2"
@@ -276,11 +274,17 @@ mount_source_image() {
       p2="${LOOP_DEV}2"
     fi
     
-    # Mount source partitions
-    run "mount \"$p1\" \"$BOOT_MNT\""
-    run "mount \"$p2\" \"$ROOT_MNT\""
+    # Wait for devices to be ready
+    local retry=0
+    while [[ ! -b "$p1" || ! -b "$p2" ]] && (( retry < 10 )); do
+      sleep 1
+      ((retry++))
+    done
+    
+    mount "$p1" "$BOOT_MNT"
+    mount "$p2" "$ROOT_MNT"
   else
-    LOOP_DEV="(loop-device)"
+    LOOP_DEV=""
     log_info "[dry-run] Would mount source partitions"
   fi
 }
@@ -288,112 +292,81 @@ mount_source_image() {
 mount_target_partitions() {
   log_info "Mounting target partitions..."
   
-  TARGET_BOOT="${WORKDIR}/target_boot"
-  TARGET_ROOT="${WORKDIR}/target_root"
-  mkdir -p "$TARGET_BOOT" "$TARGET_ROOT"
-  
   if [[ $DRY_RUN -eq 0 ]]; then
-    run "mount \"$PART_BOOT\" \"$TARGET_BOOT\""
-    run "mount \"$PART_ROOT\" \"$TARGET_ROOT\""
+    mount "$PART_BOOT" "$TARGET_BOOT"
+    mount "$PART_ROOT" "$TARGET_ROOT"
   fi
 }
 
-copy_boot_partition() {
-  log_info "Copying boot partition..."
+copy_partition() {
+  local src="$1" dst="$2" name="$3"
+  log_info "Copying $name partition..."
   
-  if [[ $DRY_RUN -eq 0 ]]; then
-    # Try to use tmpfs for speed if enough RAM is available
-    local root_size_mb=$(du -sm "$BOOT_MNT" | awk '{print $1}')
-    local tmpfs_size_mb=$((root_size_mb + 50))  # Add 50MB buffer
-    local free_mb=$(free -m | awk '/Mem:/ {print $7}')
+  [[ $DRY_RUN -eq 1 ]] && { log_info "[dry-run] Would copy $name partition"; return; }
+  
+  local size_mb free_mb tmpfs_size_mb
+  size_mb=$(du -sm "$src" | awk '{print $1}')
+  tmpfs_size_mb=$((size_mb + 100))
+  free_mb=$(awk '/MemAvailable/ {print int($2/1024)}' /proc/meminfo)
+  
+  if (( free_mb >= tmpfs_size_mb * 2 )); then
+    log_info "Using RAM for faster copy (${tmpfs_size_mb}MB)..."
+    local tmpfs_mnt="${WORKDIR}/tmpfs_${name}"
+    mkdir -p "$tmpfs_mnt"
+    mount -t tmpfs -o size="${tmpfs_size_mb}M" tmpfs "$tmpfs_mnt"
     
-    if [[ $free_mb -ge $((tmpfs_size_mb * 2)) ]]; then
-      log_info "Using RAM for faster copy..."
-      local tmpfs_mnt="${WORKDIR}/tmpfs_boot"
-      mkdir -p "$tmpfs_mnt"
-      mount -t tmpfs -o size="${tmpfs_size_mb}M" tmpfs "$tmpfs_mnt"
-      
-      # Fast copy via tar through tmpfs
-      (cd "$BOOT_MNT" && tar -cpf - .) | (cd "$tmpfs_mnt" && tar -xpf -)
-      (cd "$tmpfs_mnt" && tar -cpf - .) | (cd "$TARGET_BOOT" && tar -xpf -)
-      
-      umount "$tmpfs_mnt"
-      rm -rf "$tmpfs_mnt"
-    else
-      log_info "Using direct copy method..."
-      rsync -aHAX --info=progress2 "$BOOT_MNT/" "$TARGET_BOOT/"
-    fi
+    (cd "$src" && tar -cpf - .) | (cd "$tmpfs_mnt" && tar -xpf -)
+    (cd "$tmpfs_mnt" && tar -cpf - .) | (cd "$dst" && tar -xpf -)
+    
+    umount "$tmpfs_mnt"
+    rm -rf "$tmpfs_mnt"
   else
-    log_info "[dry-run] Would copy boot partition"
+    log_info "Using direct rsync..."
+    rsync -aHAX --info=progress2 "$src/" "$dst/"
   fi
 }
 
-copy_root_partition() {
-  log_info "Copying root partition..."
-  
-  if [[ $DRY_RUN -eq 0 ]]; then
-    # Try to use tmpfs for speed if enough RAM is available
-    local root_size_mb=$(du -sm "$ROOT_MNT" | awk '{print $1}')
-    local tmpfs_size_mb=$((root_size_mb + 100))  # Add 100MB buffer
-    local free_mb=$(free -m | awk '/Mem:/ {print $7}')
-    
-    if [[ $free_mb -ge $((tmpfs_size_mb * 2)) ]]; then
-      log_info "Using RAM for faster copy..."
-      local tmpfs_mnt="${WORKDIR}/tmpfs_root"
-      mkdir -p "$tmpfs_mnt"
-      mount -t tmpfs -o size="${tmpfs_size_mb}M" tmpfs "$tmpfs_mnt"
-      
-      # Fast copy via tar through tmpfs
-      (cd "$ROOT_MNT" && tar -cpf - .) | (cd "$tmpfs_mnt" && tar -xpf -)
-      (cd "$tmpfs_mnt" && tar -cpf - .) | (cd "$TARGET_ROOT" && tar -xpf -)
-      
-      umount "$tmpfs_mnt"
-      rm -rf "$tmpfs_mnt"
-    else
-      log_info "Using direct copy method..."
-      rsync -aHAX --info=progress2 "$ROOT_MNT/" "$TARGET_ROOT/"
-    fi
-  else
-    log_info "[dry-run] Would copy root partition"
-  fi
-}
+copy_boot_partition() { copy_partition "$BOOT_MNT" "$TARGET_BOOT" "boot"; }
+copy_root_partition() { copy_partition "$ROOT_MNT" "$TARGET_ROOT" "root"; }
 
 update_config_files() {
   log_info "Updating configuration files for F2FS..."
   
-  if [[ $DRY_RUN -eq 0 ]]; then
-    # Get partition UUIDs
-    local boot_uuid=$(blkid -s PARTUUID -o value "$PART_BOOT")
-    local root_uuid=$(blkid -s PARTUUID -o value "$PART_ROOT")
-    
-    # Update cmdline.txt
-    if [[ -f "${TARGET_BOOT}/cmdline.txt" ]]; then
-      log_debug "Updating cmdline.txt"
-      sed -i "s|root=[^ ]*|root=PARTUUID=$root_uuid|" "${TARGET_BOOT}/cmdline.txt"
-      sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_BOOT}/cmdline.txt"
-      # Remove resize script if present
-      sed -i 's| init=/usr/lib/raspi-config/init_resize.sh||' "${TARGET_BOOT}/cmdline.txt"
-    fi
-    
-    # Update fstab
-    log_debug "Creating new fstab"
-    cat > "${TARGET_ROOT}/etc/fstab" <<EOF
+  [[ $DRY_RUN -eq 1 ]] && { log_info "[dry-run] Would update config files"; return; }
+  
+  local boot_uuid root_uuid
+  boot_uuid=$(blkid -s PARTUUID -o value "$PART_BOOT")
+  root_uuid=$(blkid -s PARTUUID -o value "$PART_ROOT")
+  
+  # Update cmdline.txt
+  if [[ -f "${TARGET_BOOT}/cmdline.txt" ]]; then
+    log_debug "Updating cmdline.txt"
+    sed -i "s|root=[^ ]*|root=PARTUUID=$root_uuid|" "${TARGET_BOOT}/cmdline.txt"
+    sed -i "s|rootfstype=[^ ]*|rootfstype=f2fs|" "${TARGET_BOOT}/cmdline.txt"
+    sed -i 's| init=/usr/lib/raspi-config/init_resize.sh||' "${TARGET_BOOT}/cmdline.txt"
+  fi
+  
+  # Update fstab
+  log_debug "Creating new fstab"
+  cat > "${TARGET_ROOT}/etc/fstab" <<EOF
 proc                  /proc   proc    defaults                    0   0
 PARTUUID=$boot_uuid  /boot   vfat    defaults                    0   2
 PARTUUID=$root_uuid  /       f2fs    defaults,noatime,discard    0   1
 EOF
-  else
-    log_info "[dry-run] Would update configuration files"
-  fi
 }
 
 setup_first_boot() {
   log_info "Setting up first-boot configurations..."
   
-  if [[ $DRY_RUN -eq 0 ]]; then
-    # Create F2FS resize script
-    mkdir -p "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount"
-    cat > "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize" <<'EOF'
+  [[ $DRY_RUN -eq 1 ]] && {
+    log_info "[dry-run] Would set up first-boot configs"
+    [[ $ENABLE_SSH -eq 1 ]] && log_info "[dry-run] Would enable SSH"
+    return
+  }
+  
+  # Create F2FS resize script
+  mkdir -p "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount"
+  cat > "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize" <<'EOF'
 #!/bin/sh
 . /scripts/functions
 log_begin_msg "Expanding F2FS root filesystem..."
@@ -403,19 +376,15 @@ if [ -x /sbin/resize.f2fs ]; then
   log_end_msg "F2FS root filesystem expanded."
   rm -f /etc/initramfs-tools/scripts/init-premount/f2fsresize
 else
-  log_end_msg "resize.f2fs not found – skipping."
+  log_end_msg "resize.f2fs not found - skipping."
 fi
 EOF
-    chmod +x "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize"
-    
-    # Enable SSH if requested
-    if [[ $ENABLE_SSH -eq 1 ]]; then
-      log_info "Enabling SSH on first boot"
-      touch "${TARGET_BOOT}/ssh"
-    fi
-  else
-    log_info "[dry-run] Would set up first-boot configurations"
-    [[ $ENABLE_SSH -eq 1 ]] && log_info "[dry-run] Would enable SSH"
+  chmod +x "${TARGET_ROOT}/etc/initramfs-tools/scripts/init-premount/f2fsresize"
+  
+  # Enable SSH if requested
+  if [[ $ENABLE_SSH -eq 1 ]]; then
+    log_info "Enabling SSH on first boot"
+    touch "${TARGET_BOOT}/ssh"
   fi
 }
 
@@ -425,10 +394,9 @@ finalize() {
   if [[ $DRY_RUN -eq 0 ]]; then
     sync
     
-    # Final checks
     if [[ -b "$PART_BOOT" && -b "$PART_ROOT" ]]; then
-      log_info "Verifying partition sizes:"
-      df -h "$PART_BOOT" "$PART_ROOT" || true
+      log_info "Partition layout:"
+      df -h "$PART_BOOT" "$PART_ROOT" 2>/dev/null || true
     fi
   fi
   
@@ -441,7 +409,6 @@ finalize() {
 }
 
 main() {
-  # Parse arguments
   while getopts "b:i:d:sknxh" opt; do
     case "$opt" in
       b) BOOT_SIZE="$OPTARG" ;;
@@ -456,22 +423,20 @@ main() {
   done
   shift $((OPTIND-1))
   
-  # Get positional arguments if not provided as options
   [[ -z $SOURCE_PATH && $# -ge 1 ]] && SOURCE_PATH="$1" && shift
   [[ -z $TARGET_PATH && $# -ge 1 ]] && TARGET_PATH="$1" && shift
   
-  # Verify dependencies
   check_deps
   
-  # Interactive mode if source or target not provided
+  # Interactive mode if needed
   if [[ -z $SOURCE_PATH ]]; then
-    log_info "No source specified, entering interactive selection mode"
+    log_info "No source specified, entering interactive mode"
     SOURCE_PATH="$(fzf_file_picker)"
     [[ -z $SOURCE_PATH ]] && { log_error "No source selected"; exit "$E_USAGE"; }
   fi
   
   if [[ -z $TARGET_PATH ]]; then
-    log_info "No target specified, entering interactive selection mode"
+    log_info "No target specified, entering interactive mode"
     TARGET_PATH="$(fzf_device_picker)"
     [[ -z $TARGET_PATH ]] && { log_error "No target selected"; exit "$E_USAGE"; }
   fi
@@ -482,7 +447,6 @@ main() {
   log_info "Boot size: $BOOT_SIZE"
   [[ $ENABLE_SSH -eq 1 ]] && log_info "SSH will be enabled on first boot"
   
-  # Execute the conversion process
   prepare_workdir
   prepare_source
   prepare_target "$TARGET_PATH"

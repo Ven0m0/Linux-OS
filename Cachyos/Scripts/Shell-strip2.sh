@@ -22,10 +22,9 @@ pp_strip_comments(){ sed '/^[[:space:]]*#.*$/d'; }
 pp_strip_copyright(){ awk '/^#/{if(!p)next}{p=1;print}'; }
 pp_strip_separators(){ sed '/^#[[:space:]]*-\{5,\}/d'; }
 
-# stream normalizer: multiple replacements in one pass (perl is single-process & reliable)
-pp_normalize_bashisms(){
-  perl -pe 's/\(\) \{/(){/g; s/\|\| true/|| :/g; s/&>\/dev\/null/>\/dev\/null 2>&1/g'
-}
+pp_normalize_redirects(){ [[ $HAS_SD -eq 1 ]] && sd '&>/dev/null' '&>/dev/null' || sed 's|&>/dev/null|>/dev/null 2>\&1|g'; }
+dofunc(){ [[ $HAS_SD -eq 1 ]] && sd '\(\) \{' '(){' "$1" || sed -i 's/() {/(){/g' "$1"; }
+dotrue(){ [[ $HAS_SD -eq 1 ]] && sd '\|\| true' '|| :' "$1" || sed -i 's/|| true/|| :/g' "$1"; }
 
 # find shell files (NUL-separated)
 files_in_repo(){
@@ -57,7 +56,9 @@ esac
   pp_strip_separators <"$INPUT" \
   | pp_strip_copyright \
   | pp_strip_comments \
-  | pp_normalize_bashisms \
+  | pp_normalize_redirects \
+  | dofunc \
+  | dotrue \
   | { [[ $HAS_SHFMT -eq 1 ]] && shfmt -mn -ln bash -fn -ci -kp || cat; } \
   | { [[ $HAS_SHELLHARDEN -eq 1 ]] && shellharden || cat; }
 } >"$OUT"

@@ -6,8 +6,8 @@ shopt -s nullglob
 export LC_ALL=C LANG=C
 
 # Config
-declare -A cfg=([boot_size]="512M" [ssh]=0 [dry_run]=0 [debug]=0 [keep_source]=0 [dietpi]=0)
-declare src_path="" tgt_path="" IS_BLOCK=0 SRC_IMG="" WORKDIR="" LOOP_DEV="" TGT_DEV="" TGT_LOOP="" BOOT_PART="" ROOT_PART="" LOCK_FD=-1 LOCK_FILE=""
+declare -A cfg=([boot_size]="1024M" [ssh]=0 [dry_run]=0 [debug]=0 [keep_source]=0 [dietpi]=0)
+declare src_path="" tgt_path="" IS_BLOCK=0 SRC_IMG="" WORKDIR="" LOOP_DEV="" TGT_DEV="" TGT_LOOP="" BOOT_PART="" ROOT_PART="" LOCK_FD=-1 LOCK_FILE="" STOPPED_UDISKS2=0
 
 # Logging
 log() { printf '[%s] %s\n' "$(date +%T)" "${1-}"; }
@@ -74,16 +74,30 @@ refresh_partitions() {
   if [[ $dev == /dev/loop* ]]; then
     debug "Refreshing loop partitions: $dev"
     losetup -d "$dev" &>/dev/null || :
+    sleep 1
     TGT_LOOP=$(losetup --show -f -P "$tgt_path")
     TGT_DEV=$TGT_LOOP
+    debug "Loop device reattached: $TGT_DEV"
   else
     debug "Refreshing partition table: $dev"
-    command -v blockdev &>/dev/null && {
-      blockdev --flushbufs "$dev" &>/dev/null || :
-      blockdev --rereadpt "$dev" &>/dev/null || :
-    }
-    partprobe -s "$dev" &>/dev/null || :
-    command -v udevadm &>/dev/null && udevadm settle &>/dev/null || sleep 1
+
+    # Try multiple methods with retries for block devices
+    local retry
+    for ((retry = 0; retry < 3; retry++)); do
+      ((retry > 0)) && {
+        warn "Retry $retry: forcing partition table refresh"
+        sleep 2
+      }
+
+      command -v blockdev &>/dev/null && {
+        blockdev --flushbufs "$dev" &>/dev/null || :
+        blockdev --rereadpt "$dev" 2>/dev/null && break
+      }
+
+      partprobe -s "$dev" 2>/dev/null && break
+    done
+
+    command -v udevadm &>/dev/null && udevadm settle --timeout=10 &>/dev/null || sleep 2
   fi
 
   derive_partition_paths "$TGT_DEV"
@@ -133,6 +147,12 @@ cleanup() {
   [[ -n ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" &>/dev/null || :
   [[ -n ${TGT_LOOP:-} ]] && losetup -d "$TGT_LOOP" &>/dev/null || :
 
+  # Restart udisks2 if we stopped it
+  ((${STOPPED_UDISKS2:-0})) && {
+    debug "Restarting udisks2"
+    systemctl start udisks2.service 2>/dev/null || :
+  }
+
   release_device_lock
   [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR"
 }
@@ -158,19 +178,36 @@ check_deps() {
 force_umount_device() {
   local dev=$1 parts part
 
-  mapfile -t parts < <(lsblk -n -o NAME,MOUNTPOINT "$dev" | awk '$2!="" {print "/dev/"$1}')
+  # Kill any processes using the device
+  command -v fuser &>/dev/null && {
+    fuser -km "$dev" &>/dev/null 2>&1 || :
+    sleep 1
+  }
+
+  # Find and unmount all partitions
+  mapfile -t parts < <(lsblk -n -o NAME,MOUNTPOINT "$dev" 2>/dev/null | awk '$2!="" {print "/dev/"$1}')
 
   ((${#parts[@]})) && {
     warn "Unmounting partitions on $dev"
-    for part in "${parts[@]}"; do umount -f "$part" &>/dev/null || :; done
+    for part in "${parts[@]}"; do
+      umount -fl "$part" &>/dev/null 2>&1 || :
+    done
+    sleep 1
   }
 
+  # Force kernel to drop caches and release device
+  sync
+  echo 3 >/proc/sys/vm/drop_caches 2>/dev/null || :
+
+  # Final fuser kill
   command -v fuser &>/dev/null && {
-    fuser -k "$dev" &>/dev/null || :
-    for part in "${parts[@]}"; do fuser -k "$part" &>/dev/null || :; done
+    fuser -km "$dev" &>/dev/null 2>&1 || :
+    for part in "${parts[@]}"; do
+      [[ -b $part ]] && fuser -km "$part" &>/dev/null 2>&1 || :
+    done
   }
 
-  sleep 1
+  sleep 2
 }
 
 # Process source
@@ -201,7 +238,15 @@ setup_target() {
       warn "WARNING: $tgt_path will be DESTROYED!"
       read -rp "Type YES to continue: " confirm
       [[ $confirm == YES ]] || error "Aborted"
+
+      # Aggressive cleanup
       force_umount_device "$tgt_path"
+
+      # Additional safety: try to release device
+      command -v hdparm &>/dev/null && hdparm -z "$tgt_path" &>/dev/null 2>&1 || :
+
+      sync
+      sleep 2
     }
     TGT_DEV=$tgt_path
     ((cfg[dry_run])) || { command -v blockdev &>/dev/null && blockdev --flushbufs "$TGT_DEV" &>/dev/null || :; }
@@ -228,15 +273,61 @@ setup_target() {
 # Partition target
 partition_target() {
   info "Partitioning"
+
+  # For block devices, ensure complete device release before partitioning
+  if [[ $TGT_DEV != /dev/loop* ]] && ((!cfg[dry_run])); then
+    debug "Preparing block device for partitioning"
+
+    # Final aggressive cleanup
+    force_umount_device "$TGT_DEV"
+
+    # Stop any automount services that might grab the device
+    if systemctl is-active udisks2.service &>/dev/null; then
+      warn "Stopping udisks2 temporarily"
+      systemctl stop udisks2.service 2>/dev/null && STOPPED_UDISKS2=1 || :
+    fi
+
+    # Give kernel time to settle
+    sync
+    sleep 2
+  fi
+
+  # For loop devices, release and reattach for clean partitioning
+  if [[ $TGT_DEV == /dev/loop* ]] && ((!cfg[dry_run])); then
+    debug "Releasing loop device before partitioning"
+    losetup -d "$TGT_DEV" &>/dev/null || :
+    sync
+    sleep 1
+    TGT_LOOP=$(losetup --show -f "$tgt_path")
+    TGT_DEV=$TGT_LOOP
+    debug "Reattached as $TGT_DEV"
+  fi
+
+  # Zero beginning to clear any existing partition table
+  ((cfg[dry_run])) || {
+    dd if=/dev/zero of="$TGT_DEV" bs=1M count=10 conv=fsync 2>/dev/null || :
+    sync
+    sleep 2
+  }
+
   run wipefs -af "$TGT_DEV"
   sync
   sleep 1
 
   run parted -s "$TGT_DEV" mklabel msdos
-  run parted -s "$TGT_DEV" mkpart primary fat32 0% "${cfg[boot_size]}"
-  run parted -s "$TGT_DEV" mkpart primary "${cfg[boot_size]}" 100%
   sync
+  sleep 1
 
+  run parted -s "$TGT_DEV" mkpart primary fat32 0% "${cfg[boot_size]}"
+  sync
+  sleep 1
+
+  run parted -s "$TGT_DEV" mkpart primary "${cfg[boot_size]}" 100%
+  run parted -s "$TGT_DEV" set 1 boot on
+  sync
+  sleep 3
+
+  # Refresh partition table (handles loop device reattach with -P flag)
   refresh_partitions "$TGT_DEV"
 
   info "Creating filesystems"
@@ -346,22 +437,67 @@ setup_boot() {
   info "Setting up first boot"
   ((cfg[dry_run])) && return 0
 
-  mkdir -p "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants"
+  # Add kernel modules first
+  local modules_file="${WORKDIR}/target_root/etc/modules"
+  grep -q '^f2fs$' "$modules_file" 2>/dev/null || echo 'f2fs' >>"$modules_file"
 
+  [[ -d ${WORKDIR}/target_root/etc/initramfs-tools ]] && {
+    local initramfs_modules="${WORKDIR}/target_root/etc/initramfs-tools/modules"
+    grep -q '^f2fs$' "$initramfs_modules" 2>/dev/null || echo 'f2fs' >>"$initramfs_modules"
+  }
+
+  # Create resize script that runs BEFORE mount (most reliable approach)
+  mkdir -p "${WORKDIR}/target_root/usr/local/bin"
+  cat >"${WORKDIR}/target_root/usr/local/bin/f2fs-resize-once.sh" <<-'EOFSCRIPT'
+	#!/bin/bash
+	# F2FS one-time resize script
+	RESIZE_FLAG="/boot/.f2fs-resized"
+
+	if [[ -f $RESIZE_FLAG ]]; then
+	  exit 0
+	fi
+
+	# Install f2fs-tools if missing
+	if ! command -v resize.f2fs &>/dev/null; then
+	  export DEBIAN_FRONTEND=noninteractive
+	  apt-get update -qq && apt-get install -y f2fs-tools || exit 0
+	fi
+
+	# Find root partition from fstab
+	ROOT_PART=$(awk '$2=="/" && $1~/^PARTUUID=/ {gsub(/PARTUUID=/,"",$1); print $1}' /etc/fstab)
+	[[ -z $ROOT_PART ]] && exit 0
+
+	ROOT_DEV=$(blkid -t PARTUUID="$ROOT_PART" -o device)
+	[[ -z $ROOT_DEV || ! -b $ROOT_DEV ]] && exit 0
+
+	# Ensure root is mounted read-only
+	if ! mount -o remount,ro / 2>/dev/null; then
+	  # If remount fails, we're too late in boot - schedule for next boot via rc.local
+	  exit 0
+	fi
+
+	# Resize filesystem
+	if resize.f2fs "$ROOT_DEV" 2>/dev/null; then
+	  mount -o remount,rw /
+	  touch "$RESIZE_FLAG"
+	fi
+	EOFSCRIPT
+  chmod +x "${WORKDIR}/target_root/usr/local/bin/f2fs-resize-once.sh"
+
+  # Create systemd service that runs VERY early
+  mkdir -p "${WORKDIR}/target_root/etc/systemd/system"
   cat >"${WORKDIR}/target_root/etc/systemd/system/f2fs-resize.service" <<-'EOFSERVICE'
 	[Unit]
-	Description=F2FS Root Filesystem Resize
+	Description=F2FS Root Filesystem Resize (First Boot)
 	DefaultDependencies=no
 	After=systemd-remount-fs.service
-	Before=local-fs-pre.target local-fs.target
-	ConditionPathExists=!/var/lib/.f2fs-resized
+	Before=local-fs-pre.target
+	ConditionPathExists=!/boot/.f2fs-resized
 
 	[Service]
 	Type=oneshot
+	ExecStart=/usr/local/bin/f2fs-resize-once.sh
 	RemainAfterExit=yes
-	ExecStartPre=/bin/sh -c 'export DEBIAN_FRONTEND=noninteractive; apt-get update -qq && apt-get install -y f2fs-tools'
-	ExecStart=/bin/sh -c 'resize.f2fs $(findmnt -n -o SOURCE /) || true'
-	ExecStartPost=/bin/touch /var/lib/.f2fs-resized
 	StandardOutput=journal+console
 	StandardError=journal+console
 
@@ -369,16 +505,20 @@ setup_boot() {
 	WantedBy=sysinit.target
 	EOFSERVICE
 
+  mkdir -p "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants"
   ln -sf /etc/systemd/system/f2fs-resize.service "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants/f2fs-resize.service"
 
-  # Add kernel modules
-  local modules_file="${WORKDIR}/target_root/etc/modules"
-  [[ -f $modules_file ]] && grep -q '^f2fs$' "$modules_file" || echo 'f2fs' >>"$modules_file"
-
-  [[ -d ${WORKDIR}/target_root/etc/initramfs-tools ]] && {
-    local initramfs_modules="${WORKDIR}/target_root/etc/initramfs-tools/modules"
-    grep -q '^f2fs$' "$initramfs_modules" 2>/dev/null || echo 'f2fs' >>"$initramfs_modules"
-  }
+  # Create rc.local as absolute last resort fallback
+  local rc_local="${WORKDIR}/target_root/etc/rc.local"
+  cat >"$rc_local" <<-'EOFRC'
+	#!/bin/bash
+	# Last resort F2FS resize (should not normally execute)
+	if [[ ! -f /boot/.f2fs-resized ]]; then
+	  /usr/local/bin/f2fs-resize-once.sh
+	fi
+	exit 0
+	EOFRC
+  chmod +x "$rc_local"
 
   ((cfg[ssh])) && {
     info "Enabling SSH on first boot"
@@ -407,7 +547,7 @@ usage() {
 	OPTIONS:
 	  -b SIZE   Boot size (default: ${cfg[boot_size]})
 	  -i FILE   Source (.img / .img.xz)
-	  -d DEV    Target device or file
+	  -d DEV    Target device or file (optional for .img in-place)
 	  -s        Enable SSH
 	  -k        Keep source copy
 	  -n        Dry run
@@ -421,13 +561,16 @@ usage() {
 	  # Create F2FS image file
 	  ${0##*/} -i RaspberryPiOS.img -d output.img
 
+	  # Modify image in-place (no target specified)
+	  ${0##*/} -i DietPi.img
+
 	  # Interactive mode
 	  sudo ${0##*/}
 
 	NOTES:
 	  - Supports DietPi and Raspberry Pi OS
 	  - First boot installs F2FS tools and resizes filesystem
-	  - Ensure adequate power supply during first boot
+	  - Omitting target for .img files enables in-place modification
 	EOF
   exit 0
 }
@@ -445,6 +588,7 @@ main() {
       cfg[debug]=1
       set -x
       ;;
+    h) usage ;;
     *) usage ;;
     esac
   done
@@ -461,11 +605,31 @@ main() {
     [[ -z $src_path ]] && error "No source"
   }
 
+  # Auto-detect in-place modification for .img files
+  if [[ -z $tgt_path ]]; then
+    if [[ $src_path == *.img && ! $src_path == *.xz ]]; then
+      warn "No target specified - will modify source in-place"
+      read -rp "Modify $src_path in-place? [y/N]: " confirm
+      [[ $confirm =~ ^[Yy]$ ]] && {
+        tgt_path="$src_path"
+        cfg[keep_source]=0 # Force direct modification
+        info "In-place modification enabled"
+      }
+    fi
+  fi
+
   [[ -z $tgt_path ]] && {
     info "Select target"
     tgt_path=$(lsblk -dno NAME,SIZE,TYPE,RM | awk '$3=="disk"&&($4=="1"||$4=="0")' | fzf --prompt="Target: " | awk '{print "/dev/"$1}')
     [[ -z $tgt_path ]] && error "No target"
   }
+
+  # Interactive boot size selection if not specified
+  if [[ ${cfg[boot_size]} == "1024M" ]] && [[ -t 0 ]]; then
+    info "Current boot partition size: ${cfg[boot_size]}"
+    read -rp "Change boot size? [512M/1024M/2048M or press Enter to keep default]: " boot_input
+    [[ -n $boot_input ]] && cfg[boot_size]=$boot_input
+  fi
 
   [[ ${cfg[boot_size]} =~ [KMGT]i?B?$ ]] || cfg[boot_size]+="M"
 

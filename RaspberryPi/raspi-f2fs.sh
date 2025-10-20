@@ -31,20 +31,19 @@ run() {
 
 # Derive partition paths using bash pattern matching
 derive_partition_paths() {
-  local dev="${1:-}"
+  local dev=${1:-}
   [[ -z $dev ]] && {
     BOOT_PART=""
     ROOT_PART=""
     return
   }
-
-  if [[ $dev == *@(nvme|mmcblk|loop)* ]]; then
+  [[ $dev == *@(nvme|mmcblk|loop)* ]] && {
     BOOT_PART="${dev}p1"
     ROOT_PART="${dev}p2"
-  else
+  } || {
     BOOT_PART="${dev}1"
     ROOT_PART="${dev}2"
-  fi
+  }
 }
 
 # Wait for partition devices
@@ -54,12 +53,10 @@ wait_for_partitions() {
 
   for ((i = 0; i < 60; i++)); do
     [[ -b $boot && -b $root ]] && return 0
-
-    if ((i % 6 == 5 && ${#dev})); then
+    ((i % 6 == 5 && ${#dev})) && {
       partprobe -s "$dev" &>/dev/null || :
       command -v udevadm &>/dev/null && udevadm settle &>/dev/null || :
-    fi
-
+    }
     sleep 0.5
   done
 
@@ -154,9 +151,7 @@ check_deps() {
 
   ((missing)) && error "Install missing dependencies (Arch: pacman -S f2fs-tools dosfstools parted rsync xz util-linux)"
 
-  [[ -z $src_path || -z $tgt_path ]] && {
-    command -v fzf &>/dev/null || error "fzf required for interactive mode (pacman -S fzf)"
-  }
+  [[ -z $src_path || -z $tgt_path ]] && { command -v fzf &>/dev/null || error "fzf required for interactive mode (pacman -S fzf)"; }
 }
 
 # Force unmount device
@@ -167,9 +162,7 @@ force_umount_device() {
 
   ((${#parts[@]})) && {
     warn "Unmounting partitions on $dev"
-    for part in "${parts[@]}"; do
-      umount -f "$part" &>/dev/null || :
-    done
+    for part in "${parts[@]}"; do umount -f "$part" &>/dev/null || :; done
   }
 
   command -v fuser &>/dev/null && {
@@ -302,9 +295,9 @@ update_config() {
   info "Updating config for F2FS"
   ((cfg[dry_run])) && return 0
 
-  local boot_uuid root_uuid
-  boot_uuid=$(blkid -s PARTUUID -o value "$BOOT_PART")
-  root_uuid=$(blkid -s PARTUUID -o value "$ROOT_PART")
+  local boot_partuuid root_partuuid
+  boot_partuuid=$(blkid -s PARTUUID -o value "$BOOT_PART")
+  root_partuuid=$(blkid -s PARTUUID -o value "$ROOT_PART")
 
   # Detect DietPi
   [[ -f ${WORKDIR}/target_root/boot/dietpi/.hw_model ]] && {
@@ -312,27 +305,39 @@ update_config() {
     cfg[dietpi]=1
   }
 
+  # Update cmdline.txt
   [[ -f ${WORKDIR}/target_boot/cmdline.txt ]] && {
     info "Patching cmdline.txt"
-    sed -i -e "s|root=[^ ]*|root=PARTUUID=$root_uuid|" \
+    sed -i -e "s|root=[^ ]*|root=PARTUUID=$root_partuuid|" \
       -e "s|rootfstype=[^ ]*|rootfstype=f2fs|" \
+      -e 's|rootwait|rootwait rootdelay=5|' \
       -e 's| init=/usr/lib/raspi-config/init_resize\.sh||' \
+      -e 's| init=/usr/lib/raspberrypi-sys-mods/firstboot||' \
       "${WORKDIR}/target_boot/cmdline.txt"
+
+    grep -q rootwait "${WORKDIR}/target_boot/cmdline.txt" || sed -i 's/$/ rootwait rootdelay=5/' "${WORKDIR}/target_boot/cmdline.txt"
   }
 
+  # Update fstab
   cat >"${WORKDIR}/target_root/etc/fstab" <<-EOF
-	proc                 /proc  proc   defaults           0 0
-	PARTUUID=$boot_uuid  /boot  vfat   defaults           0 2
-	PARTUUID=$root_uuid  /      f2fs   noatime,discard    0 1
+	proc                     /proc  proc    defaults          0  0
+	PARTUUID=$boot_partuuid  /boot  vfat    defaults          0  2
+	PARTUUID=$root_partuuid  /      f2fs    defaults,noatime  0  1
 	EOF
 
-  # Disable standard resize hooks
+  # Disable resize hooks
   ((cfg[dietpi])) && {
     local dietpi_stage="${WORKDIR}/target_root/boot/dietpi/.install_stage"
     [[ -f $dietpi_stage ]] && {
-      info "Patching DietPi install stage for F2FS"
-      sed -i 's/resize2fs/# resize2fs (disabled for f2fs)/g' "$dietpi_stage" || :
+      info "Patching DietPi install stage"
+      sed -i -e 's/resize2fs/# resize2fs (disabled for f2fs)/g' -e 's/parted.*resizepart/# parted resizepart (disabled)/g' "$dietpi_stage" || :
     }
+  }
+
+  local resize_service="${WORKDIR}/target_root/etc/systemd/system/multi-user.target.wants/rpi-set-sysconf.service"
+  [[ -L $resize_service ]] && {
+    info "Disabling rpi-set-sysconf resize service"
+    rm -f "$resize_service"
   }
 }
 
@@ -341,72 +346,46 @@ setup_boot() {
   info "Setting up first boot"
   ((cfg[dry_run])) && return 0
 
-  if ((cfg[dietpi])); then
-    info "Configuring DietPi for F2FS"
+  mkdir -p "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants"
 
-    # Create postboot directory if missing
-    mkdir -p "${WORKDIR}/target_root/var/lib/dietpi/postboot.d"
-
-    # Create F2FS resize service (runs before DietPi automation)
-    cat >"${WORKDIR}/target_root/etc/systemd/system/f2fs-resize.service" <<-'EOFSERVICE'
+  cat >"${WORKDIR}/target_root/etc/systemd/system/f2fs-resize.service" <<-'EOFSERVICE'
 	[Unit]
 	Description=F2FS Root Filesystem Resize
 	DefaultDependencies=no
-	After=local-fs-pre.target
-	Before=local-fs.target shutdown.target
-	Conflicts=shutdown.target
-	ConditionPathExists=!/var/lib/dietpi/.f2fs-resized
+	After=systemd-remount-fs.service
+	Before=local-fs-pre.target local-fs.target
+	ConditionPathExists=!/var/lib/.f2fs-resized
 
 	[Service]
 	Type=oneshot
 	RemainAfterExit=yes
-	ExecStartPre=/bin/sh -c 'apt-get update -qq && apt-get install -y f2fs-tools'
-	ExecStart=/bin/sh -c 'resize.f2fs $(findmnt -n -o SOURCE /)'
-	ExecStartPost=/bin/touch /var/lib/dietpi/.f2fs-resized
-	StandardOutput=journal
-	StandardError=journal
+	ExecStartPre=/bin/sh -c 'export DEBIAN_FRONTEND=noninteractive; apt-get update -qq && apt-get install -y f2fs-tools'
+	ExecStart=/bin/sh -c 'resize.f2fs $(findmnt -n -o SOURCE /) || true'
+	ExecStartPost=/bin/touch /var/lib/.f2fs-resized
+	StandardOutput=journal+console
+	StandardError=journal+console
 
 	[Install]
-	WantedBy=local-fs.target
+	WantedBy=sysinit.target
 	EOFSERVICE
 
-    # Enable the service
-    ln -sf /etc/systemd/system/f2fs-resize.service \
-      "${WORKDIR}/target_root/etc/systemd/system/local-fs.target.wants/f2fs-resize.service"
+  ln -sf /etc/systemd/system/f2fs-resize.service "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants/f2fs-resize.service"
 
-    info "F2FS resize service installed (systemd)"
-  else
-    info "Configuring Raspberry Pi OS for F2FS"
+  # Add kernel modules
+  local modules_file="${WORKDIR}/target_root/etc/modules"
+  [[ -f $modules_file ]] && grep -q '^f2fs$' "$modules_file" || echo 'f2fs' >>"$modules_file"
 
-    # For RPi OS: Use rc.local approach (more reliable than initramfs)
-    local rc_local="${WORKDIR}/target_root/etc/rc.local"
-
-    # Backup existing rc.local if present
-    [[ -f $rc_local ]] && cp "$rc_local" "${rc_local}.bak"
-
-    cat >"$rc_local" <<-'EOFRC'
-	#!/bin/bash
-	# F2FS resize on first boot
-	if [[ ! -f /var/lib/.f2fs-resized ]]; then
-	  export DEBIAN_FRONTEND=noninteractive
-	  apt-get update -qq && apt-get install -y f2fs-tools
-	  ROOT_DEV=$(findmnt -n -o SOURCE /)
-	  if [[ -b $ROOT_DEV ]] && command -v resize.f2fs &>/dev/null; then
-	    resize.f2fs "$ROOT_DEV"
-	    touch /var/lib/.f2fs-resized
-	  fi
-	fi
-	exit 0
-	EOFRC
-    chmod +x "$rc_local"
-
-    info "F2FS resize script installed (rc.local)"
-  fi
+  [[ -d ${WORKDIR}/target_root/etc/initramfs-tools ]] && {
+    local initramfs_modules="${WORKDIR}/target_root/etc/initramfs-tools/modules"
+    grep -q '^f2fs$' "$initramfs_modules" 2>/dev/null || echo 'f2fs' >>"$initramfs_modules"
+  }
 
   ((cfg[ssh])) && {
     info "Enabling SSH on first boot"
-    touch "${WORKDIR}/target_boot/ssh"
+    touch "${WORKDIR}/target_boot/ssh" "${WORKDIR}/target_boot/SSH"
   }
+
+  info "F2FS resize service installed"
 }
 
 # Complete
@@ -416,11 +395,14 @@ finalize() {
 
   info "Complete!"
   ((IS_BLOCK)) && info "SD card ready: $tgt_path" || info "Image ready: $tgt_path"
+  info "First boot will be ~30s slower while F2FS tools install and resize"
 }
 
 usage() {
   cat <<-EOF
 	Usage: ${0##*/} [OPTIONS] [SOURCE] [TARGET]
+
+	Flash Raspberry Pi images with F2FS root filesystem.
 
 	OPTIONS:
 	  -b SIZE   Boot size (default: ${cfg[boot_size]})
@@ -432,9 +414,19 @@ usage() {
 	  -x        Debug
 	  -h        Help
 
+	EXAMPLES:
+	  # Flash to SD card with SSH enabled
+	  sudo ${0##*/} -s -i DietPi.img.xz -d /dev/sdX
+
+	  # Create F2FS image file
+	  ${0##*/} -i RaspberryPiOS.img -d output.img
+
+	  # Interactive mode
+	  sudo ${0##*/}
+
 	NOTES:
-	  - For DietPi images: F2FS tools installed automatically on first boot
-	  - First boot will be slower due to filesystem resize
+	  - Supports DietPi and Raspberry Pi OS
+	  - First boot installs F2FS tools and resizes filesystem
 	  - Ensure adequate power supply during first boot
 	EOF
   exit 0
@@ -465,16 +457,13 @@ main() {
 
   [[ -z $src_path ]] && {
     info "Select source"
-    src_path=$(command -v fd &>/dev/null \
-      && fd -e img -e img.xz . "$HOME" | fzf --prompt="Source: " \
-      || find "$HOME" -type f \( -name "*.img" -o -name "*.img.xz" \) | fzf)
+    src_path=$(command -v fd &>/dev/null && fd -e img -e img.xz . "$HOME" | fzf --prompt="Source: " || find "$HOME" -type f \( -name "*.img" -o -name "*.img.xz" \) | fzf)
     [[ -z $src_path ]] && error "No source"
   }
 
   [[ -z $tgt_path ]] && {
     info "Select target"
-    tgt_path=$(lsblk -dno NAME,SIZE,TYPE,RM | awk '$3=="disk"&&($4=="1"||$4=="0")' \
-      | fzf --prompt="Target: " | awk '{print "/dev/"$1}')
+    tgt_path=$(lsblk -dno NAME,SIZE,TYPE,RM | awk '$3=="disk"&&($4=="1"||$4=="0")' | fzf --prompt="Target: " | awk '{print "/dev/"$1}')
     [[ -z $tgt_path ]] && error "No target"
   }
 

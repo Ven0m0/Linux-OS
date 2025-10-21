@@ -90,8 +90,7 @@ export RUSTC_BOOTSTRAP=1
 export CARGO_PROFILE_RELEASE_LTO=true
 export CARGO_BUILD_JOBS="$jobs"
 export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
-# export RUSTUP_TOOLCHAIN=nightly
-#LFLAGS=(-Clinker=clang -Clink-arg=-fuse-ld=lld -Clinker-features=lld)
+#LFLAGS=(-Clinker=clang -Clinker-features=+lld)
 #CLDFLAGS=(-fuse-ld=lld)
 
 # —————— Core optimization flags ——————
@@ -123,7 +122,7 @@ RUSTFLAGS_BASE=(
   -Cstrip=symbols
   -Clink-args="-flto -Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-gc-sections -Wl,-z,now -Wl,-s -Wl,--icf=all -Wl,-z,relro -Wl,-z,pack-relative-relocs"
   -Clto=fat
-  #-Clinker-plugin-lto
+  -Clinker-plugin-lto
   -Ztune-cpu=native
   -Cdebuginfo=0
   -Cpanic=abort

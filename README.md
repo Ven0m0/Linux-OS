@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/archma
 Fetch:
 
 ```bash
-curl -fsS4 https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/shell-tools/vnfetch.sh | bash
+curl -fsS4 https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/shell-tools/vnfetch.sh | bash
 ```
 
 </details>
@@ -34,7 +34,7 @@ curl -fsS4 https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 <summary><b>Rank mirrors & keyrings</b></summary>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Rank.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rank.sh | bash
 ```
 
 </details>
@@ -42,7 +42,10 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 <summary><b>Automated install</b></summary>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/Install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/Install.sh | bash
+```
+```bash
+curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/Chaotic-aur.sh | bash
 ```
 
 </details>
@@ -51,7 +54,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 <summary><b>Automated configuration</b></summary>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/AutoSetup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/AutoSetup.sh | bash
 ```
 
 </details>
@@ -59,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 <summary><b>Bleachbit extra cleaner install</b></summary>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/bleachbit.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/bleachbit.sh | bash
 ```
 
 </details>
@@ -67,9 +70,9 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 <summary><b>Miscellaneous scripts</b></summary>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Rust/Strip-rust.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/Strip-rust.sh | bash
 
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Debloat.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Debloat.sh | bash
 ```
 
 </details>

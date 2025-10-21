@@ -17,7 +17,8 @@ if ! grep -qF "$repo" "$conf"; then
 $repo\\
 $mirror
 " "$conf"
-  echo "chaotic-aur added. run: sudo pacman -Syu"
+  echo "chaotic-aur added."
+  sudo pacman -Syy --noconfirm
 else
   echo "chaotic-aur already present"
 fi

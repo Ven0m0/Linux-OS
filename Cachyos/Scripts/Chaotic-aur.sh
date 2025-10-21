@@ -26,7 +26,7 @@ if ! has_repo; then
   install_urls &>/dev/null
   append_repo
   echo "chaotic-aur added. run: sudo pacman -Syu"
-  sudo pacman -Syy --noconfirm --needed >/dev/null
+  sudo pacman -Syyu --noconfirm --needed >/dev/null
 else
   echo "chaotic-aur already present"
 fi

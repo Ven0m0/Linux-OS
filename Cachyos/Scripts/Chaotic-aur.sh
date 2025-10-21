@@ -40,6 +40,7 @@ PARU_PKGS=(alhp-keyring alhp-mirrorlist)
 PACMAN_OPTS=(--noconfirm --needed)
 PARU_OPTS=(--noconfirm --skipreview --needed)
 
+has(){ command -v "$1" &>/dev/null; }
 has_header(){ local hdr="$1"; grep -qF -- "$hdr" "$CONF"; }
 # append block variable (name) if header missing. uses nameref.
 ensure_block(){
@@ -49,26 +50,27 @@ ensure_block(){
   printf '%s\n' "$blk" | sudo tee -a "$CONF" >/dev/null
 }
 recv_and_lsign(){
-  sudo pacman-key --keyserver keyserver.ubuntu.com -r "$CHAOTIC_KEY" &>/dev/null ||:
-  yes | sudo pacman-key --lsign-key "$CHAOTIC_KEY" &>/dev/null ||:
+  sudo pacman-key --keyserver keyserver.ubuntu.com -r "$CHAOTIC_KEY" &>/dev/null||:
+  yes | sudo pacman-key --lsign-key "$CHAOTIC_KEY" &>/dev/null||:
 }
 install_urls(){
-  sudo pacman "${PACMAN_OPTS[@]}" -U "${CHAOTIC_URLS[@]}" &>/dev/null || :
+  sudo pacman "${PACMAN_OPTS[@]}" -U "${CHAOTIC_URLS[@]}" &>/dev/null||:
 }
 install_alhp_via_paru(){
-  if command -v paru &>/dev/null; then
-    paru "${PARU_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null || :
+  if has paru; then
+    paru "${PARU_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null||:
   else
     # fallback to pacman if paru not present
-    sudo pacman "${PACMAN_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null || :
+    sudo pacman "${PACMAN_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null||:
   fi
 }
-added=0
-
+# Check all repositories at once
 missing_repos=()
 has_header '[chaotic-aur]'||missing_repos+=(chaotic)
 has_header '[artafinde]'||missing_repos+=(artafinde)
 has_header '[core-x86-64-v3]'||missing_repos+=(alhp)
+
+# Process missing repos
 for repo in "${missing_repos[@]}"; do
   case $repo in
     chaotic) recv_and_lsign; install_urls; ensure_block '[chaotic-aur]' CHAOTIC_BLOCK;;
@@ -76,10 +78,9 @@ for repo in "${missing_repos[@]}"; do
     alhp) install_alhp_via_paru; ensure_block '[core-x86-64-v3]' ALHP_BLOCK;;
   esac
 done
+
+# Update if any repos were added
 (( ${#missing_repos[@]} ))&&{
   sudo pacman -Syyuq "${PACMAN_OPTS[@]}" &>/dev/null||:
   echo 'repos added'
 }||echo 'no changes'
-
-
-

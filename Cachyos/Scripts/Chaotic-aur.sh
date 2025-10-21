@@ -49,8 +49,8 @@ ensure_block(){
   printf '%s\n' "$blk" | sudo tee -a "$CONF" >/dev/null
 }
 recv_and_lsign(){
-  sudo pacman-key --keyserver keyserver.ubuntu.com --recv-keys "$CHAOTIC_KEY" &>/dev/null || :
-  printf 'y\n' | sudo pacman-key --lsign-key "$CHAOTIC_KEY" &>/dev/null || :
+  sudo pacman-key --keyserver keyserver.ubuntu.com -r "$CHAOTIC_KEY" &>/dev/null ||:
+  yes | sudo pacman-key --lsign-key "$CHAOTIC_KEY" &>/dev/null ||:
 }
 install_urls(){
   sudo pacman "${PACMAN_OPTS[@]}" -U "${CHAOTIC_URLS[@]}" &>/dev/null || :
@@ -65,28 +65,21 @@ install_alhp_via_paru(){
 }
 added=0
 
-if ! has_header '[chaotic-aur]'; then
-  recv_and_lsign
-  install_urls
-  ensure_block '[chaotic-aur]' CHAOTIC_BLOCK
-  added=1
-fi
-if ! has_header '[artafinde]'; then
-  ensure_block '[artafinde]' ARTA_BLOCK
-  added=1
-fi
-if ! has_header '[core-x86-64-v3]'; then
-  install_alhp_via_paru(){ install_alhp_via_paru; }
-  install_alhp_via_paru
-  ensure_block '[core-x86-64-v3]' ALHP_BLOCK
-  added=1
-fi
-if (( added )); then
-  sudo pacman -Syyuq "${PACMAN_OPTS[@]}" &>/dev/null || :
-  printf 'repos added\n'
-else
-  printf 'no changes\n'
-fi
+missing_repos=()
+has_header '[chaotic-aur]'||missing_repos+=(chaotic)
+has_header '[artafinde]'||missing_repos+=(artafinde)
+has_header '[core-x86-64-v3]'||missing_repos+=(alhp)
+for repo in "${missing_repos[@]}"; do
+  case $repo in
+    chaotic) recv_and_lsign; install_urls; ensure_block '[chaotic-aur]' CHAOTIC_BLOCK;;
+    artafinde) ensure_block '[artafinde]' ARTA_BLOCK;;
+    alhp) install_alhp_via_paru; ensure_block '[core-x86-64-v3]' ALHP_BLOCK;;
+  esac
+done
+(( ${#missing_repos[@]} ))&&{
+  sudo pacman -Syyuq "${PACMAN_OPTS[@]}" &>/dev/null||:
+  echo 'repos added'
+}||echo 'no changes'
 
 
 

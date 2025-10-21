@@ -5,7 +5,7 @@ IFS=$'\n\t'
 sudo -v
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || :
-SHELL="$(command -v bash)"
+SHELL=bash
 jobs="$(nproc)"
 # Helper functions
 has(){ command -v "$1" &>/dev/null; }
@@ -29,8 +29,7 @@ fi
 [[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf
 : "${CFLAGS:=-O3 --march=native -mtune=native -pipe}}"
 : "${CXXFLAGS:=$CFLAGS}"
-export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib
-export MAKEFLAGS="-j${jobs}" NINJAFLAGS="-j${jobs}" GOMAXPROCS="${jobs}" CARGO_BUILD_JOBS="${jobs}"
+export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib MAKEFLAGS="-j$jobs"
 : "${RUSTFLAGS:=-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clinker-plugin-lto -Cllvm-args=-enable-dfa-jump-thread \
 -Clinker=clang -Clinker-features=+lld -Zunstable-options -Ztune-cpu=native -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none}"
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1
@@ -53,30 +52,29 @@ DE=${DE:-"System"}
 
 # Package list (official + AUR combined)
 pkgs=(
-  topgrade bauh flatpak partitionmanager polkit-kde-agent legcord prismlauncher
+  topgrade bauh flatpak partitionmanager polkit-kde-agent prismlauncher
   obs-studio pigz lrzip pixz minizip-ng optipng svgo nasm yasm ccache sccache
   openmp polly mold autofdo-bin patchutils vulkan-mesa-layers
   plasma-wayland-protocols vkd3d-proton-git protonup-qt protonplus proton-ge-custom
   vkbasalt menu-cache profile-sync-daemon profile-cleaner bleachbit-git irqbalance
   xorg-xhost libappindicator-gtk3 libdbusmenu-glib appmenu-gtk-module
   xdg-desktop-portal modprobed-db cachyos-ksm-settings cpupower-gui openrgb
-  dropbear optiimage multipath-tools preload wolfssl sshpass graphicsmagick
+  optiimage multipath-tools preload sshpass graphicsmagick
   fclones cpio bc fuse2 appimagelauncher jdk24-graalvm-ee-bin
   cleanerml-git makepkg-optimize-mold prelockd uresourced optipng-parallel
-  plzip plzip-lzip-link lbzip2 usb-dirty-pages-udev cleanlib32 tuckr-git
-  dxvk-gplasync-bin pay-respects unzrip-git adbr-git luxtorpeda av1an
-  intel-ucode-shrink-hook xdg-ninja cylon scaramanga kbuilder yadm
+  plzip plzip-lzip-link lbzip2 usb-dirty-pages-udev cleanlib32
+  dxvk-gplasync-bin pay-respects unzrip-git adbr-git luxtorpeda-git av1an
+  xdg-ninja cylon scaramanga kbuilder yadm starship
 )
 
 # Package management functions
 Install_packages(){
-  local pkg pkgs=()
-  for pkg in "$@"; do
-    if ! pacman -Q "$pkg" &>/dev/null; then
-      pkgs+=("$pkg")
-    fi
-  done
-  [[ ${#pkgs[@]} -eq 0 ]] && return 0
+  local pkg; local -a pkgs
+  mapfile -t pkgs < <(pacman -Qq)
+  local -A installed; for pkg in "${pkgs[@]}"; do installed[$pkg]=1; done
+  pkgs=()
+  for pkg; do [[ ${installed[$pkg]} ]]||pkgs+=("$pkg"); done
+  (( ${#pkgs[@]} ))||return 0
   HotMsg "$DE: installing ${pkgs[*]}"
   pacman -Syu --noconfirm "${pkgs[@]}"
 }
@@ -92,11 +90,9 @@ Remove_packages(){
   pacman -R --noconfirm "${pkgs[@]}"
 }
 # Detect missing packages
-echo "Checking installed packages..."
-missing=()
-for p in "${pkgs[@]}"; do
-  "${pkgmgr[@]}" -Qiq "$p" &>/dev/null || missing+=("$p")
-done
+mapfile -t installed < <(pacman -Qq)
+declare -A inst_map; for p in "${installed[@]}"; do inst_map[$p]=1; done
+missing=(); for p in "${pkgs[@]}"; do [[ ${inst_map[$p]} ]]||missing+=("$p"); done
 
 # Install missing packages
 if [[ ${#missing[@]} -eq 0 ]]; then
@@ -132,12 +128,7 @@ fi
 # Flatpak apps
 if has flatpak; then
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || :
-  flats=(
-    io.github.wiiznokes.fan-control
-    io.github.giantpinkrobots.flatsweep
-    best.ellie.StartupConfiguration
-    org.kde.audiotube
-  )
+  flats=(io.github.wiiznokes.fan-control)
   [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
   flatpak update -y --noninteractive || :
 fi
@@ -159,7 +150,7 @@ rust_crates=(
 )
 
 has sccache && export RUSTC_WRAPPER=sccache
-rustup default nightly &>/dev/null || :
+rustup default nightly >/dev/null || :
 rustup set auto-self-update disable || :
 rustup set profile minimal || :
 rustup self upgrade-data || :
@@ -168,54 +159,23 @@ rustup self upgrade-data || :
 LC_ALL=C cargo +nightly -Zgit -Zno-embed-metadata -Zbuild-std=std,panic_abort \
   -Zbuild-std-features=panic_immediate_abort install \
   --git https://github.com/GitoxideLabs/gitoxide gitoxide -f --bins \
-  --no-default-features --features max-pure || :
+  --no-default-features --locked --features max-pure || :
 
 # Install other Rust crates
-[[ ${#rust_crates[@]} -gt 0 ]] && LC_ALL=C cargo install -Zunstable-options \
-  -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata --locked --bins \
-  -f -q --keep-going "${rust_crates[@]}" || :
+[[ ${#rust_crates[@]} -gt 0 ]] && printf '%s\n' "${rust_crates[@]}"|xargs -P"$jobs" -I{} \
+  LC_ALL=C cargo +nightly install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata --locked {} -f -q||:
 
 # Micro plugins
 if has micro; then
-  mplug=(
-    fish fzf wc filemanager cheat linter lsp autofmt detectindent editorconfig
+  mplug=(fish fzf wc filemanager cheat linter lsp autofmt detectindent editorconfig
     misspell comment diff jump bounce autoclose manipulator joinLines literate 
-    status ftoptions
-  )
+    status ftoptions)
   micro -plugin install "${mplug[@]}" || :
   micro -plugin update &>/dev/null || :
 fi
 
-# Fisher plugins for Fish shell
-if has fish && [ -r /usr/share/fish/vendor_functions.d/fisher.fish ]; then
-  fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher install jorgebucaran/fisher && fisher update" || :
-  fishplug=(
-    acomagu/fish-async-prompt 
-    kyohsuke/fish-evalcache 
-    eugene-babichenko/fish-codegen-cache 
-    oh-my-fish/plugin-xdg 
-    wk/plugin-ssh-term-helper 
-    scaryrawr/cheat.sh.fish 
-    y3owk1n/fish-x 
-    scaryrawr/zoxi
-    patrickf1/fzf.fish
-    jorgebucaran/autopair.fish
-    wawa19933/fish-systemd
-    kpbaks/autols.fish
-    halostatue/fish-rust
-    kpbaks/zellij.fish
-  )
-  printf '%s\n' "${fishplug[@]}" | fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher install " || :
-  fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher update" || :
-fi
-
-# FZF bash completions
-mkdir -p "$HOME/.config/bash"
-curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" \
-  -o "$HOME/.config/bash/fzf-simple-completion.sh" || :
-chmod +x "$HOME/.config/bash/fzf-simple-completion.sh" || :
-
 # GitHub CLI extensions
+has gh || sudo pacman -Sq github-cli --noconfirm --needed
 if has gh; then
   gh extension install gennaro-tedesco/gh-f || :
   gh extension install gennaro-tedesco/gh-s || :
@@ -268,51 +228,49 @@ sudo pacman -Sccq --noconfirm &>/dev/null || :
 [[ "${is_aur_helper:-0}" -eq 1 ]] && "${pkgmgr[@]}" -Sccq --noconfirm &>/dev/null || :
 sudo journalctl --rotate --vacuum-size=1 --flush --sync -q || :
 sudo fstrim -a --quiet-unsupported || :
-
-# Setup MIME environment variables (completing truncated section from original)
-export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0 \
-  MIMALLOC_ALLOW_LARGE_OS_PAGES=1 MIMALLOC_PURGE_DELAY=25 \
-  MIMALLOC_ARENA_EAGER_COMMIT=1
-
 # Shell integration setup for common shells
 HotMsg "Setting up shell integration..."
 
-# Zsh setup
-if has zsh; then
+fish_setup(){
+  mkdir -p "$HOME/.config/fish/conf.d" || :
+  fish -c "fish_update_completions" || :
+  if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
+    fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher update"
+    fishplug=(acomagu/fish-async-prompt kyohsuke/fish-evalcache eugene-babichenko/fish-codegen-cache
+    oh-my-fish/plugin-xdg wk/plugin-ssh-term-helper 
+    scaryrawr/cheat.sh.fish y3owk1n/fish-x
+    scaryrawr/zoxide kpbaks/autols.fish patrickf1/fzf.fish
+    jorgebucaran/autopair.fish wawa19933/fish-systemd
+    halostatue/fish-rust kpbaks/zellij.fish)
+    printf '%s\n' "${fishplug[@]}" | fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher install " || :
+  fi
+}
+# Bash setup
+bash_setup(){
+  mkdir -p "${HOME}/.config/bash" || :
+  curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" \
+    -o "${HOME}/.config/bash/fzf-simple-completion.sh" && chmod +x "${HOME}/.config/bash/fzf-simple-completion.sh"
+}
+zsh_setup(){
+  if [[ ! -f "$HOME/.p10k.zsh" ]]; then
+    curl -fsSL "https://raw.githubusercontent.com/romkatv/powerlevel10k/master/config/p10k-lean.zsh" \
+      -o "$HOME/.p10k.zsh" || :
+  fi
   [[ ! -f "$HOME/.zshenv" ]] && echo 'export ZDOTDIR="$HOME/.config/zsh"' > "$HOME/.zshenv"
   mkdir -p "$HOME/.config/zsh" || :
-  
-  # Install zinit if missing
   if [[ ! -d "$HOME/.local/share/zinit/zinit.git" ]]; then
     mkdir -p "$HOME/.local/share/zinit" || :
     git clone https://github.com/zdharma-continuum/zinit.git "$HOME/.local/share/zinit/zinit.git" || :
   fi
-fi
+}
 
-# Fish setup  
-if has fish; then
-  mkdir -p "$HOME/.config/fish/conf.d" || :
-  # Update fish plugins from our config
-  fish -c "fish_update_completions" || :
-fi
-
-# Bash setup
-if [[ ! -f "$HOME/.config/bash/bash-preexec.sh" ]]; then
-  mkdir -p "$HOME/.config/bash" || :
-  curl -fsSL "https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh" \
-    -o "$HOME/.config/bash/bash-preexec.sh" || :
-fi
-
-# Install p10k for zsh if missing
-if [[ ! -f "$HOME/.p10k.zsh" ]]; then
-  curl -fsSL "https://raw.githubusercontent.com/romkatv/powerlevel10k/master/config/p10k-lean.zsh" \
-    -o "$HOME/.p10k.zsh" || :
-fi
-
-# Install starship if missing
-if ! has starship; then
-  HotMsg "Installing Starship prompt..."
-  curl -fsSL https://starship.rs/install.sh | sh -s -- -y || :
-fi
+declare -A shell_setups=(
+  [zsh]='zsh_setup'
+  [fish]='fish_setup'
+  [bash]='bash_setup'
+)
+for sh in "${!shell_setups[@]}"; do
+  has "$sh" && eval "${shell_setups[$sh]}" ||:
+done
 
 log "All done! Restart your shell to apply all changes."

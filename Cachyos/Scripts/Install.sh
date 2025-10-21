@@ -64,7 +64,7 @@ pkgs=(
   cleanerml-git makepkg-optimize-mold prelockd uresourced optipng-parallel
   plzip plzip-lzip-link lbzip2 usb-dirty-pages-udev cleanlib32
   dxvk-gplasync-bin pay-respects unzrip-git adbr-git luxtorpeda-git av1an
-  xdg-ninja cylon scaramanga kbuilder yadm starship
+  xdg-ninja cylon scaramanga kbuilder yadm starship shfmt shellcheck shellharden dash
 )
 
 # Package management functions

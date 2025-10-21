@@ -103,7 +103,7 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 * [Lure.sh](https://lure.sh)
 * [Basher](https://www.basher.it/package)
 * [bpkg](https://bpkg.sh)
-
+* [Nix](https://github.com/NixOS/nix) ***/*** [Home-manager](https://github.com/nix-community/home-manager) **|** [Nixpkgs](https://github.com/NixOS/nixpkgs) **|** [NUR](https://github.com/nix-community/NUR) **|**
 * [x-cmd](https://www.x-cmd.com)
 
   <details>

@@ -18,10 +18,10 @@ audit=0
 scsi_mod.use_blk_mq=y nosplash
 
 Bootloader:
-sudo nano /boot/limine.conf
+sudo $EDITOR /boot/limine.conf
 Kernel:
-sudo nano /etc/default/limine
-sudo nano /boot/loader/entries/linux-cachyos.conf
+sudo $EDITOR /etc/default/limine
+sudo $EDITOR /boot/loader/entries/linux-cachyos.conf
 
 Cmdline:
 nowatchdog quiet nosplash mitigations=off split_lock_detect=off pcie_aspm.policy=performance pcie_aspm=off clearcpuid=514 systemd.unified_cgroup_hierarchy=1 tsc=reliable clocksource=tsc init_on_alloc=0 init_on_free=0 nvme_core.default_ps_max_latency_us=0 f2fs.flush_merge_segments=1 xfs_mod.defaultcrc=0 cpuidle.governor=teo nohz=on threadirqs page_poison=off NVreg_EnableGpuFirmware=1 usbhid.mousepoll=1 usbhid.kbpoll=1 usbcore.autosuspend=10 scsi_mod.use_blk_mq=y

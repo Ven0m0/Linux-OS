@@ -1,43 +1,57 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+
 sudo -v
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || : 
+cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || :
 SHELL="$(command -v bash)"
-
-# helpers
+jobs="$(nproc)"
+# Helper functions
 has(){ command -v "$1" &>/dev/null; }
+HotMsg(){ printf "\e[1;33m► %s\e[0m\n" "$1"; }
+die(){ printf "\e[1;31m✖ %s\e[0m\n" "$1" >&2; exit "${2:-1}"; }
+log(){ printf "\e[1;36m✓ %s\e[0m\n" "$1"; }
 
-# pick package helper
-if has paru; then pkgmgr=(paru); is_aur_helper=1
-elif has yay; then pkgmgr=(yay); is_aur_helper=1
-else pkgmgr=(sudo pacman); is_aur_helper=0
+# Pick package helper
+if has paru; then
+  pkgmgr=(paru)
+  is_aur_helper=1
+elif has yay; then
+  pkgmgr=(yay)
+  is_aur_helper=1
+else
+  pkgmgr=(sudo pacman)
+  is_aur_helper=0
 fi
 
-# recommended build env
+# Build environment setup
 [[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf
-export CFLAGS="${CFLAGS:--march=native -mtune=native -O3 -pipe}"
-export CXXFLAGS="$CFLAGS"
+: "${CFLAGS:=-O3 --march=native -mtune=native -pipe}}"
+: "${CXXFLAGS:=$CFLAGS}"
 export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib
-export MAKEFLAGS="-j$(nproc)" NINJAFLAGS="-j$(nproc)"
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode=yes -Cllvm-args=-enable-dfa-jump-thread 
-  -Zunstable-options -Ztune-cpu=native -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none -Zdylib-lto"
-command -v ld.lld &>/dev/null && export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"
-export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly
-unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER
+export MAKEFLAGS="-j${jobs}" NINJAFLAGS="-j${jobs}" GOMAXPROCS="${jobs}" CARGO_BUILD_JOBS="${jobs}"
+: "${RUSTFLAGS:=-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode=yes -Cllvm-args=-enable-dfa-jump-thread \
+-Clink-arg=-fuse-ld=lld -Zunstable-options -Ztune-cpu=native -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none -Zdylib-lto}"
+export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1
+export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_OPT_LEVEL=3
+unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
+export UV_COMPILE_BYTECODE=1 UV_NO_VERIFY_HASHES=1 UV_SYSTEM_PYTHON=1 UV_FORK_STRATEGY=fewest UV_RESOLUTION=highest
+export ZSTD_NBTHREADS=0 FLATPAK_FORCE_TEXT_AUTH=1 PYTHONOPTIMIZE=2 PYTHON_JIT=1
 MPKG_FLAGS='--cleanbuild --clean --rmdeps --syncdeps --nocheck --skipinteg --skippgpcheck --skipchecksums'
-GPG_FLAGS='--batch -q -z1 --compress-algo ZLIB --yes --skip-verify'
-GIT_FLAGS='--depth=1 --single-branch'
+GPG_FLAGS='--batch -q -z1 --yes --skip-verify'
+GIT_FLAGS='--depth=1'
 
-# remove pacman lock if stale
+# Remove pacman lock if stale
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root /var/lib/pacman/db.lck
-
-# sync keyring + full upgrade
+# Sync keyring + full upgrade
 "${pkgmgr[@]}" -Syq archlinux-keyring --noconfirm || :
-"${pkgmgr[@]}" -Syuq --noconfirm || :
+"${pkgmgr[@]}" -Syyuq --noconfirm || :
 
-# package list (official + AUR combined)
+# Define DE for installation messages
+DE=${DE:-"System"}
+
+# Package list (official + AUR combined)
 pkgs=(
   topgrade bauh flatpak partitionmanager polkit-kde-agent legcord prismlauncher
   obs-studio pigz lrzip pixz minizip-ng optipng svgo nasm yasm ccache sccache
@@ -54,44 +68,41 @@ pkgs=(
   intel-ucode-shrink-hook xdg-ninja cylon scaramanga kbuilder yadm
 )
 
-Install_packages() {  # parameters: package names
-    local pkg pkgs=()
-    for pkg in "$@" ; do
-        if ! pacman -Q $pkg  >& /dev/null ; then
-            pkgs+=("$pkg")
-        fi
-    done
-    if [ -n "$pkgs" ] ; then
-        HotMsg "$DE: installing ${pkgs[*]}"
-        pacman -Syu --noconfirm "${pkgs[@]}"
+# Package management functions
+Install_packages(){
+  local pkg pkgs=()
+  for pkg in "$@"; do
+    if ! pacman -Q "$pkg" &>/dev/null; then
+      pkgs+=("$pkg")
     fi
+  done
+  [[ ${#pkgs[@]} -eq 0 ]] && return 0
+  HotMsg "$DE: installing ${pkgs[*]}"
+  pacman -Syu --noconfirm "${pkgs[@]}"
 }
-
-Remove_packages() {  # parameters: package names
-    local pkg pkgs=()
-    for pkg in "$@" ; do
-        if pacman -Q $pkg  >& /dev/null ; then
-            pkgs+=("$pkg")
-        fi
-    done
-    if [ -n "$pkgs" ] ; then
-        HotMsg "$DE: uninstalling ${pkgs[*]}"
-        pacman -R --noconfirm "${pkgs[@]}"
+Remove_packages(){
+  local pkg pkgs=()
+  for pkg in "$@"; do
+    if pacman -Q "$pkg" &>/dev/null; then
+      pkgs+=("$pkg")
     fi
+  done
+  [[ ${#pkgs[@]} -eq 0 ]] && return 0
+  HotMsg "$DE: uninstalling ${pkgs[*]}"
+  pacman -R --noconfirm "${pkgs[@]}"
 }
-
-
-# detect missing packages
+# Detect missing packages
 echo "Checking installed packages..."
 missing=()
 for p in "${pkgs[@]}"; do
   "${pkgmgr[@]}" -Qiq "$p" &>/dev/null || missing+=("$p")
 done
 
+# Install missing packages
 if [[ ${#missing[@]} -eq 0 ]]; then
-  printf '✔ All packages installed\n'
+  log "All packages installed"
 else
-  printf '➜ Installing: %s\n' "${missing[*]}"
+  HotMsg "Installing: ${missing[*]}"
   if [[ "${is_aur_helper:-0}" -eq 1 ]]; then
     aur_flags=(
       --needed --noconfirm --removemake --cleanafter --sudoloop
@@ -99,118 +110,209 @@ else
       --mflags "$MPKG_FLAGS" --gitflags "$GIT_FLAGS" --gpgflags "$GPG_FLAGS"
     )
     if ! "${pkgmgr[@]}" -Sq "${aur_flags[@]}" "${missing[@]}"; then
-      printf '✖ Batch install failed. Logging missing packages to %s/Desktop/failed_packages.log\n' "$HOME"
       logfile="${HOME}/Desktop/failed_packages.log"
+      die "Batch install failed. Logging missing packages to ${logfile}"
       rm -f "$logfile"
       for p in "${missing[@]}"; do
-        ! "${pkgmgr[@]}" -Qiq "$p" &>/dev/null && printf '%s\n' "$p" >>"$logfile"
+        ! "${pkgmgr[@]}" -Qiq "$p" &>/dev/null && printf '%s\n' "$p" >> "$logfile"
       done
-      printf '✖ See %s\n' "$logfile"
     else
-      printf '✔ Installation complete\n'
+      log "Installation complete"
     fi
   else
     # pacman only
     if ! "${pkgmgr[@]}" -Sq --needed --noconfirm "${missing[@]}"; then
-      printf '✖ pacman install failed. Check output\n'
+      die "Pacman install failed. Check output"
     else
-      printf '✔ Installation complete\n'
+      log "Installation complete"
     fi
   fi
 fi
 
-# Flatpak apps (array-based)
+# Flatpak apps
 if has flatpak; then
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || :
   flats=(
     io.github.wiiznokes.fan-control
     io.github.giantpinkrobots.flatsweep
     best.ellie.StartupConfiguration
+    org.kde.audiotube
   )
   [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
-  flatpak install -y flathub org.kde.audiotube || :
-  flatpak update -y --noninteractive
+  flatpak update -y --noninteractive || :
 fi
 
 # Rust + Cargo utilities
 if ! has rustup; then
-  printf 'Installing rustup (minimal nightly)...\n'
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y -q -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
+  HotMsg "Installing rustup (minimal nightly)..."
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | 
+    sh -s -- --profile minimal --default-toolchain nightly -y -q \
+    -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
   export PATH="${HOME}/.cargo/bin:${PATH}"
 fi
 
 rust_crates=(
-rmz cpz xcp crabz parallel-sh parel ffzap cargo-diet crab-fetch cargo-list minhtml cargo-minify rimage ripunzip terminal_tools
-imagineer docker-image-pusher image-optimizer dui-cli imgc pixelsqueeze bgone dupimg simagef compresscli dssim img-squeeze lq
+  rmz cpz xcp crabz parallel-sh parel ffzap cargo-diet crab-fetch cargo-list 
+  minhtml cargo-minify rimage ripunzip terminal_tools imagineer docker-image-pusher 
+  image-optimizer dui-cli imgc pixelsqueeze bgone dupimg simagef compresscli 
+  dssim img-squeeze lq
 )
 
-command -v sccache &>/dev/null && export RUSTC_WRAPPER=sccache
-rustup default nightly || :
+has sccache && export RUSTC_WRAPPER=sccache
+rustup default nightly &>/dev/null || :
 rustup set auto-self-update disable || :
 rustup set profile minimal || :
 rustup self upgrade-data || :
 
-LC_ALL=C cargo +nightly -Zgit -Zno-embed-metadata -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort install \
-  --git https://github.com/GitoxideLabs/gitoxide gitoxide gitoxide -f --bins --no-default-features --features max-pure || :
+# Install gitoxide with specific flags
+LC_ALL=C cargo +nightly -Zgit -Zno-embed-metadata -Zbuild-std=std,panic_abort \
+  -Zbuild-std-features=panic_immediate_abort install \
+  --git https://github.com/GitoxideLabs/gitoxide gitoxide -f --bins \
+  --no-default-features --features max-pure || :
 
-[[ ${#rust_crates[@]} -gt 0 ]] && LC_ALL=C cargo install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata --locked --bins -f -q --keep-going "${rust_crates[@]}" || :
+# Install other Rust crates
+[[ ${#rust_crates[@]} -gt 0 ]] && LC_ALL=C cargo install -Zunstable-options \
+  -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata --locked --bins \
+  -f -q --keep-going "${rust_crates[@]}" || :
 
 # Micro plugins
 if has micro; then
-  mplug=(fish fzf wc filemanager cheat linter lsp autofmt detectindent editorconfig misspell comment diff jump bounce autoclose manipulator joinLines literate status ftoptions)
+  mplug=(
+    fish fzf wc filemanager cheat linter lsp autofmt detectindent editorconfig
+    misspell comment diff jump bounce autoclose manipulator joinLines literate 
+    status ftoptions
+  )
   micro -plugin install "${mplug[@]}" || :
-  micro -plugin update >/dev/null || :
+  micro -plugin update &>/dev/null || :
 fi
+
 # Fisher plugins for Fish shell
 if has fish && [ -r /usr/share/fish/vendor_functions.d/fisher.fish ]; then
-  fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher install jorgebucaran/fisher && fisher update"
-  fishplug=(acomagu/fish-async-prompt kyohsuke/fish-evalcache eugene-babichenko/fish-codegen-cache oh-my-fish/plugin-xdg wk/plugin-ssh-term-helper scaryrawr/cheat.sh.fish y3owk1n/fish-x scaryrawr/zoxide.fish patrickf1/fzf.fish archelaus/shell-mommy eth-p/fish-plugin-sudo rubiev/plugin-fuck paysonwallach/fish-you-should-use)
+  fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher install jorgebucaran/fisher && fisher update" || :
+  fishplug=(
+    acomagu/fish-async-prompt 
+    kyohsuke/fish-evalcache 
+    eugene-babichenko/fish-codegen-cache 
+    oh-my-fish/plugin-xdg 
+    wk/plugin-ssh-term-helper 
+    scaryrawr/cheat.sh.fish 
+    y3owk1n/fish-x 
+    scaryrawr/zoxi
+    patrickf1/fzf.fish
+    jorgebucaran/autopair.fish
+    wawa19933/fish-systemd
+    kpbaks/autols.fish
+    halostatue/fish-rust
+    kpbaks/zellij.fish
+  )
   printf '%s\n' "${fishplug[@]}" | fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher install " || :
-  fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher update"
+  fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | . && fisher update" || :
 fi
+
 # FZF bash completions
 mkdir -p "$HOME/.config/bash"
-curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" -o "$HOME/.config/bash/fzf-simple-completion.sh"
+curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" \
+  -o "$HOME/.config/bash/fzf-simple-completion.sh" || :
 chmod +x "$HOME/.config/bash/fzf-simple-completion.sh" || :
 
+# GitHub CLI extensions
 if has gh; then
-  gh extension install gennaro-tedesco/gh-f
-  gh extension install gennaro-tedesco/gh-s
+  gh extension install gennaro-tedesco/gh-f || :
+  gh extension install gennaro-tedesco/gh-s || :
 fi
 
+# Go tools
 has go || sudo pacman -Sq go --noconfirm --needed
-# Go
-if has go; then
-  go install github.com/dim-an/cod@latest
+has go && go install github.com/dim-an/cod@latest || :
+
+# SDK tools and mise
+if ! has mise; then
+  HotMsg "Installing mise version manager..."
+  curl -fsSL https://mise.jdx.dev/install.sh | sh || :
 fi
 
 if has sdk; then
-  sdk install java 25-graal
-  #sdk install java 25-graalce
+  HotMsg "Installing GraalVM EE 25 via sdkman..."
+  sdk install java 25-graal || :
 fi
+
 # Soar
-curl -fsSL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh
+curl -fsSL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh || :
 
 # Housekeeping & system updates
-has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry '(-disable={config_update,system,tldr,maza,yazi,micro})' 2>/dev/null || :
-has fc-cache && sudo fc-cache -f >/dev/null || :
+has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry \
+  '(-disable={config_update,system,tldr,maza,yazi,micro})' &>/dev/null || :
+has fc-cache && sudo fc-cache -f &>/dev/null || :
 has update-desktop-database && sudo update-desktop-database &>/dev/null || :
-has fwupdmgr && { sudo fwupdmgr refresh -y && sudo fwupdtool update; }
+has fwupdmgr && { sudo fwupdmgr refresh -y && sudo fwupdtool update; } || :
 
 # Initramfs
-if has update-initramfs; then sudo update-initramfs || :
-elif has limine-mkinitcpio; then sudo limine-mkinitcpio || :
-elif has mkinitcpio; then sudo mkinitcpio -P || :
-elif has /usr/lib/booster/regenerate_images; then sudo /usr/lib/booster/regenerate_images || :
-elif has dracut-rebuild; then sudo dracut-rebuild || :
-else printf '⚠ initramfs generator not found; update manually\n'; fi
+if has update-initramfs; then 
+  sudo update-initramfs || :
+elif has limine-mkinitcpio; then 
+  sudo limine-mkinitcpio || :
+elif has mkinitcpio; then 
+  sudo mkinitcpio -P || :
+elif has /usr/lib/booster/regenerate_images; then 
+  sudo /usr/lib/booster/regenerate_images || :
+elif has dracut-rebuild; then 
+  sudo dracut-rebuild || :
+else 
+  HotMsg "⚠ initramfs generator not found; update manually"
+fi
 
 # Cleanup
 orphans="$(pacman -Qdtq 2>/dev/null || :)"
-[ -n "$orphans" ] && sudo pacman -Rns $orphans --noconfirm &>/dev/null || :
+[[ -n "$orphans" ]] && sudo pacman -Rns $orphans --noconfirm &>/dev/null || :
 sudo pacman -Sccq --noconfirm &>/dev/null || :
-[ "${is_aur_helper:-0}" -eq 1 ] && "${pkgmgr[@]}" -Sccq --noconfirm &>/dev/null || :
+[[ "${is_aur_helper:-0}" -eq 1 ]] && "${pkgmgr[@]}" -Sccq --noconfirm &>/dev/null || :
 sudo journalctl --rotate --vacuum-size=1 --flush --sync -q || :
 sudo fstrim -a --quiet-unsupported || :
 
-printf '\nAll done\n'
+# Setup MIME environment variables (completing truncated section from original)
+export MIMALLOC_VERBOSE=0 MIMALLOC_SHOW_ERRORS=0 MIMALLOC_SHOW_STATS=0 \
+  MIMALLOC_ALLOW_LARGE_OS_PAGES=1 MIMALLOC_PURGE_DELAY=25 \
+  MIMALLOC_ARENA_EAGER_COMMIT=1
+
+# Shell integration setup for common shells
+HotMsg "Setting up shell integration..."
+
+# Zsh setup
+if has zsh; then
+  [[ ! -f "$HOME/.zshenv" ]] && echo 'export ZDOTDIR="$HOME/.config/zsh"' > "$HOME/.zshenv"
+  mkdir -p "$HOME/.config/zsh" || :
+  
+  # Install zinit if missing
+  if [[ ! -d "$HOME/.local/share/zinit/zinit.git" ]]; then
+    mkdir -p "$HOME/.local/share/zinit" || :
+    git clone https://github.com/zdharma-continuum/zinit.git "$HOME/.local/share/zinit/zinit.git" || :
+  fi
+fi
+
+# Fish setup  
+if has fish; then
+  mkdir -p "$HOME/.config/fish/conf.d" || :
+  # Update fish plugins from our config
+  fish -c "fish_update_completions" || :
+fi
+
+# Bash setup
+if [[ ! -f "$HOME/.config/bash/bash-preexec.sh" ]]; then
+  mkdir -p "$HOME/.config/bash" || :
+  curl -fsSL "https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh" \
+    -o "$HOME/.config/bash/bash-preexec.sh" || :
+fi
+
+# Install p10k for zsh if missing
+if [[ ! -f "$HOME/.p10k.zsh" ]]; then
+  curl -fsSL "https://raw.githubusercontent.com/romkatv/powerlevel10k/master/config/p10k-lean.zsh" \
+    -o "$HOME/.p10k.zsh" || :
+fi
+
+# Install starship if missing
+if ! has starship; then
+  HotMsg "Installing Starship prompt..."
+  curl -fsSL https://starship.rs/install.sh | sh -s -- -y || :
+fi
+
+log "All done! Restart your shell to apply all changes."

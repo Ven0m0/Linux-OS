@@ -10,7 +10,7 @@ sudo -v
 if ! grep -qF "$repo" "$conf"; then
   sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
   sudo pacman-key --lsign-key 3056513887B78AEB
-  sudo pacman -U \
+  sudo pacman --noconfirm --needed -U \
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   sudo sed -i "\$a\\
@@ -18,7 +18,7 @@ $repo\\
 $mirror
 " "$conf"
   echo "chaotic-aur added."
-  sudo pacman -Syy --noconfirm
+  sudo pacman -Syy --noconfirm --needed
 else
   echo "chaotic-aur already present"
 fi

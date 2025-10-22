@@ -1,35 +1,31 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'
-
-sudo -v
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || :
+cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null||:
 SHELL=bash
 jobs="$(nproc)"
 # Helper functions
 has(){ command -v "$1" &>/dev/null; }
-HotMsg(){ printf "\e[1;33m► %s\e[0m\n" "$1"; }
-die(){ printf "\e[1;31m✖ %s\e[0m\n" "$1" >&2; exit "${2:-1}"; }
-log(){ printf "\e[1;36m✓ %s\e[0m\n" "$1"; }
+HotMsg(){ echo -e "\e[1;33m► $1\e[0m"; }
+die(){ echo -e "\e[1;31m✖ $1\e[0m" >&2; exit "${2:-1}"; }
+log(){ echo -e "\e[1;36m✓ $1\e[0m"; }
 
 # Pick package helper
 if has paru; then
-  pkgmgr=(paru)
-  is_aur_helper=1
+  pkgmgr=(paru); is_aur_helper=1
 elif has yay; then
-  pkgmgr=(yay)
-  is_aur_helper=1
+  pkgmgr=(yay); is_aur_helper=1
 else
-  pkgmgr=(sudo pacman)
-  is_aur_helper=0
+  pkgmgr=(sudo pacman); is_aur_helper=0
 fi
 
 # Build environment setup
 [[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf
-: "${CFLAGS:=-O3 --march=native -mtune=native -pipe}}"
+: "${CFLAGS:=-O3 -march=native -mtune=native -pipe}}"
 : "${CXXFLAGS:=$CFLAGS}"
-export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib MAKEFLAGS="-j$jobs"
+export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib 
+export MAKEFLAGS="-j$jobs" NINJAFLAGS="-j$jobs" GOMAXPROCS="$jobs" CARGO_BUILD_JOBS="$jobs"
 : "${RUSTFLAGS:=-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clinker-plugin-lto -Cllvm-args=-enable-dfa-jump-thread \
 -Clinker=clang -Clinker-features=+lld -Zunstable-options -Ztune-cpu=native -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none}"
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1
@@ -40,15 +36,13 @@ export ZSTD_NBTHREADS=0 FLATPAK_FORCE_TEXT_AUTH=1 PYTHONOPTIMIZE=2 PYTHON_JIT=1
 MPKG_FLAGS='--cleanbuild --clean --rmdeps --syncdeps --nocheck --skipinteg --skippgpcheck --skipchecksums'
 GPG_FLAGS='--batch -q -z1 --yes --skip-verify'
 GIT_FLAGS='--depth=1'
+sudo -v
 
 # Remove pacman lock if stale
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root /var/lib/pacman/db.lck
 # Sync keyring + full upgrade
-"${pkgmgr[@]}" -Syq archlinux-keyring --noconfirm || :
-"${pkgmgr[@]}" -Syyuq --noconfirm || :
-
-# Define DE for installation messages
-DE=${DE:-"System"}
+"${pkgmgr[@]}" -Syq archlinux-keyring --noconfirm||:
+"${pkgmgr[@]}" -Syyuq --noconfirm||:
 
 # Package list (official + AUR combined)
 pkgs=(
@@ -67,29 +61,7 @@ pkgs=(
   xdg-ninja cylon scaramanga kbuilder yadm starship shfmt shellcheck shellharden dash
 )
 
-# Package management functions
-Install_packages(){
-  local pkg; local -a pkgs
-  mapfile -t pkgs < <(pacman -Qq)
-  local -A installed; for pkg in "${pkgs[@]}"; do installed[$pkg]=1; done
-  pkgs=()
-  for pkg; do [[ ${installed[$pkg]} ]]||pkgs+=("$pkg"); done
-  (( ${#pkgs[@]} ))||return 0
-  HotMsg "$DE: installing ${pkgs[*]}"
-  pacman -Syu --noconfirm "${pkgs[@]}"
-}
-Remove_packages(){
-  local pkg pkgs=()
-  for pkg in "$@"; do
-    if pacman -Q "$pkg" &>/dev/null; then
-      pkgs+=("$pkg")
-    fi
-  done
-  [[ ${#pkgs[@]} -eq 0 ]] && return 0
-  HotMsg "$DE: uninstalling ${pkgs[*]}"
-  pacman -R --noconfirm "${pkgs[@]}"
-}
-# Detect missing packages
+# Detect missing packages - using hash map for O(1) lookups
 mapfile -t installed < <(pacman -Qq)
 declare -A inst_map; for p in "${installed[@]}"; do inst_map[$p]=1; done
 missing=(); for p in "${pkgs[@]}"; do [[ ${inst_map[$p]} ]]||missing+=("$p"); done
@@ -110,7 +82,7 @@ else
       die "Batch install failed. Logging missing packages to ${logfile}"
       rm -f "$logfile"
       for p in "${missing[@]}"; do
-        ! "${pkgmgr[@]}" -Qiq "$p" &>/dev/null && printf '%s\n' "$p" >> "$logfile"
+        ! "${pkgmgr[@]}" -Qiq "$p" &>/dev/null && echo "$p" >> "$logfile"
       done
     else
       log "Installation complete"
@@ -127,27 +99,27 @@ fi
 
 # Flatpak apps
 if has flatpak; then
-  flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo || :
+  flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo||:
   flats=(io.github.wiiznokes.fan-control)
-  [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}" || :
-  flatpak update -y --noninteractive || :
+  [[ ${#flats[@]} -gt 0 ]] && flatpak install -y flathub "${flats[@]}"||:
+  flatpak update -y --noninteractive||:
 fi
 
 # Rust + Cargo utilities
 if ! has rustup; then
   HotMsg "Installing rustup (minimal nightly)..."
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | 
-    sh -s -- --profile minimal --default-toolchain nightly -y -q \
+  tmp=$(mktemp)
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs > "$tmp"
+  sh "$tmp" --profile minimal --default-toolchain nightly -y -q \
     -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
+  rm "$tmp"
   export PATH="${HOME}/.cargo/bin:${PATH}"
 fi
 
-rust_crates=(
-  rmz cpz xcp crabz parallel-sh parel ffzap cargo-diet crab-fetch cargo-list 
+rust_crates=(rmz cpz xcp crabz parallel-sh parel ffzap cargo-diet crab-fetch cargo-list 
   minhtml cargo-minify rimage ripunzip terminal_tools imagineer docker-image-pusher 
-  image-optimizer dui-cli imgc pixelsqueeze bgone dupimg simagef compresscli 
-  dssim img-squeeze lq
-)
+  image-optimizer dui-cli imgc pixelsqueeze bgone dupimg simagef compresscli dssim
+  img-squeeze lq)
 
 has sccache && export RUSTC_WRAPPER=sccache
 rustup default nightly >/dev/null || :

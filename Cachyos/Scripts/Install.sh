@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'
+sudo -v
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null||:
 SHELL=bash
@@ -36,7 +37,6 @@ export ZSTD_NBTHREADS=0 FLATPAK_FORCE_TEXT_AUTH=1 PYTHONOPTIMIZE=2 PYTHON_JIT=1
 MPKG_FLAGS='--cleanbuild --clean --rmdeps --syncdeps --nocheck --skipinteg --skippgpcheck --skipchecksums'
 GPG_FLAGS='--batch -q -z1 --yes --skip-verify'
 GIT_FLAGS='--depth=1'
-sudo -v
 
 # Remove pacman lock if stale
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root /var/lib/pacman/db.lck
@@ -116,46 +116,53 @@ if ! has rustup; then
   export PATH="${HOME}/.cargo/bin:${PATH}"
 fi
 
-rust_crates=(rmz cpz xcp crabz parallel-sh parel ffzap cargo-diet crab-fetch cargo-list 
+rust_crates=(
+  rmz cpz xcp crabz parallel-sh parel ffzap cargo-diet crab-fetch cargo-list 
   minhtml cargo-minify rimage ripunzip terminal_tools imagineer docker-image-pusher 
-  image-optimizer dui-cli imgc pixelsqueeze bgone dupimg simagef compresscli dssim
-  img-squeeze lq)
+  image-optimizer dui-cli imgc pixelsqueeze bgone dupimg simagef compresscli 
+  dssim img-squeeze lq
+)
 
 has sccache && export RUSTC_WRAPPER=sccache
-rustup default nightly >/dev/null || :
-rustup set auto-self-update disable || :
-rustup set profile minimal || :
-rustup self upgrade-data || :
+rustup default nightly &>/dev/null||:
+rustup set auto-self-update disable||:
+rustup set profile minimal||:
+rustup self upgrade-data||:
 
 # Install gitoxide with specific flags
 LC_ALL=C cargo +nightly -Zgit -Zno-embed-metadata -Zbuild-std=std,panic_abort \
   -Zbuild-std-features=panic_immediate_abort install \
   --git https://github.com/GitoxideLabs/gitoxide gitoxide -f --bins \
-  --no-default-features --locked --features max-pure || :
+  --no-default-features --locked --features max-pure||:
 
-# Install other Rust crates
-[[ ${#rust_crates[@]} -gt 0 ]] && printf '%s\n' "${rust_crates[@]}"|xargs -P"$jobs" -I{} \
-  LC_ALL=C cargo +nightly install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata --locked {} -f -q||:
+# Install other Rust crates in parallel with progress indicator
+if [[ ${#rust_crates[@]} -gt 0 ]]; then
+  HotMsg "Installing ${#rust_crates[@]} Rust crates in parallel..."
+  xargs -P"$jobs" -I{} sh -c \
+    'echo -n "."; LC_ALL=C cargo +nightly install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata --locked {} -f -q||:' \
+    < <(printf '%s\n' "${rust_crates[@]}")
+  echo # Newline after progress dots
+fi
 
 # Micro plugins
 if has micro; then
   mplug=(fish fzf wc filemanager cheat linter lsp autofmt detectindent editorconfig
     misspell comment diff jump bounce autoclose manipulator joinLines literate 
     status ftoptions)
-  micro -plugin install "${mplug[@]}" || :
-  micro -plugin update &>/dev/null || :
+  micro -plugin install "${mplug[@]}"||:
+  micro -plugin update &>/dev/null||:
 fi
 
 # GitHub CLI extensions
 has gh || sudo pacman -Sq github-cli --noconfirm --needed
 if has gh; then
-  gh extension install gennaro-tedesco/gh-f || :
-  gh extension install gennaro-tedesco/gh-s || :
+  gh extension install gennaro-tedesco/gh-f||:
+  gh extension install gennaro-tedesco/gh-s||:
 fi
 
 # Go tools
 has go || sudo pacman -Sq go --noconfirm --needed
-has go && go install github.com/dim-an/cod@latest || :
+has go && go install github.com/dim-an/cod@latest||:
 
 # SDK tools and mise
 if ! has mise; then
@@ -165,7 +172,7 @@ fi
 
 if has sdk; then
   HotMsg "Installing GraalVM EE 25 via sdkman..."
-  sdk install java 25-graal || :
+  sdk install java 25-graal||:
 fi
 
 # Soar
@@ -173,39 +180,40 @@ curl -fsSL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | s
 
 # Housekeeping & system updates
 has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry \
-  '(-disable={config_update,system,tldr,maza,yazi,micro})' &>/dev/null || :
-has fc-cache && sudo fc-cache -f &>/dev/null || :
-has update-desktop-database && sudo update-desktop-database &>/dev/null || :
-has fwupdmgr && { sudo fwupdmgr refresh -y && sudo fwupdtool update; } || :
+  '(-disable={config_update,system,tldr,maza,yazi,micro})' &>/dev/null||:
+has fc-cache && sudo fc-cache -f &>/dev/null||:
+has update-desktop-database && sudo update-desktop-database &>/dev/null||:
+has fwupdmgr && { sudo fwupdmgr refresh -y && sudo fwupdtool update; }||:
 
 # Initramfs
 if has update-initramfs; then 
-  sudo update-initramfs || :
+  sudo update-initramfs||:
 elif has limine-mkinitcpio; then 
-  sudo limine-mkinitcpio || :
+  sudo limine-mkinitcpio||:
 elif has mkinitcpio; then 
-  sudo mkinitcpio -P || :
+  sudo mkinitcpio -P||:
 elif has /usr/lib/booster/regenerate_images; then 
-  sudo /usr/lib/booster/regenerate_images || :
+  sudo /usr/lib/booster/regenerate_images||:
 elif has dracut-rebuild; then 
-  sudo dracut-rebuild || :
+  sudo dracut-rebuild||:
 else 
   HotMsg "⚠ initramfs generator not found; update manually"
 fi
 
 # Cleanup
-orphans="$(pacman -Qdtq 2>/dev/null || :)"
-[[ -n "$orphans" ]] && sudo pacman -Rns $orphans --noconfirm &>/dev/null || :
-sudo pacman -Sccq --noconfirm &>/dev/null || :
-[[ "${is_aur_helper:-0}" -eq 1 ]] && "${pkgmgr[@]}" -Sccq --noconfirm &>/dev/null || :
-sudo journalctl --rotate --vacuum-size=1 --flush --sync -q || :
-sudo fstrim -a --quiet-unsupported || :
+orphans="$(pacman -Qdtq 2>/dev/null||:)"
+[[ -n "$orphans" ]] && sudo pacman -Rns $orphans --noconfirm &>/dev/null||:
+sudo pacman -Sccq --noconfirm &>/dev/null||:
+[[ "${is_aur_helper:-0}" -eq 1 ]] && "${pkgmgr[@]}" -Sccq --noconfirm &>/dev/null||:
+sudo journalctl --rotate --vacuum-size=1 --flush --sync -q||:
+sudo fstrim -a --quiet-unsupported||:
+
 # Shell integration setup for common shells
 HotMsg "Setting up shell integration..."
 
 fish_setup(){
-  mkdir -p "$HOME/.config/fish/conf.d" || :
-  fish -c "fish_update_completions" || :
+  mkdir -p "$HOME/.config/fish/conf.d"||:
+  fish -c "fish_update_completions"||:
   if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
     fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher update"
     fishplug=(acomagu/fish-async-prompt kyohsuke/fish-evalcache eugene-babichenko/fish-codegen-cache
@@ -214,25 +222,25 @@ fish_setup(){
     scaryrawr/zoxide kpbaks/autols.fish patrickf1/fzf.fish
     jorgebucaran/autopair.fish wawa19933/fish-systemd
     halostatue/fish-rust kpbaks/zellij.fish)
-    printf '%s\n' "${fishplug[@]}" | fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher install " || :
+    printf '%s\n' "${fishplug[@]}" | fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher install "||:
   fi
 }
 # Bash setup
 bash_setup(){
-  mkdir -p "${HOME}/.config/bash" || :
+  mkdir -p "${HOME}/.config/bash"||:
   curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" \
     -o "${HOME}/.config/bash/fzf-simple-completion.sh" && chmod +x "${HOME}/.config/bash/fzf-simple-completion.sh"
 }
 zsh_setup(){
   if [[ ! -f "$HOME/.p10k.zsh" ]]; then
     curl -fsSL "https://raw.githubusercontent.com/romkatv/powerlevel10k/master/config/p10k-lean.zsh" \
-      -o "$HOME/.p10k.zsh" || :
+      -o "$HOME/.p10k.zsh"||:
   fi
   [[ ! -f "$HOME/.zshenv" ]] && echo 'export ZDOTDIR="$HOME/.config/zsh"' > "$HOME/.zshenv"
-  mkdir -p "$HOME/.config/zsh" || :
+  mkdir -p "$HOME/.config/zsh"||:
   if [[ ! -d "$HOME/.local/share/zinit/zinit.git" ]]; then
-    mkdir -p "$HOME/.local/share/zinit" || :
-    git clone https://github.com/zdharma-continuum/zinit.git "$HOME/.local/share/zinit/zinit.git" || :
+    mkdir -p "$HOME/.local/share/zinit"||:
+    git clone https://github.com/zdharma-continuum/zinit.git "$HOME/.local/share/zinit/zinit.git"||:
   fi
 }
 
@@ -242,7 +250,7 @@ declare -A shell_setups=(
   [bash]='bash_setup'
 )
 for sh in "${!shell_setups[@]}"; do
-  has "$sh" && eval "${shell_setups[$sh]}" ||:
+  has "$sh" && eval "${shell_setups[$sh]}"||:
 done
 
 log "All done! Restart your shell to apply all changes."

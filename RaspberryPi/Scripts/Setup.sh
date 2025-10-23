@@ -22,13 +22,15 @@ echo "https://github.com/Itai-Nelken/PiApps-terminal_bash-edition"
 curl -ssfL https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
 pi-apps update -y
 
-echo 'APT::Acquire::Retries "5";
+echo -e 'APT::Acquire::Retries "5";
 Acquire::Queue-Mode "access";
 Acquire::Languages "none";
 APT::Acquire::ForceIPv4 "true";
 APT::Get::AllowUnauthenticated "true";
 Acquire::CompressionTypes::Order:: "gz";
+
 APT::Acquire::Max-Parallel-Downloads "5";' | sudo tee /etc/apt/apt.conf.d/99parallel
+#Acquire::CompressionTypes::lz4 "lz4";
 
 echo -e 'APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::AutocleanInterval "7";
@@ -37,6 +39,60 @@ Unattended-Upgrade::Remove-Unused-Dependencies "true";
 Unattended-Upgrade::AutoFixInterruptedDpkg "true";
 APT::Periodic::Update-Package-Lists "1";
 Unattended-Upgrade::MinimalSteps "true";' | sudo tee /etc/apt/apt.conf.d/50-unattended-upgrades
+
+# Disable APT terminal logging
+echo -e 'Dir::Log::Terminal "";' | sudo tee /etc/apt/apt.conf.d/01disable-log
+
+echo -e "path-exclude /usr/share/doc/*
+path-exclude /usr/share/help/*
+path-exclude /usr/share/man/*
+path-exclude /usr/share/groff/*
+path-exclude /usr/share/info/*
+path-exclude /usr/share/locale/*
+path-exclude /usr/share/gnome/help/*/*
+path-exclude /usr/share/doc/kde/HTML/*/*
+path-exclude /usr/share/omf/*/*-*.emf
+# lintian stuff is small, but really unnecessary
+path-exclude /usr/share/lintian/*
+path-exclude /usr/share/linda/*
+# paths to keep
+path-include /usr/share/locale/locale.alias
+path-include /usr/share/locale/en/*
+path-include /usr/share/locale/en_GB/*
+path-include /usr/share/locale/en_GB.UTF-8/*
+# we need to keep copyright files for legal reasons
+path-include /usr/share/doc/*/copyright" | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+
+## DPKG keep current versions of configs
+echo -e 'DPkg::Options {
+   "--force-confdef";
+};' | sudo tee /etc/apt/apt.conf.d/71debconf
+
+
+# ------------------------------------------------------------------------
+echo -e "LC_ALL=C" | sudo tee -a /etc/environment
+
+# Don't reserve space man-pages, locales, licenses.
+echo -e "Remove useless companies"
+sudo apt-get remove --purge *texlive* -yy
+find /usr/share/doc/ -depth -type f ! -name copyright | xargs sudo rm -f || true
+find /usr/share/doc/ | grep '\.gz' | xargs sudo rm -f
+find /usr/share/doc/ | grep '\.pdf' | xargs sudo rm -f
+find /usr/share/doc/ | grep '\.tex' | xargs sudo rm -f
+find /usr/share/doc/ -empty | xargs sudo rmdir || true
+sudo rm -rfd /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* \
+    /usr/share/linda/* /var/cache/man/* /usr/share/man/* /usr/share/X11/locale/!\(en_GB\)
+sudo rm -rfd /usr/share/locale/!\(en_GB\)
+
+echo -e "Disable wait online service"
+echo -e "[connectivity]
+enabled=false" | sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf
+sudo systemctl mask NetworkManager-wait-online.service >/dev/null 2>&1
+
+echo -e "Disable SELINUX"
+echo -e "SELINUX=disabled
+SELINUXTYPE=minimum" | sudo tee /etc/selinux/config
+sudo setenforce 0
 
 # ------------------------------------------------------------------------
 

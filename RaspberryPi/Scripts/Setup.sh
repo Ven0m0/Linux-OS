@@ -35,6 +35,7 @@ APT::Periodic::AutocleanInterval "7";
 APT::Periodic::Download-Upgradeable-Packages "1";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
 Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+APT::Periodic::Update-Package-Lists "1";
 Unattended-Upgrade::MinimalSteps "true";' | sudo tee /etc/apt/apt.conf.d/50-unattended-upgrades
 
 # ------------------------------------------------------------------------
@@ -66,6 +67,10 @@ sudo powertop --auto-tune && sudo powertop --auto-tune
 sudo cpupower frequency-set -g powersave
 sudo cpupower set --perf-bias 9
 sudo sensors-detect --auto
+
+#--Optimize udev
+sudo sed -i -e 's/^#udev_log=info/udev_log=err/' /etc/udev/udev.conf
+sudo sed -i -e 's/^#exec_delay=/exec_delay=0/' /etc/udev/udev.conf
 
 # ------------------------------------------------------------------------
 

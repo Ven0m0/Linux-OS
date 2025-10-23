@@ -7,7 +7,6 @@ DOTFILES_TOOL="chezmoi"  # or "dotter"
 # --- DETECT PACKAGE MANAGER ---
 if command -v pacman &>/dev/null; then
     PKG='sudo pacman -Sy --needed --noconfirm'
-    sudo sed -i -e s"/\#LogFile.*/LogFile = /"g /etc/pacman.conf
     sudo pacman -Syu --needed --noconfirm >/dev/null
 elif command -v apt-get &>/dev/null; then
     PKG='sudo apt-get install -y'
@@ -32,11 +31,12 @@ fi
 localectl set-locale C.UTF-8
 
 echo "[*] Setup complete! All dotfiles and app configs restored."
-
+sudo sed -i -e s"/\#LogFile.*/LogFile = /"g /etc/pacman.conf
 sudo sed -i 's/^#CleanMethod = KeepInstalled$/CleanMethod = KeepCurrent/' /etc/pacman.conf
 
 sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com && sudo pacman-key --lsign-key 3056513887B78AEB 
-sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' --noconfirm && sudo pacman -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst' --noconfirm
+sudo pacman --noconfirm --needed -U \
+'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
 
 cat <<'EOF' | sudo tee -a /etc/pacman.conf >/dev/null
 [artafinde]
@@ -52,3 +52,7 @@ SigLevel = Required
 Server = https://xyne.dev/repos/xyne
 EOF
 
+## Improve NVME
+if $(find /sys/block/nvme[0-9]* | grep -q nvme); then
+    echo -e "options nvme_core default_ps_max_latency_us=0" | sudo tee /etc/modprobe.d/nvme.conf
+fi

@@ -108,31 +108,17 @@ if has mise; then msg "Configuring mise"; mise settings set experimental true 2>
   mise doctor 2>/dev/null || :; has go && go install github.com/dim-an/cod@latest 2>/dev/null || :
 fi &
 if [[ ! -d "$HOME/.sdkman" ]]; then msg "Installing sdkman"
-  curl -fsSL "https://get.sdkman.io" | bash 2>/dev/null || :; export SDKMAN_DIR="$HOME/.sdkman"
+  curl -sf "https://get.sdkman.io?ci=true" | bash 2>/dev/null || :; export SDKMAN_DIR="$HOME/.sdkman"
   [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"; fi
 if [[ -d "$HOME/.sdkman" ]]; then export SDKMAN_DIR="$HOME/.sdkman"
   [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
   msg "Configuring sdkman"; sdk selfupdate 2>/dev/null || :; sdk update 2>/dev/null || :; fi &
 if ! has soar; then msg "Installing soar"
-  curl -fsSL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh 2>/dev/null || :
+  curl -fsL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh 2>/dev/null || :
   export PATH="$HOME/.local/share/soar/bin:$PATH"; fi
 if has soar; then msg "Configuring soar"; soar update 2>/dev/null || :; soar_pkgs=(btop-rust fastfetch)
   for pkg in "${soar_pkgs[@]}"; do soar list 2>/dev/null | grep -q "$pkg" || soar install "$pkg" 2>/dev/null || :; done &
 fi &
-if [[ $EUID -eq 0 || -n $PRIV ]]; then
-  if ! lsblk 2>/dev/null | grep -q zram; then run_priv modprobe zram 2>/dev/null || :
-    run_priv sh -c 'echo lz4 > /sys/block/zram0/comp_algorithm' 2>/dev/null || :
-    run_priv sh -c "echo \$(($(grep MemTotal /proc/meminfo | awk '{print $2}')*1024/2)) > /sys/block/zram0/disksize" 2>/dev/null || :
-    run_priv mkswap /dev/zram0 2>/dev/null && run_priv swapon -p 100 /dev/zram0 2>/dev/null || :; fi &
-  run_priv tee /etc/sysctl.d/99-cachyos.conf <<'EOF' >/dev/null 2>&1 || :
-vm.swappiness=10
-vm.vfs_cache_pressure=50
-vm.dirty_ratio=10
-vm.dirty_background_ratio=5
-kernel.nmi_watchdog=0
-EOF
-  run_priv sysctl --system &>/dev/null || : &
-fi
 fish_setup() { mkdir -p "$HOME/.config/fish/conf.d" 2>/dev/null || :
   fish -c "fish_update_completions" 2>/dev/null || :
   if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then

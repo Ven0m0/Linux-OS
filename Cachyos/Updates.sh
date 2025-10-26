@@ -139,7 +139,11 @@ update_extras() {
       has cargo-syu && "${cargo_cmd[@]}" syu -g
     fi
   fi
-
+  if has mise; then
+    mise p i -ay
+    mise up -y
+    mise prune -y
+  fi
   has micro && micro -plugin update >/dev/null 2>&1 || :
   has yazi && ya pkg upgrade >/dev/null 2>&1 || :
 

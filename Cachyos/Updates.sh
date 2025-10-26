@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C LANGUAGE=C
-
+IFS=$'\n\t'; export LC_ALL=C LANG=C LANGUAGE=C
 #============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -12,7 +10,6 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 
 has() { command -v "$1" >/dev/null 2>&1; }
 xecho() { printf '%b\n' "$*"; }
-
 get_priv_cmd() {
   local cmd
   for cmd in sudo-rs sudo doas; do
@@ -23,13 +20,9 @@ get_priv_cmd() {
   done
   [[ $EUID -eq 0 ]] && printf '' || { xecho "${RED}No privilege tool found${DEF}" >&2; exit 1; }
 }
-
 PRIV_CMD=$(get_priv_cmd)
 [[ -n $PRIV_CMD && $EUID -ne 0 ]] && "$PRIV_CMD" -v
-
-run_priv() {
-  [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@"
-}
+run_priv() { [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@" }
 
 print_banner() {
   local banner flag_colors
@@ -59,25 +52,17 @@ EOF
   xecho "Meow (> ^ <)"
 }
 
-cleanup() {
-  [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck >/dev/null 2>&1 || :
-}
+cleanup() { [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck >/dev/null 2>&1 || :; }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-export HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
-export SHELL=${SHELL:-/bin/bash}
+export HOME="${HOME:-/home/${SUDO_USER:-$USER}}" SHELL=bash
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-export CFLAGS="-march=native -mtune=native -O3 -pipe" 
-export CXXFLAGS="$CFLAGS"
+CFLAGS="-march=native -mtune=native -O3 -pipe" 
+export CFLAGS CXXFLAGS="$CFLAGS"
 export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-export CARGO_CACHE_RUSTC_INFO=1 
-export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always 
-export CARGO_HTTP_MULTIPLEXING=true
-export CARGO_NET_GIT_FETCH_WITH_CLI=true
-export RUSTUP_TOOLCHAIN=nightly 
-export RUSTC_BOOTSTRAP=1
+export CARGO_CACHE_RUSTC_INFO=1 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTC_BOOTSTRAP=1
 
 has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 IFS=$'\n\t'
-shopt -s nullglob globstar
 export LC_ALL=C LANG=C LANGUAGE=C
 
 #============ Color & Effects ============

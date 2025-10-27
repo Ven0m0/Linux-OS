@@ -25,7 +25,7 @@ jobs:
             sed -i 's/|| true/|| :/g' "$f"
             sed -i '/^#[[:space:]]*-\{5,\}/d' "$f"
             sed -i '/^$/{N;/^\n$/D;}' "$f"
-            shellcheck -f diff "$f" | patch -Np1 || :
+            shellcheck -f diff "$f" | patch -p1 || :
             shellharden --replace "$f" || :
             shfmt -i 2 -s -bn -ln bash -w "$f" || :
           done

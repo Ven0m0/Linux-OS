@@ -59,7 +59,7 @@ if command -v apt-fast &>/dev/null; then
 else
   alias apt="sudo apt-get"
 fi
-if command -v nala &>/dev/null, then
+if command -v nala &>/dev/null; then
   alias nal='sudo \nala'
   alias nala='sudo \nala'
 fi

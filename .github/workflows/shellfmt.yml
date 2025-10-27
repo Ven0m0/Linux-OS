@@ -1,0 +1,45 @@
+name: Shell Lint & Format
+on:
+  pull_request:
+    paths:
+      - '**/*.{sh,bash,zsh,bashrc}'
+      - '**/*bash*.*'
+  push:
+    paths:
+      - '**/*.{sh,bash,zsh,bashrc}'
+      - '**/*bash*.*'
+  workflow_dispatch:
+  
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install tools
+        env:
+            DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get update -yq && sudo apt-get upgrade -yq
+          sudo apt-get install -yq shellcheck shfmt
+          curl -sL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-musl.tar.gz | tar xz
+          sudo mv shellharden /usr/local/bin/
+      
+      - name: Find & fix shell files
+        run: |
+          while IFS= read -r f; do
+            shellharden --replace "$f"
+            shellcheck -f diff "$f" | patch -Np1 || :
+            shfmt -i 2 -s -bn -ln bash -w "$f"
+          done < <(find . -name '*.sh' -o -type f -exec grep -l '^#!/.*bash' {} \;)
+      
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet || {
+            git add -A
+            git commit -m "🔧 Auto-fix shell scripts"
+            git push
+          }

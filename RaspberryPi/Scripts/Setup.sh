@@ -28,7 +28,7 @@ Acquire::Languages "none";
 APT::Acquire::ForceIPv4 "true";
 APT::Get::AllowUnauthenticated "true";
 Acquire::CompressionTypes::Order:: "gz";
-
+APT { Get { Assume-Yes "true"; Fix-Broken "true"; Fix-Missing "true"; List-Cleanup "true"; };};
 APT::Acquire::Max-Parallel-Downloads "5";' | sudo tee /etc/apt/apt.conf.d/99parallel
 #Acquire::CompressionTypes::lz4 "lz4";
 

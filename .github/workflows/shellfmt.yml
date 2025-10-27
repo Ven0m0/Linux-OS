@@ -28,15 +28,15 @@ jobs:
           SHELLCHECK_OPTS: '--shell=bash --source-path=SCRIPTDIR --external-sources --check-sourced'
         run: |
           {
-            find . -name '*.sh' -o -name '*.bash'
-            find . -type f -exec grep -l '^#!/.*sh' {} +
+            find . -name '*.sh' -o -name '*.bash' || :
+            find . -type f -exec grep -l '^#!/.*sh' {} + || :
           } | sort -u | while IFS= read -r f; do
             sed -i 's/() {/(){/g' "$f"
             sed -i 's/|| true/|| :/g' "$f"
             sed -i '/^#[[:space:]]*-\{5,\}/d' "$f"
             sed -i '/^$/{N;/^\n$/D;}' "$f"
-            shellcheck -f diff "$f" | patch -p1 || :
             shellharden --replace "$f" || :
+            shellcheck -f diff "$f" | patch -p1 || :
             shfmt -i 2 -s -bn -ln bash -w "$f" || :
           done
       

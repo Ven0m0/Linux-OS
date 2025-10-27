@@ -63,7 +63,7 @@ if has apt-fast; then
   sudo nala clean; sudo nala autoremove; sudo nala autopurge
    # nala fetch --auto --fetches 5 -c DE -y --non-free --debian --https-only
 else
-  sudo apt-get update -yq --allow-releaseinfo-change
+  sudo apt-get update -yfmq --allow-releaseinfo-change -o 
   sudo apt-get dist-upgrade -yqfm
   sudo apt-get -yq full-upgrade
   sudo apt-get clean -yq; sudo apt-get autoclean -yq; sudo apt-get autoremove --purge -yq

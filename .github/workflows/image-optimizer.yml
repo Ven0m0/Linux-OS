@@ -16,10 +16,7 @@ jobs:
     permissions: write-all
     runs-on: ubuntu-latest
     steps:
-      # Checkout repo
-      - name: Checkout Repo
-        uses: actions/checkout@v5
-
+      - uses: actions/checkout@v5
       # Cache Image Optimizer dependencies
       - name: Cache Image Optimizer dependencies
         id: cache-image-optimizer

@@ -16,6 +16,8 @@ jobs:
           sudo mv shellharden /usr/local/bin/
       
       - name: Find & fix shell files
+        env:
+          SHELLCHECK_OPTS: '--shell=bash --source-path=SCRIPTDIR --external-sources --check-sourced'
         run: |
           {
             find . -name '*.sh' -o -name '*.bash'

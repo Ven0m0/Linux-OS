@@ -55,7 +55,7 @@ removeReservedTLDs(){
 				}
 			EOF
 			)"
-
+    fi
   		printInfo 'Sorting blocklist'
 		sort < "${blocklistFile:?}" | uniq | sponge "${blocklistFile:?}"
 	fi

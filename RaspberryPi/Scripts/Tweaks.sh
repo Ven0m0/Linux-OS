@@ -73,8 +73,8 @@ esac
 
 packages="libraspberrypi-doc manpages snapd cups*"
 echo -e "\nRemove packages? ( $packages )"
-read -p "Agree (y/n)? " option
-y*) sudo apt-get remove -y "$packages" ;;
+read -p "Agree (y/n)? " option y*) sudo apt-get remove -y "$packages" ;;
+
 
 sudo apt-get -y autoremove --purge && sudo apt-get clean
 

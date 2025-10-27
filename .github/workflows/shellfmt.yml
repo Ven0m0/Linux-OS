@@ -28,11 +28,14 @@ jobs:
       
       - name: Find & fix shell files
         run: |
-          while IFS= read -r f; do
+          {
+            find . -name '*.sh' -o -name '*.bash'
+            find . -type f -exec grep -l '^#!/.*sh' {} +
+          } | sort -u | while IFS= read -r f; do
             shellharden --replace "$f"
-            shellcheck -f diff "$f" | patch -Np1 || :
+            shellcheck -f diff "$f" | patch -Np1 || true
             shfmt -i 2 -s -bn -ln bash -w "$f"
-          done < <(find . -name '*.sh' -o -type f -exec grep -l '^#!/.*bash' {} \;)
+          done
       
       - name: Commit changes
         run: |
@@ -43,3 +46,4 @@ jobs:
             git commit -m "🔧 Auto-fix shell scripts"
             git push
           }
+  

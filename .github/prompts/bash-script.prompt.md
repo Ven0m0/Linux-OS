@@ -36,8 +36,8 @@ log(){ echo "[$(date -Iseconds)] ${1}"; }
 
 # Dependencies
 REQUIRED_TOOLS=(curl git rsync)
-for tool in "${REQUIRED_TOOLS[@]}"; do
-    command -v "$tool" >/dev/null 2>&1 || die "${tool} required" 1
+for tool in ""${REQUIRED_TOOLS[@]}; do
+    command -v ""$tool >/dev/null 2>&1 || die ""$tool" required" 1
 done
 )$()"
 

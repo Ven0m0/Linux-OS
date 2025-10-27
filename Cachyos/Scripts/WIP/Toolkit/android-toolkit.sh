@@ -35,9 +35,9 @@ WHATSAPP_CLEAN_PATHS=(
 )
 
 # --- Helper functions ---
-has() { command -v "$1" &>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
-log() {
+log(){
   local level="$1"; shift
   case "$level" in
     info)  [[ $VERBOSE -eq 1 ]] && printf "\033[0;32m[INFO]\033[0m %s\n" "$*" ;;
@@ -47,7 +47,7 @@ log() {
   esac
 }
 
-check_requirements() {
+check_requirements(){
   local missing=()
   
   if [[ $USE_SHIZUKU -eq 1 ]]; then
@@ -73,7 +73,7 @@ check_requirements() {
 }
 
 # Execute a command, honouring dry-run mode
-run() {
+run(){
   if [[ $DRYRUN -eq 1 ]]; then
     log debug "Would run: $*"
   else
@@ -166,7 +166,7 @@ run_mgr(){
 }
 
 # Push file to device
-push_file() {
+push_file(){
   local src="$1" dst="$2"
   
   if [[ $DRYRUN -eq 1 ]]; then
@@ -187,7 +187,7 @@ push_file() {
 }
 
 # Pull file from device
-pull_file() {
+pull_file(){
   local src="$1" dst="$2"
   
   if [[ $DRYRUN -eq 1 ]]; then
@@ -208,7 +208,7 @@ pull_file() {
 }
 
 # Get free space on device
-get_free_space() {
+get_free_space(){
   run_cmd "df -h /data | tail -n1 | awk '{print \$4}'" | tr -d '\r'
 }
 
@@ -224,7 +224,7 @@ if [[ -z $PRIMARY_MANAGER ]]; then
 fi
 
 # Execute command via ADB or Shizuku
-run_cmd() {
+run_cmd(){
   if [[ $DRYRUN -eq 1 ]]; then
     log debug "Would run: $*"
     return 0
@@ -248,7 +248,7 @@ run_cmd() {
 # --- Clean functions ---
 
 # Clean app caches
-clean_app_caches() {
+clean_app_caches(){
   log info "Clearing app caches..."
   
   # Clear caches for all third-party apps
@@ -272,7 +272,7 @@ clean_app_caches() {
 }
 
 # Clean log files
-clean_logs() {
+clean_logs(){
   log info "Cleaning log files..."
   
   # Clear all logcat buffers
@@ -294,7 +294,7 @@ clean_logs() {
 }
 
 # Clean temporary files
-clean_temp_files() {
+clean_temp_files(){
   log info "Cleaning temporary files..."
   
   # Clear /data/local/tmp (requires root or Shizuku)
@@ -307,7 +307,7 @@ clean_temp_files() {
 }
 
 # Clean browser cache
-clean_browser_cache() {
+clean_browser_cache(){
   log info "Cleaning browser caches..."
   
   local browser_paths=(
@@ -327,7 +327,7 @@ clean_browser_cache() {
 }
 
 # Clean thumbnails
-clean_thumbnails() {
+clean_thumbnails(){
   log info "Cleaning thumbnail caches..."
   
   run_cmd "rm -rf /sdcard/DCIM/.thumbnails/*"
@@ -338,7 +338,7 @@ clean_thumbnails() {
 }
 
 # Clean downloads folder
-clean_downloads() {
+clean_downloads(){
   log info "Cleaning downloads folder..."
   
   if [[ "${CLEAN_DOWNLOADS_DAYS:-0}" -gt 0 ]]; then
@@ -353,7 +353,7 @@ clean_downloads() {
 # --- WhatsApp media functions ---
 
 # Clean old opus files
-clean_whatsapp_opus() {
+clean_whatsapp_opus(){
   local delete_days="${DELETE_OPUS_DAYS:-90}"
   log info "Cleaning opus files older than $delete_days days"
   
@@ -362,22 +362,22 @@ clean_whatsapp_opus() {
     
     if [[ $DRYRUN -eq 1 ]]; then
       # Just list files that would be deleted
-      run_cmd find \"$path\" -type f -name \"*.opus\" -mtime +$delete_days -exec ls -la {} \\\;
+      run_cmd find \""$path"\" -type f -name \"*.opus\" -mtime +"$delete_days" -exec ls -la {} \\\;
       
       # Count files that would be deleted
       local count
-      count=$(run_cmd find \"$path\" -type f -name \"*.opus\" -mtime +$delete_days | wc -l)
+      count=$(run_cmd find \""$path"\" -type f -name \"*.opus\" -mtime +"$delete_days" | wc -l)
       log info "Would delete $count opus files from $path"
     else
       # Actually delete the files
-      run_cmd find \"$path\" -type f -name \"*.opus\" -mtime +$delete_days -delete
+      run_cmd find \""$path"\" -type f -name \"*.opus\" -mtime +"$delete_days" -delete
       log info "Deleted opus files older than $delete_days days from $path"
     fi
   done
 }
 
 # Clean specific WhatsApp paths completely
-clean_whatsapp_paths() {
+clean_whatsapp_paths(){
   log info "Cleaning specific WhatsApp folders"
   
   for path in "${WHATSAPP_CLEAN_PATHS[@]}"; do
@@ -386,18 +386,18 @@ clean_whatsapp_paths() {
     if [[ $DRYRUN -eq 1 ]]; then
       # Count files that would be deleted
       local count
-      count=$(run_cmd find \"$path\" -type f | wc -l)
+      count=$(run_cmd find \""$path"\" -type f | wc -l)
       log info "Would delete $count files from $path"
     else
       # Delete all files in the path
-      run_cmd rm -rf \"$path/\"*
+      run_cmd rm -rf \""$path"/\"*
       log info "Deleted all files in $path"
     fi
   done
 }
 
 # Optimize WhatsApp images
-optimize_whatsapp_images() {
+optimize_whatsapp_images(){
   [[ "${OPTIMIZE_IMAGES:-1}" -ne 1 ]] && return
   
   log info "Optimizing images"
@@ -460,7 +460,7 @@ optimize_whatsapp_images() {
 # --- Device optimization functions ---
 
 # Optimize Android Runtime
-optimize_art_runtime() {
+optimize_art_runtime(){
   log info "Optimizing ART runtime..."
   
   # Run any postponed dex-opt jobs immediately
@@ -476,7 +476,7 @@ optimize_art_runtime() {
 }
 
 # Configure rendering settings
-configure_rendering() {
+configure_rendering(){
   log info "Configuring rendering settings..."
   
   # GPU Rendering
@@ -502,7 +502,7 @@ configure_rendering() {
 }
 
 # Configure audio settings
-configure_audio() {
+configure_audio(){
   log info "Configuring audio settings..."
   
   # Audio optimization
@@ -517,7 +517,7 @@ configure_audio() {
 }
 
 # Configure battery optimization
-configure_battery() {
+configure_battery(){
   log info "Configuring battery optimizations..."
   
   # Battery saver settings
@@ -531,7 +531,7 @@ configure_battery() {
 }
 
 # Configure network settings
-configure_network() {
+configure_network(){
   log info "Configuring network settings..."
   
   # Data saver
@@ -553,7 +553,7 @@ configure_network() {
 }
 
 # Configure input settings
-configure_input() {
+configure_input(){
   log info "Configuring input settings..."
   
   # Touch optimization
@@ -575,7 +575,7 @@ configure_input() {
 }
 
 # Configure system settings
-configure_system() {
+configure_system(){
   log info "Configuring system settings..."
   
   # System UI
@@ -593,7 +593,7 @@ configure_system() {
 }
 
 # Configure doze and app standby
-configure_doze() {
+configure_doze(){
   log info "Configuring doze and app standby..."
   
   # Force doze
@@ -613,7 +613,7 @@ configure_doze() {
 # --- App permissions management ---
 
 # Set app permission
-set_app_permission() {
+set_app_permission(){
   local mode="$1" pkg="$2"
   
   case "$mode" in
@@ -637,7 +637,7 @@ set_app_permission() {
 }
 
 # Load app permissions from config file
-load_app_permissions() {
+load_app_permissions(){
   [[ ! -f "$CONFIG_FILE" ]] && return 1
   
   log info "Loading app permissions from config file"
@@ -677,7 +677,7 @@ load_app_permissions() {
 # --- Usage/help functions ---
 
 # Show detailed usage for the script
-usage() {
+usage(){
   cat <<EOF
 Android Toolkit - Comprehensive Android device management utility
 
@@ -735,7 +735,7 @@ EOF
 }
 
 # Show command-specific help
-command_help() {
+command_help(){
   local cmd="$1"
   
   case "$cmd" in
@@ -905,7 +905,7 @@ choose_manager(){
 # --- Command handlers ---
 
 # Clean command handler
-cmd_clean() {
+cmd_clean(){
   local clean_system=0 clean_downloads=0 skip_browser=0 skip_thumbnails=0
   
   # Parse options
@@ -970,7 +970,7 @@ cmd_clean() {
 }
 
 # WhatsApp clean command handler
-cmd_whatsapp_clean() {
+cmd_whatsapp_clean(){
   local delete_days=90 optimize_images=1
   
   # Parse options
@@ -1022,7 +1022,7 @@ cmd_whatsapp_clean() {
 }
 
 # Optimize command handler
-cmd_optimize() {
+cmd_optimize(){
   local categories=() custom_dns=""
   
   # Parse options
@@ -1103,7 +1103,7 @@ cmd_optimize() {
 }
 
 # Permissions command handler
-cmd_permissions() {
+cmd_permissions(){
   local action="apply" pkg="" perm=""
   
   # Parse options
@@ -1193,7 +1193,7 @@ EOF
 }
 
 # Maintenance command handler
-cmd_maintenance() {
+cmd_maintenance(){
   local action=""
   
   # Parse options
@@ -1230,7 +1230,7 @@ cmd_maintenance() {
 }
 
 # Backup/restore command handler
-cmd_backup_restore() {
+cmd_backup_restore(){
   local action="" file=""
   
   # Parse options
@@ -1275,7 +1275,7 @@ cmd_backup_restore() {
 }
 
 # Initialize config/cache directories
-init_dirs() {
+init_dirs(){
   mkdir -p "$CONFIG_DIR" "$CACHE_DIR" &>/dev/null
   
   # Create default config if it doesn't exist
@@ -1306,7 +1306,7 @@ EOF
 
 # --- Main Program ---
 
-main() {
+main(){
   # Initialize directories
   init_dirs
   

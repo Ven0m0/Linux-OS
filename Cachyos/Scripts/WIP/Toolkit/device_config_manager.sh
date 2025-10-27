@@ -13,7 +13,7 @@ log() {
 }
 
 check_adb() {
-  command -v adb &>/dev/null || { 
+  command -v adb &>/dev/null || {
     echo "Error: adb not found. Please install Android platform tools."
     return 1
   }
@@ -27,10 +27,10 @@ check_adb() {
 apply_device_configs() {
   local section key value
   log "Applying optimized device configurations..."
-  
+
   # Connectivity settings
   apply_config connectivity dhcp_rapid_commit_enabled true
-  
+
   # Privacy settings
   apply_config privacy bg_location_check_is_enabled false
   apply_config privacy safety_center_is_enabled false
@@ -68,9 +68,9 @@ apply_device_configs() {
 
   # Bluetooth settings - optimize but disable features that might drain battery
   for flag in a2dp_lhdc_api a2dp_variable_aac_capability a2dp_version_1_4 avdt_prioritize_mandatory_codec \
-              avrcp_16_default brcm_better_le_scan_params browsing_refactor bt_socket_api_l2cap_cid \
-              enable_sniff_offload fix_buf_len_check_for_first_k_frame fix_hfp_qual_1_9 \
-              fix_started_module_race hh_state_update_race_fix l2cap_fcs_option_fix; do
+    avrcp_16_default brcm_better_le_scan_params browsing_refactor bt_socket_api_l2cap_cid \
+    enable_sniff_offload fix_buf_len_check_for_first_k_frame fix_hfp_qual_1_9 \
+    fix_started_module_race hh_state_update_race_fix l2cap_fcs_option_fix; do
     apply_config bluetooth "com.android.bluetooth.flags.${flag}" true
   done
 
@@ -85,7 +85,7 @@ apply_device_configs() {
 
   # Additional system commands
   apply_system_commands
-  
+
   log "Device configurations applied successfully"
 }
 
@@ -93,8 +93,8 @@ apply_device_configs() {
 apply_config() {
   local section="$1" key="$2" value="$3"
   log_debug "Setting ${section}/${key}=${value}"
-  adb shell cmd device_config put "$section" "$key" "$value" >/dev/null 2>&1 || 
-    log "Failed to set ${section}/${key}=${value}"
+  adb shell cmd device_config put "$section" "$key" "$value" >/dev/null 2>&1 \
+    || log "Failed to set ${section}/${key}=${value}"
 }
 
 # Apply additional system commands that aren't device_config settings
@@ -128,13 +128,13 @@ apply_system_commands() {
   adb shell device_config put activity_manager enable_background_cpu_boost true
   adb shell device_config put activity_manager force_high_refresh_rate true
   adb shell device_config put graphics render_thread_priority high
-  
+
   adb shell cmd activity kill-all
   adb shell am kill-all
   adb shell cmd activity compact system
   adb shell am broadcast -a android.intent.action.ACTION_OPTIMIZE_DEVICE
   adb shell am broadcast -a com.android.systemui.action.CLEAR_MEMORY
-  
+
   # Network policy
   adb shell cmd netpolicy set restrict-background true
 
@@ -148,7 +148,7 @@ apply_system_commands() {
   adb shell sm fstrim
   adb shell cmd activity idle-maintenance
   adb shell pm bg-dexopt-job
-  
+
   adb shell cmd otadexopt cleanup
   adb shell cmd package art pr-dexopt-job --run
   adb shell cmd package art configure-batch-dexopt -r bg-dexopt
@@ -161,11 +161,11 @@ apply_system_commands() {
   adb shell am broadcast -a com.android.systemui.action.CLEAR_MEMORY
   adb shell am kill-all
   adb shell cmd activity kill-all
-  
-  # Run any postponed dex‐opt jobs immediately 
+
+  # Run any postponed dex‐opt jobs immediately
   adb shell cmd jobscheduler run -f android \
-    $(adb shell cmd jobscheduler list-jobs android \
-    | grep background-dexopt | awk '{print $2}')
+    "$(adb shell cmd jobscheduler list-jobs android \
+      | grep background-dexopt | awk '{print $2}')"
 
   # Power management
   adb shell cmd power set-adaptive-power-saver-enabled true
@@ -178,12 +178,12 @@ apply_system_commands() {
   adb shell settings put global enhanced_processing 1
   adb shell settings put global omap.enhancement true
 
-  vk_set(){
+  vk_set() {
     adb shell setprop debug.renderengine.backend skiavk
     adb shell setprop debug.hwui.renderer skiavk
     adb shell setprop debug.hwui.use_vulkan true
   }
-  gl_set(){
+  gl_set() {
     adb shell setprop debug.renderengine.backend skiaglthreaded
     adb shell setprop debug.hwui.renderer skiagl
     adb shell setprop debug.hwui.use_vulkan false
@@ -200,31 +200,31 @@ apply_system_commands() {
   adb shell settings put global battery_saver_constants \ 
   "vibration_disabled=true,animation_disabled=true,soundtrigger_disabled=true,fullbackup_deferred=true,keyvaluebackup_deferred=true, \
   gps_mode=low_power,data_saver=true,optional_sensors_disabled=true,advertiser_id_enabled=false"
-  
+
   # Graphics
   adb shell device_config put graphics enable_cpu_boost true
   adb shell device_config put graphics enable_gpu_boost true
 
   # Driver
-    adb shell settings put global game_low_latency_mode 1
-    adb shell settings put global game_gpu_optimizing 1
-    adb shell settings put global game_driver_mode 1
-    adb shell settings put global game_driver_all_apps 1
-    adb shell settings put global game_driver_opt_out_apps 1
-    adb shell settings put global updatable_driver_all_apps 1
-    adb shell settings put global updatable_driver_production_opt_out_apps 1
-    adb shell settings put global angle_gl_driver_all_angle 1
+  adb shell settings put global game_low_latency_mode 1
+  adb shell settings put global game_gpu_optimizing 1
+  adb shell settings put global game_driver_mode 1
+  adb shell settings put global game_driver_all_apps 1
+  adb shell settings put global game_driver_opt_out_apps 1
+  adb shell settings put global updatable_driver_all_apps 1
+  adb shell settings put global updatable_driver_production_opt_out_apps 1
+  adb shell settings put global angle_gl_driver_all_angle 1
   adb shell settings put global angle_debug_package com.android.angle
   adb shell settings put global angle_gl_driver_selection_values angle
-  
+
   # Global settings
   adb shell settings put global updatable_driver_all_apps 1
   adb shell settings put global sqlite_compatibility_wal_flags "syncMode=OFF,fsyncMode=off"
 
   # Print data in .db files, clean:
-  grep -vx -f <(sqlite3 Main.db .dump) <(sqlite3 ${DB} .schema) 
+  grep -vx -f <(sqlite3 Main.db .dump) <(sqlite3 "$DB" .schema)
   # Use below command fr update dg.db file:
-  sqlite3 /data/data/com.google.android.gms/databases/dg.db "update main set c='0' where a like '%attest%';" 
+  sqlite3 /data/data/com.google.android.gms/databases/dg.db "update main set c='0' where a like '%attest%';"
 
 }
 
@@ -236,32 +236,35 @@ log_debug() {
 # Reset all configurations to default
 reset_device_configs() {
   log "Resetting device configurations to default..."
-  
+
   # List sections to reset
   local sections=(
     connectivity privacy runtime runtime_native runtime_native_boot
-    systemui activity_manager package_manager_service window_manager 
+    systemui activity_manager package_manager_service window_manager
     wifi bluetooth adservices
   )
-  
+
   # Reset each section
   for section in "${sections[@]}"; do
     adb shell cmd device_config reset "$section" >/dev/null 2>&1 || log "Failed to reset section: $section"
   done
-  
+
   log "Device configurations reset successfully"
 }
 
 # Main function
 main() {
   check_adb || exit 1
-  
+
   # Parse command line arguments
   if [[ $# -gt 0 ]]; then
     case "$1" in
-      apply) apply_device_configs ;;
-      reset) reset_device_configs ;;
-      *) echo "Usage: $0 [apply|reset]"; exit 1 ;;
+    apply) apply_device_configs ;;
+    reset) reset_device_configs ;;
+    *)
+      echo "Usage: $0 [apply|reset]"
+      exit 1
+      ;;
     esac
   else
     # Default action
@@ -270,6 +273,6 @@ main() {
 }
 
 # Execute main function if run directly
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
   main "$@"
 fi

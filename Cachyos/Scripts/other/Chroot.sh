@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 LC_ALL=C
-sync; sudo -v
+sync
+sudo -v
 
 lsblk -A
 sudo mount /dev/nvme0n1p2 /mnt
@@ -17,7 +18,6 @@ sudo arch-chroot /mnt /bin/bash
 echo "micro /etc/fstab"
 echo "micro /etc/mkinitcpio.conf"
 
-
 exit
 sudo arch-chroot /mnt mkinitcpio -P
 sudo umount -R /mnt/run
@@ -25,11 +25,9 @@ sudo umount -R /mnt/dev
 sudo umount -R /mnt/sys
 sudo umount -R /mnt/proc
 sudo umount /mnt/boot/efi
-# sudo umount /mnt/boot 
+# sudo umount /mnt/boot
 umount /mnt
 
 sudo reboot
-
-
 
 # sudo mkinitcpio -P

@@ -23,7 +23,7 @@ adb shell 'find /sdcard -type f \( \
   \) -delete'
 
 # Replace `/sdcard` with all external volumes
-for path in $(adb shell ls /storage | grep -v emulated); do
+for path in "$(adb shell ls /storage | grep -v emulated)"; do
   adb shell "find /storage/$path -type f \( ... \) -delete"
 done
 

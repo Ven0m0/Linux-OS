@@ -10,13 +10,12 @@ dpkg -l | grep -qw gawk || sudo apt-get install mawk -y
 wait 
 #mawk -i inplace '!a[$0]++' $blacklist
 
-
 # https://github.com/hectorm/hblock/blob/master/hblock
 # Remove comments from string.
-removeComments() { sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
+removeComments(){ sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
 
 # Remove reserved Top Level Domains.
-removeReservedTLDs() {
+removeReservedTLDs(){
 	sed -e '/\.corp$/d' \
 		-e '/\.domain$/d' \
 		-e '/\.example$/d' \
@@ -32,7 +31,6 @@ removeReservedTLDs() {
 
 		# Read the sources file ignoring comments or empty lines.
 		removeComments < "${sourcesFile:?}" > "${sourcesUrlFile:?}"
-
 
   
 	# If the blocklist file is not empty, it is filtered and sorted.

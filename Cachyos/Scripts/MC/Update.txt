@@ -1,5 +1,3 @@
-
-
 ferium scan
 sleep 5
 ferium upgrade

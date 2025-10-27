@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob
 export LC_ALL=C LANG=C.UTF-8
 
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 
 sudo -v
 sudo pacman -Syyuq --noconfirm --needed
@@ -17,7 +19,10 @@ TMPFILE=$(mktemp)
 
 mirroropt() {
   local name="$1" file="${2:-$MIRRORDIR/${1}-mirrorlist}"
-  [[ -r "$file" ]] || { echo "Missing: $file" >&2; return 1; }
+  [[ -r $file ]] || {
+    echo "Missing: $file" >&2
+    return 1
+  }
   echo "→ Ranking $name..."
   rate-mirrors stdin \
     --save="$TMPFILE" \

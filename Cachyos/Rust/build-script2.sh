@@ -4,10 +4,10 @@ set -euo pipefail
 # 1. Detect & remove unused dependencies
 cargo +nightly install cargo-udeps cargo-shear
 cargo udeps --all-targets
-cargo shear                         # removes unused deps from Cargo.toml
+cargo shear # removes unused deps from Cargo.toml
 
 # 2. Find dead code / unused items
-cargo machete                      # (optional) remove unused public functions
+cargo machete # (optional) remove unused public functions
 
 # 3. Minify HTML
 find . -name "*.html" -exec minhtml -i {} -o {} \;
@@ -19,7 +19,7 @@ find assets -type f \( -iname '*.png' -o -iname '*.jpg' \) -exec rimage {} --opt
 flaca compress ./static
 
 # 6. Remove unneeded workspace cruft
-cargo diet -p your_crate_name      # shows what will ship → trim as needed
+cargo diet -p your_crate_name # shows what will ship → trim as needed
 
 # 7. Lint features and dep versions
 cargo unused-features
@@ -30,7 +30,7 @@ cargo outdated
 cargo sort-fix
 
 # 9. Parallel compile (faster dev cycle)
-cargo q build --release            # if you installed cargo-q
+cargo q build --release # if you installed cargo-q
 
 # 10. PGO compile
 cargo pgo build --bin your_app

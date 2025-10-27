@@ -23,8 +23,7 @@ adb shell settings put global mobile_data_always_on 0
 adb shell settings put global enhanced_processing 1
 adb shell settings put global sem_enhanced_cpu_responsiveness 1
 adb shell settings put global game_driver_all_apps 1
-adb shell settings put global wifi.supplicant_scan_interval 180\
-adb shell settings put secure upload_debug_log_pref 0
+adb shell settings put global wifi.supplicant_scan_interval 180adb shell settings put secure upload_debug_log_pref 0
 adb shell settings put secure upload_log_pref 0
 adb shell settings put global sys_traced 0
 adb shell settings put global wifi_verbose_logging_enabled 0

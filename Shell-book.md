@@ -52,11 +52,11 @@ hasname(){ local x; x=$(type -Pf -- "$1") && printf '%s\n' "${x##*/}"; }
 # Export array of newline/space seperated quotes variables
 export_array(){ local -n a=$1; for v in "${a[@]}"; do eval "export $v"; done; unset v; }
 # Printf-echo
-p() { printf '%s\n' "$*" 2>/dev/null; }
+p(){ printf '%s\n' "$*" 2>/dev/null; }
 # Printf-echo for color with auto reset
-pe() { printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
+pe(){ printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
 # Bash sleep replacement
-sleepy() { read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
+sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
 #──────────── Safe optimal privilege tool ────────────────────
 suexec="$(command -v sudo-rs 2>/dev/null || command -v sudo 2>/dev/null || command -v doas 2>/dev/null)"
 [[ -z ${suexec:-} ]] && { p "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
@@ -151,14 +151,14 @@ fcat(){ printf '%s\n' "$(<${1})"; }
 <summary><b>Sleep replacement in bash</b></summary>
 
 ```bash
-#sleepy() { read -rt "$1" <> <(:) &>/dev/null || :; }
+#sleepy(){ read -rt "$1" <> <(:) &>/dev/null || :; }
 ```
 </details>
 <details>
 <summary><b>Use regex on a string</b></summary>
 
 ```bash
-regex() { [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}" }
+regex(){ [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}" }
 ```
 
 The result of `bash`'s regex matching can be used to replace `sed` for a
@@ -174,7 +174,7 @@ multiple capture groups some modification is needed.
 **Example Function:**
 
 ```bash
-regex() {
+regex(){
     # Usage: regex "string" "regex"
     [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
 }
@@ -186,13 +186,13 @@ regex() {
 This is an alternative to `cut`, `awk` and other tools. **CAVEAT:** Requires `bash` 4+
 
 ```bash
-split() { IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"; printf '%s\n' "${arr[@]}" }
+split(){ IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"; printf '%s\n' "${arr[@]}" }
 ```
 
 **Example Function:**
 
 ```bash
-split() {
+split(){
    # Usage: split "string" "delimiter"
    IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"
    printf '%s\n' "${arr[@]}"
@@ -231,7 +231,7 @@ john
 **Example Function:**
 
 ```bash
-trim_quotes() {
+trim_quotes(){
     # Usage: trim_quotes "string"
     : "${1//\'}"
     printf '%s\n' "${_//\"}"
@@ -252,7 +252,7 @@ Hello, World
 **Example Function:**
 
 ```sh
-strip_all() {
+strip_all(){
     # Usage: strip_all "string" "pattern"
     printf '%s\n' "${1//$2}"
 }
@@ -277,7 +277,7 @@ The Brown Fox
 **Example Function:**
 
 ```bash
-strip() {
+strip(){
     # Usage: strip "string" "pattern"
     printf '%s\n' "${1/$2}"
 }
@@ -309,7 +309,7 @@ allows us to effectively remove array duplicates.
 **Example Function:**
 
 ```bash
-remove_array_dups() {
+remove_array_dups(){
     # Usage: remove_array_dups "array"
     declare -A tmp_array
 
@@ -387,7 +387,7 @@ shopt -u globstar
 **Example Function:**
 
 ```bash
-extract() {
+extract(){
     # Usage: extract file "opening marker" "closing marker"
     while IFS=$'\n' read -r line; do
         [[ $extract && $line != "$3" ]] &&
@@ -417,7 +417,6 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 | `${!VAR}` | Access a variable based on the value of `VAR`.
 | `${!VAR*}` | Expand to `IFS` separated list of variable names starting with `VAR`. |
 | `${!VAR@}` | Expand to `IFS` separated list of variable names starting with `VAR`. If double-quoted, each variable name expands to a separate word. |
-
 
 ### Replacement
 
@@ -473,7 +472,6 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 | `${VAR+STRING}` | If `VAR` is set, use `STRING` as its value.
 | `${VAR:?STRING}` | Display an error if empty or unset.
 | `${VAR?STRING}` | Display an error if unset.
-
 
 ### BRACE EXPANSION
 
@@ -536,7 +534,7 @@ file="${1/#\~\//${HOME}/}"
 This will run the given command and keep it running, even after the terminal or SSH connection is terminated. All output is ignored.
 
 ```bash
-bkr() {
+bkr(){
     (nohup "$@" &>/dev/null &)
 }
 

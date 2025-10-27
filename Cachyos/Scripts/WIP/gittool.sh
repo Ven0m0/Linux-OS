@@ -2,11 +2,13 @@
 # Speed up git
 export LC_ALL=C LANG=C
 
-githousekeep(){
-  local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"; cd -- "$workdir" || return 1
+githousekeep() {
+  local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+  cd -- "$workdir" || return 1
   local dir="${1:-$workdir}"
   if ! git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    printf 'Not a git work tree: %s\n' "$dir" >&2; return 1
+    printf 'Not a git work tree: %s\n' "$dir" >&2
+    return 1
   fi
   printf '\e[1mHousekeeping: %s\e[0m\n' "$dir"
   git -C "$dir" rm -r --cached .
@@ -38,11 +40,13 @@ githousekeep(){
   git -C "$dir" gc --auto --aggressive --prune=now --quiet
   git -C "$dir" clean -fdXq
 }
-gitdate(){
-  local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"; cd -- "$workdir" || return 1
+gitdate() {
+  local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+  cd -- "$workdir" || return 1
   local dir="${1:-$workdir}"
   if ! git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    printf 'Not a git work tree: %s\n' "$dir" >&2; return 1
+    printf 'Not a git work tree: %s\n' "$dir" >&2
+    return 1
   fi
   printf '\e[1mUpdating: %s\e[0m\n' "$dir"
   # Keep remote-tracking refs tidy

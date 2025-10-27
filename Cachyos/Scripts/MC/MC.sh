@@ -11,7 +11,7 @@ echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler
 echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
 
 # Detect if running inside ghostty terminal
-if [[ "$TERM" == "ghostty" ]]; then
+if [[ $TERM == "ghostty" ]]; then
   # Inside ghostty terminal:
   # 1) Launch playit in new ghostty terminal
   # 2) Run start.sh here (current ghostty terminal)
@@ -19,12 +19,12 @@ if [[ "$TERM" == "ghostty" ]]; then
   ghostty -e bash -c '
     playit &
     PLAYIT_PID=$!
-    trap "kill $PLAYIT_PID 2>/dev/null || true" EXIT INT TERM
+    trap "kill $PLAYIT_PID 2>/dev/null || :" EXIT INT TERM
     wait
   ' &
 
   # Sleep a bit to let playit start
-  read -rt 1 || true
+  read -rt 1 || :
 
   # Run start.sh in current terminal, foreground
   ./start.sh
@@ -35,8 +35,8 @@ else
   ghostty -e bash -c '
     playit &
     PLAYIT_PID=$!
-    trap "kill $PLAYIT_PID 2>/dev/null || true" EXIT INT TERM
-    read -rt 1 || true
+    trap "kill $PLAYIT_PID 2>/dev/null || :" EXIT INT TERM
+    read -rt 1 || :
     ./start.sh
   '
 fi

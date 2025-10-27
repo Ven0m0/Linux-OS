@@ -45,11 +45,11 @@ cargo fmt
 cargo clippy -- -D warnings
 
 # 9. Parallel compile (faster dev cycle)
-cargo q build --release            # if you installed cargo-q
+cargo q build --release # if you installed cargo-q
 
 # 10. PGO compile
 cargo pgo build --bin your_app
 
 # 11. Strip and report size
-strip target/release/$(basename $(pwd))
-ls -lh target/release/$(basename $(pwd))
+strip target/release/"$(basename "$PWD")"
+ls -lh target/release/"$(basename "$PWD")"

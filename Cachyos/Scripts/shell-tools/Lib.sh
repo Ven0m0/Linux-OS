@@ -31,5 +31,5 @@ dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p
 bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
 regex(){ [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}" }
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
-fcat(){ printf '%s\n' "$(<${1})"; }
+fcat(){ printf '%s\n' "$(<"${1}")"; }
 

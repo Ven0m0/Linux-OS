@@ -1,5 +1,3 @@
-
-
 # Condense font
 fonttools ttLib.scale \
   --x-scale 0.85 \
@@ -10,4 +8,4 @@ fonttools ttLib.scale \
     -e 's/JetBrains Mono Nerd Font/JetBrains Mono Condensed Nerd Font/g' \
     -e 's/JetBrainsMonoNerdFont/JetBrainsMonoCondensedNerdFont/g' \
     -e 's/(<fontRevision value=")[0-9.]+/\10.900/g' \
-  | ttx -o JetBrainsMonoNerdFont-Condensed.ttf /dev/stdin
+    | ttx -o JetBrainsMonoNerdFont-Condensed.ttf /dev/stdin

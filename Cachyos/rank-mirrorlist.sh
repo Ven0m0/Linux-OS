@@ -10,17 +10,36 @@ export LC_ALL=C LANG=C.UTF-8
 
 # --- Colors and Logging ---
 if [[ -t 2 ]]; then
-  ALL_OFF="\e[0m"; BOLD="\e[1m"; RED="${BOLD}\e[31m"; GREEN="${BOLD}\e[32m"; YELLOW="${BOLD}\e[33m"
+  ALL_OFF="\e[0m"
+  BOLD="\e[1m"
+  RED="${BOLD}\e[31m"
+  GREEN="${BOLD}\e[32m"
+  YELLOW="${BOLD}\e[33m"
 fi
 readonly ALL_OFF BOLD GREEN RED YELLOW
 
-msg() { local fmt=$1; shift; printf "%b==>%b%b ${fmt}%b\n" "${GREEN-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "$@" >&2; }
-info() { local fmt=$1; shift; printf "%b -->%b%b ${fmt}%b\n" "${YELLOW-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "$@" >&2; }
-error() { local fmt=$1; shift; printf "%b==> ERROR:%b%b ${fmt}%b\n" "${RED-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "$@" >&2; }
-die() { (($#)) && error "$@"; exit 255; }
+msg() {
+  local fmt=$1
+  shift
+  printf "%b==>%b%b ${fmt}%b\n" "${GREEN-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "$@" >&2
+}
+info() {
+  local fmt=$1
+  shift
+  printf "%b -->%b%b ${fmt}%b\n" "${YELLOW-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "$@" >&2
+}
+error() {
+  local fmt=$1
+  shift
+  printf "%b==> ERROR:%b%b ${fmt}%b\n" "${RED-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "$@" >&2
+}
+die() {
+  (($#)) && error "$@"
+  exit 255
+}
 
 # --- Prerequisites ---
-(( EUID == 0 )) || die "This script must be run as root."
+((EUID == 0)) || die "This script must be run as root."
 command -v rate-mirrors >/dev/null || die "'rate-mirrors' is not installed."
 
 # --- Globals ---
@@ -58,7 +77,7 @@ rank_arch_from_url() {
 
   # Parse URLs into an array
   mapfile -t urls < <(awk '/^#?Server/ {url=$3; sub(/\$.*/,"",url); if(!seen[url]++) print url}' "$TMP_DOWNLOAD")
-  (( ${#urls[@]} > 0 )) || die "No server entries found in the fetched list from %s" "$url"
+  ((${#urls[@]} > 0)) || die "No server entries found in the fetched list from %s" "$url"
 
   info "Ranking %d mirrors from URL..." "${#urls[@]}"
   local -a stdin_flags=(
@@ -66,9 +85,9 @@ rank_arch_from_url() {
     --path-to-return="\$repo/os/\$arch"
     --comment-prefix="# " --output-prefix="Server = "
   )
-  printf '%s\n' "${urls[@]}" |
-    rate-mirrors --save="$TMP_MAIN" --allow-root stdin "${stdin_flags[@]}" ||
-    die "rate-mirrors failed to process mirror list from URL."
+  printf '%s\n' "${urls[@]}" \
+    | rate-mirrors --save="$TMP_MAIN" --allow-root stdin "${stdin_flags[@]}" \
+    || die "rate-mirrors failed to process mirror list from URL."
 
   [[ -s $TMP_MAIN ]] || die "rate-mirrors did not produce an output file."
   cp -f --backup=simple --suffix=".bak" "$TMP_MAIN" "$path"

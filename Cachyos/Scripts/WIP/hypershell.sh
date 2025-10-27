@@ -19,4 +19,3 @@ hyperfine \
   --runs "$RUNS" \
   'dash -c '\''i=1; while [ $i -le 1000000 ]; do :; i=$((i+1)); done'\''' \
   'bash -c '\''i=1; while [ $i -le 1000000 ]; do :; i=$((i+1)); done'\'''
-

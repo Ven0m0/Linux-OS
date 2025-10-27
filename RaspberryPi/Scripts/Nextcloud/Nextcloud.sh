@@ -37,7 +37,6 @@ EOF
 sudo chown -R www-data:www-data /var/www/nextcloud
 sudo chmod -R 755 /var/www/nextcloud
 
-
 sudo touch /etc/nginx/sites-available/nextcloud.conf
 
 sudo apt install certbot python3-certbot-nginx -y

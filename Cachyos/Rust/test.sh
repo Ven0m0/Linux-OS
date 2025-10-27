@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit
+set -eEuo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar inherit_errexit
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 # —————— Trap ——————
 cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
-  cargo-cache -efg  &>/dev/null || :
-  cargo clean  &>/dev/null || :
-  cargo pgo clean  &>/dev/null || :
-  rm -rf "$HOME/.cache/sccache/"*  &>/dev/null || :
+  cargo-cache -efg &>/dev/null || :
+  cargo clean &>/dev/null || :
+  cargo pgo clean &>/dev/null || :
+  rm -rf "$HOME/.cache/sccache/"* &>/dev/null || :
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
@@ -131,17 +133,17 @@ BIN=./target/release/your_binary
 BOLT_BIN=./target/release/your_binary.bolt
 
 # Instrumented BOLT run to produce a profile
-perf record -e cycles:u -j any,u -- $BIN "$@"
+perf record -e cycles:u -j any,u -- "$BIN" "$@"
 # Re-optimize the binary layout
 llvm-bolt \
-  $BIN \
+  "$BIN" \
   --use-profile=perf.data \
   --reorder-blocks=ext-tsp \
   --split-functions \
   --split-all-cold \
   --icf=1 \
   --layout=hottext \
-  --output=$BOLT_BIN
+  --output="$BOLT_BIN"
 
 echo "=== Done! ==="
 echo "Final optimized executable: $BOLT_BIN"

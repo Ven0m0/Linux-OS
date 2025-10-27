@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Ensure we're running as root
-if [[ "${EUID}" -ne 0 ]]; then
+if [[ $EUID -ne 0 ]]; then
   echo "This script must be run as root."
   exit 1
 fi
@@ -45,7 +45,7 @@ cp arch/arm64/boot/dts/overlays/README /boot/overlays/
 cp arch/arm64/boot/Image.gz /boot/kernel8.img
 
 # Update the bootloader
-echo "dtoverlay=vc4-kms-v3d" >> /boot/config.txt
+echo "dtoverlay=vc4-kms-v3d" >>/boot/config.txt
 
 # Reboot
 echo "Rebooting in 10 seconds..."

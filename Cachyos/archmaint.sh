@@ -17,28 +17,31 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #=========== Helpers =================
-has(){ command -v "$1" &>/dev/null; }
-xecho(){ printf '%b\n' "$*"; }
-log(){ (( QUIET )) || xecho "$*"; }
-err(){ xecho "$*" >&2; }
-die(){ err "${RED}Error:${DEF} $*"; exit 1; }
-confirm(){
+has() { command -v "$1" &>/dev/null; }
+xecho() { printf '%b\n' "$*"; }
+log() { ((QUIET)) || xecho "$*"; }
+err() { xecho "$*" >&2; }
+die() {
+  err "${RED}Error:${DEF} $*"
+  exit 1
+}
+confirm() {
   local msg="$1"
-  (( ASSUME_YES )) && return 0
+  ((ASSUME_YES)) && return 0
   printf '%s [y/N]: ' "$msg" >&2
   read -r ans
   [[ $ans == [Yy]* ]]
 }
 #=========== Privilege Management =====
-get_sudo(){
+get_sudo() {
   local cmd=""
-  for c in sudo-rs sudo doas; do 
+  for c in sudo-rs sudo doas; do
     if has "$c"; then
       cmd="$c"
       break
     fi
   done
-  
+
   if [[ -z $cmd && $EUID -ne 0 ]]; then
     die "No privilege escalation tool found and not running as root."
   fi
@@ -48,36 +51,37 @@ get_sudo(){
 SUDO=$(get_sudo)
 [[ -n $SUDO && $EUID -ne 0 ]] && "$SUDO" -v
 
-run_priv(){
+run_priv() {
   if [[ $EUID -eq 0 || -z $SUDO ]]; then
-    "$@" 
+    "$@"
   else
-    $SUDO -- "$@"
+    "$SUDO" -- "$@"
   fi
 }
 
 #=========== Banner Functions ==========
-print_banner(){
+print_banner() {
   local banner="$1" flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
-  
+
   mapfile -t lines <<<"$banner"
   local lines_count=${#lines[@]} segments=${#flag_colors[@]}
-  
+
   if ((lines_count <= 1)); then
     for line in "${lines[@]}"; do
       printf '%s%s%s\n' "${flag_colors[0]}" "$line" "$DEF"
     done
   else
     for i in "${!lines[@]}"; do
-      local segment_idx=$(( i * (segments - 1) / (lines_count - 1) ))
+      local segment_idx=$((i * (segments - 1) / (lines_count - 1)))
       ((segment_idx >= segments)) && segment_idx=$((segments - 1))
       printf '%s%s%s\n' "${flag_colors[segment_idx]}" "${lines[i]}" "$DEF"
     done
   fi
 }
 
-print_update_banner(){
-  local banner=$(cat <<'EOF'
+print_update_banner() {
+  local banner=$(
+    cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -85,13 +89,14 @@ print_update_banner(){
 ╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗███████║
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
-)
+  )
   print_banner "$banner"
   xecho "Meow (> ^ <)"
 }
 
-print_clean_banner(){
-  local banner=$(cat <<'EOF'
+print_clean_banner() {
+  local banner=$(
+    cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ 
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
@@ -99,45 +104,45 @@ print_clean_banner(){
 ╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝
  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
 EOF
-)
+  )
   print_banner "$banner"
 }
 
 #=========== Environment Setup =========
-setup_env(){
+setup_env() {
   export HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
   export SHELL=${SHELL:-/bin/bash}
-  
+
   # Rust environment
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-  export CFLAGS="-march=native -mtune=native -O3 -pipe" 
+  export CFLAGS="-march=native -mtune=native -O3 -pipe"
   export CXXFLAGS="$CFLAGS"
   export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-  export CARGO_CACHE_RUSTC_INFO=1 
-  export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always 
+  export CARGO_CACHE_RUSTC_INFO=1
+  export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
   export CARGO_HTTP_MULTIPLEXING=true
   export CARGO_NET_GIT_FETCH_WITH_CLI=true
-  export RUSTUP_TOOLCHAIN=nightly 
+  export RUSTUP_TOOLCHAIN=nightly
   export RUSTC_BOOTSTRAP=1
-  
+
   # Try to get dbus running
   has dbus-launch && export "$(dbus-launch 2>/dev/null || :)"
 }
 
 #=========== Update Functions ===========
-run_system_maintenance(){
+run_system_maintenance() {
   local cmd=$1 args=("${@:2}")
   if has "$cmd"; then
     case "$cmd" in
-      modprobed-db) "$cmd" store &>/dev/null || : ;;
-      hwclock|updatedb|chwd) run_priv "$cmd" "${args[@]}" &>/dev/null || : ;;
-      mandb) run_priv "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;;
-      *) run_priv "$cmd" "${args[@]}" &>/dev/null || : ;;
+    modprobed-db) "$cmd" store &>/dev/null || : ;;
+    hwclock | updatedb | chwd) run_priv "$cmd" "${args[@]}" &>/dev/null || : ;;
+    mandb) run_priv "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;;
+    *) run_priv "$cmd" "${args[@]}" &>/dev/null || : ;;
     esac
   fi
 }
 
-update_system_packages(){
+update_system_packages() {
   local pkgmgr aur_opts=()
   log "🔄${BLU}System update${DEF}"
   # Detect package manager
@@ -150,22 +155,22 @@ update_system_packages(){
   else
     pkgmgr=pacman
   fi
-  
+
   # Remove pacman lock if exists
   [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck &>/dev/null || :
-  
+
   # Update keyring and file databases
   run_priv "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &>/dev/null || :
-  
+
   # Update file database if needed
   [[ -f /var/lib/pacman/sync/core.files ]] || run_priv pacman -Fy --noconfirm || :
   run_priv pacman -Fy --noconfirm &>/dev/null || :
-  
+
   # Run system updates
   if [[ $pkgmgr == paru ]]; then
-    local args=(--noconfirm --needed --mflags '--skipinteg --skippgpcheck' 
-                --bottomup --skipreview --cleanafter --removemake 
-                --sudoloop --sudo "$SUDO" "${aur_opts[@]}")
+    local args=(--noconfirm --needed --mflags '--skipinteg --skippgpcheck'
+      --bottomup --skipreview --cleanafter --removemake
+      --sudoloop --sudo "$SUDO" "${aur_opts[@]}")
     log "🔄${BLU}Updating AUR packages with ${pkgmgr}...${DEF}"
     "$pkgmgr" -Suyy "${args[@]}" &>/dev/null || :
     "$pkgmgr" -Sua --devel "${args[@]}" &>/dev/null || :
@@ -175,7 +180,7 @@ update_system_packages(){
   fi
 }
 
-update_with_topgrade(){
+update_with_topgrade() {
   if has topgrade; then
     log "🔄${BLU}Running Topgrade updates...${DEF}"
     local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
@@ -185,7 +190,7 @@ update_with_topgrade(){
   fi
 }
 
-update_flatpak(){
+update_flatpak() {
   if has flatpak; then
     log "🔄${BLU}Updating Flatpak...${DEF}"
     run_priv flatpak update -y --noninteractive --appstream &>/dev/null || :
@@ -193,13 +198,13 @@ update_flatpak(){
   fi
 }
 
-update_rust(){
+update_rust() {
   if has rustup; then
     log "🔄${BLU}Updating Rust...${DEF}"
     rustup update
     run_priv rustup update
     rustup self upgrade-data
-    
+
     if has cargo; then
       log "🔄${BLU}Updating Cargo packages...${DEF}"
       local cargo_cmd=(cargo)
@@ -209,7 +214,7 @@ update_rust(){
           break
         fi
       done
-      
+
       # Update cargo packages
       if "${cargo_cmd[@]}" install-update -Vq 2>/dev/null; then
         "${cargo_cmd[@]}" install-update -agfq
@@ -219,13 +224,13 @@ update_rust(){
   fi
 }
 
-update_editors(){
+update_editors() {
   # Update editor plugins
   has micro && micro -plugin update &>/dev/null || :
   has yazi && ya pkg upgrade &>/dev/null || :
 }
 
-update_shells(){
+update_shells() {
   if has fish; then
     log "🔄${BLU}Updating Fish...${DEF}"
     fish -c "fish_update_completions" || :
@@ -235,7 +240,7 @@ update_shells(){
       fish -c ". \"$HOME/.config/fish/functions/fisher.fish\"; and fisher update" || :
     fi
   fi
-  
+
   # Update basher if installed
   if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null; then
     if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null; then
@@ -244,23 +249,23 @@ update_shells(){
       log "⚠️${YLW}Basher pull failed${DEF}"
     fi
   fi
-  
+
   # Update tldr cache
   has tldr && run_priv tldr -cuq || :
 }
 
-update_python(){
+update_python() {
   if has uv; then
     log "🔄${BLU}Updating UV...${DEF}"
     uv self update -q &>/dev/null || log "⚠️${YLW}Failed to update UV${DEF}"
-    
+
     log "🔄${BLU}Updating UV tools...${DEF}"
     if uv tool list -q &>/dev/null; then
       uv tool upgrade --all -q || log "⚠️${YLW}Failed to update UV tools${DEF}"
     else
       log "✅${GRN}No UV tools installed${DEF}"
     fi
-    
+
     log "🔄${BLU}Updating Python packages...${DEF}"
     if has jq; then
       local pkgs
@@ -273,17 +278,17 @@ update_python(){
       fi
     else
       log "⚠️${YLW}jq not found, using fallback method${DEF}"
-      uv pip install --upgrade -r <(uv pip list --format freeze) &>/dev/null || \
-        log "⚠️${YLW}Failed to update packages${DEF}"
+      uv pip install --upgrade -r <(uv pip list --format freeze) &>/dev/null \
+        || log "⚠️${YLW}Failed to update packages${DEF}"
     fi
-    
+
     log "🔄${BLU}Updating Python interpreters...${DEF}"
     uv python update-shell -q
     uv python upgrade -q || log "⚠️${YLW}Failed to update Python versions${DEF}"
   fi
 }
 
-update_system_utils(){
+update_system_utils() {
   log "🔄${BLU}Running miscellaneous updates...${DEF}"
   # Array of commands to run in background
   local cmds=(
@@ -293,14 +298,14 @@ update_system_utils(){
     "update-smart-drivedb"
     "update-ccache-links"
   )
-  
+
   for cmd in "${cmds[@]}"; do
     local cmd_name=${cmd%% *}
-    has "$cmd_name" && run_priv $cmd &>/dev/null || :
+    has "$cmd_name" && run_priv "$cmd" &>/dev/null || :
   done
-  
+
   has update-leap && LC_ALL=C update-leap &>/dev/null || :
-  
+
   # Update firmware
   if has fwupdmgr; then
     log "🔄${BLU}Updating firmware...${DEF}"
@@ -309,7 +314,7 @@ update_system_utils(){
   fi
 }
 
-update_boot(){
+update_boot() {
   log "🔍${BLU}Checking boot configuration...${DEF}"
   # Update systemd-boot if installed
   if [[ -d /sys/firmware/efi ]] && has bootctl && run_priv bootctl is-installed -q &>/dev/null; then
@@ -319,14 +324,14 @@ update_boot(){
   else
     log "❌${YLW}systemd-boot not present, skipping${DEF}"
   fi
-  
+
   # Update sdboot-manage if available
   if has sdboot-manage; then
     log "🔄${BLU}Updating sdboot-manage...${DEF}"
     run_priv sdboot-manage remove &>/dev/null || :
     run_priv sdboot-manage update &>/dev/null || :
   fi
-  
+
   # Update initramfs
   log "🔄${BLU}Updating initramfs...${DEF}"
   if has update-initramfs; then
@@ -344,7 +349,7 @@ update_boot(){
         break
       fi
     done
-    
+
     # Special case for booster
     if [[ $found_initramfs -eq 0 && -x /usr/lib/booster/regenerate_images ]]; then
       run_priv /usr/lib/booster/regenerate_images || :
@@ -354,19 +359,19 @@ update_boot(){
   fi
 }
 
-run_update(){
+run_update() {
   print_update_banner
   setup_env
-  
+
   checkupdates -dc &>/dev/null || :
-  
+
   # Run basic system maintenance
   run_system_maintenance modprobed-db
   run_system_maintenance hwclock -w
   run_system_maintenance updatedb
   run_system_maintenance chwd -a
   run_system_maintenance mandb
-  
+
   # Run update functions
   update_system_packages
   update_with_topgrade
@@ -382,13 +387,13 @@ run_update(){
 
 #=========== Clean Functions ===========
 # Clean arrays of file/directory paths
-clean_paths(){
+clean_paths() {
   local paths=("$@")
   for path in "${paths[@]}"; do
     # Handle wildcard paths
     if [[ $path == *\** ]]; then
       # Use globbing directly
-      for item in $path; do
+      for item in "${path[@]}"; do
         [[ -e $item ]] && rm -rf --preserve-root -- "$item" &>/dev/null || :
       done
     else
@@ -397,13 +402,13 @@ clean_paths(){
   done
 }
 
-clean_with_sudo(){
+clean_with_sudo() {
   local paths=("$@")
   for path in "${paths[@]}"; do
     # Handle wildcard paths
     if [[ $path == *\** ]]; then
       # Use globbing directly
-      for item in $path; do
+      for item in "${path[@]}"; do
         [[ -e $item ]] && run_priv rm -rf --preserve-root -- "$item" &>/dev/null || :
       done
     else
@@ -412,64 +417,64 @@ clean_with_sudo(){
   done
 }
 
-capture_disk_usage(){
+capture_disk_usage() {
   local var_name=$1
-  local -n ref=$var_name
+  local -n ref="$var_name"
   ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
 }
 
-run_clean(){
+run_clean() {
   print_clean_banner
-  
+
   # Ensure sudo access
   [[ $EUID -ne 0 && -n $SUDO ]] && "$SUDO" -v
-  
+
   # Capture disk usage before cleanup
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
   space_before=$(run_priv du -sh / 2>/dev/null | cut -f1)
-  
+
   log "🔄${BLU}Starting system cleanup...${DEF}"
-  
+
   # Drop caches
   sync
   log "🔄${BLU}Dropping cache...${DEF}"
   echo 3 | run_priv tee /proc/sys/vm/drop_caches &>/dev/null
-  
+
   # Store and sort modprobed database
   if has modprobed-db; then
     log "🔄${BLU}Storing kernel modules...${DEF}"
     run_priv modprobed-db store
-    
+
     local db_files=("${HOME}/.config/modprobed.db" "${HOME}/.local/share/modprobed.db")
     for db in "${db_files[@]}"; do
       [[ -f $db ]] && sort -u "$db" -o "$db" &>/dev/null || :
     done
   fi
-  
+
   # Network cleanup
   log "🔄${BLU}Flushing network caches...${DEF}"
   has dhclient && dhclient -r &>/dev/null || :
   run_priv resolvectl flush-caches &>/dev/null || :
-  
+
   # Package management cleanup
   log "🔄${BLU}Removing orphaned packages...${DEF}"
   mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || :)
   if [[ ${#orphans[@]} -gt 0 ]]; then
     run_priv pacman -Rns "${orphans[@]}" --noconfirm &>/dev/null || :
   fi
-  
+
   log "🔄${BLU}Cleaning package cache...${DEF}"
   run_priv pacman -Scc --noconfirm &>/dev/null || :
   run_priv paccache -rk0 -q &>/dev/null || :
-  
+
   # Python package manager cleanup
   if has uv; then
     log "🔄${BLU}Cleaning UV cache...${DEF}"
     uv cache prune -q 2>/dev/null || :
     uv cache clean -q 2>/dev/null || :
   fi
-  
+
   # Cargo/Rust cleanup
   if has cargo-cache; then
     log "🔄${BLU}Cleaning Cargo cache...${DEF}"
@@ -477,18 +482,18 @@ run_clean(){
     cargo cache -efg trim --limit 1B 2>/dev/null || :
     cargo cache -efg clean-unref 2>/dev/null || :
   fi
-  
+
   # Kill CPU-intensive processes
   log "🔄${BLU}Checking for CPU-intensive processes...${DEF}"
   while read -r pid; do
     [[ -n $pid ]] && run_priv kill -9 "$pid" &>/dev/null || :
   done < <(ps aux --sort=-%cpu 2>/dev/null | awk '{if($3>50.0) print $2}' | tail -n +2)
-  
+
   # Reset swap
   log "🔄${BLU}Resetting swap space...${DEF}"
   run_priv swapoff -a &>/dev/null || :
   run_priv swapon -a &>/dev/null || :
-  
+
   # Clean log files and crash dumps
   log "🔄${BLU}Cleaning logs and crash dumps...${DEF}"
   # Use fd if available, fallback to find
@@ -500,7 +505,7 @@ run_clean(){
     run_priv find -O3 /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
   fi
   run_priv find -O3 /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
-  
+
   # Clean cache files
   log "🔄${BLU}Cleaning cache files...${DEF}"
   local cache_dirs=(
@@ -512,7 +517,7 @@ run_clean(){
     "${HOME}/.cache/"
     "/root/.cache/"
   )
-  
+
   # Clean user cache
   if has fd; then
     fd -H -t f -d 4 --changed-before 1d . "${HOME}/.cache" -x rm {} \; &>/dev/null || :
@@ -521,21 +526,21 @@ run_clean(){
     find -O3 "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null || :
     find -O3 "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
   fi
-  
+
   run_priv systemd-tmpfiles --clean &>/dev/null || :
-  
+
   # Clean system and user cache directories
   clean_with_sudo "${cache_dirs[@]/%/*}"
-  
+
   # Clean Flatpak application caches
   clean_paths "${HOME}/.var/app/"*/cache/* 2>/dev/null || :
-  
+
   # Clean Qt cache files
   clean_paths "${HOME}/.config/Trolltech.conf" 2>/dev/null || :
-  
+
   # Rebuild KDE cache if present
   has kbuildsycoca6 && kbuildsycoca6 --noincremental &>/dev/null || :
-  
+
   # Empty trash directories
   log "🔄${BLU}Emptying trash...${DEF}"
   local trash_dirs=(
@@ -543,12 +548,12 @@ run_clean(){
     "/root/.local/share/Trash/"
   )
   clean_paths "${trash_dirs[@]/%/*}" 2>/dev/null || :
-  
+
   # Flatpak cleanup
   if has flatpak; then
     log "🔄${BLU}Cleaning Flatpak...${DEF}"
     flatpak uninstall --unused --delete-data -y --noninteractive &>/dev/null || :
-    
+
     # Clean flatpak caches
     local flatpak_dirs=(
       "/var/tmp/flatpak-cache-"
@@ -558,21 +563,21 @@ run_clean(){
     )
     clean_paths "${flatpak_dirs[@]}" 2>/dev/null || :
   fi
-  
+
   # Clear thumbnails
   clean_paths "${HOME}/.thumbnails/" 2>/dev/null || :
-  
+
   # Clean system logs
   log "🔄${BLU}Cleaning system logs...${DEF}"
   run_priv rm -f --preserve-root -- /var/log/pacman.log &>/dev/null || :
   run_priv journalctl --rotate --vacuum-size=1 --flush --sync -q &>/dev/null || :
   clean_with_sudo /run/log/journal/* /var/log/journal/* /root/.local/share/zeitgeist/* /home/*/.local/share/zeitgeist/* 2>/dev/null || :
-  
+
   # Clean history files
   log "🔄${BLU}Cleaning history files...${DEF}"
   local history_files=(
     "${HOME}/.wget-hsts"
-    "${HOME}/.curl-hsts" 
+    "${HOME}/.curl-hsts"
     "${HOME}/.lesshst"
     "${HOME}/nohup.out"
     "${HOME}/token"
@@ -582,7 +587,7 @@ run_clean(){
     "${HOME}/.bash_history"
     "${HOME}/.history"
   )
-  
+
   local root_history_files=(
     "/root/.local/share/fish/fish_history"
     "/root/.config/fish/fish_history"
@@ -590,13 +595,13 @@ run_clean(){
     "/root/.bash_history"
     "/root/.history"
   )
-  
+
   clean_paths "${history_files[@]}" 2>/dev/null || :
   clean_with_sudo "${root_history_files[@]}" 2>/dev/null || :
-  
+
   # Application-specific cleanups
   log "🔄${BLU}Cleaning application caches...${DEF}"
-  
+
   # LibreOffice
   local libreoffice_paths=(
     "${HOME}/.config/libreoffice/4/user/registrymodifications.xcu"
@@ -604,7 +609,7 @@ run_clean(){
     "${HOME}/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu"
   )
   clean_paths "${libreoffice_paths[@]}" 2>/dev/null || :
-  
+
   # Steam
   local steam_paths=(
     "${HOME}/.local/share/Steam/appcache/"
@@ -614,16 +619,16 @@ run_clean(){
     "${HOME}/.var/app/com.valvesoftware.Steam/data/Steam/appcache/"
   )
   clean_paths "${steam_paths[@]/%/*}" 2>/dev/null || :
-  
+
   # NVIDIA
   run_priv rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null || :
-  
+
   # Python history
   log "🔄${BLU}Securing Python history...${DEF}"
   local python_history="${HOME}/.python_history"
   [[ ! -f $python_history ]] && { touch "$python_history" 2>/dev/null || :; }
   run_priv chattr +i "$(realpath "$python_history")" &>/dev/null || :
-  
+
   # Firefox cleanup
   log "🔄${BLU}Cleaning Firefox...${DEF}"
   local firefox_paths=(
@@ -636,7 +641,7 @@ run_clean(){
     "${HOME}/snap/firefox/common/.cache/"
   )
   clean_paths "${firefox_paths[@]}" 2>/dev/null || :
-  
+
   # Firefox crashes with Python - fixed heredoc format
   if has python3; then
     python3 <<'EOF' &>/dev/null
@@ -648,7 +653,7 @@ for pattern in ['~/.mozilla/firefox/*/crashes/*', '~/.mozilla/firefox/*/crashes/
       except: pass
 EOF
   fi
-  
+
   # Wine cleanup
   log "🔄${BLU}Cleaning Wine...${DEF}"
   local wine_paths=(
@@ -657,7 +662,7 @@ EOF
     "${HOME}/.cache/winetricks/"
   )
   clean_paths "${wine_paths[@]/%/*}" 2>/dev/null || :
-  
+
   # GTK recent files
   local gtk_paths=(
     "/.recently-used.xbel"
@@ -666,7 +671,7 @@ EOF
     "${HOME}/.var/app/*/data/recently-used.xbel"
   )
   clean_paths "${gtk_paths[@]}" 2>/dev/null || :
-  
+
   # KDE recent files
   local kde_paths=(
     "${HOME}/.local/share/RecentDocuments/*.desktop"
@@ -675,24 +680,24 @@ EOF
     "${HOME}/.var/app/*/data/*.desktop"
   )
   clean_paths "${kde_paths[@]}" 2>/dev/null || :
-  
+
   # Trim disks
   log "🔄${BLU}Trimming disks...${DEF}"
   run_priv fstrim -a --quiet-unsupported &>/dev/null || :
   run_priv fstrim -A --quiet-unsupported &>/dev/null || :
-  
+
   # Rebuild font cache
   log "🔄${BLU}Rebuilding font cache...${DEF}"
   run_priv fc-cache -f &>/dev/null || :
-  
+
   # SDK cleanup
   has sdk && sdk flush tmp &>/dev/null || :
-  
+
   # BleachBit if available
   if has bleachbit; then
     log "🔄${BLU}Running BleachBit...${DEF}"
     LC_ALL=C LANG=C bleachbit -c --preset &>/dev/null || :
-    
+
     # Run with elevated privileges if possible
     if has xhost; then
       xhost si:localuser:root &>/dev/null || :
@@ -704,25 +709,25 @@ EOF
       log "⚠️${YLW}Cannot run BleachBit with elevated privileges${DEF}"
     fi
   fi
-  
+
   # Show disk usage results
   log "${GRN}System cleaned!${DEF}"
   capture_disk_usage disk_after
   space_after=$(run_priv du -sh / 2>/dev/null | cut -f1)
-  
+
   log "==> ${BLU}Disk usage before cleanup:${DEF} ${disk_before}"
   log "==> ${GRN}Disk usage after cleanup: ${DEF} ${disk_after}"
-  log 
+  log
   log "${BLU}Space before/after:${DEF}"
   log "${YLW}Before:${DEF} ${space_before}"
   log "${GRN}After: ${DEF} ${space_after}"
 }
 
 #=========== Traps & Cleanup ===========
-cleanup(){
+cleanup() {
   # Clean up pacman lock if it exists
   [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck &>/dev/null || :
-  
+
   # Reset environment variables
   unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
 }
@@ -732,7 +737,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 #=========== CLI Interface =============
-show_usage(){
+show_usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] COMMAND
 
@@ -757,20 +762,22 @@ Examples:
 EOF
 }
 
-parse_args(){
+parse_args() {
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -h|--help)
-        show_usage exit 0 ;;
-      -q|--quiet) QUIET=1 shift ;;
-      -v|--verbose) VERBOSE=1 shift ;;
-      -y|--yes) ASSUME_YES=1 shift ;;
-      -n|--dry-run) DRYRUN=1 shift ;;
-      update|clean)
-        [[ -n $MODE ]] && die "Cannot specify multiple commands: $MODE and $1"
-        MODE=$1 shift ;;
-      *) die "Unknown option: $1\nUse --help for usage information." ;;
+    -h | --help)
+      show_usage exit 0
+      ;;
+    -q | --quiet) QUIET=1 shift ;;
+    -v | --verbose) VERBOSE=1 shift ;;
+    -y | --yes) ASSUME_YES=1 shift ;;
+    -n | --dry-run) DRYRUN=1 shift ;;
+    update | clean)
+      [[ -n $MODE ]] && die "Cannot specify multiple commands: $MODE and $1"
+      MODE=$1 shift
+      ;;
+    *) die "Unknown option: $1\nUse --help for usage information." ;;
     esac
   done
   # Validate command
@@ -780,15 +787,15 @@ parse_args(){
 }
 
 #=========== Main Function =============
-main(){
+main() {
   parse_args "$@"
   if [[ $DRYRUN -eq 1 ]]; then
     log "${YLW}Running in dry-run mode. No changes will be made.${DEF}"
   fi
   case "$MODE" in
-    update) run_update ;;
-    clean) run_clean ;;
-    *) die "Unknown command: $MODE" ;;
+  update) run_update ;;
+  clean) run_clean ;;
+  *) die "Unknown command: $MODE" ;;
   esac
 }
 main "$@"

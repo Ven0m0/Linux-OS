@@ -67,7 +67,7 @@ optimize_art() {
   # Run any postponed dex-opt jobs immediately
   local job_id
   job_id=$(adb shell cmd jobscheduler list-jobs android | grep 'background-dexopt' | awk '{print $2}')
-  if [[ -n "$job_id" ]]; then
+  if [[ -n $job_id ]]; then
     adb shell cmd jobscheduler run -f android "$job_id"
   fi
 
@@ -327,6 +327,6 @@ main() {
 }
 
 # Ensure the script is executed directly, not sourced.
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
   main "$@"
 fi

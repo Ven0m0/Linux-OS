@@ -2,9 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# ----------------------------
 # Simple image optimizer wrapper
-# ----------------------------
 # Usage:
 #   ./optimize-images.sh [--jobs N] [--lossy] [--dry-run] [--keep-backup] [path]
 # Defaults:
@@ -17,7 +15,6 @@ IFS=$'\n\t'
 #  - Replaces file only if the optimized output is smaller
 #  - Prefers fd/fdfind for discovery; falls back to find
 #  - Prefers rust-parallel if present; falls back to xargs -P
-# ----------------------------
 
 # Defaults
 JOBS=$(nproc 2>/dev/null || echo 4)
@@ -27,19 +24,46 @@ KEEPBACKUP=0
 TARGET="."
 
 # Parse args
-while (( $# )); do
+while (($#)); do
   case "$1" in
-    --jobs) JOBS="$2"; shift 2;;
-    --jobs=*) JOBS="${1#*=}"; shift;;
-    --lossy) LOSSY=1; shift;;
-    --dry-run) DRYRUN=1; shift;;
-    --keep-backup) KEEPBACKUP=1; shift;;
-    -h|--help) sed -n '1,120p' "$0"; exit 0;;
-    --) shift; TARGET="$1"; shift; break;;
-    -*)
-      echo "Unknown option: $1" >&2; exit 2;;
-    *)
-      TARGET="$1"; shift;;
+  --jobs)
+    JOBS="$2"
+    shift 2
+    ;;
+  --jobs=*)
+    JOBS="${1#*=}"
+    shift
+    ;;
+  --lossy)
+    LOSSY=1
+    shift
+    ;;
+  --dry-run)
+    DRYRUN=1
+    shift
+    ;;
+  --keep-backup)
+    KEEPBACKUP=1
+    shift
+    ;;
+  -h | --help)
+    sed -n '1,120p' "$0"
+    exit 0
+    ;;
+  --)
+    shift
+    TARGET="$1"
+    shift
+    break
+    ;;
+  -*)
+    echo "Unknown option: $1" >&2
+    exit 2
+    ;;
+  *)
+    TARGET="$1"
+    shift
+    ;;
   esac
 done
 
@@ -72,14 +96,14 @@ filesize_prog() {
 }
 
 # Write the per-file optimization script (self-contained)
-cat > "$OPT_SCRIPT" <<'BASH'
+cat >"$OPT_SCRIPT" <<'BASH'
 #!/usr/bin/env bash
 set -euo pipefail
 file="$1"
 lossy_flag="$2"
 dryrun="$3"
 keepbackup="$4"
-filesize_prog() {
+filesize_prog(){
   if stat -c%s "$1" &>/dev/null; then
     stat -c%s "$1"
   else
@@ -248,7 +272,7 @@ chmod +x "$OPT_SCRIPT"
 
 # Build list command that emits null-separated file paths
 emit_file_list() {
-  if [ -n "$FD_BIN" ]; then
+  if [[ -n $FD_BIN ]]; then
     # prefer fd/fdfind
     "$FD_BIN" -0 -H -I -e png -e jpg -e jpeg -e webp -e avif -e jxl -e gif -e svg -e html . "$TARGET"
   else
@@ -256,40 +280,40 @@ emit_file_list() {
     find "$TARGET" -type f \( \
       -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o \
       -iname '*.avif' -o -iname '*.jxl' -o -iname '*.gif' -o -iname '*.svg' -o -iname '*.html' -o -iname '*.htm' \
-    \) -print0
+      \) -print0
   fi
 }
 
 # Run
 echo "Target: $TARGET"
 echo "Jobs: $JOBS"
-echo "Lossy conversions: $([ "$LOSSY" -eq 1 ] && echo yes || echo no)"
+echo "Lossy conversions: $([[ $LOSSY -eq 1 ]] && echo yes || echo no)"
 echo "Using fd: ${FD_BIN:-none}"
 echo "Using parallel runner: ${PARALLEL_BIN:-xargs fallback}"
-if [ "$DRYRUN" -eq 1 ]; then echo "DRY RUN - no files will be replaced"; fi
-if [ "$KEEPBACKUP" -eq 1 ]; then echo "BACKUPS will be kept as file.bak"; fi
+if [[ $DRYRUN -eq 1 ]]; then echo "DRY RUN - no files will be replaced"; fi
+if [[ $KEEPBACKUP -eq 1 ]]; then echo "BACKUPS will be kept as file.bak"; fi
 
 # Choose executor
-if [ -n "$PARALLEL_BIN" ] && [ "$PARALLEL_BIN" = "rust-parallel" ]; then
+if [[ -n $PARALLEL_BIN ]] && [[ $PARALLEL_BIN == "rust-parallel" ]]; then
   # rust-parallel expects an input file with command lines (one per line)
   CMDF="$TMPDIR/cmds.txt"
-  : > "$CMDF"
+  : >"$CMDF"
   # construct safe shell-quoted command lines
   while IFS= read -r -d '' f; do
     # use printf %q for safe single-argument quoting
     esc=$(printf "%q" "$f")
-    printf '%s\n' "\"$OPT_SCRIPT\" $esc" >> "$CMDF"
+    printf '%s\n' "\"$OPT_SCRIPT\" $esc" >>"$CMDF"
   done < <(emit_file_list)
-  if [ "$DRYRUN" -eq 1 ]; then
+  if [[ $DRYRUN -eq 1 ]]; then
     echo "[DRY] Would run rust-parallel reading commands from $CMDF (first lines):"
     head -n 6 "$CMDF"
   else
     rust-parallel -j "$JOBS" -i "$CMDF"
   fi
 
-elif [ -n "$PARALLEL_BIN" ] && [ "$PARALLEL_BIN" != "rust-parallel" ]; then
+elif [[ -n $PARALLEL_BIN ]] && [[ $PARALLEL_BIN != "rust-parallel" ]]; then
   # GNU parallel
-  if [ "$DRYRUN" -eq 1 ]; then
+  if [[ $DRYRUN -eq 1 ]]; then
     echo "[DRY] Would run GNU parallel with $JOBS jobs"
     emit_file_list | tr '\0' '\n' | sed -n '1,6p'
   else
@@ -298,7 +322,7 @@ elif [ -n "$PARALLEL_BIN" ] && [ "$PARALLEL_BIN" != "rust-parallel" ]; then
 
 else
   # fallback: xargs
-  if [ "$DRYRUN" -eq 1 ]; then
+  if [[ $DRYRUN -eq 1 ]]; then
     echo "[DRY] Would run xargs -P $JOBS"
     emit_file_list | tr '\0' '\n' | sed -n '1,6p'
   else

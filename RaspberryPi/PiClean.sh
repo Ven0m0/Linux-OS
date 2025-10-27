@@ -2,25 +2,43 @@
 #──────────── Setup ────────────────────
 shopt -s nullglob globstar execfail
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
-dirname(){ local tmp=${1:-.}; [[ $tmp != *[!/]* ]] && { printf '/\n'; return; }; tmp=${tmp%%"${tmp##*[!/]}" }; [[ $tmp != */* ]] && { printf '.\n'; return; }; tmp=${tmp%/*}; tmp=${tmp%%"${tmp##*[!/]}"}; printf '%s\n' "${tmp:-/}"; }
+dirname() {
+  local tmp=${1:-.}
+  [[ $tmp != *[!/]* ]] && {
+    printf '/\n'
+    return
+  }
+  tmp=${tmp%%"${tmp##*[!/]}" }
+  [[ $tmp != */* ]] && {
+    printf '.\n'
+    return
+  }
+  tmp=${tmp%/*}
+  tmp=${tmp%%"${tmp##*[!/]}"}
+  printf '%s\n' "${tmp:-/}"
+}
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-cd $WORKDIR || exit 1
+cd "$WORKDIR" || exit 1
 #──────────── Helpers ────────────────────
-has(){ command -v -- "$1" &>/dev/null; }
-hasname(){
+has() { command -v -- "$1" &>/dev/null; }
+hasname() {
   local x
   if ! x=$(type -P -- "$1"); then
     return 1
   fi
   printf '%s\n' "${x##*/}"
 }
-xprintf(){ printf "%s\n" "$@"; }
+xprintf() { printf "%s\n" "$@"; }
 #──────────── Sudo ────────────────────
 [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
 suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
-[[ -z ${suexec:-} ]] && { echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; exit 1; }
+[[ -z ${suexec:-} ]] && {
+  echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
+  exit 1
+}
 [[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
-export HOME="/home/${SUDO_USER:-$USER}"; sync
+export HOME="/home/${SUDO_USER:-$USER}"
+sync
 #─────────────────────────────────────────────────────────────
 echo
 echo " ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗     ███████╗ ██████╗██████╗ ██╗██████╗ ████████╗"
@@ -29,7 +47,7 @@ echo "██║     ██║     █████╗  ███████║�
 echo "██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║    ╚════██║██║     ██╔══██╗██║██╔═══╝    ██║   "
 echo "╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝    ███████║╚██████╗██║  ██║██║██║        ██║   "
 echo " ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝   "
-echo 
+echo
 
 echo "Cleaning apt cache"
 sudo rm -rf /var/lib/apt/lists/*
@@ -45,7 +63,8 @@ if command -v deborphan &>/dev/null; then
   sudo deborphan | xargs sudo apt-get -y remove --purge --auto-remove
 fi
 
-uv cache prune -q; uv cache clean -q
+uv cache prune -q
+uv cache clean -q
 echo "Removing common cache directories and trash"
 sudo rm -rf /tmp/*
 sudo rm -rf /var/tmp/*
@@ -80,13 +99,10 @@ sudo find -O3 /var/log/ -name "*.log" -type f -mtime +3 -delete
 sudo find -O3 /var/crash/ -name "core.*" -type f -mtime +3 -delete
 sudo find -O3 /var/cache/apt/ -name "*.bin" -type f -mtime +3 -delete
 
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
+sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 echo "System clean-up complete."
 
 echo "Clearing DietPi..."
 sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null || G_SUDO dietpi-logclear 2 2>/dev/null
 sudo /boot/dietpi/func/dietpi-cleaner 2 2>/dev/null || G_SUDO dietpi-cleaner 2 2>/dev/null
-
-
-
-

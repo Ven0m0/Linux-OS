@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-[[ $EUID -eq 0 ]] || { sudo "${0/#.\//$PWD/}" || { echo "Administrator privileges required"; exit 1; }; exit; }
+[[ $EUID -eq 0 ]] || {
+  sudo "${0/#.\//$PWD/}" || {
+    echo "Administrator privileges required"
+    exit 1
+  }
+  exit
+}
 export HOME="/home/${SUDO_USER:-$USER}" LC_ALL=C LANG=C
 
 sudo apt-get purge -y libreoffice*

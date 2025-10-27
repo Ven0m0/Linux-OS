@@ -8,9 +8,9 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
-has() { command -v "$1" >/dev/null 2>&1; }
-xecho() { printf '%b\n' "$*"; }
-get_priv_cmd() {
+has(){ command -v "$1" >/dev/null 2>&1; }
+xecho(){ printf '%b\n' "$*"; }
+get_priv_cmd(){
   local cmd
   for cmd in sudo-rs sudo doas; do
     if has "$cmd"; then
@@ -22,9 +22,9 @@ get_priv_cmd() {
 }
 PRIV_CMD=$(get_priv_cmd)
 [[ -n $PRIV_CMD && $EUID -ne 0 ]] && "$PRIV_CMD" -v
-run_priv() { [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@" }
+run_priv(){ [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@" }
 
-print_banner() {
+print_banner(){
   local banner flag_colors
   banner=$(cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -52,7 +52,7 @@ EOF
   xecho "Meow (> ^ <)"
 }
 
-cleanup() { [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck >/dev/null 2>&1 || :; }
+cleanup(){ [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck >/dev/null 2>&1 || :; }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
@@ -66,7 +66,7 @@ export CARGO_CACHE_RUSTC_INFO=1 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH
 
 has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
 
-run_system_maintenance() {
+run_system_maintenance(){
   local cmd=$1 args=("${@:2}")
   if has "$cmd"; then
     case "$cmd" in
@@ -78,7 +78,7 @@ run_system_maintenance() {
   fi
 }
 
-update_system() {
+update_system(){
   local pkgmgr aur_opts=()
   xecho "🔄${BLU}System update${DEF}"
   if has paru; then
@@ -105,7 +105,7 @@ update_system() {
   fi
 }
 
-update_extras() {
+update_extras(){
   if has topgrade; then
     xecho "🔄${BLU}Running Topgrade updates...${DEF}"
     local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
@@ -168,7 +168,7 @@ update_extras() {
   has tldr && run_priv tldr -cuq || :
 }
 
-update_python() {
+update_python(){
   if has uv; then
     xecho "🔄${BLU}Updating UV...${DEF}"
     uv self update -q >/dev/null 2>&1 || xecho "⚠️${YLW}Failed to update UV${DEF}"
@@ -182,7 +182,7 @@ update_python() {
     if has jq; then
       pkgs=$(uv pip list --outdated --format json | jq -r '.[].name' 2>/dev/null || :)
       if [[ -n $pkgs ]]; then
-        uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh $pkgs \
+        uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh "$pkgs" \
           >/dev/null 2>&1 || xecho "⚠️${YLW}Failed to update packages${DEF}"
       else
         xecho "✅${GRN}All Python packages are up to date${DEF}"
@@ -198,12 +198,12 @@ update_python() {
   fi
 }
 
-update_system_utils() {
+update_system_utils(){
   xecho "🔄${BLU}Running miscellaneous updates...${DEF}"
   local cmds=("fc-cache -f" "update-desktop-database" "update-pciids" "update-smart-drivedb" "update-ccache-links")
   for cmd in "${cmds[@]}"; do
     local cmd_name=${cmd%% *}
-    has "$cmd_name" && run_priv $cmd
+    has "$cmd_name" && run_priv "$cmd"
   done
   has update-leap && LC_ALL=C update-leap >/dev/null 2>&1 || :
   if has fwupdmgr; then
@@ -213,7 +213,7 @@ update_system_utils() {
   fi
 }
 
-update_boot() {
+update_boot(){
   xecho "🔍${BLU}Checking boot configuration...${DEF}"
   if [[ -d /sys/firmware/efi ]] && has bootctl && run_priv bootctl is-installed -q >/dev/null 2>&1; then
     xecho "✅${GRN}systemd-boot detected, updating${DEF}"
@@ -252,7 +252,7 @@ update_boot() {
   fi
 }
 
-main() {
+main(){
   print_banner
   checkupdates -dc >/dev/null 2>&1 || :
   run_system_maintenance modprobed-db

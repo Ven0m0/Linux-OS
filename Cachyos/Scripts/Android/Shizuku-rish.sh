@@ -3,19 +3,19 @@
 adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS
 
 LC_ALL=C LANG=C
-BASEDIR=$( dirname "${0}" )
+BASEDIR=$(dirname "${0}")
 BIN=/data/data/com.termux/files/usr/bin
 HOME=/data/data/com.termux/files/home
 DEX="${BASEDIR}/rish_shizuku.dex"
 
 # Exit if dex is not in the same directory
-if [ ! -f "${DEX}" ]; then
+if [[ ! -f $DEX ]]; then
   echo "Cannot find ${DEX}"
   exit 1
 fi
 
 # Create a Shizuku script file
-tee "${BIN}/shizuku" > /dev/null << EOF
+tee "${BIN}/shizuku" >/dev/null <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Make a list of open ports
@@ -53,7 +53,7 @@ EOF
 dex="${HOME}/rish_shizuku.dex"
 
 # Create a Rish script file
-tee "${BIN}/rish" > /dev/null << EOF
+tee "${BIN}/rish" >/dev/null <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
 [ -z "\$RISH_APPLICATION_ID" ] && export RISH_APPLICATION_ID="com.termux"
@@ -65,8 +65,7 @@ EOF
 chmod +x "${BIN}/shizuku" "${BIN}/rish"
 
 # Copy dex to the home directory
-cp -f "${DEX}" "${dex}"
+cp -f "$DEX" "$dex"
 
 # Remove dex write permission, because app_process cannot load writable dex
-chmod -w "${dex}"
-
+chmod -w "$dex"

@@ -158,7 +158,7 @@ discover_files(){
 }
 # Runs the optimizer script on a list of files using the best parallel tool available.
 run_parallel_optimization(){
-  local -n files_ref=$1 # Pass file array by reference
+  local -n files_ref="$1" # Pass file array by reference
   # Check which parallel runner to use
   local runner=""
   if command -v rust-parallel &>/dev/null; then runner="rust-parallel";

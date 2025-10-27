@@ -17,7 +17,7 @@ messages:
 - Verified compatibility: RHEL 7+, Ubuntu 20.04+, Debian 10+
 
 ## Script Structure
-```bash
+"$()$(bash
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
@@ -30,16 +30,16 @@ WORKDIR="$(mktemp -d)"
 
 # Error handling
 trap 'cleanup' EXIT INT TERM
-cleanup() { rm -rf "${WORKDIR}"; }
-die() { echo "[ERROR] ${1}" >&2; exit "${2:-1}"; }
-log() { echo "[$(date -Iseconds)] ${1}"; }
+cleanup(){ rm -rf "$WORKDIR"; }
+die(){ echo "[ERROR] ${1}" >&2; exit "${2:-1}"; }
+log(){ echo "[$(date -Iseconds)] ${1}"; }
 
 # Dependencies
 REQUIRED_TOOLS=(curl git rsync)
 for tool in "${REQUIRED_TOOLS[@]}"; do
-    command -v "${tool}" >/dev/null 2>&1 || die "${tool} required" 1
+    command -v "$tool" >/dev/null 2>&1 || die "${tool} required" 1
 done
-```
+)$()"
 
 ## Mandatory Components
 1. Error Management

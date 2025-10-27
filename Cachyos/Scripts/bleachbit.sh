@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 
 # Download and install BleachBit custom cleaners

@@ -11,19 +11,19 @@ clean_storage() {
     -iname "*.tmp" -o -iname "*.temp" -o -iname "*.crdownload" \
     -o -iname "*.partial" -o -iname "*.log" -o -iname "*.cache" \
     -o -iname "*.thumb" \
-  \) -exec rm -f {} + 2>/dev/null || true
+    \) -exec rm -f {} + 2>/dev/null || :
 }
 
 remove_empty_dirs() {
   echo "→ Removing empty directories under /sdcard"
-  find /sdcard/ -type d -empty -delete 2>/dev/null || true
+  find /sdcard/ -type d -empty -delete 2>/dev/null || :
 }
 
 clear_caches_with_shizuku() {
   echo "→ Clearing app caches via Shizuku"
   for pkg in "${pkgs[@]}"; do
     echo "   • $pkg"
-    if $is_pc; then
+    if "$is_pc"; then
       adb shell "shizuku pm clear $pkg" >/dev/null 2>&1 || echo "     ✗ failed"
     else
       shizuku pm clear "$pkg" >/dev/null 2>&1 || echo "     ✗ failed"
@@ -35,7 +35,7 @@ recompile_packages() {
   echo "→ Fallback: forcing recompilation (may free cache) via cmd package compile -r"
   for pkg in "${pkgs[@]}"; do
     echo "   • $pkg"
-    if $is_pc; then
+    if "$is_pc"; then
       adb shell "cmd package compile -r $pkg" >/dev/null 2>&1 || echo "     ✗ failed"
     else
       cmd package compile -r "$pkg" >/dev/null 2>&1 || echo "     ✗ failed"
@@ -54,14 +54,14 @@ fi
 
 # Gather package list (third‑party only)
 echo "Gathering installed user apps…"
-if $is_pc; then
+if "$is_pc"; then
   mapfile -t pkgs < <(adb shell pm list packages -3 | cut -d':' -f2)
 else
   mapfile -t pkgs < <(pm list packages -3 | cut -d':' -f2)
 fi
 
 # Attempt cache clear
-if $is_pc; then
+if "$is_pc"; then
   # Check if Shizuku is installed on device
   if adb shell command -v shizuku &>/dev/null; then
     clear_caches_with_shizuku

@@ -29,7 +29,7 @@ WORKDIR="work_$(printf '%(%s)T' -1)"
 rm -rf "$WORKDIR" && mkdir -p "$WORKDIR"
 
 echo "[1/10] Decoding APK with apktool..."
-$APKTOOL d "$INPUT_APK" -o "$WORKDIR/src"
+"$APKTOOL" d "$INPUT_APK" -o "$WORKDIR/src"
 
 echo "[2/10] Stripping unused resources..."
 # Example: remove extra densities
@@ -38,16 +38,16 @@ find -O3 "$WORKDIR/src/res" -maxdepth 1 -type d -name "drawable-*" ! -name "draw
 rm -rf "$WORKDIR/src/res/raw/" "$WORKDIR/src/assets/"
 
 echo "[3/10] Rebuilding stripped APK..."
-$APKTOOL b "$WORKDIR/src" -o "$WORKDIR/stripped.apk"
+"$APKTOOL" b "$WORKDIR/src" -o "$WORKDIR/stripped.apk"
 
 echo "[4/10] Running Redex optimization..."
-$REDEX -i "$WORKDIR/stripped.apk" -o "$WORKDIR/redexed.apk"
+"$REDEX" -i "$WORKDIR/stripped.apk" -o "$WORKDIR/redexed.apk"
 
 echo "[5/10] Converting DEX to JAR for ProGuard/R8..."
-$DEX2JAR "$WORKDIR/redexed.apk" -o "$WORKDIR/app.jar"
+"$DEX2JAR" "$WORKDIR/redexed.apk" -o "$WORKDIR/app.jar"
 
 echo "[6/10] Running ProGuard shrink..."
-cat > "$WORKDIR/proguard-rules.pro" <<EOL
+cat >"$WORKDIR/proguard-rules.pro" <<EOL
 -keep public class * {
     public *;
 }
@@ -60,8 +60,8 @@ EOL
 java -jar "$PROGUARD_JAR" \
   -injars "$WORKDIR/app.jar" \
   -outjars "$WORKDIR/app_proguard.jar" \
-  -libraryjars <java.home>/lib/rt.jar \
-  -include "$WORKDIR/proguard-rules.pro"
+  -libraryjars \
+  -include "$WORKDIR/proguard-rules.pro" <java.home >/lib/rt.jar
 
 echo "[7/10] Rebuilding DEX from optimized JAR..."
 # Convert back: jar2dex
@@ -69,28 +69,28 @@ dx --dex --output="$WORKDIR/classes.dex" "$WORKDIR/app_proguard.jar"
 # Repackage into APK
 unzip -q "$WORKDIR/redexed.apk" -d "$WORKDIR/apk_unpack"
 cp "$WORKDIR/classes.dex" "$WORKDIR/apk_unpack/"
-cd "$WORKDIR/apk_unpack"
+cd "$WORKDIR/apk_unpack" || exit
 zip -q -r ../repackaged.apk .
-cd - > /dev/null
+cd - >/dev/null || exit
 
 echo "[8/10] Aligning APK..."
-$ZIPALIGN -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk"
+"$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk"
 
 echo "[9/10] Signing APK..."
-$APKSIGNER sign \
+"$APKSIGNER" sign \
   --ks "$KEYSTORE_PATH" --ks-key-alias "$KEY_ALIAS" \
-  --ks-pass pass:$KEYSTORE_PASS --key-pass pass:$KEY_PASS \
+  --ks-pass pass:"$KEYSTORE_PASS" --key-pass pass:"$KEY_PASS" \
   --out "$WORKDIR/signed.apk" \
   "$WORKDIR/aligned.apk"
 
 echo "[10/10] Optimizing PNGs and JPEGs..."
 # Unzip to optimize resources
 unzip -q "$WORKDIR/signed.apk" -d "$WORKDIR/final_unpack"
-find "$WORKDIR/final_unpack/res" -iname "*.png" -exec $PNGCRUSH -rem alla -brute {} {}.opt \; -exec mv {}.opt {} +
-find "$WORKDIR/final_unpack/res" -iname "*.jpg" -exec $JPEGOPTIM --strip-all {} +
+find "$WORKDIR/final_unpack/res" -iname "*.png" -exec "$PNGCRUSH" -rem alla -brute {} {}.opt \; -exec mv {}.opt {} +
+find "$WORKDIR/final_unpack/res" -iname "*.jpg" -exec "$JPEGOPTIM" --strip-all {} +
 # Rezip final APK
-cd "$WORKDIR/final_unpack"
-$SEVENZIP a -tzip -mx=9 ../"$OUTPUT_APK" .
-cd - > /dev/null
+cd "$WORKDIR/final_unpack" || exit
+"$SEVENZIP" a -tzip -mx=9 ../"$OUTPUT_APK" .
+cd - >/dev/null || exit
 
 echo "✅ Optimized APK created at: $WORKDIR/$OUTPUT_APK"

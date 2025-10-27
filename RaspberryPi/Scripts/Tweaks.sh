@@ -2,7 +2,7 @@
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 # https://github.com/jmcerrejon/PiKISS/blob/master/res/cRasp.sh
 
-disableSwap() {
+disableSwap(){
     # Disable partition "swap"
     sudo dphys-swapfile swapoff
     sudo dphys-swapfile uninstall
@@ -14,7 +14,7 @@ case "$option" in
 y*) disableSwap ;;
 esac
 
-enableZRAM() {
+enableZRAM(){
     echo -e "\nEnabling ZRAM...\n"
     cat <<\EOF >/tmp/zram
 #!/bin/bash
@@ -34,7 +34,7 @@ EOF
     chmod +x /tmp/zram
     sudo mv /tmp/zram /etc/zram
     sudo /etc/zram
-    if [ "$(grep -c zram /etc/rc.local)" -eq 0 ]; then
+    if [[ "$(grep -c zram /etc/rc.local)" -eq 0 ]]; then
         sudo sed -i 's_^exit 0$_/etc/zram\nexit 0_' /etc/rc.local
     fi
 }
@@ -45,7 +45,7 @@ case "$option" in
 y*) enableZRAM ;;
 esac
 
-if [ -f /etc/inittab ]; then
+if [[ -f /etc/inittab ]]; then
     echo -e "\nRemove the extra tty/getty | Save: +3.5 MB RAM"
     read -p "Agree (y/n)? " option
     case "$option" in
@@ -89,13 +89,13 @@ set -x
 CORES=$(nproc --all)
 modprobe zram
 ZRAM_DEVICE=
-while [ -z "$ZRAM_DEVICE" ] 
+while [ "$ZRAM_DEVICE" = "" ] 
 do
-	ZRAM_DEVICE=$(zramctl --find --size "$ZRAM_MEMORY"M --streams $CORES --algorithm lz4)
+	ZRAM_DEVICE=$(zramctl --find --size "$ZRAM_MEMORY"M --streams "$CORES" --algorithm lz4)
 	sleep 5
 done
-mkswap $ZRAM_DEVICE
-swapon --priority 5 $ZRAM_DEVICE
+mkswap "$ZRAM_DEVICE"
+swapon --priority 5 "$ZRAM_DEVICE"
 
 # Run on boot
 $ sudo crontab -e
@@ -105,7 +105,5 @@ $ sudo crontab -e
 
 echo
 read -p "Have a nice day and don't blame me!. Press [Enter] to continue..."
-
-
 
 echo 1 | sudo tee /sys/kernel/mm/ksm/run

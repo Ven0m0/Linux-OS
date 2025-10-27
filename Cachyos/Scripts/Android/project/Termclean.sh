@@ -1,10 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# -----------------------------------------------------------------------------
 # Termux Butler - A comprehensive cleaning, maintenance, and optimization
 # script for your Termux environment.
 #
 # Version: 1.0.0
-# -----------------------------------------------------------------------------
 
 # --- Globals & Configuration ---
 set -o pipefail # Fail a pipe if any command fails
@@ -134,7 +132,7 @@ task_filesystem_hygiene() {
   log_info "Searching for and removing empty directories..."
   local empty_dirs
   empty_dirs=$(find "$HOME" -type d -empty -print)
-  if [[ -n "$empty_dirs" ]]; then
+  if [[ -n $empty_dirs ]]; then
     echo "$empty_dirs"
     echo "$empty_dirs" | xargs -r rm -r
     log_ok "Removed empty directories."
@@ -145,7 +143,7 @@ task_filesystem_hygiene() {
   log_info "Searching for and removing empty files..."
   local empty_files
   empty_files=$(find "$HOME" -type f -empty -print)
-  if [[ -n "$empty_files" ]]; then
+  if [[ -n $empty_files ]]; then
     echo "$empty_files"
     echo "$empty_files" | xargs -r rm
     log_ok "Removed empty files."
@@ -172,7 +170,7 @@ task_find_large_files() {
   local large_files
   large_files=$("${find_cmd[@]}" -exec du -h {} + | sort -rh)
 
-  if [[ -n "$large_files" ]]; then
+  if [[ -n $large_files ]]; then
     log_ok "Found large files:"
     echo "--------------------------"
     echo "$large_files"

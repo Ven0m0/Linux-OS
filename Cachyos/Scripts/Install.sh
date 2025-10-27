@@ -4,13 +4,13 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || :
 jobs=$(nproc)
-has() { command -v "$1" &>/dev/null; }
-msg() { printf '\e[1;33m▶ %s\e[0m\n' "$*"; }
-die() { printf '\e[1;31m✖ %s\e[0m\n' "$*" >&2; exit "${2:-1}"; }
-log() { printf '\e[1;36m✓ %s\e[0m\n' "$*"; }
-get_priv() { for cmd in sudo-rs sudo doas; do has "$cmd" && { echo "$cmd"; return 0; }; done; [[ $EUID -eq 0 ]] || die "No priv" 1; }
+has(){ command -v "$1" &>/dev/null; }
+msg(){ printf '\e[1;33m▶ %s\e[0m\n' "$*"; }
+die(){ printf '\e[1;31m✖ %s\e[0m\n' "$*" >&2; exit "${2:-1}"; }
+log(){ printf '\e[1;36m✓ %s\e[0m\n' "$*"; }
+get_priv(){ for cmd in sudo-rs sudo doas; do has "$cmd" && { echo "$cmd"; return 0; }; done; [[ $EUID -eq 0 ]] || die "No priv" 1; }
 PRIV=$(get_priv); [[ -n $PRIV && $EUID -ne 0 ]] && "$PRIV" -v
-run_priv() { [[ $EUID -eq 0 || -z $PRIV ]] && "$@" || "$PRIV" -- "$@"; }
+run_priv(){ [[ $EUID -eq 0 || -z $PRIV ]] && "$@" || "$PRIV" -- "$@"; }
 if has paru; then pkgmgr=(paru) aur=1; elif has yay; then pkgmgr=(yay) aur=1; else pkgmgr=(pacman) aur=0; fi
 [[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf
 : "${CFLAGS:=-O3 -march=native -mtune=native -pipe}" "${CXXFLAGS:=$CFLAGS}"
@@ -31,7 +31,7 @@ run_priv pacman-key --populate archlinux cachyos 2>/dev/null || :
 "${pkgmgr[@]}" -Syyuq --noconfirm 2>/dev/null || :
 pkgs=(
   base-devel linux-headers dkms git curl wget rsync patchutils
-  ${aur:+} paru yay ccache sccache mold lld llvm clang nasm yasm openmp polly
+  "${aur:+}" paru yay ccache sccache mold lld llvm clang nasm yasm openmp polly
   pigz lrzip pixz plzip lbzip2 pbzip2 minizip-ng zstd lz4 xz optipng svgo graphicsmagick
   preload irqbalance ananicy-cpp auto-cpufreq thermald cpupower cpupower-gui openrgb
   profile-sync-daemon profile-cleaner prelockd uresourced modprobed-db cachyos-ksm-settings
@@ -48,7 +48,7 @@ pkgs=(
 )
 mapfile -t inst < <(pacman -Qq 2>/dev/null)
 declare -A have; for p in "${inst[@]}"; do have[$p]=1; done
-miss=(); for p in "${pkgs[@]}"; do [[ ${have[$p]} ]] || miss+=("$p"); done
+miss=(); for p in "${pkgs[@]}"; do [[ -n ${have[$p]} ]] || miss+=("$p"); done
 if (( ${#miss[@]} )); then
   msg "Installing ${#miss[@]} pkgs"
   if (( aur )); then
@@ -119,7 +119,7 @@ if ! has soar; then msg "Installing soar"
 if has soar; then msg "Configuring soar"; soar update 2>/dev/null || :; soar_pkgs=(btop-rust fastfetch)
   for pkg in "${soar_pkgs[@]}"; do soar list 2>/dev/null | grep -q "$pkg" || soar install "$pkg" 2>/dev/null || :; done &
 fi &
-fish_setup() { mkdir -p "$HOME/.config/fish/conf.d" 2>/dev/null || :
+fish_setup(){ mkdir -p "$HOME/.config/fish/conf.d" 2>/dev/null || :
   fish -c "fish_update_completions" 2>/dev/null || :
   if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
     fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher update" 2>/dev/null &
@@ -129,10 +129,10 @@ fish_setup() { mkdir -p "$HOME/.config/fish/conf.d" 2>/dev/null || :
       halostatue/fish-rust kpbaks/zellij.fish)
     printf '%s\n' "${fishplug[@]}" | fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher install" 2>/dev/null || :
   fi; }
-bash_setup() { mkdir -p "$HOME/.config/bash" 2>/dev/null || :
+bash_setup(){ mkdir -p "$HOME/.config/bash" 2>/dev/null || :
   curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" \
     -o "$HOME/.config/bash/fzf-simple-completion.sh" && chmod +x "$_" 2>/dev/null; }
-zsh_setup() { [[ ! -f "$HOME/.p10k.zsh" ]] && curl -fsSL \
+zsh_setup(){ [[ ! -f "$HOME/.p10k.zsh" ]] && curl -fsSL \
     "https://raw.githubusercontent.com/romkatv/powerlevel10k/master/config/p10k-lean.zsh" -o "$HOME/.p10k.zsh" 2>/dev/null || :
   [[ ! -f "$HOME/.zshenv" ]] && echo 'export ZDOTDIR="$HOME/.config/zsh"' > "$HOME/.zshenv"
   mkdir -p "$HOME/.config/zsh" "$HOME/.local/share/zinit" 2>/dev/null || :
@@ -154,7 +154,7 @@ elif has dracut-rebuild; then run_priv dracut-rebuild 2>/dev/null || :
 else msg "⚠ initramfs generator not found"; fi &
 wait
 orphans=$(pacman -Qdtq 2>/dev/null || :)
-[[ -n $orphans ]] && run_priv pacman -Rns $orphans --noconfirm 2>/dev/null || :
+[[ -n $orphans ]] && run_priv pacman -Rns "$orphans" --noconfirm 2>/dev/null || :
 run_priv pacman -Sccq --noconfirm 2>/dev/null || :
 (( aur )) && "${pkgmgr[@]}" -Sccq --noconfirm 2>/dev/null || :
 run_priv journalctl --rotate --vacuum-size=50M --flush --sync -q 2>/dev/null || :

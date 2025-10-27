@@ -32,7 +32,7 @@ foo.iter() ---> foo.par_iter()
 # https://crates.io/crates/fastant
 cargo add fastant
 #in main.rs
-fn main() {
+fn main(){
     let start = fastant::Instant::now();
     let duration: std::time::Duration = start.elapsed();
 }
@@ -87,9 +87,6 @@ rustup component add llvm-tools-preview
 cargo install cargo-pgo
 rustup component add llvm-tools-preview
 
-
-
-
 ## Apps
 
 # Dynamic key remapp
@@ -102,7 +99,6 @@ cargo install rust-curl
 git clone https://github.com/arvid-berndtsson/rurl.git
 cd rurl
 cargo build --release && cargo install --path .
-
 
 # Better fastfetch
 cargo install rustch

@@ -29,7 +29,7 @@ dpkg --get-selections | grep -v deinstall | cut -f 1 | xargs
 
 # Remove some packages to get a minimal install
 echo "==> Removing all linux kernels except the currrent one"
-dpkg --list | awk '{ print $2 }' | grep 'linux-image-3.*-generic' | grep -v $(uname -r) | xargs apt-get -y purge
+dpkg --list | awk '{ print $2 }' | grep 'linux-image-3.*-generic' | grep -v "$(uname -r)" | xargs apt-get -y purge
 
 #echo "==> Removing linux headers"
 #dpkg --list | awk '{ print $2 }' | grep linux-headers | xargs apt-get -y purge
@@ -56,7 +56,7 @@ apt-get -y purge popularity-contest installation-report wireless-tools wpasuppli
 apt-get -y install deborphan
 
 echo "==> Purge prior removed packages"
-dpkg -l|grep "^rc"|cut -f 3 -d" "|xargs apt-get -y purge
+dpkg -l | grep "^rc" | cut -f 3 -d" " | xargs apt-get -y purge
 
 # Clean up the apt cache
 apt-get -y clean
@@ -80,13 +80,13 @@ rm -rf /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/lind
 # Remove Bash history
 unset HISTFILE
 rm -f /root/.bash_history
-rm -f $HOME/.bash_history
+rm -f "$HOME"/.bash_history
 
 # Clean up log files
-find /var/log -type f | while read f; do echo -ne '' > $f; done;
+find /var/log -type f | while read f; do echo -ne '' >"$f"; done
 
 echo "==> Disk usage before cleanup"
-echo ${DISK_USAGE_BEFORE_CLEANUP}
+echo "$DISK_USAGE_BEFORE_CLEANUP"
 
 echo "==> Disk usage after cleanup"
 df -h

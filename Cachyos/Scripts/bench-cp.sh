@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
 LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 sudo -v
 
 LOG="copy-bench-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
-> "$LOG"
+>"$LOG"
 
 benchmark() {
-  local name="$1"; shift
+  local name="$1"
+  shift
   local cmd="$*"
 
   hyperfine \
@@ -17,16 +20,16 @@ benchmark() {
     "$cmd"
 
   jq -c '{cmd: .command, mean: .results.mean, stddev: .results.stddev}' \
-    /tmp/hf-"$name".json >> "$LOG"
+    /tmp/hf-"$name".json >>"$LOG"
   rm -f /tmp/hf-"$name".json
 }
 
-benchmark "cp"    cp cachyos.iso cachyos-cp.iso --no-preserve=all -x -f
-benchmark "cpz"   cpz cachyos.iso cachyos-cpz.iso -f
-benchmark "xcp-w0"   xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w 0
-benchmark "xcp-w4"   xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms
-benchmark "xcp-w8"   xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w8
-benchmark "xcp-w0-2MB-block"   xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w 0 --block-size 2MB
+benchmark "cp" cp cachyos.iso cachyos-cp.iso --no-preserve=all -x -f
+benchmark "cpz" cpz cachyos.iso cachyos-cpz.iso -f
+benchmark "xcp-w0" xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w 0
+benchmark "xcp-w4" xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms
+benchmark "xcp-w8" xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w8
+benchmark "xcp-w0-2MB-block" xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w 0 --block-size 2MB
 benchmark "uu-cp" uu-cp -f --no-preserve=all cachyos.iso cachyos-uu-cp.iso
 benchmark "cpui" cpui -f -y cachyos.iso cachyos-cpui.iso
 

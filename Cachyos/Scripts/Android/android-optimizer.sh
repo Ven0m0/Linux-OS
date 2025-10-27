@@ -63,4 +63,3 @@ adb shell pm trim-caches 999999999999999999
 adb shell pm trim-caches 999999999999999999
 adb shell pm trim-caches 999999999999999999
 adb kill-server
-

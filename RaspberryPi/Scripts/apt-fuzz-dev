@@ -11,9 +11,7 @@ mkdir -p -- "$CACHE_DIR" &>/dev/null || :
 : "${APT_FUZZ_CACHE_MAX_BYTES:=0}"
 : "${APT_FUZZ_ANSI:=1}"
 
-# -------------------------
 # Tool detection
-# -------------------------
 if command -v sk &>/dev/null; then
   FINDER=sk
 elif command -v fzf &>/dev/null; then
@@ -33,18 +31,14 @@ FINDER_OPTS=(--layout=reverse-list --tiebreak=index --no-sort --no-hscroll)
 [[ "$APT_FUZZ_ANSI" -eq 1 ]] && FINDER_OPTS+=(--ansi)
 [[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && read -r -a FINDER_OPTS <<< "$APT_FUZZ_FINDER_OPTS"
 
-# -------------------------
 # Manager detection
-# -------------------------
 if command -v apt-fast &>/dev/null; then
   PRIMARY_MANAGER=apt-fast
 else
   PRIMARY_MANAGER=apt-get
 fi
 
-# -------------------------
 # Small utils
-# -------------------------
 byte_to_human(){
   local bytes="${1:-0}" i=0 pow=1
   local -a units=(B K M G T)
@@ -59,9 +53,7 @@ byte_to_human(){
 _cache_file_for(){ printf '%s/%s.cache' "$CACHE_DIR" "${1//[^a-zA-Z0-9._+-]/_}"; }
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59)/60 )); }
 
-# -------------------------
 # Optimized cache index + eviction
-# -------------------------
 CACHE_INDEX="${CACHE_DIR}/.index"
 _update_cache_index(){
   local tmp="${CACHE_DIR}/.index.$$"
@@ -112,9 +104,7 @@ evict_old_cache(){
 }
 _update_cache_index   # ensure index exists at script start
 
-# -------------------------
 # Cached preview helpers
-# -------------------------
 _generate_preview(){
   local pkg="$1" out tmp
   out="$(_cache_file_for "$pkg")"
@@ -142,9 +132,7 @@ _cached_preview_print(){
 }
 export -f _cached_preview_print _generate_preview
 
-# -------------------------
 # Manager runner
-# -------------------------
 run_mgr(){
   local action="$1"; shift || :
   local pkgs=("$@") cmd=()
@@ -173,16 +161,12 @@ run_mgr(){
   sudo "${cmd[@]}"
 }
 
-# -------------------------
 # Package listing
-# -------------------------
 list_all_packages(){ [[ -f "$CACHE_DIR/pkgnames.cache" ]] && cat "$CACHE_DIR/pkgnames.cache" || apt-cache pkgnames; }
 list_installed(){ [[ -f "$CACHE_DIR/installed.cache" ]] && cat "$CACHE_DIR/installed.cache" || dpkg-query -W -f='${Package}\n'; }
 list_upgradable(){ [[ -f "$CACHE_DIR/upgradable.cache" ]] && cat "$CACHE_DIR/upgradable.cache" || apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}'; }
 
-# -------------------------
 # Backup / Restore
-# -------------------------
 backup_installed(){
   local out="${1:-pkglist-$(date +%F).txt}"
   dpkg-query -W -f='${binary:Package}\n' | sort -u >"$out"
@@ -198,9 +182,7 @@ restore_from_file(){
   run_mgr install "${sel[@]}"
 }
 
-# -------------------------
 # Status header
-# -------------------------
 _status_header(){
   local stats files size age
   stats=$(_cache_info_from_index)
@@ -210,9 +192,7 @@ _status_header(){
   printf 'manager: %s | cache: %s files, %s, oldest: %s' "$PRIMARY_MANAGER" "$files" "$size" "$age"
 }
 
-# -------------------------
 # Menus
-# -------------------------
 menu_search_packages(){
   local sel pkgs
   sel=$(list_all_packages | "$FINDER" "${FINDER_OPTS[@]}" --multi --height=60% --prompt="Search> " \
@@ -273,9 +253,7 @@ menu_maintenance(){
   esac
 }
 
-# -------------------------
 # Background prefetch
-# -------------------------
 _prefetch_package_lists(){
   apt-cache pkgnames > "$CACHE_DIR/pkgnames.cache" 2>/dev/null &
   dpkg-query -W -f='${Package}\n' > "$CACHE_DIR/installed.cache" 2>/dev/null &
@@ -292,9 +270,7 @@ _prefetch_package_previews(){
 }
 _prefetch_package_lists &
 
-# -------------------------
 # Self install/uninstall
-# -------------------------
 _install_self(){
   local dest="${HOME%/}/.local/bin/apt-fuzz" compdir="${HOME%/}/.local/share/bash-completion/completions"
   mkdir -p -- "${HOME%/}/.local/bin"
@@ -325,9 +301,7 @@ _uninstall_self(){
   [[ -f $compfile ]] && rm -f -- "$compfile" && echo "Removed $compfile"
 }
 
-# -------------------------
 # Main TUI loop
-# -------------------------
 main_menu(){
   local choice
   while true; do
@@ -344,9 +318,7 @@ main_menu(){
   done
 }
 
-# -------------------------
 # Entry point
-# -------------------------
 case "${1:-}" in
   --install) _install_self "${2:-}"; exit 0;;
   --uninstall) _uninstall_self "${2:-}"; exit 0;;

@@ -8,13 +8,16 @@ clean_dir() {
   echo "Cleaning junk files in $dir ..."
   find "$dir" -type f \( \
     -iname "*.tmp" -o -iname "*.temp" -o -iname "*.crdownload" -o -iname "*.partial" -o -iname "*.log" -o -iname "*.cache" -o -iname "*.thumb" \
-  \) -exec rm -f {} +
+    \) -exec rm -f {} +
 }
 
 # Detect if running inside adb shell or Termux (simple heuristic)
-if [ "$(command -v adb)" ]; then
+if [[ -n "$(command -v adb)" ]]; then
   # Running on PC: use adb shell for commands
-  adb get-state >/dev/null 2>&1 || { echo "No device connected via adb."; exit 1; }
+  adb get-state >/dev/null 2>&1 || {
+    echo "No device connected via adb."
+    exit 1
+  }
   echo "Running on PC with adb connection."
 
   # Delete junk files in storage areas
@@ -30,7 +33,7 @@ if [ "$(command -v adb)" ]; then
   # Try clearing cache for user apps (limited, no root)
   echo "Attempting to clear app caches (limited)..."
   pkgs=$(adb shell pm list packages -3 | cut -d':' -f2)
-  for pkg in $pkgs; do
+  for pkg in "${pkgs[@]}"; do
     echo "Clearing cache for $pkg ..."
     adb shell cmd package compile -r "$pkg" 2>/dev/null
   done
@@ -47,7 +50,7 @@ else
 
   # Clean junk files
   for folder in /sdcard/Download /sdcard/DCIM /sdcard/Pictures /sdcard/Movies /sdcard/Music; do
-    if [ -d "$folder" ]; then
+    if [[ -d $folder ]]; then
       clean_dir "$folder"
     fi
   done

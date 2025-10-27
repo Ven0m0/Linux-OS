@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar; export LC_ALL=C
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
+export LC_ALL=C
 sudo -v
 
 # Determine the device mounted at root
@@ -9,11 +12,11 @@ ROOT_DEV=$(findmnt -n -o SOURCE /)
 FSTYPE=$(findmnt -n -o FSTYPE /)
 
 # If the filesystem is ext4, execute the tune2fs command
-if [[ "$FSTYPE" == "ext4" ]]; then
-    echo "Root filesystem is ext4 on $ROOT_DEV"
-    sudo tune2fs -O fast_commit "$ROOT_DEV"
+if [[ $FSTYPE == "ext4" ]]; then
+  echo "Root filesystem is ext4 on $ROOT_DEV"
+  sudo tune2fs -O fast_commit "$ROOT_DEV"
 else
-    echo "Root filesystem is not ext4 (detected: $FSTYPE). Skipping tune2fs."
+  echo "Root filesystem is not ext4 (detected: $FSTYPE). Skipping tune2fs."
 fi
 
 sudo balooctl6 disable && sudo balooctl6 purge
@@ -29,11 +32,9 @@ locale -a | grep -q '^en_US\.utf8$' && { export LANG='en_US.UTF-8' LANGUAGE='en_
 
 sudo curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Linux-Settings/etc/sysctl.d/99-tweak-settings.conf -o /etc/sysctl.d/99-tweak-settings.conf
 
-
 echo "Debloat and fixup"
-sudo pacman -Rns cachyos-v4-mirrorlist --noconfirm || true
-sudo pacman -Rns cachy-browser --noconfirm || true
-
+sudo pacman -Rns cachyos-v4-mirrorlist --noconfirm || :
+sudo pacman -Rns cachy-browser --noconfirm || :
 
 echo "install basher from https://github.com/basherpm/basher"
 curl -s https://raw.githubusercontent.com/basherpm/basher/master/install.sh | bash
@@ -69,8 +70,6 @@ sudo sed -i -e 's/#DefaultTimeoutStopSec.*/DefaultTimeoutStopSec=5s/g' /etc/syst
 sudo sed -i -e 's/#ALGO.*/ALGO=lz4/g' /etc/default/zramswap
 sudo sed -i -e 's/PERCENT.*/PERCENT=25/g' /etc/default/zramswap
 
-# ------------------------------------------------------------------------
-
 ## Flush bluetooth
 sudo rm -rfd /var/lib/bluetooth/*
 
@@ -85,7 +84,7 @@ balooctl suspend
 balooctl disable
 balooctl purge
 sudo systemctl disable plasma-baloorunner
-for dir in $HOME $HOME/*/; do touch "$dir/.metadata_never_index" "$dir/.noindex" "$dir/.nomedia" "$dir/.trackerignore"; done
+for dir in "$HOME" "$HOME"/*/; do touch "$dir/.metadata_never_index" "$dir/.noindex" "$dir/.nomedia" "$dir/.trackerignore"; done
 
 echo -e "Enable write cache"
 echo -e "write back" | sudo tee /sys/block/*/queue/write_cache
@@ -126,17 +125,17 @@ sudo sed -i -e 's/sortstrategy =.*/sortstrategy = 0/' /etc/preload.conf
 # Disable pacman logging.
 sudo sed -i -e s"/\#LogFile.*/LogFile = /"g /etc/pacman.conf
 
-sudo timedatectl set-timezone Europe/Berlin 
+sudo timedatectl set-timezone Europe/Berlin
 
 # Don't reserve space man-pages, locales, licenses.
 echo -e "Remove useless companies"
-find /usr/share/doc/ -depth -type f ! -name copyright | xargs sudo rm -f || true
+find /usr/share/doc/ -depth -type f ! -name copyright | xargs sudo rm -f || :
 find /usr/share/doc/ | grep '\.gz' | xargs sudo rm -f
 find /usr/share/doc/ | grep '\.pdf' | xargs sudo rm -f
 find /usr/share/doc/ | grep '\.tex' | xargs sudo rm -f
-find /usr/share/doc/ -empty | xargs sudo rmdir || true
+find /usr/share/doc/ -empty | xargs sudo rmdir || :
 sudo rm -rfd /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* \
-    /usr/share/linda/* /var/cache/man/* /usr/share/man/* /usr/share/X11/locale/!\(en_GB\)
+  /usr/share/linda/* /var/cache/man/* /usr/share/man/* /usr/share/X11/locale/!\(en_GB\)
 sudo rm -rfd /usr/share/locale/!\(en_GB\)
 yay -Rcc --noconfirm man-pages
 
@@ -197,5 +196,3 @@ echo "bfq
       ntsync
       tcp_bbr
       zram" | doas tee /etc/modprobe.d/modules.conf
-
-        

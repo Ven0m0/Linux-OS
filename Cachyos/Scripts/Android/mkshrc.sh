@@ -4,9 +4,9 @@
 # --- Keybindings ---
 # These work universally as they are mksh/terminal features
 set -o emacs
-bind '"\e[1;5D"=backward-word' # Ctrl+Left
-bind '"\e[1;5C"=forward-word' # Ctrl+Right
-bind '"\e[A"=search-history-up' # Up arrow history search
+bind '"\e[1;5D"=backward-word'    # Ctrl+Left
+bind '"\e[1;5C"=forward-word'     # Ctrl+Right
+bind '"\e[A"=search-history-up'   # Up arrow history search
 bind '"\e[B"=search-history-down' # Down arrow history search
 bind ^[a=beginning-of-line
 bind ^[e=end-of-line
@@ -25,12 +25,11 @@ set +o nohup # disable nohup mode
 set -o utf8-mode
 
 mkcd() {
-  mkdir -p "$1" && cd "$1"
+  mkdir -p "$1" && cd "$1" || exit
 }
 cdl() {
   cd "$1" && ls -a --color=auto
 }
-
 
 CDPATH=".:~:/sdcard:/sdcard/Android/data:/:/storage/emulated/0"
 export CDPATH
@@ -69,8 +68,8 @@ current_activity() {
 }
 
 # a function to help users find the local ip (from gh:omz/sysadmin plugin)
-myip(){
-if [ -x "$(command -v 'ip')" ]; then
+myip() {
+  if [[ -x "$(command -v 'ip')" ]]; then
     ip addr | awk '/inet /{print $2}' | grep -v 127.0.0.1
   else
     ifconfig | awk '/inet /{print $2}' | grep -v 127.0.0.1
@@ -82,31 +81,45 @@ function man() {
   local binary="$(_resolve "$1" | cut -d ' ' -f1)"
 
   # Handle empty or recursive call (man man)
-  if [ -z "$binary" ] || [ "$binary" = 'man' ]; then
+  if [[ -z $binary ]] || [[ $binary == 'man' ]]; then
     echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2
     return 1
   fi
 
   # Use --help output as a poor-man’s manual
   local manual="$("$binary" --help 2>&1)"
-  if [ $? -eq 127 ] || [ -z "$manual" ]; then
+  if [[ $? -eq 127 ]] || [[ -z $manual ]]; then
     echo "No manual entry for $binary" >&2
     return 16
   fi
 
-  $binary --help
+  "$binary" --help
 }
 export man
 
 # Function to simulate 'man' command
 man() {
-  [ -z "$1" ] && { echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2; return 1; }
-  "$1" --help >/dev/null 2>&1 && "$1" --help 2>&1 || { echo "No manual entry for $1" >&2; return 16; }
+  [[ -z $1 ]] && {
+    echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2
+    return 1
+  }
+  "$1" --help >/dev/null 2>&1 && "$1" --help 2>&1 || {
+    echo "No manual entry for $1" >&2
+    return 16
+  }
 }
 
 # --- 1. Define Colors ---
-MGN=$'\e[35m'; BLU=$'\e[34m'; YLW=$'\e[33m'; BLD=$'\e[1m'; UND=$'\e[4m'
-GRN=$'\e[32m'; CYN=$'\e[36m'; DEF=$'\e[0m'; RED=$'\e[31m'; PNK=$'\e[38;5;205m'
+MGN=$'\e[35m'
+BLU=$'\e[34m'
+YLW=$'\e[33m'
+BLD=$'\e[1m'
+UND=$'\e[4m'
+GRN=$'\e[32m'
+CYN=$'\e[36m'
+DEF=$'\e[0m'
+RED=$'\e[31m'
+PNK=$'\e[38;5;205m'
 
 # --- 2. Set the PS1 evaluation string ---
 PS1='

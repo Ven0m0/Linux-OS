@@ -131,7 +131,7 @@ prepare() {
   info "Setting up workspace"
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}")
   SRC_IMG="${WORKDIR}/source.img"
-  mkdir -p "${WORKDIR}"/{boot,root,target_{boot,root}}
+  mkdir -p "$WORKDIR"/{boot,root,target_{boot,root}}
   trap cleanup EXIT INT TERM
 }
 
@@ -607,7 +607,7 @@ main() {
 
   # Auto-detect in-place modification for .img files
   if [[ -z $tgt_path ]]; then
-    if [[ $src_path == *.img && ! $src_path == *.xz ]]; then
+    if [[ $src_path == *.img && $src_path != *.xz ]]; then
       warn "No target specified - will modify source in-place"
       read -rp "Modify $src_path in-place? [y/N]: " confirm
       [[ $confirm =~ ^[Yy]$ ]] && {

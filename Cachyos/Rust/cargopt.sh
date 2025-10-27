@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-set -eEuo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar inherit_errexit
+set -eEuo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar inherit_errexit
 export LC_ALL=C LANG=C
 # —————— Tweaks ——————
 if [[ $EUID -ne 0 ]]; then
   echo "This script requires root privileges. Validating with sudo..."
-  sudo -v || { echo "Sudo failed. Exiting."; exit 1; }
+  sudo -v || {
+    echo "Sudo failed. Exiting."
+    exit 1
+  }
 fi
 sudo cpupower frequency-set --governor performance
 MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
@@ -24,7 +29,9 @@ cleanup() {
 }
 trap cleanup ERR
 # —————— Defaults & help ——————
-USE_MOLD=0; LOCKED_FLAG=""; CRATES=()
+USE_MOLD=0
+LOCKED_FLAG=""
+CRATES=()
 
 usage() {
   cat <<EOF >&2
@@ -44,19 +51,34 @@ EOF
 }
 
 # —————— Parse args ——————
-if [ "$#" -eq 0 ]; then
+if [[ $# -eq 0 ]]; then
   echo "Error: at least one <crate> is required" >&2
   usage 1
 fi
 
-while [ "$#" -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
-    -m|--mold) USE_MOLD=1; shift ;;
-    -l|--locked) LOCKED_FLAG="--locked"; shift ;;
-    -h|--help) usage 0 ;;
-    --) shift; break ;;
-    -*) echo >&2 "Error: unknown option '$1'"; usage 1 ;;
-    *) CRATES+=("$1"); shift ;;
+  -m | --mold)
+    USE_MOLD=1
+    shift
+    ;;
+  -l | --locked)
+    LOCKED_FLAG="--locked"
+    shift
+    ;;
+  -h | --help) usage 0 ;;
+  --)
+    shift
+    break
+    ;;
+  -*)
+    echo >&2 "Error: unknown option '$1'"
+    usage 1
+    ;;
+  *)
+    CRATES+=("$1")
+    shift
+    ;;
   esac
 done
 # —————— Prepare environment ——————
@@ -83,7 +105,7 @@ unset CARGO_ENCODED_RUSTFLAGS
 export OPT_LEVEL=3
 export MAKEFLAGS="$CARGO_MAKEFLAGS"
 
-export CARGO_CACHE_RUSTC_INFO=1 
+export CARGO_CACHE_RUSTC_INFO=1
 export CARGO_HTTP_SSL_VERSION="tlsv1.3" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
 export CARGO_INCREMENTAL=0
 export RUSTC_BOOTSTRAP=1

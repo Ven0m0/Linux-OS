@@ -52,7 +52,6 @@ alias ls='ls --color=auto --group-directories-first'
 alias cls='clear' c='clear'
 alias grep='grep --color=auto'
 
-
 # apt
 alias apt='sudo apt'
 if command -v apt-fast &>/dev/null; then
@@ -69,8 +68,6 @@ alias aptupgd='sudo apt-get update && sudo apt-get dist-upgrade -V && sudo apt-g
 alias apts='apt-cache search'
 alias aptshow='apt-cache show'
 aptsearch(){ if ! nala search -n "$@"; then { apt-cache search "$@" || return 1; } fi; }
-
-
 
 # docker
 alias dr='docker run'
@@ -192,7 +189,7 @@ bind -m emacs -x     '"\eh": run-help'
 #──────────── End ────────────
 dedupe_path(){
   local IFS=: dir s; declare -A seen
-  for dir in $PATH; do
+  for dir in "${PATH[@]}"; do
     [[ -n $dir && -z ${seen[$dir]} ]] && seen[$dir]=1 && s="${s:+$s:}$dir"
   done
   [[ -n $s ]] && export PATH="$s"

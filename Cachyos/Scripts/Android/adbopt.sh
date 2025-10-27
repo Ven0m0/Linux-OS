@@ -48,8 +48,8 @@ printf '%s\n' "Optimizing ART..."
 adb shell pm bg-dexopt-job --enable
 # Run any postponed dex‐opt jobs immediately 
 adb shell cmd jobscheduler run -f android \
-  $(adb shell cmd jobscheduler list-jobs android \
-  | grep background-dexopt | awk '{print $2}')
+  "$(adb shell cmd jobscheduler list-jobs android \
+  | grep background-dexopt | awk '{print $2}')"
 
 # Does it twice to force speed-profile for all and does only speed for apps that might benefit without overwriting
 adb shell cmd package compile -af --full --secondary-dex -m speed-profile
@@ -147,7 +147,6 @@ adb shell settings put global media.enable-commonsource true
 debug.media.video.frc false
 debug.media.video.vpp false
 
-
 adb shell settings put global battery_saver_constants \ 
   "vibration_disabled=true,animation_disabled=true,soundtrigger_disabled=true,fullbackup_deferred=true,keyvaluebackup_deferred=true, \
   gps_mode=low_power,data_saver=true,optional_sensors_disabled=true,advertiser_id_enabled=false"
@@ -163,7 +162,6 @@ adb shell settings put global background_gpu_usage 0
 adb shell settings put global enable_app_prefetch 1
 adb shell settings put global storage.preload.complete 1
 adb shell settings put global ota_disable_automatic_update 1
-
 
 printf '%s\n' "Configuring Vulkan..."
 vk_set(){
@@ -286,7 +284,6 @@ adb shell settings put global view.scroll_friction 0
 adb shell device_config put systemui window_blur 0
 adb shell device_config put systemui window_cornerRadius 0
 
-
 printf '%s\n' "Other"
 adb shell settings put global gpu_rasterization_forced 1
 adb shell settings put global enable_lcd_text 1
@@ -356,7 +353,7 @@ adb shell dumpsys deviceidle whitelist +com.android.systemui
 
 #Print all applications in use
 adb shell pm list packages | sed -e "s/package://" | \
-  while read x; do adb shell cmd package resolve-activity --brief $x | tail -n 1 | grep -v "No activity found"; done
+  while read x; do adb shell cmd package resolve-activity --brief "$x" | tail -n 1 | grep -v "No activity found"; done
 
 # List all active services
 #adb shell dumpsys -l
@@ -405,10 +402,9 @@ adb shell sm set-force-adoptable true
     adb shell settings put global debug.hwui.render_priority 1
 
 # Print data in .db files, clean:
-grep -vx -f <(sqlite3 Main.db .dump) <(sqlite3 ${DB} .schema) 
+grep -vx -f <(sqlite3 Main.db .dump) <(sqlite3 "$DB" .schema) 
 # Use below command fr update dg.db file:
 sqlite3 /data/data/com.google.android.gms/databases/dg.db "update main set c='0' where a like '%attest%';" 
-
 
 set_apk(){
   local mode="$1" apk="$2"
@@ -419,7 +415,6 @@ set_apk(){
   esac
 }
 set_apk dump com.pittvandewitt.wavelet
-
 
 adb shell settings put secure systemui.google.opa_enabled 0
 adb shell settings put system background_power_saving_enable 1
@@ -461,7 +456,7 @@ adb shell settings put system perf_profile performance
     adb shell cmd appops set com.google.android.ims START_FOREGROUND ignore
     adb shell cmd appops set com.google.android.ims INSTANT_APP_START_FOREGROUND ignore
 
-   for d in $(adb shell ls -a sdcard); do adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore"; done
+   for d in "$(adb shell ls -a sdcard)"; do adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore"; done
   #"sdcard/$d/.nomedia"
 
 adb shell setprop debug.threadedOpt 1
@@ -475,7 +470,6 @@ adb shell am kill-all
 adb shell cmd activity kill-all
 
 printf '%s\n' "All done!"
-
 
 adb kill-server
 rm -rf "${HOME}/.android"

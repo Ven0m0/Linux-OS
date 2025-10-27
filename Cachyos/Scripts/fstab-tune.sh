@@ -10,7 +10,7 @@ LC_ALL=C
 # Detect root device and ensure it's F2FS
 device=$(findmnt -n -o SOURCE /)
 fs_type=$(findmnt -n -o FSTYPE "$device")
-fs_type=$(findmnt -n -o FSTYPE ${device:-/})
+fs_type=$(findmnt -n -o FSTYPE "${device:-/}")
 [[ "$fs_type" != "f2fs" ]] &&  { echo "Error: Root fs isnt F2FS (detected type: ${fs_type}). Exiting."; exit 1 }
 # Get UUID
 UUID=$(sudo blkid -s UUID -o value "$device")

@@ -4,7 +4,7 @@
 # Simplified config injection without newline-handling, password-masking,
 # backups or DietPi-specific notifications.
 
-G_CONFIG_INJECT(){
+G_CONFIG_INJECT() {
   : "${G_PROGRAM_NAME:=G_CONFIG_INJECT}"
   local pattern=${1//\//\\/}
   local setting=$2
@@ -12,7 +12,10 @@ G_CONFIG_INJECT(){
   local after=${4//\//\\/}
 
   # Ensure writable file
-  [[ -w $file ]] || { echo "[$G_PROGRAM_NAME] Cannot write to $file" >&2; return 1; }
+  [[ -w $file ]] || {
+    echo "[$G_PROGRAM_NAME] Cannot write to $file" >&2
+    return 1
+  }
 
   # Escape setting for regex matching
   local esc="$setting"
@@ -23,7 +26,7 @@ G_CONFIG_INJECT(){
   esc=${esc//?/\\?}
   esc=${esc//[/\\[}
   esc=${esc//(/\\(}
-  esc=${esc//\{}/\\{}  # literal brace
+  esc=${esc//\{/}/\\{} # literal brace
   esc=${esc//^/\\^}
   esc=${esc//&/\\&}
   esc=${esc//\$/\\$}
@@ -38,7 +41,7 @@ G_CONFIG_INJECT(){
 
   # 2) Pattern present and unique -> replace first
   if grep -Eq "^[[:blank:]]*$pattern" "$file"; then
-    if (( $(grep -Ec "^[[:blank:]]*$pattern" "$file") > 1 )); then
+    if (($(grep -Ec "^[[:blank:]]*$pattern" "$file") > 1)); then
       echo "[$G_PROGRAM_NAME] Multiple matches for '$pattern' in $file" >&2
       return 1
     fi
@@ -55,7 +58,7 @@ G_CONFIG_INJECT(){
   fi
 
   # 4) Append after specific line
-  if [[ $after ]]; then
+  if [[ -n $after ]]; then
     if grep -Eq "^[[:blank:]]*$after" "$file"; then
       sed -Ei "0,/^[[:blank:]]*$after.*\$/s//&\\n${setting}/" "$file" || return 1
       echo "[$G_PROGRAM_NAME] Inserted setting after '$after' in $file"
@@ -67,14 +70,14 @@ G_CONFIG_INJECT(){
   fi
 
   # 5) Fallback: append to end
-  [[ -s $file ]] || echo '# Added by bash_helpers' >> "$file"
+  [[ -s $file ]] || echo '# Added by bash_helpers' >>"$file"
   sed -Ei "\$a\\${setting}" "$file" || return 1
   echo "[$G_PROGRAM_NAME] Appended setting to end of $file"
 }
 
 # Simple, signal-friendly sleep without external command
 G_SLEEP_FD=
-G_SLEEP(){
-  [[ $G_SLEEP_FD ]] || exec {G_SLEEP_FD}<> <(:)
+G_SLEEP() {
+  [[ -n $G_SLEEP_FD ]] || exec {G_SLEEP_FD}<> <(:)
   read -rt "$1" -u "$G_SLEEP_FD" || :
 }

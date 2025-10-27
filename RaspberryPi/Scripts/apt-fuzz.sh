@@ -50,9 +50,7 @@ mkdir -p -- "$CACHE_DIR" &>/dev/null
 # 0/1 flag
 : "${APT_FUZZ_ANSI:=1}"
 
-# -------------------------
 # Tool detection
-# -------------------------
 if command -v sk &>/dev/null; then
   FINDER=sk
 elif command -v fzf &>/dev/null; then
@@ -68,11 +66,9 @@ else
   FIND_TOOL="find"
 fi
 
-# -------------------------
 # FINDER options (array)
-# -------------------------
 FINDER_OPTS=(--layout=reverse-list --tiebreak=index --no-sort --no-hscroll)
-if [[ "${APT_FUZZ_ANSI}" == "1" ]]; then
+if [[ "$APT_FUZZ_ANSI" == "1" ]]; then
   FINDER_OPTS+=(--ansi)
 fi
 if [[ -n ${APT_FUZZ_FINDER_OPTS:-} ]]; then
@@ -80,9 +76,7 @@ if [[ -n ${APT_FUZZ_FINDER_OPTS:-} ]]; then
   read -r -a FINDER_OPTS <<< "$APT_FUZZ_FINDER_OPTS"
 fi
 
-# -------------------------
 # Manager detection
-# -------------------------
 HAS_NALA=0; HAS_APT_FAST=0
 command -v nala &>/dev/null && HAS_NALA=1 || :
 command -v apt-fast &>/dev/null && HAS_APT_FAST=1 || :
@@ -93,9 +87,7 @@ if [[ -z $PRIMARY_MANAGER ]]; then
   [[ $HAS_NALA -eq 0 && $HAS_APT_FAST -eq 1 ]] && PRIMARY_MANAGER=apt-fast
 fi
 
-# -------------------------
 # Utilities (pure bash reductions where possible)
-# -------------------------
 total_bytes_in_dir(){
   local dir="$1" total=0 s f
   if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
@@ -127,9 +119,7 @@ byte_to_human(){
   fi
 }
 
-# -------------------------
 # Cache helpers
-# -------------------------
 _cache_file_for(){ local pkg="$1"; printf '%s/%s.cache' "$CACHE_DIR" "${pkg//[^a-zA-Z0-9._+-]/_}"; }
 _cache_mins(){ printf '%d' $(( (APT_FUZZ_CACHE_TTL + 59) / 60 )); }
 
@@ -201,12 +191,10 @@ _cache_stats(){
   else
     age=$(( ( (printf '%(%s)T' -1) - oldest ) / 60 ))m
   fi
-  printf '%s|%s|%s' "${files}" "${size}" "${age}"
+  printf '%s|%s|%s' "$files" "$size" "$age"
 }
 
-# -------------------------
 # Preview generation (atomic)
-# -------------------------
 _generate_preview(){
   local pkg="$1" out tmp
   out="$(_cache_file_for "$pkg")"
@@ -232,9 +220,7 @@ _cached_preview_print(){
 }
 export -f _cached_preview_print
 
-# -------------------------
 # Manager runner (apt-get for apt)
-# -------------------------
 run_mgr(){
   local action="$1"; shift || :
   local pkgs=("$@") cmd=()
@@ -278,9 +264,7 @@ choose_manager(){
   [[ -n $choice ]] && PRIMARY_MANAGER="$choice"
 }
 
-# -------------------------
 # Lists / helpers / UI (fd-native implementations when available)
-# -------------------------
 list_all_packages(){
   # Try fd-native parsing of /var/lib/apt/lists/*Packages; fallback to apt-cache
   if [[ "$FIND_TOOL" == "fd" || "$FIND_TOOL" == "fdfind" ]]; then
@@ -467,9 +451,7 @@ main_menu(){
   done
 }
 
-# -------------------------
 # Self-install / uninstall & completion
-# -------------------------
 _install_self(){
   local dest="${HOME%/}/.local/bin/apt-fuzz" compdir="${HOME%/}/.local/share/bash-completion/completions"
   mkdir -p -- "${HOME%/}/.local/bin"
@@ -492,16 +474,14 @@ BASHCOMP
   printf 'Completion installed: %s/apt-fuzz\n' "$compdir"
 }
 _uninstall_self(){
-  local dest="${HOME%/}/.local/bin/apt-fuzz" comp="${HOME%/}/.local/share/bash-completion/completions/apt-fuzz" cache="${CACHE_DIR}"
+  local dest="${HOME%/}/.local/bin/apt-fuzz" comp="${HOME%/}/.local/share/bash-completion/completions/apt-fuzz" cache="$CACHE_DIR"
   printf 'Uninstalling apt-fuzz...\n'
   rm -f -- "$dest"; rm -f -- "$comp"; rm -rf -- "$cache"
   printf 'Removed: %s\nRemoved: %s\nRemoved cache dir: %s\n' "$dest" "$comp" "$cache"
   printf 'Uninstall complete.\n'
 }
 
-# -------------------------
 # CLI conveniences
-# -------------------------
 if [[ $# -gt 0 ]]; then
   case "$1" in
     --install) _install_self; exit 0 ;;

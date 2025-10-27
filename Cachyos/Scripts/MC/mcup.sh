@@ -12,10 +12,10 @@ ferium scan && ferium upgrade
 
 # ─── Clean .old Mods Folder ────────────────────────────────────────────────────
 if [[ -d mods/.old ]]; then
-    echo "[*] Cleaning old mod backups..."
-    rm -f mods/.old/*
+  echo "[*] Cleaning old mod backups..."
+  rm -f mods/.old/*
 else
-    echo "[*] Skipping cleanup: mods/.old does not exist."
+  echo "[*] Skipping cleanup: mods/.old does not exist."
 fi
 
 # ─── Repack Mods ───────────────────────────────────────────────────────────────
@@ -39,16 +39,16 @@ final_jar="$dest_dir/GeyserConnect.jar"
 mkdir -p "$dest_dir"
 
 if curl "${curlopts[@]}" -o "$tmp_jar" "$URL"; then
-    echo "[*] Download complete: $tmp_jar"
+  echo "[*] Download complete: $tmp_jar"
 else
-    echo "[!] Failed to download GeyserConnect!" >&2
-    exit 1
+  echo "[!] Failed to download GeyserConnect!" >&2
+  exit 1
 fi
 
 # ─── Backup Existing JAR ───────────────────────────────────────────────────────
-if [[ -f "$final_jar" ]]; then
-    echo "[*] Backing up existing GeyserConnect.jar..."
-    mv "$final_jar" "$final_jar.bak"
+if [[ -f $final_jar ]]; then
+  echo "[*] Backing up existing GeyserConnect.jar..."
+  mv "$final_jar" "$final_jar.bak"
 fi
 
 # ─── Repack and Cleanup ────────────────────────────────────────────────────────

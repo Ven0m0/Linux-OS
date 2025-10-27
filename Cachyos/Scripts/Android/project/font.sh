@@ -3,7 +3,7 @@
 # Optimizes local TTF/OTF fonts to reduce file size.
 # Usage: optimize_local_fonts <file_or_dir> [horiz_scale]
 
-optimize_local_fonts() {
+optimize_local_fonts(){
   local target="${1:?Provide font file or directory}"
   local scale="${2:-1.0}"   # horizontal scale (default 1.0 = no scaling)
 

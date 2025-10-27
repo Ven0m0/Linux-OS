@@ -3,7 +3,7 @@
 <details>
 <summary><b>Bash script template</b></summary>
 
-```bash
+"$()$(bash
 #!/usr/bin/env bash
 #set -eECuo pipefail
 set -euo pipefail
@@ -14,21 +14,21 @@ shopt -s nullglob globstar
 # export LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 export LC_ALL="C" LANG="C.UTF-8"
 WORKDIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
-cd $WORKDIR
+cd "$WORKDIR"
 
 # Ensure root rights
 sudo -v
 
 # Sleep replacement in bash
-sleepy() { read -rt 0.1 <> <(:) || :; }
-```
+sleepy(){ read -rt 0.1 <> <(:) || :; }
+)$()"
 
 </details>
 
 <details>
 <summary><b>Colors</b></summary>
 
-```bash
+"$()$(bash
 #──────────── Foreground colors ────────────
 BLK='\033[30m' # Black
 RED='\033[31m' # Red
@@ -50,7 +50,7 @@ BRIGHT_MGN='\033[95m'
 BRIGHT_CYN='\033[96m'
 BRIGHT_WHT='\033[97m'
 #────────────────────────
-```
+)$()"
 
 </details>
 
@@ -59,33 +59,33 @@ BRIGHT_WHT='\033[97m'
   
 in the script:
 
-```bash
+"$()$(bash
 # Load config (if it exists)
 CONFIG_FILE="./config.cfg"
 [[ -f "$CONFIG_FILE" ]] && source "$CONFIG_FILE"
-```
+)$()"
 in the config file:
 
-```bash
+"$()$(bash
 # ~/config.cfg || ~/config.conf
 USERNAME="user"
 PORT=8080
 DEBUG=true
-```
+)$()"
 
 </details>
 
 <details>
 <summary><b>IP Stuff</b></summary>
 
-```bash
+"$()$(bash
 # Display global/public IP
 echo "Your Global IP is: $(curl -s https://api.ipify.org/)"
 
 # Display weather report based on region
 location="$(curl -s ipinfo.io/region)"
 [[ "$location" != "Bielefeld" ]] && location="Bielefeld"
-curl wttr.in/$location?0
+curl wttr.in/"$location"?0
 
 # Speedtest DL/UP
 down=$(curl -s -o /dev/null -w "%{speed_download}" https://speed.cloudflare.com/__down?bytes=100000000)
@@ -94,18 +94,18 @@ awk -v s="$down" 'BEGIN {printf "Download: %.2f Mbps\n", (s*8)/(1024*1024)}'
 up=$(dd if=/dev/zero bs=1M count=10 2>/dev/null | \
   curl -s -o /dev/null -w "%{speed_upload}" --data-binary @- https://speed.cloudflare.com/__up)
 awk -v s="$up" 'BEGIN {printf "Upload: %.2f Mbps\n", (s*8)/(1024*1024)}'
-```
+)$()"
 
 </details>
 
 <details>
 <summary><b>Misc</b></summary>
 
-```bash
+"$()$(bash
 # shopt -s extglob
 # For 
 # *.(jpg|png)
 # file?(.*) # file and file.bak
-```
+)$()"
 
 </details>

@@ -11,11 +11,11 @@ mkdir -p kernel
 cd kernel
 
 echo "Grabbing kernel and patches..."
-rm -r patches 2> /dev/null || true # just in case
+rm -r patches 2>/dev/null || : # just in case
 git clone --depth=1 https://github.com/t2linux/linux-t2-patches patches
 pkgver=$(curl -sL https://github.com/t2linux/T2-Ubuntu-Kernel/releases/latest/ | grep "<title>Release" | awk -F " " '{print $2}' | cut -d "v" -f 2 | cut -d "-" -f 1)
 _srcname=linux-${pkgver}
-wget https://kernel.org/pub/linux/kernel/v"${pkgver//.*}".x/"${_srcname}".tar.xz
+wget https://kernel.org/pub/linux/kernel/v"${pkgver//.*/}".x/"$_srcname".tar.xz
 tar xvf "$_srcname".tar.xz
 cd "$_srcname"
 
@@ -23,27 +23,27 @@ cd "$_srcname"
 # ^ out of date, applied in patch 1001
 echo "Applying patches..."
 for patch in ../patches/*.patch; do
-    patch -Np1 < "$patch"
+  patch -Np1 <"$patch"
 done
 
-zcat /proc/config.gz > .config
+zcat /proc/config.gz >.config
 kernelver=$(make kernelversion)
 localver=$(grep 'CONFIG_LOCALVERSION=' .config | awk -F '"' '{print $2}')
 kernelmajminver=$(echo "$kernelver" | awk -F "." '{print $1 "." $2}')
 
 # grab RT patchset
-rtpatchfile=$(curl -s --location "https://kernel.org/pub/linux/kernel/projects/rt/$kernelmajminver/" | grep -ioE "<a href=\"(patch-.+)\">" | awk -F "\"" '{print $2}' | tail -n 1)
+rtpatchfile=$(curl -s --location "https://kernel.org/pub/linux/kernel/projects/rt/$kernelmajminver/" | grep -ioE '<a href="(patch-.+)">' | awk -F '"' '{print $2}' | tail -n 1)
 rtver=$(echo "$rtpatchfile" | awk -F "-" '{print $3}' | awk -F "\\\." '{print "-" $1}')
 
-if [ -n "$rtpatchfile" ]; then
-    echo "Grabbing real-time patches..."
-    wget -O "../patches/$rtpatchfile" "https://kernel.org/pub/linux/kernel/projects/rt/$kernelmajminver/$rtpatchfile" || true
-    xz -d "../patches/$rtpatchfile" || true
+if [[ -n $rtpatchfile ]]; then
+  echo "Grabbing real-time patches..."
+  wget -O "../patches/$rtpatchfile" "https://kernel.org/pub/linux/kernel/projects/rt/$kernelmajminver/$rtpatchfile" || :
+  xz -d "../patches/$rtpatchfile" || :
 
-    echo "Applying real-time patches..."
-    patch -Np1 < "../patches/$(echo "$rtpatchfile" | head -c -4)" || true
+  echo "Applying real-time patches..."
+  patch -Np1 <"../patches/$(echo "$rtpatchfile" | head -c -4)" || :
 else
-    echo "Real-time patches not grabbed."
+  echo "Real-time patches not grabbed."
 fi
 
 echo "Making configs..."
@@ -53,8 +53,8 @@ echo "Making configs..."
 ./scripts/config --undefine DEBUG_INFO_SPLIT
 ./scripts/config --undefine DEBUG_INFO_REDUCED
 ./scripts/config --undefine DEBUG_INFO_COMPRESSED
-./scripts/config --set-val  DEBUG_INFO_NONE       y
-./scripts/config --set-val  DEBUG_INFO_DWARF5     n
+./scripts/config --set-val DEBUG_INFO_NONE y
+./scripts/config --set-val DEBUG_INFO_DWARF5 n
 make olddefconfig
 scripts/config --module CONFIG_BT_HCIBCM4377
 scripts/config --module CONFIG_HID_APPLE_IBRIDGE

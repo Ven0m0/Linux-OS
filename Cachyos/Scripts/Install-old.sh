@@ -33,8 +33,8 @@ else
 fi
 
 # Sync keyring + upgrade
-$aurhelper -Syq archlinux-keyring --noconfirm
-$aurhelper -Syuq --noconfirm
+"$aurhelper" -Syq archlinux-keyring --noconfirm
+"$aurhelper" -Syuq --noconfirm
 
 # sudo pacman -Rns openssh && sudo pacman -Sq openssh-hpn openssh-hpn-shim
 pkgs=(
@@ -56,36 +56,36 @@ pkgs=(
 echo "Checking installed packages..."
 missing=()
 for p in "${pkgs[@]}"; do
-  $aurhelper -Qiq "$p" &>/dev/null || missing+=("$p")
+  "$aurhelper" -Qiq "$p" &>/dev/null || missing+=("$p")
 done
 
-if [ ${#missing[@]} -eq 0 ]; then
+if [[ ${#missing[@]} -eq 0 ]]; then
   echo "✔ All packages installed"
   exit 0
 fi
 
 echo "➜ Installing: ${missing[*]}"
-while [ ${#missing[@]} -gt 0 ]; do
+while [[ ${#missing[@]} -gt 0 ]]; do
   failed=()
-  $aurhelper -Sq --needed --noconfirm --removemake --cleanafter --sudoloop \
+  "$aurhelper" -Sq --needed --noconfirm --removemake --cleanafter --sudoloop \
     --skipreview --nokeepsrc --batchinstall --combinedupgrade \
     --mflags '--skipinteg --skippgpcheck' "${missing[@]}" || {
       echo "Some packages failed. Retrying individually..."
       for p in "${missing[@]}"; do
-        $aurhelper -Sq --needed --noconfirm --removemake --cleanafter \
+        "$aurhelper" -Sq --needed --noconfirm --removemake --cleanafter \
           --skipreview --nokeepsrc "$p" || failed+=("$p")
       done
-      missing=($(printf "%s\n" "${missing[@]}" | grep -vxF -f <(printf "%s\n" "${failed[@]}")))
+      missing=("$(printf "%s\n" "${missing[@]}" | grep -vxF -f <(printf "%s\n" "${failed[@]}")"))
   }
-  [ ${#failed[@]} -eq 0 ] && break
+  [[ ${#failed[@]} -eq 0 ]] && break
 done
 
 echo "✔ Installation complete (or skipped if already present)"
 
 if command -v flatpak &>/dev/null; then
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-  flats=`awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs`
-  flatpak install -y flathub ${flats}
+  flats=$(awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs)
+  flatpak install -y flathub "$flats"
   flatpak install -y flathub org.kde.audiotube
 fi
 # echo "Installing gaming applications"
@@ -125,7 +125,7 @@ url="https://raw.githubusercontent.com/CodesOfRishi/navita/main/navita.sh"
 dest="${HOME}/.config/bash"
 mkdir -p "$dest"
 curl -sSfL --create-dirs -o "$dest/$(basename "$url")" "$url" 
-chmod +x "${dest}/$(basename "${url}")" && . "${dest}/$(basename "${url}")"
+chmod +x "${dest}/$(basename "$url")" && . "${dest}/$(basename "$url")"
 
 if ! command -v rustup; then
   echo "Installing rust + components..."
@@ -262,7 +262,7 @@ fi
 echo "Cleaning"
 sudo pacman -Rns "$(pacman -Qdtq 2>/dev/null)" --noconfirm >/dev/null
 sudo pacman -Sccq --noconfirm
-sudo $aurhelper -Sccq --noconfirm
+sudo "$aurhelper" -Sccq --noconfirm
 sudo journalctl --rotate --vacuum-size=1 --flush --sync -q
 sudo fstrim -a --quiet-unsupported
 

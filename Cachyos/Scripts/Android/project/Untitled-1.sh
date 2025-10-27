@@ -41,13 +41,13 @@ prepare_for_revanced() {
     esac
   done
 
-  if [[ -z "$APKS_ARCHIVE" ]]; then
+  if [[ -z $APKS_ARCHIVE ]]; then
     log_error "No .apks file provided."
     print_usage
     return 1
   fi
 
-  if [[ -z "$OUTPUT_FILE" ]]; then
+  if [[ -z $OUTPUT_FILE ]]; then
     local base_name
     base_name=$(basename "$APKS_ARCHIVE" .apks)
     OUTPUT_FILE="${base_name}-universal.apk"
@@ -63,7 +63,7 @@ prepare_for_revanced() {
   done
 
   # --- Keystore check ---
-  if [[ ! -f "$DEBUG_KEYSTORE" ]]; then
+  if [[ ! -f $DEBUG_KEYSTORE ]]; then
     log "Generating debug keystore..."
     mkdir -p "$(dirname "$DEBUG_KEYSTORE")"
     keytool -genkey -v -keystore "$DEBUG_KEYSTORE" \
@@ -104,7 +104,7 @@ prepare_for_revanced() {
 }
 
 # Run if called directly
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
   prepare_for_revanced "$@"
 fi
 #!/bin/bash
@@ -150,13 +150,13 @@ prepare_for_revanced() {
     esac
   done
 
-  if [[ -z "$APKS_ARCHIVE" ]]; then
+  if [[ -z $APKS_ARCHIVE ]]; then
     log_error "No .apks file provided."
     print_usage
     return 1
   fi
 
-  if [[ -z "$OUTPUT_FILE" ]]; then
+  if [[ -z $OUTPUT_FILE ]]; then
     local base_name
     base_name=$(basename "$APKS_ARCHIVE" .apks)
     OUTPUT_FILE="${base_name}-universal.apk"
@@ -172,7 +172,7 @@ prepare_for_revanced() {
   done
 
   # --- Keystore check ---
-  if [[ ! -f "$DEBUG_KEYSTORE" ]]; then
+  if [[ ! -f $DEBUG_KEYSTORE ]]; then
     log "Generating debug keystore..."
     mkdir -p "$(dirname "$DEBUG_KEYSTORE")"
     keytool -genkey -v -keystore "$DEBUG_KEYSTORE" \
@@ -213,6 +213,6 @@ prepare_for_revanced() {
 }
 
 # Run if called directly
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
   prepare_for_revanced "$@"
 fi

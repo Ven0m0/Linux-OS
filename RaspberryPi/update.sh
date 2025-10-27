@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C; shopt -s nullglob globstar execfail
+export LC_ALL=C LANG=C
+shopt -s nullglob globstar execfail
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
 #============ Color & Effects ============
@@ -9,10 +10,21 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #============ Helpers ====================
-has(){ local x="${1:?no argument}"; local p; p=$(command -v -- "$x") || return 1; [ -x "$p" ] || return 1; }
-hasname(){ local x="${1:?no argument}"; local p; p=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${p##*/}"; }
+has() {
+  local x="${1:?no argument}"
+  local p
+  p=$(command -v -- "$x") || return 1
+  [[ -x $p ]] || return 1
+}
+hasname() {
+  local x="${1:?no argument}"
+  local p
+  p=$(type -P -- "$x" 2>/dev/null) || return 1
+  printf '%s\n' "${p##*/}"
+}
 #============ Banner ====================
-banner=$(cat <<'EOF'
+banner=$(
+  cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -22,52 +34,64 @@ banner=$(cat <<'EOF'
 EOF
 )
 # Split banner into array
-mapfile -t banner_lines <<< "$banner"
+mapfile -t banner_lines <<<"$banner"
 lines=${#banner_lines[@]}
 # Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
 flag_colors=(
-  "$LBLU"   # Light Blue
-  "$PNK"    # Pink
-  "$BWHT"  # White
-  "$PNK"    # Pink
-  "$LBLU"   # Light Blue
+  "$LBLU" # Light Blue
+  "$PNK"  # Pink
+  "$BWHT" # White
+  "$PNK"  # Pink
+  "$LBLU" # Light Blue
 )
 segments=${#flag_colors[@]}
 # If banner is trivially short, just print without dividing by (lines-1)
-if (( lines <= 1 )); then
+if ((lines <= 1)); then
   for line in "${banner_lines[@]}"; do
     printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
   done
 else
   for i in "${!banner_lines[@]}"; do
     # Map line index proportionally into 0..(segments-1)
-    segment_index=$(( i * (segments - 1) / (lines - 1) ))
-    (( segment_index >= segments )) && segment_index=$((segments - 1))
+    segment_index=$((i * (segments - 1) / (lines - 1)))
+    ((segment_index >= segments)) && segment_index=$((segments - 1))
     printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
   done
 fi
 echo "Meow (> ^ <)"
 #============ Safety ====================
 [[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null
-export HOME="/home/${SUDO_USER:-$USER}"; sync
+export HOME="/home/${SUDO_USER:-$USER}"
+sync
 #=============================================================
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
 export APT_NO_COLOR=1 NO_COLOR=1 DPKG_COLORS=never DEBIAN_FRONTEND=noninteractive
-run_apt(){ sudo apt-get -yqfm --allow-releaseinfo-change -o Acquire::Languages none; -o APT::Get::Fix-Missing true; -o APT::Get::Fix-Broken true; "$1" "$@"; }
+run_apt() {
+  sudo apt-get -yqfm --allow-releaseinfo-change -o Acquire::Languages none
+  -o APT::Get::Fix-Missing true
+  -o APT::Get::Fix-Broken true
+  "$1" "$@"
+}
 if has apt-fast; then
   sudo apt-fast update -yq --allow-releaseinfo-change
   sudo apt-fast upgrade -yfq --no-install-recommends
   sudo apt-fast dist-upgrade -yqf --no-install-recommends
-  sudo apt-fast clean -yq; sudo apt-fast autoclean -yq; sudo apt-fast autopurge -yq
-#elif has nala; then
+  sudo apt-fast clean -yq
+  sudo apt-fast autoclean -yq
+  sudo apt-fast autopurge -yq
+  #elif has nala; then
   sudo nala upgrade --no-install-recommends
-  sudo nala clean; sudo nala autoremove; sudo nala autopurge
-   # nala fetch --auto --fetches 5 -c DE -y --non-free --debian --https-only
+  sudo nala clean
+  sudo nala autoremove
+  sudo nala autopurge
+  # nala fetch --auto --fetches 5 -c DE -y --non-free --debian --https-only
 else
   run_apt update
   run_apt dist-upgrade
   run_apt full-upgrade
-  sudo apt-get clean -yq; sudo apt-get autoclean -yq; sudo apt-get autoremove --purge -yq
+  sudo apt-get clean -yq
+  sudo apt-get autoclean -yq
+  sudo apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them
 sudo dpkg --configure -a >/dev/null

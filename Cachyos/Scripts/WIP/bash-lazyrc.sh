@@ -1,13 +1,14 @@
 # --- autoload dirs ---
-func_dirs="$HOME/.bash/functions.d"   # lazy function scripts
-config_dirs="$HOME/.bash/configs"     # normal config scripts
+func_dirs="$HOME/.bash/functions.d" # lazy function scripts
+config_dirs="$HOME/.bash/configs"   # normal config scripts
 autoload_cache="$HOME/.cache/bash_autoload.list"
 config_cache="$HOME/.cache/bash_config.loaded"
 
 lazyfile() {
-  local src=$1; shift
+  local src=$1
+  shift
   for f; do
-    eval "$f() { unset -f $*; source \"$src\"; $f \"\$@\"; }"
+    eval "$f(){ unset -f $*; source \"$src\"; $f \"\$@\"; }"
   done
 }
 
@@ -31,23 +32,29 @@ autoload_init() {
   local cache_valid=1 config_valid=1
 
   # check function cache
-  [ -f "$autoload_cache" ] || cache_valid=0
-  if [ $cache_valid -eq 1 ]; then
+  [[ -f $autoload_cache ]] || cache_valid=0
+  if [[ $cache_valid -eq 1 ]]; then
     for src in "$func_dirs"/*.sh; do
-      [ "$src" -nt "$autoload_cache" ] && { cache_valid=0; break; }
+      [[ $src -nt $autoload_cache ]] && {
+        cache_valid=0
+        break
+      }
     done
   fi
 
   # check config cache
-  [ -f "$config_cache" ] || config_valid=0
-  if [ $config_valid -eq 1 ]; then
+  [[ -f $config_cache ]] || config_valid=0
+  if [[ $config_valid -eq 1 ]]; then
     for src in "$config_dirs"/*.sh; do
-      [ "$src" -nt "$config_cache" ] && { config_valid=0; break; }
+      [[ $src -nt $config_cache ]] && {
+        config_valid=0
+        break
+      }
     done
   fi
 
   # regenerate function cache
-  if [ $cache_valid -eq 0 ]; then
+  if [[ $cache_valid -eq 0 ]]; then
     : >"$autoload_cache"
     shopt -s nullglob
     for src in "$func_dirs"/*.sh; do
@@ -64,7 +71,7 @@ autoload_init() {
   done <"$autoload_cache"
 
   # regenerate config cache and source configs
-  if [ $config_valid -eq 0 ]; then
+  if [[ $config_valid -eq 0 ]]; then
     : >"$config_cache"
     shopt -s nullglob
     for src in "$config_dirs"/*.sh; do
@@ -76,7 +83,7 @@ autoload_init() {
     # just source cached configs
     shopt -s nullglob
     while read -r src; do
-      [ -f "$src" ] && source "$src"
+      [[ -f $src ]] && source "$src"
     done <"$config_cache"
     shopt -u nullglob
   fi

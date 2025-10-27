@@ -54,7 +54,7 @@ command -v flatpak &>/dev/null && {
 PACKAGE="${PKG:-} ${PKG2:-} ${PKG3:-}"
 # Power plan
 if [[ -r /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]]; then
-  PWPLAN="$(sort -u --parallel=$(nproc) /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)"
+  PWPLAN="$(sort -u --parallel="$(nproc)" /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)"
 elif command -v powerprofilesctl &>/dev/null; then
   PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 fi
@@ -122,14 +122,14 @@ fstype=$(findmnt -rn -o FSTYPE /)
 DISKVAL="${disk_used:-} / ${disk_avail:-} (${disk_col}${disk_pct_num}%${DEF}) - ${fstype:-unknown}"
 #──────────── Print ─────────────
 labelw=14 OUT=''
-append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="${_line}"$'\n'; }
+append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="$_line"$'\n'; }
 
-append "User"       "${userhost}"
+append "User"       "$userhost"
 OUT+="────────────────────────────────────────────"$'\n'
 append "Date"       "${DATE:-}"
 append "OS"         "${OS:-}"
 append "Kernel"     "${KERNEL:-}"
-append "Uptime"     "${UPT}"
+append "Uptime"     "$UPT"
 append "Packages"   "${PACKAGE:-}"
 append "Processes"  "${PROCS:-}"
 append "Shell"      "${SHELLX:-}"

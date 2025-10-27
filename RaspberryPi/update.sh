@@ -53,6 +53,7 @@ export HOME="/home/${SUDO_USER:-$USER}"; sync
 #=============================================================
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
 export APT_NO_COLOR=1 NO_COLOR=1 DPKG_COLORS=never DEBIAN_FRONTEND=noninteractive
+run_apt(){ sudo apt-get -yqfm --allow-releaseinfo-change -o Acquire::Languages none; -o APT::Get::Fix-Missing true; -o APT::Get::Fix-Broken true; "$1" "$@"; }
 if has apt-fast; then
   sudo apt-fast update -yq --allow-releaseinfo-change
   sudo apt-fast upgrade -yfq --no-install-recommends
@@ -63,9 +64,9 @@ if has apt-fast; then
   sudo nala clean; sudo nala autoremove; sudo nala autopurge
    # nala fetch --auto --fetches 5 -c DE -y --non-free --debian --https-only
 else
-  sudo apt-get update -yfmq --allow-releaseinfo-change -o 
-  sudo apt-get dist-upgrade -yqfm
-  sudo apt-get -yq full-upgrade
+  run_apt update
+  run_apt dist-upgrade
+  run_apt full-upgrade
   sudo apt-get clean -yq; sudo apt-get autoclean -yq; sudo apt-get autoremove --purge -yq
 fi
 # Check's the broken packages and fix them

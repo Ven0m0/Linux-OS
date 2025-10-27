@@ -22,7 +22,7 @@ pp_strip_comments(){ sed '/^[[:space:]]*#.*$/d'; }
 pp_strip_copyright(){ awk '/^#/{if(!p)next}{p=1;print}'; }
 pp_strip_separators(){ sed '/^#[[:space:]]*-\{5,\}/d'; }
 
-pp_normalize_redirects(){ [[ $HAS_SD -eq 1 ]] && sd '&>/dev/null' '&>/dev/null' || sed 's|&>/dev/null|>/dev/null 2>\&1|g'; }
+pp_normalize_redirects(){ [[ $HAS_SD -eq 1 ]] && sd '>/dev/null 2>\&1' '&>/dev/null' || sed 's|>/dev/null 2>\&1|&>/dev/null|g'; }
 dofunc(){ [[ $HAS_SD -eq 1 ]] && sd '\(\) \{' '(){' "$1" || sed -i 's/() {/(){/g' "$1"; }
 dotrue(){ [[ $HAS_SD -eq 1 ]] && sd '\|\| true' '|| :' "$1" || sed -i 's/|| true/|| :/g' "$1"; }
 

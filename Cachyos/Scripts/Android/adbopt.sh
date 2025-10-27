@@ -375,13 +375,13 @@ adb shell dumpsys meminfo
 # Open Special Menu
 # adb shell am start -a android.intent.action.VIEW \
 # Open settings:
-adb shell am start -n com.android.settings/com.android.settings.Settings
+#adb shell am start -n com.android.settings/com.android.settings.Settings
 # Start prefered webbrowser:
-adb shell am start -a android.intent.action.VIEW -d <url> (com.android.browser | com.android.chrome | com.sec.android.sbrowser)
+#adb shell am start -a android.intent.action.VIEW -d <url> (com.android.browser | com.android.chrome | com.sec.android.sbrowser)
 # Open any URL in default browser
-adb shell am start -a android.intent.action.VIEW -d <url>
+#adb shell am start -a android.intent.action.VIEW -d <url>
 # Print Activities:
-adb shell am start -a com.android.settings/.wifi.CaptivePortalWebViewActivity
+#adb shell am start -a com.android.settings/.wifi.CaptivePortalWebViewActivity
 
 # Auto rotation off
 adb shell content insert –uri content://settings/system –bind name:s:accelerometer_rotation –bind value:i:0

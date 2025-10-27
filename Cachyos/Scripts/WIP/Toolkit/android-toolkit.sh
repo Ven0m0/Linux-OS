@@ -168,11 +168,11 @@ run_mgr(){
 # Push file to device
 push_file(){
   local src="$1" dst="$2"
-  
   if [[ $DRYRUN -eq 1 ]]; then
     log debug "Would push $src to $dst"
     return 0
-  }
+  fi
+}
   
   if [[ $USE_SHIZUKU -eq 1 ]]; then
     log error "File push not supported with Shizuku yet"

@@ -1,28 +1,17 @@
 name: Shell Lint & Format
-on:
-  pull_request:
-    paths:
-      - '**/*.{sh,bash,zsh,bashrc}'
-      - '**/*bash*.*'
-  push:
-    paths:
-      - '**/*.{sh,bash,zsh,bashrc}'
-      - '**/*bash*.*'
-  workflow_dispatch:
-  
+on: [push, pull_request]
 jobs:
-  fmt:
+  lint:
     runs-on: ubuntu-latest
-    permissions: write-all
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       
       - name: Install tools
         env:
             DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update -yq && sudo apt-get upgrade -yq
-          sudo apt-get install -yq shellcheck shfmt
+          sudo apt-get update -yqq
+          sudo apt-get install -y shellcheck shfmt
           curl -sL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-musl.tar.gz | tar xz
           sudo mv shellharden /usr/local/bin/
       
@@ -32,9 +21,13 @@ jobs:
             find . -name '*.sh' -o -name '*.bash'
             find . -type f -exec grep -l '^#!/.*sh' {} +
           } | sort -u | while IFS= read -r f; do
-            shellharden --replace "$f"
-            shellcheck -f diff "$f" | patch -Np1 || true
-            shfmt -i 2 -s -bn -ln bash -w "$f"
+            sed -i 's/() {/(){/g' "$f"
+            sed -i 's/|| true/|| :/g' "$f"
+            sed -i '/^#[[:space:]]*-\{5,\}/d' "$f"
+            sed -i '/^$/{N;/^\n$/D;}' "$f"
+            shellcheck -f diff "$f" | patch -Np1 || :
+            shellharden --replace "$f" || :
+            shfmt -i 2 -s -bn -ln bash -w "$f" || :
           done
       
       - name: Commit changes
@@ -46,4 +39,3 @@ jobs:
             git commit -m "🔧 Auto-fix shell scripts"
             git push
           }
-  

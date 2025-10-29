@@ -37,6 +37,23 @@ sudo pacman --needed --noconfirm -S zenity --noconfirm --needed
 cargo install --git "https://github.com/fthomys/update-alternatives"
 pbin="$(command -v update-alternatives || echo ${HOME}/.cargo/bin/update-alternatives)"
 sudo ln -sf "$pbin" "/usr/local/bin/$(basename $pbin)"
+sudo cat > /etc/pacman.d/hooks/ <<'EOF'
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Type = Path
+# Re-run when these areas may change
+Target = usr/bin/*
+Target = usr/local/bin/*
+Target = etc/alternatives/*
+
+[Action]
+Description = Rebuilding alternatives symlinks
+When = PostTransaction
+Exec = /usr/local/bin/update-alternatives sync
+EOF
+
 # oxidizr-arch (switch to uutils, sudo-rs)
 paru --skipreview --needed --noconfirm -S oxidizr-arch
 echo -e "run: 

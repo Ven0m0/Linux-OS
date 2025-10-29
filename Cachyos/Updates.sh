@@ -116,6 +116,8 @@ update_extras(){
 
   if has flatpak; then
     xecho "🔄${BLU}Updating Flatpak...${DEF}"
+    run_priv flatpak update -y --noninteractive --appstream
+    flatpak update -yu --noninteractive
     run_priv flatpak update -y --noninteractive --force-remove >/dev/null 2>&1 || :
   fi
 
@@ -143,6 +145,11 @@ update_extras(){
     mise p i -ay
     mise up -y
     mise prune -y
+  fi
+  if has bun; then
+    bun update --latest -gr --quiet --linker=hoisted --concurrent-scripts=8
+  elif has pnpm; then
+    pnpm up -Lg
   fi
   has micro && micro -plugin update >/dev/null 2>&1 || :
   has yazi && ya pkg upgrade >/dev/null 2>&1 || :

@@ -57,7 +57,7 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-export HOME="${HOME:-/home/${SUDO_USER:-$USER}}" SHELL=bash
+export HOME="$/home/${SUDO_USER:-$USER}" SHELL=bash
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
 CFLAGS="-march=native -mtune=native -O3 -pipe" 
 export CFLAGS CXXFLAGS="$CFLAGS"
@@ -123,8 +123,9 @@ update_extras(){
 
   if has rustup; then
     xecho "🔄${BLU}Updating Rust...${DEF}"
+    HOME="$/home/${SUDO_USER:-$USER}"
     rustup update
-    run_priv rustup update
+    sudo -u $USER rustup update
     rustup self upgrade-data
     if has cargo; then
       xecho "🔄${BLU}Updating Cargo packages...${DEF}"
@@ -147,13 +148,14 @@ update_extras(){
     mise prune -y
   fi
   if has bun; then
+    bun i --only-missing
     bun update --latest -gr --quiet --linker=hoisted --concurrent-scripts=8
   elif has pnpm; then
     pnpm up -Lg
   fi
   has micro && micro -plugin update >/dev/null 2>&1 || :
   has yazi && ya pkg upgrade >/dev/null 2>&1 || :
-
+  has tldr && run_priv tldr -cuq || :
   if has fish; then
     xecho "🔄${BLU}Updating Fish...${DEF}"
     fish -c "fish_update_completions" || :
@@ -163,7 +165,6 @@ update_extras(){
       fish -c ". \"$HOME/.config/fish/functions/fisher.fish\"; and fisher update" || :
     fi
   fi
-
   if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null; then
       xecho "✅${GRN}Updated Basher${DEF}"
@@ -171,8 +172,7 @@ update_extras(){
       xecho "⚠️${YLW}Basher pull failed${DEF}"
     fi
   fi
-
-  has tldr && run_priv tldr -cuq || :
+  has update-alternatives && run_priv update-alternatives sync
 }
 
 update_python(){

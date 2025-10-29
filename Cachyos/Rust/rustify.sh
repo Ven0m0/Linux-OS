@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
 cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 sudo -v
@@ -31,3 +32,13 @@ cargo install runiq
 cargo install minhtml
 # Wget
 cargo install kelpsget
+# Update-alternatives for arch
+sudo pacman -S zenity --noconfirm --needed
+cargo install --git "https://github.com/fthomys/update-alternatives"
+pbin="$(command -v update-alternatives || echo ${HOME}/.cargo/bin/update-alternatives)"
+sudo ln -sf "$pbin" "/usr/local/bin/$(basename $pbin)"
+# oxidizr-arch (switch to uutils, sudo-rs)
+paru -S oxidizr-arch
+# dnsmasq / systemdresolved
+curl -sf "https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/etchdns.sh" | bash
+#

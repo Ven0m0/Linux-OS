@@ -59,8 +59,8 @@ paru --skipreview --needed --noconfirm -S oxidizr-arch
 echo -e "run: 
 paru --skipreview --needed --noconfirm -S uutils-coreutils uutils-findutils-bin sudo-rs
 sudo oxidizr-arch --commit use coreutils
-sudo oxidizr-arch --commit use findutils
-sudo oxidizr-arch --commit use sudo"
+sudo oxidizr-arch --commit use sudo
+sudo oxidizr-arch --commit use findutils"
 # dnsmasq / systemdresolved
 curl -sf "https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/etchdns.sh" | bash
 # JQ
@@ -70,3 +70,7 @@ https://github.com/RaphGL/Tuckr
 https://github.com/levinion/stor
 # Nix
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+### Image optimizer
+# Flaca
+paru --skipreview --needed --noconfirm -S flaca-bin || cargo install --git https://github.com/Blobfolio/flaca.git --bin flaca

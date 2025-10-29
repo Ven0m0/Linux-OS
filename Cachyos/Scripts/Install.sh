@@ -106,19 +106,33 @@ if has mise; then msg "Configuring mise"; mise settings set experimental true 2>
   for tool in node@lts python@latest go@latest bun@latest pnpm@latest fnm@latest; do
     mise use -g "$tool" 2>/dev/null || :; done
   mise doctor 2>/dev/null || :; has go && go install github.com/dim-an/cod@latest 2>/dev/null || :
-fi &
+fi
 if [[ ! -d "$HOME/.sdkman" ]]; then msg "Installing sdkman"
   curl -sf "https://get.sdkman.io?ci=true" | bash 2>/dev/null || :; export SDKMAN_DIR="$HOME/.sdkman"
-  [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"; fi
-if [[ -d "$HOME/.sdkman" ]]; then export SDKMAN_DIR="$HOME/.sdkman"
   [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
-  msg "Configuring sdkman"; sdk selfupdate 2>/dev/null || :; sdk update 2>/dev/null || :; fi &
+fi
+if [[ -d "$HOME/.sdkman" ]]; then 
+  export SDKMAN_DIR="$HOME/.sdkman"
+  [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+  msg "Configuring sdkman"
+  sdk selfupdate 2>/dev/null; sdk update 2>/dev/null
+fi
 if ! has soar; then msg "Installing soar"
   curl -fsL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh 2>/dev/null || :
   export PATH="$HOME/.local/share/soar/bin:$PATH"; fi
-if has soar; then msg "Configuring soar"; soar update 2>/dev/null || :; soar_pkgs=(btop-rust fastfetch)
-  for pkg in "${soar_pkgs[@]}"; do soar list 2>/dev/null | grep -q "$pkg" || soar install "$pkg" 2>/dev/null || :; done &
-fi &
+if has soar; then
+  msg "Configuring soar"
+  soar self update || :
+  soar S && soar u --no-verify || :
+  soar_pkgs=()
+  for pkg in "${soar_pkgs[@]}"; do 
+    soar s "$pkg" && soar i -yq "$pkg" || : 
+    soar ls 2>/dev/null | grep -q "$pkg" || soar i -yq "$pkg" || : 
+  done
+  soar i -yq 'sstrip.upx.ss#github.com.pkgforge-dev.super-strip'
+fi
+
+
 fish_setup(){ mkdir -p "$HOME/.config/fish/conf.d" 2>/dev/null || :
   fish -c "fish_update_completions" 2>/dev/null || :
   if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then

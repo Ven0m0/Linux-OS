@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
-#cargo install etchdns -f
-#sudo ln -sf /home/youruser/.cargo/bin/etchdns /usr/local/bin/etchdns
-cargo install etchdns -f --root /usr/local
-sudo chown root:root /usr/local/bin/etchdns
-sudo chmod 755 /usr/local/bin/etchdns
+export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
+cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
+sudo -v
+
+cargo install etchdns -f
+pbin="$(command -v etchdns || echo ${HOME}/.cargo/bin/etchdns)"
+sudo ln -sf "$pbin" "/usr/local/bin/$(basename $pbin)"
+# sudo chown root:root "/usr/local/bin/$(basename $pbin)"
+# sudo chmod 755 "/usr/local/bin/$(basename $pbin)"
 
 # prepare config
-#mkdir -p /etc/etchdns
 sudo touch /etc/etchdns.toml
-
 sudo cat > /etc/etchdns/etchdns.toml <<'EOF'
 listen_addresses = ["0.0.0.0:53"]
 log_level = "warn"

@@ -2,7 +2,8 @@
 export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
 cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 sudo -v
-# Gnu utilks
+
+# Gnu utils
 sudo pacman -S uutils-coreutils
 paru -S uutils-diffutils uutils-findutils uutils-procps-git 
 # Sed

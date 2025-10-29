@@ -37,7 +37,7 @@ sudo pacman --needed --noconfirm -S zenity --noconfirm --needed
 cargo install --git "https://github.com/fthomys/update-alternatives"
 pbin="$(command -v update-alternatives || echo ${HOME}/.cargo/bin/update-alternatives)"
 sudo ln -sf "$pbin" "/usr/local/bin/$(basename $pbin)"
-sudo cat > /etc/pacman.d/hooks/ <<'EOF'
+sudo cat > "/etc/pacman.d/hooks/update-alternatives.hook" <<'EOF'
 [Trigger]
 Operation = Install
 Operation = Upgrade

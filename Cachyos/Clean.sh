@@ -111,7 +111,11 @@ main() {
     cargo cache -efg trim --limit 1B &>/dev/null || :
     cargo cache -efg clean-unref &>/dev/null || :
   fi
-
+  has bun && bun pm cache rm
+  if has pnpm; then
+    pnpm prune
+    pnpm store prune
+  fi
   xecho "🔄${BLU}Killing CPU-intensive processes...${DEF}"
   while read -r pid; do
     [[ -n $pid ]] && run_priv kill -9 "$pid" &>/dev/null || :

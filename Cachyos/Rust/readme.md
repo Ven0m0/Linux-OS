@@ -45,6 +45,13 @@ export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=sy
 -Clink-arg=-fuse-ld=mold
 ```
 
+**Full std build**
+```bash
+export RUSTC_BOOTSTRAP=1 CARGO_INCREMENTAL=0 OPT_LEVEL=3 CARGO_PROFILE_RELEASE_LTO=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_WRAPPER=sccache
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Clinker-plugin-lto -Clink-arg=-fuse-ld=mold -Cllvm-args=-enable-dfa-jump-thread -Cpanic=immediate-abort -Zunstable-options -Ztune-cpu=native -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none -Zprecise-enum-drop-elaboration=yes -Zdefault-visibility=hidden"
+cargo +nightly -Zunstable-options -Zavoid-dev-deps -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort install -f 
+```
+
 ```bash
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
   -fno-semantic-interposition -fdata-sections -ffunction-sections -ftree-vectorize \

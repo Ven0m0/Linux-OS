@@ -258,6 +258,32 @@ main() {
   clean_firefox ~/.mozilla/firefox ~/.cache
   clean_firefox ~/snap/firefox/common/.mozilla/firefox ~/snap/firefox/common/.cache
 
+  # Firefox cleanup
+  clean_paths "${HOME}/.mozilla/firefox/"*/bookmarkbackups \
+    "${HOME}/.mozilla/firefox/"*/saved-telemetry-pings \
+    "${HOME}/.mozilla/firefox/"*/sessionstore-logs \
+    "${HOME}/.mozilla/firefox/"*/sessionstore-backups \
+    "${HOME}/.cache/mozilla/"* \
+    "${HOME}/.var/app/org.mozilla.firefox/cache/"* \
+    "${HOME}/snap/firefox/common/.cache/"*
+  if has python3; then
+    python3 <<'EOF'
+import glob, os
+for pattern in ['~/.mozilla/firefox/*/crashes/*', '~/.mozilla/firefox/*/crashes/events/*']:
+  for path in glob.glob(os.path.expanduser(pattern)):
+    if os.path.isfile(path):
+      try:
+        os.remove(path)
+      except Exception:
+        pass
+EOF
+  fi
+  clean_db() {
+    sqlite3 "$1" "VACUUM;" && sqlite3 "$1" "REINDEX;"
+    sqlite3 "$1" "PRAGMA optimize"
+    find -O2 "$1" -maxdepth 1 -type f -not -name '*.sqlite-wal' -print0 | xargs -0 file -e ascii | sed -n -e "s/:.*SQLite.*//p"
+  }
+
   clean_electron_container() {
     if [[ -d ~/.config/$1 ]]; then
       cd ~/.config
@@ -294,48 +320,20 @@ main() {
   clean_electron_container "Code - Insiders"
   clean_electron_container "Code - OSS"
   clean_electron_container "Code"
-
+  clean_electron_container "VSCodium"
+  clean_electron_container "Void"
   # Handbrake
   clean_directory ~/.config/ghb/EncodeLogs
   # NVIDIA
   rm -rf ~/.config/ghb/Activity.log.* &>/dev/null
   [[ -d ~/.nv ]] && sudo rm -rf ~/.nv
-
   # GNU parallel
   [[ -d ~/.parallel ]] && rm -rf ~/.parallel
-
   # WGET hosts file
   [[ -f ~/.wget-hsts ]] && rm -f ~/.wget-hsts
-
+  # Ccache
   command -v ccache &>/dev/null && ccache -C
 
-  # Firefox cleanup
-  clean_paths "${HOME}/.mozilla/firefox/"*/bookmarkbackups \
-    "${HOME}/.mozilla/firefox/"*/saved-telemetry-pings \
-    "${HOME}/.mozilla/firefox/"*/sessionstore-logs \
-    "${HOME}/.mozilla/firefox/"*/sessionstore-backups \
-    "${HOME}/.cache/mozilla/"* \
-    "${HOME}/.var/app/org.mozilla.firefox/cache/"* \
-    "${HOME}/snap/firefox/common/.cache/"*
-  if has python3; then
-    python3 <<'EOF'
-import glob, os
-for pattern in ['~/.mozilla/firefox/*/crashes/*', '~/.mozilla/firefox/*/crashes/events/*']:
-  for path in glob.glob(os.path.expanduser(pattern)):
-    if os.path.isfile(path):
-      try:
-        os.remove(path)
-      except Exception:
-        pass
-EOF
-  fi
-
-  clean_db() {
-    sqlite3 "$1" vacuum
-    sqlite3 "$1" reindex
-    sqlite3 "$1" "PRAGMA optimize"
-  }
-  find -L "$@" -maxdepth 2 -type f -not -name '*.sqlite-wal' -print0 2>/dev/null | xargs -0 file -e ascii | sed -n -e "s/:.*SQLite.*//p"
   # Wine
   clean_paths "${HOME}/.wine/drive_c/windows/temp/"* \
     "${HOME}/.cache/wine/"* \

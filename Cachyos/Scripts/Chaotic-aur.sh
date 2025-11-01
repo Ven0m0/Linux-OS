@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-LC_ALL=C.UTF-8
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' HOME="/home/${SUDO_USER:-$USER}"
+export LC_ALL=C LANG=C
+cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 sudo -v
 
 declare -r CONF=/etc/pacman.conf

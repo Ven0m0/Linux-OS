@@ -40,6 +40,7 @@ Include = /etc/pacman.d/alhp-mirrorlist
 Include = /etc/pacman.d/mirrorlist
 EOF
 
+# endeavouros
 read -r -d '' ENDEAVOUR_BLOCK <<'EOF'
 [endeavouros]
 SigLevel = Optional TrustAll

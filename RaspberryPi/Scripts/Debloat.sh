@@ -2,7 +2,6 @@
 export HOME="/home/${SUDO_USER:-$USER}" LC_ALL=C LANG=C
 sudo -v
 
-
 sudo apt-get purge -y libreoffice*
 echo "Tweaks from https://privacy.sexy"
 sudo apt-get purge -y reportbug python3-reportbug reportbug-gtk apport whoopsie popularity-contest

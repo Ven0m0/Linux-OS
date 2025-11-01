@@ -39,30 +39,34 @@ Include = /etc/pacman.d/alhp-mirrorlist
 [multilib]
 Include = /etc/pacman.d/mirrorlist
 EOF
+
+read -r -d '' ENDEAVOUR_BLOCK <<'EOF'
+[endeavouros]
+SigLevel = Optional TrustAll
+Include = /etc/pacman.d/endeavouros-mirrorlist"
+EOF
+
 PARU_PKGS=(alhp-keyring alhp-mirrorlist)
 PACMAN_OPTS=(--noconfirm --needed)
 PARU_OPTS=(--noconfirm --skipreview --needed)
 
-has() { command -v "$1" &>/dev/null; }
-has_header() {
-  local hdr="$1"
-  grep -qF -- "$hdr" "$CONF"
-}
+has(){ command -v "$1" &>/dev/null; }
+has_header(){ local hdr="$1"; grep -qF -- "$hdr" "$CONF"; }
 # append block variable (name) if header missing. uses nameref.
-ensure_block() {
+ensure_block(){
   local hdr="$1" blk_name="$2"
   has_header "$hdr" && return 0
   local -n blk="$blk_name"
   printf '%s\n' "$blk" | sudo tee -a "$CONF" >/dev/null
 }
-recv_and_lsign() {
+recv_and_lsign(){
   sudo pacman-key --keyserver keyserver.ubuntu.com -r "$CHAOTIC_KEY" &>/dev/null || :
   yes | sudo pacman-key --lsign-key "$CHAOTIC_KEY" &>/dev/null || :
 }
-install_urls() {
+install_urls(){
   sudo pacman "${PACMAN_OPTS[@]}" -U "${CHAOTIC_URLS[@]}" &>/dev/null || :
 }
-install_alhp_via_paru() {
+install_alhp_via_paru(){
   if has paru; then
     paru "${PARU_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null || :
   else
@@ -70,11 +74,30 @@ install_alhp_via_paru() {
     sudo pacman "${PACMAN_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null || :
   fi
 }
+install_eos_repos(){
+  local repo url tmpd
+  repo=https://github.com/endeavouros-team/PKGBUILDS.git
+  tmpd=$(mktemp -d) || return 1
+  if has gix; then
+    gix clone --depth=1 --no-tags "$repo" "$tmpd" &>/dev/null || return 1
+  else
+    git clone --depth=1 --filter=blob:none --no-tags "$repo" "$tmpd" &>/dev/null || return 1
+  fi
+  for dir in endeavouros-keyring endeavouros-mirrorlist; do
+    cd "$tmpd/$dir" || return 1
+    makepkg -sircC --skippgpcheck --skipchecksums --skipinteg --nocheck --noconfirm --needed &>/dev/null || return 1
+  done
+  # Add repo to pacman.conf if not present
+  has_header '[endeavouros]' || ensure_block '[endeavouros]' ENDEAVOUR_BLOCK
+  rm -rf "$tmpd"
+  echo "Installed endeavouros‑keyring & mirrorlist and added repo entry"
+}
 # Check all repositories at once
 missing_repos=()
 has_header '[chaotic-aur]' || missing_repos+=(chaotic)
 has_header '[artafinde]' || missing_repos+=(artafinde)
 has_header '[core-x86-64-v3]' || missing_repos+=(alhp)
+has_header '[endeavouros]' || missing_repos+=(endeavouros)
 
 # Process missing repos
 for repo in "${missing_repos[@]}"; do
@@ -89,11 +112,12 @@ for repo in "${missing_repos[@]}"; do
     install_alhp_via_paru
     ensure_block '[core-x86-64-v3]' ALHP_BLOCK
     ;;
+  endeavouros) install_eos_repos ;;
   esac
 done
 
 # Update if any repos were added
 ((${#missing_repos[@]})) && {
-  sudo pacman -Syyuq "${PACMAN_OPTS[@]}" &>/dev/null || :
+  sudo pacman -Syy "${PACMAN_OPTS[@]}" &>/dev/null || :
   echo 'repos added'
 } || echo 'no changes'

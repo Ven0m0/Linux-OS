@@ -102,7 +102,7 @@ rate-keys(){
 main(){
   local arch_url="${ARCH_MIRRORS_URL:-${1:-$DEFAULT_ARCH_URL}}"
   rank_arch_from_url "$arch_url" "$MIRRORS_DIR/mirrorlist"
-
+  rate-keys
   has cachyos-rate-mirrors && sudo cachyos-rate-mirrors
   
   info "Searching for other mirrorlists in %s..." "$MIRRORS_DIR"

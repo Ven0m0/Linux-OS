@@ -24,13 +24,13 @@ rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86
 <summary><b>Flags:</b></summary>
 
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Zdylib-lto -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Zprecise-enum-drop-elaboration=yes -Zno-embed-metadata -Clink-arg=-fuse-ld=lld -Clink-arg=-flto -Cllvm-args=-enable-dfa-jump-thread"
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Zdylib-lto -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Zprecise-enum-drop-elaboration=yes -Zno-embed-metadata -Clink-arg=-fuse-ld=mold -Clink-arg=-flto -Cllvm-args=-enable-dfa-jump-thread"
 ```
 
 Safe RUSTFLAGS:
 
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Clinker-plugin-lto -Clink-arg=-fuse-ld=lld -Cpanic=abort -Zunstable-options -Ztune-cpu=native -Cllvm-args=-enable-dfa-jump-thread -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none" OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Clinker-plugin-lto -Clink-arg=-fuse-ld=mold -Cpanic=abort -Zunstable-options -Ztune-cpu=native -Cllvm-args=-enable-dfa-jump-thread -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none" OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly
 ```
 ```bash
 LC_ALL=C cargo +nightly -Zgit -Zgitoxide -Zno-embed-metadata -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort install 

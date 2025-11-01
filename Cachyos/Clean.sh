@@ -100,20 +100,15 @@ main() {
   run_priv paccache -rk0 -q &>/dev/null || :
 
   if has uv; then
-    xecho "🔄${BLU}Cleaning UV cache...${DEF}"
-    uv cache prune -q &>/dev/null || :
-    uv cache clean -q &>/dev/null || :
+    uv clean -q
   fi
   if has cargo-cache; then
     xecho "🔄${BLU}Cleaning Cargo cache...${DEF}"
-    cargo cache -efg &>/dev/null || :
-    cargo cache -efg trim --limit 1B &>/dev/null || :
-    cargo cache -efg clean-unref &>/dev/null || :
+    cargo cache -efg &>/dev/null; cargo cache -ef trim --limit 1B &>/dev/null
   fi
   has bun && bun pm cache rm
   if has pnpm; then
-    pnpm prune
-    pnpm store prune
+    pnpm prune; pnpm store prune
   fi
   xecho "🔄${BLU}Killing CPU-intensive processes...${DEF}"
   while read -r pid; do
@@ -161,7 +156,8 @@ main() {
 
   # System logs
   run_priv rm -f --preserve-root -- "/var/log/pacman.log" &>/dev/null || :
-  run_priv journalctl --rotate --vacuum-size=1 --flush --sync -q &>/dev/null || :
+  run_priv journalctl --flush --sync -q
+  run_priv journalctl --rotate --vacuum-size=1 -q
   run_priv rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* &>/dev/null || :
   run_priv rm -rf --preserve-root -- /root/.local/share/zeitgeist/* /home/*/.local/share/zeitgeist/* &>/dev/null || :
 

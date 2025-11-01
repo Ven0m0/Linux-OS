@@ -103,6 +103,8 @@ main(){
   local arch_url="${ARCH_MIRRORS_URL:-${1:-$DEFAULT_ARCH_URL}}"
   rank_arch_from_url "$arch_url" "$MIRRORS_DIR/mirrorlist"
 
+  has cachyos-rate-mirrors && sudo cachyos-rate-mirrors
+  
   info "Searching for other mirrorlists in %s..." "$MIRRORS_DIR"
   local f repo
   # Use a simple glob, as it's cleaner and sufficient for this directory
@@ -113,8 +115,9 @@ main(){
     [[ -z $repo || $repo == "$(basename "$f")" ]] && continue # Skip if suffix wasn't removed
     rate_repository_mirrors "$repo" "$f"
   done
-
-  chmod 644 "$MIRRORS_DIR"/*mirrorlist* 2>/dev/null || :
+  sudo chmod go+r "$MIRRORS_DIR"/*mirrorlist* 2>/dev/null || :
+  sudo chmod 644 "$MIRRORS_DIR"/*mirrorlist* 2>/dev/null || :
+  sudo pacman -Syq --noconfirm --needed || :
   msg "Script finished successfully."
 }
 

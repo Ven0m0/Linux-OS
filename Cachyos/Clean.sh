@@ -1,37 +1,18 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar extglob
-IFS=$'\n\t' LC_ALL=C LANG=C LANGUAGE=C SHELL=bash
+set -euo pipefail; shopt -s nullglob globstar extglob
+IFS=$'\n\t' SHELL=bash; export LC_ALL=C LANG=C LANGUAGE=C
 #============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-has() { command -v "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
+has(){ command -v "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
 
-#============ Privilege Helper ==========
-get_priv_cmd() {
-  local cmd
-  for cmd in sudo-rs sudo doas; do
-    if has "$cmd"; then
-      printf '%s' "$cmd"
-      return 0
-    fi
-  done
-  [[ $EUID -eq 0 ]] && printf '' || {
-    xecho "${RED}No privilege tool found${DEF}" >&2
-    exit 1
-  }
-}
-PRIV_CMD=$(get_priv_cmd)
-[[ -n $PRIV_CMD && $EUID -ne 0 ]] && "$PRIV_CMD" -v
-run_priv() { [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@"; }
-
-print_banner() {
-  local banner flag_colors
-  banner=$(
+#============ Banner ==========
+print_banner(){
+  local banner flag_colors; banner=$(
     cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ 
@@ -45,9 +26,7 @@ EOF
   flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
-    for line in "${lines[@]}"; do
-      printf '%s%s%s\n' "${flag_colors[0]}" "$line" "$DEF"
-    done
+    for line in "${lines[@]}"; do printf '%s%s%s\n' "${flag_colors[0]}" "$line" "$DEF"; done
   else
     for i in "${!lines[@]}"; do
       local segment_index=$((i * (segments - 1) / (line_count - 1)))
@@ -56,124 +35,187 @@ EOF
     done
   fi
 }
-
-cleanup() { :; }
+cleanup(){ :; }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-capture_disk_usage() {
-  local var_name=$1
-  local -n ref="$var_name"
+capture_disk_usage(){
+  local -n ref="$1"
   ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
 }
 
-main() {
+ensure_not_running(){
+  local process_name=$1 timeout=6
+  if pgrep -x -u "$USER" "$process_name" &>/dev/null; then
+    xecho "  ${YLW}Waiting for ${process_name} to exit...${DEF}"
+    while ((timeout-- > 0)) && pgrep -x -u "$USER" "$process_name" &>/dev/null; do
+      sleep 1
+    done
+    if pgrep -x -u "$USER" "$process_name" &>/dev/null; then
+      xecho "  ${RED}Killing ${process_name}...${DEF}"
+      pkill -KILL -x -u "$USER" "$process_name" &>/dev/null || :
+      sleep 1
+    fi
+  fi
+}
+
+clean_sqlite_dbs(){
+  local db diff s_old s_new total_saved=0
+  while read -r db; do
+    s_old=$(stat -c%s "$db" 2>/dev/null) || continue
+    sqlite3 "$db" "VACUUM; REINDEX;" &>/dev/null || continue
+    s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
+    diff=$((s_old - s_new)); total_saved=$((total_saved + diff))
+  done < <(find . -maxdepth 1 -type f -print0 | xargs -0 file -e ascii | sed -n 's/:.*SQLite.*//p')
+  if ((total_saved > 0)); then
+    xecho "${GRN}Vacuumed SQLite DBs, saved $((total_saved / 1024)) KB${DEF}"
+  fi
+}
+clean_browsers(){
+  xecho "🔄${BLU}Cleaning browser data...${DEF}"
+  # Firefox, Icecat, Seamonkey
+  local ff_base="${HOME}/.mozilla"
+  local browser
+  for browser in firefox icecat seamonkey; do
+    ensure_not_running "$browser"
+    local profiles_ini="${ff_base}/${browser}/profiles.ini"
+    if [[ -f "$profiles_ini" ]]; then
+      xecho "  ${CYN}Cleaning ${browser} profiles...${DEF}"
+      while read -r path; do
+        local profile_dir="${ff_base}/${browser}/${path}"
+        if [[ -d "$profile_dir" ]]; then
+          (cd "$profile_dir" && clean_sqlite_dbs)
+          rm -rf -- "${profile_dir}/"{bookmarkbackups,crashes,datareporting,minidumps,saved-telemetry-pings,sessionstore-*} &>/dev/null
+        fi
+      done < <(grep '^Path=' "$profiles_ini" | cut -d= -f2)
+    fi
+  done
+  rm -rf -- "${HOME}/.cache/mozilla/"* &>/dev/null
+  # Chromium, Chrome, etc.
+  local chrome_base="${HOME}/.config"
+  local chrome_browsers=(chromium chromium-beta chromium-dev
+    google-chrome google-chrome-beta google-chrome-unstable
+    brave-browser brave-browser-beta brave-browser-nightly)
+  for browser in "${chrome_browsers[@]}"; do
+    ensure_not_running "$browser"
+    local browser_config_dir="${chrome_base}/${browser}"
+    if [[ -d "$browser_config_dir" ]]; then
+      xecho "  ${CYN}Cleaning ${browser} profiles...${DEF}"
+      local profile_path
+      for profile_path in "${browser_config_dir}/Default" "${browser_config_dir}/Profile"*; do
+        if [[ -d "$profile_path" ]]; then
+          (cd "$profile_path" && clean_sqlite_dbs)
+          rm -rf -- "${profile_path}/"{'Application Cache',Cache,'Code Cache',GPUCache,'Service Worker'} &>/dev/null
+        fi
+      done
+    fi
+  done
+}
+
+main(){
   print_banner
-  [[ $EUID -ne 0 ]] && run_priv true
+  [[ ! $EUID == 0 ]] && { sudo -v || sudo true }
   export HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
   space_before=$(run_priv du -sh / 2>/dev/null | cut -f1)
-
-  sync
   xecho "🔄${BLU}Dropping cache...${DEF}"
-  echo 3 | run_priv tee /proc/sys/vm/drop_caches &>/dev/null
+  sync; echo 3 | run_priv tee /proc/sys/vm/drop_caches &>/dev/null
   if has modprobed-db; then
-    xecho "🔄${BLU}Storing kernel modules...${DEF}"
-    run_priv modprobed-db store
+    modprobed-db store &>/dev/null
     for db in "${HOME}/.config/modprobed.db" "${HOME}/.local/share/modprobed.db"; do
       [[ -f $db ]] && sort -u "$db" -o "$db" &>/dev/null || :
     done
   fi
   xecho "🔄${BLU}Flushing network caches...${DEF}"
-  has dhclient && dhclient -r &>/dev/null || :
-  run_priv resolvectl flush-caches &>/dev/null || :
+  sudo resolvectl flush-caches &>/dev/null; sudo dhclient -r &>/dev/null 
   xecho "🔄${BLU}Removing orphaned packages...${DEF}"
   mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || :)
-  if [[ ${#orphans[@]} -gt 0 ]]; then
-    run_priv pacman -Rns "${orphans[@]}" --noconfirm &>/dev/null || :
-  fi
-  find /etc/pacman.d -maxdepth 1 -type f \( -name '*.bak' \) -print0 | xargs -0 sudo rm -- &>/dev/null
-  xecho "🔄${BLU}Cleaning package cache...${DEF}"
-  run_priv pacman -Scc --noconfirm &>/dev/null || :
-  run_priv paccache -rk0 -q &>/dev/null || :
+  [[ ${#orphans[@]} -gt 0 ]] && sudo pacman --noconfirm -Rns "${orphans[@]}" &>/dev/null || :
 
-  if has uv; then
-    uv clean -q
-  fi
+  find -O2 /etc/pacman.d -maxdepth 1 -type f \( -iname '*.bak' \) -print0 | xargs -0 sudo rm -- &>/dev/null
+  find -O2 /etc/pacman.d -maxdepth 1 -type f \( -name '*.pacnew' \) -print0 | xargs -0 sudo rm -- &>/dev/null
+  find -O2 /etc/pacman.d -maxdepth 1 -type f \( -name '*-backup' \) -print0 | xargs -0 sudo rm -- &>/dev/null
+  xecho "🔄${BLU}Cleaning package cache...${DEF}"
+  paru -Sccq --noconfirm &>/dev/null || :
+  sudo paccache -rk0 -q || :
+
   if has cargo-cache; then
     xecho "🔄${BLU}Cleaning Cargo cache...${DEF}"
     cargo cache -efg &>/dev/null; cargo cache -ef trim --limit 1B &>/dev/null
   fi
+  
+  has uv && uv clean -q
   has bun && bun pm cache rm
-  if has pnpm; then
-    pnpm prune; pnpm store prune
-  fi
+  has pnpm && { pnpm prune; pnpm store prune; }
+  has sdk && sdk flush tmp &>/dev/null
+
   xecho "🔄${BLU}Killing CPU-intensive processes...${DEF}"
   while read -r pid; do
-    [[ -n $pid ]] && run_priv kill -9 "$pid" &>/dev/null || :
+    [[ -n $pid ]] && sudo kill -9 "$pid" &>/dev/null || :
   done < <(ps aux --sort=-%cpu 2>/dev/null | awk '{if($3>50.0) print $2}' | tail -n +2)
 
   xecho "🔄${BLU}Resetting swap space...${DEF}"
-  run_priv swapoff -a &>/dev/null && run_priv swapon -a &>/dev/null
+  sudo swapoff -a &>/dev/null && sudo swapon -a &>/dev/null
 
   xecho "🔄${BLU}Cleaning logs and crash dumps...${DEF}"
-  run_priv find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
-  run_priv find /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
-  run_priv find /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
+  sudo find -O2 /var/log/ -iname "*.log" -type f -mtime +7 -delete &>/dev/null || :
+  sudo find -O2 /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
+  sudo find -O2 /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
 
   xecho "🔄${BLU}Cleaning user cache...${DEF}"
-  find "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null || :
-  find "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
-  run_priv systemd-tmpfiles --clean &>/dev/null || :
+  find -O2 "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null || :
+  find -O2 "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
+  sudo systemd-tmpfiles --clean &>/dev/null || :
 
   for dir in /var/cache/ /tmp/ /var/tmp/ /var/crash/ /var/lib/systemd/coredump/ "${HOME}/.cache/" /root/.cache/; do
-    run_priv rm -rf --preserve-root -- "$dir"* &>/dev/null || :
+    sudo rm -rf --preserve-root -- "$dir"* &>/dev/null || :
   done
 
-  safe_remove() { [[ -e $1 ]] && rm -rf --preserve-root -- "$1" &>/dev/null || :; }
-  clean_paths() { for path in "$@"; do [[ -e $path ]] && safe_remove "$path"; done; }
-
-  # Flatpak cache
-  safe_remove "${HOME}/.var/app/"*/cache/*
-  safe_remove "${HOME}/.config/Trolltech.conf"
-  has kbuildsycoca6 && kbuildsycoca6 --noincremental &>/dev/null || :
+  safe_remove(){ [[ -e $1 ]] && rm -rf --preserve-root -- "$1" &>/dev/null || :; }
+  clean_paths(){ for path in "$@"; do [[ -e $path ]] && safe_remove "$path"; done; }
 
   # Trash
   safe_remove "${HOME}/.local/share/Trash/"*
-  run_priv rm -rf --preserve-root -- "/root/.local/share/Trash/"* &>/dev/null || :
+  sudo rm -rf --preserve-root -- "/root/.local/share/Trash/"* &>/dev/null || :
+
+  local safe_remove_paths=(
+    "${HOME}/.local/share/Trash/"*
+    "${HOME}/.local/share/flatpak/system-cache/"*
+    "/var/tmp/flatpak-cache-"*
+    "${HOME}/.thumbnails/"*
+    "${HOME}/.var/app/"*/cache/*
+    "${HOME}/.var/app/"*/data/Trash/*
+    "${HOME}/.config/Trolltech.conf"
+    "${HOME}/.local/share/Steam/appcache/"*
+    "${HOME}/.nv/ComputeCache/"*
+  )
+  for path in "${safe_remove_paths[@]}"; do rm -rf --preserve-root -- "$path" &>/dev/null; done
 
   # Flatpak system caches
-  if has flatpak; then
-    flatpak uninstall --unused --delete-data -y --noninteractive &>/dev/null || :
-    run_priv rm -rf --preserve-root -- /var/tmp/flatpak-cache-* &>/dev/null || :
-    safe_remove "${HOME}/.cache/flatpak/system-cache/"*
-    safe_remove "${HOME}/.local/share/flatpak/system-cache/"*
-    safe_remove "${HOME}/.var/app/"*/data/Trash/*
-  fi
-  safe_remove "${HOME}/.thumbnails/"*
-
+  has flatpak && flatpak uninstall --unused --delete-data -y --noninteractive &>/dev/null || :
+  has kbuildsycoca6 && kbuildsycoca6 --noincremental &>/dev/null || :
   # System logs
-  run_priv rm -f --preserve-root -- "/var/log/pacman.log" &>/dev/null || :
-  run_priv journalctl --flush --sync -q
-  run_priv journalctl --rotate --vacuum-size=1 -q
-  run_priv rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* &>/dev/null || :
-  run_priv rm -rf --preserve-root -- /root/.local/share/zeitgeist/* /home/*/.local/share/zeitgeist/* &>/dev/null || :
+  sudo rm -f --preserve-root -- "/var/log/pacman.log" &>/dev/null || :
+  sudo journalctl --flush --sync -q; sudo journalctl --rotate --vacuum-size=1 -q
+  sudo rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* &>/dev/null || :
+  sudo rm -rf --preserve-root -- /root/.local/share/zeitgeist/* /home/*/.local/share/zeitgeist/* &>/dev/null || :
 
-  # History
-  for file in \
-    "${HOME}/.wget-hsts" "${HOME}/.curl-hsts" "${HOME}/.lesshst" "${HOME}/nohup.out" "${HOME}/token" \
-    "${HOME}/.local/share/fish/fish_history" "${HOME}/.config/fish/fish_history" \
-    "${HOME}/.zsh_history" "${HOME}/.bash_history" "${HOME}/.history"; do
-    safe_remove "$file"
+  xecho "🔄${BLU}Cleaning shell history files...${DEF}"
+  local history_files=(
+    .bash_history .zsh_history .history
+    .local/share/fish/fish_history .config/fish/fish_history
+    .wget-hsts .lesshst
+  )
+  for file in "${history_files[@]}"; do
+    rm -f -- "${HOME}/${file}" &>/dev/null
+    run_priv rm -f -- "/root/${file}" &>/dev/null
   done
-  for file in \
-    "/root/.local/share/fish/fish_history" "/root/.config/fish/fish_history" \
-    "/root/.zsh_history" "/root/.bash_history" "/root/.history"; do
-    run_priv rm -f --preserve-root -- "$file" &>/dev/null || :
-  done
+  touch "${HOME}/.python_history" && run_priv chattr +i "${HOME}/.python_history" &>/dev/null
 
+  clean_browsers "$HOME"
+  
   # LibreOffice
   clean_paths "${HOME}/.config/libreoffice/4/user/registrymodifications.xcu" \
     "${HOME}/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu" \
@@ -186,15 +228,12 @@ main() {
     "${HOME}/.var/app/com.valvesoftware.Steam/cache/"* \
     "${HOME}/.var/app/com.valvesoftware.Steam/data/Steam/appcache/"*
 
-  # NVIDIA
-  run_priv rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null || :
-
   # Python history
   local python_history="${HOME}/.python_history"
   [[ ! -f $python_history ]] && touch "$python_history" || :
-  run_priv chattr +i "$(realpath "$python_history")" &>/dev/null || :
+  sudo chattr +i "$(realpath "$python_history")" &>/dev/null || :
 
-  clean_firefox() {
+  clean_firefox(){
     if [[ -d $1 ]]; then
       echo "Cleaning Firefox profile $1"
       cd "$1"
@@ -233,7 +272,7 @@ main() {
       cd ..
     fi
   }
-  clean_firefox() {
+  clean_firefox(){
     # 1 argument - path to profile | 2 argument - path to cache directory
     if [[ -d $1 ]]; then
       cd "$1"
@@ -274,13 +313,13 @@ for pattern in ['~/.mozilla/firefox/*/crashes/*', '~/.mozilla/firefox/*/crashes/
         pass
 EOF
   fi
-  clean_db() {
+  clean_db(){
     sqlite3 "$1" "VACUUM;" && sqlite3 "$1" "REINDEX;"
     sqlite3 "$1" "PRAGMA optimize"
     find -O2 "$1" -maxdepth 1 -type f -not -name '*.sqlite-wal' -print0 | xargs -0 file -e ascii | sed -n -e "s/:.*SQLite.*//p"
   }
 
-  clean_electron_container() {
+  clean_electron_container(){
     if [[ -d ~/.config/$1 ]]; then
       cd ~/.config
       cd "${1}"
@@ -347,35 +386,31 @@ EOF
     "${HOME}/.kde4/share/apps/RecentDocuments/"*.desktop \
     "${HOME}/.var/app/"*/data/*.desktop
 
-  run_priv fstrim -a --quiet-unsupported &>/dev/null || :
-  run_priv fc-cache -f &>/dev/null || :
-
-  has sdk && sdk flush tmp &>/dev/null || :
+  sudo fstrim -a --quiet-unsupported; sudo fstrim -A --quiet-unsupported
+  sudo fc-cache -r &>/dev/null || :
 
   if has bleachbit; then
     xecho "🔄${BLU}Running BleachBit...${DEF}"
-    bleachbit -c --preset &>/dev/null || :
+    [[ -f ${HOME}/.config/bleachbit/bleachbit.ini ]] && bleachbit -c --preset &>/dev/null || bleachbit -c --all-but-warning &>/dev/null || :
     if has xhost; then
-      xhost si:localuser:root &>/dev/null || :
-      xhost si:localuser:"$USER" &>/dev/null || :
-      run_priv bleachbit -c --preset &>/dev/null || :
+      xhost si:localuser:root &>/dev/null; xhost si:localuser:"$USER" &>/dev/null
+      [[ -f ${HOME}/.config/bleachbit/bleachbit.ini ]] && sudo bleachbit -c --preset &>/dev/null || sudo bleachbit -c --all-but-warning &>/dev/null
     elif has pkexec; then
-      pkexec bleachbit -c --preset &>/dev/null || :
+      [[ -f ${HOME}/.config/bleachbit/bleachbit.ini ]] && pkexec bleachbit -c --preset &>/dev/null || pkexec bleachbit -c --all-but-warning &>/dev/null
     else
       xecho "⚠️${YLW}Cannot run BleachBit with elevated privileges${DEF}"
     fi
   fi
-
   capture_disk_usage disk_after
-  space_after=$(run_priv du -sh / 2>/dev/null | cut -f1)
+  space_after=$(run_priv du -sh / | cut -f1)
 
-  xecho "${GRN}System cleaned!${DEF}"
-  xecho "==> ${BLU}Disk usage before cleanup:${DEF} ${disk_before}"
-  xecho "==> ${GRN}Disk usage after cleanup: ${DEF} ${disk_after}"
   xecho
-  xecho "${BLU}Space before/after:${DEF}"
+  xecho "${GRN}System cleaned!${DEF}"
+  xecho "==> ${BLU}Disk usage before:${DEF} ${disk_before}"
+  xecho "==> ${GRN}Disk usage after: ${DEF} ${disk_after}"
+  xecho
+  xecho "${BLU}Total space before/after:${DEF}"
   xecho "${YLW}Before:${DEF} ${space_before}"
   xecho "${GRN}After: ${DEF} ${space_after}"
 }
-
 main "$@"

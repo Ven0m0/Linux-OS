@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 shopt -s nullglob globstar extglob
-set -CE
 IFS=$'\n\t' LC_ALL=C LANG=C LANGUAGE=C SHELL=bash
 #============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'

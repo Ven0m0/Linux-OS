@@ -16,9 +16,11 @@
 
 * [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
 
-* [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance/)
+* [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)
 
 * [Ascii flag color codes](https://www.flagcolorcodes.com)
+
+* [Bash prompt generator](https://bash-prompt-generator.org) &nbsp;&nbsp; [Ezprompt generator](https://ezprompt.net)
 
 </details>
 

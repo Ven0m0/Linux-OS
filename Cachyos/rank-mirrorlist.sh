@@ -94,6 +94,7 @@ rank_arch_from_url(){
 }
 rate-keys(){
   has keyserver-rank || return 1
+  sudo pacman-db-upgrade
   keyserver-rank --yes
 }
 

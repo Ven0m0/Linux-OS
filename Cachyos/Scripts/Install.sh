@@ -125,10 +125,8 @@ has cargo && {
   cargo install cargo-binstall -q 2>/dev/null || :
   
   # gitoxide with max optimizations
-  LC_ALL=C cargo +nightly -Zgit -Zno-embed-metadata -Zbuild-std=std,panic_abort \
-    -Zbuild-std-features=panic_immediate_abort install --git https://github.com/GitoxideLabs/gitoxide \
-    gitoxide -f --bins --no-default-features --locked --features max-pure 2>/dev/null || : &
-  
+  cargo install --git https://github.com/GitoxideLabs/gitoxide gitoxide -f --bins --features max-pure --no-default-features
+      
   # Parallel crate install
   printf '%s\n' "${crates[@]}" | xargs -P"$jobs" -I{} sh -c \
     'cargo install --list 2>/dev/null | grep -q "^{} " || cargo binstall -y {} 2>/dev/null || \

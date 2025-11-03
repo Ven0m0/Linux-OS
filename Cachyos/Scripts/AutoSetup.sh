@@ -196,3 +196,51 @@ echo "bfq
       ntsync
       tcp_bbr
       zram" | doas tee /etc/modprobe.d/modules.conf
+
+
+vscode_json_set(){
+  local prop=$1 val=$2
+  has python3 || { echo "Skipping VSCode setting (no python3): $prop"; return; }
+  python3 <<EOF
+from pathlib import Path
+import os, json, sys
+property_name='$prop'
+target=json.loads('$val')
+home_dir=f'/home/{os.getenv("SUDO_USER",os.getenv("USER"))}'
+settings_files=[
+  f'{home_dir}/.config/Code/User/settings.json',
+  f'{home_dir}/.config/VSCodium/User/settings.json',
+  f'{home_dir}/.config/Void/User/settings.json',
+  f'{home_dir}/.var/app/com.visualstudio.code/config/Code/User/settings.json'
+]
+for sf in settings_files:
+  file=Path(sf)
+  if not file.is_file(): continue
+  content=file.read_text()
+  if not content.strip(): content='{}'
+  try: obj=json.loads(content)
+  except json.JSONDecodeError: continue
+  if property_name in obj and obj[property_name]==target: continue
+  obj[property_name]=target
+  file.write_text(json.dumps(obj,indent=2))
+EOF
+}
+  # VSCode privacy settings
+  vscode_json_set 'telemetry.telemetryLevel' '"off"'
+  vscode_json_set 'telemetry.enableTelemetry' 'false'
+  vscode_json_set 'telemetry.enableCrashReporter' 'false'
+  vscode_json_set 'workbench.enableExperiments' 'false'
+  vscode_json_set 'update.mode' '"none"'
+  vscode_json_set 'update.channel' '"none"'
+  vscode_json_set 'update.showReleaseNotes' 'false'
+  vscode_json_set 'npm.fetchOnlinePackageInfo' 'false'
+  vscode_json_set 'git.autofetch' 'false'
+  vscode_json_set 'workbench.settings.enableNaturalLanguageSearch' 'false'
+  vscode_json_set 'typescript.disableAutomaticTypeAcquisition' 'false'
+  vscode_json_set 'workbench.experimental.editSessions.enabled' 'false'
+  vscode_json_set 'workbench.experimental.editSessions.autoStore' 'false'
+  vscode_json_set 'workbench.editSessions.autoResume' 'false'
+  vscode_json_set 'workbench.editSessions.continueOn' 'false'
+  vscode_json_set 'extensions.autoUpdate' 'false'
+  vscode_json_set 'extensions.autoCheckUpdates' 'false'
+  vscode_json_set 'extensions.showRecommendationsOnlyOnDemand' 'true'

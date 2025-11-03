@@ -39,6 +39,7 @@ EOF
 
 trap 'cleanup' EXIT INT TERM
 cleanup(){ :; }
+cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 
 find_files(){
   if has fdf && [[ ! " $@ " =~ " --exec " ]]; then
@@ -46,7 +47,7 @@ find_files(){
   elif has fd; then
     fd -H --color=never "$@"
   else
-    find "$@"
+    find -O2 "$@"
   fi
 }
 

@@ -1,20 +1,19 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar extglob
+set -euo pipefail; shopt -s nullglob globstar extglob
 IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
-export LC_ALL=C LANG=C LANGUAGE=C HOME="$/home/${SUDO_USER:-$USER}"
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
+export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
+builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
 [[ $EUID -ne 0 ]] && sudo -v
+sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 #============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m' RED=$'\e[31m' GRN=$'\e[32m'
 YLW=$'\e[33m' BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m' DEF=$'\e[0m' BLD=$'\e[1m'
-has() { command -v "$1" &>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
-print_banner() {
-  local banner
-  banner=$(
-    cat <<'EOF'
+print_banner(){
+  local banner lines flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
+  banner=$(cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
@@ -22,44 +21,41 @@ print_banner() {
 ╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝
  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝
 EOF
-  )
+)
   mapfile -t lines <<<"$banner"
-  local flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
-  if ((line_count <= 1)); then
+  if ((line_count<=1)); then
     printf '%s%s%s\n' "${flag_colors[0]}" "${lines[0]}" "$DEF"
   else
     for i in "${!lines[@]}"; do
-      local seg_idx=$((i * (segments - 1) / (line_count - 1)))
-      ((seg_idx >= segments)) && seg_idx=$((segments - 1))
+      local seg_idx=$((i*(segments-1)/(line_count-1)))
+      ((seg_idx>=segments)) && seg_idx=$((segments-1))
       printf '%s%s%s\n' "${flag_colors[seg_idx]}" "${lines[i]}" "$DEF"
     done
   fi
 }
 
 trap 'cleanup' EXIT INT TERM
-cleanup() { :; }
+cleanup(){ :; }
 
-find_files() {
-  if has fdf && [[ ! " $@ " =~ " --exec " ]]; then
-    fdf -H --color=never "$@"
-  elif has fd; then
+find_files(){
+  if has fd && [[ ! " $* " =~ " --exec " ]]; then
     fd -H --color=never "$@"
   else
     find "$@"
   fi
 }
 
-capture_disk_usage() {
-  local -n ref="$1"
+capture_disk_usage(){
+  local -n ref=$1
   ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
 }
 
-ensure_not_running() {
+ensure_not_running(){
   local process_name=$1 timeout=6
   if pgrep -x -u "$USER" "$process_name" &>/dev/null; then
     printf '  %b\n' "${YLW}Waiting for ${process_name} to exit...${DEF}"
-    while ((timeout-- > 0)) && pgrep -x -u "$USER" "$process_name" &>/dev/null; do
+    while ((timeout-->0)) && pgrep -x -u "$USER" "$process_name" &>/dev/null; do
       read -rt 1 -- <> <(:) &>/dev/null || :
     done
     if pgrep -x -u "$USER" "$process_name" &>/dev/null; then
@@ -70,24 +66,21 @@ ensure_not_running() {
   fi
 }
 
-clean_sqlite_dbs() {
+clean_sqlite_dbs(){
   local db diff s_old s_new total_saved=0
   while read -r db; do
     s_old=$(stat -c%s "$db" 2>/dev/null) || continue
     sqlite3 "$db" "VACUUM; REINDEX;" &>/dev/null || continue
     s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
-    diff=$((s_old - s_new))
-    total_saved=$((total_saved + diff))
+    diff=$((s_old-s_new))
+    total_saved=$((total_saved+diff))
   done < <(find_files . -maxdepth 1 -type f -print0 | xargs -0r file -e ascii | sed -n 's/:.*SQLite.*//p')
-  if ((total_saved > 0)); then
-    printf '  %b\n' "${GRN}Vacuumed SQLite DBs, saved $((total_saved / 1024)) KB${DEF}"
-  fi
+  ((total_saved>0)) && printf '  %b\n' "${GRN}Vacuumed SQLite DBs, saved $((total_saved/1024)) KB${DEF}"
 }
-clean_browsers() {
+
+clean_browsers(){
   printf '%b\n' "🔄${BLU}Cleaning browser data...${DEF}"
   local user_home="${1:-$HOME}"
-  # Browser definitions: "executable_name;config_root;type"
-  # type: mozilla, mozilla_standalone, chrome
   local browsers=(
     "firefox;${user_home}/.mozilla/firefox;mozilla"
     "librewolf;${user_home}/.librewolf;mozilla_standalone"
@@ -105,10 +98,8 @@ clean_browsers() {
     if [[ $type == "mozilla" || $type == "mozilla_standalone" ]]; then
       local profile_base_dir="$config_root"
       [[ $type == "mozilla_standalone" ]] && profile_base_dir="${config_root}/"
-      local installs_ini="${config_root}/installs.ini"
-      local profiles_ini="${config_root}/profiles.ini"
+      local installs_ini="${config_root}/installs.ini" profiles_ini="${config_root}/profiles.ini"
       declare -A seen_profiles
-      # Modern method (Firefox)
       if [[ -f $installs_ini ]]; then
         while read -r path; do
           [[ -n $path && -z ${seen_profiles[$path]} ]] && {
@@ -117,7 +108,6 @@ clean_browsers() {
           }
         done < <(awk -F= '/^Default=/{print $2}' "$installs_ini" 2>/dev/null)
       fi
-      # Legacy/fork method
       if [[ -f $profiles_ini ]]; then
         while read -r path; do
           [[ -n $path && -z ${seen_profiles[$path]} ]] && {
@@ -134,32 +124,152 @@ clean_browsers() {
   done
 }
 
-main() {
+glob_rm(){
+  local pattern=$1
+  eval "rm -rf $pattern" &>/dev/null || :
+}
+
+py_glob_rm(){
+  local pattern=$1
+  has python3 || { echo "Skipping glob pattern (no python3): $pattern"; return; }
+  python3 <<EOF
+import glob, os
+path='$pattern'
+expanded=os.path.expandvars(os.path.expanduser(path))
+paths=glob.glob(expanded)
+if not paths: exit(0)
+for p in paths:
+  if not os.path.isfile(p): continue
+  os.remove(p)
+EOF
+}
+
+vscode_json_set(){
+  local prop=$1 val=$2
+  has python3 || { echo "Skipping VSCode setting (no python3): $prop"; return; }
+  python3 <<EOF
+from pathlib import Path
+import os, json, sys
+property_name='$prop'
+target=json.loads('$val')
+home_dir=f'/home/{os.getenv("SUDO_USER",os.getenv("USER"))}'
+settings_files=[
+  f'{home_dir}/.config/Code/User/settings.json',
+  f'{home_dir}/.var/app/com.visualstudio.code/config/Code/User/settings.json'
+]
+for sf in settings_files:
+  file=Path(sf)
+  if not file.is_file(): continue
+  content=file.read_text()
+  if not content.strip(): content='{}'
+  try: obj=json.loads(content)
+  except json.JSONDecodeError: continue
+  if property_name in obj and obj[property_name]==target: continue
+  obj[property_name]=target
+  file.write_text(json.dumps(obj,indent=2))
+EOF
+}
+
+privacy_clean(){
+  printf '%b\n' "🔒${MGN}Privacy hardening...${DEF}"
+  
+  # Shell history
+  rm -f ~/.{bash,zsh}_history ~/.history ~/.local/share/fish/fish_history ~/.config/fish/fish_history ~/.wget-hsts ~/.lesshst &>/dev/null
+  sudo rm -f /root/.{bash,zsh}_history /root/.history /root/.local/share/fish/fish_history /root/.config/fish/fish_history &>/dev/null
+  
+  # Wine/Winetricks
+  rm -rf ~/.wine/drive_c/windows/temp/* ~/.cache/{wine,winetricks}/ &>/dev/null
+  
+  # VSCode crash/cache/logs
+  glob_rm '~/.config/Code/{Crash\ Reports,exthost\ Crash\ Reports,Cache,CachedData,Code\ Cache,GPUCache,CachedExtensions,CachedExtensionVSIXs,logs}/*'
+  glob_rm '~/.var/app/com.visualstudio.code/config/Code/{Crash\ Reports,exthost\ Crash\ Reports,Cache,CachedData,Code\ Cache,GPUCache,CachedExtensions,CachedExtensionVSIXs,logs}/*'
+  
+  # Python history (immutable)
+  rm -f ~/.python_history &>/dev/null
+  sudo rm -f /root/.python_history &>/dev/null
+  touch ~/.python_history && sudo chattr +i ~/.python_history &>/dev/null
+  
+  # Steam
+  rm -rf ~/.local/share/Steam/appcache/* ~/snap/steam/common/{.cache,.local/share/Steam/appcache}/* ~/.var/app/com.valvesoftware.Steam/{cache,data/Steam/appcache}/* &>/dev/null
+  
+  # LibreOffice
+  rm -f ~/.config/libreoffice/4/user/registrymodifications.xcu ~/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu ~/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu &>/dev/null
+  
+  # Firefox
+  rm -rf ~/.cache/mozilla/* ~/.var/app/org.mozilla.firefox/cache/* ~/snap/firefox/common/.cache/* &>/dev/null
+  rm -rf ~/.mozilla/firefox/Crash\ Reports/* ~/.var/app/org.mozilla.firefox/.mozilla/firefox/Crash\ Reports/* ~/snap/firefox/common/.mozilla/firefox/Crash\ Reports/* &>/dev/null
+  py_glob_rm '~/.mozilla/firefox/*/crashes/*'
+  py_glob_rm '~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/crashes/*'
+  py_glob_rm '~/snap/firefox/common/.mozilla/firefox/*/crashes/*'
+  py_glob_rm '~/.mozilla/firefox/*/crashes/events/*'
+  py_glob_rm '~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/crashes/events/*'
+  py_glob_rm '~/snap/firefox/common/.mozilla/firefox/*/crashes/events/*'
+  py_glob_rm '~/.mozilla/firefox/*/containers.json'
+  py_glob_rm '~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/containers.json'
+  py_glob_rm '~/snap/firefox/common/.mozilla/firefox/*/containers.json'
+  
+  # GNOME Web
+  rm -rf ~/.cache/epiphany/* ~/.var/app/org.gnome.Epiphany/cache/* ~/snap/epiphany/common/.cache/* &>/dev/null
+  rm -f ~/.local/share/epiphany/ephy-history.db{,-shm,-wal} ~/.var/app/org.gnome.Epiphany/data/epiphany/ephy-history.db{,-shm,-wal} ~/snap/epiphany/*/.local/share/epiphany/ephy-history.db{,-shm,-wal} &>/dev/null
+  
+  # System crash/logs/activity
+  sudo rm -rf /var/crash/* /var/lib/systemd/coredump/ &>/dev/null
+  has journalctl && sudo journalctl --vacuum-time=1s &>/dev/null
+  sudo rm -rf /run/log/journal/* /var/log/journal/* &>/dev/null
+  sudo rm -rf {/root,/home/*}/.local/share/zeitgeist &>/dev/null
+  
+  # GTK/KDE recent files
+  rm -f ~/.recently-used.xbel ~/.local/share/recently-used.xbel* ~/snap/*/*/.local/share/recently-used.xbel ~/.var/app/*/data/recently-used.xbel &>/dev/null
+  rm -rf ~/.local/share/RecentDocuments/*.desktop ~/.kde{,4}/share/apps/RecentDocuments/*.desktop ~/snap/*/*/.local/share/*.desktop ~/.var/app/*/data/*.desktop &>/dev/null
+  
+  # VSCode privacy settings
+  vscode_json_set 'telemetry.telemetryLevel' '"off"'
+  vscode_json_set 'telemetry.enableTelemetry' 'false'
+  vscode_json_set 'telemetry.enableCrashReporter' 'false'
+  vscode_json_set 'workbench.enableExperiments' 'false'
+  vscode_json_set 'update.mode' '"none"'
+  vscode_json_set 'update.channel' '"none"'
+  vscode_json_set 'update.showReleaseNotes' 'false'
+  vscode_json_set 'npm.fetchOnlinePackageInfo' 'false'
+  vscode_json_set 'git.autofetch' 'false'
+  vscode_json_set 'workbench.settings.enableNaturalLanguageSearch' 'false'
+  vscode_json_set 'typescript.disableAutomaticTypeAcquisition' 'false'
+  vscode_json_set 'workbench.experimental.editSessions.enabled' 'false'
+  vscode_json_set 'workbench.experimental.editSessions.autoStore' 'false'
+  vscode_json_set 'workbench.editSessions.autoResume' 'false'
+  vscode_json_set 'workbench.editSessions.continueOn' 'false'
+  vscode_json_set 'extensions.autoUpdate' 'false'
+  vscode_json_set 'extensions.autoCheckUpdates' 'false'
+  vscode_json_set 'extensions.showRecommendationsOnlyOnDemand' 'true'
+  
+  printf '  %b\n' "${GRN}Privacy hardening complete${DEF}"
+}
+
+main(){
   print_banner
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
   space_before=$(sudo du -sh / 2>/dev/null | cut -f1)
-
+  
   if has modprobed-db; then
     printf '%b\n' "🔄${BLU}Storing kernel modules...${DEF}"
     modprobed-db store &>/dev/null && sudo modprobed-db store &>/dev/null
   fi
+  
   printf '%b\n' "🔄${BLU}Flushing network caches...${DEF}"
   sudo resolvectl flush-caches &>/dev/null || :
   sudo systemd-resolve --flush-caches &>/dev/null || :
   sudo systemd-resolve --reset-statistics &>/dev/null || :
-
+  
   printf '%b\n' "🔄${BLU}Removing orphaned packages...${DEF}"
   mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || :)
-  if [[ ${#orphans[@]} -gt 0 ]]; then
-    sudo pacman -Rns --noconfirm "${orphans[@]}" &>/dev/null || :
-  fi
-
+  ((${#orphans[@]}>0)) && sudo pacman -Rns --noconfirm "${orphans[@]}" &>/dev/null || :
+  
   printf '%b\n' "🔄${BLU}Cleaning package caches...${DEF}"
   sudo find -O2 /etc/pacman.d -maxdepth 1 -type f -name '*.bak' -delete &>/dev/null
   paru -Scc --noconfirm &>/dev/null || sudo pacman -Scc --noconfirm &>/dev/null
   sudo paccache -rk0 -q &>/dev/null || :
-
+  
   has uv && uv clean -q
   if has cargo-cache; then
     printf '%b\n' "🔄${BLU}Cleaning Cargo cache...${DEF}"
@@ -169,56 +279,67 @@ main() {
   has bun && bun pm cache rm &>/dev/null
   has pnpm && { pnpm prune &>/dev/null && pnpm store prune &>/dev/null; }
   has sdk && sdk flush tmp &>/dev/null
-
+  
   printf '%b\n' "🔄${BLU}Resetting swap space...${DEF}"
   sudo swapoff -a &>/dev/null && sudo swapon -a &>/dev/null
-
+  
   printf '%b\n' "🔄${BLU}Cleaning old logs and crash dumps...${DEF}"
   sudo find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
   sudo journalctl --rotate --vacuum-size=10M -q &>/dev/null
-
+  
   printf '%b\n' "🔄${BLU}Cleaning user and system caches...${DEF}"
   sudo systemd-tmpfiles --clean &>/dev/null || :
   find_files "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null || :
   find_files "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
-
+  
   local safe_remove_paths=(
     "${HOME}/.local/share/Trash/"*
     "${HOME}/.thumbnails/"*
+    "${HOME}/.cache/thumbnails/"*
     "${HOME}/.var/app/"*/cache/*
     "${HOME}/.config/Trolltech.conf"
     "${HOME}/.local/share/Steam/appcache/"*
     "${HOME}/.nv/ComputeCache/"*
   )
   for path in "${safe_remove_paths[@]}"; do rm -rf -- "$path" &>/dev/null; done
-
-  sudo rm -rf /root/.local/share/Trash/* &>/dev/null
-  sudo rm -rf /var/tmp/flatpak-cache-* &>/dev/null
+  
+  sudo rm -rf /root/.local/share/Trash/* /var/tmp/flatpak-cache-* &>/dev/null
   has flatpak && flatpak uninstall --unused --delete-data -y &>/dev/null
-
-  printf '%b\n' "🔄${BLU}Cleaning shell history files...${DEF}"
-  local history_files=(.bash_history .zsh_history .history .local/share/fish/fish_history .config/fish/fish_history .wget-hsts .lesshst)
-  for file in "${history_files[@]}"; do
-    rm -f -- "${HOME}/${file}" &>/dev/null
-    sudo rm -f -- "/root/${file}" &>/dev/null
-  done
-  touch "${HOME}/.python_history" && sudo chattr +i "${HOME}/.python_history" &>/dev/null
-
+  
+  # Snap cleanup
+  sudo rm -rf /var/lib/snapd/cache/* &>/dev/null
+  if has snap; then
+    printf '%b\n' "🔄${BLU}Removing old Snap revisions...${DEF}"
+    snap list --all | while read -r name version rev tracking publisher notes; do
+      [[ $notes == *disabled* ]] && sudo snap remove "$name" --revision="$rev" &>/dev/null || :
+    done
+  fi
+  rm -rf ~/snap/*/*/.cache/* &>/dev/null
+  
+  # Flatpak cleanup
+  rm -rf ~/.cache/flatpak/system-cache/* ~/.local/share/flatpak/system-cache/* ~/.var/app/*/cache/* &>/dev/null
+  
+  # Temp folders
+  sudo rm -rf /tmp/* /var/tmp/* &>/dev/null
+  rm -rf ~/.cache/* &>/dev/null
+  sudo rm -rf /root/.cache/* /var/cache/* &>/dev/null
+  
   clean_browsers "$HOME"
-
+  privacy_clean
+  
   if has bleachbit; then
     printf '%b\n' "🔄${BLU}Running BleachBit...${DEF}"
     bleachbit -c --preset &>/dev/null || :
     sudo bleachbit -c --preset &>/dev/null || :
   fi
-
+  
   sudo fstrim -a --quiet-unsupported &>/dev/null || :
   sudo fc-cache -r &>/dev/null || :
-
+  
   capture_disk_usage disk_after
   space_after=$(sudo du -sh / 2>/dev/null | cut -f1)
-
-  printf '\n%b\n' "${GRN}System cleaned!${DEF}"
+  
+  printf '\n%b\n' "${GRN}System cleaned & privacy hardened! 🎉🔒${DEF}"
   printf '==> %b %s\n' "${BLU}Disk usage before:${DEF}" "$disk_before"
   printf '==> %b %s\n' "${GRN}Disk usage after: ${DEF}" "$disk_after"
   printf '\n%b\n' "${BLU}Total space before/after:${DEF}"

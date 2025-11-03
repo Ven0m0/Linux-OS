@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 shopt -s nullglob globstar extglob
-IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null | echo bash)"
+IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
 export LC_ALL=C LANG=C LANGUAGE=C HOME="$/home/${SUDO_USER:-$USER}"
 sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 [[ $EUID -ne 0 ]] && sudo -v

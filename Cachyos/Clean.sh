@@ -9,18 +9,18 @@ sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m' RED=$'\e[31m' GRN=$'\e[32m'
 YLW=$'\e[33m' BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m' DEF=$'\e[0m' BLD=$'\e[1m'
-has(){ command -v "$1" &>/dev/null; }
+has() { command -v "$1" &>/dev/null; }
 
-print_banner(){
+print_banner() {
   local banner
   banner=$(
     cat <<'EOF'
- ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
-██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ 
+ ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
+██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
 ██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║
 ╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝
- ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
+ ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝
 EOF
   )
   mapfile -t lines <<<"$banner"
@@ -38,24 +38,24 @@ EOF
 }
 
 trap 'cleanup' EXIT INT TERM
-cleanup(){ :; }
-cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
+cleanup() { :; }
 
-find_files(){
+find_files() {
   if has fdf && [[ ! " $@ " =~ " --exec " ]]; then
     fdf -H --color=never "$@"
   elif has fd; then
     fd -H --color=never "$@"
   else
-    find -O2 "$@"
+    find "$@"
   fi
 }
 
-capture_disk_usage(){
-  local -n ref="$1"; ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
+capture_disk_usage() {
+  local -n ref="$1"
+  ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
 }
 
-ensure_not_running(){
+ensure_not_running() {
   local process_name=$1 timeout=6
   if pgrep -x -u "$USER" "$process_name" &>/dev/null; then
     printf '  %b\n' "${YLW}Waiting for ${process_name} to exit...${DEF}"
@@ -70,7 +70,7 @@ ensure_not_running(){
   fi
 }
 
-clean_sqlite_dbs(){
+clean_sqlite_dbs() {
   local db diff s_old s_new total_saved=0
   while read -r db; do
     s_old=$(stat -c%s "$db" 2>/dev/null) || continue
@@ -83,7 +83,7 @@ clean_sqlite_dbs(){
     printf '  %b\n' "${GRN}Vacuumed SQLite DBs, saved $((total_saved / 1024)) KB${DEF}"
   fi
 }
-clean_browsers(){
+clean_browsers() {
   printf '%b\n' "🔄${BLU}Cleaning browser data...${DEF}"
   local user_home="${1:-$HOME}"
   # Browser definitions: "executable_name;config_root;type"
@@ -99,34 +99,34 @@ clean_browsers(){
   )
   for browser_def in "${browsers[@]}"; do
     IFS=';' read -r name config_root type <<<"$browser_def"
-    [[ ! -d "$config_root" ]] && continue
+    [[ ! -d $config_root ]] && continue
     ensure_not_running "$name"
     printf '  %b\n' "${CYN}Cleaning ${name} profiles...${DEF}"
-    if [[ "$type" == "mozilla" || "$type" == "mozilla_standalone" ]]; then
+    if [[ $type == "mozilla" || $type == "mozilla_standalone" ]]; then
       local profile_base_dir="$config_root"
-      [[ "$type" == "mozilla_standalone" ]] && profile_base_dir="${config_root}/"
+      [[ $type == "mozilla_standalone" ]] && profile_base_dir="${config_root}/"
       local installs_ini="${config_root}/installs.ini"
       local profiles_ini="${config_root}/profiles.ini"
       declare -A seen_profiles
       # Modern method (Firefox)
-      if [[ -f "$installs_ini" ]]; then
+      if [[ -f $installs_ini ]]; then
         while read -r path; do
-          [[ -n "$path" && -z "${seen_profiles[$path]}" ]] && {
+          [[ -n $path && -z ${seen_profiles[$path]} ]] && {
             (cd "${profile_base_dir}${path}" && clean_sqlite_dbs)
             seen_profiles[$path]=1
           }
         done < <(awk -F= '/^Default=/{print $2}' "$installs_ini" 2>/dev/null)
       fi
       # Legacy/fork method
-      if [[ -f "$profiles_ini" ]]; then
+      if [[ -f $profiles_ini ]]; then
         while read -r path; do
-          [[ -n "$path" && -z "${seen_profiles[$path]}" ]] && {
+          [[ -n $path && -z ${seen_profiles[$path]} ]] && {
             (cd "${profile_base_dir}${path}" && clean_sqlite_dbs)
             seen_profiles[$path]=1
           }
         done < <(awk -F= '/^Path=/{print $2}' "$profiles_ini" 2>/dev/null)
       fi
-    elif [[ "$type" == "chrome" ]]; then
+    elif [[ $type == "chrome" ]]; then
       while read -r profile_dir; do
         (cd "$profile_dir" && clean_sqlite_dbs)
       done < <(find_files "$config_root" -maxdepth 1 -type d \( -name "Default" -o -name "Profile *" \))
@@ -134,7 +134,7 @@ clean_browsers(){
   done
 }
 
-main(){
+main() {
   print_banner
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
@@ -148,7 +148,7 @@ main(){
   sudo resolvectl flush-caches &>/dev/null || :
   sudo systemd-resolve --flush-caches &>/dev/null || :
   sudo systemd-resolve --reset-statistics &>/dev/null || :
-  
+
   printf '%b\n' "🔄${BLU}Removing orphaned packages...${DEF}"
   mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || :)
   if [[ ${#orphans[@]} -gt 0 ]]; then
@@ -163,10 +163,11 @@ main(){
   has uv && uv clean -q
   if has cargo-cache; then
     printf '%b\n' "🔄${BLU}Cleaning Cargo cache...${DEF}"
-    cargo cache -efg &>/dev/null; cargo cache -ef trim --limit 1B &>/dev/null
+    cargo cache -efg &>/dev/null
+    cargo cache -ef trim --limit 1B &>/dev/null
   fi
   has bun && bun pm cache rm &>/dev/null
-  has pnpm && { pnpm prune  &>/dev/null && pnpm store prune &>/dev/null; }
+  has pnpm && { pnpm prune &>/dev/null && pnpm store prune &>/dev/null; }
   has sdk && sdk flush tmp &>/dev/null
 
   printf '%b\n' "🔄${BLU}Resetting swap space...${DEF}"
@@ -218,11 +219,11 @@ main(){
   space_after=$(sudo du -sh / 2>/dev/null | cut -f1)
 
   printf '\n%b\n' "${GRN}System cleaned!${DEF}"
-  printf '==> %b %s\n' "${BLU}Disk usage before:${DEF}" "${disk_before}"
-  printf '==> %b %s\n' "${GRN}Disk usage after: ${DEF}" "${disk_after}"
+  printf '==> %b %s\n' "${BLU}Disk usage before:${DEF}" "$disk_before"
+  printf '==> %b %s\n' "${GRN}Disk usage after: ${DEF}" "$disk_after"
   printf '\n%b\n' "${BLU}Total space before/after:${DEF}"
-  printf '%b %s\n' "${YLW}Before:${DEF}" "${space_before}"
-  printf '%b %s\n' "${GRN}After: ${DEF}" "${space_after}"
+  printf '%b %s\n' "${YLW}Before:${DEF}" "$space_before"
+  printf '%b %s\n' "${GRN}After: ${DEF}" "$space_after"
 }
 
 main "$@"

@@ -42,11 +42,9 @@ RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-#─────────────────────────────────────────
-
 #──────────── Helpers ────────────────────
 # Check for command
-has(){ [[ -x $(command -v -- "$1" 2>/dev/null) ]]; }
+has(){ command -v "$1" &>/dev/null; }
 # Get basename of command if on path
 hasname(){ local x; x=$(type -Pf -- "$1") && printf '%s\n' "${x##*/}"; }
 # Export array of newline/space seperated quotes variables

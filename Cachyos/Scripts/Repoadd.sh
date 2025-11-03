@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'; export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-cd "$(builtin cd -P -- "${BASH_SOURCE[0]%/*}" && printf '%s\n' "$PWD")" || exit 1
+builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
 sudo -v
 
 declare -r CONF=/etc/pacman.conf

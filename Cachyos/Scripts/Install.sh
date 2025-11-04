@@ -110,6 +110,7 @@ has rustup && {
   rustup set auto-self-update disable 2>/dev/null || :
   rustup set profile minimal 2>/dev/null || :
   rustup self upgrade-data 2>/dev/null || :
+  rustup update 2>/dev/null || :
   has sccache && export RUSTC_WRAPPER=sccache
 } &
 
@@ -240,6 +241,12 @@ zsh_setup(){
 declare -A shell_setups=([zsh]=zsh_setup [fish]=fish_setup [bash]=bash_setup)
 for sh in "${!shell_setups[@]}"; do
   has "$sh" && "${shell_setups[$sh]}" &
+done
+
+srvc=(nohang prelockd memavaild uresourced preload)
+for sv in "${srvc[@]}"; do
+  sudo pacman --noconfirm --needed -Sq "$sv"
+  sudo systemctl enable --now "$sv"
 done
 
 wait

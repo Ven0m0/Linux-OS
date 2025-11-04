@@ -7,8 +7,8 @@ export LC_ALL=C LANG=C.UTF-8
 has() { command -v -- "$1" &>/dev/null; }
 
 sudo -v
-sudo pacman -Syyuq --noconfirm --needed
-sudo pacman-db-upgrade
+sudo pacman --noconfirm --needed -Syyuq || :
+sudo pacman-db-upgrade --nocolor &>/dev/null || :
 has keyserver-rank && keyserver-rank --yes || :
 
 export RATE_MIRRORS_PROTOCOL=https \

@@ -9,7 +9,7 @@ has() { command -v -- "$1" &>/dev/null; }
 sudo -v
 sudo pacman -Syyuq --noconfirm --needed
 sudo pacman-db-upgrade
-has keyserver-rank && keyserver-rank --yes
+has keyserver-rank && keyserver-rank --yes || :
 
 export RATE_MIRRORS_PROTOCOL=https \
   RATE_MIRRORS_ALLOW_ROOT=true RATE_MIRRORS_DISABLE_COMMENTS_IN_FILE=true RATE_MIRRORS_DISABLE_COMMENTS=true \

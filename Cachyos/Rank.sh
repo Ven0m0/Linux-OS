@@ -17,12 +17,10 @@ export RATE_MIRRORS_PROTOCOL=https \
 MIRRORDIR=/etc/pacman.d
 TMPFILE=$(mktemp)
 
-mirroropt() {
+mirroropt(){
   local name="$1" file="${2:-$MIRRORDIR/${1}-mirrorlist}"
-  [[ -r $file ]] || {
-    echo "Missing: $file" >&2
-    return 1
-  }
+  #sudo find -O2 /etc/pacman.d/ -name "*backup*" -type f --exec xargs -r sudo rm -f
+  [[ -r $file ]] || { echo "Missing: $file" >&2; return 1; }
   echo "→ Ranking $name..."
   rate-mirrors stdin \
     --save="$TMPFILE" \

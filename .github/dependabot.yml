@@ -4,8 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+      timezone: "Europe/Berlin"
+      time: "04:00"
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:
       interval: "weekly"
+      timezone: "Europe/Berlin"
+      time: "04:00"

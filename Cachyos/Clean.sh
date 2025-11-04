@@ -1,55 +1,19 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar extglob
-IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
-export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
-builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
-[[ $EUID -ne 0 ]] && sudo -v
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
-#============ Color & Effects ============
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m' RED=$'\e[31m' GRN=$'\e[32m'
-YLW=$'\e[33m' BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m' DEF=$'\e[0m' BLD=$'\e[1m'
-has(){ command -v "$1" &>/dev/null; }
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || exit 1
 
-print_banner(){
-  local banner lines flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
-  banner=$(cat <<'EOF'
- ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
-██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
-██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
-██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║
-╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝
- ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝
-EOF
-)
-  mapfile -t lines <<<"$banner"
-  local line_count=${#lines[@]} segments=${#flag_colors[@]}
-  if ((line_count<=1)); then
-    printf '%s%s%s\n' "${flag_colors[0]}" "${lines[0]}" "$DEF"
-  else
-    for i in "${!lines[@]}"; do
-      local seg_idx=$((i*(segments-1)/(line_count-1)))
-      ((seg_idx>=segments)) && seg_idx=$((segments-1))
-      printf '%s%s%s\n' "${flag_colors[seg_idx]}" "${lines[i]}" "$DEF"
-    done
-  fi
-}
+# Initialize privilege tool
+PRIV_CMD=$(init_priv)
+export PRIV_CMD
 
-trap 'cleanup' EXIT INT TERM
-cleanup(){ :; }
+# Setup cleanup trap
+setup_cleanup_trap
 
-find_files(){
-  if has fd && [[ ! " $* " =~ " --exec " ]]; then
-    fd -H --color=never "$@"
-  else
-    find "$@"
-  fi
-}
-
-capture_disk_usage(){
-  local -n ref=$1
-  ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
-}
+# Change to script directory and drop caches
+builtin cd -P -- "${SCRIPT_DIR}" && printf '%s\n' "$PWD" || exit 1
+sync; echo 3 | run_priv tee /proc/sys/vm/drop_caches &>/dev/null
 
 ensure_not_running(){
   local process_name=$1 timeout=6
@@ -168,10 +132,10 @@ privacy_clean(){
 }
 
 main(){
-  print_banner
+  print_named_banner "clean"
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
-  space_before=$(sudo du -sh / 2>/dev/null | cut -f1)
+  space_before=$(run_priv du -sh / 2>/dev/null | cut -f1)
   if has modprobed-db; then
     printf '%b\n' "🔄${BLU}Storing kernel modules...${DEF}"
     modprobed-db store &>/dev/null && sudo modprobed-db store &>/dev/null

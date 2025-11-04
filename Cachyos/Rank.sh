@@ -7,7 +7,6 @@ has(){ command -v -- "$1" &>/dev/null; }
 sudo -v; sync
 
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' B='\033[0;34m' C='\033[0;36m' Z='\033[0m' D='\033[1m'
-
 MIRRORDIR=/etc/pacman.d
 BACKUPDIR=/etc/pacman.d/.bak
 LOGFILE=/var/log/mirror-rank.log
@@ -21,7 +20,6 @@ VERBOSE=no
 REPOS=(arch cachyos chaotic-aur endeavouros alhp)
 REF_LEVEL=""
 TMP=()
-
 export RATE_MIRRORS_PROTOCOL=https RATE_MIRRORS_ALLOW_ROOT=true \
   RATE_MIRRORS_DISABLE_COMMENTS_IN_FILE=true RATE_MIRRORS_DISABLE_COMMENTS=true \
   RATE_MIRRORS_ENTRY_COUNTRY="$COUNTRY" CONCURRENCY

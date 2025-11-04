@@ -192,8 +192,13 @@ main(){
   has bun && bun pm cache rm &>/dev/null
   has pnpm && { pnpm prune &>/dev/null && pnpm store prune &>/dev/null; }
   has sdk && sdk flush tmp &>/dev/null
-  printf '%b\n' "🔄${BLU}Resetting swap space...${DEF}"
-  sudo swapoff -a &>/dev/null && sudo swapon -a &>/dev/null
+  printf '%b\n' "🔄${BLU}Resetting  space...${DEF}"
+  if swapon --summary | grep -q "swap"; then
+    sudo swapoff -a &>/dev/null && sudo swapon -a &>/dev/null
+  fi
+  for service in bluetooth.service cups.service avahi-daemon.service ModemManager.service; do
+    systemctl is-active --quiet "$service" && sudo systemctl stop "$service"
+  done
   printf '%b\n' "🔄${BLU}Cleaning old logs and crash dumps...${DEF}"
   sudo find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
   sudo journalctl --rotate --vacuum-size=10M -q &>/dev/null

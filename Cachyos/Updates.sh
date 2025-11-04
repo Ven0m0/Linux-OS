@@ -1,82 +1,18 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C LANGUAGE=C
-#============ Color & Effects ============
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m'
-DEF=$'\e[0m' BLD=$'\e[1m'
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || exit 1
 
-has(){ command -v "$1" >/dev/null 2>&1; }
-xecho(){ printf '%b\n' "$*"; }
-get_priv_cmd(){
-  local cmd
-  for cmd in sudo-rs sudo doas; do
-    if has "$cmd"; then
-      printf '%s' "$cmd"
-      return 0
-    fi
-  done
-  [[ $EUID -eq 0 ]] && printf '' || { xecho "${RED}No privilege tool found${DEF}" >&2; exit 1; }
-}
-PRIV_CMD=$(get_priv_cmd)
-[[ -n $PRIV_CMD && $EUID -ne 0 ]] && "$PRIV_CMD" -v
-run_priv(){ [[ $EUID -eq 0 || -z $PRIV_CMD ]] && "$@" || "$PRIV_CMD" -- "$@" }
+# Initialize privilege escalation
+PRIV_CMD=$(init_priv)
+export PRIV_CMD
 
-print_banner(){
-  local banner flag_colors
-  banner=$(cat <<'EOF'
-██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
-██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
-██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
-██║   ██║██╔═══╝ ██║  ██║██╔══██║   ██║   ██╔══╝  ╚════██║
-╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗███████║
- ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
-EOF
-)
-  mapfile -t lines <<<"$banner"
-  flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
-  local line_count=${#lines[@]} segments=${#flag_colors[@]}
-  if ((line_count <= 1)); then
-    for line in "${lines[@]}"; do
-      printf '%s%s%s\n' "${flag_colors[0]}" "$line" "$DEF"
-    done
-  else
-    for i in "${!lines[@]}"; do
-      local segment_index=$(( i * (segments - 1) / (line_count - 1) ))
-      ((segment_index >= segments)) && segment_index=$((segments - 1))
-      printf '%s%s%s\n' "${flag_colors[segment_index]}" "${lines[i]}" "$DEF"
-    done
-  fi
-  xecho "Meow (> ^ <)"
-}
+# Setup cleanup trap
+setup_cleanup_trap
 
-cleanup(){ [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck >/dev/null 2>&1 || :; }
-trap cleanup EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-
-export HOME="$/home/${SUDO_USER:-$USER}" SHELL=bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-CFLAGS="-march=native -mtune=native -O3 -pipe" 
-export CFLAGS CXXFLAGS="$CFLAGS"
-export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-export CARGO_CACHE_RUSTC_INFO=1 CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTC_BOOTSTRAP=1
-
-has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
-
-run_system_maintenance(){
-  local cmd=$1 args=("${@:2}")
-  if has "$cmd"; then
-    case "$cmd" in
-      modprobed-db) "$cmd" store >/dev/null 2>&1 || : ;;
-      hwclock|updatedb|chwd) run_priv "$cmd" "${args[@]}" >/dev/null 2>&1 || : ;;
-      mandb) run_priv "$cmd" -q >/dev/null 2>&1 || mandb -q >/dev/null 2>&1 || : ;;
-      *) run_priv "$cmd" "${args[@]}" >/dev/null 2>&1 || : ;;
-    esac
-  fi
-}
+# Setup build environment
+setup_build_env
 
 update_system(){
   local pkgmgr aur_opts=()
@@ -90,7 +26,7 @@ update_system(){
   else
     pkgmgr=pacman
   fi
-  [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck >/dev/null 2>&1 || :
+  cleanup_pacman_lock
   run_priv "$pkgmgr" -Sy archlinux-keyring --noconfirm -q >/dev/null 2>&1 || :
   [[ -f /var/lib/pacman/sync/core.files ]] || run_priv pacman -Fy --noconfirm || :
   run_priv pacman -Fy --noconfirm >/dev/null 2>&1 || :
@@ -260,7 +196,7 @@ update_boot(){
 }
 
 main(){
-  print_banner
+  print_named_banner "update" "Meow (> ^ <)"
   checkupdates -dc >/dev/null 2>&1 || :
   run_system_maintenance modprobed-db
   run_system_maintenance hwclock -w

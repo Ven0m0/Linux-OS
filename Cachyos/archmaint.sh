@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar execfail
-export LC_ALL=C LANG=C LANGUAGE=C
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || exit 1
 
 #=========== Configuration ============
 QUIET=0
@@ -10,137 +10,20 @@ VERBOSE=0
 DRYRUN=0
 ASSUME_YES=0
 MODE=""
-#=========== Color & Effects ==========
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m'
-DEF=$'\e[0m' BLD=$'\e[1m'
-#=========== Helpers =================
-has() { command -v "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
+
+# Override log function to respect QUIET
 log() { ((QUIET)) || xecho "$*"; }
-err() { xecho "$*" >&2; }
-die() {
-  err "${RED}Error:${DEF} $*"
-  exit 1
-}
-confirm() {
-  local msg="$1"
-  ((ASSUME_YES)) && return 0
-  printf '%s [y/N]: ' "$msg" >&2
-  read -r ans
-  [[ $ans == [Yy]* ]]
-}
-#=========== Privilege Management =====
-get_sudo() {
-  local cmd=""
-  for c in sudo-rs sudo doas; do
-    if has "$c"; then
-      cmd="$c"
-      break
-    fi
-  done
 
-  if [[ -z $cmd && $EUID -ne 0 ]]; then
-    die "No privilege escalation tool found and not running as root."
-  fi
-  echo "$cmd"
-}
+# Initialize privilege tool (renamed from SUDO to PRIV_CMD for consistency)
+PRIV_CMD=$(init_priv)
+export PRIV_CMD
+# Keep SUDO as alias for backward compatibility
+SUDO="$PRIV_CMD"
 
-SUDO=$(get_sudo)
-[[ -n $SUDO && $EUID -ne 0 ]] && "$SUDO" -v
 
-run_priv() {
-  if [[ $EUID -eq 0 || -z $SUDO ]]; then
-    "$@"
-  else
-    "$SUDO" -- "$@"
-  fi
-}
-
-#=========== Banner Functions ==========
-print_banner() {
-  local banner="$1" flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
-
-  mapfile -t lines <<<"$banner"
-  local lines_count=${#lines[@]} segments=${#flag_colors[@]}
-
-  if ((lines_count <= 1)); then
-    for line in "${lines[@]}"; do
-      printf '%s%s%s\n' "${flag_colors[0]}" "$line" "$DEF"
-    done
-  else
-    for i in "${!lines[@]}"; do
-      local segment_idx=$((i * (segments - 1) / (lines_count - 1)))
-      ((segment_idx >= segments)) && segment_idx=$((segments - 1))
-      printf '%s%s%s\n' "${flag_colors[segment_idx]}" "${lines[i]}" "$DEF"
-    done
-  fi
-}
-
-print_update_banner() {
-  local banner=$(
-    cat <<'EOF'
-██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
-██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
-██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
-██║   ██║██╔═══╝ ██║  ██║██╔══██║   ██║   ██╔══╝  ╚════██║
-╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗███████║
- ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
-EOF
-  )
-  print_banner "$banner"
-  xecho "Meow (> ^ <)"
-}
-
-print_clean_banner() {
-  local banner=$(
-    cat <<'EOF'
- ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ 
-██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ 
-██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
-██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║
-╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝
- ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ 
-EOF
-  )
-  print_banner "$banner"
-}
-
-#=========== Environment Setup =========
-setup_env() {
-  export HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
-  export SHELL=${SHELL:-/bin/bash}
-
-  # Rust environment
-  export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-  export CFLAGS="-march=native -mtune=native -O3 -pipe"
-  export CXXFLAGS="$CFLAGS"
-  export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-  export CARGO_CACHE_RUSTC_INFO=1
-  export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
-  export CARGO_HTTP_MULTIPLEXING=true
-  export CARGO_NET_GIT_FETCH_WITH_CLI=true
-  export RUSTUP_TOOLCHAIN=nightly
-  export RUSTC_BOOTSTRAP=1
-
-  # Try to get dbus running
-  has dbus-launch && export "$(dbus-launch 2>/dev/null || :)"
-}
 
 #=========== Update Functions ===========
-run_system_maintenance() {
-  local cmd=$1 args=("${@:2}")
-  if has "$cmd"; then
-    case "$cmd" in
-    modprobed-db) "$cmd" store &>/dev/null || : ;;
-    hwclock | updatedb | chwd) run_priv "$cmd" "${args[@]}" &>/dev/null || : ;;
-    mandb) run_priv "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;;
-    *) run_priv "$cmd" "${args[@]}" &>/dev/null || : ;;
-    esac
-  fi
-}
+# Note: run_system_maintenance is now provided by common.sh
 
 update_system_packages() {
   local pkgmgr aur_opts=()
@@ -157,7 +40,7 @@ update_system_packages() {
   fi
 
   # Remove pacman lock if exists
-  [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck &>/dev/null || :
+  cleanup_pacman_lock
 
   # Update keyring and file databases
   run_priv "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &>/dev/null || :
@@ -360,8 +243,8 @@ update_boot() {
 }
 
 run_update() {
-  print_update_banner
-  setup_env
+  print_named_banner "update" "Meow (> ^ <)"
+  setup_build_env
 
   checkupdates -dc &>/dev/null || :
 
@@ -417,14 +300,8 @@ clean_with_sudo() {
   done
 }
 
-capture_disk_usage() {
-  local var_name=$1
-  local -n ref="$var_name"
-  ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
-}
-
 run_clean() {
-  print_clean_banner
+  print_named_banner "clean"
 
   # Ensure sudo access
   [[ $EUID -ne 0 && -n $SUDO ]] && "$SUDO" -v
@@ -724,15 +601,14 @@ EOF
 }
 
 #=========== Traps & Cleanup ===========
-cleanup() {
-  # Clean up pacman lock if it exists
-  [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f -- /var/lib/pacman/db.lck &>/dev/null || :
-
+# Enhanced cleanup for archmaint
+cleanup_archmaint() {
+  cleanup_pacman_lock
   # Reset environment variables
   unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
 }
 
-trap cleanup EXIT
+trap cleanup_archmaint EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 

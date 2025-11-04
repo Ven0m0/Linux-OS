@@ -34,23 +34,27 @@ EOF
     done
   fi
 }
+
 trap 'cleanup' EXIT INT TERM
 cleanup(){ :; }
 
 find_files(){
-  if has fdf && [[ ! " $@ " =~ " --exec " ]]; then
-    fdf -H --color=never "$@" 2>/dev/null
-  if has fd; then
-    fd -H -c never "$@" 2>/dev/null
+  if has fd && [[ ! " $* " =~ " --exec " ]]; then
+    fd -H --color=never "$@"
   else
-    find -O2 "$@" 2>/dev/null
+    find "$@"
   fi
 }
-capture_disk_usage(){ local -n ref=$1; ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'); }
+
+capture_disk_usage(){
+  local -n ref=$1
+  ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
+}
+
 ensure_not_running(){
   local process_name=$1 timeout=6
   if pgrep -x -u "$USER" "$process_name" &>/dev/null; then
-    printf '%b\n' "${YLW}Waiting for ${process_name} to exit...${DEF}"
+    printf '  %b\n' "${YLW}Waiting for ${process_name} to exit...${DEF}"
     while ((timeout-->0)) && pgrep -x -u "$USER" "$process_name" &>/dev/null; do
       read -rt 1 -- <> <(:) &>/dev/null || :
     done
@@ -192,13 +196,8 @@ main(){
   has bun && bun pm cache rm &>/dev/null
   has pnpm && { pnpm prune &>/dev/null && pnpm store prune &>/dev/null; }
   has sdk && sdk flush tmp &>/dev/null
-  printf '%b\n' "🔄${BLU}Resetting  space...${DEF}"
-  if swapon --summary | grep -q "swap"; then
-    sudo swapoff -a &>/dev/null && sudo swapon -a &>/dev/null
-  fi
-  for service in bluetooth.service cups.service avahi-daemon.service ModemManager.service; do
-    systemctl is-active --quiet "$service" && sudo systemctl stop "$service"
-  done
+  printf '%b\n' "🔄${BLU}Resetting swap space...${DEF}"
+  sudo swapoff -a &>/dev/null && sudo swapon -a &>/dev/null
   printf '%b\n' "🔄${BLU}Cleaning old logs and crash dumps...${DEF}"
   sudo find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
   sudo journalctl --rotate --vacuum-size=10M -q &>/dev/null

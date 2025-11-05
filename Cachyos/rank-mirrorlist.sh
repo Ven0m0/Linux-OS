@@ -98,3 +98,9 @@ main(){
 }
 
 main "$@"
+
+if has rankmirrors; then
+  wget --timeout=3 -q -O - "https://archlinux.org/mirrorlist/?country=DE&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' | \
+    rankmirrors -n 15 - | sudo tee /etc/pacman.d/mirrorlist.tmp
+  sudo mv /etc/pacman.d/mirrorlist.tmp /etc/pacman.d/mirrorlist
+fi

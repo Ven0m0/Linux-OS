@@ -123,9 +123,11 @@ update_python(){
     fi
     xecho "🔄${BLU}Updating Python packages...${DEF}"
     if has jq; then
-      pkgs=$(uv pip list --outdated --format json | jq -r '.[].name' 2>/dev/null || :)
-      if [[ -n $pkgs ]]; then
-        uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh "$pkgs" \
+      # Use mapfile for efficient array population instead of command substitution
+      local pkgs
+      mapfile -t pkgs < <(uv pip list --outdated --format json 2>/dev/null | jq -r '.[].name' 2>/dev/null || :)
+      if [[ ${#pkgs[@]} -gt 0 ]]; then
+        uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh "${pkgs[@]}" \
           >/dev/null 2>&1 || xecho "⚠️${YLW}Failed to update packages${DEF}"
       else
         xecho "✅${GRN}All Python packages are up to date${DEF}"
@@ -143,10 +145,12 @@ update_python(){
 
 update_system_utils(){
   xecho "🔄${BLU}Running miscellaneous updates...${DEF}"
+  # Pre-check which commands exist to avoid repeated 'has' calls
   local cmds=("fc-cache -f" "update-desktop-database" "update-pciids" "update-smart-drivedb" "update-ccache-links")
+  local cmd cmd_name
   for cmd in "${cmds[@]}"; do
-    local cmd_name=${cmd%% *}
-    has "$cmd_name" && run_priv "$cmd"
+    cmd_name=${cmd%% *}
+    has "$cmd_name" && run_priv "$cmd_name" "${cmd#* }" &>/dev/null || :
   done
   has update-leap && LC_ALL=C update-leap >/dev/null 2>&1 || :
   if has fwupdmgr; then

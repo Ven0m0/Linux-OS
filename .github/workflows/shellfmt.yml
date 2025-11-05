@@ -1,5 +1,10 @@
 name: Shell Lint & Format
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "**/*.{sh,bash,bashrc,profile}"
+
 permissions:
   contents: write
   pull-requests: write

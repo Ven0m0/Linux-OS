@@ -55,10 +55,23 @@ sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
    - Exit codes
    - Dependencies
 
+5. Tools (Check if installed for non default)
+  - fdf -> fd -> find (if exec not needed, otherwise `fd -> find`
+  - rg -> grep
+  - sd -> sed
+  - jaq -> jq
+  - gix (gitoxide) -> git
+  - sk (skim) -> fzf
+  - rust-parallel -> parallel -> xargs
+  - bun -> pnpm -> npm
+  - uv -> pip
+  - aria2 -> curl -> wget2 -> wget (if output piped no aria2)
+  - bat -> cat
+
 ## Testing Requirements
-1. Unit tests (using bats-core)
-2. Integration tests
-3. ShellCheck validation
+1. ShellCheck validation
+2. Shellharden validation
+3. shfmt  validation
 4. Distribution compatibility tests
 5. Performance benchmarks
 

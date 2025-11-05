@@ -1,11 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export LC_ALL=C LANG=C
+
 sudo apt-get install ntpdate
 sudo ntpdate -u ntp.ubuntu.com
 sudo apt-get install ca-certificates
 
-# SSH fix
-find -O3 ~/.ssh/ -type f -exec chmod 600 {}
-find -O3 ~/.ssh/ -type d -exec chmod 700 {}
-find -O3 ~/.ssh/ -type f -name "*.pub" -exec chmod 644 {}
+# SSH fix - Use fd/fdf when available for better performance
+if command -v fdf &>/dev/null; then
+  fdf -H -t f . ~/.ssh/ -x chmod 600
+  fdf -H -t d . ~/.ssh/ -x chmod 700
+  fdf -H -t f '\.pub$' ~/.ssh/ -x chmod 644
+elif command -v fd &>/dev/null; then
+  fd -H -t f . ~/.ssh/ -x chmod 600
+  fd -H -t d . ~/.ssh/ -x chmod 700
+  fd -H -t f '\.pub$' ~/.ssh/ -x chmod 644
+else
+  find ~/.ssh/ -type f -exec chmod 600 {} +
+  find ~/.ssh/ -type d -exec chmod 700 {} +
+  find ~/.ssh/ -type f -name "*.pub" -exec chmod 644 {} +
+fi
+
 sudo chmod -R 744 ~/.ssh
 sudo chmod -R 744 ~/.gnupg
 

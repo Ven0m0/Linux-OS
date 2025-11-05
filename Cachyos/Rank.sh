@@ -17,7 +17,8 @@ TIMEOUT=30
 TEST_PKG=core/pacman
 STATE_FILE=state
 VERBOSE=no
-REPOS=(arch cachyos chaotic-aur endeavouros alhp)
+ARCH_URL='https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&use_mirror_status=on'
+REPOS=(cachyos chaotic-aur endeavouros alhp)
 REF_LEVEL=""
 TMP=()
 export RATE_MIRRORS_PROTOCOL=https RATE_MIRRORS_ALLOW_ROOT=true \
@@ -44,22 +45,6 @@ get_ref(){
   REF_LEVEL=$(curl -sf -m10 "$url" 2>/dev/null | head -n1)
   [[ $REF_LEVEL =~ ^[0-9]+$ ]] || REF_LEVEL=""
   [[ $VERBOSE = yes && $REF_LEVEL ]] && info "Ref level: $REF_LEVEL"
-}
-
-rank_one(){
-  local url=$1 timeout=${2:-$TIMEOUT} ref=${3:-$REF_LEVEL}
-  local state="${url}/${STATE_FILE}" out time lvl
-  
-  out=$(curl --fail -Lsm "$timeout" -w '\n%{time_total}' "$state" 2>/dev/null) || return $?
-  lvl=$(head -n1 <<<"$out")
-  time=$(tail -n1 <<<"$out")
-  [[ $lvl =~ ^[0-9]+$ && $time =~ ^[0-9.]+$ ]] || return 1
-  
-  if [[ $ref && $lvl -lt $((ref-10)) ]]; then
-    [[ $VERBOSE = yes ]] && warn "Old mirror: $url (lvl $lvl vs $ref)"
-    return 1
-  fi
-  echo "$url \$repo/\$arch $lvl $time"
 }
 
 test_speed(){
@@ -106,6 +91,35 @@ rank_rate(){
       return
     }
   sudo install -m644 -b -S -T "$tmp" "$file"
+}
+
+rank_arch_fresh(){
+  local url="${1:-$ARCH_URL}" path="$MIRRORDIR/mirrorlist" tmp=$(mktemp); TMP+=("$tmp")
+  
+  [[ -f $path ]] && backup "$path"
+  info "Fetching fresh Arch mirrorlist from archlinux.org"
+  
+  if has curl; then
+    curl -sfL --retry 3 --retry-delay 1 "$url" -o "$tmp.dl" || die "Download failed: $url"
+  elif has wget; then
+    wget -qO "$tmp.dl" "$url" || die "Download failed: $url"
+  else
+    die "Neither curl nor wget available"
+  fi
+  
+  local -a urls
+  mapfile -t urls < <(awk '/^#?Server/{url=$3; sub(/\$.*/,"",url); if(!seen[url]++)print url}' "$tmp.dl")
+  ((${#urls[@]}>0)) || die "No server entries found"
+  
+  info "Ranking ${#urls[@]} fresh Arch mirrors"
+  printf '%s\n' "${urls[@]}" \
+    | rate-mirrors --save="$tmp" stdin \
+      --path-to-test="extra/os/x86_64/extra.files" \
+      --path-to-return="\$repo/os/\$arch" \
+      --comment-prefix="# " --output-prefix="Server = " \
+  || { warn "rate-mirrors failed for Arch, falling back"; rank_manual "$path"; return; }
+  
+  sudo install -m644 -b -S -T "$tmp" "$path"
 }
 
 rank_reflector(){
@@ -177,23 +191,38 @@ opt_all(){
   
   get_ref
   
-  if has cachyos-rate-mirrors; then
-    info "Using cachyos-rate-mirrors"
-    sudo cachyos-rate-mirrors || :
-  elif has rate-mirrors; then
-    for repo in "${REPOS[@]}"; do
-      [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_rate "$repo" || :
+  if has rate-mirrors; then
+    rank_arch_fresh "$ARCH_URL"
+    
+    if has cachyos-rate-mirrors; then
+      info "Using cachyos-rate-mirrors"
+      sudo cachyos-rate-mirrors || :
+    else
+      for repo in "${REPOS[@]}"; do
+        [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_rate "$repo" || :
+      done
+    fi
+    
+    info "Searching for other mirrorlists..."
+    local f repo
+    for f in "$MIRRORDIR"/*mirrorlist; do
+      [[ -L $f || $f == "$MIRRORDIR/mirrorlist" ]] && continue
+      repo=$(basename "$f" "-mirrorlist")
+      [[ $repo == "$(basename "$f")" ]] && continue
+      [[ " ${REPOS[*]} " =~ " $repo " ]] && continue
+      rank_rate "$repo" "$f" || :
     done
   elif has reflector; then
-    [[ -f $MIRRORDIR/mirrorlist ]] && rank_reflector "$MIRRORDIR/mirrorlist" || :
+    rank_reflector "$MIRRORDIR/mirrorlist" || :
   else
     info "Using manual ranking"
+    [[ -f $MIRRORDIR/mirrorlist ]] && rank_manual "$MIRRORDIR/mirrorlist" || :
     for repo in "${REPOS[@]}"; do
       [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_manual "$MIRRORDIR/${repo}-mirrorlist" || :
     done
   fi
   
-  sudo chmod go+r "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
+  sudo chmod 644 "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
   info "Updated all mirrorlists"
   sudo pacman -Syyq --noconfirm --needed || :
 }
@@ -238,7 +267,7 @@ usage(){
 Usage: $(basename "$0") [OPTIONS]
 
 Options:
-  -o, --optimize        Optimize all mirrors
+  -o, --optimize        Optimize all mirrors (fetches fresh Arch mirrorlist)
   -b, --benchmark [F]   Benchmark mirrors (default: $MIRRORDIR/mirrorlist)
   -s, --show [F]        Show current mirrorlist
   -r, --restore         Restore from backup
@@ -249,7 +278,7 @@ Options:
 
 Examples:
   $(basename "$0")              # Interactive menu
-  $(basename "$0") -o           # Optimize all
+  $(basename "$0") -o           # Optimize all (with fresh Arch mirrors)
   $(basename "$0") -c US -o     # Optimize for US mirrors
   $(basename "$0") -b           # Benchmark current
 EOF

@@ -67,7 +67,7 @@ vacuum_sqlite(){ # echo bytes_saved
   # skip if probably open
   [[ -f ${db}-wal || -f ${db}-journal ]] && { printf '0\n'; return; }
   s_old=$(stat -c%s "$db" 2>/dev/null) || { printf '0\n'; return; }
-  # Combine PRAGMA operations for efficiency
+  # VACUUM already rebuilds indices, making REINDEX redundant
   sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || { printf '0\n'; return; }
   s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
   printf '%d\n' "$((s_old - s_new))"

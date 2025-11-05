@@ -193,8 +193,10 @@ force_umount_device() {
 
   if ((${#parts[@]} > 0)); then
     warn "Unmounting partitions on $dev"
-    # Batch unmount all partitions at once for better performance
-    umount -fl "${parts[@]}" &>/dev/null 2>&1 || :
+    # Unmount each partition individually for robustness
+    for part in "${parts[@]}"; do
+      umount -fl "$part" &>/dev/null 2>&1 || :
+    done
     sleep 1
   fi
 

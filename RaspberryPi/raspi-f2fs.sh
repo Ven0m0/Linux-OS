@@ -160,16 +160,20 @@ cleanup() {
 # Check dependencies
 check_deps() {
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync tar xz blkid partprobe lsblk flock)
-  local cmd missing=0
+  local -a missing_cmds=()
+  local cmd
 
+  # Batch check all commands first, then report all missing at once
   for cmd in "${deps[@]}"; do
-    command -v "$cmd" &>/dev/null || {
-      warn "Missing: $cmd"
-      missing=1
-    }
+    command -v "$cmd" &>/dev/null || missing_cmds+=("$cmd")
   done
 
-  ((missing)) && error "Install missing dependencies (Arch: pacman -S f2fs-tools dosfstools parted rsync xz util-linux)"
+  if ((${#missing_cmds[@]} > 0)); then
+    for cmd in "${missing_cmds[@]}"; do
+      warn "Missing: $cmd"
+    done
+    error "Install missing dependencies (Arch: pacman -S f2fs-tools dosfstools parted rsync xz util-linux)"
+  fi
 
   [[ -z $src_path || -z $tgt_path ]] && { command -v fzf &>/dev/null || error "fzf required for interactive mode (pacman -S fzf)"; }
 }
@@ -184,16 +188,15 @@ force_umount_device() {
     sleep 1
   }
 
-  # Find and unmount all partitions
+  # Find and unmount all partitions efficiently
   mapfile -t parts < <(lsblk -n -o NAME,MOUNTPOINT "$dev" 2>/dev/null | awk '$2!="" {print "/dev/"$1}')
 
-  ((${#parts[@]})) && {
+  if ((${#parts[@]} > 0)); then
     warn "Unmounting partitions on $dev"
-    for part in "${parts[@]}"; do
-      umount -fl "$part" &>/dev/null 2>&1 || :
-    done
+    # Batch unmount all partitions at once for better performance
+    umount -fl "${parts[@]}" &>/dev/null 2>&1 || :
     sleep 1
-  }
+  fi
 
   # Force kernel to drop caches and release device
   sync
@@ -252,8 +255,14 @@ setup_target() {
     ((cfg[dry_run])) || { command -v blockdev &>/dev/null && blockdev --flushbufs "$TGT_DEV" &>/dev/null || :; }
   else
     ((cfg[dry_run])) || {
+      # Detach all existing loop devices for this path in one efficient pass
       mapfile -t existing < <(losetup -j "$tgt_path" 2>/dev/null | cut -d: -f1)
-      for loop in "${existing[@]}"; do [[ -n $loop ]] && losetup -d "$loop" &>/dev/null || :; done
+      # Batch detach if multiple loops exist
+      ((${#existing[@]} > 0)) && {
+        for loop in "${existing[@]}"; do
+          [[ -n $loop ]] && losetup -d "$loop" &>/dev/null || :
+        done
+      }
     }
 
     local size_mb=$(($(du -m "$SRC_IMG" | cut -f1) + 200))

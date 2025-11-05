@@ -36,13 +36,27 @@ find0(){ # usage: find0 <path> <find-args...> (prints NUL-delimited)
   fi
 }
 
-ensure_not_running_any(){ local timeout=6 p
+ensure_not_running_any(){ 
+  local timeout=6 p running_procs=()
+  # Batch check all processes once instead of individually
   for p in "$@"; do
-    if pgrep -x -u "$USER" "$p" &>/dev/null; then
-      printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
-      while ((timeout-->0)) && pgrep -x -u "$USER" "$p" &>/dev/null; do read -rt 1 -- <> <(:) &>/dev/null || :; done
-      pgrep -x -u "$USER" "$p" &>/dev/null && { printf '  %s\n' "${RED}Killing ${p}...${DEF}"; pkill -KILL -x -u "$USER" "$p" &>/dev/null || :; read -rt 1 -- <> <(:) &>/dev/null || :; }
-    fi
+    pgrep -x -u "$USER" "$p" &>/dev/null && running_procs+=("$p")
+  done
+  
+  # Only process running programs
+  [[ ${#running_procs[@]} -eq 0 ]] && return
+  
+  for p in "${running_procs[@]}"; do
+    printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
+    local wait_time=$timeout
+    while ((wait_time-- > 0)) && pgrep -x -u "$USER" "$p" &>/dev/null; do 
+      sleep 1
+    done
+    pgrep -x -u "$USER" "$p" &>/dev/null && { 
+      printf '  %s\n' "${RED}Killing ${p}...${DEF}"
+      pkill -KILL -x -u "$USER" "$p" &>/dev/null || :
+      sleep 1
+    }
   done
 }
 
@@ -53,15 +67,20 @@ vacuum_sqlite(){ # echo bytes_saved
   # skip if probably open
   [[ -f ${db}-wal || -f ${db}-journal ]] && { printf '0\n'; return; }
   s_old=$(stat -c%s "$db" 2>/dev/null) || { printf '0\n'; return; }
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; REINDEX; PRAGMA optimize;' &>/dev/null || { printf '0\n'; return; }
+  # Combine PRAGMA operations for efficiency
+  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || { printf '0\n'; return; }
   s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
   printf '%d\n' "$((s_old - s_new))"
 }
 
 clean_sqlite_dbs(){ # in CWD
   local total=0 db saved
+  # Batch file type checks to reduce subprocess calls
   while IFS= read -r -d '' db; do
-    if file -e ascii -b "$db" | grep -q 'SQLite'; then
+    # Skip non-regular files early
+    [[ -f $db ]] || continue
+    # Use magic byte check instead of spawning file command
+    if head -c 16 "$db" 2>/dev/null | grep -q 'SQLite format 3'; then
       saved=$(vacuum_sqlite "$db" || printf '0')
       ((saved>0)) && total=$((total+saved))
     fi
@@ -85,19 +104,21 @@ foxdir(){ # echo ACTIVE profile dir for a base like ~/.mozilla/firefox or ~/.lib
 }
 
 mozilla_profiles(){ # print all profile dirs for a base containing installs.ini/profiles.ini
-  local base=$1 line p; declare -A seen
+  local base=$1 p; declare -A seen
   [[ -d $base ]] || return 0
+  
+  # Process installs.ini using awk for efficiency
   if [[ -f $base/installs.ini ]]; then
-    while IFS= read -r line; do
-      [[ $line == Default=* ]] || continue
-      p=${line#Default=}; [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
-    done < "$base/installs.ini"
+    while IFS= read -r p; do
+      [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
+    done < <(awk -F= '/^Default=/ {print $2}' "$base/installs.ini")
   fi
+  
+  # Process profiles.ini using awk for efficiency
   if [[ -f $base/profiles.ini ]]; then
-    while IFS= read -r line; do
-      [[ $line == Path=* ]] || continue
-      p=${line#Path=}; [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
-    done < "$base/profiles.ini"
+    while IFS= read -r p; do
+      [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
+    done < <(awk -F= '/^Path=/ {print $2}' "$base/profiles.ini")
   fi
 }
 

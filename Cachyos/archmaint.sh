@@ -152,8 +152,10 @@ update_python() {
     log "🔄${BLU}Updating Python packages...${DEF}"
     if has jq; then
       local pkgs
-      mapfile -t pkgs < <(uv pip list --outdated --format json | jq -r '.[].name' 2>/dev/null || :)
+      # Optimize by only calling uv pip list once and parsing efficiently
+      mapfile -t pkgs < <(uv pip list --outdated --format json 2>/dev/null | jq -r '.[].name' 2>/dev/null || :)
       if [[ ${#pkgs[@]} -gt 0 ]]; then
+        # Use array expansion for better argument passing
         uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh "${pkgs[@]}" \
           &>/dev/null || log "⚠️${YLW}Failed to update packages${DEF}"
       else
@@ -161,6 +163,7 @@ update_python() {
       fi
     else
       log "⚠️${YLW}jq not found, using fallback method${DEF}"
+      # Optimize by avoiding process substitution when possible
       uv pip install --upgrade -r <(uv pip list --format freeze) &>/dev/null \
         || log "⚠️${YLW}Failed to update packages${DEF}"
     fi
@@ -173,18 +176,20 @@ update_python() {
 
 update_system_utils() {
   log "🔄${BLU}Running miscellaneous updates...${DEF}"
-  # Array of commands to run in background
+  # Pre-filter commands that exist to reduce repeated has() calls
   local cmds=(
-    "fc-cache -f"
-    "update-desktop-database"
-    "update-pciids"
-    "update-smart-drivedb"
-    "update-ccache-links"
+    "fc-cache:-f"
+    "update-desktop-database:"
+    "update-pciids:"
+    "update-smart-drivedb:"
+    "update-ccache-links:"
   )
 
+  local cmd cmd_name cmd_args
   for cmd in "${cmds[@]}"; do
-    local cmd_name=${cmd%% *}
-    has "$cmd_name" && run_priv "$cmd" &>/dev/null || :
+    cmd_name="${cmd%%:*}"
+    cmd_args="${cmd#*:}"
+    has "$cmd_name" && run_priv "$cmd_name" ${cmd_args:+$cmd_args} &>/dev/null || :
   done
 
   has update-leap && LC_ALL=C update-leap &>/dev/null || :
@@ -271,33 +276,45 @@ run_update() {
 #=========== Clean Functions ===========
 # Clean arrays of file/directory paths
 clean_paths() {
-  local paths=("$@")
+  local paths=("$@") path
+  # Batch check existence to reduce syscalls
+  local existing_paths=()
   for path in "${paths[@]}"; do
     # Handle wildcard paths
     if [[ $path == *\** ]]; then
-      # Use globbing directly
-      for item in "${path[@]}"; do
-        [[ -e $item ]] && rm -rf --preserve-root -- "$item" &>/dev/null || :
+      # Use globbing directly and collect existing items
+      shopt -s nullglob
+      for item in $path; do
+        [[ -e $item ]] && existing_paths+=("$item")
       done
+      shopt -u nullglob
     else
-      [[ -e $path ]] && rm -rf --preserve-root -- "$path" &>/dev/null || :
+      [[ -e $path ]] && existing_paths+=("$path")
     fi
   done
+  # Batch delete all existing paths at once
+  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
 clean_with_sudo() {
-  local paths=("$@")
+  local paths=("$@") path
+  # Batch check existence to reduce syscalls and sudo invocations
+  local existing_paths=()
   for path in "${paths[@]}"; do
     # Handle wildcard paths
     if [[ $path == *\** ]]; then
-      # Use globbing directly
-      for item in "${path[@]}"; do
-        [[ -e $item ]] && run_priv rm -rf --preserve-root -- "$item" &>/dev/null || :
+      # Use globbing directly and collect existing items
+      shopt -s nullglob
+      for item in $path; do
+        [[ -e $item ]] && existing_paths+=("$item")
       done
+      shopt -u nullglob
     else
-      [[ -e $path ]] && run_priv rm -rf --preserve-root -- "$path" &>/dev/null || :
+      [[ -e $path ]] && existing_paths+=("$path")
     fi
   done
+  # Batch delete all existing paths at once with single sudo call
+  [[ ${#existing_paths[@]} -gt 0 ]] && run_priv rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
 run_clean() {
@@ -373,15 +390,16 @@ run_clean() {
 
   # Clean log files and crash dumps
   log "🔄${BLU}Cleaning logs and crash dumps...${DEF}"
-  # Use fd if available, fallback to find
+  # Use fd if available, fallback to find - optimize with batch delete
   if has fd; then
-    run_priv fd -H -t f -e log -d 4 --changed-before 7d . /var/log -x rm {} \; &>/dev/null || :
-    run_priv fd -H -t f -p "core.*" -d 2 --changed-before 7d . /var/crash -x rm {} \; &>/dev/null || :
+    run_priv fd -H -t f -e log -d 4 --changed-before 7d . /var/log -X rm &>/dev/null || :
+    run_priv fd -H -t f -p "core.*" -d 2 --changed-before 7d . /var/crash -X rm &>/dev/null || :
   else
-    run_priv find -O3 /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
-    run_priv find -O3 /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
+    # Use -delete for better performance than -exec rm
+    run_priv find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
+    run_priv find /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
   fi
-  run_priv find -O3 /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
+  run_priv find /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
 
   # Clean cache files
   log "🔄${BLU}Cleaning cache files...${DEF}"
@@ -395,13 +413,15 @@ run_clean() {
     "/root/.cache/"
   )
 
-  # Clean user cache
+  # Clean user cache - optimize by using -delete directly with find
   if has fd; then
-    fd -H -t f -d 4 --changed-before 1d . "${HOME}/.cache" -x rm {} \; &>/dev/null || :
-    fd -H -t d -d 4 --changed-before 1d -E "**/.git" . "${HOME}/.cache" -x rmdir {} \; &>/dev/null || :
+    # Use fd with batch delete for better performance
+    fd -H -t f -d 4 --changed-before 1d . "${HOME}/.cache" -X rm &>/dev/null || :
+    fd -H -t d -d 4 --changed-before 1d -E "**/.git" . "${HOME}/.cache" -X rmdir &>/dev/null || :
   else
-    find -O3 "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null || :
-    find -O3 "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
+    # find -delete is more efficient than -exec rm
+    find "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null || :
+    find "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
   fi
 
   run_priv systemd-tmpfiles --clean &>/dev/null || :

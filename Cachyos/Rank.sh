@@ -182,18 +182,15 @@ restore(){
 
 opt_all(){
   info "Starting optimization (country: $COUNTRY)"
-  
   sudo pacman -Syyuq --noconfirm --needed || :
   sudo pacman-db-upgrade --nocolor &>/dev/null || :
   has keyserver-rank && sudo keyserver-rank --yes &>/dev/null || :
   
   [[ -f /etc/eos-rankmirrors.disabled ]] && source /etc/eos-rankmirrors.disabled || :
-  
   get_ref
   
   if has rate-mirrors; then
     rank_arch_fresh "$ARCH_URL"
-    
     if has cachyos-rate-mirrors; then
       info "Using cachyos-rate-mirrors"
       sudo cachyos-rate-mirrors || :
@@ -202,7 +199,6 @@ opt_all(){
         [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_rate "$repo" || :
       done
     fi
-    
     info "Searching for other mirrorlists..."
     local f repo
     for f in "$MIRRORDIR"/*mirrorlist; do
@@ -221,7 +217,6 @@ opt_all(){
       [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_manual "$MIRRORDIR/${repo}-mirrorlist" || :
     done
   fi
-  
   sudo chmod 644 "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
   info "Updated all mirrorlists"
   sudo pacman -Syyq --noconfirm --needed || :

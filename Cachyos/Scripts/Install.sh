@@ -41,7 +41,7 @@ run_priv pacman-key --init 2>/dev/null || :
 run_priv pacman-key --populate archlinux cachyos 2>/dev/null || :
 "${pkgmgr[@]}" -Syq archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null || :
 "${pkgmgr[@]}" -Syyuq --noconfirm 2>/dev/null || :
-run_priv modprobe zram bbr || :
+run_priv modprobe zram tcp_bbr adios
 
 # Package list
 pkgs=(
@@ -59,7 +59,7 @@ pkgs=(
   btop htop fastfetch pay-respects fclones topgrade bauh flatpak partitionmanager polkit-kde-agent
   bleachbit-git cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher cleanerml-git
   makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an xdg-ninja cylon
-  scaramanga kbuilder optiimage optipng-parallel vx-bin biome
+  scaramanga kbuilder optiimage optipng-parallel vx-bin biome yamlfmt
 )
 
 # Install packages

@@ -118,7 +118,7 @@ has rustup && {
 crates=(
   cpz xcp crabz rmz parel ffzap cargo-binstall cargo-diet crab-fetch cargo-list minhtml cargo-minify
   rimage ripunzip terminal_tools imagineer docker-image-pusher image-optimizer dui-cli imgc pixelsqueeze
-  bgone dupimg simagef compresscli dssim img-squeeze lq parallel-sh
+  bgone dupimg simagef compresscli dssim img-squeeze lq parallel-sh frep dupe-krill bssh
 )
 
 has cargo && {

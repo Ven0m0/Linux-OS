@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-# Compatibility wrapper (deprecated): use android-toolkit.sh whatsapp
+# Compatibility wrapper (deprecated): use android-toolkit.sh device-config
 set -euo pipefail; IFS=$'\n\t'
-exec "$(dirname "$0")/android-toolkit.sh" whatsapp "$@"
+sub="${1:-apply}"; shift || :
+exec "$(dirname "$0")/android-toolkit.sh" device-config "$sub" "$@"

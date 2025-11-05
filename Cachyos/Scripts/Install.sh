@@ -250,6 +250,7 @@ srvc=(nohang prelockd memavaild uresourced preload)
 for sv in "${srvc[@]}"; do
   sudo pacman --noconfirm --needed -Sq "$sv"
   sudo systemctl enable --now "$sv"
+  sudo systemctl enable --now pci-latency.service
 done
 
 wait

@@ -5,7 +5,7 @@
 # package.name=PRIORITY_INTERACTIVE_FAST:speed-profile
 
 [permission]
-com.pittvandewitt.wavelet = "dump,write"
+com.pittvandewitt.wavelet = "write,dump"
 com.termux = "write,dump,doze"
 moe.shizuku.privileged.api = "write"
 

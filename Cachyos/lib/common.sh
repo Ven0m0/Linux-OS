@@ -253,21 +253,34 @@ find_files() {
 
 #============ Package Manager Detection ============
 # Detect and return best available AUR helper or pacman
+# Cache result to avoid repeated checks
+_PKG_MGR_CACHED=""
+_AUR_OPTS_CACHED=()
+
 detect_pkg_manager() {
-  local pkgmgr aur_opts=()
+  # Return cached result if available
+  if [[ -n $_PKG_MGR_CACHED ]]; then
+    printf '%s\n' "$_PKG_MGR_CACHED"
+    printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
+    return 0
+  fi
+  
+  local pkgmgr
   
   if has paru; then
     pkgmgr=paru
-    aur_opts=(--batchinstall --combinedupgrade --nokeepsrc)
+    _AUR_OPTS_CACHED=(--batchinstall --combinedupgrade --nokeepsrc)
   elif has yay; then
     pkgmgr=yay
-    aur_opts=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
+    _AUR_OPTS_CACHED=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
   else
     pkgmgr=pacman
+    _AUR_OPTS_CACHED=()
   fi
   
+  _PKG_MGR_CACHED=$pkgmgr
   printf '%s\n' "$pkgmgr"
-  printf '%s\n' "${aur_opts[@]}"
+  printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
 
 # Library successfully loaded

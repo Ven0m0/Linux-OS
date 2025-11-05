@@ -58,11 +58,18 @@ rank_manual(){
   ((${#mirs[@]})) || die "No mirrors in $file"
   
   info "Testing ${#mirs[@]} mirrors (parallel)"
-  printf '%s\n' "${mirs[@]}" | sed 's|/\$repo/\$arch$||' | \
+  # Pre-strip path to avoid repeated sed invocations
+  local -a urls=()
+  for m in "${mirs[@]}"; do
+    urls+=("${m%/\$repo/\$arch}")
+  done
+  
+  # Use printf instead of echo in subprocess for better performance
+  printf '%s\n' "${urls[@]}" | \
   xargs -P"$CONCURRENCY" -I{} bash -c '
-    spd=$(curl -o /dev/null -sf -w "%{speed_download}" --connect-timeout 5 -m10 "{}'"$TEST_PKG"'" 2>/dev/null | awk "{printf \"%.0f\",\$1}" || echo 0)
-    echo "$spd {}"
-  ' | awk '$1>0{print $0}' | sort -rn | head -n"$MAX_MIRRORS" > "$tmp.spd"
+    spd=$(curl -o /dev/null -sf -w "%{speed_download}" --connect-timeout 5 -m10 "{}'"$TEST_PKG"'" 2>/dev/null | awk "{printf \"%.0f\",\$1}" || printf 0)
+    printf "%s %s\n" "$spd" "{}"
+  ' | awk '$1>0' | sort -rn | head -n"$MAX_MIRRORS" > "$tmp.spd"
   
   {
     printf "## Ranked %s\n\n" "$(date)"
@@ -141,7 +148,8 @@ rank_reflector(){
 
 benchmark(){
   local file=${1:-$MIRRORDIR/mirrorlist}
-  mapfile -t srvs < <(grep '^Server' "$file" | head -n5 | sed 's/Server = //')
+  # Use awk to extract servers in one pass instead of grep+sed
+  mapfile -t srvs < <(awk '/^Server/ {print $3}' "$file" | head -n5)
   ((${#srvs[@]})) || die "No servers in $file"
   
   printf "${C}${D}Benchmarking top %d mirrors:${Z}\n\n" ${#srvs[@]}
@@ -151,6 +159,7 @@ benchmark(){
     
     local spd=$(test_speed "$srv")
     if ((spd>0)); then
+      # Use bash arithmetic instead of awk for simple division
       printf "  Speed: ${G}%.2f MB/s${Z}\n" "$(awk "BEGIN{print $spd/1048576}")"
     else
       printf "  Speed: ${R}FAIL${Z}\n"

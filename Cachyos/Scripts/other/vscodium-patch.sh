@@ -1,9 +1,21 @@
 #!/bin/bash
 LC_ALL=C
 
-add_mime_type(){ ! grep -qE "^MimeType=.*\b${1};" "$2" && sed -i -E "s#^(MimeType=.*;)\$#\1${1};#" "$2"; }
+SED=$(command -v sd &>/dev/null && echo sd || echo sed)
+JQ=$(command -v jaq &>/dev/null && echo jaq || echo jq)
+
+dl(){
+  local url="$1" out="$2"
+  if command -v curl &>/dev/null; then
+    curl -fSL -o "$out" "$url" || wget -q -O "$out" "$url"
+  else
+    wget -q -O "$out" "$url"
+  fi
+}
+
+add_mime_type(){ ! grep -qE "^MimeType=.*\b${1};" "$2" && $SED -i -E "s#^(MimeType=.*;)\$#\1${1};#" "$2"; }
 fix_15741(){ add_mime_type 'inode/directory' "$1"; }
-fix_129953(){ sed -i -E 's/"desktopName":\s*"(.+)-url-handler\.desktop"/"desktopName": "\1.desktop"/' "$1"; }
+fix_129953(){ $SED -i -E 's/"desktopName":\s*"(.+)-url-handler\.desktop"/"desktopName": "\1.desktop"/' "$1"; }
 fix_214741(){ add_mime_type 'text/plain' "$1"; }
 
 xdg_patch(){
@@ -30,22 +42,37 @@ vscodium_marketplace(){
   local -r prod="${1:-/usr/share/vscodium/resources/app/product.json}"
   local -r revert="${2:-0}"
   [[ ! -f $prod ]] && printf "Error: %s not found\n" "$prod" >&2 && return 1
-  if [[ $revert -eq 1 ]]; then
-    sed -i \
-      -e 's/^[[:blank:]]*"serviceUrl":.*/    "serviceUrl": "https:\/\/open-vsx.org\/vscode\/gallery",/' \
-      -e '/^[[:blank:]]*"cacheUrl/d' \
-      -e 's/^[[:blank:]]*"itemUrl":.*/    "itemUrl": "https:\/\/open-vsx.org\/vscode\/item"/' \
-      -e '/^[[:blank:]]*"linkProtectionTrustedDomains/d' \
-      -e '/^[[:blank:]]*"documentationUrl/i\  "linkProtectionTrustedDomains": ["https://open-vsx.org"],' \
-      "$prod" && printf "Restored VSCodium to Open-VSX\n"
+
+  if [[ $SED == "sd" ]]; then
+    if [[ $revert -eq 1 ]]; then
+      sd -s '"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery"' '"serviceUrl": "https://open-vsx.org/vscode/gallery"' "$prod"
+      sd -s '"cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",' '' "$prod"
+      sd -s '"itemUrl": "https://marketplace.visualstudio.com/items"' '"itemUrl": "https://open-vsx.org/vscode/item"' "$prod"
+      printf "Restored VSCodium to Open-VSX\n"
+    else
+      sd -s '"serviceUrl": "https://open-vsx.org/vscode/gallery"' '"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery"' "$prod"
+      sd '("serviceUrl": "[^"]+")' '$1,\n    "cacheUrl": "https://vscode.blob.core.windows.net/gallery/index"' "$prod"
+      sd -s '"itemUrl": "https://open-vsx.org/vscode/item"' '"itemUrl": "https://marketplace.visualstudio.com/items"' "$prod"
+      printf "VSCodium marketplace patched\n"
+    fi
   else
-    sed -i \
-      -e 's/^[[:blank:]]*"serviceUrl":.*/    "serviceUrl": "https:\/\/marketplace.visualstudio.com\/_apis\/public\/gallery",/' \
-      -e '/^[[:blank:]]*"cacheUrl/d' \
-      -e '/^[[:blank:]]*"serviceUrl/a\    "cacheUrl": "https:\/\/vscode.blob.core.windows.net\/gallery\/index",' \
-      -e 's/^[[:blank:]]*"itemUrl":.*/    "itemUrl": "https:\/\/marketplace.visualstudio.com\/items"/' \
-      -e '/^[[:blank:]]*"linkProtectionTrustedDomains/d' \
-      "$prod" && printf "VSCodium marketplace patched\n"
+    if [[ $revert -eq 1 ]]; then
+      sed -i \
+        -e 's/^[[:blank:]]*"serviceUrl":.*/    "serviceUrl": "https:\/\/open-vsx.org\/vscode\/gallery",/' \
+        -e '/^[[:blank:]]*"cacheUrl/d' \
+        -e 's/^[[:blank:]]*"itemUrl":.*/    "itemUrl": "https:\/\/open-vsx.org\/vscode\/item"/' \
+        -e '/^[[:blank:]]*"linkProtectionTrustedDomains/d' \
+        -e '/^[[:blank:]]*"documentationUrl/i\  "linkProtectionTrustedDomains": ["https://open-vsx.org"],' \
+        "$prod" && printf "Restored VSCodium to Open-VSX\n"
+    else
+      sed -i \
+        -e 's/^[[:blank:]]*"serviceUrl":.*/    "serviceUrl": "https:\/\/marketplace.visualstudio.com\/_apis\/public\/gallery",/' \
+        -e '/^[[:blank:]]*"cacheUrl/d' \
+        -e '/^[[:blank:]]*"serviceUrl/a\    "cacheUrl": "https:\/\/vscode.blob.core.windows.net\/gallery\/index",' \
+        -e 's/^[[:blank:]]*"itemUrl":.*/    "itemUrl": "https:\/\/marketplace.visualstudio.com\/items"/' \
+        -e '/^[[:blank:]]*"linkProtectionTrustedDomains/d' \
+        "$prod" && printf "VSCodium marketplace patched\n"
+    fi
   fi
 }
 
@@ -60,7 +87,7 @@ fix_sign(){
     search='import("node-ovsx-sign")'
     replace='import("@vscode/vsce-sign")'
   fi
-  grep -qF "$search" "$path" 2>/dev/null && sed -i "s|${search}|${replace}|g" "$path"
+  grep -qF "$search" "$path" 2>/dev/null && $SED -i "s|${search}|${replace}|g" "$path"
 }
 
 features_patch(){
@@ -68,18 +95,21 @@ features_patch(){
   local -r patch="${2:-/usr/share/code-features/patch.json}"
   local -r cache="${3:-/usr/share/code-features/cache.json}"
   local tmp="${prod}.tmp.$$"
-  command -v jq &>/dev/null || { printf "Error: jq required\n" >&2; return 1; }
+
+  command -v $JQ &>/dev/null || { printf "Error: jq/jaq required\n" >&2; return 1; }
   [[ ! -f $prod ]] && printf "WARN: %s not found. Install extra/code.\n" "$prod" >&2 && return 0
   [[ ! -f $patch ]] && printf "Error: %s not found\n" "$patch" >&2 && return 1
   [[ ! -f $cache ]] && printf '{}' >"$cache"
-  jq -s '
+
+  $JQ -s '
     .[0] as $prod | .[1] as $patch |
     ($prod | to_entries | map(select(.key as $k | $patch | has($k))) | from_entries) as $saved |
     ($prod + $patch) as $merged |
     {product: $merged, cache: $saved}
   ' "$prod" "$patch" >"$tmp" || return 1
-  jq -r '.product' "$tmp" >"${prod}" || return 1
-  jq -r '.cache' "$tmp" >"${cache}" || return 1
+
+  $JQ -r '.product' "$tmp" >"${prod}" || return 1
+  $JQ -r '.cache' "$tmp" >"${cache}" || return 1
   rm -f "$tmp" &>/dev/null || :
   printf "Applied code-features patch\n"
 }
@@ -88,9 +118,11 @@ features_restore(){
   local -r prod="${1:-/usr/lib/code/product.json}"
   local -r patch="${2:-/usr/share/code-features/patch.json}"
   local -r cache="${3:-/usr/share/code-features/cache.json}"
-  command -v jq &>/dev/null || { printf "Error: jq required\n" >&2; return 1; }
+
+  command -v $JQ &>/dev/null || { printf "Error: jq/jaq required\n" >&2; return 1; }
   [[ ! -f $prod || ! -f $patch || ! -f $cache ]] && printf "Error: Required files missing\n" >&2 && return 1
-  jq -s '
+
+  $JQ -s '
     .[0] as $prod | .[1] as $patch | .[2] as $cache |
     ($prod | to_entries | map(select(.key as $k | ($patch | has($k)) | not)) | from_entries) as $cleaned |
     ($cleaned + $cache)
@@ -101,15 +133,17 @@ features_restore(){
 }
 
 features_update(){
-  local ver="${1:-$(jq -r .version /usr/lib/code/product.json 2>/dev/null)}"
+  local ver="${1:-$($JQ -r .version /usr/lib/code/product.json 2>/dev/null)}"
   local work="/tmp/code-features.$$"
   local url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
   local patch="${2:-./patch.json}"
-  command -v jq &>/dev/null || { printf "Error: jq required\n" >&2; return 1; }
+
+  command -v $JQ &>/dev/null || { printf "Error: jq/jaq required\n" >&2; return 1; }
   [[ -z $ver ]] && printf "Error: Version required\n" >&2 && return 1
+
   mkdir -p "$work" || return 1
   printf "Downloading VSCode %s...\n" "$ver"
-  curl -fSL -o "$work/code.tgz" "$url" || { rm -rf "$work"; return 1; }
+  dl "$url" "$work/code.tgz" || { rm -rf "$work"; return 1; }
   tar xf "$work/code.tgz" -C "$work" || { rm -rf "$work"; return 1; }
 
   local -a keys=(nameShort nameLong applicationName serverApplicationName urlProtocol
@@ -120,7 +154,7 @@ features_update(){
     trustedExtensionAuthAccess auth "configurationSync.store" "editSessions.store"
     tunnelApplicationName tunnelApplicationConfig)
 
-  jq -r --argjson keys "$(printf '%s\n' "${keys[@]}" | jq -R . | jq -s .)" \
+  $JQ -r --argjson keys "$(printf '%s\n' "${keys[@]}" | $JQ -R . | $JQ -s .)" \
     'reduce $keys[] as $k ({}; . + {($k): (getpath($k | split("."))?)}) | . + {enableTelemetry: false}' \
     "$work/VSCode-linux-x64/resources/app/product.json" >"$patch" || { rm -rf "$work"; return 1; }
 
@@ -135,20 +169,20 @@ marketplace_patch(){
   local -r cache="${3:-/usr/share/code-marketplace/cache.json}"
   local tmp="${prod}.tmp.$$"
 
-  command -v jq &>/dev/null || { printf "Error: jq required\n" >&2; return 1; }
+  command -v $JQ &>/dev/null || { printf "Error: jq/jaq required\n" >&2; return 1; }
   [[ ! -f $prod ]] && printf "WARN: %s not found. Install extra/code.\n" "$prod" >&2 && return 0
   [[ ! -f $patch ]] && printf "Error: %s not found\n" "$patch" >&2 && return 1
   [[ ! -f $cache ]] && printf '{}' >"$cache"
 
-  jq -s '
+  $JQ -s '
     .[0] as $prod | .[1] as $patch |
     ($prod | to_entries | map(select(.key as $k | $patch | has($k))) | from_entries) as $saved |
     ($prod + $patch) as $merged |
     {product: $merged, cache: $saved}
   ' "$prod" "$patch" >"$tmp" || return 1
 
-  jq -r '.product' "$tmp" >"${prod}" || return 1
-  jq -r '.cache' "$tmp" >"${cache}" || return 1
+  $JQ -r '.product' "$tmp" >"${prod}" || return 1
+  $JQ -r '.cache' "$tmp" >"${cache}" || return 1
   rm -f "$tmp" &>/dev/null || :
   fix_sign 0
   printf "Applied code-marketplace patch\n"
@@ -159,10 +193,10 @@ marketplace_restore(){
   local -r patch="${2:-/usr/share/code-marketplace/patch.json}"
   local -r cache="${3:-/usr/share/code-marketplace/cache.json}"
 
-  command -v jq &>/dev/null || { printf "Error: jq required\n" >&2; return 1; }
+  command -v $JQ &>/dev/null || { printf "Error: jq/jaq required\n" >&2; return 1; }
   [[ ! -f $prod || ! -f $patch || ! -f $cache ]] && printf "Error: Required files missing\n" >&2 && return 1
 
-  jq -s '
+  $JQ -s '
     .[0] as $prod | .[1] as $patch | .[2] as $cache |
     ($prod | to_entries | map(select(.key as $k | ($patch | has($k)) | not)) | from_entries) as $cleaned |
     ($cleaned + $cache)
@@ -179,12 +213,12 @@ marketplace_update(){
   local url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
   local patch="${2:-./patch.json}"
 
-  command -v jq &>/dev/null || { printf "Error: jq required\n" >&2; return 1; }
+  command -v $JQ &>/dev/null || { printf "Error: jq/jaq required\n" >&2; return 1; }
   [[ -z $ver ]] && printf "Error: Version required\n" >&2 && return 1
 
   mkdir -p "$work" || return 1
   printf "Downloading VSCode %s...\n" "$ver"
-  curl -fSL -o "$work/code.tgz" "$url" || { rm -rf "$work"; return 1; }
+  dl "$url" "$work/code.tgz" || { rm -rf "$work"; return 1; }
   tar xf "$work/code.tgz" -C "$work" || { rm -rf "$work"; return 1; }
 
   local -a keys=(extensionsGallery extensionRecommendations keymapExtensionTips
@@ -192,7 +226,7 @@ marketplace_update(){
     virtualWorkspaceExtensionTips remoteExtensionTips extensionAllowedBadgeProviders
     extensionAllowedBadgeProvidersRegex msftInternalDomains linkProtectionTrustedDomains)
 
-  jq -r --argjson keys "$(printf '%s\n' "${keys[@]}" | jq -R . | jq -s .)" \
+  $JQ -r --argjson keys "$(printf '%s\n' "${keys[@]}" | $JQ -R . | $JQ -s .)" \
     'reduce $keys[] as $k ({}; . + {($k): .[$k]})' \
     "$work/VSCode-linux-x64/resources/app/product.json" >"$patch" || { rm -rf "$work"; return 1; }
 
@@ -255,6 +289,8 @@ Defaults:
   VSCodium:  /usr/share/vscodium/resources/app/product.json
   Features:  /usr/share/code-features/{patch,cache}.json
   Marketplace: /usr/share/code-marketplace/{patch,cache}.json
+
+Tools: Prefers sd>sed, jaq>jq, curl>wget
 EOF
       return 1
       ;;

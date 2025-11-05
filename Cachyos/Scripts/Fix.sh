@@ -62,6 +62,15 @@ echo "Fixing Fakeroot error"
 sudo pacman -Sy --needed base-devel
 
 echo "Fixing wlogout pgp keyring error"
-curl -sS https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
+# Prefer aria2 -> curl -> wget2 -> wget for downloads
+if command -v aria2c &>/dev/null; then
+  aria2c -q -d /tmp -o wlogout.asc https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F && gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc
+elif command -v curl &>/dev/null; then
+  curl -sS https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
+elif command -v wget2 &>/dev/null; then
+  wget2 -qO- https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
+else
+  wget -qO- https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
+fi
 
 sudo pacman -Syyu --noconfirm

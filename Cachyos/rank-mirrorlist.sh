@@ -49,12 +49,17 @@ mirroropt(){
 rank_arch_from_url(){
   local url="${1:-$DEFAULT_ARCH_URL}" path="$MIRRORS_DIR/mirrorlist"
   info "Fetching mirrorlist from %s" "$url"
-  if has curl; then
+  # Prefer aria2 -> curl -> wget2 -> wget
+  if has aria2c; then
+    aria2c -q --max-tries=3 --retry-wait=1 -d "$TMP_DIR" -o dl "$url"
+  elif has curl; then
     curl -sfL --retry 3 --retry-delay 1 "$url" -o "$TMP_DIR/dl"
+  elif has wget2; then
+    wget2 -q -O "$TMP_DIR/dl" "$url"
   elif has wget; then
     wget -qO "$TMP_DIR/dl" "$url"
   else
-    die "Neither curl nor wget available"
+    die "No download tool available (aria2c, curl, wget2, wget)"
   fi || die "Download failed: %s" "$url"
   local -a urls
   mapfile -t urls < <(awk '/^#?Server/{url=$3; sub(/\$.*/,"",url); if(!seen[url]++)print url}' "$TMP_DIR/dl")
@@ -100,7 +105,29 @@ main(){
 main "$@"
 
 if has rankmirrors; then
-  wget --timeout=3 -q -O - "https://archlinux.org/mirrorlist/?country=DE&protocol=https&use_mirror_status=on" | sed -e 's/^#Server/Server/' -e '/^#/d' | \
-    rankmirrors -n 15 - | sudo tee /etc/pacman.d/mirrorlist.tmp
-  sudo mv /etc/pacman.d/mirrorlist.tmp /etc/pacman.d/mirrorlist
+  local mirror_url="https://archlinux.org/mirrorlist/?country=DE&protocol=https&use_mirror_status=on"
+  local mirror_data
+
+  # Prefer aria2 -> curl -> wget2 -> wget for download
+  if has aria2c; then
+    mirror_data=$(aria2c -q --timeout=3 --allow-overwrite=true -d /tmp -o - "$mirror_url" 2>/dev/null || :)
+  elif has curl; then
+    mirror_data=$(curl -sS --max-time 3 "$mirror_url" 2>/dev/null || :)
+  elif has wget2; then
+    mirror_data=$(wget2 -qO- --timeout=3 "$mirror_url" 2>/dev/null || :)
+  else
+    mirror_data=$(wget --timeout=3 -q -O - "$mirror_url" 2>/dev/null || :)
+  fi
+
+  # Prefer sd -> sed for string replacement
+  if [[ -n $mirror_data ]]; then
+    if has sd; then
+      echo "$mirror_data" | sd '^#Server' 'Server' | sd '^#.*' '' | \
+        rankmirrors -n 15 - | sudo tee /etc/pacman.d/mirrorlist.tmp >/dev/null
+    else
+      echo "$mirror_data" | sed -e 's/^#Server/Server/' -e '/^#/d' | \
+        rankmirrors -n 15 - | sudo tee /etc/pacman.d/mirrorlist.tmp >/dev/null
+    fi
+    sudo mv /etc/pacman.d/mirrorlist.tmp /etc/pacman.d/mirrorlist
+  fi
 fi

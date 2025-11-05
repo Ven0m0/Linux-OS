@@ -189,7 +189,13 @@ update_system_utils() {
   for cmd in "${cmds[@]}"; do
     cmd_name="${cmd%%:*}"
     cmd_args="${cmd#*:}"
-    has "$cmd_name" && run_priv "$cmd_name" ${cmd_args:+$cmd_args} &>/dev/null || :
+    if has "$cmd_name"; then
+      if [[ -n $cmd_args ]]; then
+        run_priv "$cmd_name" "$cmd_args" &>/dev/null || :
+      else
+        run_priv "$cmd_name" &>/dev/null || :
+      fi
+    fi
   done
 
   has update-leap && LC_ALL=C update-leap &>/dev/null || :
@@ -284,7 +290,8 @@ clean_paths() {
     if [[ $path == *\** ]]; then
       # Use globbing directly and collect existing items
       shopt -s nullglob
-      for item in $path; do
+      local -a items=($path)
+      for item in "${items[@]}"; do
         [[ -e $item ]] && existing_paths+=("$item")
       done
       shopt -u nullglob
@@ -305,7 +312,8 @@ clean_with_sudo() {
     if [[ $path == *\** ]]; then
       # Use globbing directly and collect existing items
       shopt -s nullglob
-      for item in $path; do
+      local -a items=($path)
+      for item in "${items[@]}"; do
         [[ -e $item ]] && existing_paths+=("$item")
       done
       shopt -u nullglob

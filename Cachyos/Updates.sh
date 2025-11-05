@@ -150,7 +150,7 @@ update_system_utils(){
   local cmd cmd_name
   for cmd in "${cmds[@]}"; do
     cmd_name=${cmd%% *}
-    has "$cmd_name" && run_priv $cmd &>/dev/null || :
+    has "$cmd_name" && run_priv "$cmd_name" "${cmd#* }" &>/dev/null || :
   done
   has update-leap && LC_ALL=C update-leap >/dev/null 2>&1 || :
   if has fwupdmgr; then

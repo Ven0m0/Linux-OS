@@ -1,71 +1,15 @@
 # Todo
 
-https://github.com/vasi/pixz
-
-https://crates.io/crates/protonup-rs
-
-https://crates.io/crates/cargo-sleek
-
-https://crates.io/crates/du-dust
-
-https://crates.io/crates/fd-find
-
-https://crates.io/crates/brush-shell
-
-cargo install nexish
-
-https://crates.io/crates/boltshell
-
-https://gitlab.redox-os.org/redox-os/ion/
-
 https://wiki.archlinux.org/title/List_of_applications/Documents#Console
 
 https://wiki.archlinux.org/title/List_of_applications/Internet#Firefox_spin-offs
 
 https://www.commandlinefu.com/commands/browse
 
-https://wiki.archlinux.org/title/Secure_Shell
-
-https://wiki.archlinux.org/title/Display_manager
-
-https://wiki.archlinux.org/title/Domain_name_resolution#DNS_servers
-
 https://wiki.archlinux.org/title/Domain_name_resolution
 
-https://github.com/Kobzol/cargo-pgo/blob/main/README.md
-
-cargo-unused-features
-cargo install rustscout-cli
-cargo install dedups
-cargo install argc
-
-cargo install redlib
-
-cargo install teip
-
-cargo install shim
-cargo install shimexe
-
-cargo install flash
-
-# ls
-https://crates.io/crates/lla
-
-https://crates.io/crates/mc-repack
-
-https://crates.io/crates/touch-cli
-
-cargo install less
-
-
-https://crates.io/crates/hitdns
-https://github.com/jedisct1/EtchDNS
 
 https://github.com/macp3o/linux-tweaks
-
-https://gitlab.com/iucode-tool/iucode-tool/-/wikis/home
-https://github.com/AnnikaV9/kbuilder
-https://crates.io/crates/vicut
 
 # Dotfiles
 
@@ -87,9 +31,6 @@ https://github.com/deadc0de6/dotdrop
 ```
 https://github.com/644/compressimages
 https://github.com/jkool702/forkrun
-https://crates.io/crates/trees-rs
-fisher install meaningful-ooo/sponge
-fisher install acomagu/fish-async-prompt
 ```
 
 ```markdown
@@ -110,32 +51,15 @@ Full lto:
 
 -Z cargo-lints
 
-RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
+RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=stripmine -Zllvm-plugins=/usr/lib/LLVMPolly.so"
 
--Z llvm-plugins=LLVMPolly.so
--Z llvm-plugins=/usr/lib/LLVMPolly.so
--C llvm-args=-polly-vectorizer=stripmine
 
 export PYTHONOPTIMIZE=2
-
-export BUILDCACHE_COMPRESS_FORMAT=ZSTD
-export BUILDCACHE_COMPRESS_FORMAT=LZ4
-export BUILDCACHE_ACCURACY=SLOPPY
-export BUILDCACHE_ACCURACY=DEFAULT
-export BUILDCACHE_DIRECT_MODE=true
-export CCACHE_COMPRESS=true
-export CCACHE_COMPRESSLEVEL=3
-export CCACHE_INODECACHE=true
-
-Codegen:
--Z precise-enum-drop-elaboration=yes
-PGO:
--Z debug-info-for-profiling
 
 ```
 ```
 git tweaks
-git clone --depth 1 --single-branch --shallow-submodules --filter='blob:none'
+git clone --depth 1--shallow-submodules --filter='blob:none'
 ```
 ```markdown
 Rust tls models:

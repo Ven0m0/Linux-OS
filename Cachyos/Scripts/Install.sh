@@ -54,12 +54,12 @@ pkgs=(
   menu-cache plasma-wayland-protocols xdg-desktop-portal xdg-desktop-portal-kde xorg-xhost
   libappindicator-gtk3 libdbusmenu-glib appmenu-gtk-module protonup-qt protonplus proton-ge-custom
   gamemode lib32-gamemode mangohud lib32-mangohud prismlauncher obs-studio luxtorpeda-git
-  dxvk-gplasync-bin rustup jdk24-graalvm-ee-bin python-pip uv github-cli bun-bin cod-bin
+  dxvk-gplasync-bin rustup python-pip uv github-cli bun-bin cod-bin
   starship zoxide eza bat fd ripgrep sd dust fzf shfmt shellcheck shellharden micro yadm dash
   btop htop fastfetch pay-respects fclones topgrade bauh flatpak partitionmanager polkit-kde-agent
   bleachbit-git cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher cleanerml-git
   makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an xdg-ninja cylon
-  scaramanga kbuilder optiimage optipng-parallel
+  scaramanga kbuilder optiimage optipng-parallel vx-bin biome
 )
 
 # Install packages
@@ -119,7 +119,7 @@ has rustup && {
 crates=(
   cpz xcp crabz rmz parel ffzap cargo-binstall cargo-diet crab-fetch cargo-list minhtml cargo-minify
   rimage ripunzip terminal_tools imagineer docker-image-pusher image-optimizer dui-cli imgc pixelsqueeze
-  bgone dupimg simagef compresscli dssim img-squeeze lq parallel-sh frep dupe-krill bssh
+  bgone dupimg simagef compresscli dssim img-squeeze lq parallel-sh frep dupe-krill bssh vicut aq-cli
 )
 
 has cargo && {
@@ -128,7 +128,10 @@ has cargo && {
   
   # gitoxide with max optimizations
   cargo install --git https://github.com/GitoxideLabs/gitoxide gitoxide -f --bins --features max-pure --no-default-features
-      
+
+  # Other
+  cargo install --locked --features system-clipboard zee
+  
   # Parallel crate install
   printf '%s\n' "${crates[@]}" | xargs -P"$jobs" -I{} sh -c \
     'cargo install --list 2>/dev/null | grep -q "^{} " || cargo binstall -y {} 2>/dev/null || \
@@ -194,7 +197,6 @@ if ! has soar; then
   curl -fsL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh 2>/dev/null || :
   export PATH="$HOME/.local/share/soar/bin:$PATH"
 fi
-
 if has soar; then
   msg "Configuring soar"
   soar self update || :

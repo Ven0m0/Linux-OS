@@ -41,7 +41,7 @@ run_priv pacman-key --init 2>/dev/null || :
 run_priv pacman-key --populate archlinux cachyos 2>/dev/null || :
 "${pkgmgr[@]}" -Syq archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null || :
 "${pkgmgr[@]}" -Syyuq --noconfirm 2>/dev/null || :
-run_priv modprobe zram tcp_bbr || :
+run_priv modprobe zram tcp_bbr adios
 
 # Package list
 pkgs=(

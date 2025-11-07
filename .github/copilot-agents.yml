@@ -2,7 +2,7 @@ agents:
   bash-expert:
     description: "Bash scripting & system cfg specialist"
     instructions: |
-      Bash focus. Modern tools (fd/rg/bat). Minimal, fast, POSIX+bashisms. Auto-detect pkg mgr. Error handling. Distro hints.
+      Bash focus. Modern tools (fd/rg/bat/jaq/sd/bun/uv). Minimal, fast, POSIX+bashisms. Auto-detect pkg mgr. Error handling. Distro hints.
     context:
     - "**/*.sh"
     - "**/*.bash"

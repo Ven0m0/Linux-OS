@@ -1,5 +1,24 @@
 # Copilot Instructions: Linux-OS
 
+## AI Agent Exec Guidelines
+
+**Core**: Autonomous exec. Min confirms. Max token efficiency.
+
+## Principles
+- **Exec Immediately** — Edit existing w/o hesitation
+- **Confirm Only Large Δ** — Wide-scope impacts only
+- **Quality & Consistency** — Thorough auto checks
+- **Verify Facts** — Check sources, no speculation
+- **Prefer Existing** — Edit over create
+- **Rethink** — If ≥2 approaches exist, list pros/cons
+- **Avoid Waste** — Draft & confirm approach for complex work
+
+### Settings
+Lang: EN (tech) | Style: Pro, concise, advanced | Emojis: Min | Func/Var: short
+
+### Abbrev
+`y`=Yes `n`=No `c`=Cont `r`=Rev `u`=Undo
+
 ## Repo Map
 `[ProjectRoot]/`: [purpose root] | `src/`: [purpose src]
 
@@ -14,7 +33,6 @@ BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 has() { command -v "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
 ```
 
 ## Code Patterns
@@ -23,6 +41,11 @@ xecho() { printf '%b\n' "$*"; }
 - Check before install: `pacman -Q pkg`, `flatpak list`, `cargo install --list`
 - Bashism over POSIX, shortcuts, compact
 - Fast & simple, not verbose
+- Easy maintenance, Clear comments
+- Minimal duplication
+- Reduce technical dept and good function separation and organization
+- Consistent shebang: `#!/usr/bin/env bash`
+- Tool availability checks before usage and graceful fallbacks to alternative tools
 
 ### Deps
 Distro hints: `(Arch: pacman -S f2fs-tools)` or `(Debian: sudo apt-get install -y f2fs-tools)`
@@ -31,25 +54,32 @@ Distro hints: `(Arch: pacman -S f2fs-tools)` or `(Debian: sudo apt-get install -
 - `mapfile -t arr < <(cmd)` avoid subshells; never parse `ls`
 - Assoc arrays cfg: `declare -A cfg=([dry_run]=0 [debug]=0 [ssh]=0)`
 
+#### Performance Enhancements
+- Prefer faster modern tools (fd, rg, aria2, sd) when available
+- Batch operations instead of individual commands
+- Reduced subprocess spawning
+- Optimized file operations
+
 ### Interactive
 - Arg-less w/ fzf when `src_path`/`tgt_path` missing
 - Fallback: `command -v fd &>/dev/null && fd -e img ... | fzf || find ... | fzf`
 - AUR: `--needed --noconfirm --removemake --cleanafter --sudoloop --skipreview --batchinstall`
 
 ### Network
-`curl -fsL`
+`curl -fsL --http2`
 
 ## Tooling
 ### Fmt/Lint/Harden
 ```bash
-shfmt -i 2 -ci -sr file.sh && \
+shfmt -i 2 -ln bash -bn -s file.sh && \
 shellcheck -f diff file.sh | patch -Np1 && \
 shellharden --replace file.sh
 ```
-Lint: `shellcheck file.sh` (disabled `.shellcheckrc`) | Harden: run `Harden Script` task
 
 ### Modern (w/ Fallbacks)
-`fd`/`find` | `rg`/`grep` | `bat`/`cat` | `sd`/`sed` | `zoxide`/`cd` | `bun`/`npm`
+`fdf`->`fd`/`find` (if exec not needed, otherwise fd -> find) | `rg`->`grep` | `bat`->`cat` | `sd`->`sed` | `zoxide`->`cd` | `bun`->`pnpm`->`npm` | `uv`->`pip`
+`aria2`->`curl`->`wget2`->`wget` (if pipe then no aria2) | `jaq`->`jq` | `sk (skim)`->`fzf` | `rust-parallel`->`parallel`->`xargs`
+
 
 ### README
 Update curl snippets when mod entrypoints: `curl -fsSL https://raw.githubusercontent.com/Ven0m0/repo/main/...`

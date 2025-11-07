@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
-sudo -v
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
+# Override HOME for SUDO_USER context
+export HOME="/home/${SUDO_USER:-$USER}"
+
+# Initialize privilege tool
+PRIV_CMD=$(init_priv)
 
 declare -r CONF=/etc/pacman.conf
 # chaotic
@@ -46,27 +52,25 @@ EOF
 PARU_PKGS=(alhp-keyring alhp-mirrorlist)
 PACMAN_OPTS=(--noconfirm --needed)
 PARU_OPTS=(--noconfirm --skipreview --needed)
-
-has(){ command -v "$1" &>/dev/null; }
 has_header(){ local hdr="$1"; grep -qF -- "$hdr" "$CONF"; }
 # append block variable (name) if header missing. uses nameref.
 ensure_block(){
   local hdr="$1" blk="$2"
   has_header "$hdr" && return 0
   local -n blk="$blk_name"
-  printf '%s\n' "$blk" | sudo tee -a "$CONF" >/dev/null
+  printf '%s\n' "$blk" | run_priv tee -a "$CONF" >/dev/null
 }
 recv_and_lsign(){
-  sudo pacman-key --keyserver keyserver.ubuntu.com -r "$CHAOTIC_KEY" &>/dev/null || :
-  yes | sudo pacman-key --lsign-key "$CHAOTIC_KEY" &>/dev/null || :
+  run_priv pacman-key --keyserver keyserver.ubuntu.com -r "$CHAOTIC_KEY" &>/dev/null || :
+  yes | run_priv pacman-key --lsign-key "$CHAOTIC_KEY" &>/dev/null || :
 }
-install_urls(){ sudo pacman "${PACMAN_OPTS[@]}" -U "${CHAOTIC_URLS[@]}" &>/dev/null || :; }
+install_urls(){ run_priv pacman "${PACMAN_OPTS[@]}" -U "${CHAOTIC_URLS[@]}" &>/dev/null || :; }
 install_alhp_via_paru(){
   if has paru; then
     paru "${PARU_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null || :
   else
     # fallback to pacman if paru not present
-    sudo pacman "${PACMAN_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null || :
+    run_priv pacman "${PACMAN_OPTS[@]}" -S "${PARU_PKGS[@]}" &>/dev/null || :
   fi
 }
 install_eos_repos(){
@@ -98,7 +102,7 @@ has_header '[endeavouros]' || missing_repos+=(endeavouros)
 if ! pacman -Qsq cachyos-mirrorlist &>/dev/null; then
   if curl https://mirror.cachyos.org/cachyos-repo.tar.xz -O; then
     tar xvf cachyos-repo.tar.xz && cd cachyos-repo || exit
-    chmod +x cachyos-repo.sh && sudo bash /cachyos-repo.sh
+    chmod +x cachyos-repo.sh && run_priv bash /cachyos-repo.sh
   fi
 fi
 
@@ -121,6 +125,6 @@ done
 
 # Update if any repos were added
 ((${#missing_repos[@]})) && {
-  sudo pacman -Syy "${PACMAN_OPTS[@]}" &>/dev/null || :
+  run_priv pacman -Syy "${PACMAN_OPTS[@]}" &>/dev/null || :
   echo 'repos added'
 } || echo 'no changes'

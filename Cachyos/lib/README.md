@@ -109,6 +109,9 @@ Scripts that have been refactored to use this library:
 - `Cachyos/Scripts/Install.sh`
 - `Cachyos/Scripts/Privacy-Config.sh`
 - `Cachyos/Scripts/bench.sh`
+- `Cachyos/Scripts/Repoadd.sh`
+
+Total: 8 scripts refactored
 
 ## Contributing
 

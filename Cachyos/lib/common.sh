@@ -303,6 +303,11 @@ vacuum_sqlite() {
   [[ -f $db ]] || { printf '0\n'; return; }
   # Skip if probably open
   [[ -f ${db}-wal || -f ${db}-journal ]] && { printf '0\n'; return; }
+  # Validate it's actually a SQLite database file
+  if ! head -c 16 "$db" 2>/dev/null | grep -q 'SQLite format 3'; then
+    printf '0\n'
+    return
+  fi
   s_old=$(stat -c%s "$db" 2>/dev/null) || { printf '0\n'; return; }
   # VACUUM already rebuilds indices, making REINDEX redundant
   sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || { printf '0\n'; return; }
@@ -317,11 +322,8 @@ clean_sqlite_dbs() {
   while IFS= read -r -d '' db; do
     # Skip non-regular files early
     [[ -f $db ]] || continue
-    # Use magic byte check instead of spawning file command
-    if head -c 16 "$db" 2>/dev/null | grep -q 'SQLite format 3'; then
-      saved=$(vacuum_sqlite "$db" || printf '0')
-      ((saved > 0)) && total=$((total + saved))
-    fi
+    saved=$(vacuum_sqlite "$db" || printf '0')
+    ((saved > 0)) && total=$((total + saved))
   done < <(find0 . -maxdepth 1 -type f)
   ((total > 0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF}"
 }
@@ -407,24 +409,30 @@ chrome_profiles() {
 }
 
 #============ Path Cleaning Helpers ============
+# Helper to expand wildcard paths safely
+_expand_wildcards() {
+  local path=$1
+  local -n result_ref=$2
+  if [[ $path == *\** ]]; then
+    # Use globbing directly and collect existing items
+    shopt -s nullglob
+    local -a items=($path)
+    for item in "${items[@]}"; do
+      [[ -e $item ]] && result_ref+=("$item")
+    done
+    shopt -u nullglob
+  else
+    [[ -e $path ]] && result_ref+=("$path")
+  fi
+}
+
 # Clean arrays of file/directory paths
 clean_paths() {
   local paths=("$@") path
   # Batch check existence to reduce syscalls
   local existing_paths=()
   for path in "${paths[@]}"; do
-    # Handle wildcard paths
-    if [[ $path == *\** ]]; then
-      # Use globbing directly and collect existing items
-      shopt -s nullglob
-      local -a items=($path)
-      for item in "${items[@]}"; do
-        [[ -e $item ]] && existing_paths+=("$item")
-      done
-      shopt -u nullglob
-    else
-      [[ -e $path ]] && existing_paths+=("$path")
-    fi
+    _expand_wildcards "$path" existing_paths
   done
   # Batch delete all existing paths at once
   [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
@@ -436,18 +444,7 @@ clean_with_sudo() {
   # Batch check existence to reduce syscalls and sudo invocations
   local existing_paths=()
   for path in "${paths[@]}"; do
-    # Handle wildcard paths
-    if [[ $path == *\** ]]; then
-      # Use globbing directly and collect existing items
-      shopt -s nullglob
-      local -a items=($path)
-      for item in "${items[@]}"; do
-        [[ -e $item ]] && existing_paths+=("$item")
-      done
-      shopt -u nullglob
-    else
-      [[ -e $path ]] && existing_paths+=("$path")
-    fi
+    _expand_wildcards "$path" existing_paths
   done
   # Batch delete all existing paths at once with single sudo call
   [[ ${#existing_paths[@]} -gt 0 ]] && run_priv rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :

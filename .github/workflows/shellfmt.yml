@@ -31,8 +31,8 @@ jobs:
       - name: Find & fix shell files
         run: |
           {
-            find . -name '*.sh' -o -name '*.bash' || :
-            find . -type f -exec grep -l '^#!/.*sh' {} + || :
+            find -O2 . -name '*.sh' -o -name '*.bash' || :
+            find -O2 . -type f -exec grep -l '^#!/.*sh' {} + || :
           } | sort -u | while IFS= read -r f; do
             sed -i 's/() {/(){/g' "$f"; sed -i 's/|| true/|| :/g' "$f"
             sed -i '/^#[[:space:]]*-\{5,\}/d' "$f"; sed -i '/^$/{N;/^\n$/D;}' "$f"

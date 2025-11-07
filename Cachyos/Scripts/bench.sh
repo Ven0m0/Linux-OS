@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C
-shopt -s nullglob
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
 
-#–– Helper to test for a binary in $PATH
-has() { command -v -- "$1" &>/dev/null; } # Check for command
-hasname() { local x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; }
-xecho() { printf '%s\n' "$@" 2>/dev/null; } # Print-echo
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
-[[ -z ${suexec:-} ]] && {
-  echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
-  exit 1
-}
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
+# Override HOME for SUDO_USER context
 export HOME="/home/${SUDO_USER:-$USER}"
+
+# Initialize privilege tool
+PRIV_CMD=$(init_priv)
+
+hasname() { local x=$(type -P -- "$1") && printf '%s\n' "${x##*/}"; }
 has hyperfine || {
   echo "❌ hyperfine not found in PATH"
   exit 1
@@ -20,15 +18,14 @@ has hyperfine || {
 
 jobs16="$(nproc 2>/dev/null)"
 jobs8="$(($(nproc 2>/dev/null || echo 1) / 2))"
-((jobs1 < 1)) && jobs8=1
+((jobs8 < 1)) && jobs8=1
 
 o1="$(</sys/devices/system/cpu/intel_pstate/no_turbo)"
 Reset() {
-  #echo "${o1:-0}" | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
-  echo 0 | "$suexec" tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
+  echo 0 | run_priv tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
 }
-"$suexec" cpupower frequency-set --governor performance &>/dev/null || :
-echo 1 | "$suexec" tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
+run_priv cpupower frequency-set --governor performance &>/dev/null || :
+echo 1 | run_priv tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
 
 benchmark() {
   local name="$1"
@@ -36,7 +33,7 @@ benchmark() {
   local cmd="$*"
   printf '%s\n' "▶ $name"
   command hyperfine -w 25 -m 50 -i -S bash \
-    -p "sync; echo 3 | ${suexec:-su -c} tee /proc/sys/vm/drop_caches &>/dev/null; resolvectl flush-caches; hash -r" \
+    -p "sync; echo 3 | ${PRIV_CMD:-sudo} tee /proc/sys/vm/drop_caches &>/dev/null; resolvectl flush-caches; hash -r" \
     "$cmd"
 }
 # Benchmarks

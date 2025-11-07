@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-cd -P -- "${BASH_SOURCE[0]%/*}" 2>/dev/null || :
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
+# Override HOME and setup build environment
+export HOME="/home/${SUDO_USER:-$USER}"
+setup_build_env
+
 jobs=$(nproc)
 
-has(){ command -v "$1" &>/dev/null; }
+# Custom log functions for this script
 msg(){ printf '\e[1;33m▶ %s\e[0m\n' "$*"; }
 die(){ printf '\e[1;31m✖ %s\e[0m\n' "$*" >&2; exit "${2:-1}"; }
 log(){ printf '\e[1;36m✓ %s\e[0m\n' "$*"; }
 
 # Privilege escalation
-get_priv(){ for cmd in sudo-rs sudo doas; do has "$cmd" && { echo "$cmd"; return 0; }; done; [[ $EUID -eq 0 ]] || die "No priv" 1; }
-PRIV=$(get_priv); [[ -n $PRIV && $EUID -ne 0 ]] && "$PRIV" -v
-run_priv(){ [[ $EUID -eq 0 || -z $PRIV ]] && "$@" || "$PRIV" -- "$@"; }
+PRIV_CMD=$(init_priv)
 
 # Package manager detection
 if has paru; then pkgmgr=(paru) aur=1
@@ -21,12 +24,9 @@ elif has yay; then pkgmgr=(yay) aur=1
 else pkgmgr=(pacman) aur=0
 fi
 
-# Build environment
-[[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf
-: "${CFLAGS:=-O3 -march=native -mtune=native -pipe}" "${CXXFLAGS:=$CFLAGS}"
-export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib MAKEFLAGS="-j$jobs" NINJAFLAGS="-j$jobs" \
-  GOMAXPROCS="$jobs" CARGO_BUILD_JOBS="$jobs" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true \
-  OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
+# Additional build environment settings specific to this script
+export GOMAXPROCS="$jobs" CARGO_BUILD_JOBS="$jobs" CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true \
+  OPT_LEVEL=3 CARGO_INCREMENTAL=0 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 \
   CARGO_PROFILE_RELEASE_OPT_LEVEL=3 UV_COMPILE_BYTECODE=1 UV_NO_VERIFY_HASHES=1 UV_SYSTEM_PYTHON=1 \
   UV_FORK_STRATEGY=fewest UV_RESOLUTION=highest ZSTD_NBTHREADS=0 FLATPAK_FORCE_TEXT_AUTH=1 PYTHONOPTIMIZE=2 \
   PYTHON_JIT=1 ELECTRON_OZONE_PLATFORM_HINT=auto
@@ -36,7 +36,7 @@ export AR=llvm-ar CC=clang CXX=clang++ NM=llvm-nm RANLIB=llvm-ranlib MAKEFLAGS="
 unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
 
 # System preparation
-run_priv rm -f /var/lib/pacman/db.lck 2>/dev/null || :
+cleanup_pacman_lock
 run_priv pacman-key --init 2>/dev/null || :
 run_priv pacman-key --populate archlinux cachyos 2>/dev/null || :
 "${pkgmgr[@]}" -Syq archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null || :

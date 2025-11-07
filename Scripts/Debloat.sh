@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
 # Unified Debloat Script for Arch-based and Debian-based systems
 # Removes unnecessary packages and disables telemetry services
-
-set -euo pipefail
+set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'
-shopt -s nullglob globstar
-export LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-export HOME="/home/${SUDO_USER:-$USER}"
-
-# Ensure sudo access
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 sudo -v
-
 # --- Platform Detection ---
-detect_platform() {
+detect_platform(){
   if command -v pacman &>/dev/null; then
     echo "arch"
   elif command -v apt-get &>/dev/null; then
@@ -23,7 +17,7 @@ detect_platform() {
 }
 
 # --- Arch-based Debloat ---
-debloat_arch() {
+debloat_arch(){
   echo "## Debloating Arch-based system..."
   # Remove mostly useless packages
   echo "Removing unnecessary packages..."
@@ -45,7 +39,7 @@ debloat_arch() {
 }
 
 # --- Debian-based Debloat ---
-debloat_debian() {
+debloat_debian(){
   echo "## Debloating Debian-based system..."
   # Remove LibreOffice (if not needed)
   echo "Removing LibreOffice..."
@@ -65,7 +59,7 @@ debloat_debian() {
 }
 
 # --- Main Execution ---
-main() {
+main(){
   local platform; platform=$(detect_platform)
   echo -e "Detected platform: ${platform}\n"
   case "$platform" in

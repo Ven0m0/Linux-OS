@@ -29,17 +29,20 @@ jobs:
           curl -sfL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-musl.tar.gz | tar xz
           sudo mv shellharden /usr/local/bin/
       - name: Find & fix shell files
+        shell: bash
         run: |
-          {
-            find -O2 . -name '*.sh' -o -name '*.bash' || :
-            find -O2 . -type f -exec grep -l '^#!/.*sh' {} + || :
-          } | sort -u | while IFS= read -r f; do
+          while IFS= read -r f; do
             sed -i 's/() {/(){/g' "$f"; sed -i 's/|| true/|| :/g' "$f"
             sed -i '/^#[[:space:]]*-\{5,\}/d' "$f"; sed -i '/^$/{N;/^\n$/D;}' "$f"
-            shellharden --replace "$f" || :
-            shellcheck -x -a  -f diff --shell=${{ matrix.shell }} "$f" | patch -Np1 || :
-            shfmt -i 2 -s -bn -ln bash -w "$f" || :
-          done
+            shellharden --replace "$f" &>/dev/null || :
+            shellcheck -f diff --shell=${{ matrix.shell }} "$f" | patch -Np1 2>/dev/null || :
+            shfmt -i 2 -s -bn -ln bash -w "$f" &>/dev/null || :
+          done < <(
+            {
+              find -O2 . -type f \( -name '*.sh' -o -name '*.bash' -o -name '.bashrc'\) -print 2>/dev/null || :
+              find -O2 . -type f -exec grep -Il '^#!/.*sh' {} + 2>/dev/null || :
+            } | sort -u 2>/dev/null
+          )
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"

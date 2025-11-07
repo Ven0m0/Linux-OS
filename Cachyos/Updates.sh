@@ -68,14 +68,16 @@ update_extras(){
       local cargo_cmd=(cargo)
       for cmd in gg mommy clicker; do
         if has "cargo-$cmd"; then
-          cargo_cmd=(cargo "$cmd")
-          break
+          cargo_cmd=(cargo "$cmd"); break
         fi
       done
-      if "${cargo_cmd[@]}" install-update -Vq 2>/dev/null; then
-        "${cargo_cmd[@]}" install-update -agfq
+      if "${cargo_cmd[@]}" install-update -Vq &>/dev/null; then
+        "${cargo_cmd[@]}" install-update -agfq || :
       fi
-      has cargo-syu && "${cargo_cmd[@]}" syu -g
+      has cargo-syu && "${cargo_cmd[@]}" syu -g || :
+      if "${cargo_cmd[@]}" fresh -V &>/dev/null; then
+        "${cargo_cmd[@]}" fresh -u --batch --no-interactive --include-prerelease || :
+      fi
     fi
   fi
   if has mise; then

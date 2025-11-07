@@ -251,6 +251,19 @@ find_files() {
   fi
 }
 
+# NUL-safe finder using fd/fdf/find
+find0() {
+  local root=$1
+  shift
+  if has fdf; then
+    fdf -H -0 --color=never "$@" . "$root"
+  elif has fd; then
+    fd -H -0 --color=never "$@" . "$root"
+  else
+    find "$root" "$@" -print0
+  fi
+}
+
 #============ Package Manager Detection ============
 # Detect and return best available AUR helper or pacman
 # Cache result to avoid repeated checks
@@ -281,6 +294,163 @@ detect_pkg_manager() {
   _PKG_MGR_CACHED=$pkgmgr
   printf '%s\n' "$pkgmgr"
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
+}
+
+#============ SQLite Maintenance ============
+# Vacuum a single SQLite database and return bytes saved
+vacuum_sqlite() {
+  local db=$1 s_old s_new
+  [[ -f $db ]] || { printf '0\n'; return; }
+  # Skip if probably open
+  [[ -f ${db}-wal || -f ${db}-journal ]] && { printf '0\n'; return; }
+  s_old=$(stat -c%s "$db" 2>/dev/null) || { printf '0\n'; return; }
+  # VACUUM already rebuilds indices, making REINDEX redundant
+  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || { printf '0\n'; return; }
+  s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
+  printf '%d\n' "$((s_old - s_new))"
+}
+
+# Clean SQLite databases in current working directory
+clean_sqlite_dbs() {
+  local total=0 db saved
+  # Batch file type checks to reduce subprocess calls
+  while IFS= read -r -d '' db; do
+    # Skip non-regular files early
+    [[ -f $db ]] || continue
+    # Use magic byte check instead of spawning file command
+    if head -c 16 "$db" 2>/dev/null | grep -q 'SQLite format 3'; then
+      saved=$(vacuum_sqlite "$db" || printf '0')
+      ((saved > 0)) && total=$((total + saved))
+    fi
+  done < <(find0 . -maxdepth 1 -type f)
+  ((total > 0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF}"
+}
+
+#============ Process Management ============
+# Wait for processes to exit, kill if timeout
+ensure_not_running_any() {
+  local timeout=6 p running_procs=()
+  # Batch check all processes once instead of individually
+  for p in "$@"; do
+    pgrep -x -u "$USER" "$p" &>/dev/null && running_procs+=("$p")
+  done
+  
+  # Only process running programs
+  [[ ${#running_procs[@]} -eq 0 ]] && return
+  
+  for p in "${running_procs[@]}"; do
+    printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
+    local wait_time=$timeout
+    while ((wait_time-- > 0)) && pgrep -x -u "$USER" "$p" &>/dev/null; do
+      sleep 1
+    done
+    pgrep -x -u "$USER" "$p" &>/dev/null && {
+      printf '  %s\n' "${RED}Killing ${p}...${DEF}"
+      pkill -KILL -x -u "$USER" "$p" &>/dev/null || :
+      sleep 1
+    }
+  done
+}
+
+#============ Browser Profile Detection ============
+# Firefox-family profile discovery
+foxdir() {
+  local base=$1 p
+  [[ -d $base ]] || return 1
+  if [[ -f $base/installs.ini ]]; then
+    p=$(awk -F= '/^\[.*\]/{f=0} /^\[Install/{f=1;next} f&&/^Default=/{print $2;exit}' "$base/installs.ini")
+    [[ -n $p && -d $base/$p ]] && { printf '%s\n' "$base/$p"; return 0; }
+  fi
+  if [[ -f $base/profiles.ini ]]; then
+    p=$(awk -F= '/^\[.*\]/{s=0} /^\[Profile[0-9]+\]/{s=1} s&&/^Default=1/{d=1} s&&/^Path=/{if(d){print $2;exit}}' "$base/profiles.ini")
+    [[ -n $p && -d $base/$p ]] && { printf '%s\n' "$base/$p"; return 0; }
+  fi
+  return 1
+}
+
+# List all Mozilla profiles in a base directory
+mozilla_profiles() {
+  local base=$1 p
+  declare -A seen
+  [[ -d $base ]] || return 0
+  
+  # Process installs.ini using awk for efficiency
+  if [[ -f $base/installs.ini ]]; then
+    while IFS= read -r p; do
+      [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
+    done < <(awk -F= '/^Default=/ {print $2}' "$base/installs.ini")
+  fi
+  
+  # Process profiles.ini using awk for efficiency
+  if [[ -f $base/profiles.ini ]]; then
+    while IFS= read -r p; do
+      [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
+    done < <(awk -F= '/^Path=/ {print $2}' "$base/profiles.ini")
+  fi
+}
+
+# Chromium roots (native/flatpak/snap)
+chrome_roots_for() {
+  case "$1" in
+    chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
+    chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
+    brave) printf '%s\n' "$HOME/.config/BraveSoftware/Brave-Browser" "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser" "$HOME/snap/brave/current/.config/BraveSoftware/Brave-Browser" ;;
+    opera) printf '%s\n' "$HOME/.config/opera" "$HOME/.config/opera-beta" "$HOME/.config/opera-developer" ;;
+    *) : ;;
+  esac
+}
+
+# List Default + Profile * dirs under a Chromium root
+chrome_profiles() {
+  local root=$1 d
+  for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
+}
+
+#============ Path Cleaning Helpers ============
+# Clean arrays of file/directory paths
+clean_paths() {
+  local paths=("$@") path
+  # Batch check existence to reduce syscalls
+  local existing_paths=()
+  for path in "${paths[@]}"; do
+    # Handle wildcard paths
+    if [[ $path == *\** ]]; then
+      # Use globbing directly and collect existing items
+      shopt -s nullglob
+      local -a items=($path)
+      for item in "${items[@]}"; do
+        [[ -e $item ]] && existing_paths+=("$item")
+      done
+      shopt -u nullglob
+    else
+      [[ -e $path ]] && existing_paths+=("$path")
+    fi
+  done
+  # Batch delete all existing paths at once
+  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
+}
+
+# Clean paths with privilege escalation
+clean_with_sudo() {
+  local paths=("$@") path
+  # Batch check existence to reduce syscalls and sudo invocations
+  local existing_paths=()
+  for path in "${paths[@]}"; do
+    # Handle wildcard paths
+    if [[ $path == *\** ]]; then
+      # Use globbing directly and collect existing items
+      shopt -s nullglob
+      local -a items=($path)
+      for item in "${items[@]}"; do
+        [[ -e $item ]] && existing_paths+=("$item")
+      done
+      shopt -u nullglob
+    else
+      [[ -e $path ]] && existing_paths+=("$path")
+    fi
+  done
+  # Batch delete all existing paths at once with single sudo call
+  [[ ${#existing_paths[@]} -gt 0 ]] && run_priv rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
 # Library successfully loaded

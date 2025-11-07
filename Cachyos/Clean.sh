@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar extglob
-IFS=$'\n\t'; export LC_ALL=C LANG=C LANGUAGE=C
-
-# Colors
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m' RED=$'\e[31m' GRN=$'\e[32m'
-YLW=$'\e[33m' BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m' DEF=$'\e[0m' BLD=$'\e[1m'
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || exit 1
 
 # Modes
 DEEP=${DEEP:-0}       # aggressive app/browser data purge
 NUCLEAR_CLEAN=${NUCLEAR_CLEAN:-0} # allow /var/cache and full ~/.cache nukes (dangerous)
 
-has(){ command -v "$1" &>/dev/null; }
+# Initialize privilege tool
+PRIV_CMD=$(init_priv)
+export PRIV_CMD
+
+trap 'cleanup' INT TERM EXIT
+cleanup(){ :; }
 
 banner(){
   printf '%s\n' "${LBLU} ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ ${DEF}"
@@ -20,122 +22,6 @@ banner(){
   printf '%s\n' "${PNK}██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║${DEF}"
   printf '%s\n' "${LBLU}╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝${DEF}"
   printf '%s\n' "${LBLU} ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ${DEF}"
-}
-
-trap 'cleanup' INT TERM EXIT
-cleanup(){ :; }
-
-capture_disk_usage(){ local -n ref=$1; ref=$(df -h --output=used,pcent / | awk 'NR==2{print $1, $2}'); }
-
-# NUL-safe finder using fdf/fd/find
-find0(){ # usage: find0 <path> <find-args...> (prints NUL-delimited)
-  local root=$1; shift
-  if has fdf; then fdf -H -0 --color=never "$@" . "$root"
-  elif has fd; then fd -H -0 --color=never "$@" . "$root"
-  else find "$root" "$@" -print0
-  fi
-}
-
-ensure_not_running_any(){ 
-  local timeout=6 p running_procs=()
-  # Batch check all processes once instead of individually
-  for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &>/dev/null && running_procs+=("$p")
-  done
-  
-  # Only process running programs
-  [[ ${#running_procs[@]} -eq 0 ]] && return
-  
-  for p in "${running_procs[@]}"; do
-    printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
-    local wait_time=$timeout
-    while ((wait_time-- > 0)) && pgrep -x -u "$USER" "$p" &>/dev/null; do 
-      sleep 1
-    done
-    pgrep -x -u "$USER" "$p" &>/dev/null && { 
-      printf '  %s\n' "${RED}Killing ${p}...${DEF}"
-      pkill -KILL -x -u "$USER" "$p" &>/dev/null || :
-      sleep 1
-    }
-  done
-}
-
-# SQLite maintenance
-vacuum_sqlite(){ # echo bytes_saved
-  local db=$1 s_old s_new
-  [[ -f $db ]] || { printf '0\n'; return; }
-  # skip if probably open
-  [[ -f ${db}-wal || -f ${db}-journal ]] && { printf '0\n'; return; }
-  s_old=$(stat -c%s "$db" 2>/dev/null) || { printf '0\n'; return; }
-  # VACUUM already rebuilds indices, making REINDEX redundant
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || { printf '0\n'; return; }
-  s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
-  printf '%d\n' "$((s_old - s_new))"
-}
-
-clean_sqlite_dbs(){ # in CWD
-  local total=0 db saved
-  # Batch file type checks to reduce subprocess calls
-  while IFS= read -r -d '' db; do
-    # Skip non-regular files early
-    [[ -f $db ]] || continue
-    # Use magic byte check instead of spawning file command
-    if head -c 16 "$db" 2>/dev/null | grep -q 'SQLite format 3'; then
-      saved=$(vacuum_sqlite "$db" || printf '0')
-      ((saved>0)) && total=$((total+saved))
-    fi
-  done < <(find0 . -maxdepth 1 -type f)
-  ((total>0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total/1024)) KB${DEF}"
-}
-
-# Firefox-family profile discovery
-foxdir(){ # echo ACTIVE profile dir for a base like ~/.mozilla/firefox or ~/.librewolf
-  local base=$1 p
-  [[ -d $base ]] || return 1
-  if [[ -f $base/installs.ini ]]; then
-    p=$(awk -F= '/^\[.*\]/{f=0} /^\[Install/{f=1;next} f&&/^Default=/{print $2;exit}' "$base/installs.ini")
-    [[ -n $p && -d $base/$p ]] && { printf '%s\n' "$base/$p"; return 0; }
-  fi
-  if [[ -f $base/profiles.ini ]]; then
-    p=$(awk -F= '/^\[.*\]/{s=0} /^\[Profile[0-9]+\]/{s=1} s&&/^Default=1/{d=1} s&&/^Path=/{if(d){print $2;exit}}' "$base/profiles.ini")
-    [[ -n $p && -d $base/$p ]] && { printf '%s\n' "$base/$p"; return 0; }
-  fi
-  return 1
-}
-
-mozilla_profiles(){ # print all profile dirs for a base containing installs.ini/profiles.ini
-  local base=$1 p; declare -A seen
-  [[ -d $base ]] || return 0
-  
-  # Process installs.ini using awk for efficiency
-  if [[ -f $base/installs.ini ]]; then
-    while IFS= read -r p; do
-      [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
-    done < <(awk -F= '/^Default=/ {print $2}' "$base/installs.ini")
-  fi
-  
-  # Process profiles.ini using awk for efficiency
-  if [[ -f $base/profiles.ini ]]; then
-    while IFS= read -r p; do
-      [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
-    done < <(awk -F= '/^Path=/ {print $2}' "$base/profiles.ini")
-  fi
-}
-
-# Chromium roots (native/flatpak/snap)
-chrome_roots_for(){ # $1 product key
-  case "$1" in
-    chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
-    chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
-    brave) printf '%s\n' "$HOME/.config/BraveSoftware/Brave-Browser" "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser" "$HOME/snap/brave/current/.config/BraveSoftware/Brave-Browser" ;;
-    opera) printf '%s\n' "$HOME/.config/opera" "$HOME/.config/opera-beta" "$HOME/.config/opera-developer" ;;
-    *) : ;;
-  esac
-}
-
-chrome_profiles(){ # list Default + Profile * dirs under a root
-  local root=$1 d
-  for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
 }
 
 # Borrow Seryoga's lists (gated by DEEP to avoid UX breakage by default)
@@ -227,8 +113,8 @@ clean_electron(){
 privacy_clean(){
   printf '%s\n' "🔒${MGN}Privacy cleanup...${DEF}"
   rm -f "$HOME"/.{bash,zsh}_history "$HOME"/.history "$HOME"/.local/share/fish/fish_history "$HOME"/.config/fish/fish_history "$HOME"/.{wget,less,python}_history &>/dev/null || :
-  sudo rm -f /root/.{bash,zsh,python}_history /root/.history /root/.local/share/fish/fish_history /root/.config/fish/fish_history &>/dev/null || :
-  touch "$HOME/.python_history" && sudo chattr +i "$HOME/.python_history" &>/dev/null || :
+  run_priv rm -f /root/.{bash,zsh,python}_history /root/.history /root/.local/share/fish/fish_history /root/.config/fish/fish_history &>/dev/null || :
+  touch "$HOME/.python_history" && run_priv chattr +i "$HOME/.python_history" &>/dev/null || :
   # Steam, Wine, thumbnails, GTK/KDE recents
   rm -rf "$HOME/.local/share/Steam/appcache"/* "$HOME/.cache/wine"/* "$HOME/.cache/winetricks"/* &>/dev/null || :
   rm -rf "$HOME"/.thumbnails/* "$HOME"/.cache/thumbnails/* &>/dev/null || :
@@ -240,15 +126,15 @@ privacy_clean(){
   # HandBrake logs
   rm -rf "$HOME/.config/ghb/EncodeLogs"/* "$HOME/.config/ghb/Activity.log."* &>/dev/null || :
   # NVIDIA user cache
-  [[ -d "$HOME/.nv" ]] && sudo rm -rf "$HOME/.nv" &>/dev/null || :
+  [[ -d "$HOME/.nv" ]] && run_priv rm -rf "$HOME/.nv" &>/dev/null || :
 }
 
 pkg_cache_clean(){
   if has pacman; then
-    sudo paccache -rk0 -q &>/dev/null || :
-    if has paru; then paru -Scc --noconfirm &>/dev/null || :; else sudo pacman -Scc --noconfirm &>/dev/null || :; fi
+    run_priv paccache -rk0 -q &>/dev/null || :
+    if has paru; then paru -Scc --noconfirm &>/dev/null || :; else run_priv pacman -Scc --noconfirm &>/dev/null || :; fi
   fi
-  if has apt-get; then sudo apt-get clean &>/dev/null || :; sudo apt-get autoclean &>/dev/null || :; fi
+  if has apt-get; then run_priv apt-get clean &>/dev/null || :; run_priv apt-get autoclean &>/dev/null || :; fi
 }
 
 snap_flatpak_trim(){
@@ -256,41 +142,41 @@ snap_flatpak_trim(){
   if has snap; then
     printf '%s\n' "🔄${BLU}Removing old Snap revisions...${DEF}"
     snap list --all | while read -r name version rev tracking publisher notes; do
-      [[ ${notes:-} == *disabled* ]] && sudo snap remove "$name" --revision="$rev" &>/dev/null || :
+      [[ ${notes:-} == *disabled* ]] && run_priv snap remove "$name" --revision="$rev" &>/dev/null || :
     done
     rm -rf "$HOME"/snap/*/*/.cache/* &>/dev/null || :
   fi
-  sudo rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
+  run_priv rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
 }
 
 system_clean(){
   printf '%s\n' "🔄${BLU}System cleanup...${DEF}"
-  sudo resolvectl flush-caches &>/dev/null || :
-  sudo systemd-resolve --flush-caches &>/dev/null || :
-  sudo systemd-resolve --reset-statistics &>/dev/null || :
+  run_priv resolvectl flush-caches &>/dev/null || :
+  run_priv systemd-resolve --flush-caches &>/dev/null || :
+  run_priv systemd-resolve --reset-statistics &>/dev/null || :
   pkg_cache_clean
-  sudo journalctl --rotate -q &>/dev/null || :
-  sudo journalctl --vacuum-size=10M -q &>/dev/null || :
-  sudo find /var/log -type f -name '*.old' -delete &>/dev/null || :
-  sudo swapoff -a &>/dev/null || :; sudo swapon -a &>/dev/null || :
-  sudo systemd-tmpfiles --clean &>/dev/null || :
+  run_priv journalctl --rotate -q &>/dev/null || :
+  run_priv journalctl --vacuum-size=10M -q &>/dev/null || :
+  run_priv find /var/log -type f -name '*.old' -delete &>/dev/null || :
+  run_priv swapoff -a &>/dev/null || :; run_priv swapon -a &>/dev/null || :
+  run_priv systemd-tmpfiles --clean &>/dev/null || :
   # Caches (safe)
   rm -rf "$HOME/.local/share/Trash"/* "$HOME/.nv/ComputeCache"/* &>/dev/null || :
   rm -rf "$HOME/.var/app"/*/cache/* &>/dev/null || :
-  ((NUCLEAR_CLEAN>0)) && { rm -rf "$HOME/.cache"/* &>/dev/null || :; sudo rm -rf /var/cache/* &>/dev/null || :; }
-  sudo rm -rf /tmp/* /var/tmp/* &>/dev/null || :
-  has bleachbit && { bleachbit -c --preset &>/dev/null || :; sudo bleachbit -c --preset &>/dev/null || :; }
-  sudo fstrim -a --quiet-unsupported &>/dev/null || :
-  has fc-cache && sudo fc-cache -r &>/dev/null || :
+  ((NUCLEAR_CLEAN>0)) && { rm -rf "$HOME/.cache"/* &>/dev/null || :; run_priv rm -rf /var/cache/* &>/dev/null || :; }
+  run_priv rm -rf /tmp/* /var/tmp/* &>/dev/null || :
+  has bleachbit && { bleachbit -c --preset &>/dev/null || :; run_priv bleachbit -c --preset &>/dev/null || :; }
+  run_priv fstrim -a --quiet-unsupported &>/dev/null || :
+  has fc-cache && run_priv fc-cache -r &>/dev/null || :
 }
 
 main(){
   banner
-  [[ $EUID -ne 0 ]] && sudo -v || :
+  [[ $EUID -ne 0 ]] && "$PRIV_CMD" -v || :
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
-  space_before=$(sudo du -sh / 2>/dev/null | cut -f1)
-  sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null || :
+  space_before=$(run_priv du -sh / 2>/dev/null | cut -f1)
+  sync; echo 3 | run_priv tee /proc/sys/vm/drop_caches &>/dev/null || :
   # Dev caches
   if has cargo-cache; then cargo cache -efg &>/dev/null || :; cargo cache -ef trim --limit 1B &>/dev/null || :; fi
   has uv && uv clean -q || :
@@ -305,7 +191,7 @@ main(){
   system_clean
 
   capture_disk_usage disk_after
-  space_after=$(sudo du -sh / 2>/dev/null | cut -f1)
+  space_after=$(run_priv du -sh / 2>/dev/null | cut -f1)
   printf '\n%s\n' "${GRN}System cleaned${DEF}"
   printf '==> %s %s\n' "${BLU}Disk usage before:${DEF}" "$disk_before"
   printf '==> %s %s\n' "${GRN}Disk usage after:${DEF}" "$disk_after"

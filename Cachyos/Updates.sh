@@ -1,31 +1,23 @@
 #!/usr/bin/env bash
 # Standalone system update script for Arch-based systems.
-#============ Configuration & Bootstrap ============
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-#============ Color & Formatting ============
-BLU=$'\e[34m' GRN=$'\e[32m' YLW=$'\e[33m' RED=$'\e[31m' DEF=$'\e[0m'
-#============ Core Helpers ============
-xecho(){ printf '%b\n' "$*"; }
-has(){ command -v "$1" &>/dev/null; }
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || exit 1
+
+# Override HOME for SUDO_USER context
+export HOME="/home/${SUDO_USER:-$USER}"
 
 main(){
-  local PRIV_CMD
-  get_priv_cmd(){
-    local cmd
-    for cmd in sudo-rs sudo doas; do has "$cmd" && printf '%s' "$cmd" && return; done
-    [[ $EUID -eq 0 ]] || { xecho "${RED}No sudo tool found${DEF}"; exit 1; }
-  }
-  PRIV_CMD=$(get_priv_cmd)
-  [[ -n $PRIV_CMD && $EUID -ne 0 ]] && "$PRIV_CMD" -v || :
-  run_priv(){ if [[ $EUID -eq 0 || -z $PRIV_CMD ]]; then "$@"; else "$PRIV_CMD" -- "$@"; fi; }
+  # Initialize privilege tool
+  PRIV_CMD=$(init_priv)
+  
   cleanup(){ run_priv rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
   trap cleanup EXIT INT TERM
   #============ Update Functions ============
   update_system(){
     local pkgmgr aur_opts=()
-    xecho "🔄${BLU} System Packages${DEF}"
+    log "🔄${BLU} System Packages${DEF}"
     if has paru; then pkgmgr=paru; aur_opts=(--batchinstall --fmflags --skipinteg --nokeepsrc);
     elif has yay; then pkgmgr=yay; aur_opts=(--answerclean y --answerdiff n);
     else pkgmgr=pacman; fi
@@ -42,7 +34,7 @@ main(){
   }
   
   update_extras(){
-    xecho "🔄${BLU} Extra Tooling${DEF}"
+    log "🔄${BLU} Extra Tooling${DEF}"
     if has topgrade; then
       local user_flags=('--disable=system' '--disable=self-update' '--disable=brew')
       topgrade -yc --no-retry "${user_flags[@]}" &>/dev/null || :
@@ -66,7 +58,7 @@ main(){
   
   update_python(){
     if ! has uv; then return 0; fi
-    xecho "🔄${BLU} Python Environment (uv)${DEF}"
+    log "🔄${BLU} Python Environment (uv)${DEF}"
     uv self update &>/dev/null || :
     mapfile -t pkgs < <(uv tool list --format=json | jq -r '.[].name' 2>/dev/null)
     [[ ${#pkgs[@]} -gt 0 ]] && uv tool upgrade "${pkgs[@]}" &>/dev/null || :
@@ -77,7 +69,7 @@ main(){
   }
   
   update_maintenance(){
-    xecho "🔄${BLU} System Maintenance${DEF}"
+    log "🔄${BLU} System Maintenance${DEF}"
     local cmd
     for cmd in fc-cache-reload update-desktop-database update-pciids update-smart-drivedb fwupdmgr; do
       has "$cmd" && run_priv "$cmd" &>/dev/null || :
@@ -97,12 +89,12 @@ main(){
   }
   
   #============ Execution ============
-  xecho "\n${GRN} Meow! System Update Starting (> ^ <)${DEF}"
+  log "\n${GRN} Meow! System Update Starting (> ^ <)${DEF}"
   update_system
   update_extras
   update_python
   update_maintenance
-  xecho "\n${GRN}All done ✅${DEF}\n"
+  log "\n${GRN}All done ✅${DEF}\n"
 }
 
 main "$@"

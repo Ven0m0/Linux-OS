@@ -1,45 +1,43 @@
 name: Shell Lint & Format
+
 on: 
   workflow_dispatch:
   pull_request:
     paths:
       - "**/*.{sh,bash,bashrc,profile}"
-
-permissions:
-  contents: write
-  pull-requests: write
+env:
+  DEBIAN_FRONTEND: noninteractive
+  LC_ALL: C
+  SHELLCHECK_OPTS: "--source-path=SCRIPTDIR --external-sources --check-sourced"
+permissions: write-all
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 jobs:
   lint:
+    strategy:
+      matrix:
+        shell: [bash, sh]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with: 
           fetch-depth: 1
       - name: Install tools
-        env:
-          DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get update -yqq
-          sudo apt-get install -y shellcheck shfmt
-          curl -sL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-musl.tar.gz | tar xz
+          sudo apt-get update -y; sudo apt-get install -y shellcheck shfmt
+          curl -sfL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-musl.tar.gz | tar xz
           sudo mv shellharden /usr/local/bin/
       - name: Find & fix shell files
-        env:
-          SHELLCHECK_OPTS: "--shell=bash --source-path=SCRIPTDIR --external-sources --check-sourced"
         run: |
           {
             find . -name '*.sh' -o -name '*.bash' || :
             find . -type f -exec grep -l '^#!/.*sh' {} + || :
           } | sort -u | while IFS= read -r f; do
-            sed -i 's/() {/(){/g' "$f"
-            sed -i 's/|| true/|| :/g' "$f"
-            sed -i '/^#[[:space:]]*-\{5,\}/d' "$f"
-            sed -i '/^$/{N;/^\n$/D;}' "$f"
+            sed -i 's/() {/(){/g' "$f"; sed -i 's/|| true/|| :/g' "$f"
+            sed -i '/^#[[:space:]]*-\{5,\}/d' "$f"; sed -i '/^$/{N;/^\n$/D;}' "$f"
             shellharden --replace "$f" || :
-            shellcheck -f diff "$f" | patch -p1 || :
+            shellcheck -x -a  -f diff --shell=${{ matrix.shell }} "$f" | patch -Np1 || :
             shfmt -i 2 -s -bn -ln bash -w "$f" || :
           done
       - name: Commit changes

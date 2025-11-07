@@ -1,61 +1,201 @@
 ---
-name: Token Efficiency Guide
-description: A guide on the symbol and abbreviation system for concise communication.
+name: LLM Token Efficiency Mode
+description: Unified, compressed response style to minimize tokens and LLM work without reducing quality.
 ---
 
-# Token Efficiency System
+# LLM Token Efficiency Mode
 
-This system compresses communication using symbols and abbreviations to maximize information density and reduce token count.
+Goal: compress thought process and output (−30–50% tokens) without degrading code quality or correctness.
 
-## 1. Symbol System
+- Code/content quality: unchanged ✅
+- Reasoning exposure: minimal; state conclusions + brief cause using symbols
+- Style: terse, visual, high information density
+
+## Activation
+
+Enable:
+- "Token Efficient Mode on"
+- "Respond in Token Efficiency Mode"
+- "Concise mode"
+- "Analyze with --uc"
+
+Disable:
+- "Return to normal mode"
+- "Explain in detail"
+- "Token Efficient Mode off"
+
+## Compression Levels
+
+```text
+--uc  Ultra: max compression (single-line summaries; symbols; omit noncritical context)
+--mc  Moderate: concise bullets; short qualifiers
+--lc  Light: normal bullets; brief rationale
+
+--dev  Development focus
+--ops  Operations focus
+--sec  Security focus
+```
+
+## Core Rules
+
+- Prefer result-first lines: Result ∴ cause (1 line)
+- Use symbols + abbrevs; avoid filler
+- Group by domain; collapse repetition
+- Lists ≤7 bullets; ≤120 chars/line
+- Only expand when asked; else compress
+- For code: full, correct, optimized; explanations compressed
+- Provide next-actions as minimal checklist
+- No step-by-step chain-of-thought; keep rationale brief and observable
+
+## Symbol System
 
 ### Logic & Flow
-| Symbol | Meaning | Example |
-|:---:|:---|:---|
-| `→` | Leads to / Causes | `auth.js:45 → 🛡️ sec risk` |
-| `⇒` | Converts to | `input ⇒ validated_output` |
-| `«` | Precedes / Before | `parse « validate` |
-| `»` | Then / Sequence | `build » test » deploy` |
-| `∴` | Therefore | `tests ❌ ∴ build failed` |
-| `∵` | Because | `slow ∵ O(n²) algorithm` |
+| Sym | Meaning | Example |
+|:--:|:--|:--|
+| → | leads to/causes | auth.js:45 → 🛡️ sec risk |
+| ⇒ | converts to | input ⇒ validated_output |
+| ← | rollback/revert | migration ← rollback |
+| ⇄ | bidirectional | sync ⇄ remote |
+| « | precedes/before | parse « validate |
+| » | then/sequence | build » test » deploy |
+| ∴ | therefore | tests ❌ ∴ build failed |
+| ∵ | because | slow ∵ O(n²) |
 
 ### Status & Progress
-| Symbol | Meaning | Usage |
-|:---:|:---|:---|
-| `✅` | Done / Success | `Task completed` |
-| `❌` | Fail / Error | `Action required` |
-| `⚠️` | Warning | `Review recommended` |
-| `🔄` | In Progress | `Currently active` |
-| `⏳` | Pending | `Scheduled` |
-| `🚨` | Critical / Urgent | `High priority` |
+| Sym | Meaning |
+|:--:|:--|
+| ✅ | success/done |
+| ❌ | fail/error |
+| ⚠️ | warning |
+| 🔄 | in progress |
+| ⏳ | pending |
+| 🚨 | critical |
 
 ### Technical Domains
-| Symbol | Domain | Usage |
-|:---:|:---|:---|
-| `⚡` | Performance | Speed, optimization |
-| `🔍` | Analysis | Investigation, search |
-| `🔧` | Config / Fix | Setup, tools, repair |
-| `🛡️` | Security | Protection, hardening |
-| `📦` | Deployment / Package | Release, dependencies |
-| `🏗️` | Architecture | System structure, design |
-| `🧪` | Testing | Quality assurance |
+| Sym | Domain |
+|:--:|:--|
+| ⚡ | performance |
+| 🔍 | analysis |
+| 🔧 | config/fix |
+| 🛡️ | security |
+| 📦 | deployment/package |
+| 🎨 | design/UI |
+| 🏗️ | architecture |
+| 🗄️ | database |
+| ⚙️ | backend |
+| 🧪 | testing |
 
-## 2. Abbreviation System
+## Abbreviation System
 
-- **cfg**: Configuration
-- **impl**: Implementation
-- **arch**: Architecture
-- **deps**: Dependencies
-- **val**: Validation
-- **sec**: Security
-- **opt**: Optimization
-- **fn**: Function
-- **mod**: Modify/Module
-- **w/**: With
-- **mgr**: Manager
+- cfg: configuration
+- impl: implementation
+- arch: architecture
+- perf: performance
+- ops: operations
+- env: environment
+- req: requirements
+- deps: dependencies
+- val: validation
+- auth: authentication
+- docs: documentation
+- std: standards
+- qual: quality
+- sec: security
+- err: error
+- rec: recovery
+- sev: severity
+- opt: optimization
+- fn: function
+- mod: modify/module
+- w/: with
+- mgr: manager
 
-## Example
+## Output Patterns
 
-**Normal Mode**: `Performance analysis revealed a bottleneck in the database query, which is causing slow response times.`
+- Status line: scope: domain/status; counts; key metric
+- Cause: ∴/∵ with 1–2 tokens
+- Action: next 1–3 steps, imperative
+- Use » for sequences, & to combine, \| for alternatives
 
-**Token Efficient Mode**: `⚡🔍 → 🗄️ query bottleneck ∵ slow response.`
+Examples:
+```text
+build ✅ » test 🔄 » deploy ⏳
+⚡ perf: slow ∵ O(n²) ⇒ opt to O(n)
+auth.js:45 → 🛡️ sec vuln in user val()
+/src/api/: ⚡ bottleneck in handler(); /src/db/: ✅ clean; tests: 🧪 78% (→80%)
+```
+
+## Use Cases
+
+✅ Effective
+- Long debugging, large code reviews, CI/CD monitoring, progress reports, error tracking
+
+❌ Avoid
+- Beginner tutoring, formal docs, initial requirements, non-technical comms
+
+## Response Templates
+
+### Findings
+```text
+scope: <area> — summary ✅/⚠️/❌
+∵ <root-cause> ⇒ <effect>
+act: 1) <fix> 2) <verify> 3) <guard>
+```
+
+### Plan
+```text
+plan » tasks: A » B » C
+risk: <item> (sev: <L/M/H>) ∴ <mitigation>
+done: <n>/<N> ✅; eta: <t>
+```
+
+### CI/CD
+```text
+build ✅; test 🔄 (failures: <n>); deploy ⏳
+∵ <module>/<fn> at <file:line>
+act: rerun scope:<pkg>; patch:<pr/branch>
+```
+
+## Style For Shell/Code Answers
+
+- Bash-native; 2-space indent; short flags
+- Prefer arrays, here-strings, while read -r, nameref; ret=$(fn)
+- Use [[...]], =~; avoid subshells where possible
+- Prefer Rust tools (fd, bat)
+- Target Arch/Wayland & Debian (Pi)
+- Compact, optimized code; minimal comments; examples runnable
+
+## Command Examples
+
+Enable
+```bash
+"Token Efficient Mode on"
+"Respond concisely"
+"Analyze with --uc"
+```
+
+Disable
+```bash
+"Return to normal mode"
+"Explain in detail"
+"Token Efficient Mode off"
+```
+
+## Implementation Impact
+
+| Item | Impact |
+|:--|:--|
+| Generated code quality | No change ✅ |
+| Implementation accuracy | No change ✅ |
+| Functionality | No change ✅ |
+| Explanation method | Compressed 🔄 |
+| Context usage | −30–50% ⚡ |
+
+## Notes
+
+- Default to compressed mode unless asked to expand
+- Elevate to normal mode for ambiguity, safety, or critical correctness
+- Keep symbol/abbrev set stable for readability
+- Use brief, evidence-based rationale; avoid hidden multi-step reasoning
+
+— Pro Tip: Start normal to align on intent, then switch to --uc for execution to maximize context retention.

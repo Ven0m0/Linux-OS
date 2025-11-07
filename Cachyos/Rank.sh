@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; SHELL=/bin/bash
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" &>/dev/null || :
-has(){ command -v -- "$1" &>/dev/null; }
-sudo -v; sync
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || exit 1
 
+# Override environment for this script
+SHELL=/bin/bash
+export HOME="/home/${SUDO_USER:-$USER}"
+
+# Initialize privilege and sync
+PRIV_CMD=$(init_priv)
+sync
+
+# Color overrides for this script (uses different scheme)
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' B='\033[0;34m' C='\033[0;36m' Z='\033[0m' D='\033[1m'
 MIRRORDIR=/etc/pacman.d
 BACKUPDIR=/etc/pacman.d/.bak
@@ -34,10 +41,10 @@ trap cleanup EXIT INT TERM
 
 backup(){
   local src=$1 dst=$BACKUPDIR/$(basename "$src")-$(date +%s).bak
-  [[ -d $BACKUPDIR ]] || sudo mkdir -p "$BACKUPDIR"
-  sudo cp -a "$src" "$dst" &>/dev/null || return 1
+  [[ -d $BACKUPDIR ]] || run_priv mkdir -p "$BACKUPDIR"
+  run_priv cp -a "$src" "$dst" &>/dev/null || return 1
   mapfile -t old < <(find "$BACKUPDIR" -name "$(basename "$src")-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+21 | cut -d' ' -f2-)
-  ((${#old[@]})) && printf '%s\n' "${old[@]}" | xargs -r sudo rm -f &>/dev/null || :
+  ((${#old[@]})) && printf '%s\n' "${old[@]}" | xargs -r run_priv rm -f &>/dev/null || :
 }
 
 get_ref(){
@@ -74,8 +81,8 @@ rank_manual(){
   {
     printf "## Ranked %s\n\n" "$(date)"
     awk '{print "Server = " $2}' "$tmp.spd"
-  } | sudo tee "$tmp" >/dev/null
-  sudo install -m644 -b -S -T "$tmp" "$file"
+  } | run_priv tee "$tmp" >/dev/null
+  run_priv install -m644 -b -S -T "$tmp" "$file"
 }
 
 rank_rate(){
@@ -97,7 +104,7 @@ rank_rate(){
       rank_manual "$file"
       return
     }
-  sudo install -m644 -b -S -T "$tmp" "$file"
+  run_priv install -m644 -b -S -T "$tmp" "$file"
 }
 
 rank_arch_fresh(){
@@ -126,7 +133,7 @@ rank_arch_fresh(){
       --comment-prefix="# " --output-prefix="Server = " \
   || { warn "rate-mirrors failed for Arch, falling back"; rank_manual "$path"; return; }
   
-  sudo install -m644 -b -S -T "$tmp" "$path"
+  run_priv install -m644 -b -S -T "$tmp" "$path"
 }
 
 rank_reflector(){
@@ -138,12 +145,12 @@ rank_reflector(){
   local -a args=(--save "$tmp" --protocol https --latest 20 --sort rate -n"$MAX_MIRRORS" --threads "$CONCURRENCY")
   [[ $COUNTRY =~ ^[A-Z]{2}$ ]] && args+=(--country "$COUNTRY")
   
-  sudo reflector "${args[@]}" &>/dev/null || {
+  run_priv reflector "${args[@]}" &>/dev/null || {
     warn "reflector failed, falling back"
     rank_manual "$file"
     return
   }
-  sudo install -m644 -b -S -T "$tmp" "$file"
+  run_priv install -m644 -b -S -T "$tmp" "$file"
 }
 
 benchmark(){
@@ -184,16 +191,16 @@ restore(){
   [[ $n =~ ^[0-9]+$ && $n -ge 1 && $n -le ${#baks[@]} ]] || die "Invalid selection"
   
   local tgt=$(basename "${baks[$((n-1))]}" | sed 's/-[0-9]\+\.bak$//')
-  sudo cp "${baks[$((n-1))]}" "$MIRRORDIR/$tgt" || die "Restore failed"
+  run_priv cp "${baks[$((n-1))]}" "$MIRRORDIR/$tgt" || die "Restore failed"
   info "Restored $tgt"
-  sudo pacman -Sy &>/dev/null || :
+  run_priv pacman -Sy &>/dev/null || :
 }
 
 opt_all(){
   info "Starting optimization (country: $COUNTRY)"
-  sudo pacman -Syyuq --noconfirm --needed || :
-  sudo pacman-db-upgrade --nocolor &>/dev/null || :
-  has keyserver-rank && sudo keyserver-rank --yes &>/dev/null || :
+  run_priv pacman -Syyuq --noconfirm --needed || :
+  run_priv pacman-db-upgrade --nocolor &>/dev/null || :
+  has keyserver-rank && run_priv keyserver-rank --yes &>/dev/null || :
   
   [[ -f /etc/eos-rankmirrors.disabled ]] && source /etc/eos-rankmirrors.disabled || :
   get_ref
@@ -202,7 +209,7 @@ opt_all(){
     rank_arch_fresh "$ARCH_URL"
     if has cachyos-rate-mirrors; then
       info "Using cachyos-rate-mirrors"
-      sudo cachyos-rate-mirrors || :
+      run_priv cachyos-rate-mirrors || :
     else
       for repo in "${REPOS[@]}"; do
         [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_rate "$repo" || :
@@ -226,9 +233,9 @@ opt_all(){
       [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_manual "$MIRRORDIR/${repo}-mirrorlist" || :
     done
   fi
-  sudo chmod 644 "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
+  run_priv chmod 644 "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
   info "Updated all mirrorlists"
-  sudo pacman -Syyq --noconfirm --needed || :
+  run_priv pacman -Syyq --noconfirm --needed || :
 }
 
 show_current(){
@@ -290,8 +297,8 @@ EOF
 }
 
 main(){
-  [[ $EUID -eq 0 || $# -gt 0 ]] || exec sudo -E "$0" "$@"
-  sudo mkdir -p "$(dirname "$LOGFILE")" "$BACKUPDIR" &>/dev/null || :
+  [[ $EUID -eq 0 || $# -gt 0 ]] || exec "$PRIV_CMD" -E "$0" "$@"
+  run_priv mkdir -p "$(dirname "$LOGFILE")" "$BACKUPDIR" &>/dev/null || :
   
   while (($#)); do
     case $1 in

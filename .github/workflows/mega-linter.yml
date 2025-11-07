@@ -27,7 +27,10 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
-
+  checks: write
+  issues: write
+env:
+  LC_ALL: C
 jobs:
   megalinter:
     name: MegaLinter
@@ -37,19 +40,28 @@ jobs:
         uses: actions/checkout@v5
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: MegaLinter
         uses: oxsecurity/megalinter@v9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MEGALINTER_CONFIG: .mega-linter.yml
+          PAT: ${{ secrets.PAT }}
           VALIDATE_ALL_CODEBASE: true
           APPLY_FIXES: all
           APPLY_FIXES_EVENT: all
           APPLY_FIXES_MODE: commit
           PARALLEL: true
           SHOW_ELAPSED_TIME: true
+          FLAVOR_SUGGESTIONS: true
+          BASH_SHELLCHECK_DISABLE_ERRORS: true
+          BASH_SHELLCHECK_ARGUMENTS: '-s bash -P SCRIPTDIR -x -a -S warning -C auto -o all'
+          BASH_SHFMT_ARGUMENTS: "-ln bash -s -i 2 -bn"
+          FILTER_REGEX_INCLUDE: '((\.config|\.termux|\.github)/|^\.[^/]+$|^scripts/|^bin/|.*)'
+          FILTER_REGEX_EXCLUDE: '(^Linux-Settings/|^\.cache/|^node_modules/|^vendor/|^dist/|^build/|^third_party/|^\.venv/|^venv/|^__pycache__/|^\.git/)'
+          ENABLE: ACTION,BASH,CSS,DOCKERFILE,EDITORCONFIG,ENV,HTML,JSON,MAKEFILE,MARKDOWN,PYTHON,REPOSITORY,SPELL,TOML,XML,YAML
+          DISABLE_LINTERS: REPOSITORY_KICS,REPOSITORY_GRYPE,SPELL_VALE,REPOSITORY_TRIVY,REPOSITORY_DEVSKIM
+          DISABLE_ERRORS_LINTERS: SPELL_CSPELL,SPELL_LYCHEE,BASH_EXEC,REPOSITORY_GIT_DIFF,REPOSITORY_SECRETLINT
 
       - name: Upload MegaLinter reports
         if: always()

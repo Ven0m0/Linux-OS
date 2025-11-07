@@ -29,8 +29,7 @@ permissions:
   pull-requests: write
   checks: write
   issues: write
-env:
-  LC_ALL: C
+
 jobs:
   megalinter:
     name: MegaLinter
@@ -62,6 +61,7 @@ jobs:
           ENABLE: ACTION,BASH,CSS,DOCKERFILE,EDITORCONFIG,ENV,HTML,JSON,MAKEFILE,MARKDOWN,PYTHON,REPOSITORY,SPELL,TOML,XML,YAML
           DISABLE_LINTERS: REPOSITORY_KICS,REPOSITORY_GRYPE,SPELL_VALE,REPOSITORY_TRIVY,REPOSITORY_DEVSKIM
           DISABLE_ERRORS_LINTERS: SPELL_CSPELL,SPELL_LYCHEE,BASH_EXEC,REPOSITORY_GIT_DIFF,REPOSITORY_SECRETLINT
+          LC_ALL: C
 
       - name: Upload MegaLinter reports
         if: always()

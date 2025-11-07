@@ -8,7 +8,7 @@ on:
 env:
   DEBIAN_FRONTEND: noninteractive
   LC_ALL: C
-  SHELLCHECK_OPTS: "--source-path=SCRIPTDIR --external-sources --check-sourced"
+  SHELLCHECK_OPTS: "--source-path=SCRIPTDIR --external-sources --check-sourced --severity=style --shell=bash"
 permissions: write-all
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"

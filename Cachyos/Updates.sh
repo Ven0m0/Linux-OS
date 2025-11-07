@@ -3,14 +3,10 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh" || exit 1
-
 # Initialize privilege escalation
-PRIV_CMD=$(init_priv)
-export PRIV_CMD
-
+export PRIV_CMD=$(init_priv)
 # Setup cleanup trap
 setup_cleanup_trap
-
 # Setup build environment
 setup_build_env
 

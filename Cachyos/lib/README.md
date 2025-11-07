@@ -96,7 +96,7 @@ Trans flag color palette with exported variables:
 - **DRY Principle**: Single source of truth for common patterns
 - **Consistency**: Standardized behavior across all scripts
 - **Maintainability**: Changes in one place benefit all scripts
-- **Reduced Code**: Eliminates ~270+ lines of duplicated code across 6 scripts
+- **Reduced Code**: Eliminates ~273 lines of duplicated code across 8 scripts
 - **Better Testing**: Common functions can be tested in isolation
 
 ## Refactored Scripts

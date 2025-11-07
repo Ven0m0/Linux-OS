@@ -6,11 +6,9 @@ echo '--- Disable Firefox Pioneer study monitoring'
 pref_name='toolkit.telemetry.pioneer-new-studies-available'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -48,11 +46,9 @@ echo '--- Clear Firefox pioneer program ID'
 pref_name='toolkit.telemetry.pioneerId'
 pref_value='""'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -90,11 +86,9 @@ echo '--- Minimize Firefox telemetry logging verbosity'
 pref_name='toolkit.telemetry.log.level'
 pref_value='"Fatal"'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -132,11 +126,9 @@ echo '--- Disable Firefox telemetry log output'
 pref_name='toolkit.telemetry.log.dump'
 pref_value='"Fatal"'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -174,11 +166,9 @@ echo '--- Disable pings to Firefox telemetry server'
 pref_name='toolkit.telemetry.server'
 pref_value='""'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -256,11 +246,9 @@ fi
 pref_name='toolkit.telemetry.shutdownPingSender.enabledFirstSession'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -296,11 +284,9 @@ fi
 pref_name='toolkit.telemetry.firstShutdownPing.enabled'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -338,11 +324,9 @@ echo '--- Disable Firefox new profile ping'
 pref_name='toolkit.telemetry.newProfilePing.enabled'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -380,11 +364,9 @@ echo '--- Disable Firefox update ping'
 pref_name='toolkit.telemetry.updatePing.enabled'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -422,11 +404,9 @@ echo '--- Disable Firefox prio ping'
 pref_name='toolkit.telemetry.prioping.enabled'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -464,11 +444,9 @@ echo '--- Disable archiving of Firefox telemetry'
 pref_name='toolkit.telemetry.archive.enabled'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -506,11 +484,9 @@ echo '--- Disable detailed telemetry collection in Firefox'
 pref_name='toolkit.telemetry.enabled'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -549,11 +525,9 @@ echo '--- Disable collection of technical and interaction data in Firefox'
 pref_name='datareporting.healthreport.uploadEnabled'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -591,11 +565,9 @@ echo '--- Disable Firefox unified telemetry'
 pref_name='toolkit.telemetry.unified'
 pref_value='false'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then
@@ -633,11 +605,9 @@ echo '--- Clear Firefox telemetry user ID'
 pref_name='toolkit.telemetry.cachedClientID'
 pref_value='""'
 echo "Setting preference \"$pref_name\" to \"$pref_value\"."
-declare -a profile_paths=(
-  ~/.mozilla/firefox/*/
+declare -a profile_paths=(~/.mozilla/firefox/*/
   ~/.var/app/org.mozilla.firefox/.mozilla/firefox/*/
-  ~/snap/firefox/common/.mozilla/firefox/*/
-)
+  ~/snap/firefox/common/.mozilla/firefox/*/)
 declare -i total_profiles_found=0
 for profile_dir in "${profile_paths[@]}"; do
   if [[ ! -d $profile_dir ]]; then

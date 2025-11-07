@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
 
-#============ Color & Effects ============
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' DEF=$'\e[0m'
-has(){ command -v "$1" &>/dev/null; }
+# Override HOME for SUDO_USER context
+export HOME="/home/${SUDO_USER:-$USER}"
 
 print_banner(){
   cat <<'EOF'

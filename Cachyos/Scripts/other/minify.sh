@@ -17,7 +17,9 @@ minify_css(){
   len_in=$(wc -c <"$f")
   [[ $f =~ \.min\.css$ ]] && return 0
   tmp=$(mktemp)
-  if command -v bunx &>/dev/null; then
+  if command -v minhtml &>/dev/null; then
+    minhtml --minify-css --allow-optimal-entities --allow-removing-spaces-between-attributes "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+  elif command -v bunx &>/dev/null; then
     bunx lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
     npx -y lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
@@ -34,7 +36,7 @@ minify_html(){
   len_in=$(wc -c <"$f")
   tmp=$(mktemp)
   if command -v minhtml &>/dev/null; then
-    minhtml "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    minhtml --minify-css --allow-optimal-entities --allow-removing-spaces-between-attributes "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   elif command -v bunx &>/dev/null; then
     bunx @minify-html/node-cli "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify-html failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
@@ -83,10 +85,10 @@ export ylw
 process(){
   local -a css=() html=() json=() yaml=()
   if command -v fd &>/dev/null; then
-    mapfile -t css < <(fd -e css -tf -E '*.min.css' -E node_modules -E dist . "$out" 2>/dev/null)
-    mapfile -t html < <(fd -e html -e htm -tf -E node_modules -E dist . "$out" 2>/dev/null)
-    mapfile -t json < <(fd -e json -tf -E '*.min.json' -E 'package*.json' -E node_modules -E .git . "$out" 2>/dev/null)
-    mapfile -t yaml < <(fd -e yml -e yaml -tf -E node_modules -E dist . "$out" 2>/dev/null)
+    mapfile -t css < <(fd -ecss -tf -E'*.min.css' -Enode_modules -Edist . "$out" 2>/dev/null)
+    mapfile -t html < <(fd -ehtml -ehtm -tf -Enode_modules -Edist . "$out" 2>/dev/null)
+    mapfile -t json < <(fd -ejson -tf -E'*.min.json' -E'package*.json' -Enode_modules -E.git . "$out" 2>/dev/null)
+    mapfile -t yaml < <(fd -eyml -eyaml -tf -Enode_modules -Edist . "$out" 2>/dev/null)
   else
     mapfile -t css < <(find "$out" -type f -name '*.css' ! -name '*.min.css' ! -path '*/node_modules/*' ! -path '*/dist/*' 2>/dev/null)
     mapfile -t html < <(find "$out" -type f \( -name '*.html' -o -name '*.htm' \) ! -path '*/node_modules/*' ! -path '*/dist/*' 2>/dev/null)
@@ -95,7 +97,6 @@ process(){
   fi
   local -i total=$(( ${#css[@]} + ${#html[@]} + ${#json[@]} + ${#yaml[@]} ))
   (( total == 0 )) && { printf "%s⊘%s No files found\n" "$ylw" "$rst"; return 0; }
-
   if command -v rust-parallel &>/dev/null; then
     (( ${#css[@]} > 0 )) && printf "%s\n" "${css[@]}" | rust-parallel -j"$jobs" minify_css {} || :
     (( ${#html[@]} > 0 )) && printf "%s\n" "${html[@]}" | rust-parallel -j"$jobs" minify_html {} || :

@@ -1,58 +1,73 @@
-# Copilot Instructions: Linux-OS
+# Copilot Master Instructions
 
-## Core
-Autonomous exec. Min confirms. Max token efficiency. Bash & cfg focus.
+## 1. Core Principles
 
-## Principles
-**Exec Immediately** — Edit existing w/o hesitation | **Confirm Large Δ Only** | **Quality First** — Auto checks | **Verify Facts** — No speculation | **Prefer Existing** → Edit over create | **Rethink** — List pros/cons if ≥2 approaches
+- **Autonomous Execution**: Execute tasks immediately. Edit existing code and configurations without hesitation. Confirm only for large-scale or potentially destructive changes.
+- **Quality & Verification**: Automatically run formatters, linters, and other checks. Verify facts and avoid speculation.
+- **Efficiency**: Prioritize token efficiency and concise communication.
+- **Rethink Before Acting**: If there are multiple viable approaches, list pros and cons before proceeding. Prefer editing existing files over creating new ones.
+- **Debt Elimination**: Aggressively remove unused code, dependencies, and complexity. Less code is less debt.
 
-### Settings
-Lang: EN (tech) | Style: Pro, concise, advanced | Emojis: Min | Names: short
+## 2. Communication Style
 
-### Abbrev
-`y`=Yes `n`=No `c`=Cont `r`=Rev `u`=Undo | cfg=config impl=implementation arch=architecture deps=dependencies val=validation sec=security err=error opt=optimization Δ=change mgr=manager fn=function mod=modify rm=remove w/=with dup=duplicate
+- **Language**: English (Technical)
+- **Style**: Professional, concise, advanced, and blunt.
+- **Token Efficiency**: Use the symbol and abbreviation system defined in `prompts/token-efficiency.prompt.md`.
 
-## Bash Template
-```bash
-#!/usr/bin/env bash
-export LC_ALL=C LANG=C
-BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
-has() { command -v "$1" &>/dev/null; }
-```
+## 3. Development Practices
 
-## Code Patterns
-### Pkg Mgrs & Privilege
-Detect: `paru`→`yay`→`pacman` (Arch) | `apt`/`dpkg` (Debian) → `pkgmgr` array | Check before install: `pacman -Q pkg`, `flatpak list`, `cargo install --list` | Distro hints: `(Arch: pacman -S pkg)` `(Debian: apt-get install -y pkg)`
+### Change & Commit Hygiene
+- **TDD Workflow**: Follow a Red → Green → Refactor cycle.
+- **Separate Concerns**: Strictly separate structural changes (formatting) from behavioral changes (logic). Never mix them in the same commit.
+- **Atomic Commits**: Commits must be small, frequent, and independent. A commit is ready only when:
+    1. All tests pass.
+    2. Linters produce zero warnings.
+    3. It represents a single, logical unit of work.
+    4. The commit message is clear and concise.
 
-### Data & Performance
-`mapfile -t arr < <(cmd)` avoid subshells | Never parse `ls` | Assoc arrays: `declare -A cfg=([dry_run]=0 [debug]=0)` | Prefer modern tools: `fd`→`find` `rg`→`grep` `bat`→`cat` `sd`→`sed` `aria2`→`curl`→`wget` `jaq`→`jq` `sk`→`fzf` | Batch ops, reduce subprocess spawning
+### Code Quality
+- **Single Responsibility**: Functions and modules should do one thing well.
+- **Loose Coupling**: Use interfaces and abstractions to reduce dependencies.
+- **Fail Fast**: Use early returns and guard clauses.
+- **DRY**: Eliminate duplicate logic and code immediately.
 
-### Interactive
-Arg-less w/ fzf when paths missing | Fallback: `has fd && fd ... | fzf || find ... | fzf` | AUR: `--needed --noconfirm --removemake --cleanafter --sudoloop --skipreview --batchinstall`
+## 4. Language-Specific Guidelines
 
-### Network
-`curl -fsL --http2` | Update README curl snippets on entrypoint mod
+### **Bash**
+- **Strict Mode**: `set -Eeuo pipefail`, `shopt -s nullglob globstar`, `IFS=$'\n\t'`, `export LC_ALL=C LANG=C`.
+- **Idioms**: Prefer native bashisms: arrays, `mapfile -t`, `[[...]]`, parameter expansion. Avoid parsing `ls`, `eval`, and backticks.
+- **Tooling**: Prefer modern Rust-based tools (`fd`, `rg`, `bat`, `sd`, `zoxide`) with fallbacks to traditional counterparts (`find`, `grep`, `cat`, `sed`, `cd`).
+- **Structure**: Use the canonical template in `prompts/bash-script.prompt.md`.
+- **Linting**: `shfmt -i 2 -ci -sr`, `shellcheck` (zero warnings), `shellharden`.
 
-## Tooling
-**Fmt/Lint/Harden**: `shfmt -i 2 -ln bash -bn -s file.sh && shellcheck -f diff file.sh | patch -Np1 && shellharden --replace file.sh`
+### **Rust**
+- **Error Handling**: Use `Result<T, E>` and the `?` operator. Use `thiserror` or `anyhow` for rich errors. Avoid `unwrap()`/`expect()` in library code.
+- **Style**: Format with `rustfmt`. Lint with `cargo clippy -- -D warnings`.
+- **Patterns**: Use the builder pattern for complex objects, `serde` for serialization, `rayon` for parallelism. Prefer iterators and borrowing over indexing and `clone()`.
+- **API Design**: Implement common traits (`Debug`, `Clone`, `Default`, etc.). Use newtypes for type safety. Public APIs must be documented.
 
-**Modern w/ Fallbacks**: `fdf`→`fd`→`find` (no exec) | `aria2`→`curl`→`wget2`→`wget` (no aria2 if pipe) | `rust-parallel`→`parallel`→`xargs`
+### **Python**
+- **Style**: Follow PEP 8. Format with `black` or `ruff format`. Lint with `ruff` or `flake8`.
+- **Typing**: Use type hints (`typing` module) for all functions and variables.
+- **Docstrings**: Follow PEP 257.
+- **Structure**: Break complex functions into smaller, single-purpose units.
 
-## Dev Practices
-**TDD**: Red→Green→Refactor | **Changes**: Structural (fmt/org) ≠ Behavioral (fn add/mod/del) — never mix | **Commit**: Tests pass + Zero warns + Single unit + Clear msg — small, frequent, independent | **Quality**: Single responsibility, loose coupling, early returns, no over-abstraction, elim dup, clear intent, explicit deps
+### **Markdown**
+- **Structure**: Use `##` for H2 and `###` for H3. Limit nesting.
+- **Code Blocks**: Use fenced code blocks with language identifiers.
+- **Line Length**: Soft wrap at 80-100 characters for readability.
 
-### Prohibitions
-❌ Hardcode (use const/cfg/env) | ❌ Repetitive (functionize) | ❌ Common err (unify) | ❌ Dup logic (abstract)
+## 5. Performance Optimization
+- **Measure First**: Profile and benchmark before optimizing.
+- **Focus on Hot Paths**: Optimize the most frequently executed code.
+- **Caching**: Use in-memory (Redis), DB, and frontend caching where appropriate. Invalidate correctly.
+- **Concurrency**: Use async I/O, thread/worker pools, and batch processing.
+- **Database**: Use indexes, analyze query plans (`EXPLAIN`), and avoid N+1 queries.
 
-## Agents
-See `copilot-agents.yml`:
-- **bash-expert**: Bash scripting specialist
-- **performance-optimizer**: Performance tuning
-- **config-manager**: Config files
-- **security-auditor**: Security review
-- **doc-writer**: Documentation
+## 6. GitHub Actions
+- **Security**: Use OIDC for cloud auth, set least-privilege `permissions` for `GITHUB_TOKEN`, and scan for secrets.
+- **Performance**: Use caching for dependencies and build outputs. Use matrix strategies for parallel jobs.
+- **Structure**: Maintain clean, modular workflows. Use composite actions or reusable workflows to reduce duplication.
+- **Testing**: Integrate unit, integration, and E2E tests. Report results clearly.
 
-Invoke via Copilot Chat: `@workspace /agent bash-expert`
-
-## Symbols
-→ leads | ⇒ converts | ← rollback | ⇄ bidir | & and | \| or | » then | ∴ therefore | ∵ because | ✅ done | ❌ fail | ⚠️ warn | 🔄 active | ⏳ pending | 🚨 critical | ⚡ perf | 🔍 analysis | 🔧 cfg | 🛡️ sec | 📦 deploy | 🎨 UI | 🏗️ arch | 🗄️ DB | ⚙️ backend | 🧪 test
+---

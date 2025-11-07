@@ -7,7 +7,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-permissions: write-all
+permissions: 
+  contents: write
+  pull-requests: write
 env:
   DEBIAN_FRONTEND: noninteractive
   LC_ALL: C

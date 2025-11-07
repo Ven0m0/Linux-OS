@@ -1,4 +1,4 @@
-# <img height="20" src="https://cdn.freebiesupply.com/logos/large/2x/raspberry-pi-logo-png-transparent.png" alt="Pi"> Raspberry pi related stuff
+# <img height="30" src="https://cdn.freebiesupply.com/logos/large/2x/raspberry-pi-logo-png-transparent.png" alt="Pi"> Raspberry pi related stuff
 
 
 ### Updates

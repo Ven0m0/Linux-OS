@@ -31,8 +31,16 @@ jobs:
       - name: Find & fix shell files
         shell: bash
         run: |
+          awk_fix='
+            /^#[[:space:]]*-{5,}/ { next }
+            {
+              gsub(/\(\) \{/, "(){")
+              gsub(/\|\| true/, "|| :")
+              if (NF) { if (blank) print ""; blank=0; print }
+              else blank=1
+            }'
           while IFS= read -r f; do
-            sed -i -e 's/() {/(){/g' -e 's/|| true/|| :/g' -e '/^#[[:space:]]*-\{5,\}/d' -e '/^$/{N;/^\n$/D;}' "$f"
+            awk "$awk_fix" "$f" > "$f.tmp" && mv "$f.tmp" "$f"
             shellharden --replace "$f" &>/dev/null || :
             shellcheck -f diff "$f" | patch -Np1 &>/dev/null || :
             shfmt -i 2 -s -bn -ln bash -w "$f" &>/dev/null || :

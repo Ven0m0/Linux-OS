@@ -41,6 +41,15 @@ jobs:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 1
 
+      # Validate and fix config files first
+      - name: Validate and Fix Config Files
+        uses: kehoecj/validate-configs-action@v4.0.1
+        with:
+          group-by: "pass-fail"
+          exclude-dirs: ".github,.git,.cache,go,node_modules,.var,.rustup,.wine,.zim,.void-editor"
+          AUTO_FIX: "true"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: MegaLinter
         uses: oxsecurity/megalinter@v9
         env:

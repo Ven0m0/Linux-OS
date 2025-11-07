@@ -85,18 +85,19 @@ export ylw
 process(){
   local -a css=() html=() json=() yaml=()
   if command -v fd &>/dev/null; then
-    mapfile -t css < <(fd -ecss -tf -E'*.min.css' -Enode_modules -Edist . "$out" 2>/dev/null)
-    mapfile -t html < <(fd -ehtml -ehtm -tf -Enode_modules -Edist . "$out" 2>/dev/null)
-    mapfile -t json < <(fd -ejson -tf -E'*.min.json' -E'package*.json' -Enode_modules -E.git . "$out" 2>/dev/null)
-    mapfile -t yaml < <(fd -eyml -eyaml -tf -Enode_modules -Edist . "$out" 2>/dev/null)
+    mapfile -t css < <(fd -ecss -tf -E'*.min.css' -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
+    mapfile -t html < <(fd -ehtml -ehtm -tf -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
+    mapfile -t json < <(fd -ejson -tf -E'*.min.json' -E'package*.json' -Enode_modules -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
+    mapfile -t yaml < <(fd -eyml -eyaml -tf -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
   else
-    mapfile -t css < <(find "$out" -type f -name '*.css' ! -name '*.min.css' ! -path '*/node_modules/*' ! -path '*/dist/*' 2>/dev/null)
-    mapfile -t html < <(find "$out" -type f \( -name '*.html' -o -name '*.htm' \) ! -path '*/node_modules/*' ! -path '*/dist/*' 2>/dev/null)
-    mapfile -t json < <(find "$out" -type f -name '*.json' ! -name '*.min.json' ! -name 'package*.json' ! -path '*/node_modules/*' ! -path '*/.git/*' 2>/dev/null)
-    mapfile -t yaml < <(find "$out" -type f \( -name '*.yml' -o -name '*.yaml' \) ! -path '*/node_modules/*' ! -path '*/dist/*' 2>/dev/null)
+    mapfile -t css < <(find "$out" -type f -name '*.css' ! -name '*.min.css' ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
+    mapfile -t html < <(find "$out" -type f \( -name '*.html' -o -name '*.htm' \) ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
+    mapfile -t json < <(find "$out" -type f -name '*.json' ! -name '*.min.json' ! -name 'package*.json' ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
+    mapfile -t yaml < <(find "$out" -type f \( -name '*.yml' -o -name '*.yaml' \) ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
   fi
   local -i total=$(( ${#css[@]} + ${#html[@]} + ${#json[@]} + ${#yaml[@]} ))
   (( total == 0 )) && { printf "%s⊘%s No files found\n" "$ylw" "$rst"; return 0; }
+
   if command -v rust-parallel &>/dev/null; then
     (( ${#css[@]} > 0 )) && printf "%s\n" "${css[@]}" | rust-parallel -j"$jobs" minify_css {} || :
     (( ${#html[@]} > 0 )) && printf "%s\n" "${html[@]}" | rust-parallel -j"$jobs" minify_html {} || :

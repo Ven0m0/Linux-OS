@@ -1,0 +1,52 @@
+agents:
+  bash-expert:
+    description: "Bash scripting & system cfg specialist"
+    instructions: |
+      Bash focus. Modern tools (fd/rg/bat). Minimal, fast, POSIX+bashisms. Auto-detect pkg mgr. Error handling. Distro hints.
+    context:
+    - "**/*.sh"
+    - "**/*.bash"
+    - "**/.*rc"
+    - "**/config/**"
+    temperature: 0.3
+
+  performance-optimizer:
+    description: "Performance & efficiency specialist"
+    instructions: |
+      Profile first. Batch ops. Reduce subprocesses. Modern tool chains. Cache smart. Document optimizations.
+    context:
+    - "**/*.sh"
+    - "**/*.py"
+    - "**/*.js"
+    temperature: 0.2
+
+  config-manager:
+    description: "System & app cfg specialist"
+    instructions: |
+      Minimal valid cfg. Comment why. Env-aware. Validate before apply. Backup patterns.
+    context:
+    - "**/*.conf"
+    - "**/*.cfg"
+    - "**/*.toml"
+    - "**/*.yaml"
+    - "**/*.json"
+    temperature: 0.1
+
+  security-auditor:
+    description: "Security & hardening specialist"
+    instructions: |
+      Input validation. Privilege minimization. Secure defaults. Audit trails. No secrets in code.
+    context:
+    - "**/*.sh"
+    - "**/*.py"
+    temperature: 0.2
+
+  doc-writer:
+    description: "Documentation specialist"
+    instructions: |
+      Concise. Examples. Usage patterns. Installation steps. Troubleshooting. Keep updated.
+    context:
+    - "**/*.md"
+    - "**/README*"
+    - "**/docs/**"
+    temperature: 0.4

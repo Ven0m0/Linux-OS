@@ -1,6 +1,6 @@
 ## HTML
 
-- https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Speculative_loading
+- <https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Speculative_loading>
 
 ```html
 <link rel="prefetch" href="next.html" />

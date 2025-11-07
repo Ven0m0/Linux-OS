@@ -44,6 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rank.s
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/Install.sh | bash
 ```
+
 ```bash
 curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/Chaotic-aur.sh | bash
 ```
@@ -95,16 +96,16 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 <details>
 <summary><b>Packages:</b></summary>
 
-* <https://wiki.archlinux.org/title/Category:Lists_of_software>
-* [Arch PKG](https://archlinux.org/packages)
-* [AUR PKG](https://aur.archlinux.org)
-* [Crates.io](https://crates.io)
-* [FlatHub](https://flathub.org)
-* [Lure.sh](https://lure.sh)
-* [Basher](https://www.basher.it/package)
-* [bpkg](https://bpkg.sh)
-* [Nix](https://github.com/NixOS/nix) ***/*** [Home-manager](https://github.com/nix-community/home-manager) **|** [Nixpkgs](https://github.com/NixOS/nixpkgs) **|** [NUR](https://github.com/nix-community/NUR) **|**
-* [x-cmd](https://www.x-cmd.com)
+- <https://wiki.archlinux.org/title/Category:Lists_of_software>
+- [Arch PKG](https://archlinux.org/packages)
+- [AUR PKG](https://aur.archlinux.org)
+- [Crates.io](https://crates.io)
+- [FlatHub](https://flathub.org)
+- [Lure.sh](https://lure.sh)
+- [Basher](https://www.basher.it/package)
+- [bpkg](https://bpkg.sh)
+- [Nix](https://github.com/NixOS/nix) **_/_** [Home-manager](https://github.com/nix-community/home-manager) **|** [Nixpkgs](https://github.com/NixOS/nixpkgs) **|** [NUR](https://github.com/nix-community/NUR) **|**
+- [x-cmd](https://www.x-cmd.com)
 
   <details>
   <summary><b>Install x-cmd</b></summary>
@@ -128,18 +129,18 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 
 ## Supported Linux Distributions
 
-* [CachyOS](https://cachyos.org)
-* [EndeavourOS](https://endeavouros.com)
-* [Nobara](https://nobaraproject.org)
-* [SteamOS](https://store.steampowered.com/steamos/buildyourown) ([Download](https://store.steampowered.com/steamos/download/?ver=steamdeck&snr=))
-* [Bazzite](https://bazzite.gg)
-* [Gentoo](https://www.gentoo.org)
-* [Linux Mint](https://linuxmint.com/)
-* [DietPi](https://dietpi.com/)
-* [Raspberry Pi OS](https://www.raspberrypi.com/software)
+- [CachyOS](https://cachyos.org)
+- [EndeavourOS](https://endeavouros.com)
+- [Nobara](https://nobaraproject.org)
+- [SteamOS](https://store.steampowered.com/steamos/buildyourown) ([Download](https://store.steampowered.com/steamos/download/?ver=steamdeck&snr=))
+- [Bazzite](https://bazzite.gg)
+- [Gentoo](https://www.gentoo.org)
+- [Linux Mint](https://linuxmint.com/)
+- [DietPi](https://dietpi.com/)
+- [Raspberry Pi OS](https://www.raspberrypi.com/software)
 
 ## Useful websites
 
-* [Wormhole file sharing](https://wormhole.app)
+- [Wormhole file sharing](https://wormhole.app)
 
-* [Online tools](https://tools.waytolearnx.com/en)
+- [Online tools](https://tools.waytolearnx.com/en)

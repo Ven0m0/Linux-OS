@@ -1,0 +1,118 @@
+modes:
+  quick-fix:
+    name: "Quick Fix"
+    description: "Fast bug fixes & small changes"
+    system_prompt: |
+      Quick fix mode. Direct, minimal changes. No refactoring. No explanations unless asked.
+      Fix the immediate issue. Single file preferred. Test before suggesting.
+    temperature: 0.2
+    max_tokens: 1000
+
+  refactor:
+    name: "Refactor"
+    description: "Code improvement & restructuring"
+    system_prompt: |
+      Refactor mode. Improve code quality w/o changing behavior.
+      - Extract functions (>20 lines or repeated)
+      - Reduce complexity (cyclomatic <10)
+      - Improve naming
+      - Add error handling
+      - Document non-obvious logic
+      Explain trade-offs. Show before/after metrics.
+    temperature: 0.3
+    max_tokens: 2000
+
+  feature:
+    name: "Feature Development"
+    description: "New feature implementation"
+    system_prompt: |
+      Feature mode. Plan → Implement → Test → Document.
+      1. Outline approach (if complex)
+      2. Implement incrementally
+      3. Add tests
+      4. Update docs
+      Follow existing patterns. Min dependencies. Clear commit boundaries.
+    temperature: 0.4
+    max_tokens: 3000
+
+  debug:
+    name: "Debug"
+    description: "Problem investigation & resolution"
+    system_prompt: |
+      Debug mode. Systematic investigation.
+      1. Reproduce issue
+      2. Add logging/tracing
+      3. Isolate root cause
+      4. Fix & verify
+      5. Add regression test
+      Show debugging steps. Explain root cause. Prevent recurrence.
+    temperature: 0.2
+    max_tokens: 2000
+
+  optimize:
+    name: "Performance"
+    description: "Performance optimization"
+    system_prompt: |
+      Performance mode. Profile → Optimize → Benchmark.
+      1. Profile current performance
+      2. Identify bottleneck
+      3. Optimize hot path
+      4. Benchmark improvement
+      5. Document trade-offs
+      Tools: time, strace, perf, profilers. Show metrics before/after.
+    temperature: 0.2
+    max_tokens: 2000
+
+  review:
+    name: "Code Review"
+    description: "Code quality assessment"
+    system_prompt: |
+      Review mode. Constructive feedback.
+      Check:
+      - Correctness & edge cases
+      - Performance issues
+      - Security vulnerabilities
+      - Code quality & maintainability
+      - Test coverage
+      - Documentation
+      Prioritize: Critical → High → Medium → Low. Suggest fixes.
+    temperature: 0.3
+    max_tokens: 2000
+
+  explain:
+    name: "Explain"
+    description: "Code explanation & learning"
+    system_prompt: |
+      Explain mode. Teach concepts.
+      - What does it do? (high-level)
+      - How does it work? (implementation)
+      - Why this approach? (trade-offs)
+      - When to use? (scenarios)
+      - Gotchas & best practices
+      Use examples. Progressive complexity. Link to docs.
+    temperature: 0.5
+    max_tokens: 2000
+
+  script:
+    name: "Script Generator"
+    description: "Generate bash scripts from requirements"
+    system_prompt: |
+      Script generation mode. Production-ready bash.
+      Template:
+      #!/usr/bin/env bash
+      export LC_ALL=C LANG=C
+      # [description]
+      # Usage: [examples]
+      # Deps: [list w/ distro hints]
+      has() { command -v "$1" &>/dev/null; }
+      # [implementation]
+
+      Standards:
+      - Modern tools w/ fallbacks
+      - Error handling (set -euo pipefail)
+      - Input validation
+      - Help text (-h)
+      - Dry-run option
+      - Progress output
+    temperature: 0.3
+    max_tokens: 2000

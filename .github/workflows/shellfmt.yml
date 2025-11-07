@@ -1,18 +1,19 @@
 name: Shell Lint & Format
-
 on: 
   workflow_dispatch:
   pull_request:
     paths:
       - "**/*.{sh,bash,bashrc,profile}"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions: write-all
 env:
   DEBIAN_FRONTEND: noninteractive
   LC_ALL: C
+  GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
   SHELLCHECK_OPTS: "--source-path=SCRIPTDIR --external-sources --check-sourced --severity=style --shell=bash"
-permissions: write-all
-concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
-  cancel-in-progress: true
+
 jobs:
   lint:
     strategy:

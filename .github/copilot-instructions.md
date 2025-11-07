@@ -36,9 +36,9 @@
 ### **Bash**
 - **Strict Mode**: `set -Eeuo pipefail`, `shopt -s nullglob globstar`, `IFS=$'\n\t'`, `export LC_ALL=C LANG=C`.
 - **Idioms**: Prefer native bashisms: arrays, `mapfile -t`, `[[...]]`, parameter expansion. Avoid parsing `ls`, `eval`, and backticks.
-- **Tooling**: Prefer modern Rust-based tools (`fd`, `rg`, `bat`, `sd`, `zoxide`) with fallbacks to traditional counterparts (`find`, `grep`, `cat`, `sed`, `cd`).
+- **Tooling**: Prefer modern Rust-based tools (`fd->find`, `rg->grep`, `bat->cat`, `sd->sed`, `zoxide`, `choose->cut`, `jaq->jq`, `bun->pnpm->npm`, `uv->pip`, `mawk->awk/gawk`) with fallbacks to traditional counterparts.
 - **Structure**: Use the canonical template in `prompts/bash-script.prompt.md`.
-- **Linting**: `shfmt -i 2 -ci -sr`, `shellcheck` (zero warnings), `shellharden`.
+- **Linting**: `shfmt -i 2 -bn -ln bash -s`, `shellcheck -a -x` (zero warnings), `shellharden`.
 
 ### **Rust**
 - **Error Handling**: Use `Result<T, E>` and the `?` operator. Use `thiserror` or `anyhow` for rich errors. Avoid `unwrap()`/`expect()` in library code.

@@ -46,7 +46,7 @@ jobs:
         uses: kehoecj/validate-configs-action@v4.0.1
         with:
           group-by: "pass-fail"
-          exclude-dirs: ".github,.git,.cache,go,node_modules,.var,.rustup,.wine,.zim,.void-editor"
+          exclude-dirs: ".github,.git,.cache,go,node_modules,.var,.rustup,.wine,.zim,.void-editor,.vscode,.claude"
           AUTO_FIX: "true"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

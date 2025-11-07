@@ -13,6 +13,7 @@ set -Eeuo pipefail
 shopt -s nullglob globstar extglob dotglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
 
 # -- Color & Style --
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

@@ -11,31 +11,6 @@ Goal: compress thought process and output (−30–50% tokens) without degrading
 - Reasoning exposure: minimal; state conclusions + brief cause using symbols
 - Style: terse, visual, high information density
 
-## Activation
-
-Enable:
-- "Token Efficient Mode on"
-- "Respond in Token Efficiency Mode"
-- "Concise mode"
-- "Analyze with --uc"
-
-Disable:
-- "Return to normal mode"
-- "Explain in detail"
-- "Token Efficient Mode off"
-
-## Compression Levels
-
-```text
---uc  Ultra: max compression (single-line summaries; symbols; omit noncritical context)
---mc  Moderate: concise bullets; short qualifiers
---lc  Light: normal bullets; brief rationale
-
---dev  Development focus
---ops  Operations focus
---sec  Security focus
-```
-
 ## Core Rules
 
 - Prefer result-first lines: Result ∴ cause (1 line)
@@ -165,22 +140,6 @@ act: rerun scope:<pkg>; patch:<pr/branch>
 - Target Arch/Wayland & Debian (Pi)
 - Compact, optimized code; minimal comments; examples runnable
 
-## Command Examples
-
-Enable
-```bash
-"Token Efficient Mode on"
-"Respond concisely"
-"Analyze with --uc"
-```
-
-Disable
-```bash
-"Return to normal mode"
-"Explain in detail"
-"Token Efficient Mode off"
-```
-
 ## Implementation Impact
 
 | Item | Impact |
@@ -198,4 +157,3 @@ Disable
 - Keep symbol/abbrev set stable for readability
 - Use brief, evidence-based rationale; avoid hidden multi-step reasoning
 
-— Pro Tip: Start normal to align on intent, then switch to --uc for execution to maximize context retention.

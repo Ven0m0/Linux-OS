@@ -1,4 +1,8 @@
-# Copilot Instructions: Linux-OS (Bash-first)
+---
+applyTo: "**/*.{sh,bash}"
+---
+
+# Bash guidelines
 
 These instructions define how GitHub Copilot should propose Bash and related shell content for this repo. Follow the patterns and templates here before inventing new ones.
 

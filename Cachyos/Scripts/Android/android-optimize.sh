@@ -7,9 +7,9 @@ IFS=$'\n\t'; export LC_ALL=C LANG=C
 # Combines: adb-device-optimizer, adb-app-optimizer, monolith, cleanup, nomedia, WA cleaner, aapt2 optimize
 
 ADB_BIN="${ADB:-adb}"
-FD="${FD:-$(command -v fd || command -v fdfind || true)}"
-RG="${RG:-$(command -v rg || true)}"
-SD="${SD:-$(command -v sd || true)}"
+FD="${FD:-$(command -v fd || command -v fdfind || :)}"
+RG="${RG:-$(command -v rg || :)}"
+SD="${SD:-$(command -v sd || :)}"
 FIND="${FIND:-$(command -v find)}"
 CUT="${CUT:-$(command -v cut)}"
 XARGS="${XARGS:-$(command -v xargs)}"
@@ -83,7 +83,7 @@ cleanup_fs(){
 opt_art(){
   section "ART Optimize"
   local job_id
-  job_id="$("$ADB_BIN" shell cmd jobscheduler list-jobs android 2>/dev/null | grep -F background-dexopt | awk "{print \$2}" || true)"
+  job_id="$("$ADB_BIN" shell cmd jobscheduler list-jobs android 2>/dev/null | grep -F background-dexopt | awk "{print \$2}" || :)"
   [[ -n "${job_id:-}" ]] && ash cmd jobscheduler run -f android "$job_id"
   ash cmd package compile -af --full --secondary-dex -m speed-profile
   ash cmd package compile -a -f  --full --secondary-dex -m speed
@@ -304,7 +304,7 @@ EOF
 }
 
 main(){
-  local cmd="${1:-}"; shift || true
+  local cmd="${1:-}"; shift || :
   case "${cmd:-}" in
     device-all) cmd_device_all "$@";;
     monolith) cmd_monolith "$@";;

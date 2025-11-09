@@ -6,13 +6,13 @@ IFS=$'\n\t'; export LC_ALL=C LANG=C
 # Unified Android optimizer: desktop+ADB or Termux-native
 # Combines device optimization, app compilation, cache cleanup, filesystem maintenance
 
-readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && printf 1 || printf 0)"
-readonly NPROC="$(nproc 2>/dev/null || printf 4)"
+readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && echo 1 || echo 0)"
+readonly NPROC="$(nproc 2>/dev/null || echo 4)"
 
 ADB="${ADB:-adb}"
-FD="${FD:-$(command -v fd || command -v fdfind || :)}"
-RG="${RG:-$(command -v rg || :)}"
-SD="${SD:-$(command -v sd || :)}"
+FD="${FD:-$(command -v fd 2>/dev/null || command -v fdfind 2>/dev/null || :)}"
+RG="${RG:-$(command -v rga 2>/dev/null || command -v rg 2>/dev/null || :)}"
+SD="${SD:-$(command -v sd 2>/dev/null || :)}"
 
 readonly SPEED_APPS=(
   com.whatsapp com.snapchat.android com.instagram.android com.zhiliaoapp.musically
@@ -83,7 +83,7 @@ task_maint(){
   ash cmd stats write-to-disk
   ash settings put global fstrim_mandatory_interval 1
   ash pm art cleanup
-  ash pm trim-caches 128G
+  ash pm trim-caches 256G
   ash cmd shortcut reset-all-throttling
   ash logcat -b all -c
   ash wm density reset
@@ -105,9 +105,11 @@ task_art(){
   local jid
   jid="$(ash cmd jobscheduler list-jobs android 2>/dev/null | grep -F background-dexopt | awk '{print $2}' || :)"
   [[ -n "$jid" ]] && ash cmd jobscheduler run -f android "$jid"
-  ash cmd package compile -af --full --secondary-dex -m speed-profile
-  ash cmd package compile -a -f --full --secondary-dex -m speed
+  ash cmd package compile -af --full -r cmdline -m speed
+  ash cmd package compile -a --full -r cmdline -m speed-profile
   ash pm art dexopt-packages -r bg-dexopt
+  ash art pr-deopt-job --run
+  ash pm bg-dexopt-job
 }
 
 task_perf(){
@@ -123,7 +125,6 @@ task_perf(){
   ash device_config put privacy location_access_check_enabled false
   ash device_config put privacy location_accuracy_enabled false
 }
-
 task_render(){
   sec "Rendering tweaks"
   ash setprop debug.composition.type dyn
@@ -143,7 +144,6 @@ task_render(){
   ash settings put global disable_hw_overlays 1
   ash settings put global gpu_rasterization_forced 1
 }
-
 task_audio(){
   sec "Audio tweaks"
   ash settings put global audio.offload.video true
@@ -152,7 +152,6 @@ task_audio(){
   ash settings put global audio.offload.multiple.enabled true
   ash settings put global media.stagefright.thumbnail.prefer_hw_codecs true
 }
-
 task_battery(){
   sec "Battery tweaks"
   ash settings put global dynamic_power_savings_enabled 1
@@ -163,7 +162,6 @@ task_battery(){
   ash cmd power set-fixed-performance-mode-enabled false
   ash cmd power set-adaptive-power-saver-enabled true
 }
-
 task_input(){
   sec "Input/animations"
   ash settings put global animator_duration_scale 0.0
@@ -171,7 +169,6 @@ task_input(){
   ash settings put global window_animation_scale 0.0
   ash wm disable-blur true
 }
-
 task_net(){
   sec "Network tweaks"
   ash cmd netpolicy set restrict-background true
@@ -181,7 +178,6 @@ task_net(){
   ash settings put global ble_scan_always_enabled 0
   ash settings put global network_avoid_bad_wifi 1
 }
-
 task_webview(){
   sec "WebView/ANGLE"
   ash cmd webviewupdate set-webview-implementation com.android.webview.beta
@@ -190,7 +186,6 @@ task_webview(){
   ash settings put global angle_gl_driver_selection_values angle
   ash settings put global angle_gl_driver_selection_pkgs com.android.webview,com.android.webview.beta
 }
-
 task_misc(){
   sec "Misc tweaks"
   ash setprop debug.debuggerd.disable 1
@@ -204,7 +199,7 @@ task_compile_speed(){
   sec "High-perf apps → speed"
   for p in "${SPEED_APPS[@]}"; do
     info "$p"
-    ash cmd package compile -f --full --secondary-dex -m speed "$p"
+    ash cmd package compile -f --full -r cmdline -m speed "$p"
   done
 }
 
@@ -212,14 +207,14 @@ task_compile_system(){
   sec "System apps → everything"
   for p in "${SYSTEM_APPS[@]}"; do
     info "$p"
-    ash cmd package compile -f --full --secondary-dex -m everything "$p"
+    ash cmd package compile -f --full -r cmdline -m everything "$p"
   done
 }
 
 task_finalize(){
   sec "Finalize"
   ash am broadcast -a android.intent.action.ACTION_OPTIMIZE_DEVICE
-  ash pm bg-dexopt-job
+  ash am broadcast -a com.android.systemui.action.CLEAR_MEMORY
   ash am kill-all
   ash cmd activity kill-all
   ash dumpsys batterystats --reset
@@ -242,16 +237,6 @@ cmd_device_all(){
   task_compile_system
   task_finalize
   ok "Device optimization complete"
-}
-
-cmd_monolith(){
-  adb_ok
-  local mode="${1:-everything-profile}"
-  sec "Monolith ($mode)"
-  ash cmd package compile -a -f -m "$mode"
-  ash cmd package compile -a -f --compile-layouts
-  ash cmd package bg-dexopt-job
-  ok "Monolith complete"
 }
 
 cmd_cache_clean(){
@@ -311,9 +296,9 @@ task_pkg_maint(){
   pkg update -y || err "Update failed"
   pkg upgrade -y || err "Upgrade failed"
   info "Cleaning..."
-  pkg autoclean
+  pkg clean -y
+  pkg autoclean -y
   apt-get autoremove -y
-  apt clean
   ok "Packages updated"
 }
 

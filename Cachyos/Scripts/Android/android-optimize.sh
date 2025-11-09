@@ -3,16 +3,23 @@ set -Eeuo pipefail
 shopt -s nullglob globstar extglob dotglob
 IFS=$'\n\t'; export LC_ALL=C LANG=C
 
-# Unified Android optimizer: desktop+ADB or Termux-native
-# Combines device optimization, app compilation, cache cleanup, filesystem maintenance
+# Unified Android optimizer: desktop+ADB or Termux+Shizuku
+# Device optimization, ART compilation, cache cleanup, filesystem maintenance
 
 readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && echo 1 || echo 0)"
 readonly NPROC="$(nproc 2>/dev/null || echo 4)"
 
+# Tool resolution with caching
 ADB="${ADB:-adb}"
-FD="${FD:-$(command -v fd 2>/dev/null || command -v fdfind 2>/dev/null || :)}"
-RG="${RG:-$(command -v rga 2>/dev/null || command -v rg 2>/dev/null || :)}"
-SD="${SD:-$(command -v sd 2>/dev/null || :)}"
+FD="${FD:-$(command -v fd || command -v fdfind || :)}"
+RG="${RG:-$(command -v rga || command -v rg || :)}"
+SD="${SD:-$(command -v sd || :)}"
+
+# Shizuku/rish detection for Termux
+if ((IS_TERMUX)); then
+  RISH="$(command -v rish || :)"
+  [[ -n "$RISH" ]] && ADB="$RISH" || warn "rish not found; device tasks unavailable"
+fi
 
 readonly SPEED_APPS=(
   com.whatsapp com.snapchat.android com.instagram.android com.zhiliaoapp.musically
@@ -28,6 +35,7 @@ readonly SYSTEM_APPS=(
   com.mediatek.location.lppe.main com.google.android.permissioncontroller com.android.bluetooth
 )
 
+# Color setup
 C_RST="$(tput sgr0 2>/dev/null || :)"
 C_BLD="$(tput bold 2>/dev/null || :)"
 C_RED="$(tput setaf 1 2>/dev/null || :)"
@@ -51,24 +59,32 @@ confirm(){
   done
 }
 
-# === ADB functions (desktop) ===
-adb_ok(){
-  ((IS_TERMUX)) && return 0
-  command -v "$ADB" &>/dev/null || { err "adb not found"; exit 1; }
-  "$ADB" start-server &>/dev/null || :
-  "$ADB" get-state &>/dev/null || { err "No device. Enable USB debugging"; exit 1; }
+# Shell executor: local or ADB/rish
+ash(){
+  if ((IS_TERMUX)); then
+    [[ -n "$RISH" ]] && "$RISH" "$@" 2>/dev/null || eval "$*"
+  else
+    "$ADB" shell "$@" 2>/dev/null || :
+  fi
 }
 
-ash(){ ((IS_TERMUX)) && eval "$*" || "$ADB" shell "$@" 2>/dev/null || :; }
+# Validate device access
+device_ok(){
+  if ((IS_TERMUX)); then
+    [[ -n "$RISH" ]] || { err "rish not available; install Shizuku"; return 1; }
+    return 0
+  fi
+  command -v "$ADB" &>/dev/null || { err "adb not found"; return 1; }
+  "$ADB" start-server &>/dev/null || :
+  "$ADB" get-state &>/dev/null || { err "No device; enable USB debugging"; return 1; }
+}
 
+# AAPT2 android.jar locator
 aapt2_jar(){
-  local roots=()
-  [[ -n "${ANDROID_HOME:-}" ]] && roots+=("$ANDROID_HOME")
-  [[ -n "${ANDROID_SDK_ROOT:-}" ]] && roots+=("$ANDROID_SDK_ROOT")
-  roots+=("$HOME/Android/Sdk" "$HOME/Library/Android/sdk" /opt/android-sdk)
+  local roots=("${ANDROID_HOME:-}" "${ANDROID_SDK_ROOT:-}" "$HOME/Android/Sdk" "$HOME/Library/Android/sdk" /opt/android-sdk)
   for r in "${roots[@]}"; do
     [[ -d "$r/platforms" ]] || continue
-    local c v jar=""
+    local jar=""
     while IFS= read -r -d '' c; do
       [[ -f "$c/android.jar" ]] && jar="$c/android.jar"
     done < <(find "$r/platforms" -maxdepth 1 -type d -name "android-*" -print0 2>/dev/null || :)
@@ -96,8 +112,7 @@ task_maint(){
 
 task_cleanup_fs(){
   sec "Filesystem cleanup"
-  ash 'find /sdcard -type f -iregex ".*\.\(log\|bak\|old\|tmp\)$" -delete'
-  ash 'find /storage -mindepth 2 -maxdepth 5 -type f -iregex ".*\.\(log\|bak\|old\|tmp\)$" -delete'
+  ash 'find /sdcard /storage/emulated/0 -type f -iregex ".*\.\(log\|bak\|old\|tmp\)$" -delete 2>/dev/null || :'
 }
 
 task_art(){
@@ -125,6 +140,7 @@ task_perf(){
   ash device_config put privacy location_access_check_enabled false
   ash device_config put privacy location_accuracy_enabled false
 }
+
 task_render(){
   sec "Rendering tweaks"
   ash setprop debug.composition.type dyn
@@ -144,6 +160,7 @@ task_render(){
   ash settings put global disable_hw_overlays 1
   ash settings put global gpu_rasterization_forced 1
 }
+
 task_audio(){
   sec "Audio tweaks"
   ash settings put global audio.offload.video true
@@ -152,6 +169,7 @@ task_audio(){
   ash settings put global audio.offload.multiple.enabled true
   ash settings put global media.stagefright.thumbnail.prefer_hw_codecs true
 }
+
 task_battery(){
   sec "Battery tweaks"
   ash settings put global dynamic_power_savings_enabled 1
@@ -162,6 +180,7 @@ task_battery(){
   ash cmd power set-fixed-performance-mode-enabled false
   ash cmd power set-adaptive-power-saver-enabled true
 }
+
 task_input(){
   sec "Input/animations"
   ash settings put global animator_duration_scale 0.0
@@ -169,6 +188,7 @@ task_input(){
   ash settings put global window_animation_scale 0.0
   ash wm disable-blur true
 }
+
 task_net(){
   sec "Network tweaks"
   ash cmd netpolicy set restrict-background true
@@ -178,6 +198,7 @@ task_net(){
   ash settings put global ble_scan_always_enabled 0
   ash settings put global network_avoid_bad_wifi 1
 }
+
 task_webview(){
   sec "WebView/ANGLE"
   ash cmd webviewupdate set-webview-implementation com.android.webview.beta
@@ -186,6 +207,7 @@ task_webview(){
   ash settings put global angle_gl_driver_selection_values angle
   ash settings put global angle_gl_driver_selection_pkgs com.android.webview,com.android.webview.beta
 }
+
 task_misc(){
   sec "Misc tweaks"
   ash setprop debug.debuggerd.disable 1
@@ -220,8 +242,9 @@ task_finalize(){
   ash dumpsys batterystats --reset
 }
 
+# Full device optimization
 cmd_device_all(){
-  adb_ok
+  device_ok || return 1
   task_maint
   task_cleanup_fs
   task_art
@@ -239,42 +262,59 @@ cmd_device_all(){
   ok "Device optimization complete"
 }
 
+# Monolith compile
+cmd_monolith(){
+  device_ok || return 1
+  local mode="${1:-everything-profile}"
+  sec "Monolith compile ($mode)"
+  ash cmd package compile -a --full -r cmdline -m "$mode"
+  ok "Compilation complete"
+}
+
+# Cache cleanup
 cmd_cache_clean(){
-  adb_ok
+  device_ok || return 1
   sec "Clear app caches"
-  "$ADB" shell pm list packages -3 2>/dev/null | cut -d: -f2 \
-    | xargs -r -n1 -P"$NPROC" -I{} "$ADB" shell pm clear --cache-only {} &>/dev/null || :
-  "$ADB" shell pm list packages -s 2>/dev/null | cut -d: -f2 \
-    | xargs -r -n1 -P"$NPROC" -I{} "$ADB" shell pm clear --cache-only {} &>/dev/null || :
+  if ((IS_TERMUX)); then
+    ash pm list packages -3 | cut -d: -f2 | xargs -r -n1 -P"$NPROC" ash pm clear --cache-only &>/dev/null || :
+    ash pm list packages -s | cut -d: -f2 | xargs -r -n1 -P"$NPROC" ash pm clear --cache-only &>/dev/null || :
+  else
+    "$ADB" shell pm list packages -3 2>/dev/null | cut -d: -f2 \
+      | xargs -r -n1 -P"$NPROC" -I{} "$ADB" shell pm clear --cache-only {} &>/dev/null || :
+    "$ADB" shell pm list packages -s 2>/dev/null | cut -d: -f2 \
+      | xargs -r -n1 -P"$NPROC" -I{} "$ADB" shell pm clear --cache-only {} &>/dev/null || :
+  fi
   ash pm trim-caches 128G
   ash logcat -b all -c
   ok "Cache cleared"
 }
 
+# Index guard creation
 cmd_index_nomedia(){
   local base="${1:-/storage/emulated/0}"
   sec "Index guard (.nomedia)"
   while IFS= read -r -d '' d; do
-    : >"$d/.nomedia" || :
-    : >"$d/.noindex" || :
-    : >"$d/.metadata_never_index" || :
-    : >"$d/.trackerignore" || :
-  done < <(find "$base" -type d -readable -print0 2>/dev/null)
+    : >"$d/.nomedia" 2>/dev/null || :
+    : >"$d/.noindex" 2>/dev/null || :
+    : >"$d/.metadata_never_index" 2>/dev/null || :
+    : >"$d/.trackerignore" 2>/dev/null || :
+  done < <(find "$base" -type d -readable -print0 2>/dev/null || :)
   ok "Index guards created"
 }
 
+# WhatsApp cleanup
 cmd_wa_clean(){
   local wa="${1:-/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media}"
   sec "WhatsApp cleanup (>45d)"
   [[ -d "$wa" ]] || { warn "Not found: $wa"; return; }
   local b a
   b="$(du -sm "$wa" 2>/dev/null | cut -f1 || printf 0)"
-  find "$wa" -type f -iregex '.*\.\(jpg\|jpeg\|png\|gif\|mp4\|mov\|wmv\|flv\|webm\|mxf\|avi\|avchd\|mkv\)$' -mtime +45 -print0 \
-    | xargs -0 -r rm -f
+  find "$wa" -type f -iregex '.*\.\(jpg\|jpeg\|png\|gif\|mp4\|mov\|wmv\|flv\|webm\|mxf\|avi\|avchd\|mkv\)$' -mtime +45 -delete 2>/dev/null || :
   a="$(du -sm "$wa" 2>/dev/null | cut -f1 || printf 0)"
-  ok "Freed ${((b-a))} MB"
+  ok "Freed $((b-a)) MB"
 }
 
+# AAPT2 optimization
 cmd_aapt2_opt(){
   local in="${1:-target/release/app-unsigned.apk}"
   local out="${2:-target/release/app-optimized.apk}"
@@ -289,7 +329,7 @@ cmd_aapt2_opt(){
   ok "Saved → $out"
 }
 
-# === Termux tasks ===
+# === Termux-specific tasks ===
 task_pkg_maint(){
   sec "Package maintenance"
   info "Updating packages..."
@@ -298,44 +338,29 @@ task_pkg_maint(){
   info "Cleaning..."
   pkg clean -y
   pkg autoclean -y
-  apt-get autoremove -y
+  apt-get autoremove -y &>/dev/null || :
   ok "Packages updated"
 }
 
 task_cache_termux(){
   sec "Cache cleanup"
   local cleaned=()
-  if command -v uv &>/dev/null; then
-    uv cache clean --force &>/dev/null
-    uv cache prune &>/dev/null
-    cleaned+=(uv)
-  fi
-  if command -v pip &>/dev/null; then
-    pip cache purge &>/dev/null
-    cleaned+=(pip)
-  fi
-  if [[ -d "$HOME/.npm" ]]; then
-    npm cache clean --force &>/dev/null
-    cleaned+=(npm)
-  fi
-  if [[ -d "$HOME/.cache" ]]; then
-    find "$HOME/.cache" -mindepth 1 -delete 2>/dev/null || :
-    cleaned+=(user-cache)
-  fi
-  if [[ -d /data/data/com.termux/files/usr/tmp ]]; then
-    find /data/data/com.termux/files/usr/tmp -mindepth 1 -delete 2>/dev/null || :
-    cleaned+=(termux-tmp)
-  fi
-  ok "Cleaned: ${cleaned[*]}"
+  command -v uv &>/dev/null && { uv cache clean --force &>/dev/null; uv cache prune &>/dev/null; cleaned+=(uv); }
+  command -v pip &>/dev/null && { pip cache purge &>/dev/null; cleaned+=(pip); }
+  [[ -d "$HOME/.npm" ]] && { npm cache clean --force &>/dev/null; cleaned+=(npm); }
+  [[ -d "$HOME/.cache" ]] && { find "$HOME/.cache" -mindepth 1 -delete 2>/dev/null || :; cleaned+=(user-cache); }
+  [[ -d /data/data/com.termux/files/usr/tmp ]] && { find /data/data/com.termux/files/usr/tmp -mindepth 1 -delete 2>/dev/null || :; cleaned+=(termux-tmp); }
+  ok "Cleaned: ${cleaned[*]:-none}"
 }
 
 task_fs_hygiene(){
   sec "Filesystem hygiene"
-  local ed ef
-  ed="$(find "$HOME" -type d -empty -print 2>/dev/null || :)"
-  [[ -n "$ed" ]] && { printf '%s\n' "$ed" | xargs -r rm -r; ok "Removed empty dirs"; } || info "No empty dirs"
-  ef="$(find "$HOME" -type f -empty -print 2>/dev/null || :)"
-  [[ -n "$ef" ]] && { printf '%s\n' "$ef" | xargs -r rm; ok "Removed empty files"; } || info "No empty files"
+  local ed ef cnt=0
+  ed="$(find "$HOME" -type d -empty 2>/dev/null || :)"
+  [[ -n "$ed" ]] && { printf '%s\n' "$ed" | xargs -r rm -r && ((cnt++)); }
+  ef="$(find "$HOME" -type f -empty 2>/dev/null || :)"
+  [[ -n "$ef" ]] && { printf '%s\n' "$ef" | xargs -r rm && ((cnt++)); }
+  ((cnt>0)) && ok "Removed empty dirs/files" || info "No empty dirs/files"
 }
 
 task_large_files(){
@@ -343,14 +368,12 @@ task_large_files(){
   local path="${2:-$HOME}"
   sec "Large files (>${mb}MB)"
   info "Searching $path..."
-  warn "May be slow"
-  local fc lf
+  local lf
   if [[ -n "$FD" ]]; then
-    fc=($FD . "$path" -t f -S "+${mb}M")
+    lf="$("$FD" . "$path" -t f -S "+${mb}M" -x du -h {} + 2>/dev/null | sort -rh || :)"
   else
-    fc=(find "$path" -type f -size "+${mb}M")
+    lf="$(find "$path" -type f -size "+${mb}M" -exec du -h {} + 2>/dev/null | sort -rh || :)"
   fi
-  lf="$("${fc[@]}" -exec du -h {} + 2>/dev/null | sort -rh || :)"
   [[ -n "$lf" ]] && { ok "Found:"; printf '%s\n' "$lf"; } || info "None found"
 }
 
@@ -362,6 +385,7 @@ task_updatedb(){
   ok "DB updated"
 }
 
+# Full Termux optimization
 cmd_termux_full(){
   task_pkg_maint
   task_cache_termux
@@ -370,17 +394,26 @@ cmd_termux_full(){
   ok "Termux optimization complete"
 }
 
-# === Menu ===
+# === Interactive menu ===
 menu(){
   printf '\n%s%s=== Android Optimizer ===%s\n' "$C_MAG" "$C_BLD" "$C_RST"
   if ((IS_TERMUX)); then
     cat <<EOF
-1) Full Termux optimize
-2) Package maintenance
-3) Cache cleanup
-4) Filesystem hygiene
-5) Find large files [MB] [path]
-6) Update locate DB
+[Device] (requires rish/Shizuku)
+1) Full device optimize
+2) Monolith compile [mode]
+3) Clear app caches
+4) Create index guards [path]
+5) WhatsApp cleanup [path]
+[Termux]
+6) Full Termux optimize
+7) Package maintenance
+8) Cache cleanup
+9) Filesystem hygiene
+0) Find large files [MB] [path]
+u) Update locate DB
+[Other]
+a) AAPT2 optimize [in] [out]
 q) Quit
 EOF
   else
@@ -406,17 +439,18 @@ interactive(){
     menu
     read -rp "Select: " c args
     case "$c" in
-      1) ((IS_TERMUX)) && cmd_termux_full || cmd_device_all;;
-      2) ((IS_TERMUX)) && task_pkg_maint || cmd_monolith $args;;
-      3) ((IS_TERMUX)) && task_cache_termux || cmd_cache_clean;;
-      4) ((IS_TERMUX)) && task_fs_hygiene || cmd_index_nomedia $args;;
-      5) ((IS_TERMUX)) && task_large_files $args || cmd_wa_clean $args;;
-      6) ((IS_TERMUX)) && task_updatedb || cmd_aapt2_opt $args;;
-      7) ((IS_TERMUX)) || task_pkg_maint;;
-      8) ((IS_TERMUX)) || task_cache_termux;;
-      9) ((IS_TERMUX)) || task_fs_hygiene;;
-      0) ((IS_TERMUX)) || task_large_files $args;;
-      u) ((IS_TERMUX)) || task_updatedb;;
+      1) cmd_device_all;;
+      2) cmd_monolith $args;;
+      3) cmd_cache_clean;;
+      4) cmd_index_nomedia $args;;
+      5) cmd_wa_clean $args;;
+      6) ((IS_TERMUX)) && cmd_termux_full || cmd_aapt2_opt $args;;
+      7) ((IS_TERMUX)) && task_pkg_maint || task_pkg_maint;;
+      8) ((IS_TERMUX)) && task_cache_termux || task_cache_termux;;
+      9) ((IS_TERMUX)) && task_fs_hygiene || task_fs_hygiene;;
+      0) task_large_files $args;;
+      u) task_updatedb;;
+      a) ((IS_TERMUX)) && cmd_aapt2_opt $args || :;;
       q|Q) break;;
       *) warn "Invalid";;
     esac
@@ -426,20 +460,20 @@ interactive(){
 
 usage(){
   cat <<EOF
-android-optimize.sh - Unified Android optimizer (ADB or Termux)
+android-optimize.sh - Unified Android optimizer (ADB or Termux+Shizuku)
 
-ADB commands:
+Device commands:
   device-all              Full device optimization
   monolith [mode]         Compile all apps (default: everything-profile)
   cache-clean             Clear app caches
-  index-nomedia [path]    Create .nomedia guards
-  wa-clean [path]         WhatsApp media cleanup (>45d)
-  aapt2-opt [in] [out]    Optimize APK
+  index-nomedia [path]    Create .nomedia guards (default: /storage/emulated/0)
+  wa-clean [path]         WhatsApp media cleanup >45d
+  aapt2-opt [in] [out]    Optimize APK with AAPT2
 
 Termux commands:
   termux-full             Full Termux optimization
   pkg-maint               Package maintenance
-  cache-termux            Cache cleanup
+  cache-termux            Cache cleanup (uv, pip, npm, user)
   fs-hygiene              Remove empty files/dirs
   large-files [MB] [path] Find large files (default: 100MB, \$HOME)
   updatedb                Update locate database
@@ -447,7 +481,8 @@ Termux commands:
 Interactive:
   menu                    Show interactive menu (default)
 
-Environment: $([[ $IS_TERMUX -eq 1 ]] && printf Termux || printf "Desktop+ADB")
+Environment: $([[ $IS_TERMUX -eq 1 ]] && printf "Termux" || printf "Desktop+ADB")
+Termux device access: $([[ $IS_TERMUX -eq 1 && -n "${RISH:-}" ]] && printf "rish (Shizuku)" || printf "N/A")
 EOF
 }
 

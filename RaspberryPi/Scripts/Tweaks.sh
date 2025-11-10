@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+# Setup environment
+setup_environment
+
 # https://github.com/jmcerrejon/PiKISS/blob/master/res/cRasp.sh
 
 disableSwap(){
@@ -73,7 +79,10 @@ esac
 
 packages="libraspberrypi-doc manpages snapd cups*"
 echo -e "\nRemove packages? ( $packages )"
-read -p "Agree (y/n)? " option y*) sudo apt-get remove -y "$packages" ;;
+read -p "Agree (y/n)? " option
+case "$option" in
+y*) sudo apt-get remove -y "$packages" ;;
+esac
 
 
 sudo apt-get -y autoremove --purge && sudo apt-get clean

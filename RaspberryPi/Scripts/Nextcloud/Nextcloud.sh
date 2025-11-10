@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-export HOME="/home/${SUDO_USER:-$USER}" LC_ALL=C LANG=C
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../../lib/common.sh"
+
+# Setup environment
+setup_environment
 
 sudo apt-get update && sudo apt-get upgrade -y
 

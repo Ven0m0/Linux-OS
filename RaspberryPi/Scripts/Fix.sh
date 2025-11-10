@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-set -euo pipefail
-export LC_ALL=C LANG=C
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+# Setup environment
+setup_environment
 
 sudo apt-get install ntpdate
 sudo ntpdate -u ntp.ubuntu.com

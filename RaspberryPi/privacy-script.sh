@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # https://privacy.sexy — v0.13.8 — Mon, 19 May 2025 19:20:17 GMT
-if [[ $EUID -ne 0 ]]; then
-  script_path=$([[ $0 == /* ]] && echo "$0" || echo "$PWD/${0#./}")
-  sudo "$script_path" || (
-    echo 'Administrator privileges are required.'
-    exit 1
-  )
-  exit 0
-fi
-export HOME="/home/${SUDO_USER:-${USER}}" # Keep `~` and `$HOME` for user not `/root`.
+
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/cleaning.sh"
+
+# Require root privileges
+require_root "$@"
 
 # --Disable Python history for future interactive commands--
 echo '--- Disable Python history for future interactive commands'
@@ -100,13 +99,10 @@ else
 fi
 
 echo '--- Clear system crash report files'
-sudo rm -rfv /var/crash/*
-sudo rm -rfv /var/lib/systemd/coredump/
+clean_crash_dumps
 
 echo '--- Clear system logs (`journald`)'
-if ! command -v 'journalctl' &>/dev/null; then
-  echo 'Skipping because "journalctl" is not found.'
-else
+if has journalctl; then
   sudo journalctl --vacuum-time=1s
 fi
 sudo rm -rfv /run/log/journal/*
@@ -116,43 +112,16 @@ echo '--- Clear Zeitgeist data (activity logs)'
 sudo rm -rfv {/root,/home/*}/.local/share/zeitgeist
 
 echo '--- Clear obsolete APT packages'
-if ! command -v 'apt-get' &>/dev/null; then
-  echo 'Skipping because "apt-get" is not found.'
+if has apt-get; then
+  clean_apt_cache
+  echo '--- Clear APT package file lists'
+  sudo rm -rfv /var/lib/apt/lists/*
 else
-  sudo apt-get autoclean
-fi
-
-echo '--- Clear APT package file lists'
-sudo rm -rfv /var/lib/apt/lists/*
-
-echo '--- Clear orphaned APT package dependencies'
-if ! command -v 'apt-get' &>/dev/null; then
   echo 'Skipping because "apt-get" is not found.'
-else
-  sudo apt-get -y autoremove --purge
-fi
-
-echo '--- Clear cache for APT packages'
-if ! command -v 'apt-get' &>/dev/null; then
-  echo 'Skipping because "apt-get" is not found.'
-else
-  sudo apt-get clean
 fi
 
 echo '--- Clear system-wide cache'
-rm -rf /var/cache/*
-
-echo '--- Clear user-specific cache'
-rm -rfv ~/.cache/*
-sudo rm -rfv root/.cache/*
-
-echo '--- Clear thumbnails (icon cache)'
-rm -rfv ~/.thumbnails/*
-rm -rfv ~/.cache/thumbnails/*
-
-echo '--- Clear global temporary folders'
-sudo rm -rfv /tmp/*
-sudo rm -rfv /var/tmp/*
+clean_cache_dirs
 
 echo '--- Clear screenshots'
 # Clear default directory for GNOME screenshots
@@ -173,13 +142,7 @@ find ~ -name 'ksnip_*' | while read -r file_path; do
 done
 
 echo '--- Empty trash'
-# Empty global trash
-rm -rfv ~/.local/share/Trash/*
-sudo rm -rfv /root/.local/share/Trash/*
-# Empty Snap trash
-rm -rfv ~/snap/*/*/.local/share/Trash/*
-# Empty Flatpak trash (apps may not choose to use Portal API)
-rm -rfv ~/.var/app/*/data/Trash/*
+clean_trash
 
 echo '--- Clear GTK recently used files list'
 # From global installations
@@ -200,13 +163,8 @@ echo '--- Clear privacy.sexy activity logs'
 glob_pattern="$HOME/.config/privacy.sexy/logs/*"
 rm -rfv "$glob_pattern"
 
-echo '--- Clear Python history'
-rm -fv ~/.python_history
-sudo rm -fv /root/.python_history
-
-echo '--- Clear bash history'
-rm -fv ~/.bash_history
-sudo rm -fv /root/.bash_history
+echo '--- Clear Python and bash history'
+clean_history_files
 
 echo 'Your privacy and security is now hardened 🎉💪'
 echo 'Press any key to exit.'

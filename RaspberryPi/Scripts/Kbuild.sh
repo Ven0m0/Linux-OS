@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-set -euo pipefail
-export LC_ALL=C LANG=C
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+# Setup environment
+setup_environment
+
 # Build and install a custom Raspberry Pi kernel.
 # Ensure we're running as root
-[[ $EUID -ne 0 ]] && { echo "This script must be run as root."; exit 1; }
+check_root
 # Install dependencies
 apt-get update && apt-get install -y --no-install-recommends \
   bc bison cpio flex git kmod \

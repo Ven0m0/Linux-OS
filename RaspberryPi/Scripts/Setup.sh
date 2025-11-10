@@ -1,3 +1,9 @@
+#!/usr/bin/env bash
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../lib/common.sh"
+source "${SCRIPT_DIR}/../lib/cleaning.sh"
+
 export DEBIAN_FRONTEND=noninteractive
 
 echo "Install Pi-Hole"
@@ -43,25 +49,7 @@ Unattended-Upgrade::MinimalSteps "true";' | sudo tee /etc/apt/apt.conf.d/50-unat
 # Disable APT terminal logging
 echo -e 'Dir::Log::Terminal "";' | sudo tee /etc/apt/apt.conf.d/01disable-log
 
-echo -e "path-exclude /usr/share/doc/*
-path-exclude /usr/share/help/*
-path-exclude /usr/share/man/*
-path-exclude /usr/share/groff/*
-path-exclude /usr/share/info/*
-path-exclude /usr/share/locale/*
-path-exclude /usr/share/gnome/help/*/*
-path-exclude /usr/share/doc/kde/HTML/*/*
-path-exclude /usr/share/omf/*/*-*.emf
-# lintian stuff is small, but really unnecessary
-path-exclude /usr/share/lintian/*
-path-exclude /usr/share/linda/*
-# paths to keep
-path-include /usr/share/locale/locale.alias
-path-include /usr/share/locale/en/*
-path-include /usr/share/locale/en_GB/*
-path-include /usr/share/locale/en_GB.UTF-8/*
-# we need to keep copyright files for legal reasons
-path-include /usr/share/doc/*/copyright" | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc
+configure_dpkg_nodoc
 
 ## DPKG keep current versions of configs
 echo -e 'DPkg::Options {
@@ -70,17 +58,13 @@ echo -e 'DPkg::Options {
 
 echo -e "LC_ALL=C" | sudo tee -a /etc/environment
 
-# Don't reserve space man-pages, locales, licenses.
-echo -e "Remove useless companies"
-sudo apt-get remove --purge *texlive* -yy
-find /usr/share/doc/ -depth -type f ! -name copyright | xargs sudo rm -f || :
-find /usr/share/doc/ | grep '\.gz' | xargs sudo rm -f
-find /usr/share/doc/ | grep '\.pdf' | xargs sudo rm -f
-find /usr/share/doc/ | grep '\.tex' | xargs sudo rm -f
-find /usr/share/doc/ -empty | xargs sudo rmdir || :
-sudo rm -rfd /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* \
-  /usr/share/linda/* /var/cache/man/* /usr/share/man/* /usr/share/X11/locale/!\(en_GB\)
-sudo rm -rfd /usr/share/locale/!\(en_GB\)
+# Don't reserve space for man-pages, locales, licenses.
+echo -e "Remove unnecessary documentation packages"
+sudo apt-get remove --purge *texlive* -yy 2>/dev/null || :
+clean_documentation
+# Keep only en_GB locale
+sudo rm -rf /usr/share/X11/locale/!\(en_GB\) 2>/dev/null || :
+sudo rm -rf /usr/share/locale/!\(en_GB\) 2>/dev/null || :
 
 echo -e "Disable wait online service"
 echo -e "[connectivity]

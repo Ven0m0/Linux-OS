@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../lib/common.sh"
+source "${SCRIPT_DIR}/../lib/text.sh"
+
+# Setup environment
+setup_environment
 
 Get_IPs() {
   # Try ip command first (more reliable)

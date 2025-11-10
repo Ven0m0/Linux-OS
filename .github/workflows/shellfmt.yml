@@ -43,7 +43,7 @@ jobs:
             awk "$awk_fix" "$f" > "$f.tmp" && mv "$f.tmp" "$f"
             shellharden --replace "$f" &>/dev/null || :
             shellcheck -f diff "$f" | patch -Np1 &>/dev/null || :
-            shfmt -i 2 -s -bn -ln bash -w "$f" &>/dev/null || :
+            shfmt -i 2 -s -ln bash -w "$f" &>/dev/null || :
           done < <(
             {
               find -O2 . -type f \( -name '*.sh' -o -name '*.bash' -o -name '*bashrc' -o -name '*profile' \) -print 2>/dev/null || :

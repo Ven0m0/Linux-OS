@@ -4,13 +4,11 @@ export LC_ALL=C LANG=C
 # Build and install a custom Raspberry Pi kernel.
 # Ensure we're running as root
 [[ $EUID -ne 0 ]] && { echo "This script must be run as root."; exit 1; }
-
 # Install dependencies
 apt-get update && apt-get install -y --no-install-recommends \
   bc bison cpio flex git kmod \
   build-essential ca-certificates \
   libncurses-dev libssl-dev rsync
-
 # Clone the repository
 git clone --depth=1 --filter=blob:none --branch rpi-6.16.y https://github.com/raspberrypi/linux /usr/src/linux
 # Configure the build

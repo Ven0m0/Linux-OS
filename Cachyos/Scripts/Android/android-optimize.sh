@@ -126,6 +126,13 @@ task_art(){
   ash art pr-deopt-job --run
   ash pm bg-dexopt-job
 }
+task_block(){
+  sec "Firewalll"
+  [[ "$1" == enable ]] && ash cmd connectivity set-chain3-enabled true
+  [[ "$1" == disable ]] && ash cmd connectivity set-chain3-enabled false
+  [[ "$1" == block ]] && ash cmd connectivity set-package-networking-enabled false "$2"
+  [[ "$1" == unblock ]] && ash cmd connectivity set-package-networking-enabled true "$2"
+}
 
 task_perf(){
   sec "Performance tweaks"

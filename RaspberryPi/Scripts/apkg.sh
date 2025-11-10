@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # apt-fuzz — optimized sk/fzf TUI for apt/nala/apt-fast on Raspberry Pi/DietPi
 # Features: fuzzy search, cached previews, multi-select, backup/restore, prefetching
-set -euo pipefail
-shopt -s nullglob globstar extglob
+set -euo pipefail; shopt -s nullglob globstar extglob
 IFS=$'\n\t'; export LC_ALL=C LANG=C
 : "${HOME:=$(getent passwd "$USER" 2>/dev/null | cut -d: -f6)}"
 : "${XDG_CACHE_HOME:=${HOME}/.cache}"

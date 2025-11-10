@@ -1,27 +1,22 @@
 #!/usr/bin/env bash
-export LC_ALL=C LANG=C
-shopt -s nullglob globstar execfail
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/lib/common.sh"
+source "${SCRIPT_DIR}/lib/cleaning.sh"
+
+# Setup environment
+setup_environment
+
+# Initialize working directory
 WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
 builtin cd -- "$WORKDIR" || exit 1
+
 #============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-#============ Helpers ====================
-has() {
-  local x="${1:?no argument}"
-  local p
-  p=$(command -v -- "$x") || return 1
-  [[ -x $p ]] || return 1
-}
-hasname() {
-  local x="${1:?no argument}"
-  local p
-  p=$(type -P -- "$x" 2>/dev/null) || return 1
-  printf '%s\n' "${p##*/}"
-}
 #============ Banner ====================
 banner=$(
   cat <<'EOF'
@@ -60,8 +55,7 @@ else
 fi
 echo "Meow (> ^ <)"
 #============ Safety ====================
-[[ -r /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null
-export HOME="/home/${SUDO_USER:-$USER}"
+load_dietpi_globals
 sync
 #=============================================================
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
@@ -76,10 +70,9 @@ if has apt-fast; then
   sudo apt-fast update -yq --allow-releaseinfo-change
   sudo apt-fast upgrade -yfq --no-install-recommends
   sudo apt-fast dist-upgrade -yqf --no-install-recommends
-  sudo apt-fast clean -yq
-  sudo apt-fast autoclean -yq
-  sudo apt-fast autopurge -yq
-  #elif has nala; then
+  clean_apt_cache
+  sudo apt-fast autopurge -yq 2>/dev/null || :
+elif has nala; then
   sudo nala upgrade --no-install-recommends
   sudo nala clean
   sudo nala autoremove
@@ -89,9 +82,7 @@ else
   run_apt update
   run_apt dist-upgrade
   run_apt full-upgrade
-  sudo apt-get clean -yq
-  sudo apt-get autoclean -yq
-  sudo apt-get autoremove --purge -yq
+  clean_apt_cache
 fi
 # Check's the broken packages and fix them
 sudo dpkg --configure -a >/dev/null

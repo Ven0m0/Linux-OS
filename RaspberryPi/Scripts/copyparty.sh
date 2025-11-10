@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-LC_ALL=C LANG=C
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/../lib/common.sh"
+
+# Setup environment - just need the LC_ALL/LANG export
+export LC_ALL=C LANG=C
 
 # UID/GID >= 100 (or <1000 for system account)
 uid=200

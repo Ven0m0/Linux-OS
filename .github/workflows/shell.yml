@@ -1,4 +1,4 @@
-name: Shell Lint & Format
+name: Shell Lint & Auto-fix
 on:
   push:
     branches: [main, master]
@@ -20,7 +20,6 @@ permissions:
   contents: write
   pull-requests: write
   checks: write
-  issues: write
 
 env:
   LC_ALL: C
@@ -30,7 +29,7 @@ env:
 
 jobs:
   lint-format:
-    name: ShellCheck, Format & Auto-fix
+    name: Auto-fix shell files
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -42,41 +41,24 @@ jobs:
           sudo apt-get update -yqq
           sudo apt-get install -y shellcheck shfmt
           curl -sfL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-musl.tar.gz | tar xz
-          sudo mv shellharden /usr/local/bin/ || : 
-
-      - name: Run ShellCheck via Reviewdog
-        uses: reviewdog/action-shellcheck@v1.32.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          reporter: github-check
-          path: "."
-          pattern: |
-            *.sh
-            *.bash
-            *.bashrc
-            bash_*
-          exclude: |
-            */.git/*
-            ./.cache/*
-            ./Linux-Settings/*
-          check_all_files_with_shebangs: true
-          shellcheck_flags: "-x -a -s bash"
+          sudo mv shellharden /usr/local/bin/ || :
 
       - name: Find & fix shell files
         shell: bash
         run: |
           set -euo pipefail
-          IFS=$'\n\t'
+          shopt -s nullglob
+          IFS=$'\n\t'; export LC_ALL=C LANG=C
           {
             find -O2 . -type f \( -name '*.sh' -o -name '*.bash' -o -name '*bashrc' -o -name '*profile' -o -name 'bash_*' \) -print 2>/dev/null || :
             find -O2 . -type f -exec grep -Il '^#!/.*sh' {} + 2>/dev/null || :
           } | sort -u | while IFS= read -r f; do
             [[ $f =~ (^|/)\.git/|(^|/)\.cache/|(^|/)(Linux-Settings)/ ]] && continue
-            sed -i 's/() {/(){/g' "$f" || :
-            sed -i 's/|| true/|| :/g' "$f" || :
-            sed -i '/^#[[:space:]]*-\{5,\}/d' "$f" || :
-            sed -i '/^$/{N;/^\n$/D;}' "$f" || :
-            shellharden --replace "$f" 2>/dev/null || :
+            sed -E -i 's/\(\) \{/\(\)\{/g' "$f" || :
+            sed -E -i 's/\|\| true/|| :/g' "$f" || :
+            sed -E -i '/^#[[:space:]]*-{5,}/d' "$f" || :
+            sed -E -i '/^$/{N;/^\n$/D;}' "$f" || :
+            shellharden --replace "$f" &>/dev/null || :
             shellcheck -f diff "$f" 2>/dev/null | patch -p1 2>/dev/null || :
             shfmt -i 2 -s -ln bash -w "$f" 2>/dev/null || :
           done

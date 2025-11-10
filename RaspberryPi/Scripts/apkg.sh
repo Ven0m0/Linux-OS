@@ -29,7 +29,7 @@ elif command -v fdfind &>/dev/null; then
   find_cache_files(){ fdfind -0 -d 1 -tf . "$CACHE_DIR" 2>/dev/null; }
 else
   FIND_TOOL=find
-  find_cache_files(){ find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null; }
+  find_cache_files(){ find -O3 "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null; }
 fi
 
 FINDER_OPTS=(--layout=reverse-list --tiebreak=index --no-sort --no-hscroll)

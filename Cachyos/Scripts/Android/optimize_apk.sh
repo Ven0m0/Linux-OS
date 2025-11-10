@@ -52,7 +52,6 @@ cat >"$WORKDIR/proguard-rules.pro" <<EOL
     public *;
 }
 -dontwarn **
--dontoptimize
 -dontobfuscate
 -printmapping mapping.txt
 EOL

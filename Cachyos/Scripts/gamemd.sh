@@ -5,7 +5,7 @@ LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
 # Cache commands
 if command -v sudo-rs &>/dev/null; then
   sudo-rs -v
-else command -v sudo &>/dev/null; then
+elif command -v sudo &>/dev/null; then
   sudo -v
 fi
 
@@ -24,7 +24,7 @@ sudo cpupower frequency-set -g performance &>/dev/null
 
 echo 512 | sudo tee /sys/block/nvme0n1/queue/nr_requests &>/dev/null
 echo 1024 | sudo tee /sys/block/nvme0n1/queue/read_ahead_kb &>/dev/null
-echo 0 | sudo tee /sys/block/sda/queue/add_random >/dev/null &>/dev/null
+echo 0 | sudo tee /sys/block/sda/queue/add_random &>/dev/null
 
 echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy &>/dev/null
 

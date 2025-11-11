@@ -290,6 +290,7 @@ clean_paths() {
     if [[ $path == *\** ]]; then
       # Use globbing directly and collect existing items
       shopt -s nullglob
+      # shellcheck disable=SC2206
       local -a items=($path)
       for item in "${items[@]}"; do
         [[ -e $item ]] && existing_paths+=("$item")
@@ -312,6 +313,7 @@ clean_with_sudo() {
     if [[ $path == *\** ]]; then
       # Use globbing directly and collect existing items
       shopt -s nullglob
+      # shellcheck disable=SC2206
       local -a items=($path)
       for item in "${items[@]}"; do
         [[ -e $item ]] && existing_paths+=("$item")

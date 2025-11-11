@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
 LC_ALL=C
-[[ $EUID -ne 0 ]] && sudo -v || { echo "Sudo failed. Exiting."; exit 1; }
+[[ $EUID -ne 0 ]] && { sudo -v || { echo "Sudo failed. Exiting."; exit 1; }; }
 
 # f2fs-fstab-tune.sh
 # Interactive F2FS fstab entry updater for root filesystem
@@ -9,9 +9,8 @@ LC_ALL=C
 
 # Detect root device and ensure it's F2FS
 device=$(findmnt -n -o SOURCE /)
-fs_type=$(findmnt -n -o FSTYPE "$device")
 fs_type=$(findmnt -n -o FSTYPE "${device:-/}")
-[[ "$fs_type" != "f2fs" ]] &&  { echo "Error: Root fs isnt F2FS (detected type: ${fs_type}). Exiting."; exit 1 }
+[[ "$fs_type" != "f2fs" ]] &&  { echo "Error: Root fs isnt F2FS (detected type: ${fs_type}). Exiting."; exit 1; }
 # Get UUID
 UUID=$(sudo blkid -s UUID -o value "$device")
 # Desktop vs Server presets
@@ -32,7 +31,7 @@ done
 # Confirm chosen options
 printf '%b\n' "Selected options:\n${opts}"
 read -rp "Proceed to update /etc/fstab with these options? [Y/n] " confirm
-[[ ! "${confirm:-Y}" =~ ^[Yy]$ ]] && { echo "Aborted by user."; exit 0 }
+[[ ! "${confirm:-Y}" =~ ^[Yy]$ ]] && { echo "Aborted by user."; exit 0; }
 
 # Backup fstab
 backup="/etc/fstab.bak.$(printf '%(%F-%H-%M)T' -1)"

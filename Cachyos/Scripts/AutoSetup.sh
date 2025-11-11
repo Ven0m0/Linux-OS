@@ -129,11 +129,11 @@ sudo timedatectl set-timezone Europe/Berlin
 
 # Don't reserve space man-pages, locales, licenses.
 echo -e "Remove useless companies"
-find /usr/share/doc/ -depth -type f ! -name copyright | xargs sudo rm -f || :
-find /usr/share/doc/ | grep '\.gz' | xargs sudo rm -f
-find /usr/share/doc/ | grep '\.pdf' | xargs sudo rm -f
-find /usr/share/doc/ | grep '\.tex' | xargs sudo rm -f
-find /usr/share/doc/ -empty | xargs sudo rmdir || :
+find /usr/share/doc/ -depth -type f ! -name copyright -exec sudo rm -f {} + || :
+find /usr/share/doc/ -type f -name '*.gz' -exec sudo rm -f {} + || :
+find /usr/share/doc/ -type f -name '*.pdf' -exec sudo rm -f {} + || :
+find /usr/share/doc/ -type f -name '*.tex' -exec sudo rm -f {} + || :
+find /usr/share/doc/ -depth -type d -empty -exec sudo rmdir {} + || :
 sudo rm -rfd /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* \
   /usr/share/linda/* /var/cache/man/* /usr/share/man/* /usr/share/X11/locale/!\(en_GB\)
 sudo rm -rfd /usr/share/locale/!\(en_GB\)

@@ -3,18 +3,14 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/cleaning.sh"
+source "${SCRIPT_DIR}/lib/text.sh"
 
 # Setup environment
 setup_environment
 
 # Initialize working directory
 init_workdir
-#============ Color & Effects ============
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m'
-DEF=$'\e[0m' BLD=$'\e[1m'
+
 #============ Banner ====================
 banner=$(
   cat <<'EOF'
@@ -26,36 +22,13 @@ banner=$(
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 )
-# Split banner into array
-mapfile -t banner_lines <<<"$banner"
-lines=${#banner_lines[@]}
-# Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
-flag_colors=(
-  "$LBLU" # Light Blue
-  "$PNK"  # Pink
-  "$BWHT" # White
-  "$PNK"  # Pink
-  "$LBLU" # Light Blue
-)
-segments=${#flag_colors[@]}
-# If banner is trivially short, just print without dividing by (lines-1)
-if ((lines <= 1)); then
-  for line in "${banner_lines[@]}"; do
-    printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
-  done
-else
-  for i in "${!banner_lines[@]}"; do
-    # Map line index proportionally into 0..(segments-1)
-    segment_index=$((i * (segments - 1) / (lines - 1)))
-    ((segment_index >= segments)) && segment_index=$((segments - 1))
-    printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
-  done
-fi
+display_banner "$banner" "$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU"
 echo "Meow (> ^ <)"
 #============ Safety ====================
 load_dietpi_globals
 sync
 #=============================================================
+# Clean APT lists before update
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
 export APT_NO_COLOR=1 NO_COLOR=1 DPKG_COLORS=never DEBIAN_FRONTEND=noninteractive
 run_apt() {

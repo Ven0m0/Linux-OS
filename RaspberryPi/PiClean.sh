@@ -8,38 +8,13 @@ source "${SCRIPT_DIR}/lib/cleaning.sh"
 # Setup environment
 setup_environment
 
-# Custom dirname implementation (kept for compatibility)
-dirname() {
-  local tmp=${1:-.}
-  [[ $tmp != *[!/]* ]] && {
-    printf '/\n'
-    return
-  }
-  tmp=${tmp%%"${tmp##*[!/]}" }
-  [[ $tmp != */* ]] && {
-    printf '.\n'
-    return
-  }
-  tmp=${tmp%/*}
-  tmp=${tmp%%"${tmp##*[!/]}"}
-  printf '%s\n' "${tmp:-/}"
-}
-
 # Initialize working directory
-WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-cd "$WORKDIR" || exit 1
-
-# Helper functions (kept for script-specific use)
-xprintf() { printf "%s\n" "$@"; }
+init_workdir
 
 #──────────── Sudo ────────────────────
 load_dietpi_globals
-suexec="$(hasname sudo-rs || hasname sudo || hasname doas)"
-[[ -z ${suexec:-} ]] && {
-  echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
-  exit 1
-}
-[[ $EUID -ne 0 && $suexec =~ ^(sudo-rs|sudo)$ ]] && "$suexec" -v 2>/dev/null || :
+suexec="$(get_sudo_cmd)" || exit 1
+init_sudo
 sync
 #─────────────────────────────────────────────────────────────
 echo

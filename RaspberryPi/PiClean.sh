@@ -56,7 +56,9 @@ sudo rm -rf /var/lib/apt/lists/*
 clean_apt_cache
 sudo apt-get purge ?config-files 2>/dev/null || :
 echo "Cleaning leftover config files"
-dpkg -l | awk '/^rc/ { print $2 }' | xargs -r sudo apt-get purge -y 2>/dev/null || :
+if has dpkg; then
+  dpkg -l | awk '/^rc/ { print $2 }' | xargs -r sudo apt-get purge -y 2>/dev/null || :
+fi
 
 echo "orphan removal"
 if has deborphan; then

@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
-set -euo pipefail; IFS=$'\n\t'; shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
 
-# Cache commands
-if command -v sudo-rs &>/dev/null; then
-  sudo-rs -v
-elif command -v sudo &>/dev/null; then
-  sudo -v
-fi
+# Initialize privilege tool
+PRIV_CMD=$(init_priv)
 
 # Needs testing
-echo 0 | sudo tee /sys/kernel/mm/transparent_hugepage/use_zero_page &>/dev/null
-echo 0 | sudo tee /sys/kernel/mm/transparent_hugepage/shrink_underused &>/dev/null
+echo 0 | run_priv tee /sys/kernel/mm/transparent_hugepage/use_zero_page &>/dev/null
+echo 0 | run_priv tee /sys/kernel/mm/transparent_hugepage/shrink_underused &>/dev/null
 
 # Known
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null

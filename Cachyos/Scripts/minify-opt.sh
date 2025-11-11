@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar
-export LC_ALL=C
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
 # ─── USAGE ─────────────────────────────────────────────────────────────────────
 if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 /path/to/directory"
-  exit 1
+  die "Usage: $0 /path/to/directory"
 fi
 TARGET_DIR="$1"
-[[ -d $TARGET_DIR ]] || {
-  echo "Error: '$TARGET_DIR' is not a directory"
-  exit 1
-}
+[[ -d $TARGET_DIR ]] || die "Error: '$TARGET_DIR' is not a directory"
 
 # ─── SETUP ──────────────────────────────────────────────────────────────────────
 BACKUP_DIR="$HOME/image_backups_$(date +%Y%m%d_%H%M%S)"

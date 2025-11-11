@@ -8,9 +8,7 @@ source "${SCRIPT_DIR}/lib/cleaning.sh"
 setup_environment
 
 # Initialize working directory
-WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-builtin cd -- "$WORKDIR" || exit 1
-
+init_workdir
 #============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

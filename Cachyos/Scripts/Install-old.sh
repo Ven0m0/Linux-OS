@@ -1,35 +1,25 @@
 #!/usr/bin/env bash
-export LC_ALL='C' LANG='C'
-WORKDIR="$(builtin cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD")"
-builtin cd -- "$WORKDIR" || exit 1
-#============ Color & Effects ============
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m'
-DEF=$'\e[0m' BLD=$'\e[1m'
-#============ Helpers ====================
-has(){ local x="${1:?no argument}"; x=$(command -v -- "$x") &>/dev/null || return 1; [[ -x $x ]] || return 1; }
-hasname(){ local x="${1:?no argument}"; x=$(type -P -- "$x" 2>/dev/null) || return 1; printf '%s\n' "${x##*/}"; }
-export HOME="/home/${SUDO_USER:-$USER}"
-#============ Env ====================
-[[ -r /etc/makepkg.conf ]] && . "/etc/makepkg.conf"
-RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-CFLAGS="${CFLAGS:=-march=native -mtune=native -O3 -pipe}" 
-CXXFLAGS="$CFLAGS"
-MAKEFLAGS="-j$(nproc)"
-CARGO_CACHE_RUSTC_INFO=1 CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always RUSTUP_TOOLCHAIN=nightly #RUSTC_BOOTSTRAP=1
-export MAKEFLAGS RUSTFLAGS CFLAGS CXXFLAGS CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
+# Setup build environment
+setup_build_env
+
+# Initialize privilege tool
+PRIV_CMD=$(init_priv)
+
 #=============================================================
-[[ -f /var/lib/pacman/db.lck ]] && sudo rm -f --preserve-root -- '/var/lib/pacman/db.lck'
+cleanup_pacman_lock
 sync
 
-if command -v paru &>/dev/null; then
+if has paru; then
   aurhelper=paru
-elif command -v yay &>/dev/null; then
+elif has yay; then
   aurhelper=yay
 else
-  aurhelper="sudo pacman"
+  aurhelper="run_priv pacman"
 fi
 
 # Sync keyring + upgrade
@@ -53,51 +43,46 @@ pkgs=(
   intel-ucode-shrink-hook xdg-ninja cylon scaramanga kbuilder
 )
 
-echo "Checking installed packages..."
+log "Checking installed packages..."
 missing=()
 for p in "${pkgs[@]}"; do
   "$aurhelper" -Qiq "$p" &>/dev/null || missing+=("$p")
 done
 
 if [[ ${#missing[@]} -eq 0 ]]; then
-  echo "✔ All packages installed"
+  log "${GRN}✔ All packages installed${DEF}"
   exit 0
 fi
 
-echo "➜ Installing: ${missing[*]}"
+log "${YLW}➜ Installing: ${missing[*]}${DEF}"
 while [[ ${#missing[@]} -gt 0 ]]; do
   failed=()
   "$aurhelper" -Sq --needed --noconfirm --removemake --cleanafter --sudoloop \
     --skipreview --nokeepsrc --batchinstall --combinedupgrade \
     --mflags '--skipinteg --skippgpcheck' "${missing[@]}" || {
-      echo "Some packages failed. Retrying individually..."
+      log "${YLW}Some packages failed. Retrying individually...${DEF}"
       for p in "${missing[@]}"; do
         "$aurhelper" -Sq --needed --noconfirm --removemake --cleanafter \
           --skipreview --nokeepsrc "$p" || failed+=("$p")
       done
-      missing=("$(printf "%s\n" "${missing[@]}" | grep -vxF -f <(printf "%s\n" "${failed[@]}")"))
+      missing=("$(printf "%s\n" "${missing[@]}" | grep -vxF -f <(printf "%s\n" "${failed[@]}"))")
   }
   [[ ${#failed[@]} -eq 0 ]] && break
 done
 
-echo "✔ Installation complete (or skipped if already present)"
+log "${GRN}✔ Installation complete (or skipped if already present)${DEF}"
 
-if command -v flatpak &>/dev/null; then
+if has flatpak; then
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-  flats=$(awk -F '#' '{print $1}' "${WORKDIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs)
+  flats=$(awk -F '#' '{print $1}' "${SCRIPT_DIR:-$PWD}"/flatpaks.lst | sed 's/ //g' | xargs)
   flatpak install -y flathub "$flats"
   flatpak install -y flathub org.kde.audiotube
 fi
 # echo "Installing gaming applications"
 # sudo pacman -Sq cachyos-gaming-meta cachyos-gaming-applications --noconfirm --needed || :
 
-foxdir(){
-  local PROFILE_DIR="${HOME}/.mozilla/firefox" ACTIVE_PROF ACTIVE_PROF_DIR
-  ACTIVE_PROF=$(awk -F= '/^\[.*\]/{f=0} /^\[Install/{f=1; next} f && /^Default=/{print $2; exit}' "${PROFILE_DIR}/installs.ini" 2>/dev/null)
-  [[ -z "$ACTIVE_PROF" ]] && { ACTIVE_PROF=$(awk -F= '/^\[.*\]/{f=0} /^\[Profile[0-9]+\]/{f=1} f && /^Default=1/ {found=1} f && /^Path=/{if(found){print $2; exit}}' "${PROFILE_DIR}/profiles.ini" 2>/dev/null); }
-  [[ -n "$ACTIVE_PROF" ]] && { ACTIVE_PROF_DIR="${PROFILE_DIR}/${ACTIVE_PROF}"; export ACTIVE_PROF_DIR; } || { echo "❌ Could not determine active Firefox profile." >&2; exit 1; }
-}
-FOXYDIR="$(foxdir)"
+# Use foxdir from common library
+FOXYDIR="$(foxdir "$HOME/.mozilla/firefox")"
 
 # Rust packages
 rustchain='
@@ -127,7 +112,7 @@ mkdir -p "$dest"
 curl -sSfL --create-dirs -o "$dest/$(basename "$url")" "$url" 
 chmod +x "${dest}/$(basename "$url")" && . "${dest}/$(basename "$url")"
 
-if ! command -v rustup; then
+if ! has rustup; then
   echo "Installing rust + components..."
   RUSTUP_QUIET=yes
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y -q -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy

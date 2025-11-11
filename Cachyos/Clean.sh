@@ -135,7 +135,7 @@ pkg_cache_clean(){
     # Use cached package manager detection
     local pkgmgr
     pkgmgr=$(get_pkg_manager)
-    "$pkgmgr" -Scc --noconfirm &>/dev/null || :
+    run_priv "$pkgmgr" -Scc --noconfirm &>/dev/null || :
   fi
   if has apt-get; then run_priv apt-get clean &>/dev/null || :; run_priv apt-get autoclean &>/dev/null || :; fi
 }

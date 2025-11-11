@@ -4,7 +4,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/common.sh"
 source "${SCRIPT_DIR}/../lib/text.sh"
 
-export LC_ALL='C' LANG='C'
+# Setup environment (LC_ALL and LANG already set by common.sh)
+setup_environment
 
 # https://github.com/kboghdady/youTube_ads_4_pi-hole
 # check to see if gawk is installed. if not it will install it

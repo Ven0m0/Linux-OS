@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Source shared libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../lib/common.sh"
 
 # Setup environment - just need the LC_ALL/LANG export
 export LC_ALL=C LANG=C

@@ -38,9 +38,8 @@ update_system_packages() {
   # Update keyring and file databases
   run_priv "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &>/dev/null || :
 
-  # Update file database if needed
-  [[ -f /var/lib/pacman/sync/core.files ]] || run_priv pacman -Fy --noconfirm || :
-  run_priv pacman -Fy --noconfirm &>/dev/null || :
+  # Update file database only if it doesn't exist
+  [[ -f /var/lib/pacman/sync/core.files ]] || run_priv pacman -Fy --noconfirm &>/dev/null || :
 
   # Run system updates
   if [[ $pkgmgr == paru ]]; then

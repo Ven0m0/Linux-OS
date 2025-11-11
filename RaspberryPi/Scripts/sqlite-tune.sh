@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Usage: sqlite-tune db.sqlite [aggressive|safe|readonly]
-set -euo pipefail
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
 db=${1:?db path}
 mode=${2:-safe}
 
@@ -37,7 +41,6 @@ readonly)
   run 'PRAGMA cache_size=-131072;'
   ;;
 *)
-  echo "unknown mode $mode" >&2
-  exit 1
+  die "unknown mode $mode"
   ;;
 esac

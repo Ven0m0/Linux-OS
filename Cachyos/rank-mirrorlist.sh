@@ -1,20 +1,12 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar extglob
-export LC_ALL=C LANG=C LANGUAGE=C
-SHELL=/bin/bash
-if [[ -t 2 ]]; then
-  ALL_OFF="\e[0m" BOLD="\e[1m"
-  RED="${BOLD}\e[31m" GREEN="${BOLD}\e[32m" YELLOW="${BOLD}\e[33m"
-fi
-readonly ALL_OFF BOLD GREEN RED YELLOW
-has(){ command -v -- "$1" &>/dev/null; }
-msg(){ printf "%b==>%b%b $1%b\n" "${GREEN-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "${@:2}" >&2; }
-info(){ printf "%b -->%b%b $1%b\n" "${YELLOW-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "${@:2}" >&2; }
-error(){ printf "%b==> ERROR:%b%b $1%b\n" "${RED-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "${@:2}" >&2; }
-die(){ (($#)) && error "$@"; exit 255; }
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || exit 1
 
-sudo -v
+# Initialize privilege tool
+PRIV_CMD=$(init_priv)
+
 has rate-mirrors || die "'rate-mirrors' is not installed."
 
 readonly MIRRORS_DIR=/etc/pacman.d
@@ -32,8 +24,8 @@ trap 'rm -rf -- "$TMP_DIR"' EXIT HUP INT TERM
 
 mirroropt(){
   local name="$1" file="${2:-$MIRRORS_DIR/${1}-mirrorlist}"
-  [[ -r $file ]] || { error "Missing: %s" "$file"; return 1; }
-  info "Ranking mirrors for '%s'..." "$name"
+  [[ -r $file ]] || { err "${RED}Missing: $file${DEF}"; return 1; }
+  log "${YLW}Ranking mirrors for '$name'...${DEF}"
   rate-mirrors stdin \
     --save="$TMP_MAIN" \
     --fetch-mirrors-timeout=300000 \
@@ -42,13 +34,13 @@ mirroropt(){
     --path-to-return='$repo/os/$arch' \
     < <(grep -Eo 'https?://[^ ]+' "$file" | sort -u) \
   && install -m644 -b -S -T "$TMP_MAIN" "$file" \
-  && msg "Updated: %s" "$file" \
-  || error "rate-mirrors failed for repo '%s'" "$name"
+  && log "${GRN}Updated: $file${DEF}" \
+  || err "${RED}rate-mirrors failed for repo '$name'${DEF}"
 }
 
 rank_arch_from_url(){
   local url="${1:-$DEFAULT_ARCH_URL}" path="$MIRRORS_DIR/mirrorlist"
-  info "Fetching mirrorlist from %s" "$url"
+  log "${YLW}Fetching mirrorlist from $url${DEF}"
   # Prefer aria2 -> curl -> wget2 -> wget
   if has aria2c; then
     aria2c -q --max-tries=3 --retry-wait=1 -d "$TMP_DIR" -o dl "$url"
@@ -60,24 +52,24 @@ rank_arch_from_url(){
     wget -qO "$TMP_DIR/dl" "$url"
   else
     die "No download tool available (aria2c, curl, wget2, wget)"
-  fi || die "Download failed: %s" "$url"
+  fi || die "Download failed: $url"
   local -a urls
   mapfile -t urls < <(awk '/^#?Server/{url=$3; sub(/\$.*/,"",url); if(!seen[url]++)print url}' "$TMP_DIR/dl")
   ((${#urls[@]}>0)) || die "No server entries found"
-  info "Ranking %d Arch mirrors..." "${#urls[@]}"
+  log "${YLW}Ranking ${#urls[@]} Arch mirrors...${DEF}"
   printf '%s\n' "${urls[@]}" \
     | rate-mirrors --save="$TMP_MAIN" stdin \
       --path-to-test="extra/os/x86_64/extra.files" \
       --path-to-return="\$repo/os/\$arch" \
       --comment-prefix="# " --output-prefix="Server = " \
   && install -m644 -b -S -T "$TMP_MAIN" "$path" \
-  && msg "Updated: %s" "$path" \
+  && log "${GRN}Updated: $path${DEF}" \
   || die "rate-mirrors failed for Arch"
 }
 
 rate_keys(){
   has keyserver-rank || return 0
-  sudo pacman-db-upgrade
+  run_priv pacman-db-upgrade
   sudo keyserver-rank --yes
 }
 
@@ -85,11 +77,11 @@ main(){
   rank_arch_from_url "${1:-}"
   rate_keys
   if has cachyos-rate-mirrors; then
-    sudo cachyos-rate-mirrors
+    run_priv cachyos-rate-mirrors
   else
     mirroropt cachyos
   fi
-  info "Searching for other mirrorlists..."
+  log "${YLW}Searching for other mirrorlists...${DEF}"
   local f repo
   for f in "$MIRRORS_DIR"/*mirrorlist; do
     [[ -L $f || $f == "$MIRRORS_DIR/mirrorlist" ]] && continue
@@ -97,9 +89,9 @@ main(){
     [[ $repo == "$(basename "$f")" ]] && continue
     mirroropt "$repo" "$f"
   done
-  sudo chmod 644 "$MIRRORS_DIR"/*mirrorlist* &>/dev/null || :
-  sudo pacman -Syq --noconfirm --needed || :
-  msg "All mirrorlists updated successfully."
+  run_priv chmod 644 "$MIRRORS_DIR"/*mirrorlist* &>/dev/null || :
+  run_priv pacman -Syq --noconfirm --needed || :
+  log "${GRN}All mirrorlists updated successfully.${DEF}"
 }
 
 main "$@"
@@ -123,11 +115,11 @@ if has rankmirrors; then
   if [[ -n $mirror_data ]]; then
     if has sd; then
       echo "$mirror_data" | sd '^#Server' 'Server' | sd '^#.*' '' | \
-        rankmirrors -n 15 - | sudo tee /etc/pacman.d/mirrorlist.tmp >/dev/null
+        rankmirrors -n 15 - | run_priv tee /etc/pacman.d/mirrorlist.tmp >/dev/null
     else
       echo "$mirror_data" | sed -e 's/^#Server/Server/' -e '/^#/d' | \
-        rankmirrors -n 15 - | sudo tee /etc/pacman.d/mirrorlist.tmp >/dev/null
+        rankmirrors -n 15 - | run_priv tee /etc/pacman.d/mirrorlist.tmp >/dev/null
     fi
-    sudo mv /etc/pacman.d/mirrorlist.tmp /etc/pacman.d/mirrorlist
+    run_priv mv /etc/pacman.d/mirrorlist.tmp /etc/pacman.d/mirrorlist
   fi
 fi

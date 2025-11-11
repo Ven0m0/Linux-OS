@@ -1,56 +1,10 @@
----
 name: Submodule Update
-
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "11 4 * * 1" # weekly
+  schedule: [{cron: "0 5 * * 0"}]
 permissions:
   contents: write
   pull-requests: write
-concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}"
-  cancel-in-progress: true
-
 jobs:
-  update-submodules:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          submodules: recursive
-      - name: Cache Git objects
-        uses: actions/cache@v4
-        with:
-          path: |
-            .git/modules
-            .git/objects
-          key: ${{ runner.os }}-git-submodules-${{ hashFiles('.gitmodules') }}
-          restore-keys: |
-            ${{ runner.os }}-git-submodules-
-
-      - name: Update Submodules
-        id: update
-        shell: bash
-        run: |
-          set -euo pipefail
-          git submodule sync --recursive -q
-          git submodule update --recursive --remote --merge --depth 1 --single-branch -q
-          # If any submodule SHA changed, it shows as modified in porcelain output
-          if git status --porcelain | grep -E '^(M|A|D) ' >/dev/null 2>&1; then
-            echo "updated=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "updated=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Create PR with submodule updates
-        if: steps.update.outputs.updated == 'true'
-        uses: peter-evans/create-pull-request@v7
-        with:
-          title: "chore: update submodules"
-          branch: chore/update-submodules
-          commit-message: "chore: update submodules"
-          body: "Automated weekly submodule update."
-          delete-branch: true
+  update:
+    uses: Ven0m0/.github/.github/workflows/submodules.yml@main

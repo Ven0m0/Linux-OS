@@ -59,7 +59,7 @@ clean_trash() {
 # Clean Docker resources
 # Removes unused Docker containers, images, volumes, and build cache
 clean_docker() {
-  if command -v docker &>/dev/null; then
+  if has docker; then
     sudo docker system prune -af --volumes 2>/dev/null || :
     sudo docker container prune -f 2>/dev/null || :
     sudo docker image prune -af 2>/dev/null || :

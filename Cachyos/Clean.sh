@@ -132,7 +132,10 @@ privacy_clean(){
 pkg_cache_clean(){
   if has pacman; then
     run_priv paccache -rk0 -q &>/dev/null || :
-    if has paru; then paru -Scc --noconfirm &>/dev/null || :; else run_priv pacman -Scc --noconfirm &>/dev/null || :; fi
+    # Use cached package manager detection
+    local pkgmgr
+    pkgmgr=$(get_pkg_manager)
+    "$pkgmgr" -Scc --noconfirm &>/dev/null || :
   fi
   if has apt-get; then run_priv apt-get clean &>/dev/null || :; run_priv apt-get autoclean &>/dev/null || :; fi
 }

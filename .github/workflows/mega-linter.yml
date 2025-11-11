@@ -1,82 +1,16 @@
-# https://megalinter.io
----
 name: MegaLinter
-
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "**/*.{sh,bash,bashrc,profile}"
-      - "**/*.{md,markdown}"
-      - "**/*.{yml,yaml,toml,json,ini,conf}"
-      - "**/*.{js,jsx,css,html}"
-      - "Makefile"
-      - ".{editorconfig,env,mega-linter.yml}"
-  push:
-    paths:
-      - "**/*.{sh,bash,bashrc,profile}"
-      - "**/*.{md,markdown}"
-      - "**/*.{yml,yaml,toml,json,ini,conf}"
-      - "**/*.{js,jsx,css,html}"
-      - "Makefile"
-      - ".{editorconfig,env,mega-linter.yml}"
-      - ".github/**"
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}
   cancel-in-progress: true
 permissions:
   contents: write
-  pull-requests: write
-  checks: write
   issues: write
-
+  pull-requests: write
 jobs:
   megalinter:
-    name: MegaLinter
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v5
-        with:
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          fetch-depth: 1
-
-      # Validate and fix config files first
-      - name: Validate and Fix Config Files
-        uses: kehoecj/validate-configs-action@v4.0.1
-        with:
-          group-by: "pass-fail"
-          exclude-dirs: ".github,.git,.cache,go,node_modules,.var,.rustup,.wine,.zim,.void-editor,.vscode,.claude"
-          AUTO_FIX: "true"
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: MegaLinter
-        uses: oxsecurity/megalinter@v9
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PAT: ${{ secrets.PAT }}
-          VALIDATE_ALL_CODEBASE: true
-          APPLY_FIXES: all
-          APPLY_FIXES_EVENT: all
-          APPLY_FIXES_MODE: commit
-          PARALLEL: true
-          SHOW_ELAPSED_TIME: true
-          FLAVOR_SUGGESTIONS: true
-          BASH_SHELLCHECK_DISABLE_ERRORS: true
-          BASH_SHELLCHECK_ARGUMENTS: '-s bash -P SCRIPTDIR -x -a -S warning -C auto -o all'
-          BASH_SHFMT_ARGUMENTS: "-ln bash -s -i 2 -bn"
-          FILTER_REGEX_INCLUDE: '((\.config|\.termux|\.github)/|^\.[^/]+$|^scripts/|^bin/|.*)'
-          FILTER_REGEX_EXCLUDE: '(^Linux-Settings/|^\.cache/|^node_modules/|^vendor/|^dist/|^build/|^third_party/|^\.venv/|^venv/|^__pycache__/|^\.git/)'
-          ENABLE: ACTION,BASH,CSS,DOCKERFILE,EDITORCONFIG,ENV,HTML,JSON,MAKEFILE,MARKDOWN,PYTHON,REPOSITORY,SPELL,TOML,XML,YAML
-          DISABLE_LINTERS: REPOSITORY_KICS,REPOSITORY_GRYPE,SPELL_VALE,REPOSITORY_TRIVY,REPOSITORY_DEVSKIM
-          DISABLE_ERRORS_LINTERS: SPELL_CSPELL,SPELL_LYCHEE,BASH_EXEC,REPOSITORY_GIT_DIFF,REPOSITORY_SECRETLINT
-          LC_ALL: C
-
-      - name: Upload MegaLinter reports
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: MegaLinter-reports
-          path: |
-            megalinter-reports
-            mega-linter-*
+    uses: Ven0m0/.github/.github/workflows/mega-linter.yml@main
+    with:
+      exclude_dirs: '.github,.git,.cache,go,node_modules,.var,.rustup,.wine,.zim,.void-editor,.vscode,.claude'
+    secrets: inherit

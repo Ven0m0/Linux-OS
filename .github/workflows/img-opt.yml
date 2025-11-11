@@ -1,0 +1,19 @@
+name: Optimize Images
+on:
+  workflow_dispatch:
+  push:
+    paths: ['**/*.{jpg,jpeg,png,webp,avif,gif,svg}']
+  pull_request:
+    paths: ['**/*.{jpg,jpeg,png,webp,avif,gif,svg}']
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  optimize:
+    uses: Ven0m0/.github/.github/workflows/img-opt.yml@main
+    with:
+      export_webp: true
+      export_avif: false

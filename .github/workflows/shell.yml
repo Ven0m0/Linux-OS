@@ -4,11 +4,13 @@ on:
     branches: [main, master]
     paths: ["**/*.{sh,bash,bashrc,profile}", "bash_*"]
   pull_request:
+    paths: ["**/*.{sh,bash,bashrc,profile}", "bash_*"]
   workflow_dispatch:
-
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: write
-
 jobs:
   lint:
     uses: Ven0m0/.github/.github/workflows/shell-lint.yml@main

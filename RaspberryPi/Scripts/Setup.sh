@@ -119,13 +119,18 @@ for dir in "$HOME" "$HOME"/*/; do touch "$dir/.metadata_never_index" "$dir/.noin
 
 echo -e "Enable write cache"
 echo -e "write back" | sudo tee /sys/block/*/queue/write_cache
-sudo tune2fs -o journal_data_writeback "$(df / | grep / | awk '{print $1}')"
-sudo tune2fs -O ^has_journal "$(df / | grep / | awk '{print $1}')"
-sudo tune2fs -o journal_data_writeback "$(df /home | grep /home | awk '{print $1}')"
-sudo tune2fs -O ^has_journal "$(df /home | grep /home | awk '{print $1}')"
+# Optimize device detection - use findmnt instead of df|grep|awk
+root_dev=$(findmnt -n -o SOURCE /)
+home_dev=$(findmnt -n -o SOURCE /home 2>/dev/null || echo "$root_dev")
+sudo tune2fs -o journal_data_writeback "$root_dev"
+sudo tune2fs -O ^has_journal "$root_dev"
+[[ -n $home_dev && $home_dev != "$root_dev" ]] && {
+  sudo tune2fs -o journal_data_writeback "$home_dev"
+  sudo tune2fs -O ^has_journal "$home_dev"
+}
 echo -e "Enable fast commit"
-sudo tune2fs -O fast_commit "$(df / | grep / | awk '{print $1}')"
-sudo tune2fs -O fast_commit "$(df /home | grep /home | awk '{print $1}')"
+sudo tune2fs -O fast_commit "$root_dev"
+[[ -n $home_dev && $home_dev != "$root_dev" ]] && sudo tune2fs -O fast_commit "$home_dev"
 
 echo -e "Compress .local/bin"
 upx /home/"$USER"/.local/bin/*
@@ -221,7 +226,8 @@ echo -e "Flush flatpak database"
 sudo flatpak uninstall --unused --delete-data -y
 sudo flatpak repair
 echo -e "Clear the caches"
-for n in "$(find / -type d \( -name ".tmp" -o -name ".temp" -o -name ".cache" \) 2>/dev/null)"; do sudo find "$n" -type f -delete; done
+# Optimize: Use single find command instead of loop
+find / -type d \( -name ".tmp" -o -name ".temp" -o -name ".cache" \) -exec sudo find {} -type f -delete \; 2>/dev/null || :
 echo -e "Clear the patches"
 rm -rfd /{tmp,var/tmp}/{.*,*}
 sudo pacman -Qtdq \

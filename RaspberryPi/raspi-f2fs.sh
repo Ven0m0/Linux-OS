@@ -9,6 +9,8 @@ source "${SCRIPT_DIR}/lib/common.sh"
 setup_environment
 # Per common.sh: Explicitly override shell options after setup_environment().
 # Disable options incompatible with this script; enable those required.
+# execfail: Causes the shell to exit with a nonzero status if an exec fails, which can break error handling in this script.
+# globstar: Enables recursive globbing (**), which may cause unintended file matches; this script expects standard globbing.
 shopt -u execfail globstar  # Disable these for this script
 shopt -s nullglob  # Keep nullglob enabled
 

@@ -4,7 +4,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/common.sh"
 source "${SCRIPT_DIR}/../lib/cleaning.sh"
 
-# install packages without user interaction:
+# Setup environment
+setup_environment
+
+# Install packages without user interaction
 export DEBIAN_FRONTEND=noninteractive
 
 echo "### Reducing the size of the installation ###"

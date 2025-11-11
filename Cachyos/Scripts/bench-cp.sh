@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-LC_COLLATE=C LC_CTYPE=C LANG=C.UTF-8
-sudo -v
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
+# Initialize privilege tool
+PRIV_CMD=$(init_priv)
 
 LOG="copy-bench-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
 >"$LOG"

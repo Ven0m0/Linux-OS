@@ -2,27 +2,29 @@
 # Title:         Media Optimizer TUI
 # Description:   An interactive fzf-based TUI to losslessly or lossily
 #                optimize images, SVGs, and web files in parallel.
-set -euo pipefail; shopt -s nullglob globstar
-HOME="/home/${SUDO_USER:-$USER}" 
-IFS=$'\n\t'
-LC_ALL=C LANG=C
-builtin cd -- "$(command dirname -- "${BASH_SOURCE[0]:-$0}")" || exit 1
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
 # --- Configuration & Globals ---
-JOBS="$(command nproc --all 2>/dev/null || echo 4)"
+JOBS="$(nproc --all 2>/dev/null || echo 4)"
 LOSSY=0
 KEEP_BACKUPS=1
 TARGET_DIR="${1:-.}"
-# TUI Colors
-C_RED='\033[0;31m' C_GREEN='\033[0;32m' C_YELLOW='\033[1;33m' C_BLUE='\033[0;34m' C_NC='\033[0m'
+
 # Check core dependency: fzf
-command -v fzf &>/dev/null || { printf "${C_RED}Error: fzf is not installed. It is required for the TUI.${C_NC}\n" >&2; exit 1; }
+has fzf || die "fzf is not installed. It is required for the TUI."
+
 TMP_DIR="$(mktemp -d)"
 LOG_FILE="${TMP_DIR}/optimization_log.txt"
 OPTIMIZER_SCRIPT="${TMP_DIR}/optimize_one.sh"
+
 # --- Cleanup ---
 # Ensures temporary files are removed on any script exit.
 cleanup(){ rm -rf "$TMP_DIR"; }  
 trap cleanup EXIT SIGINT SIGTERM
+
 # --- Logging ---
 log_info(){ printf '[%s] %s\n' "$(date +'%F %T')" "$1" >>"$LOG_FILE"; }
 # --- Core Optimizer Logic ---

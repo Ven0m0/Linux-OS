@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
-LC_ALL=C
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
 # Shell Script Optimizer
 # A utility to format, harden, lint, and minify shell scripts.
 # It can operate on a single file or recursively on a directory.
@@ -46,18 +49,18 @@ target="${1:?No file or directory specified.}"
 
 # check dependencies
 for cmd in shfmt shellharden shellcheck awk; do
-  command -v "$cmd" &>/dev/null || { printf "Error: '%s' is not installed.\n" "$cmd" >&2; exit 1; }
+  has "$cmd" || die "Error: '$cmd' is not installed."
 done
-readonly HAS_SD=$(command -v sd &>/dev/null && echo 1 || echo 0)
+readonly HAS_SD=$(has sd && echo 1 || echo 0)
 
 # collect files
 if [[ -d "$target" ]]; then
-  (( recursive == 0 )) && { printf "Error: Use -r for directories.\n" >&2; usage; }
+  (( recursive == 0 )) && die "Error: Use -r for directories."
   mapfile -d '' files < <(find "$target" -type f \( -name '*.sh' -o -name '*.bash' \) -print0)
 else
-  [[ -f "$target" ]] && files=("$target") || { printf "Error: File not found: %s\n" "$target" >&2; exit 1; }
+  [[ -f "$target" ]] && files=("$target") || die "Error: File not found: $target"
 fi
-(( ${#files[@]} == 0 )) && { printf "No shell scripts found.\n"; exit 0; }
+(( ${#files[@]} == 0 )) && { log "No shell scripts found."; exit 0; }
 
 # awk script for stripping comments and headers
 read -r -d '' awk_script <<'AWK'

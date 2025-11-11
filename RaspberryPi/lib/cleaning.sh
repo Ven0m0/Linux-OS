@@ -15,7 +15,8 @@ clean_apt_cache() {
 clean_cache_dirs() {
   sudo rm -rf /tmp/* 2>/dev/null || :
   sudo rm -rf /var/tmp/* 2>/dev/null || :
-  sudo rm -rf /var/cache/* 2>/dev/null || :
+  # Only remove package archives, not all of /var/cache
+  sudo rm -rf /var/cache/apt/archives/* 2>/dev/null || :
   rm -rf ~/.cache/* 2>/dev/null || :
   sudo rm -rf /root/.cache/* 2>/dev/null || :
   rm -rf ~/.thumbnails/* 2>/dev/null || :

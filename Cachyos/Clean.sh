@@ -144,19 +144,12 @@ snap_flatpak_trim(){
   has flatpak && flatpak uninstall --unused --delete-data -y &>/dev/null || :
   if has snap; then
     printf '%s\n' "🔄${BLU}Removing old Snap revisions...${DEF}"
-    # Batch process snap removals to reduce subprocess calls
-    local disabled_snaps=()
+    # Remove disabled snaps (old revisions) individually with correct argument structure
     while read -r name version rev tracking publisher notes; do
-      [[ ${notes:-} == *disabled* ]] && disabled_snaps+=("$name" "--revision=$rev")
+      if [[ ${notes:-} == *disabled* ]]; then
+        run_priv snap remove "$name" --revision "$rev" &>/dev/null || :
+      fi
     done < <(snap list --all 2>/dev/null || :)
-    
-    # Remove all disabled snaps in batch if any found
-    if [[ ${#disabled_snaps[@]} -gt 0 ]]; then
-      # Process in pairs (name, revision)
-      for ((i=0; i<${#disabled_snaps[@]}; i+=2)); do
-        run_priv snap remove "${disabled_snaps[i]}" "${disabled_snaps[i+1]}" &>/dev/null || :
-      done
-    fi
     rm -rf "$HOME"/snap/*/*/.cache/* &>/dev/null || :
   fi
   run_priv rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :

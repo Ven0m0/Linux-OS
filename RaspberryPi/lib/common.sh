@@ -107,20 +107,12 @@ setup_environment() {
 # Checks for sudo-rs, sudo, or doas in order of preference
 # Returns: Command name if found, exits with error if none available
 # Usage: SUDO_CMD=$(get_sudo_cmd)
-_SUDO_CMD_CACHED=""
 get_sudo_cmd() {
-  # Return cached result if available
-  if [[ -n $_SUDO_CMD_CACHED ]]; then
-    printf '%s\n' "$_SUDO_CMD_CACHED"
-    return 0
-  fi
-  
   local sudo_cmd
   sudo_cmd="$(hasname sudo-rs || hasname sudo || hasname doas)" || {
     echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
     return 1
   }
-  _SUDO_CMD_CACHED=$sudo_cmd
   printf '%s\n' "$sudo_cmd"
 }
 

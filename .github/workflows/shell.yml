@@ -1,61 +1,16 @@
-name: Shell Lint & Auto-fix
+name: Shell Lint
 on:
   push:
     branches: [main, master]
     paths: ["**/*.{sh,bash,bashrc,profile}", "bash_*"]
   pull_request:
-    branches: [main, master]
-    paths: ["**/*.{sh,bash,bashrc,profile}", "bash_*"]
   workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 permissions:
   contents: write
 
-env:
-  SHELLCHECK_OPTS: "--source-path=SCRIPTDIR --external-sources --check-sourced --shell=bash --severity=style"
-
 jobs:
-  lint-format:
-    name: Auto-fix shell files
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install tools
-        run: |
-          sudo apt-get update -yq
-          sudo apt-get install -y shellcheck shfmt
-          curl -sfL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-gnu.tar.gz | \
-            sudo tar xz -C /usr/local/bin shellharden
-
-      - name: Fix shell files
-        run: |
-          set -euo pipefail
-          shopt -s nullglob globstar
-          IFS=$'\n\t'; export LC_ALL=C LANG=C
-          
-          mapfile -t files < <(
-            {
-              find . -type f \( -name '*.sh' -o -name '*.bash' -o -name '*bashrc' -o -name '*profile' -o -name 'bash_*' \)
-              find . -type f -exec sh -c 'head -n1 "$1" | grep -qE "^#!/.*sh"' _ {} \; -print
-            } | grep -vE '(^|/)\.(git|cache)(/|$)|(^|/)Linux-Settings/' | sort -u
-          )
-          
-          for f in "${files[@]}"; do
-            shellharden --replace "$f" &>/dev/null || :
-            shfmt -i 2 -s -ln bash -w "$f" &>/dev/null || :
-          done
-
-      - name: Commit changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git diff --quiet || {
-            git add -A
-            git commit -m "🔧 Auto-fix shell scripts [skip ci]"
-            git push
-          }
+  lint:
+    uses: Ven0m0/.github/.github/workflows/shell-lint.yml@main
+    with:
+      exclude_pattern: '(^|/)\.git/|(^|/)Linux-Settings/'

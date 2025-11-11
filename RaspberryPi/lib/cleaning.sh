@@ -36,6 +36,9 @@ clean_history_files() {
 # Clean crash dumps and core dumps
 # Removes system crash reports
 clean_crash_dumps() {
+  if command -v coredumpctl >/dev/null 2>&1; then
+    sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
+  fi
   sudo rm -rf /var/crash/* 2>/dev/null || :
   sudo rm -rf /var/lib/systemd/coredump/* 2>/dev/null || :
 }

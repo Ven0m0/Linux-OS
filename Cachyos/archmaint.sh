@@ -26,18 +26,11 @@ SUDO="$PRIV_CMD"
 # Note: run_system_maintenance is now provided by common.sh
 
 update_system_packages() {
-  local pkgmgr aur_opts=()
+  local pkgmgr aur_opts
   log "🔄${BLU}System update${DEF}"
-  # Detect package manager
-  if has paru; then
-    pkgmgr=paru
-    aur_opts=(--batchinstall --combinedupgrade --nokeepsrc)
-  elif has yay; then
-    pkgmgr=yay
-    aur_opts=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
-  else
-    pkgmgr=pacman
-  fi
+  # Use cached package manager detection
+  pkgmgr=$(get_pkg_manager)
+  mapfile -t aur_opts < <(get_aur_opts)
 
   # Remove pacman lock if exists
   cleanup_pacman_lock

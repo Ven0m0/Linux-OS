@@ -296,6 +296,22 @@ detect_pkg_manager() {
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
 
+# Get package manager name only (without options)
+get_pkg_manager() {
+  if [[ -z $_PKG_MGR_CACHED ]]; then
+    detect_pkg_manager >/dev/null
+  fi
+  printf '%s\n' "$_PKG_MGR_CACHED"
+}
+
+# Get AUR options for the detected package manager
+get_aur_opts() {
+  if [[ -z $_PKG_MGR_CACHED ]]; then
+    detect_pkg_manager >/dev/null
+  fi
+  printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
+}
+
 #============ SQLite Maintenance ============
 # Vacuum a single SQLite database and return bytes saved
 vacuum_sqlite() {
@@ -448,6 +464,51 @@ clean_with_sudo() {
   done
   # Batch delete all existing paths at once with single sudo call
   [[ ${#existing_paths[@]} -gt 0 ]] && run_priv rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
+}
+
+#============ Download Tool Detection ============
+# Get best available download tool (with optional skip for piping)
+# Usage: get_download_tool [--no-aria2]
+_DOWNLOAD_TOOL_CACHED=""
+get_download_tool() {
+  local skip_aria2=0
+  [[ ${1:-} == --no-aria2 ]] && skip_aria2=1
+  
+  # Return cached if available and aria2 not being skipped
+  if [[ -n $_DOWNLOAD_TOOL_CACHED && $skip_aria2 -eq 0 ]]; then
+    printf '%s' "$_DOWNLOAD_TOOL_CACHED"
+    return 0
+  fi
+  
+  local tool
+  if [[ $skip_aria2 -eq 0 ]] && has aria2c; then
+    tool=aria2c
+  elif has curl; then
+    tool=curl
+  elif has wget2; then
+    tool=wget2
+  elif has wget; then
+    tool=wget
+  else
+    return 1
+  fi
+  
+  [[ $skip_aria2 -eq 0 ]] && _DOWNLOAD_TOOL_CACHED=$tool
+  printf '%s' "$tool"
+}
+
+# Download a file using best available tool
+# Usage: download_file <url> <output_path>
+download_file() {
+  local url=$1 output=$2 tool
+  tool=$(get_download_tool) || return 1
+  
+  case $tool in
+    aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "$(dirname "$output")" -o "$(basename "$output")" "$url" ;;
+    curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;;
+    wget2) wget2 -q -O "$output" "$url" ;;
+    wget) wget -qO "$output" "$url" ;;
+  esac
 }
 
 # Library successfully loaded

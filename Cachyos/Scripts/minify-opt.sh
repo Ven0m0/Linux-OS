@@ -20,7 +20,7 @@ LOGFILE="$HOME/image_compression_log.txt"
 echo "Image compression started at $(date)" >"$LOGFILE"
 
 # degree of parallelism; override via JOBS env var
-JOBS="$(nproc 2>/dev/null || echo 4)"
+JOBS="${JOBS:-$(nproc 2>/dev/null || echo 4)}"
 
 # ─── compress_image FUNCTION ──────────────────────────────────────────────────
 compress_image() {
@@ -31,8 +31,8 @@ compress_image() {
   mkdir -p "${backup%/*}"
   cp -p -- "$file" "$backup"
 
-  # Oxipng
-  oxipng -o max --strip all -a -i 0 --scale16 --force -Z --zi 25 -j "$(nproc)" "$TARGET_DIR"
+  # Oxipng - use JOBS variable instead of calling nproc again
+  oxipng -o max --strip all -a -i 0 --scale16 --force -Z --zi 25 -j "$JOBS" "$TARGET_DIR"
 
   local tmp
   case "$ext" in
@@ -42,14 +42,14 @@ compress_image() {
   png)
     tmp=$(mktemp --suffix=.png)
     if pngquant --strip --quality=60-85 --speed=1 --output "$tmp" -- "$file"; then
-      oxipng -o max --strip all -a -i 0 --scale16 --force -Z --zi 25 -j "$(nproc)" --out "$file" "$tmp"
+      oxipng -o max --strip all -a -i 0 --scale16 --force -Z --zi 25 -j "$JOBS" --out "$file" "$tmp"
     else
       oxipng -o max --strip all -a -i 0 --force -Z --zi 20 -- "$file"
     fi
     rm -f -- "${tmp:-}"
     ;;
   gif)
-    gifsicle -O3 --batch -j"$(nproc)" -- "$file"
+    gifsicle -O3 --batch -j"$JOBS" -- "$file"
     ;;
   svg)
     svgo --multipass --quiet -- "$file"

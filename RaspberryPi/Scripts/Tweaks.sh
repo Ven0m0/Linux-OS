@@ -28,7 +28,8 @@ enableZRAM(){
 CORES=$(nproc --all)
 modprobe zram num_devices=${CORES}
 swapoff -a
-SIZE=$(( ($(free | grep -e "^Mem:" | awk '{print $2}') / ${CORES}) * 1024 ))
+# Optimize: Use awk directly instead of free|grep|awk
+SIZE=$(( ($(awk '/^Mem:/ {print $2}' /proc/meminfo) / ${CORES}) * 1024 ))
 CORE=0
 while [ ${CORE} -lt ${CORES} ]; do
   echo ${SIZE} > /sys/block/zram${CORE}/disksize

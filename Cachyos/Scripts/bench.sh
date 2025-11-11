@@ -16,8 +16,10 @@ has hyperfine || {
   exit 1
 }
 
-jobs16="$(nproc 2>/dev/null)"
-jobs8="$(($(nproc 2>/dev/null || echo 1) / 2))"
+# Cache nproc result to avoid repeated calls
+nproc_count="$(nproc 2>/dev/null || echo 1)"
+jobs16="$nproc_count"
+jobs8="$((nproc_count / 2))"
 ((jobs8 < 1)) && jobs8=1
 
 o1="$(</sys/devices/system/cpu/intel_pstate/no_turbo)"
@@ -37,11 +39,11 @@ benchmark() {
     "$cmd"
 }
 # Benchmarks
-benchmark "xargs" "seq 1000 | xargs -n1 -P$(nproc) echo"
-benchmark "parallel" "seq 1000 | parallel -j $(nproc) echo {}"
-benchmark "rust-parallel" "seq 1000 | rust-parallel -j $(nproc) echo {}"
-benchmark "parel" "parel -t $(nproc) 'seq 1000'"
-benchmark "parallel-sh" "parallel-sh -j $(nproc) 'seq 1000'"
+benchmark "xargs" "seq 1000 | xargs -n1 -P$nproc_count echo"
+benchmark "parallel" "seq 1000 | parallel -j $nproc_count echo {}"
+benchmark "rust-parallel" "seq 1000 | rust-parallel -j $nproc_count echo {}"
+benchmark "parel" "parel -t $nproc_count 'seq 1000'"
+benchmark "parallel-sh" "parallel-sh -j $nproc_count 'seq 1000'"
 benchmark "sort 16" "sort -u -s --parallel=\"$jobs16\" -S 50% /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
 benchmark "sort 8" "sort -u -s --parallel=\"$jobs8\" -S 50% /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
 benchmark "sort 4" "sort -u -s --parallel=4 -S 50% /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"

@@ -1,20 +1,28 @@
 #!/usr/bin/env bash
+# Source common library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh" || exit 1
+
 set -euo pipefail
 shopt -s nullglob globstar extglob
 export LC_ALL=C LANG=C LANGUAGE=C
 SHELL=/bin/bash
+
+# Initialize privilege
+PRIV_CMD=$(init_priv)
+export PRIV_CMD
+
+# Custom message functions (override common.sh for this script's style)
 if [[ -t 2 ]]; then
   ALL_OFF="\e[0m" BOLD="\e[1m"
   RED="${BOLD}\e[31m" GREEN="${BOLD}\e[32m" YELLOW="${BOLD}\e[33m"
 fi
 readonly ALL_OFF BOLD GREEN RED YELLOW
-has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf "%b==>%b%b $1%b\n" "${GREEN-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "${@:2}" >&2; }
 info(){ printf "%b -->%b%b $1%b\n" "${YELLOW-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "${@:2}" >&2; }
 error(){ printf "%b==> ERROR:%b%b $1%b\n" "${RED-}" "${ALL_OFF-}" "${BOLD-}" "${ALL_OFF-}" "${@:2}" >&2; }
 die(){ (($#)) && error "$@"; exit 255; }
-
-sudo -v
 has rate-mirrors || die "'rate-mirrors' is not installed."
 
 readonly MIRRORS_DIR=/etc/pacman.d

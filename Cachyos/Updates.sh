@@ -16,11 +16,11 @@ main(){
   trap cleanup EXIT INT TERM
   #============ Update Functions ============
   update_system(){
-    local pkgmgr aur_opts=()
+    local pkgmgr aur_opts
     log "🔄${BLU} System Packages${DEF}"
-    if has paru; then pkgmgr=paru; aur_opts=(--batchinstall --fmflags --skipinteg --nokeepsrc);
-    elif has yay; then pkgmgr=yay; aur_opts=(--answerclean y --answerdiff n);
-    else pkgmgr=pacman; fi
+    # Use cached package manager detection
+    pkgmgr=$(get_pkg_manager)
+    mapfile -t aur_opts < <(get_aur_opts)
     cleanup
     run_priv "$pkgmgr" -Sy --needed archlinux-keyring --noconfirm &>/dev/null || :
     [[ -f /var/lib/pacman/sync/core.files ]] || run_priv pacman -Fy --noconfirm &>/dev/null || :

@@ -80,10 +80,10 @@ clean_npm_cache() {
 # Clean pip cache
 # Removes Python pip cache
 clean_pip_cache() {
-  if command -v pip &>/dev/null; then
+  if has pip; then
     pip cache purge 2>/dev/null || :
   fi
-  if command -v pip3 &>/dev/null; then
+  if has pip3; then
     pip3 cache purge 2>/dev/null || :
   fi
 }

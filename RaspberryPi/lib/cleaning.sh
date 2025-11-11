@@ -71,7 +71,7 @@ clean_docker() {
 # Clean npm cache
 # Removes npm cache directory
 clean_npm_cache() {
-  if command -v npm &>/dev/null; then
+  if has npm; then
     npm cache clean --force 2>/dev/null || :
   fi
 }

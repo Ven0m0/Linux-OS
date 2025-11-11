@@ -356,18 +356,30 @@ ensure_not_running_any() {
   # Only process running programs
   [[ ${#running_procs[@]} -eq 0 ]] && return
   
+  # Wait for all processes in parallel using single loop
   for p in "${running_procs[@]}"; do
     printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
-    local wait_time=$timeout
-    while ((wait_time-- > 0)) && pgrep -x -u "$USER" "$p" &>/dev/null; do
-      sleep 1
+  done
+  
+  # Single wait loop checking all processes
+  local wait_time=$timeout
+  while ((wait_time-- > 0)); do
+    local still_running=0
+    for p in "${running_procs[@]}"; do
+      pgrep -x -u "$USER" "$p" &>/dev/null && ((still_running++))
     done
-    pgrep -x -u "$USER" "$p" &>/dev/null && {
+    ((still_running == 0)) && return
+    sleep 1
+  done
+  
+  # Kill any remaining processes
+  for p in "${running_procs[@]}"; do
+    if pgrep -x -u "$USER" "$p" &>/dev/null; then
       printf '  %s\n' "${RED}Killing ${p}...${DEF}"
       pkill -KILL -x -u "$USER" "$p" &>/dev/null || :
-      sleep 1
-    }
+    fi
   done
+  sleep 1
 }
 
 #============ Browser Profile Detection ============
@@ -432,6 +444,7 @@ _expand_wildcards() {
   if [[ $path == *\** ]]; then
     # Use globbing directly and collect existing items
     shopt -s nullglob
+    # shellcheck disable=SC2206  # Intentional globbing for wildcard expansion
     local -a items=($path)
     for item in "${items[@]}"; do
       [[ -e $item ]] && result_ref+=("$item")
@@ -469,6 +482,7 @@ clean_with_sudo() {
 #============ Download Tool Detection ============
 # Get best available download tool (with optional skip for piping)
 # Usage: get_download_tool [--no-aria2]
+# shellcheck disable=SC2120
 _DOWNLOAD_TOOL_CACHED=""
 get_download_tool() {
   local skip_aria2=0
@@ -501,6 +515,7 @@ get_download_tool() {
 # Usage: download_file <url> <output_path>
 download_file() {
   local url=$1 output=$2 tool
+  # shellcheck disable=SC2119
   tool=$(get_download_tool) || return 1
   
   case $tool in
@@ -508,6 +523,7 @@ download_file() {
     curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;;
     wget2) wget2 -q -O "$output" "$url" ;;
     wget) wget -qO "$output" "$url" ;;
+    *) return 1 ;;
   esac
 }
 

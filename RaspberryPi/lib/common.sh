@@ -93,3 +93,66 @@ run_dietpi_cleanup() {
     sudo /boot/dietpi/func/dietpi-cleaner 2 2>/dev/null || G_SUDO dietpi-cleaner 2 2>/dev/null || :
   fi
 }
+
+# Setup standard bash environment for scripts
+# Sets safe shell options and standardizes IFS
+# Usage: setup_environment
+setup_environment() {
+  set -euo pipefail
+  shopt -s nullglob globstar execfail
+  IFS=$'\n\t'
+}
+
+# Get sudo command available on the system
+# Checks for sudo-rs, sudo, or doas in order of preference
+# Returns: Command name if found, exits with error if none available
+# Usage: SUDO_CMD=$(get_sudo_cmd)
+get_sudo_cmd() {
+  local sudo_cmd
+  sudo_cmd="$(hasname sudo-rs || hasname sudo || hasname doas)" || {
+    echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
+    return 1
+  }
+  printf '%s\n' "$sudo_cmd"
+}
+
+# Initialize sudo session if not root
+# Validates sudo availability and pre-authenticates
+# Usage: init_sudo
+init_sudo() {
+  local sudo_cmd
+  sudo_cmd="$(get_sudo_cmd)" || return 1
+  
+  if [[ $EUID -ne 0 && $sudo_cmd =~ ^(sudo-rs|sudo)$ ]]; then
+    "$sudo_cmd" -v 2>/dev/null || :
+  fi
+}
+
+# Find files with fallback to standard find
+# Tries fdf, fd, then find in that order
+# Usage: find_with_fallback <type> <pattern> <path> [<action>] [<action_args>...]
+# Example: find_with_fallback f "*.sh" /path -x chmod 755
+find_with_fallback() {
+  local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}" 
+  shift 4 2>/dev/null || shift $#
+  
+  if has fdf; then
+    fdf -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
+  elif has fd; then
+    fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
+  else
+    local find_type_arg
+    case "$ftype" in
+      f) find_type_arg="-type f" ;;
+      d) find_type_arg="-type d" ;;
+      l) find_type_arg="-type l" ;;
+      *) find_type_arg="-type f" ;;
+    esac
+    
+    if [[ -n $action ]]; then
+      find "$search_path" $find_type_arg -name "$pattern" "$action" "$@"
+    else
+      find "$search_path" $find_type_arg -name "$pattern"
+    fi
+  fi
+}

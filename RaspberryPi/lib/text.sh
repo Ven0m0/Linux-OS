@@ -2,6 +2,15 @@
 # Text processing utilities library
 # Contains shared functions for text manipulation and file processing
 
+# Color constants for terminal output
+# Standard ANSI colors
+export BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+export BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
+# Extended colors (256-color palette)
+export LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
+# Text effects
+export DEF=$'\e[0m' BLD=$'\e[1m'
+
 # Remove comments from text
 # Removes shell-style comments (# ...) and blank lines
 # Usage: cat file | remove_comments
@@ -102,4 +111,36 @@ count_lines() {
 # Usage: cat file | normalize_whitespace
 normalize_whitespace() {
   sed -e 's/\t/ /g' -e 's/  */ /g'
+}
+
+# Display colorized banner with gradient effect
+# Usage: display_banner "banner_text" [colors...]
+# Example: display_banner "$banner" "$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU"
+display_banner() {
+  local banner_text="$1"
+  shift
+  local -a flag_colors=("$@")
+  
+  # Default to trans flag colors if none provided
+  if (( ${#flag_colors[@]} == 0 )); then
+    flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
+  fi
+  
+  mapfile -t banner_lines <<<"$banner_text"
+  local lines=${#banner_lines[@]}
+  local segments=${#flag_colors[@]}
+  
+  # Simple output if only one line
+  if ((lines <= 1)); then
+    for line in "${banner_lines[@]}"; do
+      printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
+    done
+  else
+    # Apply gradient across lines
+    for i in "${!banner_lines[@]}"; do
+      local segment_index=$((i * (segments - 1) / (lines - 1)))
+      ((segment_index >= segments)) && segment_index=$((segments - 1))
+      printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
+    done
+  fi
 }

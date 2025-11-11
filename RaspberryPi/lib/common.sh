@@ -3,16 +3,14 @@
 # This file contains shared functions and environment setup used across multiple scripts
 
 # Standard environment setup
-# Exports common environment variables and sets safe bash options
-setup_environment() {
-  export LC_ALL=C LANG=C
-  export DEBIAN_FRONTEND=noninteractive
-  export HOME="/home/${SUDO_USER:-$USER}"
-  set -euo pipefail
-  shopt -s nullglob globstar execfail
-  IFS=$'\n\t'
-}
-
+# When this file is sourced, it sets safe bash options and exports common environment variables.
+# Note: Sourcing this file will modify the calling shell's environment (not just child processes).
+export LC_ALL=C LANG=C
+export DEBIAN_FRONTEND=noninteractive
+export HOME="/home/${SUDO_USER:-$USER}"
+set -euo pipefail
+shopt -s nullglob globstar execfail
+IFS=$'\n\t'
 # Check if a command exists in PATH
 # Usage: has <command_name>
 # Returns: 0 if command exists, 1 otherwise

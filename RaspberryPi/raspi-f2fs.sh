@@ -7,6 +7,8 @@ source "${SCRIPT_DIR}/lib/common.sh"
 
 # Setup environment
 setup_environment
+# Per common.sh: Explicitly override shell options after setup_environment().
+# Disable options incompatible with this script; enable those required.
 shopt -u execfail globstar  # Disable these for this script
 shopt -s nullglob  # Keep nullglob enabled
 

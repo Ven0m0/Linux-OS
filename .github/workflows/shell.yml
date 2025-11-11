@@ -2,14 +2,10 @@ name: Shell Lint & Auto-fix
 on:
   push:
     branches: [main, master]
-    paths:
-      - "**/*.{sh,bash,bashrc,profile}"
-      - "bash_*"
+    paths: ["**/*.{sh,bash,bashrc,profile}", "bash_*"]
   pull_request:
     branches: [main, master]
-    paths:
-      - "**/*.{sh,bash,bashrc,profile}"
-      - "bash_*"
+    paths: ["**/*.{sh,bash,bashrc,profile}", "bash_*"]
   workflow_dispatch:
 
 concurrency:
@@ -18,13 +14,8 @@ concurrency:
 
 permissions:
   contents: write
-  pull-requests: write
-  checks: write
 
 env:
-  LC_ALL: C
-  DEBIAN_FRONTEND: noninteractive
-  GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
   SHELLCHECK_OPTS: "--source-path=SCRIPTDIR --external-sources --check-sourced --shell=bash --severity=style"
 
 jobs:
@@ -33,34 +24,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 1
 
       - name: Install tools
         run: |
-          sudo apt-get update -yqq
+          sudo apt-get update -yq
           sudo apt-get install -y shellcheck shfmt
-          curl -sfL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-musl.tar.gz | tar xz
-          sudo mv shellharden /usr/local/bin/ || :
+          curl -sfL https://github.com/anordal/shellharden/releases/latest/download/shellharden-x86_64-unknown-linux-gnu.tar.gz | \
+            sudo tar xz -C /usr/local/bin shellharden
 
-      - name: Find & fix shell files
-        shell: bash
+      - name: Fix shell files
         run: |
           set -euo pipefail
-          shopt -s nullglob
+          shopt -s nullglob globstar
           IFS=$'\n\t'; export LC_ALL=C LANG=C
-          {
-            find -O2 . -type f \( -name '*.sh' -o -name '*.bash' -o -name '*bashrc' -o -name '*profile' -o -name 'bash_*' \) -print 2>/dev/null || :
-            find -O2 . -type f -exec grep -Il '^#!/.*sh' {} + 2>/dev/null || :
-          } | sort -u | while IFS= read -r f; do
-            [[ $f =~ (^|/)\.git/|(^|/)\.cache/|(^|/)(Linux-Settings)/ ]] && continue
-            sed -E -i 's/\(\) \{/\(\)\{/g' "$f" || :
-            sed -E -i 's/\|\| true/|| :/g' "$f" || :
-            sed -E -i '/^#[[:space:]]*-{5,}/d' "$f" || :
-            sed -E -i '/^$/{N;/^\n$/D;}' "$f" || :
+          
+          mapfile -t files < <(
+            {
+              find . -type f \( -name '*.sh' -o -name '*.bash' -o -name '*bashrc' -o -name '*profile' -o -name 'bash_*' \)
+              find . -type f -exec sh -c 'head -n1 "$1" | grep -qE "^#!/.*sh"' _ {} \; -print
+            } | grep -vE '(^|/)\.(git|cache)(/|$)|(^|/)Linux-Settings/' | sort -u
+          )
+          
+          for f in "${files[@]}"; do
             shellharden --replace "$f" &>/dev/null || :
-            shellcheck -f diff "$f" 2>/dev/null | patch -p1 2>/dev/null || :
-            shfmt -i 2 -s -ln bash -w "$f" 2>/dev/null || :
+            shfmt -i 2 -s -ln bash -w "$f" &>/dev/null || :
           done
 
       - name: Commit changes
@@ -69,6 +56,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git diff --quiet || {
             git add -A
-            git commit -m "🔧 Auto-fix shell scripts [skip ci]" || :
-            git push || :
+            git commit -m "🔧 Auto-fix shell scripts [skip ci]"
+            git push
           }

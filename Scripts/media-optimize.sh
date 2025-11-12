@@ -54,7 +54,7 @@ NPROC=$(nproc 2>/dev/null || echo 4)
 QUALITY=85 VIDEO_CRF=27 VIDEO_CODEC="auto" AUDIO_BITRATE=128 JOBS=0 SUFFIX="_opt"
 KEEP_ORIGINAL=0 INPLACE=0 RECURSIVE=0 CONVERT_FORMAT="" LOSSLESS=1 OUTPUT_DIR=""
 MEDIA_TYPE="all" DRY_RUN=0 SKIP_EXISTING=0 PROGRESS=1 MIN_SAVINGS=0 TUI_MODE=0 KEEP_BACKUPS=1
-WEBP_QUALITY=85 AVIF_SPEED=6 AVIF_QUAL=60
+WEBP_QUALITY=85 AVIF_SPEED=6 AVIF_QUAL=60 MAX_RES=1920
 IMAGE_CODEC_PRIORITY=("webp" "avif" "jxl" "jpg" "png")
 VIDEO_CODEC_PRIORITY=("av1" "vp9" "h265" "h264")
 declare -g STATS_TOTAL=0 STATS_PROCESSED=0 STATS_SKIPPED=0 STATS_FAILED=0
@@ -88,6 +88,8 @@ detect_video_codec(){
   if ffmpeg_has_encoder libsvtav1 || ffmpeg_has_encoder libaom-av1; then VIDEO_CODEC="av1"
   elif ffmpeg_has_encoder libvpx-vp9; then VIDEO_CODEC="vp9"
   elif ffmpeg_has_encoder libx265; then VIDEO_CODEC="h265"
+  elif ffmpeg_has_encoder h264_nvenc; then VIDEO_CODEC="h264_nvenc"
+  elif ffmpeg_has_encoder libx264 ; then VIDEO_CODEC="libx264"
   else VIDEO_CODEC="vp9"; fi
 }
 
@@ -98,7 +100,6 @@ mkbackup(){
   mkdir -p "$bakdir" 2>/dev/null || return 1
   cp -p "$file" "$bakdir/" 2>/dev/null || warn "Backup failed: $(basename "$file")"
 }
-
 # ---- Output Path ----
 get_output_path(){
   local src="$1" fmt=$2 base="${src##*/}" name="${base%.*}" ext="${base##*.}"
@@ -107,7 +108,6 @@ get_output_path(){
   elif [[ $INPLACE -eq 1 ]]; then echo "$dir/$base"
   else echo "$dir/${name}${SUFFIX}.${ext}"; fi
 }
-
 # ---- Already Optimized Check ----
 is_already_optimized(){
   local file=$1 ext="${file##*.}" && ext="${ext,,}"
@@ -242,7 +242,8 @@ optimize_video(){
   [[ -f $out && $KEEP_ORIGINAL -eq 1 && $INPLACE -eq 0 ]] && return 0
   local orig=$(get_size "$src")
   log "Processing video: $(basename "$src")"
-  local -a enc=() ac=(-c:a libopus -b:a "${AUDIO_BITRATE}k")
+  local -a enc=() ac=(-c:a libopus -b:a "${AUDIO_BITRATE}k" -rematrix_maxval 1.0 -ac 2) \
+    ffopts=(-vf "scale=-1:${MAX_RES:-1920}" -movflags faststart -progress pipe:1 -hide_banner -loglevel error -y)
   case "$VIDEO_CODEC" in
     av1) ffmpeg_has_encoder libsvtav1 && enc=(-c:v libsvtav1 -preset 8 -crf "$VIDEO_CRF" -g 240) || enc=(-c:v libaom-av1 -cpu-used 6 -crf "$VIDEO_CRF" -g 240);;
     vp9) enc=(-c:v libvpx-vp9 -crf "$VIDEO_CRF" -b:v 0 -row-mt 1);;
@@ -252,11 +253,11 @@ optimize_video(){
   esac
   local success=0 tool=""
   if cache_tool ffzap; then
-    tool="ffzap"
-    "${T[ffzap]}" -i "$src" -f "${enc[*]} ${ac[*]}" -o "$out" -t 1 &>/dev/null && success=1
+    tool="ffzap"; [[ $NPROC -ge 8 ]] && FF_THREAD=8
+    "${T[ffzap]}" -i "$src" -f "${enc[*]} ${ac[*]} ${ffopts[*]}" -o "$out" --overwrite -t "${FF_THREAD:-2}" &>/dev/null && success=1
   elif cache_tool ffmpeg; then
     tool="ffmpeg"
-    "${T[ffmpeg]}" -i "$src" "${enc[@]}" "${ac[@]}" -y "$out" -loglevel error && success=1
+    "${T[ffmpeg]}" -i "$src" "${enc[@]}" "${ac[@]}" "${ffopts[*]}" "$out" && success=1
   else
     warn "No video encoder found (ffzap/ffmpeg required)"; return 1
   fi
@@ -279,7 +280,7 @@ optimize_audio(){
     log "Processing audio: $(basename "$src")"
     if cache_tool opusenc; then
       local tmp="${out}.tmp"
-      opusenc --bitrate "$AUDIO_BITRATE" --vbr "$src" "$tmp" &>/dev/null || return 1
+      opusenc --bitrate "$AUDIO_BITRATE" --downmix-stereo --discard-comments --quiet "$src" "$tmp" &>/dev/null || return 1
       [[ -f $tmp ]] && mv "$tmp" "$out" || return 1
     else cp "$src" "$out"; fi
   else
@@ -288,18 +289,16 @@ optimize_audio(){
     [[ -f $out && $KEEP_ORIGINAL -eq 1 && $INPLACE -eq 0 ]] && return 0
     local orig=$(get_size "$src")
     log "Processing audio: $(basename "$src") → Opus"
-    if cache_tool opusenc && [[ $ext == "wav" || $ext == "flac" ]]; then
-      opusenc --bitrate "$AUDIO_BITRATE" --vbr "$src" "$out" &>/dev/null || return 1
-    elif cache_tool ffmpeg || cache_tool ffzap; then
+    if cache_tool opusenc && [[ $ext == "wav" || $ext == "flac" || $ext == "AIFF" ]]; then
+      opusenc --bitrate "$AUDIO_BITRATE" --downmix-stereo --discard-comments --quiet "$src" "$out" &>/dev/null || return 1
+    elif cache_tool ffzap || cache_tool ffmpeg; then
       local tool=${T[ffzap]:-${T[ffmpeg]}}
+      local -a ffopts=(-c:a libopus -b:a ${AUDIO_BITRATE}k -vbr on -rematrix_maxval 1.0 -ac 2 -y -progress pipe:1 -hide_banner -y -loglevel error)
       if [[ $(basename "$tool") == "ffzap" ]]; then
-        "$tool" -i "$src" -f "-c:a libopus -b:a ${AUDIO_BITRATE}k" -o "$out" -t 1 &>/dev/null || return 1
+        "$tool" -i "$src" -f "${ffopts[*]}" -o "$out" -t "${FF_THREAD:-2}" &>/dev/null || return 1
       else
-        "$tool" -i "$src" -c:a libopus -b:a "${AUDIO_BITRATE}k" -vbr on -y "$out" -loglevel error || return 1
-      fi
-    else
-      warn "No audio encoder found (opusenc/ffzap/ffmpeg required)"; return 1
-    fi
+        "$tool" -i "$src" "${ffopts[*]}" "$out" &>/dev/null || return 1; fi
+    else { warn "No audio encoder found (opusenc/ffzap/ffmpeg required)"; return 1; }; fi
   fi
   local new=$(get_size "$out")
   ((new<orig)) && {
@@ -311,8 +310,7 @@ optimize_audio(){
 
 # ---- Process File ----
 process_file(){
-  local file=$1 ext="${file##*.}" && ext="${ext,,}"
-  ((STATS_TOTAL++))
+  local file=$1 ext="${file##*.}" && ext="${ext,,}"; ((STATS_TOTAL++))
   [[ $INPLACE -eq 0 && $file == *"$SUFFIX"* ]] && { ((STATS_SKIPPED++)); return 0; }
   show_progress "$STATS_TOTAL" "${TOTAL_FILES:-$STATS_TOTAL}" "$(basename "$file")"
   case "$ext" in
@@ -325,8 +323,8 @@ process_file(){
     *) warn "Unsupported: $file"; ((STATS_SKIPPED++));;
   esac
 }
-export -f process_file optimize_image optimize_video optimize_audio optimize_png optimize_jpeg
-export -f get_size format_bytes get_output_path is_already_optimized mkbackup cache_tool select_image_target_format ffmpeg_has_encoder
+export -f process_file optimize_image optimize_video optimize_audio optimize_png optimize_jpeg \
+  get_size format_bytes get_output_path is_already_optimized mkbackup cache_tool select_image_target_format ffmpeg_has_encoder
 
 # ---- File Collection ----
 collect_files(){
@@ -345,9 +343,7 @@ collect_files(){
           [[ $RECURSIVE -eq 0 ]] && args+=(-d 1)
           mapfile -t -d '' found < <("${T[fd]}" "${args[@]}" . "$(abs_path "$item")" -0 2>/dev/null || :)
         else
-          local -a fargs=(-type f)
-          [[ $RECURSIVE -eq 0 ]] && fargs+=(-maxdepth 1)
-          local -a pats=()
+          local -a fargs=(-type f) pats=(); [[ $RECURSIVE -eq 0 ]] && fargs+=(-maxdepth 1)
           for e in "${exts[@]}"; do pats+=(-o -iname "*.$e"); done
           pats=("${pats[@]:1}")
           mapfile -t found < <(find "$(abs_path "$item")" "${fargs[@]}" \( "${pats[@]}" \) 2>/dev/null || :)
@@ -361,11 +357,10 @@ collect_files(){
 
 # ---- TUI Mode ----
 tui_select(){
-  local dir=$1
+  local dir="$1"
   cache_tool sk || cache_tool fzf || err "TUI requires sk or fzf"
-  local picker=${T[sk]:-${T[fzf]}}
-  local -a selected=()
-  mapfile -t selected < <(collect_files "$dir" | "$picker" --multi --height=80% --layout=reverse --prompt="Select files > " | tr '\0' '\n')
+  local picker=${T[sk]:-${T[fzf]}}; local -a selected=() popts=(-m --height=~80% --layout=reverse-list --cycle --inline-info --walker-skip=".git,node_modules" --prompt="Select files > " -0 -1)
+  mapfile -t selected < <(collect_files "$dir" | "$picker" "${popts[@]}" | tr '\0' '\n')
   [[ ${#selected[@]} -eq 0 ]] && { log "No selection"; exit 0; }
   printf '%s\n' "${selected[@]}"
 }
@@ -375,11 +370,11 @@ dispatch_parallel(){
   local -a files=("${@}")
   [[ ${#files[@]} -eq 0 ]] && return 0
   if cache_tool rust-parallel; then
-    printf '%s\0' "${files[@]}" | "${T[rust-parallel]}" -0 -j "$JOBS" bash -c 'process_file "$@"' _ {}
+    printf '%s\0' "${files[@]}" | "${T[rust-parallel]}" -0 -j "$JOBS" --no-run-if-empty -d stderr -p bash -c 'process_file "$@"' _ {}
   elif cache_tool parallel; then
     printf '%s\0' "${files[@]}" | "${T[parallel]}" -0 -j "$JOBS" bash -c 'process_file "$@"' _ {}
   else
-    printf '%s\0' "${files[@]}" | xargs -0 -P "$JOBS" -n 1 bash -c 'process_file "$@"' _
+    printf '%s\0' "${files[@]}" | xargs -0 -P "$JOBS" -r -n 1 bash -c 'process_file "$@"' _
   fi
 }
 
@@ -459,10 +454,8 @@ main(){
   ((VIDEO_CRF>=0 && VIDEO_CRF<=51)) || err "CRF: 0-51"
   ((AUDIO_BITRATE>=6 && AUDIO_BITRATE<=510)) || err "Bitrate: 6-510 kbps"
   [[ -n $OUTPUT_DIR ]] && mkdir -p "$OUTPUT_DIR" && OUTPUT_DIR=$(abs_path "$OUTPUT_DIR")
-  # TUI Mode
   if [[ $TUI_MODE -eq 1 ]]; then
-    local target="${1:-.}"
-    mapfile -t FILES < <(tui_select "$target")
+    local target="${1:-.}"; mapfile -t FILES < <(tui_select "$target")
   else
     mapfile -t FILES < <(collect_files "$@")
   fi
@@ -472,8 +465,7 @@ main(){
   ((JOBS>TOTAL_FILES)) && JOBS=$TOTAL_FILES
   ((JOBS<1)) && JOBS=1
   [[ $MEDIA_TYPE == "all" || $MEDIA_TYPE == "video" ]] && detect_video_codec
-  local enc_tool="ffmpeg"
-  cache_tool ffzap && enc_tool="ffzap"
+  local enc_tool="ffmpeg"; cache_tool ffzap && enc_tool="ffzap"
   log "Processing ${#FILES[@]} files (${ENV^^}) | Jobs: $JOBS | Mode: $([[ $LOSSLESS -eq 1 ]] && echo "Lossless" || echo "Lossy Q=$QUALITY")"
   [[ $DRY_RUN -eq 1 ]] && log "DRY RUN - no files modified"
   [[ -n $CONVERT_FORMAT ]] && log "Convert → $CONVERT_FORMAT"
@@ -481,8 +473,7 @@ main(){
   [[ $MEDIA_TYPE == "all" || $MEDIA_TYPE == "audio" ]] && log "Audio: Opus @ ${AUDIO_BITRATE}kbps via $enc_tool"
   if ((JOBS==1)); then
     for f in "${FILES[@]}"; do process_file "$f" || :; done
-    [[ $PROGRESS -eq 1 ]] && echo ""
-    print_stats
+    [[ $PROGRESS -eq 1 ]] && echo ""; print_stats
   else
     dispatch_parallel "${FILES[@]}"
     log "Stats unavailable in parallel mode"

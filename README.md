@@ -144,3 +144,5 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 - [Wormhole file sharing](https://wormhole.app)
 
 - [Online tools](https://tools.waytolearnx.com/en)
+
+- [FFMPEG flag generator](https://alfg.github.io/ffmpeg-commander)

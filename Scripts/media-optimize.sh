@@ -22,7 +22,7 @@ cache_tool(){
 has(){ cache_tool "$1"; }
 
 # Pre-cache critical tools
-for tool in fd:fdfind:find rg:grep sk:fzf eza:ls rust-parallel:parallel:xargs ffzap:ffmpeg; do
+for tool in fd:fdfind rg sk:fzf eza:ls rust-parallel:parallel ffzap:ffmpeg; do
   IFS=: read -r name fallback <<<"$tool"
   cache_tool "$name" "$fallback" || :
 done

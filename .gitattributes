@@ -1,16 +1,74 @@
+# Auto detect text files and normalize line endings to LF
 * text=auto eol=lf
 
-# Shell
-*.sh text eol=lf
+# =============================================================================
+# Shell Scripts
+# =============================================================================
+*.{sh,bash,bashrc,bash_profile,bash_logout,profile} text eol=lf diff=bash
+*.fish text eol=lf
+*.{zsh,zshrc,zprofile,zshenv} text eol=lf
+
+# =============================================================================
+# Programming Languages
+# =============================================================================
+*.py diff=python
+*.{js,java} diff=java
+*.lua linguist-language=Lua
+*.nix linguist-language=Nix
+
+# =============================================================================
+# Configuration & Data Formats
+# =============================================================================
+*.json diff=json
+*.jsonc diff=json linguist-language=JSONC
+*.yaml diff=yaml
+*.yml diff=yaml
+*.toml diff=toml linguist-language=TOML
+*.ron linguist-language=RON
+*.xml diff=xml
+*.html diff=html
+*.css diff=css
+*.md diff=markdown linguist-detectable linguist-documentation
+*.txt linguist-documentation
+*.{ini,cfg,conf,service,rules} text
+
+# =============================================================================
+# Binary Files
+# =============================================================================
+# Images
+*.{jpg,jpeg,webp,avif,jxl,png,gif,bmp,ico,ogg,opus,mp3,mp4,avi,mkv,flac,wav} binary diff=exif
+*.svg text
+
+# Fonts
+*.ttf binary
+
+*.{exe,dll,so} binary
+
+*.{7z,zip,rar,tar,gz,zstd,bz2} binary
+*.pdf binary
+
+# =============================================================================
+# Special Cases
+# =============================================================================
+# Makefiles must use tabs
+Makefile text eol=lf whitespace=blank-at-eol,-blank-at-eof,-space-before-tab,tab-in-indent,tabwidth=4
+
+# Patches
+*.{patch,diff} diff=patch
+
+# Git files
+.{gitignore,gitattributes,gitconfig,gitmodules,editorconfig} text
+
+# Vim swap files
+*.{swp.swo} binary
+
+# Sample files
+*.sample linguist-documentation
+
+# =============================================================================
+# Windows
+# =============================================================================
+*.ahk text eol=crlf
+*.{ps1,psm1,psd1} text eol=crlf
 *.{cmd,[cC][mM][dD]} text eol=crlf
 *.{bat,[bB][aA][tT]} text eol=crlf
-
-*.png binary
-
-# Use built-in patterns to generate smarter diff text.
-# http://urbanautomaton.com/blog/2011/07/28/git-grep-and-language-specific-diffs/
-*.js  diff=java
-*.php diff=php
-*.pl  diff=perl
-*.py  diff=python
-*.rb  diff=ruby

@@ -1,37 +1,48 @@
 #!/usr/bin/env bash
 # Unified media optimizer for Arch Linux desktop & Termux Android
 # Features: lossless/lossy, parallel, auto codec detection, TUI mode, dry-run
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C
+shopt -s nullglob globstar; IFS=$'\n\t'
+export LC_ALL=C LANG=C
 
 # ---- Colors ----
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
 # ---- Tool Cache & Wrappers ----
 declare -A T=()
 cache_tool(){
-  local tool=$1 alt=${2:-}
+  local tool="$1" alt=${2:-}
   [[ -n ${T[$tool]:-} ]] && return 0
   T[$tool]=$(command -v "$tool" 2>/dev/null || command -v "$alt" 2>/dev/null || echo "")
   [[ -n ${T[$tool]} ]]
 }
 has(){ cache_tool "$1"; }
-
 # Pre-cache critical tools
-for tool in fd:fdfind rg sk:fzf eza:ls rust-parallel:parallel ffzap:ffmpeg; do
+for tool in fd:fdfind rg:grep sk:fzf eza:ls rust-parallel:parallel ffzap:ffmpeg; do
   IFS=: read -r name fallback <<<"$tool"
   cache_tool "$name" "$fallback" || :
 done
 
 # ---- Tool Execution Wrappers ----
-run_fd(){ [[ -n ${T[fd]:-} ]] && "${T[fd]}" "$@" || find "$@"; }
-run_rg(){ [[ -n ${T[rg]:-} ]] && "${T[rg]}" "$@" || grep -E "$@"; }
+run_fd(){
+  if [[ -n ${T[fd]:-} ]]; then
+    "${T[fd]}" -tf --no-require-git "$@" 2>/dev/null
+  else
+    find -O2 -type f "$@" 2>/dev/null
+fi
+}
+run_rg(){
+  if [[ -n ${T[rg]:-} ]]; then
+    "${T[rg]}" --no-require-git --no-ignore-messages --no-messages --trim "$@" 2>/dev/null
+  else
+    grep -E "$@" 2>/dev/null
+  fi
+}
 run_parallel(){ 
   if [[ -n ${T[rust-parallel]:-} ]]; then
-    "${T[rust-parallel]}" "$@"
+    "${T[rust-parallel]}" --no-run-if-empty -d stderr "$@" 2>/dev/null
   elif [[ -n ${T[parallel]:-} ]]; then
-    "${T[parallel]}" "$@"
+    "${T[parallel]}" "$@" 2>/dev/null
   else
-    xargs -r -P"$(nproc)" "$@"
+    xargs -r -P"$(nproc)" "$@" 2>/dev/null
   fi
 }
 
@@ -41,14 +52,13 @@ warn(){ printf '%s%s%s\n' "$Y" "$*" "$X" >&2; }
 err(){ printf '%s%s%s\n' "$R" "ERROR: $*" "$X" >&2; exit "${2:-1}"; }
 get_size(){ local f=$1; [[ -f $f ]] && { stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo 0; } || echo 0; }
 format_bytes(){
-  local bytes=$1
+  local bytes="$1"
   ((bytes<1024)) && { echo "${bytes}B"; return; }
   ((bytes<1048576)) && { echo "$((bytes/1024))K"; return; }
   ((bytes<1073741824)) && { echo "$((bytes/1048576))M"; return; }
   echo "$((bytes/1073741824))G"
 }
 abs_path(){ local path=$1; [[ $path == /* ]] && echo "$path" || echo "$(cd "$(dirname "$path")" && pwd)/$(basename "$path")"; }
-
 # ---- Config / Defaults ----
 NPROC=$(nproc 2>/dev/null || echo 4)
 QUALITY=85 VIDEO_CRF=27 VIDEO_CODEC="auto" AUDIO_BITRATE=128 JOBS=0 SUFFIX="_opt"
@@ -59,7 +69,6 @@ IMAGE_CODEC_PRIORITY=("webp" "avif" "jxl" "jpg" "png")
 VIDEO_CODEC_PRIORITY=("av1" "vp9" "h265" "h264")
 declare -g STATS_TOTAL=0 STATS_PROCESSED=0 STATS_SKIPPED=0 STATS_FAILED=0
 declare -g STATS_BYTES_BEFORE=0 STATS_BYTES_AFTER=0
-
 # ---- Temp Management ----
 TEMP_DIR=$(mktemp -d -t "optimize.XXXXXX" 2>/dev/null || mktemp -d)
 cleanup(){
@@ -67,7 +76,6 @@ cleanup(){
   find /tmp -maxdepth 1 -name "optimize.*.tmp" -user "$(id -u)" -mmin +60 -delete 2>/dev/null || :
 }
 trap cleanup EXIT INT TERM
-
 # ---- Codec Detection ----
 FFMPEG_ENCODERS=""
 ffmpeg_has_encoder(){
@@ -81,7 +89,6 @@ ffmpeg_has_encoder(){
   fi
   [[ $FFMPEG_ENCODERS == *"$1"* ]]
 }
-
 detect_video_codec(){
   local req=${VIDEO_CODEC,,}
   [[ -n $req && $req != "auto" ]] && { VIDEO_CODEC=$req; return; }
@@ -96,32 +103,32 @@ detect_video_codec(){
 # ---- Backup ----
 mkbackup(){
   [[ $KEEP_BACKUPS -eq 0 ]] && return 0
-  local file=$1 bakdir="$(dirname "$file")/.backups"
+  local file="$1"; local bakdir="$(dirname "$file")/.backups"
   mkdir -p "$bakdir" 2>/dev/null || return 1
   cp -p "$file" "$bakdir/" 2>/dev/null || warn "Backup failed: $(basename "$file")"
 }
 # ---- Output Path ----
 get_output_path(){
-  local src="$1" fmt=$2 base="${src##*/}" name="${base%.*}" ext="${base##*.}"
-  local dir="${OUTPUT_DIR:-${src%/*}}"
+  local src="$1" fmt="$2"; local base="${src##*/}"; local name="${base%.*}" ext="${base##*.}"; local dir="${OUTPUT_DIR:-${src%/*}}"
   if [[ -n $fmt && $fmt != "${ext,,}" ]]; then echo "$dir/${name}.${fmt}"
   elif [[ $INPLACE -eq 1 ]]; then echo "$dir/$base"
   else echo "$dir/${name}${SUFFIX}.${ext}"; fi
 }
 # ---- Already Optimized Check ----
 is_already_optimized(){
-  local file=$1 ext="${file##*.}" && ext="${ext,,}"
+  local file="$1"; local ext="${file##*.}" && ext="${ext,,}"
   [[ $file == *"$SUFFIX"* ]] && return 0
   case "$ext" in
     webp|avif|jxl) return 0;;
     jpg|jpeg) cache_tool identify && { local q=$(identify -format '%Q' "$file" 2>/dev/null || echo 100); ((q<90)) && return 0; };;
+    *) return 1;;
   esac; return 1
 }
 
 # ---- Progress ----
 show_progress(){
   [[ $PROGRESS -eq 0 ]] && return
-  local cur=$1 tot=$2 msg=${3:-}; local pct=$((cur*100/tot)) bar_len=40 filled=$((pct*bar_len/100)) empty=$((bar_len-filled))
+  local cur="$1" tot="$2" msg=${3:-} bar_len=40; local pct=$((cur*100/tot)); local filled=$((pct*bar_len/100)); local empty=$((bar_len-filled))
   printf '\r[%*s%*s] %3d%% (%d/%d) %s' "$filled" '' "$empty" '' "$pct" "$cur" "$tot" "$msg" | tr ' ' '='
 }
 print_stats(){
@@ -136,17 +143,16 @@ print_stats(){
 # ---- Image Optimization ----
 optimize_png(){
   local src="$1" out="$2"; local tmp="${TEMP_DIR}/$(basename "$out").tmp" orig=$(get_size "$src") success=0; cp "$src" "$tmp"
-  if cache_tool oxipng; then
-    oxipng -o max -a --scale16 --fast -Z --zi 25 -s --fix -p -q "$tmp" 2>/dev/null && success=1
-    [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=85-"$QUALITY" --strip --speed 1 --skip-if-larger -f "$tmp" -o "${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp" || :
-  elif cache_tool rimage; then
+  if cache_tool rimage && [[ $LOSSLESS -eq 0 ]]; then
     rimage oxipng --progressive -x --quiet --effort 6 --interlace -d "$TEMP_DIR" -- "$tmp" 2>/dev/null && success=1
-    [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=85-"$QUALITY" --strip --speed 1 --skip-if-larger -f "$tmp" -o "${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp" || :
+  elif cache_tool flaca && [[ $LOSSLESS -eq 0 ]]; then
+    flaca --no-symlinks --preserve-times -p "$tmp" 2>/dev/null || :
+  elif cache_tool oxipng; then
+    oxipng -o max -a --scale16 --fast -Z --zi 25 -s --fix -p -q "$tmp" 2>/dev/null && success=1
   elif cache_tool optipng; then
     optipng -o7 -strip all -fix -force -clobber -preserve -quiet -- "$tmp" 2>/dev/null && success=1
-    [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=85-"$QUALITY" --strip --speed 1 --skip-if-larger -f "$tmp" -o "${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp" || :
   fi
-  cache_tool flaca && flaca --no-symlinks --preserve-times -p "$tmp" &>/dev/null || :
+  [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=85-"$QUALITY" --strip --speed 1 --skip-if-larger -f "$tmp" -o "${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp" || :
   [[ $success -eq 1 ]] && mv "$tmp" "$out" && echo "$((orig-$(get_size "$out")))" || { rm -f "$tmp"; return 1; }
 }
 optimize_jpeg(){
@@ -154,13 +160,12 @@ optimize_jpeg(){
   if cache_tool jpegoptim; then
     [[ $LOSSLESS -eq 1 ]] && jpegoptim -s --auto-mode -p -f --stdout "$src" >"$tmp" 2>/dev/null && success=1
     [[ $LOSSLESS -eq 0 ]] && jpegoptim --max="$QUALITY" -s --auto-mode -p -f --stdout "$src" >"$tmp" 2>/dev/null && success=1
+  elif cache_tool flaca; then
+    flaca --no-symlinks --preserve-times -p "$tmp" 2>/dev/null && success=1
+  elif cache_tool rimage; then
+    rimage mozjpeg --multipass -x --quiet -- "$tmp" 2>/dev/null && success=1
   elif cache_tool cjpeg; then
     cjpeg -quality "$QUALITY" -optimize "$src" >"$tmp" 2>/dev/null && success=1
-  fi
-  cache_tool flaca && flaca --no-symlinks --preserve-times -p "$tmp" &>/dev/null || :
-  if cache_tool rimage
-    rimage mozjpeg --multipass -x --quiet -- "$tmp" 2>/dev/null && success=1
-    rimage jpeg --progressive -x --quiet -- "$tmp" 2>/dev/null && success=1
   fi
   [[ $success -eq 1 ]] && mv "$tmp" "$out" && echo "$((orig-$(get_size "$out")))" || { rm -f "$tmp"; return 1; }
 }
@@ -190,7 +195,7 @@ select_image_target_format(){
 }
 
 optimize_image(){
-  local src="$1" ext="${src##*.}" && ext="${ext,,}" out fmt
+  local src="$1" out fmt; local ext="${src##*.}" && ext="${ext,,}"
   [[ $SKIP_EXISTING -eq 1 ]] && is_already_optimized "$src" && { ((STATS_SKIPPED++)); return 0; }
   fmt=$(select_image_target_format "$ext")
   out=$(get_output_path "$src" "$fmt")
@@ -238,7 +243,7 @@ optimize_image(){
 
 # ---- Video Optimization ----
 optimize_video(){
-  local src="$1" ext="${src##*.}" out=$(get_output_path "$src" "$ext")
+  local src="$1"; local ext="${src##*.}"; local out=$(get_output_path "$src" "$ext")
   [[ -f $out && $KEEP_ORIGINAL -eq 1 && $INPLACE -eq 0 ]] && return 0
   local orig=$(get_size "$src")
   log "Processing video: $(basename "$src")"
@@ -264,7 +269,7 @@ optimize_video(){
   [[ $success -eq 0 ]] && { warn "Video optimization failed"; return 1; }
   local new=$(get_size "$out")
   ((new>0 && new<orig)) && {
-    local saved=$((orig-new)) pct=$((saved*100/orig))
+    local saved=$((orig-new)); local pct=$((saved*100/orig))
     printf '%s → %s | %s → %s (%d%%) [%s/%s]\n' "$(basename "$src")" "$(basename "$out")" "$(format_bytes "$orig")" "$(format_bytes "$new")" "$pct" "$tool" "$VIDEO_CODEC"
     [[ $INPLACE -eq 1 || $KEEP_ORIGINAL -eq 0 ]] && mkbackup "$src" && [[ $src != "$out" ]] && rm -f "$src"
   } || { warn "No savings"; rm -f "$out"; return 1; }
@@ -272,7 +277,7 @@ optimize_video(){
 
 # ---- Audio Optimization ----
 optimize_audio(){
-  local src="$1" ext="${src##*.}" && ext="${ext,,}" out
+  local src="$1" out; local ext="${src##*.}" && local ext="${ext,,}"
   if [[ $ext == "opus" ]]; then
     out=$(get_output_path "$src" "$ext")
     [[ -f $out && $KEEP_ORIGINAL -eq 1 && $INPLACE -eq 0 ]] && return 0
@@ -293,7 +298,7 @@ optimize_audio(){
       opusenc --bitrate "$AUDIO_BITRATE" --downmix-stereo --discard-comments --quiet "$src" "$out" &>/dev/null || return 1
     elif cache_tool ffzap || cache_tool ffmpeg; then
       local tool=${T[ffzap]:-${T[ffmpeg]}}
-      local -a ffopts=(-c:a libopus -b:a ${AUDIO_BITRATE}k -vbr on -rematrix_maxval 1.0 -ac 2 -y -progress pipe:1 -hide_banner -y -loglevel error)
+      local -a ffopts=(-c:a libopus -b:a "${AUDIO_BITRATE}"k -vbr on -rematrix_maxval 1.0 -ac 2 -y -progress pipe:1 -hide_banner -y -loglevel error)
       if [[ $(basename "$tool") == "ffzap" ]]; then
         "$tool" -i "$src" -f "${ffopts[*]}" -o "$out" -t "${FF_THREAD:-2}" &>/dev/null || return 1
       else
@@ -302,7 +307,7 @@ optimize_audio(){
   fi
   local new=$(get_size "$out")
   ((new<orig)) && {
-    local saved=$((orig-new)) pct=$((saved*100/orig))
+    local saved=$((orig-new)); local pct=$((saved*100/orig))
     printf '%s → %s | %s → %s (%d%%)\n' "$(basename "$src")" "$(basename "$out")" "$(format_bytes "$orig")" "$(format_bytes "$new")" "$pct"
     [[ $INPLACE -eq 1 || $KEEP_ORIGINAL -eq 0 ]] && mkbackup "$src" && [[ $src != "$out" ]] && rm -f "$src"
   }
@@ -310,7 +315,7 @@ optimize_audio(){
 
 # ---- Process File ----
 process_file(){
-  local file=$1 ext="${file##*.}" && ext="${ext,,}"; ((STATS_TOTAL++))
+  local file="$1"; local ext="${file##*.}" && local ext="${ext,,}"; ((STATS_TOTAL++))
   [[ $INPLACE -eq 0 && $file == *"$SUFFIX"* ]] && { ((STATS_SKIPPED++)); return 0; }
   show_progress "$STATS_TOTAL" "${TOTAL_FILES:-$STATS_TOTAL}" "$(basename "$file")"
   case "$ext" in
@@ -370,7 +375,7 @@ dispatch_parallel(){
   local -a files=("${@}")
   [[ ${#files[@]} -eq 0 ]] && return 0
   if cache_tool rust-parallel; then
-    printf '%s\0' "${files[@]}" | "${T[rust-parallel]}" -0 -j "$JOBS" --no-run-if-empty -d stderr -p bash -c 'process_file "$@"' _ {}
+    printf '%s\0' "${files[@]}" | "${T[rust-parallel]}" -0 --no-run-if-empty -d stderr -p bash -c 'process_file "$@"' _ {}
   elif cache_tool parallel; then
     printf '%s\0' "${files[@]}" | "${T[parallel]}" -0 -j "$JOBS" bash -c 'process_file "$@"' _ {}
   else

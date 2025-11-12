@@ -55,7 +55,7 @@ debloat_debian(){
   [[ -x /etc/cron.daily/popularity-contest ]] && sudo chmod -x "/etc/cron.daily/popularity-contest"
   # Cleanup
   echo "Running apt cleanup..."
-  sudo apt-get autoclean -y; sudo apt-get autoremove -y
+  sudo apt-get autoclean -y; sudo apt-get autoremove -y --purge
 }
 
 # --- Main Execution ---

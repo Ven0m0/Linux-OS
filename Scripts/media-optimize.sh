@@ -4,14 +4,6 @@
 set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'; export LC_ALL=C LANG=C
 
-# ---- Environment Detection ----
-if [[ -n ${TERMUX_VERSION:-} || -d /data/data/com.termux ]]; then
-  ENV="termux"
-  HOME="${HOME:-/data/data/com.termux/files/home}"
-else
-  ENV="desktop"
-fi
-
 # ---- Colors ----
 if [[ -t 1 ]]; then
   R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'

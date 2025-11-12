@@ -5,12 +5,7 @@ set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'; export LC_ALL=C LANG=C
 
 # ---- Colors ----
-if [[ -t 1 ]]; then
-  R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
-else
-  R= G= Y= B= X=
-fi
-
+R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
 # ---- Tool Cache & Wrappers ----
 declare -A T=()
 cache_tool(){
@@ -44,12 +39,7 @@ run_parallel(){
 log(){ printf '%s\n' "$*"; }
 warn(){ printf '%s%s%s\n' "$Y" "$*" "$X" >&2; }
 err(){ printf '%s%s%s\n' "$R" "ERROR: $*" "$X" >&2; exit "${2:-1}"; }
-
-get_size(){
-  local f=$1
-  [[ -f $f ]] && { stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo 0; } || echo 0
-}
-
+get_size(){ local f=$1; [[ -f $f ]] && { stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo 0; } || echo 0; }
 format_bytes(){
   local bytes=$1
   ((bytes<1024)) && { echo "${bytes}B"; return; }
@@ -57,20 +47,16 @@ format_bytes(){
   ((bytes<1073741824)) && { echo "$((bytes/1048576))M"; return; }
   echo "$((bytes/1073741824))G"
 }
-
-abs_path(){
-  local path=$1
-  [[ $path == /* ]] && echo "$path" || echo "$(cd "$(dirname "$path")" && pwd)/$(basename "$path")"
-}
+abs_path(){ local path=$1; [[ $path == /* ]] && echo "$path" || echo "$(cd "$(dirname "$path")" && pwd)/$(basename "$path")"; }
 
 # ---- Config / Defaults ----
-NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+NPROC=$(nproc 2>/dev/null || echo 4)
 QUALITY=85 VIDEO_CRF=27 VIDEO_CODEC="auto" AUDIO_BITRATE=128 JOBS=0 SUFFIX="_opt"
 KEEP_ORIGINAL=0 INPLACE=0 RECURSIVE=0 CONVERT_FORMAT="" LOSSLESS=1 OUTPUT_DIR=""
 MEDIA_TYPE="all" DRY_RUN=0 SKIP_EXISTING=0 PROGRESS=1 MIN_SAVINGS=0 TUI_MODE=0 KEEP_BACKUPS=1
 WEBP_QUALITY=85 AVIF_SPEED=6 AVIF_QUAL=60
 IMAGE_CODEC_PRIORITY=("webp" "avif" "jxl" "jpg" "png")
-
+VIDEO_CODEC_PRIORITY=("av1" "vp9" "h265" "h264")
 declare -g STATS_TOTAL=0 STATS_PROCESSED=0 STATS_SKIPPED=0 STATS_FAILED=0
 declare -g STATS_BYTES_BEFORE=0 STATS_BYTES_AFTER=0
 
@@ -85,7 +71,7 @@ trap cleanup EXIT INT TERM
 # ---- Codec Detection ----
 FFMPEG_ENCODERS=""
 ffmpeg_has_encoder(){
-  cache_tool ffmpeg || cache_tool ffzap || return 1
+  cache_tool ffzap || cache_tool ffmpeg || return 1
   if [[ -z $FFMPEG_ENCODERS ]]; then
     if [[ -n ${T[ffmpeg]:-} ]]; then
       FFMPEG_ENCODERS=$("${T[ffmpeg]}" -hide_banner -encoders 2>/dev/null || :)
@@ -102,7 +88,6 @@ detect_video_codec(){
   if ffmpeg_has_encoder libsvtav1 || ffmpeg_has_encoder libaom-av1; then VIDEO_CODEC="av1"
   elif ffmpeg_has_encoder libvpx-vp9; then VIDEO_CODEC="vp9"
   elif ffmpeg_has_encoder libx265; then VIDEO_CODEC="h265"
-  elif ffmpeg_has_encoder libx264; then VIDEO_CODEC="h264"
   else VIDEO_CODEC="vp9"; fi
 }
 
@@ -116,7 +101,7 @@ mkbackup(){
 
 # ---- Output Path ----
 get_output_path(){
-  local src=$1 fmt=$2 base="${src##*/}" name="${base%.*}" ext="${base##*.}"
+  local src="$1" fmt=$2 base="${src##*/}" name="${base%.*}" ext="${base##*.}"
   local dir="${OUTPUT_DIR:-${src%/*}}"
   if [[ -n $fmt && $fmt != "${ext,,}" ]]; then echo "$dir/${name}.${fmt}"
   elif [[ $INPLACE -eq 1 ]]; then echo "$dir/$base"
@@ -129,23 +114,16 @@ is_already_optimized(){
   [[ $file == *"$SUFFIX"* ]] && return 0
   case "$ext" in
     webp|avif|jxl) return 0;;
-    jpg|jpeg)
-      if cache_tool identify; then
-        local q=$(identify -format '%Q' "$file" 2>/dev/null || echo 100)
-        ((q<90)) && return 0
-      fi;;
-  esac
-  return 1
+    jpg|jpeg) cache_tool identify && { local q=$(identify -format '%Q' "$file" 2>/dev/null || echo 100); ((q<90)) && return 0; };;
+  esac; return 1
 }
 
 # ---- Progress ----
 show_progress(){
   [[ $PROGRESS -eq 0 ]] && return
-  local cur=$1 tot=$2 msg=${3:-}
-  local pct=$((cur*100/tot)) bar_len=40 filled=$((pct*bar_len/100)) empty=$((bar_len-filled))
+  local cur=$1 tot=$2 msg=${3:-}; local pct=$((cur*100/tot)) bar_len=40 filled=$((pct*bar_len/100)) empty=$((bar_len-filled))
   printf '\r[%*s%*s] %3d%% (%d/%d) %s' "$filled" '' "$empty" '' "$pct" "$cur" "$tot" "$msg" | tr ' ' '='
 }
-
 print_stats(){
   log "" "=== Statistics ==="
   log "Total: $STATS_TOTAL | Processed: $STATS_PROCESSED | Skipped: $STATS_SKIPPED | Failed: $STATS_FAILED"
@@ -157,30 +135,43 @@ print_stats(){
 
 # ---- Image Optimization ----
 optimize_png(){
-  local src=$1 out=$2 tmp="${TEMP_DIR}/$(basename "$out").tmp" orig=$(get_size "$src") success=0
-  cp "$src" "$tmp"
+  local src="$1" out="$2"; local tmp="${TEMP_DIR}/$(basename "$out").tmp" orig=$(get_size "$src") success=0; cp "$src" "$tmp"
   if cache_tool oxipng; then
-    oxipng -o6 --strip safe -q "$tmp" &>/dev/null && success=1
-    [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=65-"$QUALITY" --strip --speed 1 -f "$tmp" -o "${tmp}.2" &>/dev/null && mv "${tmp}.2" "$tmp" || :
+    oxipng -o max -a --scale16 --fast -Z --zi 25 -s --fix -p -q "$tmp" 2>/dev/null && success=1
+    [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=85-"$QUALITY" --strip --speed 1 --skip-if-larger -f "$tmp" -o "${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp" || :
+  elif cache_tool rimage; then
+    rimage oxipng --progressive -x --quiet --effort 6 --interlace -d "$TEMP_DIR" -- "$tmp" 2>/dev/null && success=1
+    [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=85-"$QUALITY" --strip --speed 1 --skip-if-larger -f "$tmp" -o "${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp" || :
   elif cache_tool optipng; then
-    optipng -o7 -strip all -quiet "$tmp" &>/dev/null && success=1
-    [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=65-"$QUALITY" --strip --speed 1 -f "$src" -o "$tmp" &>/dev/null || :
+    optipng -o7 -strip all -fix -force -clobber -preserve -quiet -- "$tmp" 2>/dev/null && success=1
+    [[ $LOSSLESS -eq 0 ]] && cache_tool pngquant && pngquant --quality=85-"$QUALITY" --strip --speed 1 --skip-if-larger -f "$tmp" -o "${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp" || :
   fi
-  cache_tool flaca && flaca --no-symlinks --preserve-times "$tmp" &>/dev/null || :
+  cache_tool flaca && flaca --no-symlinks --preserve-times -p "$tmp" &>/dev/null || :
   [[ $success -eq 1 ]] && mv "$tmp" "$out" && echo "$((orig-$(get_size "$out")))" || { rm -f "$tmp"; return 1; }
 }
-
 optimize_jpeg(){
-  local src=$1 out=$2 tmp="${TEMP_DIR}/$(basename "$out").tmp" orig=$(get_size "$src") success=0
+  local src="$1" out="$2"; local tmp="${TEMP_DIR}/$(basename "$out").tmp" orig=$(get_size "$src") success=0; cp "$src" "$tmp"
   if cache_tool jpegoptim; then
-    [[ $LOSSLESS -eq 1 ]] && jpegoptim --strip-all --all-progressive --stdout "$src" >"$tmp" 2>/dev/null && success=1
-    [[ $LOSSLESS -eq 0 ]] && jpegoptim --max="$QUALITY" --strip-all --all-progressive --stdout "$src" >"$tmp" 2>/dev/null && success=1
+    [[ $LOSSLESS -eq 1 ]] && jpegoptim -s --auto-mode -p -f --stdout "$src" >"$tmp" 2>/dev/null && success=1
+    [[ $LOSSLESS -eq 0 ]] && jpegoptim --max="$QUALITY" -s --auto-mode -p -f --stdout "$src" >"$tmp" 2>/dev/null && success=1
   elif cache_tool cjpeg; then
     cjpeg -quality "$QUALITY" -optimize "$src" >"$tmp" 2>/dev/null && success=1
   fi
-  cache_tool flaca && flaca --no-symlinks --preserve-times "$tmp" &>/dev/null || :
-  cache_tool rimage && rimage -i "$tmp" -o "${tmp}.r" &>/dev/null && mv -f "${tmp}.r" "$tmp" || :
+  cache_tool flaca && flaca --no-symlinks --preserve-times -p "$tmp" &>/dev/null || :
+  if cache_tool rimage
+    rimage mozjpeg --multipass -x --quiet -- "$tmp" 2>/dev/null && success=1
+    rimage jpeg --progressive -x --quiet -- "$tmp" 2>/dev/null && success=1
+  fi
   [[ $success -eq 1 ]] && mv "$tmp" "$out" && echo "$((orig-$(get_size "$out")))" || { rm -f "$tmp"; return 1; }
+}
+optimize_webp(){
+  local src="$1" out="$2"; local tmp="${TEMP_DIR}/$(basename "$out").tmp" orig=$(get_size "$src") success=0; cp "$src" "$tmp"
+  if cache_tool rimage; then
+    [[ $LOSSLESS -eq 1 ]] && rimage webp --lossless -x -- "$tmp" 2>/dev/null && success=1
+    [[ $LOSSLESS -eq 0 ]] && rimage webp -q "$QUALITY" -x -- "$tmp" 2>/dev/null && success=1
+  fi
+  [[ $LOSSLESS -eq 1 ]] && cwebp -near_lossless 98 -z 9 -sns 75 -pass 10 -progress -short "$src" -o "$tmp" 2>/dev/null && success=1
+  [[ $LOSSLESS -eq 0 ]] && cwebp -q "$QUALITY" -m 6 -alpha_q 90 -alpha_filter best -sns 75 -pass 10 -mt -af -progress -short "$src" -o "$tmp" 2>/dev/null && success=1
 }
 
 select_image_target_format(){
@@ -199,7 +190,7 @@ select_image_target_format(){
 }
 
 optimize_image(){
-  local src=$1 ext="${src##*.}" && ext="${ext,,}" out fmt
+  local src="$1" ext="${src##*.}" && ext="${ext,,}" out fmt
   [[ $SKIP_EXISTING -eq 1 ]] && is_already_optimized "$src" && { ((STATS_SKIPPED++)); return 0; }
   fmt=$(select_image_target_format "$ext")
   out=$(get_output_path "$src" "$fmt")
@@ -212,12 +203,11 @@ optimize_image(){
   if [[ $fmt != "$ext" ]]; then
     local tmp="${out}.tmp" success=0
     case "$fmt" in
-      webp) cache_tool cwebp && cwebp -q "$QUALITY" -m 6 -mt -af "$src" -o "$tmp" &>/dev/null && success=1;;
       avif) cache_tool avifenc && avifenc -s "$AVIF_SPEED" -j "$NPROC" --min 0 --max "$AVIF_QUAL" "$src" "$tmp" &>/dev/null && success=1;;
       jxl)
         if cache_tool cjxl; then
-          [[ $LOSSLESS -eq 1 ]] && cjxl "$src" "$tmp" -d 0 -e 7 &>/dev/null && success=1
-          [[ $LOSSLESS -eq 0 ]] && cjxl "$src" "$tmp" -q "$QUALITY" -e 7 &>/dev/null && success=1
+          [[ $LOSSLESS -eq 1 ]] && cjxl "$src" "$tmp" -d 0 -e 7 -short >/dev/null && success=1
+          [[ $LOSSLESS -eq 0 ]] && cjxl "$src" "$tmp" -q "$QUALITY" -e 7 >/dev/null && success=1
         fi;;
     esac
     [[ $success -eq 1 ]] && mv "$tmp" "$out" || { warn "Conversion to $fmt failed"; rm -f "$tmp"; return 1; }
@@ -227,7 +217,7 @@ optimize_image(){
       jpg|jpeg) optimize_jpeg "$src" "$out" >/dev/null || return 1;;
       gif) cache_tool gifsicle && gifsicle -O3 "$src" -o "$out" &>/dev/null || cp "$src" "$out";;
       svg) cache_tool svgo && svgo -i "$src" -o "$out" &>/dev/null || cache_tool scour && scour -i "$src" -o "$out" --enable-id-stripping &>/dev/null || cp "$src" "$out";;
-      webp) cache_tool cwebp && cwebp -q "$QUALITY" -m 6 -mt "$src" -o "$out" &>/dev/null || cp "$src" "$out";;
+      webp) optimize_webp "$src" "$out" >/dev/null || return 1;;
       avif) cache_tool avifenc && avifenc -s "$AVIF_SPEED" -j "$NPROC" --min 0 --max "$AVIF_QUAL" "$src" "$out" &>/dev/null || cp "$src" "$out";;
       jxl) cache_tool cjxl && cjxl "$src" "$out" -d 0 -e 7 &>/dev/null || cp "$src" "$out";;
       *) warn "Unsupported: $ext"; return 1;;
@@ -248,7 +238,7 @@ optimize_image(){
 
 # ---- Video Optimization ----
 optimize_video(){
-  local src=$1 ext="${src##*.}" out=$(get_output_path "$src" "$ext")
+  local src="$1" ext="${src##*.}" out=$(get_output_path "$src" "$ext")
   [[ -f $out && $KEEP_ORIGINAL -eq 1 && $INPLACE -eq 0 ]] && return 0
   local orig=$(get_size "$src")
   log "Processing video: $(basename "$src")"
@@ -281,7 +271,7 @@ optimize_video(){
 
 # ---- Audio Optimization ----
 optimize_audio(){
-  local src=$1 ext="${src##*.}" && ext="${ext,,}" out
+  local src="$1" ext="${src##*.}" && ext="${ext,,}" out
   if [[ $ext == "opus" ]]; then
     out=$(get_output_path "$src" "$ext")
     [[ -f $out && $KEEP_ORIGINAL -eq 1 && $INPLACE -eq 0 ]] && return 0

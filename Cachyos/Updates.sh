@@ -1,12 +1,81 @@
 #!/usr/bin/env bash
 # Standalone system update script for Arch-based systems.
-# Source common library
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/common.sh
-source "${SCRIPT_DIR}/lib/common.sh" || exit 1
+
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
+
+# Color definitions
+GRN=$'\e[32m'
+BLU=$'\e[34m'
+DEF=$'\e[0m'
 
 # Override HOME for SUDO_USER context
 export HOME="/home/${SUDO_USER:-$USER}"
+
+# Check if command exists
+has(){ command -v "$1" &>/dev/null; }
+
+# Logging function
+log(){ printf '%b\n' "$*"; }
+
+# Detect available privilege escalation tool
+get_priv_cmd(){
+  local cmd
+  for cmd in sudo-rs sudo doas; do
+    if has "$cmd"; then
+      printf '%s' "$cmd"
+      return 0
+    fi
+  done
+  [[ $EUID -eq 0 ]] || { echo "No privilege tool found and not running as root" >&2; exit 1; }
+  printf ''
+}
+
+# Initialize privilege tool
+init_priv(){
+  local priv_cmd; priv_cmd=$(get_priv_cmd)
+  [[ -n $priv_cmd && $EUID -ne 0 ]] && "$priv_cmd" -v
+  printf '%s' "$priv_cmd"
+}
+
+# Run command with privilege escalation
+run_priv(){
+  local priv_cmd="${PRIV_CMD:-}"
+  [[ -z $priv_cmd ]] && priv_cmd=$(get_priv_cmd)
+  if [[ $EUID -eq 0 || -z $priv_cmd ]]; then
+    "$@"
+  else
+    "$priv_cmd" -- "$@"
+  fi
+}
+
+# Package manager detection with caching
+_PKG_MGR_CACHED=""
+_AUR_OPTS_CACHED=()
+
+get_pkg_manager(){
+  if [[ -z $_PKG_MGR_CACHED ]]; then
+    local pkgmgr
+    if has paru; then
+      pkgmgr=paru
+      _AUR_OPTS_CACHED=(--batchinstall --combinedupgrade --nokeepsrc)
+    elif has yay; then
+      pkgmgr=yay
+      _AUR_OPTS_CACHED=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
+    else
+      pkgmgr=pacman
+      _AUR_OPTS_CACHED=()
+    fi
+    _PKG_MGR_CACHED=$pkgmgr
+  fi
+  printf '%s\n' "$_PKG_MGR_CACHED"
+}
+
+get_aur_opts(){
+  [[ -z $_PKG_MGR_CACHED ]] && get_pkg_manager >/dev/null
+  printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
+}
 
 main(){
   # Initialize privilege tool

@@ -1,15 +1,62 @@
 #!/usr/bin/env bash
-# Source shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/lib/common.sh"
-source "${SCRIPT_DIR}/lib/cleaning.sh"
-source "${SCRIPT_DIR}/lib/text.sh"
 
 # Setup environment
-setup_environment
+set -euo pipefail
+shopt -s nullglob globstar execfail
+IFS=$'\n\t'
 
 # Initialize working directory
-init_workdir
+WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$WORKDIR" || {
+  echo "Failed to change to working directory: $WORKDIR" >&2
+  exit 1
+}
+
+# Color constants for terminal output
+LBLU=$'\e[38;5;117m'
+PNK=$'\e[38;5;218m'
+BWHT=$'\e[97m'
+DEF=$'\e[0m'
+
+# Check if a command exists
+has() {
+  command -v -- "$1" &>/dev/null
+}
+
+# Display colorized banner with gradient effect
+display_banner() {
+  local banner_text="$1"
+  shift
+  local -a flag_colors=("$@")
+
+  mapfile -t banner_lines <<<"$banner_text"
+  local lines=${#banner_lines[@]}
+  local segments=${#flag_colors[@]}
+
+  if ((lines <= 1)); then
+    for line in "${banner_lines[@]}"; do
+      printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
+    done
+  else
+    for i in "${!banner_lines[@]}"; do
+      local segment_index=$((i * (segments - 1) / (lines - 1)))
+      ((segment_index >= segments)) && segment_index=$((segments - 1))
+      printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
+    done
+  fi
+}
+
+# Clean APT package manager cache
+clean_apt_cache() {
+  sudo apt-get clean -yq
+  sudo apt-get autoclean -yq
+  sudo apt-get autoremove --purge -yq
+}
+
+# Load DietPi globals if available
+load_dietpi_globals() {
+  [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
+}
 
 #============ Banner ====================
 banner=$(

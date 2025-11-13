@@ -1,14 +1,69 @@
 #!/usr/bin/env bash
-# Source shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../lib/common.sh"
-source "${SCRIPT_DIR}/../lib/cleaning.sh"
 
 # Setup environment
-setup_environment
+set -euo pipefail
+shopt -s nullglob globstar execfail
+IFS=$'\n\t'
 
 # Install packages without user interaction
 export DEBIAN_FRONTEND=noninteractive
+
+# Configure dpkg to exclude documentation and locales
+configure_dpkg_nodoc() {
+  local dpkg_config='path-exclude /usr/share/doc/*
+path-exclude /usr/share/help/*
+path-exclude /usr/share/man/*
+path-exclude /usr/share/groff/*
+path-exclude /usr/share/info/*
+path-exclude /usr/share/lintian/*
+path-exclude /usr/share/linda/*
+# we need to keep copyright files for legal reasons
+path-include /usr/share/doc/*/copyright'
+
+  echo "$dpkg_config" | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null
+  echo "Configured dpkg to exclude documentation in future installations"
+}
+
+# Remove system documentation files
+clean_documentation() {
+  echo "Removing documentation files..."
+  find /usr/share/doc/ -depth -type f ! -name copyright -delete 2>/dev/null || :
+  find /usr/share/doc/ -name '*.gz' -delete 2>/dev/null || :
+  find /usr/share/doc/ -name '*.pdf' -delete 2>/dev/null || :
+  find /usr/share/doc/ -name '*.tex' -delete 2>/dev/null || :
+  find /usr/share/doc/ -type d -empty -delete 2>/dev/null || :
+
+  echo "Removing man pages and related files..."
+  sudo rm -rf /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* \
+    /usr/share/linda/* /var/cache/man/* /usr/share/man/* 2>/dev/null || :
+}
+
+# Clean APT package manager cache
+clean_apt_cache() {
+  sudo apt-get clean -yq
+  sudo apt-get autoclean -yq
+  sudo apt-get autoremove --purge -yq
+}
+
+# Clean system cache directories
+clean_cache_dirs() {
+  sudo rm -rf /tmp/* 2>/dev/null || :
+  sudo rm -rf /var/tmp/* 2>/dev/null || :
+  sudo rm -rf /var/cache/apt/archives/* 2>/dev/null || :
+  rm -rf ~/.cache/* 2>/dev/null || :
+  sudo rm -rf /root/.cache/* 2>/dev/null || :
+  rm -rf ~/.thumbnails/* 2>/dev/null || :
+  rm -rf ~/.cache/thumbnails/* 2>/dev/null || :
+}
+
+# Clean shell and Python history files
+clean_history_files() {
+  rm -f ~/.python_history 2>/dev/null || :
+  sudo rm -f /root/.python_history 2>/dev/null || :
+  rm -f ~/.bash_history 2>/dev/null || :
+  sudo rm -f /root/.bash_history 2>/dev/null || :
+  history -c 2>/dev/null || :
+}
 
 echo "### Reducing the size of the installation ###"
 

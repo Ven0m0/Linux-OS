@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
-# Source common library
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../lib/common.sh
-source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
+
+# Color definitions
+YLW=$'\e[33m'
+MGN=$'\e[35m'
+GRN=$'\e[32m'
+CYN=$'\e[36m'
+DEF=$'\e[0m'
+
+# Check if command exists
+has(){ command -v "$1" &>/dev/null; }
 
 # Override HOME for SUDO_USER context
 export HOME="/home/${SUDO_USER:-$USER}"

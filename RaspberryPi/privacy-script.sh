@@ -1,13 +1,64 @@
 #!/usr/bin/env bash
 # https://privacy.sexy — v0.13.8 — Mon, 19 May 2025 19:20:17 GMT
 
-# Source shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/lib/common.sh"
-source "${SCRIPT_DIR}/lib/cleaning.sh"
+# Check if a command exists
+has() {
+  command -v -- "$1" &>/dev/null
+}
 
-# Require root privileges
-require_root "$@"
+# Require root privileges - auto-elevate if needed
+if [[ $EUID -ne 0 ]]; then
+  script_path=$([[ ${BASH_SOURCE[0]} == /* ]] && echo "${BASH_SOURCE[0]}" || echo "$PWD/${BASH_SOURCE[0]}")
+  sudo "$script_path" "$@" || {
+    echo 'Administrator privileges are required.' >&2
+    exit 1
+  }
+  exit 0
+fi
+
+# Clean crash dumps and core dumps
+clean_crash_dumps() {
+  if command -v coredumpctl >/dev/null 2>&1; then
+    sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
+  fi
+  sudo rm -rf /var/crash/* 2>/dev/null || :
+  sudo rm -rf /var/lib/systemd/coredump/* 2>/dev/null || :
+}
+
+# Clean APT package manager cache
+clean_apt_cache() {
+  sudo apt-get clean -yq
+  sudo apt-get autoclean -yq
+  sudo apt-get autoremove --purge -yq
+}
+
+# Clean system cache directories
+clean_cache_dirs() {
+  sudo rm -rf /tmp/* 2>/dev/null || :
+  sudo rm -rf /var/tmp/* 2>/dev/null || :
+  sudo rm -rf /var/cache/apt/archives/* 2>/dev/null || :
+  rm -rf ~/.cache/* 2>/dev/null || :
+  sudo rm -rf /root/.cache/* 2>/dev/null || :
+  rm -rf ~/.thumbnails/* 2>/dev/null || :
+  rm -rf ~/.cache/thumbnails/* 2>/dev/null || :
+}
+
+# Empty trash directories
+clean_trash() {
+  rm -rf ~/.local/share/Trash/* 2>/dev/null || :
+  sudo rm -rf /root/.local/share/Trash/* 2>/dev/null || :
+  rm -rf ~/snap/*/*/.local/share/Trash/* 2>/dev/null || :
+  rm -rf ~/.var/app/*/data/Trash/* 2>/dev/null || :
+}
+
+# Clean shell and Python history files
+clean_history_files() {
+  rm -f ~/.python_history 2>/dev/null || :
+  sudo rm -f /root/.python_history 2>/dev/null || :
+  rm -f ~/.bash_history 2>/dev/null || :
+  sudo rm -f /root/.bash_history 2>/dev/null || :
+  history -c 2>/dev/null || :
+}
 
 # --Disable Python history for future interactive commands--
 echo '--- Disable Python history for future interactive commands'

@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# Source shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../lib/common.sh"
-source "${SCRIPT_DIR}/../lib/cleaning.sh"
 
 # Set shell options:
 #   -e, exit immediately if a command exits with a non-zero status
 #   -o pipefail, means that if any element of the pipeline fails, then the pipeline as a whole will fail.
 #   -u, treat unset variables as an error when substituting.
-setup_environment
+set -euo pipefail
+shopt -s nullglob globstar execfail
+IFS=$'\n\t'
 
 DONT_RESTART_DOCKER_ENGINE=0
 DONT_ASK_CONFIRMATION=0

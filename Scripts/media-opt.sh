@@ -38,15 +38,13 @@ find_files(){
     \) 2>/dev/null | sed 's/^-o //'
   fi
 }
-
 # -- Output path --
 outpath(){
   local src=$1 fmt=${2:-${src##*.}}
-  local dir=${OUTDIR:-$(dirname "$src")}
-  local base=$(basename "$src") name="${base%.*}"
+  local dir=${OUTDIR:-$(dirname "$src")} base=$(basename "$src")
+  local name="${base%.*}"
   echo "$dir/${name}${SUFFIX}.${fmt}"
 }
-
 # -- Image optimization --
 opt_image(){
   local src=$1 ext="${src##*.}" && ext="${ext,,}"
@@ -82,7 +80,7 @@ opt_image(){
   else
     if [[ $LOSSLESS -eq 1 ]]; then
       if has flaca; then
-        flaca -j1 "$tmp" &>/dev/null || { rm -f "$tmp"; return 1; }
+        flaca --preserve-times "$tmp" &>/dev/null || { rm -f "$tmp"; return 1; }
       else
         case $ext in
           png)
@@ -96,7 +94,7 @@ opt_image(){
       if has rimage; then
         rimage mozjpeg -q "$QUALITY" -d "$TMPDIR" "$tmp" &>/dev/null || { rm -f "$tmp"; return 1; }
         local opt="$TMPDIR/$(basename "$tmp")"
-        [[ -f $opt ]] && mv "$opt" "$tmp"
+        [[ -f $opt ]] && mv -f "$opt" "$tmp"
       else
         case $ext in
           png)
@@ -117,8 +115,7 @@ opt_image(){
     [[ $KEEP -eq 0 ]] && rm -f "$src"
     ((OK++))
   else
-    rm -f "$out"
-    ((SKIP++))
+    rm -f "$out"; ((SKIP++))
   fi
 }
 
@@ -158,16 +155,14 @@ opt_video(){
   local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
   local new=$(stat -c%s "$tmp" 2>/dev/null || echo 0)
   if ((new>0 && new<orig)); then
-    mv "$tmp" "$out"
+    mv -f "$tmp" "$out"
     printf '%s → %d%%\n' "$(basename "$src")" "$((100-new*100/orig))"
     [[ $KEEP -eq 0 ]] && rm -f "$src"
     ((OK++))
   else
-    rm -f "$tmp"
-    ((SKIP++))
+    rm -f "$tmp"; ((SKIP++))
   fi
 }
-
 # -- Audio optimization --
 opt_audio(){
   local src=$1 ext="${src##*.}"
@@ -193,11 +188,9 @@ opt_audio(){
     [[ $KEEP -eq 0 ]] && rm -f "$src"
     ((OK++))
   else
-    rm -f "$tmp"
-    ((SKIP++))
+    rm -f "$tmp"; ((SKIP++))
   fi
 }
-
 # -- Dispatcher --
 process(){
   local f=$1 ext="${f##*.}" && ext="${ext,,}"
@@ -288,8 +281,7 @@ EOF
   log "Files: ${#files[@]} | Jobs: $JOBS | Mode: $([[ $LOSSLESS -eq 1 ]] && echo Lossless || echo "Lossy Q=$QUALITY") | Img: $IMG_FMT | Vid: $VID_CODEC"
   if ((JOBS>1)); then
     export -f process opt_image opt_video opt_audio outpath has
-    export QUALITY VIDEO_CRF AUDIO_BR LOSSLESS OUTDIR KEEP DRY TYPE SUFFIX TMPDIR R G Y X IMG_FMT VID_CODEC FFZAP_THREADS ZOPFLI_ITER
-    export OK SKIP FAIL TOTAL
+    export QUALITY VIDEO_CRF AUDIO_BR LOSSLESS OUTDIR KEEP DRY TYPE SUFFIX TMPDIR R G Y X IMG_FMT VID_CODEC FFZAP_THREADS ZOPFLI_ITER OK SKIP FAIL TOTAL
     if has rust-parallel; then
       printf '%s\0' "${files[@]}" | rust-parallel -0 -j "$JOBS" bash -c 'source <(declare -f process opt_image opt_video opt_audio outpath has); process "$1"' _ {}
     elif has parallel; then

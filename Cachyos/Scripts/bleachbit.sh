@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
-# Source common library
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../lib/common.sh
-source "${SCRIPT_DIR}/../lib/common.sh" || exit 1
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t'; export LC_ALL=C LANG=C
 
-# Download and install BleachBit custom cleaners
-REPO_URL="https://github.com/Ven0m0/Linux-OS.git"
-DEST="$HOME/.config/bleachbit"
+# Install BleachBit custom cleaners
+paru --noconfirm --skipreview --needed -S bleachbit bleachbit-admin cleanerml-git xorg-xhost || :
 
-git clone --depth 1 "$REPO_URL" bleachbitc \
-  && mkdir -p "$DEST" \
-  && { cpz -r bleachbitc/Cachyos/cleaners "$DEST/" 2>/dev/null || cp -r bleachbitc/Cachyos/cleaners "$DEST/"; } \
-  && { rmz -rf bleachbitc 2>/dev/null || rm -rf bleachbitc; }
+src="${HOME}/.config/bleachbit/cleaners"
+dsts=( /usr/share/bleachbit/cleaners /root/.config/bleachbit/cleaners )
+[[ ! -d /usr/share/bleachbit ]] && { echo "/usr/share/bleachbit doesnt exist, install bleachbit first"; exit 1; }
+mkdir -p /root/.config/bleachbit/cleaners; mkdir -p "${HOME}/.config/bleachbit"
+for dst in "${dsts[@]}"; do
+  install -d "$dst" || :
+  for file in "${src}"/*; do
+    [[ -f $file ]] || continue
+    fname="${file##*/}"
+    ln -f "$file" "$dst/$fname" || :
+  done
+done
 
-log "${GRN}✅ Cleaners installed to $DEST/cleaners${DEF}"
+echo "done"

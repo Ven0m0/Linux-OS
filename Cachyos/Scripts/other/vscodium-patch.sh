@@ -77,12 +77,128 @@ vscodium_marketplace(){
 fix_sign(){
   local path="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js"
   [[ ! -f $path ]] && return 0
-  if [[ ${1:-0} -eq 1 ]]; then
-    sed -i 's|import("@vscode/vsce-sign")|import("node-ovsx-sign")|g' "$path"
-  else
+  [[ ${1:-0} -eq 1 ]] && sed -i 's|import("@vscode/vsce-sign")|import("node-ovsx-sign")|g' "$path" || \
     sed -i 's|import("node-ovsx-sign")|import("@vscode/vsce-sign")|g' "$path"
-  fi
 }
+#──────────── VSCodium Product Patcher (fnr1r-style) ────────────
+# Comprehensive product.json patcher - merges all MS features into VSCodium
+vscodium_prod_patch(){
+  local vscodium_prod="${1:-/usr/share/vscodium/resources/app/product.json}"
+  local backup="${vscodium_prod}.backup.$$"
+  local work="/tmp/vscodium-patch.$$"
+  local vscode_prod="$work/product.json"
+  [[ ! -f $vscodium_prod ]] && die "VSCodium product.json not found: $vscodium_prod"
+  # Get VSCodium version to match VSCode release
+  local vscodium_ver
+  vscodium_ver=$($JQ -r '.version // empty' "$vscodium_prod" 2>/dev/null)
+  [[ -z $vscodium_ver ]] && die "Cannot determine VSCodium version"
+  mkdir -p "$work" || die "Failed to create work dir"
+  echo "Fetching VSCode $vscodium_ver product.json..."
+  local url="https://update.code.visualstudio.com/${vscodium_ver}/linux-x64/stable"
+  download_file "$url" "$work/vscode.tgz" || { rm -rf "$work"; die "Download failed"; }
+  tar xf "$work/vscode.tgz" -C "$work" --strip-components=3 \
+    VSCode-linux-x64/resources/app/product.json 2>/dev/null || {
+    rm -rf "$work"
+    die "Failed to extract product.json from archive"
+  }
+  [[ ! -f $vscode_prod ]] && { rm -rf "$work"; die "VSCode product.json not found in archive"; }
+  # Backup original
+  cp -f "$vscodium_prod" "$backup" || { rm -rf "$work"; die "Backup failed"; }
+  # Comprehensive merge: all MS features + telemetry disabled
+  # Based on fnr1r/vscodium-prod-patcher approach
+  $JQ -s '
+    .[0] as $vscodium | .[1] as $vscode |
+    $vscodium + {
+      nameShort: $vscode.nameShort,
+      nameLong: $vscode.nameLong,
+      applicationName: $vscode.applicationName,
+      dataFolderName: $vscode.dataFolderName,
+      serverDataFolderName: $vscode.serverDataFolderName,
+      darwinBundleIdentifier: $vscode.darwinBundleIdentifier,
+      linuxIconName: $vscode.linuxIconName,
+      licenseUrl: $vscode.licenseUrl,
+      extensionAllowedProposedApi: $vscode.extensionAllowedProposedApi,
+      extensionEnabledApiProposals: $vscode.extensionEnabledApiProposals,
+      extensionKind: $vscode.extensionKind,
+      extensionPointExtensionKind: $vscode.extensionPointExtensionKind,
+      extensionSyncedKeys: $vscode.extensionSyncedKeys,
+      extensionVirtualWorkspacesSupport: $vscode.extensionVirtualWorkspacesSupport,
+      extensionsGallery: $vscode.extensionsGallery,
+      extensionTips: $vscode.extensionTips,
+      extensionImportantTips: $vscode.extensionImportantTips,
+      exeBasedExtensionTips: $vscode.exeBasedExtensionTips,
+      configBasedExtensionTips: $vscode.configBasedExtensionTips,
+      keymapExtensionTips: $vscode.keymapExtensionTips,
+      languageExtensionTips: $vscode.languageExtensionTips,
+      remoteExtensionTips: $vscode.remoteExtensionTips,
+      webExtensionTips: $vscode.webExtensionTips,
+      virtualWorkspaceExtensionTips: $vscode.virtualWorkspaceExtensionTips,
+      trustedExtensionAuthAccess: $vscode.trustedExtensionAuthAccess,
+      trustedExtensionUrlPublicKeys: $vscode.trustedExtensionUrlPublicKeys,
+      auth: $vscode.auth,
+      configurationSync: $vscode.configurationSync,
+      "configurationSync.store": $vscode."configurationSync.store",
+      editSessions: $vscode.editSessions,
+      "editSessions.store": $vscode."editSessions.store",
+      settingsSync: $vscode.settingsSync,
+      aiConfig: $vscode.aiConfig,
+      commandPaletteSuggestedCommandIds: $vscode.commandPaletteSuggestedCommandIds,
+      extensionRecommendations: $vscode.extensionRecommendations,
+      extensionKeywords: $vscode.extensionKeywords,
+      extensionAllowedBadgeProviders: $vscode.extensionAllowedBadgeProviders,
+      extensionAllowedBadgeProvidersRegex: $vscode.extensionAllowedBadgeProvidersRegex,
+      linkProtectionTrustedDomains: $vscode.linkProtectionTrustedDomains,
+      msftInternalDomains: $vscode.msftInternalDomains,
+      documentationUrl: $vscode.documentationUrl,
+      introductoryVideosUrl: $vscode.introductoryVideosUrl,
+      tipsAndTricksUrl: $vscode.tipsAndTricksUrl,
+      newsletterSignupUrl: $vscode.newsletterSignupUrl,
+      releaseNotesUrl: $vscode.releaseNotesUrl,
+      keyboardShortcutsUrlMac: $vscode.keyboardShortcutsUrlMac,
+      keyboardShortcutsUrlLinux: $vscode.keyboardShortcutsUrlLinux,
+      keyboardShortcutsUrlWin: $vscode.keyboardShortcutsUrlWin,
+      quality: $vscode.quality,
+      settingsSearchUrl: $vscode.settingsSearchUrl,
+      tasConfig: $vscode.tasConfig,
+      tunnelApplicationName: $vscode.tunnelApplicationName,
+      tunnelApplicationConfig: $vscode.tunnelApplicationConfig,
+      serverApplicationName: $vscode.serverApplicationName,
+      serverGreeting: $vscode.serverGreeting,
+      urlProtocol: $vscode.urlProtocol,
+      webUrl: $vscode.webUrl,
+      webEndpointUrl: $vscode.webEndpointUrl,
+      webEndpointUrlTemplate: $vscode.webEndpointUrlTemplate,
+      webviewContentExternalBaseUrlTemplate: $vscode.webviewContentExternalBaseUrlTemplate,
+      builtInExtensions: $vscode.builtInExtensions,
+      extensionAllowedExtensionKinds: $vscode.extensionAllowedExtensionKinds,
+      crash: $vscode.crash,
+      enableTelemetry: false,
+      aiRelatedInformationUrl: $vscode.aiRelatedInformationUrl,
+      defaultChatAgent: $vscode.defaultChatAgent
+    }
+  ' "$vscodium_prod" "$vscode_prod" >"${vscodium_prod}.tmp" || {
+    mv -f "$backup" "$vscodium_prod"
+    rm -rf "$work"
+    die "JQ merge failed"
+  }
+  mv -f "${vscodium_prod}.tmp" "$vscodium_prod" || {
+    mv -f "$backup" "$vscodium_prod"
+    rm -rf "$work"
+    die "Failed to write patched product.json"
+  }
+  rm -rf "$work"
+  printf '%b\n' "${GRN}✓ VSCodium product.json patched (backup: $backup)${DEF}"
+  echo "  Merged all MS features, telemetry disabled"
+}
+vscodium_prod_restore(){
+  local vscodium_prod="${1:-/usr/share/vscodium/resources/app/product.json}" backup
+  # Find most recent backup
+  backup=$(ls -t "${vscodium_prod}.backup."* 2>/dev/null | head -1)
+  [[ -z $backup ]] && die "No backup found for $vscodium_prod"
+  cp -f "$backup" "$vscodium_prod" || die "Restore failed"
+  printf '%b\n' "${GRN}✓ Restored from $backup${DEF}"
+}
+
 #──────────── Code-Features ───────────────
 features_patch(){
   local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-features/patch.json}" cache="${3:-/usr/share/code-features/cache.json}"
@@ -100,11 +216,8 @@ features_patch(){
   rm -f "$tmp" &>/dev/null || :
   printf '%b\n' "${GRN}Applied code-features${DEF}"
 }
-
 features_restore(){
-  local prod="${1:-/usr/lib/code/product.json}"
-  local patch="${2:-/usr/share/code-features/patch.json}"
-  local cache="${3:-/usr/share/code-features/cache.json}"
+  local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-features/patch.json}" cache="${3:-/usr/share/code-features/cache.json}"
   [[ ! -f $prod || ! -f $patch || ! -f $cache ]] && die "Files missing"
   $JQ -s '
     .[0] as $prod | .[1] as $patch | .[2] as $cache |
@@ -114,9 +227,8 @@ features_restore(){
   mv -f "${prod}.tmp.$$" "$prod" || return 1
   printf '%b\n' "${GRN}Restored code-features${DEF}"
 }
-
 features_update(){
-  local ver="${1:-$($JQ -r .version /usr/lib/code/product.json 2>/dev/null)}" patch="${2:-./patch.json}"
+  local ver="${1:-$($JQ -r .version /usr/lib/code/product.json 2>/dev/null)}" patch="${2:-./patch.json}" 
   local work="/tmp/code-features.$$" url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
   [[ -z $ver ]] && die "Version required"
   mkdir -p "$work" || return 1
@@ -151,13 +263,11 @@ marketplace_patch(){
     ($prod + $patch) as $merged |
     {product: $merged, cache: $saved}
   ' "$prod" "$patch" >"$tmp" || return 1
-  
   $JQ -r '.product' "$tmp" >"$prod" && $JQ -r '.cache' "$tmp" >"$cache" || return 1
   rm -f "$tmp" &>/dev/null || :
   fix_sign 0
   printf '%b\n' "${GRN}Applied code-marketplace${DEF}"
 }
-
 marketplace_restore(){
   local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-marketplace/patch.json}" cache="${3:-/usr/share/code-marketplace/cache.json}"
   [[ ! -f $prod || ! -f $patch || ! -f $cache ]] && die "Files missing"
@@ -170,7 +280,6 @@ marketplace_restore(){
   fix_sign 1
   printf '%b\n' "${GRN}Restored code-marketplace${DEF}"
 }
-
 marketplace_update(){
   local ver="${1}" patch="${2:-./patch.json}"
   local work="/tmp/code-marketplace.$$" url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
@@ -197,6 +306,8 @@ main(){
     xdg|--xdg) xdg_patch ;;
     vscodium|--vscodium) vscodium_marketplace "${2:-}" 0 ;;
     vscodium-restore|--vscodium-restore) vscodium_marketplace "${2:-}" 1 ;;
+    vscodium-prod|--vscodium-prod) vscodium_prod_patch "${2:-}" ;;
+    vscodium-prod-restore|--vscodium-prod-restore) vscodium_prod_restore "${2:-}" ;;
     feat|--feat) features_patch "${2:-}" "${3:-}" "${4:-}" ;;
     feat-restore|--feat-restore) features_restore "${2:-}" "${3:-}" "${4:-}" ;;
     feat-update|--feat-update) features_update "${2:-}" "${3:-}" ;;
@@ -209,34 +320,57 @@ main(){
       marketplace_patch
       features_patch
       ;;
+    all-vscodium|--all-vscodium)
+      find_vscode_files | xdg_patch
+      vscodium_prod_patch "${2:-}"
+      ;;
     *) cat >&2 <<'EOF'
 Usage: vscodium-patch.sh <cmd> [args]
 
 XDG:
-  xdg                     Apply desktop patches (stdin)
+  xdg                              Apply desktop patches (stdin)
 
-VSCodium:
-  vscodium [prod]         → MS Marketplace
-  vscodium-restore [prod] ← Open-VSX
+VSCodium (Simple):
+  vscodium [prod]                  → MS Marketplace
+  vscodium-restore [prod]          ← Open-VSX
 
-Features:
-  feat [prod] [patch] [cache]         Apply patch
-  feat-restore [prod] [patch] [cache] Restore
-  feat-update [ver] [patch.json]      Update from upstream
+VSCodium (Comprehensive - fnr1r style):
+  vscodium-prod [prod]             Merge ALL MS features from VSCode
+  vscodium-prod-restore [prod]     Restore from backup
 
-Marketplace:
-  mkt [prod] [patch] [cache]          Apply patch
-  mkt-restore [prod] [patch] [cache]  Restore
-  mkt-update <ver> [patch.json]       Update from upstream
+Features (VSCode):
+  feat [prod] [patch] [cache]      Apply patch
+  feat-restore [prod] [patch]      Restore
+  feat-update [ver] [patch.json]   Update from upstream
 
-All:
-  all [vscodium-prod]     Apply all patches
+Marketplace (VSCode):
+  mkt [prod] [patch] [cache]       Apply patch
+  mkt-restore [prod] [patch]       Restore
+  mkt-update <ver> [patch.json]    Update from upstream
+
+Combined:
+  all [vscodium-prod]              Apply all patches (simple)
+  all-vscodium [prod]              Apply all + comprehensive VSCodium patch
 
 Examples:
+  # XDG fixes
   find_vscode_files | sudo vscodium-patch.sh xdg
+  
+  # VSCodium marketplace switch
   sudo vscodium-patch.sh vscodium
+  
+  # Comprehensive VSCodium patching (recommended)
+  sudo vscodium-patch.sh vscodium-prod
+  sudo vscodium-patch.sh vscodium-prod-restore
+  
+  # VSCode patches
   sudo vscodium-patch.sh mkt && sudo vscodium-patch.sh feat
+  
+  # Update patch definitions
   vscodium-patch.sh mkt-update 1.95.0
+  
+  # All-in-one VSCodium
+  sudo vscodium-patch.sh all-vscodium
 
 Defaults:
   VSCode:      /usr/lib/code/product.json
@@ -244,8 +378,7 @@ Defaults:
   Features:    /usr/share/code-features/{patch,cache}.json
   Marketplace: /usr/share/code-marketplace/{patch,cache}.json
 EOF
-      return 1
-      ;;
+      return 1;;
   esac
 }
 main "$@"

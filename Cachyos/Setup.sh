@@ -61,7 +61,3 @@ SigLevel = Required
 Server = https://xyne.dev/repos/xyne
 EOF
 
-## Improve NVME
-if "$(find /sys/block/nvme[0-9]* | grep -q nvme)"; then
-  echo -e "options nvme_core default_ps_max_latency_us=0" | run_priv tee /etc/modprobe.d/nvme.conf
-fi

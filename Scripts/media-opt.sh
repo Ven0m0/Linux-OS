@@ -1,35 +1,27 @@
 #!/usr/bin/env bash
-set -Eeuo pipefail; shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'; export LC_ALL=C LANG=C
-
 # -- Colors --
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' X=$'\e[0m'
-
 # -- Config --
 declare -gi QUALITY=85 VIDEO_CRF=27 AUDIO_BR=128 ZOPFLI_ITER=60
-declare -gi LOSSLESS=0 DRY=0 KEEP=0 JOBS=0 FFZAP_THREADS=2
+declare -gi LOSSLESS=1 DRY=0 KEEP=0 JOBS=0 FFZAP_THREADS=2 INTERACTIVE=0
 declare -g OUTDIR="" TYPE="all" SUFFIX="_opt"
 declare -g IMG_FMT="webp" VID_CODEC="av1"
 declare -gi TOTAL=0 OK=0 SKIP=0 FAIL=0
-
 # -- Helpers --
 die(){ printf '%s%s%s\n' "$R" "$*" "$X" >&2; exit 1; }
 warn(){ printf '%s%s%s\n' "$Y" "$*" "$X" >&2; }
 log(){ printf '%s\n' "$*"; }
 has(){ command -v "$1" &>/dev/null; }
-
 # -- Cleanup --
 TMPDIR=$(mktemp -d)
 cleanup(){ rm -rf "$TMPDIR"; }
 trap cleanup EXIT
-
 # -- Find files (filtered, recursive) --
 find_files(){
   local dir=${1:-.}
-  local -a img=(jpg jpeg png gif webp avif jxl tiff bmp)
-  local -a vid=(mp4 mkv mov webm avi flv)
-  local -a aud=(opus flac mp3 m4a aac ogg wav)
-  local -a exts=()
+  local -a img=(jpg jpeg png gif webp avif jxl tiff bmp) vid=(mp4 mkv mov webm avi flv) aud=(opus flac mp3 m4a aac ogg wav) exts=()
   case $TYPE in
     all) exts=("${img[@]}" "${vid[@]}" "${aud[@]}");;
     image) exts=("${img[@]}");;
@@ -63,7 +55,6 @@ opt_image(){
   [[ $DRY -eq 1 ]] && { log "[DRY] $(basename "$src") → $IMG_FMT"; return 0; }
   local tmp="$TMPDIR/$(basename "$src")"
   cp "$src" "$tmp" || return 1
-  # Format conversion + optimization
   if [[ $IMG_FMT != "$ext" ]]; then
     if has rimage; then
       local cmd="$IMG_FMT"
@@ -89,7 +80,6 @@ opt_image(){
     fi
     rm -f "$tmp"
   else
-    # In-format optimization
     if [[ $LOSSLESS -eq 1 ]]; then
       if has flaca; then
         flaca -j1 "$tmp" &>/dev/null || { rm -f "$tmp"; return 1; }
@@ -117,7 +107,7 @@ opt_image(){
         esac
       fi
     fi
-    mv "$tmp" "$out"
+    mv -f "$tmp" "$out"
   fi
   [[ -f $out ]] || { ((FAIL++)); return 1; }
   local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
@@ -138,7 +128,6 @@ opt_video(){
   [[ -f $out && $KEEP -eq 1 ]] && { ((SKIP++)); return 0; }
   [[ $DRY -eq 1 ]] && { log "[DRY] $(basename "$src")"; return 0; }
   has ffmpeg || { warn "ffmpeg missing"; ((FAIL++)); return 1; }
-  # Detect codec
   local enc=$(ffmpeg -hide_banner -encoders 2>/dev/null)
   local vc="libx264"
   case $VID_CODEC in
@@ -240,6 +229,7 @@ OPTIONS:
   -j N         Parallel jobs (0=auto, default: 0)
   -l           Lossless mode
   -n           Dry-run
+  -i           Interactive mode (fzf)
   --img FMT    Image format: webp|avif|jxl|png|jpg (default: webp)
   --vid CODEC  Video codec: av1|vp9|h265|h264 (default: av1)
   --zopfli N   Zopfli iterations (default: 60)
@@ -259,6 +249,7 @@ EOF
       -j) JOBS=$2; shift 2;;
       -l) LOSSLESS=1; shift;;
       -n) DRY=1; shift;;
+      -i) INTERACTIVE=1; shift;;
       --img) IMG_FMT="${2,,}"; shift 2;;
       --vid) VID_CODEC="${2,,}"; shift 2;;
       --zopfli) ZOPFLI_ITER=$2; shift 2;;
@@ -272,7 +263,21 @@ EOF
   [[ -n $OUTDIR ]] && mkdir -p "$OUTDIR"
   [[ $JOBS -eq 0 ]] && JOBS=$(nproc)
   local -a files=()
-  if [[ $# -eq 0 ]]; then
+  if [[ $INTERACTIVE -eq 1 ]]; then
+    has fzf || has sk || die "Interactive mode requires fzf or sk"
+    local picker=$(has fzf && echo fzf || echo sk)
+    local preview_cmd=""
+    if has bat; then
+      preview_cmd="bat --color=always --style=numbers --line-range=:50 {}"
+    elif has mediainfo; then
+      preview_cmd="mediainfo {} 2>/dev/null || stat -c'Size: %s | Modified: %y' {}"
+    else
+      preview_cmd="stat -c'Size: %s | Modified: %y' {}"
+    fi
+    mapfile -t files < <(find_files "${1:-.}" | "$picker" -m --height=~90% --layout=reverse \
+      --preview="$preview_cmd" --preview-window=right:50%:wrap \
+      --bind='ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all')
+  elif [[ $# -eq 0 ]]; then
     mapfile -t files < <(find_files .)
   else
     for p in "$@"; do
@@ -281,7 +286,6 @@ EOF
   fi
   [[ ${#files[@]} -eq 0 ]] && die "No files"
   log "Files: ${#files[@]} | Jobs: $JOBS | Mode: $([[ $LOSSLESS -eq 1 ]] && echo Lossless || echo "Lossy Q=$QUALITY") | Img: $IMG_FMT | Vid: $VID_CODEC"
-  # Parallel execution: rust-parallel → parallel → xargs
   if ((JOBS>1)); then
     export -f process opt_image opt_video opt_audio outpath has
     export QUALITY VIDEO_CRF AUDIO_BR LOSSLESS OUTDIR KEEP DRY TYPE SUFFIX TMPDIR R G Y X IMG_FMT VID_CODEC FFZAP_THREADS ZOPFLI_ITER

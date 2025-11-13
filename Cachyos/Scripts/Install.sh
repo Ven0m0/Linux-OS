@@ -41,8 +41,8 @@ sudo pacman-key --populate archlinux cachyos 2>/dev/null || :
 # Package list
 pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
   "${aur:+}" paru polly optipng svgo graphicsmagick yadm micro hyfetch polkit-kde-agent
-  pigz lrzip pixz plzip lbzip2 pbzip2 minizip-ng zstd lz4 xz openrgb bleachbit starship
-  preload irqbalance auto-cpufreq thermald cpupower cpupower-gui zoxide
+  pigz lrzip pixz plzip lbzip2 pbzip2 minizip-ng zstd lz4 xz bleachbit bleachbit-admin cleanerml-git
+  preload irqbalance auto-cpufreq thermald cpupower cpupower-gui zoxide starship openrgb
   profile-sync-daemon profile-cleaner prelockd uresourced modprobed-db cachyos-ksm-settings
   cachyos-settings autofdo-bin vulkan-mesa-layers vkd3d vkd3d-proton-git mesa-utils vkbasalt
   menu-cache plasma-wayland-protocols xdg-desktop-portal xdg-desktop-portal-kde xorg-xhost
@@ -51,8 +51,8 @@ pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yas
   dxvk-gplasync-bin rustup python-pip uv github-cli bun-bin cod-bin biome yamlfmt
   eza bat fd ripgrep sd dust skim fzf shfmt shellcheck shellharden fastfetch cachyos-gaming-applications
   pay-respects fclones topgrade bauh flatpak partitionmanager vx-bin kbuilder
-  cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher cleanerml-git
-  makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an xdg-ninja cylon
+  cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher xdg-ninja
+  makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an cylon
 )
 
 # Install packages

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Media optimizer for Arch/Termux - images, video, audio
-set -Eeuo pipefail
-shopt -s nullglob globstar extglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t'; export LC_ALL=C LANG=C
 # -- Colors --
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
 # -- Tool resolution (cached) --
@@ -14,19 +12,16 @@ has(){
   TOOLS[$t]=$(command -v "$t" || command -v "$alt" || echo "") 
   [[ -n ${TOOLS[$t]} ]]
 }
-
 # -- Core helpers --
 die(){ printf '%sERROR: %s%s\n' "$R" "$1" "$X" >&2; exit "${2:-1}"; }
 warn(){ printf '%sWARN: %s%s\n' "$Y" "$1" "$X" >&2; }
 log(){ printf '%s\n' "$*"; }
-
 # -- Config --
 declare -g QUALITY=85 VIDEO_CRF=27 AUDIO_BITRATE=128
 declare -g LOSSLESS=1 RECURSIVE=0 DRY_RUN=0 INPLACE=0 KEEP_ORIG=0
 declare -g OUTPUT_DIR="" FORMAT="" MEDIA_TYPE="all" MIN_SAVE=0
 declare -g JOBS=$(nproc) SUFFIX="_opt" TUI=0 SKIP_OPT=0
 declare -gi TOTAL=0 PROCESSED=0 SKIPPED=0 FAILED=0
-
 # -- File discovery --
 find_media(){
   local dir=${1:-.} depth_arg=""

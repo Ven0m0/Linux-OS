@@ -38,6 +38,11 @@ else
 fi
 
 localectl set-locale C.UTF-8
+sudo chmod -R 744 ~/.ssh
+sudo chmod -R 744 ~/.gnupg
+ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
+ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+sudo chown -c root:root /etc/doas.conf; sudo chmod -c 0400 /etc/doas.conf
 
 log "*] Setup complete! All dotfiles and app configs restored."
 run_priv sed -i -e s"/\#LogFile.*/LogFile = /"g /etc/pacman.conf

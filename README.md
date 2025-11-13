@@ -6,27 +6,13 @@ A collection of scripts and resources for managing and customizing Linux distrib
 <summary><b>Arch scripts</b></summary>
 
 Update:
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Updates.sh | bash
 ```
 
 Clean:
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Clean.sh | bash
-```
-
-Maintenance AIO:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/archmaint.sh | bash
-```
-
-Fetch:
-
-```bash
-curl -fsS4 https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/shell-tools/vnfetch.sh | bash
 ```
 
 </details>

@@ -30,14 +30,12 @@ find_files(){
   local -a vid=(mp4 mkv mov webm avi flv)
   local -a aud=(opus flac mp3 m4a aac ogg wav)
   local -a exts=()
-  
   case $TYPE in
     all) exts=("${img[@]}" "${vid[@]}" "${aud[@]}");;
     image) exts=("${img[@]}");;
     video) exts=("${vid[@]}");;
     audio) exts=("${aud[@]}");;
   esac
-
   if has fd; then
     local -a args=(-tf --no-require-git -S+10k)
     for e in "${exts[@]}"; do args+=(-e "$e"); done
@@ -61,13 +59,10 @@ outpath(){
 opt_image(){
   local src=$1 ext="${src##*.}" && ext="${ext,,}"
   local out=$(outpath "$src" "$IMG_FMT")
-  
   [[ -f $out && $KEEP -eq 1 ]] && { ((SKIP++)); return 0; }
   [[ $DRY -eq 1 ]] && { log "[DRY] $(basename "$src") → $IMG_FMT"; return 0; }
-
   local tmp="$TMPDIR/$(basename "$src")"
   cp "$src" "$tmp" || return 1
-
   # Format conversion + optimization
   if [[ $IMG_FMT != "$ext" ]]; then
     if has rimage; then
@@ -124,9 +119,7 @@ opt_image(){
     fi
     mv "$tmp" "$out"
   fi
-
   [[ -f $out ]] || { ((FAIL++)); return 1; }
-
   local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
   local new=$(stat -c%s "$out" 2>/dev/null || echo 0)
   if ((new>0 && new<orig)); then
@@ -144,9 +137,7 @@ opt_video(){
   local src=$1 out=$(outpath "$src")
   [[ -f $out && $KEEP -eq 1 ]] && { ((SKIP++)); return 0; }
   [[ $DRY -eq 1 ]] && { log "[DRY] $(basename "$src")"; return 0; }
-
   has ffmpeg || { warn "ffmpeg missing"; ((FAIL++)); return 1; }
-
   # Detect codec
   local enc=$(ffmpeg -hide_banner -encoders 2>/dev/null)
   local vc="libx264"
@@ -158,7 +149,6 @@ opt_video(){
     h265) [[ $enc == *libx265* ]] && vc="libx265";;
     h264) vc="libx264";;
   esac
-
   local -a vargs=() aargs=(-c:a libopus -b:a "${AUDIO_BR}k")
   case $vc in
     libsvtav1) vargs=(-c:v libsvtav1 -preset 8 -crf "$VIDEO_CRF");;
@@ -167,7 +157,6 @@ opt_video(){
     libx265) vargs=(-c:v libx265 -preset medium -crf "$VIDEO_CRF");;
     *) vargs=(-c:v libx264 -preset medium -crf "$VIDEO_CRF");;
   esac
-
   local tmp="$TMPDIR/$(basename "$out")"
   if has ffzap; then
     ffzap -i "$src" -f "${vargs[*]} ${aargs[*]}" -o "$tmp" -t "$FFZAP_THREADS" --overwrite &>/dev/null
@@ -176,9 +165,7 @@ opt_video(){
   else
     return 1
   fi
-  
   [[ -f $tmp ]] || { ((FAIL++)); return 1; }
-
   local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
   local new=$(stat -c%s "$tmp" 2>/dev/null || echo 0)
   if ((new>0 && new<orig)); then
@@ -199,9 +186,7 @@ opt_audio(){
   [[ $ext == "opus" ]] && { ((SKIP++)); return 0; }
   [[ -f $out && $KEEP -eq 1 ]] && { ((SKIP++)); return 0; }
   [[ $DRY -eq 1 ]] && { log "[DRY] $(basename "$src") → opus"; return 0; }
-
   has ffmpeg || { warn "ffmpeg missing"; ((FAIL++)); return 1; }
-
   local tmp="$TMPDIR/$(basename "$out")"
   if has ffzap; then
     ffzap -i "$src" -f "-c:a libopus -b:a ${AUDIO_BR}k" -o "$tmp" -t "$FFZAP_THREADS" --overwrite &>/dev/null
@@ -210,9 +195,7 @@ opt_audio(){
   else
     return 1
   fi
-
   [[ -f $tmp ]] || { ((FAIL++)); return 1; }
-
   local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
   local new=$(stat -c%s "$tmp" 2>/dev/null || echo 0)
   if ((new>0 && new<orig)); then
@@ -284,12 +267,10 @@ EOF
       *) break;;
     esac
   done
-
   ((QUALITY<1 || QUALITY>100)) && die "Quality: 1-100"
   ((VIDEO_CRF<0 || VIDEO_CRF>51)) && die "CRF: 0-51"
   [[ -n $OUTDIR ]] && mkdir -p "$OUTDIR"
   [[ $JOBS -eq 0 ]] && JOBS=$(nproc)
-
   local -a files=()
   if [[ $# -eq 0 ]]; then
     mapfile -t files < <(find_files .)
@@ -299,15 +280,12 @@ EOF
     done
   fi
   [[ ${#files[@]} -eq 0 ]] && die "No files"
-
   log "Files: ${#files[@]} | Jobs: $JOBS | Mode: $([[ $LOSSLESS -eq 1 ]] && echo Lossless || echo "Lossy Q=$QUALITY") | Img: $IMG_FMT | Vid: $VID_CODEC"
-
   # Parallel execution: rust-parallel → parallel → xargs
   if ((JOBS>1)); then
     export -f process opt_image opt_video opt_audio outpath has
     export QUALITY VIDEO_CRF AUDIO_BR LOSSLESS OUTDIR KEEP DRY TYPE SUFFIX TMPDIR R G Y X IMG_FMT VID_CODEC FFZAP_THREADS ZOPFLI_ITER
     export OK SKIP FAIL TOTAL
-
     if has rust-parallel; then
       printf '%s\0' "${files[@]}" | rust-parallel -0 -j "$JOBS" bash -c 'source <(declare -f process opt_image opt_video opt_audio outpath has); process "$1"' _ {}
     elif has parallel; then
@@ -318,7 +296,6 @@ EOF
   else
     for f in "${files[@]}"; do process "$f"; done
   fi
-
   log "Done: OK=$OK Skip=$SKIP Fail=$FAIL"
 }
 

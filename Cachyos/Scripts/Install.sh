@@ -30,6 +30,7 @@ sudo chmod -R 744 ~/.ssh
 sudo chmod -R 744 ~/.gnupg
 ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+sudo chown -c root:root /etc/doas.conf; sudo chmod -c 0400 /etc/doas.conf
 sudo modprobe zram tcp_bbr adios
 
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :

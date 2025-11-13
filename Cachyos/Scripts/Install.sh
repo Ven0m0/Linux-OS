@@ -23,33 +23,36 @@ jobs=$(nproc 2>/dev/null || echo 4)
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTFLAGS="{RUSTFLAGS:-'-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'}" \
   OPT_LEVEL=3 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_OPT_LEVEL=3 UV_COMPILE_BYTECODE=1  PYTHONOPTIMIZE=2
 unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
+
 # System preparation
+localectl set-locale C.UTF-8
+sudo chmod -R 744 ~/.ssh
+sudo chmod -R 744 ~/.gnupg
+ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
+ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+sudo modprobe zram tcp_bbr adios
+
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
 sudo pacman-key --init 2>/dev/null || :
 sudo pacman-key --populate archlinux cachyos 2>/dev/null || :
 "${pkgmgr[@]}" -Syq archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null || :
 "${pkgmgr[@]}" -Syyuq --noconfirm 2>/dev/null || :
-sudo modprobe zram tcp_bbr adios
-ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
-ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 # Package list
-pkgs=(
-  base-devel linux-headers dkms git curl wget rsync patchutils
-  "${aur:+}" paru yay ccache sccache mold lld llvm clang nasm yasm openmp polly
-  pigz lrzip pixz plzip lbzip2 pbzip2 minizip-ng zstd lz4 xz optipng svgo graphicsmagick
-  preload irqbalance ananicy-cpp auto-cpufreq thermald cpupower cpupower-gui openrgb
+pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
+  "${aur:+}" paru polly optipng svgo graphicsmagick yadm micro hyfetch polkit-kde-agent
+  pigz lrzip pixz plzip lbzip2 pbzip2 minizip-ng zstd lz4 xz openrgb bleachbit starship
+  preload irqbalance auto-cpufreq thermald cpupower cpupower-gui zoxide
   profile-sync-daemon profile-cleaner prelockd uresourced modprobed-db cachyos-ksm-settings
   cachyos-settings autofdo-bin vulkan-mesa-layers vkd3d vkd3d-proton-git mesa-utils vkbasalt
   menu-cache plasma-wayland-protocols xdg-desktop-portal xdg-desktop-portal-kde xorg-xhost
   libappindicator-gtk3 libdbusmenu-glib appmenu-gtk-module protonup-qt protonplus proton-ge-custom
   gamemode lib32-gamemode mangohud lib32-mangohud prismlauncher obs-studio luxtorpeda-git
-  dxvk-gplasync-bin rustup python-pip uv github-cli bun-bin cod-bin
-  starship zoxide eza bat fd ripgrep sd dust fzf shfmt shellcheck shellharden micro yadm dash
-  btop htop fastfetch pay-respects fclones topgrade bauh flatpak partitionmanager polkit-kde-agent
-  bleachbit-git cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher cleanerml-git
+  dxvk-gplasync-bin rustup python-pip uv github-cli bun-bin cod-bin biome yamlfmt
+  eza bat fd ripgrep sd dust skim fzf shfmt shellcheck shellharden fastfetch cachyos-gaming-applications
+  pay-respects fclones topgrade bauh flatpak partitionmanager vx-bin kbuilder
+  cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher cleanerml-git
   makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an xdg-ninja cylon
-  scaramanga kbuilder optiimage optipng-parallel vx-bin biome yamlfmt
 )
 
 # Install packages

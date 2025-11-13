@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # raspi-f2fs.sh - Flash Raspberry Pi images with F2FS root filesystem
-
+shopt -s nullglob
 # Source shared libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
 
 # Setup environment
 setup_environment
-shopt -s nullglob
 
 # Config
 declare -A cfg=([boot_size]="1024M" [ssh]=0 [dry_run]=0 [debug]=0 [keep_source]=0 [dietpi]=0)

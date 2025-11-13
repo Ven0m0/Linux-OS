@@ -312,18 +312,6 @@ install_extended_tools(){
   if ! has zoxide; then
     curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | run bash
   fi
-
-  # Navi (interactive cheatsheet)
-  if ! has navi; then
-    curl -sSfL https://raw.githubusercontent.com/denisidoro/navi/master/scripts/install | run bash
-  fi
-
-  # yt-dlp
-  if ! has yt-dlp; then
-    run_priv add-apt-repository -y ppa:tomtomtom/yt-dlp 2>/dev/null || :
-    run_priv apt-get update
-    run_priv apt-get install -y yt-dlp
-  fi
 }
 
 # ────────────────────────────────────────────────────────────
@@ -331,9 +319,7 @@ install_extended_tools(){
 # ────────────────────────────────────────────────────────────
 install_package_managers(){
   (( cfg[minimal] || cfg[skip_external] )) && return 0
-  
   log "Installing alternative package managers"
-  
   # apt-fast
   if ! has apt-fast; then
     run_priv mkdir -p /etc/apt/keyrings /etc/apt/sources.list.d
@@ -344,14 +330,12 @@ install_package_managers(){
     run_priv apt-get update
     run_priv apt-get install -y apt-fast
   fi
-
   # deb-get
   if ! has deb-get; then
     run_priv apt-get install -y curl lsb-release wget
     curl -sL https://raw.githubusercontent.com/wimpysworld/deb-get/main/deb-get | \
       run_priv bash -s install deb-get
   fi
-
   # eget (binary installer)
   if ! has eget; then
     curl -s https://zyedidia.github.io/eget.sh | run bash
@@ -360,16 +344,9 @@ install_package_managers(){
       mv ./eget "$HOME/.local/bin/"
     }
   fi
-
   # pacstall
   if ! has pacstall; then
     run_priv bash -c "$(curl -fsSL https://pacstall.dev/q/install)"
-  fi
-
-  # flatpak
-  if ! has flatpak; then
-    run_priv apt-get install -y flatpak
-    flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   fi
 }
 
@@ -403,11 +380,9 @@ install_external(){
 # ────────────────────────────────────────────────────────────
 main(){
   parse_args "$@"
-  
   log "${BLD}Raspberry Pi Setup & Optimization${DEF}"
   log "Mode: $([[ ${cfg[dry_run]} -eq 1 ]] && echo 'DRY-RUN' || echo 'LIVE')"
   log "Profile: $([[ ${cfg[minimal]} -eq 1 ]] && echo 'MINIMAL' || echo 'FULL')"
-  
   configure_apt
   configure_dpkg_nodoc
   clean_docs
@@ -417,12 +392,10 @@ main(){
   install_extended_tools
   install_package_managers
   install_external
-  
   # Final cleanup
   run_priv apt-get autoremove -y
   run_priv apt-get autoclean
   has flatpak && run flatpak uninstall --unused --delete-data -y || :
-  
   log "${GRN}✓${DEF} Setup complete"
   warn "Reboot recommended to apply all optimizations"
 }

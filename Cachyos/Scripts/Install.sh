@@ -30,6 +30,8 @@ sudo pacman-key --populate archlinux cachyos 2>/dev/null || :
 "${pkgmgr[@]}" -Syq archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null || :
 "${pkgmgr[@]}" -Syyuq --noconfirm 2>/dev/null || :
 sudo modprobe zram tcp_bbr adios
+ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
+ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 # Package list
 pkgs=(

@@ -7,6 +7,9 @@
 set -Eeuo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C
+
+# Color codes
+declare -r RED=$'\033[0;31m' GRN=$'\033[0;32m' BLD=$'\033[1m' DEF=$'\033[0m'
 # Config
 declare -A cfg=(
   [boot_size]="1024M"
@@ -571,94 +574,287 @@ update_config(){
   }
 }
 
-# Setup first-boot F2FS resize
+# Setup first-boot F2FS resize with initramfs hook
 setup_boot(){
-  info "Installing F2FS resize mechanism"
+  info "Installing F2FS resize mechanism (initramfs + fallbacks)"
   (( cfg[dry_run] )) && return 0
-  
+
+  local has_initramfs=0
+  [[ -d ${WORKDIR}/target_root/etc/initramfs-tools ]] && has_initramfs=1
+
   # Add kernel module loading
   local modules="${WORKDIR}/target_root/etc/modules"
   grep -q '^f2fs$' "$modules" 2>/dev/null || echo 'f2fs' >>"$modules"
-  
-  [[ -d ${WORKDIR}/target_root/etc/initramfs-tools ]] && {
+
+  # Initramfs approach (most correct - runs before root mount)
+  if (( has_initramfs )); then
+    info "Setting up initramfs hook for pre-mount resize"
+
+    # Add f2fs module to initramfs
     local initrd_mods="${WORKDIR}/target_root/etc/initramfs-tools/modules"
     grep -q '^f2fs$' "$initrd_mods" 2>/dev/null || echo 'f2fs' >>"$initrd_mods"
-  }
-  
-  # Resize script
+
+    # Create initramfs hook to copy f2fs-tools binaries
+    mkdir -p "${WORKDIR}/target_root/etc/initramfs-tools/hooks"
+    cat >"${WORKDIR}/target_root/etc/initramfs-tools/hooks/f2fs" <<-'INITRAMFS_HOOK' || die "Initramfs hook creation failed"
+	#!/bin/sh
+	# Hook to include f2fs-tools in initramfs
+
+	PREREQ=""
+	prereqs() { echo "$PREREQ"; }
+	case $1 in prereqs) prereqs; exit 0;; esac
+
+	. /usr/share/initramfs-tools/hook-functions
+
+	# Copy f2fs utilities if they exist
+	if [ -x /usr/sbin/resize.f2fs ]; then
+	  copy_exec /usr/sbin/resize.f2fs /sbin
+	fi
+	if [ -x /usr/sbin/fsck.f2fs ]; then
+	  copy_exec /usr/sbin/fsck.f2fs /sbin
+	fi
+	if [ -x /usr/sbin/mkfs.f2fs ]; then
+	  copy_exec /usr/sbin/mkfs.f2fs /sbin
+	fi
+
+	# Copy required libraries
+	for lib in /lib/*/libf2fs.so* /usr/lib/*/libf2fs.so*; do
+	  [ -e "$lib" ] && copy_exec "$lib"
+	done
+
+	exit 0
+	INITRAMFS_HOOK
+
+    chmod +x "${WORKDIR}/target_root/etc/initramfs-tools/hooks/f2fs"
+
+    # Create initramfs script for actual resize (runs in initramfs environment)
+    mkdir -p "${WORKDIR}/target_root/etc/initramfs-tools/scripts/local-premount"
+    cat >"${WORKDIR}/target_root/etc/initramfs-tools/scripts/local-premount/f2fs_resize" <<-'INITRAMFS_SCRIPT' || die "Initramfs script creation failed"
+	#!/bin/sh
+	# F2FS resize script - runs in initramfs before root mount
+
+	PREREQ=""
+	prereqs() { echo "$PREREQ"; }
+	case $1 in prereqs) prereqs; exit 0;; esac
+
+	. /scripts/functions
+
+	# Check if already resized
+	RESIZE_FLAG_DIR="/tmp/boot_check"
+	mkdir -p "$RESIZE_FLAG_DIR"
+
+	# Extract root device from kernel command line
+	ROOT_PARTUUID=""
+	for x in $(cat /proc/cmdline); do
+	  case $x in
+	    root=PARTUUID=*)
+	      ROOT_PARTUUID=${x#root=PARTUUID=}
+	      ;;
+	    root=/dev/*)
+	      ROOT_DEV=${x#root=}
+	      ;;
+	  esac
+	done
+
+	# Exit early if no root found
+	[ -z "$ROOT_PARTUUID" ] && [ -z "$ROOT_DEV" ] && exit 0
+
+	# Resolve PARTUUID to device
+	if [ -n "$ROOT_PARTUUID" ]; then
+	  wait_for_udev 10
+	  ROOT_DEV=$(blkid -t PARTUUID="$ROOT_PARTUUID" -o device 2>/dev/null)
+	fi
+
+	# Exit if device not found
+	[ -z "$ROOT_DEV" ] || [ ! -b "$ROOT_DEV" ] && exit 0
+
+	# Find boot partition (typically same disk, partition 1)
+	BOOT_DEV="${ROOT_DEV%[0-9]*}1"
+	[ "$BOOT_DEV" = "$ROOT_DEV" ] && BOOT_DEV="${ROOT_DEV%p[0-9]*}p1"
+
+	# Mount boot partition temporarily to check flag
+	if [ -b "$BOOT_DEV" ]; then
+	  mount -t vfat -o ro "$BOOT_DEV" "$RESIZE_FLAG_DIR" 2>/dev/null || exit 0
+
+	  if [ -f "$RESIZE_FLAG_DIR/.f2fs-resized" ]; then
+	    umount "$RESIZE_FLAG_DIR" 2>/dev/null
+	    exit 0
+	  fi
+
+	  # Remount rw for flag creation
+	  mount -o remount,rw "$RESIZE_FLAG_DIR" 2>/dev/null || {
+	    umount "$RESIZE_FLAG_DIR" 2>/dev/null
+	    exit 0
+	  }
+	fi
+
+	# Perform resize if resize.f2fs is available
+	if command -v resize.f2fs >/dev/null 2>&1; then
+	  log_begin_msg "Resizing F2FS root filesystem"
+
+	  if resize.f2fs "$ROOT_DEV" >/dev/null 2>&1; then
+	    log_success_msg "F2FS resize completed"
+	    # Create flag to prevent future resize attempts
+	    [ -d "$RESIZE_FLAG_DIR" ] && touch "$RESIZE_FLAG_DIR/.f2fs-resized" 2>/dev/null
+	  else
+	    log_failure_msg "F2FS resize failed (non-fatal)"
+	  fi
+
+	  log_end_msg
+	fi
+
+	# Cleanup
+	[ -d "$RESIZE_FLAG_DIR" ] && umount "$RESIZE_FLAG_DIR" 2>/dev/null
+
+	exit 0
+	INITRAMFS_SCRIPT
+
+    chmod +x "${WORKDIR}/target_root/etc/initramfs-tools/scripts/local-premount/f2fs_resize"
+
+    # Create first-boot service to install f2fs-tools and regenerate initramfs
+    mkdir -p "${WORKDIR}/target_root/etc/systemd/system"
+    cat >"${WORKDIR}/target_root/etc/systemd/system/f2fs-initramfs-setup.service" <<-'INITRAMFS_SETUP' || die "Initramfs setup service creation failed"
+	[Unit]
+	Description=F2FS Tools Installation and Initramfs Regeneration (First Boot)
+	DefaultDependencies=no
+	After=systemd-remount-fs.service network-online.target
+	Before=local-fs-pre.target
+	ConditionPathExists=!/boot/.f2fs-initramfs-ready
+
+	[Service]
+	Type=oneshot
+	ExecStart=/usr/local/bin/f2fs-initramfs-setup.sh
+	RemainAfterExit=yes
+	StandardOutput=journal+console
+	StandardError=journal+console
+
+	[Install]
+	WantedBy=sysinit.target
+	INITRAMFS_SETUP
+
+    mkdir -p "${WORKDIR}/target_root/usr/local/bin"
+    cat >"${WORKDIR}/target_root/usr/local/bin/f2fs-initramfs-setup.sh" <<-'INITRAMFS_SETUP_SCRIPT' || die "Initramfs setup script creation failed"
+	#!/usr/bin/env bash
+	set -euo pipefail
+
+	SETUP_FLAG="/boot/.f2fs-initramfs-ready"
+	[[ -f $SETUP_FLAG ]] && exit 0
+
+	echo "==> Installing f2fs-tools and regenerating initramfs..."
+
+	# Install f2fs-tools if missing
+	if ! command -v resize.f2fs &>/dev/null; then
+	  export DEBIAN_FRONTEND=noninteractive
+	  apt-get update -qq || exit 1
+	  apt-get install -y f2fs-tools || exit 1
+	fi
+
+	# Regenerate initramfs with f2fs support
+	if command -v update-initramfs &>/dev/null; then
+	  echo "==> Regenerating initramfs with F2FS support..."
+	  update-initramfs -u || {
+	    echo "WARNING: initramfs regeneration failed"
+	    exit 1
+	  }
+	fi
+
+	# Mark as complete and schedule reboot
+	touch "$SETUP_FLAG"
+	sync
+
+	echo "==> F2FS initramfs setup complete. Rebooting in 5 seconds..."
+	sleep 5
+	reboot
+	INITRAMFS_SETUP_SCRIPT
+
+    chmod +x "${WORKDIR}/target_root/usr/local/bin/f2fs-initramfs-setup.sh"
+
+    mkdir -p "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants"
+    ln -sf ../f2fs-initramfs-setup.service "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants/f2fs-initramfs-setup.service"
+  fi
+
+  # Fallback 1: Systemd service (for systems without initramfs or if initramfs fails)
+  info "Adding systemd fallback resize service"
   mkdir -p "${WORKDIR}/target_root/usr/local/bin"
   cat >"${WORKDIR}/target_root/usr/local/bin/f2fs-resize-once.sh" <<-'RESIZE_SCRIPT' || die "Resize script creation failed"
 	#!/usr/bin/env bash
 	set -euo pipefail
-	
+
 	RESIZE_FLAG="/boot/.f2fs-resized"
 	[[ -f $RESIZE_FLAG ]] && exit 0
-	
+
 	# Install f2fs-tools if missing
 	if ! command -v resize.f2fs &>/dev/null; then
 	  export DEBIAN_FRONTEND=noninteractive
 	  apt-get update -qq && apt-get install -y f2fs-tools &>/dev/null || exit 0
 	fi
-	
+
 	# Find root partition
 	ROOT_UUID=$(awk '$2=="/" && $1~/^PARTUUID=/ {gsub(/PARTUUID=/,"",$1); print $1}' /etc/fstab)
 	[[ -z $ROOT_UUID ]] && exit 0
-	
+
 	ROOT_DEV=$(blkid -t PARTUUID="$ROOT_UUID" -o device 2>/dev/null)
 	[[ -z $ROOT_DEV || ! -b $ROOT_DEV ]] && exit 0
-	
+
+	echo "==> Resizing F2FS root filesystem (fallback method)..."
+
 	# Remount root RO for safe resize
-	mount -o remount,ro / 2>/dev/null || exit 0
-	
-	# Perform resize
-	if resize.f2fs "$ROOT_DEV" &>/dev/null; then
-	  mount -o remount,rw /
-	  touch "$RESIZE_FLAG"
-	  sync
+	if mount -o remount,ro / 2>/dev/null; then
+	  # Perform resize
+	  if resize.f2fs "$ROOT_DEV" &>/dev/null; then
+	    mount -o remount,rw /
+	    touch "$RESIZE_FLAG"
+	    sync
+	    echo "==> F2FS resize completed successfully"
+	  else
+	    mount -o remount,rw /
+	    echo "WARNING: F2FS resize failed"
+	  fi
 	fi
 	RESIZE_SCRIPT
-  
+
   chmod +x "${WORKDIR}/target_root/usr/local/bin/f2fs-resize-once.sh"
-  
-  # Systemd service (early boot)
+
   mkdir -p "${WORKDIR}/target_root/etc/systemd/system"
-  cat >"${WORKDIR}/target_root/etc/systemd/system/f2fs-resize.service" <<-'RESIZE_SERVICE' || die "Systemd service creation failed"
+  cat >"${WORKDIR}/target_root/etc/systemd/system/f2fs-resize-fallback.service" <<-'RESIZE_SERVICE' || die "Systemd service creation failed"
 	[Unit]
-	Description=F2FS Root Filesystem Resize (First Boot)
+	Description=F2FS Root Filesystem Resize (Fallback Method)
 	DefaultDependencies=no
-	After=systemd-remount-fs.service
+	After=systemd-remount-fs.service f2fs-initramfs-setup.service
 	Before=local-fs-pre.target
 	ConditionPathExists=!/boot/.f2fs-resized
-	
+	ConditionPathExists=/boot/.f2fs-initramfs-ready
+
 	[Service]
 	Type=oneshot
 	ExecStart=/usr/local/bin/f2fs-resize-once.sh
 	RemainAfterExit=yes
 	StandardOutput=journal+console
 	StandardError=journal+console
-	
+
 	[Install]
 	WantedBy=sysinit.target
 	RESIZE_SERVICE
-  
+
   mkdir -p "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants"
-  ln -sf ../f2fs-resize.service "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants/f2fs-resize.service"
-  
-  # rc.local fallback
+  ln -sf ../f2fs-resize-fallback.service "${WORKDIR}/target_root/etc/systemd/system/sysinit.target.wants/f2fs-resize-fallback.service"
+
+  # Fallback 2: rc.local (ultimate fallback for non-systemd or failures)
+  info "Adding rc.local ultimate fallback"
   cat >"${WORKDIR}/target_root/etc/rc.local" <<-'RC_LOCAL' || die "rc.local creation failed"
 	#!/usr/bin/env bash
 	[[ ! -f /boot/.f2fs-resized ]] && /usr/local/bin/f2fs-resize-once.sh
 	exit 0
 	RC_LOCAL
-  
+
   chmod +x "${WORKDIR}/target_root/etc/rc.local"
-  
+
   # SSH enablement
   (( cfg[ssh] )) && {
     info "Enabling SSH on first boot"
     touch "${WORKDIR}/target_boot/ssh" "${WORKDIR}/target_boot/SSH"
   }
-  
+
   sync
 }
 
@@ -666,10 +862,22 @@ setup_boot(){
 finalize(){
   info "Finalizing"
   (( cfg[dry_run] )) || sync
-  
+
   info "${GRN}✓${DEF} F2FS conversion complete"
   (( IS_BLOCK )) && info "SD card ready: $tgt_path" || info "Image ready: $tgt_path"
-  info "First boot: F2FS tools install + resize (~30-60s delay)"
+
+  # Check if initramfs setup was added
+  if [[ -f ${WORKDIR}/target_root/etc/initramfs-tools/scripts/local-premount/f2fs_resize ]]; then
+    info ""
+    info "${BLD}First Boot Process:${DEF}"
+    info "  1. Boot 1: Install f2fs-tools, regenerate initramfs (~30-90s), auto-reboot"
+    info "  2. Boot 2: Initramfs resizes F2FS before root mount (seamless)"
+    info "  3. System ready with full F2FS capacity"
+    info ""
+    info "Note: Two boots required for initramfs-based resize"
+  else
+    info "First boot: F2FS tools install + resize (~30-60s delay)"
+  fi
 }
 
 usage(){
@@ -711,8 +919,10 @@ usage(){
 	
 	NOTES:
 	  - Requires root for block devices
-	  - First boot auto-installs f2fs-tools
-	  - F2FS resize runs on first boot
+	  - Uses initramfs hook for optimal resize (2 boots required)
+	  - First boot: installs f2fs-tools, regenerates initramfs, reboots
+	  - Second boot: initramfs resizes F2FS before root mount
+	  - Fallback resize methods if initramfs unavailable
 	  - Supports both DietPi and Raspberry Pi OS
 	EOF
   exit 0

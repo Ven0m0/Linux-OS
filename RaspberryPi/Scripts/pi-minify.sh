@@ -2,9 +2,8 @@
 #
 # DESCRIPTION: Raspberry Pi system minimization & optimization suite
 #              Aggressive cleanup, ZRAM setup, SWAP mgmt, package purge
-
-set -Eeuo pipefail
-shopt -s nullglob globstar extglob dotglob
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 

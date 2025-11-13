@@ -1,215 +1,240 @@
 #!/usr/bin/env bash
-# Media optimizer for Arch/Termux - images, video, audio
-set -euo pipefail; shopt -s nullglob globstar
+set -Eeuo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'; export LC_ALL=C LANG=C
+
 # -- Colors --
-R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
-# -- Tool resolution (cached) --
-declare -gA TOOLS=()
-has(){
-  local t=$1 alt=${2:-}
-  [[ -n ${TOOLS[$t]:-} ]] && return 0
-  TOOLS[$t]=$(command -v "$t" || command -v "$alt" || echo "") 
-  [[ -n ${TOOLS[$t]} ]]
-}
-# -- Core helpers --
-die(){ printf '%sERROR: %s%s\n' "$R" "$1" "$X" >&2; exit "${2:-1}"; }
-warn(){ printf '%sWARN: %s%s\n' "$Y" "$1" "$X" >&2; }
-log(){ printf '%s\n' "$*"; }
+R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' X=$'\e[0m'
+
 # -- Config --
-declare -g QUALITY=85 VIDEO_CRF=27 AUDIO_BITRATE=128
-declare -g LOSSLESS=1 RECURSIVE=0 DRY_RUN=0 INPLACE=0 KEEP_ORIG=0
-declare -g OUTPUT_DIR="" FORMAT="" MEDIA_TYPE="all" MIN_SAVE=0
-declare -g JOBS="$(nproc)" SUFFIX="_opt" TUI=0 SKIP_OPT=0
-declare -gi TOTAL=0 PROCESSED=0 SKIPPED=0 FAILED=0
-# -- File discovery --
-find_media(){
-  local dir=${1:-.} depth_arg=""
-  [[ $RECURSIVE -eq 0 ]] && depth_arg="-d 1"
-  local -a exts=(jpg jpeg png gif svg webp avif jxl tiff tif bmp mp4 mkv mov webm avi flv opus flac mp3 m4a aac ogg wav)
-  if has fdf; then
-    local -a args=(-tf --no-require-git "$depth_arg")
-    for e in "${exts[@]}"; do args+=(-e "$e"); done
-    "${TOOLS[fdf]}" "${args[@]}" "$dir" 2>/dev/null
-  elif has fd fdfind; then
-    local -a args=(-tf --no-require-git "$depth_arg")
-    for e in "${exts[@]}"; do args+=(-e "$e"); done
-    "${TOOLS[fd]}" "${args[@]}" "$dir" 2>/dev/null
-  else
-    local -a args=(-type f) pats=()
-    [[ $RECURSIVE -eq 0 ]] && args+=(-maxdepth 1)
-    for e in "${exts[@]}"; do pats+=(-o -iname "*.$e"); done
-    find "$dir" "${args[@]}" \( "${pats[@]:1}" \) 2>/dev/null
-  fi
-}
-# -- Output path resolution --
-get_output(){
-  local src=$1 fmt=$2 dir=${OUTPUT_DIR:-$(dirname "$src")}
-  local base=$(basename "$src") name="${base%.*}" ext="${base##*.}"
-  if [[ -n $fmt && $fmt != "${ext,,}" ]]; then
-    echo "$dir/${name}.${fmt}"
-  elif [[ $INPLACE -eq 1 ]]; then
-    echo "$src"
-  else
-    echo "$dir/${name}${SUFFIX}.${ext}"
-  fi
-}
-# -- Already optimized check --
-is_optimized(){
-  local f=$1 ext="${1##*.}" && ext="${ext,,}"
-  [[ $f == *"$SUFFIX"* ]] && return 0
-  case $ext in
-    webp|avif|jxl) return 0;;
-    jpg|jpeg) 
-      has identify || return 1
-      local q=$("${TOOLS[identify]}" -format '%Q' "$f" 2>/dev/null || echo 100)
-      ((q<90));;
-    *) return 1;;
+declare -gi QUALITY=85 VIDEO_CRF=27 AUDIO_BR=128 ZOPFLI_ITER=60
+declare -gi LOSSLESS=0 DRY=0 KEEP=0 JOBS=0 FFZAP_THREADS=2
+declare -g OUTDIR="" TYPE="all" SUFFIX="_opt"
+declare -g IMG_FMT="webp" VID_CODEC="av1"
+declare -gi TOTAL=0 OK=0 SKIP=0 FAIL=0
+
+# -- Helpers --
+die(){ printf '%s%s%s\n' "$R" "$*" "$X" >&2; exit 1; }
+warn(){ printf '%s%s%s\n' "$Y" "$*" "$X" >&2; }
+log(){ printf '%s\n' "$*"; }
+has(){ command -v "$1" &>/dev/null; }
+
+# -- Cleanup --
+TMPDIR=$(mktemp -d)
+cleanup(){ rm -rf "$TMPDIR"; }
+trap cleanup EXIT
+
+# -- Find files (filtered, recursive) --
+find_files(){
+  local dir=${1:-.}
+  local -a img=(jpg jpeg png gif webp avif jxl tiff bmp)
+  local -a vid=(mp4 mkv mov webm avi flv)
+  local -a aud=(opus flac mp3 m4a aac ogg wav)
+  local -a exts=()
+  
+  case $TYPE in
+    all) exts=("${img[@]}" "${vid[@]}" "${aud[@]}");;
+    image) exts=("${img[@]}");;
+    video) exts=("${vid[@]}");;
+    audio) exts=("${aud[@]}");;
   esac
+
+  if has fd; then
+    local -a args=(-tf --no-require-git -S+10k)
+    for e in "${exts[@]}"; do args+=(-e "$e"); done
+    fd "${args[@]}" "$dir" 2>/dev/null | grep -v "$SUFFIX"
+  else
+    find "$dir" -type f ! -name "*${SUFFIX}*" -size +10k \( \
+      $(printf -- "-o -iname *.%s " "${exts[@]}") \
+    \) 2>/dev/null | sed 's/^-o //'
+  fi
 }
+
+# -- Output path --
+outpath(){
+  local src=$1 fmt=${2:-${src##*.}}
+  local dir=${OUTDIR:-$(dirname "$src")}
+  local base=$(basename "$src") name="${base%.*}"
+  echo "$dir/${name}${SUFFIX}.${fmt}"
+}
+
 # -- Image optimization --
-optimize_image(){
+opt_image(){
   local src=$1 ext="${src##*.}" && ext="${ext,,}"
-  local fmt=${FORMAT:-$ext} out
-  # Skip check
-  [[ $SKIP_OPT -eq 1 ]] && is_optimized "$src" && { ((SKIPPED++)); return 0; }
-  # Output path
-  out=$(get_output "$src" "$fmt")
-  [[ -f $out && $KEEP_ORIG -eq 1 && $INPLACE -eq 0 ]] && { ((SKIPPED++)); return 0; }
-  # Dry run
-  [[ $DRY_RUN -eq 1 ]] && { log "[DRY] $(basename "$src") → $fmt"; return 0; }
-  local tmp="${src}.tmp"
+  local out=$(outpath "$src" "$IMG_FMT")
+  
+  [[ -f $out && $KEEP -eq 1 ]] && { ((SKIP++)); return 0; }
+  [[ $DRY -eq 1 ]] && { log "[DRY] $(basename "$src") → $IMG_FMT"; return 0; }
+
+  local tmp="$TMPDIR/$(basename "$src")"
   cp "$src" "$tmp" || return 1
-  # Format conversion
-  if [[ $fmt != "$ext" ]]; then
-    case $fmt in
-      webp)
-        if has cwebp; then
-          [[ $LOSSLESS -eq 1 ]] && cwebp -lossless "$tmp" -o "${tmp}.out" &>/dev/null || \
-          cwebp -q "$QUALITY" -m 6 "$tmp" -o "${tmp}.out" &>/dev/null
-        fi;;
-      avif) has avifenc && avifenc -s 6 -j "$(nproc)" --min 0 --max 60 "$tmp" "${tmp}.out" &>/dev/null;;
-      jxl)
-        has cjxl && {
-          [[ $LOSSLESS -eq 1 ]] && cjxl "$tmp" "${tmp}.out" -d 0 -e 7 &>/dev/null || \
-          cjxl "$tmp" "${tmp}.out" -q "$QUALITY" -e 7 &>/dev/null
-        };;
-    esac
-    [[ -f "${tmp}.out" ]] && mv "${tmp}.out" "$out" || { rm -f "$tmp" "${tmp}.out"; return 1; }
+
+  # Format conversion + optimization
+  if [[ $IMG_FMT != "$ext" ]]; then
+    if has rimage; then
+      local cmd="$IMG_FMT"
+      [[ $IMG_FMT == "webp" ]] && cmd="mozjpeg"
+      [[ $LOSSLESS -eq 0 ]] && rimage "$cmd" -q "$QUALITY" -d "$TMPDIR" "$tmp" &>/dev/null || { rm -f "$tmp"; return 1; }
+      [[ $LOSSLESS -eq 1 ]] && rimage "$cmd" -d "$TMPDIR" "$tmp" &>/dev/null || { rm -f "$tmp"; return 1; }
+      local converted="$TMPDIR/$(basename "$src" ."$ext").$IMG_FMT"
+      [[ -f $converted ]] && mv "$converted" "$out" || { rm -f "$tmp"; return 1; }
+    else
+      case $IMG_FMT in
+        webp)
+          has cwebp && {
+            [[ $LOSSLESS -eq 1 ]] && cwebp -lossless "$tmp" -o "$out" &>/dev/null || \
+            cwebp -q "$QUALITY" -m 6 "$tmp" -o "$out" &>/dev/null
+          };;
+        avif) has avifenc && avifenc -s 6 -j "$JOBS" --min 0 --max 60 "$tmp" "$out" &>/dev/null;;
+        jxl)
+          has cjxl && {
+            [[ $LOSSLESS -eq 1 ]] && cjxl "$tmp" "$out" -d 0 -e 7 &>/dev/null || \
+            cjxl "$tmp" "$out" -q "$QUALITY" -e 7 &>/dev/null
+          };;
+      esac
+    fi
     rm -f "$tmp"
   else
     # In-format optimization
-    case $ext in
-      png)
-        has oxipng && oxipng -o max -q "$tmp" &>/dev/null
-        [[ $LOSSLESS -eq 0 ]] && has pngquant && pngquant --quality="$QUALITY"-100 -f "$tmp" -o "${tmp}.2" &>/dev/null && mv "${tmp}.2" "$tmp";;
-      jpg|jpeg) has jpegoptim && jpegoptim "$([[ "$LOSSLESS" -eq 0 ]] && echo "--max=$QUALITY")" -q -f --stdout "$tmp" >"${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp";;
-      gif)
-        has gifsicle && gifsicle -O3 "$tmp" -o "${tmp}.2" &>/dev/null && mv "${tmp}.2" "$tmp";;
-      svg)
-        has svgo && svgo -i "$tmp" -o "${tmp}.2" &>/dev/null && mv "${tmp}.2" "$tmp";;
-    esac
-    # Atomic replace for in-place
-    if [[ $INPLACE -eq 1 ]]; then
-      mv -f "$tmp" "$src"
+    if [[ $LOSSLESS -eq 1 ]]; then
+      if has flaca; then
+        flaca -j1 "$tmp" &>/dev/null || { rm -f "$tmp"; return 1; }
+      else
+        case $ext in
+          png)
+            has oxipng && oxipng -o max -q "$tmp" &>/dev/null
+            has optipng && optipng -o7 -quiet "$tmp" &>/dev/null;;
+          jpg|jpeg) has jpegoptim && jpegoptim --strip-all -q "$tmp" &>/dev/null;;
+          webp) has cwebp && { local t="${tmp}.webp"; cwebp -lossless "$tmp" -o "$t" &>/dev/null && mv "$t" "$tmp"; };;
+        esac
+      fi
     else
-      mv -f "$tmp" "$out"
+      if has rimage; then
+        rimage mozjpeg -q "$QUALITY" -d "$TMPDIR" "$tmp" &>/dev/null || { rm -f "$tmp"; return 1; }
+        local opt="$TMPDIR/$(basename "$tmp")"
+        [[ -f $opt ]] && mv "$opt" "$tmp"
+      else
+        case $ext in
+          png)
+            has oxipng && oxipng -o max -q "$tmp" &>/dev/null
+            has pngquant && pngquant --quality="$QUALITY"-100 -f "$tmp" -o "${tmp}.2" &>/dev/null && mv "${tmp}.2" "$tmp";;
+          jpg|jpeg) has jpegoptim && jpegoptim --max="$QUALITY" -q -f "$tmp" &>/dev/null;;
+          webp) has cwebp && { local t="${tmp}.webp"; cwebp -q "$QUALITY" -m 6 "$tmp" -o "$t" &>/dev/null && mv "$t" "$tmp"; };;
+        esac
+      fi
     fi
+    mv "$tmp" "$out"
   fi
-  # Stats
+
+  [[ -f $out ]] || { ((FAIL++)); return 1; }
+
   local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
   local new=$(stat -c%s "$out" 2>/dev/null || echo 0)
   if ((new>0 && new<orig)); then
-    local saved=$((orig-new)) pct=$((saved*100/orig))
-    ((MIN_SAVE>0 && pct<MIN_SAVE)) && { rm -f "$out"; ((SKIPPED++)); return 1; }
-    ((PROCESSED++))
-    printf '%s → %s (%d%%)\n' "$(basename "$src")" "$(basename "$out")" "$pct"
-    [[ $INPLACE -eq 0 && $KEEP_ORIG -eq 0 ]] && [[ $src != "$out" ]] && rm -f "$src"
+    printf '%s → %d%%\n' "$(basename "$src")" "$((100-new*100/orig))"
+    [[ $KEEP -eq 0 ]] && rm -f "$src"
+    ((OK++))
   else
-    [[ $fmt == "$ext" ]] && { rm -f "$out"; ((FAILED++)); return 1; }
-    ((PROCESSED++))
+    rm -f "$out"
+    ((SKIP++))
   fi
 }
 
 # -- Video optimization --
-optimize_video(){
-  local src=$1 ext="${src##*.}" out=$(get_output "$src" "$ext")
-  [[ -f $out && $KEEP_ORIG -eq 1 && $INPLACE -eq 0 ]] && return 0
-  [[ $DRY_RUN -eq 1 ]] && { log "[DRY] $(basename "$src")"; return 0; }
-  # Detect best codec
-  local vcodec=""
-  if has ffmpeg; then
-    local encoders=$("${TOOLS[ffmpeg]}" -hide_banner -encoders 2>/dev/null || :)
-    if [[ $encoders == *libsvtav1* ]]; then vcodec="libsvtav1"
-    elif [[ $encoders == *libaom-av1* ]]; then vcodec="libaom-av1"  
-    elif [[ $encoders == *libvpx-vp9* ]]; then vcodec="libvpx-vp9"
-    elif [[ $encoders == *libx265* ]]; then vcodec="libx265"
-    else vcodec="libx264"; fi
-  fi
-  # Build ffmpeg args
-  local -a vargs aargs=(-c:a libopus -b:a "${AUDIO_BITRATE}k")
-  case $vcodec in
+opt_video(){
+  local src=$1 out=$(outpath "$src")
+  [[ -f $out && $KEEP -eq 1 ]] && { ((SKIP++)); return 0; }
+  [[ $DRY -eq 1 ]] && { log "[DRY] $(basename "$src")"; return 0; }
+
+  has ffmpeg || { warn "ffmpeg missing"; ((FAIL++)); return 1; }
+
+  # Detect codec
+  local enc=$(ffmpeg -hide_banner -encoders 2>/dev/null)
+  local vc="libx264"
+  case $VID_CODEC in
+    av1)
+      [[ $enc == *libsvtav1* ]] && vc="libsvtav1" || \
+      [[ $enc == *libaom-av1* ]] && vc="libaom-av1";;
+    vp9) [[ $enc == *libvpx-vp9* ]] && vc="libvpx-vp9";;
+    h265) [[ $enc == *libx265* ]] && vc="libx265";;
+    h264) vc="libx264";;
+  esac
+
+  local -a vargs=() aargs=(-c:a libopus -b:a "${AUDIO_BR}k")
+  case $vc in
     libsvtav1) vargs=(-c:v libsvtav1 -preset 8 -crf "$VIDEO_CRF");;
     libaom-av1) vargs=(-c:v libaom-av1 -cpu-used 6 -crf "$VIDEO_CRF");;
     libvpx-vp9) vargs=(-c:v libvpx-vp9 -crf "$VIDEO_CRF" -b:v 0 -row-mt 1);;
     libx265) vargs=(-c:v libx265 -preset medium -crf "$VIDEO_CRF");;
     *) vargs=(-c:v libx264 -preset medium -crf "$VIDEO_CRF");;
   esac
-  local tmp="${out}.tmp"
+
+  local tmp="$TMPDIR/$(basename "$out")"
   if has ffzap; then
-    "${TOOLS[ffzap]}" -i "$src" -f "${vargs[*]} ${aargs[*]} -y" -o "$tmp" --overwrite &>/dev/null
+    ffzap -i "$src" -f "${vargs[*]} ${aargs[*]}" -o "$tmp" -t "$FFZAP_THREADS" --overwrite &>/dev/null
   elif has ffmpeg; then
-    "${TOOLS[ffmpeg]}" -i "$src" "${vargs[@]}" "${aargs[@]}" -y "$tmp" &>/dev/null
+    ffmpeg -i "$src" "${vargs[@]}" "${aargs[@]}" -y "$tmp" &>/dev/null
   else
-    warn "No video encoder"; return 1
+    return 1
   fi
-  [[ -f $tmp ]] && mv "$tmp" "$out" || { rm -f "$tmp"; return 1; }
+  
+  [[ -f $tmp ]] || { ((FAIL++)); return 1; }
+
   local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
-  local new=$(stat -c%s "$out" 2>/dev/null || echo 0)
-  ((new>0 && new<orig)) && {
-    ((PROCESSED++))
-    printf '%s → %s (%d%%)\n' "$(basename "$src")" "$(basename "$out")" "$((100-new*100/orig))"
-    [[ $INPLACE -eq 1 || $KEEP_ORIG -eq 0 ]] && [[ $src != "$out" ]] && rm -f "$src"
-  } || { rm -f "$out"; ((FAILED++)); }
+  local new=$(stat -c%s "$tmp" 2>/dev/null || echo 0)
+  if ((new>0 && new<orig)); then
+    mv "$tmp" "$out"
+    printf '%s → %d%%\n' "$(basename "$src")" "$((100-new*100/orig))"
+    [[ $KEEP -eq 0 ]] && rm -f "$src"
+    ((OK++))
+  else
+    rm -f "$tmp"
+    ((SKIP++))
+  fi
 }
 
 # -- Audio optimization --
-optimize_audio(){
-  local src=$1 ext="${src##*.}" out
-  [[ $ext == "opus" ]] && out=$(get_output "$src" "$ext") || out=$(get_output "$src" "opus")
-  [[ -f $out && $KEEP_ORIG -eq 1 && $INPLACE -eq 0 ]] && return 0
-  [[ $DRY_RUN -eq 1 ]] && { log "[DRY] $(basename "$src") → opus"; return 0; }
-  local tmp="${out}.tmp"
-  if [[ $ext != "opus" ]]; then
-    if has opusenc && [[ $ext =~ ^(wav|flac|aiff)$ ]]; then
-      opusenc --bitrate "$AUDIO_BITRATE" --quiet "$src" "$tmp" &>/dev/null
-    elif has ffmpeg; then
-      "${TOOLS[ffmpeg]}" -i "$src" -c:a libopus -b:a "${AUDIO_BITRATE}k" -y "$tmp" &>/dev/null
-    else
-      warn "No audio encoder"; return 1
-    fi
+opt_audio(){
+  local src=$1 ext="${src##*.}"
+  local out=$(outpath "$src" "opus")
+  [[ $ext == "opus" ]] && { ((SKIP++)); return 0; }
+  [[ -f $out && $KEEP -eq 1 ]] && { ((SKIP++)); return 0; }
+  [[ $DRY -eq 1 ]] && { log "[DRY] $(basename "$src") → opus"; return 0; }
+
+  has ffmpeg || { warn "ffmpeg missing"; ((FAIL++)); return 1; }
+
+  local tmp="$TMPDIR/$(basename "$out")"
+  if has ffzap; then
+    ffzap -i "$src" -f "-c:a libopus -b:a ${AUDIO_BR}k" -o "$tmp" -t "$FFZAP_THREADS" --overwrite &>/dev/null
+  elif has ffmpeg; then
+    ffmpeg -i "$src" -c:a libopus -b:a "${AUDIO_BR}k" -y "$tmp" &>/dev/null
   else
-    cp -f "$src" "$tmp"
+    return 1
   fi
-  [[ -f $tmp ]] && mv "$tmp" "$out" || { rm -f "$tmp"; return 1; }
+
+  [[ -f $tmp ]] || { ((FAIL++)); return 1; }
+
   local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
-  local new=$(stat -c%s "$out" 2>/dev/null || echo 0)
-  ((new<orig)) && {
-    ((PROCESSED++))
-    printf '%s → opus (%d%%)\n' "$(basename "$src")" "$((100-new*100/orig))"
-    [[ $INPLACE -eq 1 || $KEEP_ORIG -eq 0 ]] && [[ $src != "$out" ]] && rm -f "$src"
-  } || ((FAILED++))
+  local new=$(stat -c%s "$tmp" 2>/dev/null || echo 0)
+  if ((new>0 && new<orig)); then
+    mv "$tmp" "$out"
+    printf '%s → opus %d%%\n' "$(basename "$src")" "$((100-new*100/orig))"
+    [[ $KEEP -eq 0 ]] && rm -f "$src"
+    ((OK++))
+  else
+    rm -f "$tmp"
+    ((SKIP++))
+  fi
 }
 
-# -- Process dispatcher --
-process_file(){
+# -- Dispatcher --
+process(){
   local f=$1 ext="${f##*.}" && ext="${ext,,}"
   ((TOTAL++))
   case $ext in
-    jpg|jpeg|png|gif|svg|webp|avif|jxl|tiff|tif|bmp) [[ $MEDIA_TYPE =~ ^(all|image)$ ]] && optimize_image "$f";;
-    mp4|mkv|mov|webm|avi|flv) [[ $MEDIA_TYPE =~ ^(all|video)$ ]] && optimize_video "$f";;
-    opus|flac|mp3|m4a|aac|ogg|wav) [[ $MEDIA_TYPE =~ ^(all|audio)$ ]] && optimize_audio "$f";;
-    *) ((SKIPPED++));;
+    jpg|jpeg|png|gif|webp|avif|jxl|tiff|bmp) [[ $TYPE =~ ^(all|image)$ ]] && opt_image "$f";;
+    mp4|mkv|mov|webm|avi|flv) [[ $TYPE =~ ^(all|video)$ ]] && opt_video "$f";;
+    opus|flac|mp3|m4a|aac|ogg|wav) [[ $TYPE =~ ^(all|audio)$ ]] && opt_audio "$f";;
+    *) ((SKIP++));;
   esac
 }
 
@@ -218,88 +243,83 @@ main(){
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -h|--help) cat <<'EOF'
-optimize - Media optimizer (images/video/audio)
+optimize - Media optimizer (recursive, filtered)
 
-USAGE: optimize [OPTIONS] [files/dirs...]
+USAGE: optimize [OPTIONS] [paths...]
 
 OPTIONS:
-  -t TYPE   Media type: all|image|video|audio (default: all)
-  -q N      Quality 1-100 (default: 85)
-  -c N      Video CRF 0-51 (default: 27)
-  -b N      Audio bitrate kbps (default: 128)
-  -f FMT    Convert format (webp|avif|jxl|png|jpg)
-  -o DIR    Output directory
-  -k        Keep originals
-  -i        Replace in-place
-  -r        Recursive
-  -j N      Parallel jobs (default: auto)
-  -l        Lossy mode
-  -n        Dry-run
-  -s        Skip already optimized
-  -T        TUI mode (interactive)
-  --min N   Min % savings (default: 0)
+  -t TYPE      Type: all|image|video|audio (default: all)
+  -q N         Quality 1-100 (default: 85)
+  -c N         Video CRF 0-51 (default: 27)
+  -b N         Audio bitrate kbps (default: 128)
+  -o DIR       Output directory
+  -k           Keep originals
+  -j N         Parallel jobs (0=auto, default: 0)
+  -l           Lossless mode
+  -n           Dry-run
+  --img FMT    Image format: webp|avif|jxl|png|jpg (default: webp)
+  --vid CODEC  Video codec: av1|vp9|h265|h264 (default: av1)
+  --zopfli N   Zopfli iterations (default: 60)
+  --ffzap-t N  ffzap threads (default: 2)
 
-EXAMPLES:
-  optimize .
-  optimize -f webp -q 90 -r ~/Pictures
-  optimize -t video -c 28 video.mp4
+FILTERS: Always recursive, min 10KB, excludes *_opt* paths
+PARALLEL: rust-parallel → parallel → xargs
+TOOLS: flaca, rimage, ffzap, ffmpeg, oxipng, optipng, pngquant, jpegoptim, cwebp, avifenc, cjxl
 EOF
         exit 0;;
-      -t) MEDIA_TYPE="${2,,}"; shift 2;;
+      -t) TYPE="${2,,}"; shift 2;;
       -q) QUALITY=$2; shift 2;;
       -c) VIDEO_CRF=$2; shift 2;;
-      -b) AUDIO_BITRATE=$2; shift 2;;
-      -f) FORMAT="${2,,}"; LOSSLESS=0; shift 2;;
-      -o) OUTPUT_DIR=$2; shift 2;;
-      -k) KEEP_ORIG=1; shift;;
-      -i) INPLACE=1; KEEP_ORIG=0; shift;;
-      -r) RECURSIVE=1; shift;;
+      -b) AUDIO_BR=$2; shift 2;;
+      -o) OUTDIR=$2; shift 2;;
+      -k) KEEP=1; shift;;
       -j) JOBS=$2; shift 2;;
-      -l) LOSSLESS=0; shift;;
-      -n) DRY_RUN=1; shift;;
-      -s) SKIP_OPT=1; shift;;
-      -T) TUI=1; shift;;
-      --min) MIN_SAVE=$2; shift 2;;
-      -*) die "Unknown option: $1";;
+      -l) LOSSLESS=1; shift;;
+      -n) DRY=1; shift;;
+      --img) IMG_FMT="${2,,}"; shift 2;;
+      --vid) VID_CODEC="${2,,}"; shift 2;;
+      --zopfli) ZOPFLI_ITER=$2; shift 2;;
+      --ffzap-t) FFZAP_THREADS=$2; shift 2;;
+      -*) die "Unknown: $1";;
       *) break;;
     esac
   done
-  # Validate
-  ((QUALITY<1 || QUALITY>100)) && die "Quality must be 1-100"
-  ((VIDEO_CRF<0 || VIDEO_CRF>51)) && die "CRF must be 0-51"
-  ((AUDIO_BITRATE<6 || AUDIO_BITRATE>510)) && die "Bitrate must be 6-510"
-  [[ -n $OUTPUT_DIR ]] && mkdir -p "$OUTPUT_DIR"
-  # Collect files
+
+  ((QUALITY<1 || QUALITY>100)) && die "Quality: 1-100"
+  ((VIDEO_CRF<0 || VIDEO_CRF>51)) && die "CRF: 0-51"
+  [[ -n $OUTDIR ]] && mkdir -p "$OUTDIR"
+  [[ $JOBS -eq 0 ]] && JOBS=$(nproc)
+
   local -a files=()
-  if [[ $TUI -eq 1 ]]; then
-    has sk || has fzf || die "TUI requires sk or fzf"
-    local picker=${TOOLS[sk]:-${TOOLS[fzf]}}
-    mapfile -t files < <(find_media "${1:-.}" | "$picker" -m --height=~80% --layout=reverse)
-  elif [[ $# -eq 0 || ($# -eq 1 && $1 == "-") ]]; then
-    mapfile -t files
+  if [[ $# -eq 0 ]]; then
+    mapfile -t files < <(find_files .)
   else
-    for arg in "$@"; do
-      if [[ -f $arg ]]; then
-        files+=("$arg")
-      elif [[ -d $arg ]]; then
-        mapfile -t -O "${#files[@]}" files < <(find_media "$arg")
-      fi
+    for p in "$@"; do
+      [[ -f $p ]] && files+=("$p") || mapfile -t -O "${#files[@]}" files < <(find_files "$p")
     done
   fi
-  [[ ${#files[@]} -eq 0 ]] && die "No files found"
-  # Process
-  log "Processing ${#files[@]} files | Jobs: $JOBS | Mode: $([[ $LOSSLESS -eq 1 ]] && echo Lossless || echo "Lossy Q=$QUALITY")"
-  if ((JOBS>1)) && has rust-parallel; then
-    printf '%s\0' "${files[@]}" | "${TOOLS[rust-parallel]}" -0 --no-run-if-empty bash -c 'source "$1"; process_file "$2"' _ "$0" {}
-  elif ((JOBS>1)) && has parallel; then  
-    export -f process_file optimize_image optimize_video optimize_audio get_output is_optimized has
-    export TOOLS QUALITY VIDEO_CRF AUDIO_BITRATE LOSSLESS FORMAT OUTPUT_DIR INPLACE KEEP_ORIG MIN_SAVE SKIP_OPT DRY_RUN MEDIA_TYPE SUFFIX
-    printf '%s\0' "${files[@]}" | "${TOOLS[parallel]}" -0 -j "$JOBS" process_file {}
+  [[ ${#files[@]} -eq 0 ]] && die "No files"
+
+  log "Files: ${#files[@]} | Jobs: $JOBS | Mode: $([[ $LOSSLESS -eq 1 ]] && echo Lossless || echo "Lossy Q=$QUALITY") | Img: $IMG_FMT | Vid: $VID_CODEC"
+
+  # Parallel execution: rust-parallel → parallel → xargs
+  if ((JOBS>1)); then
+    export -f process opt_image opt_video opt_audio outpath has
+    export QUALITY VIDEO_CRF AUDIO_BR LOSSLESS OUTDIR KEEP DRY TYPE SUFFIX TMPDIR R G Y X IMG_FMT VID_CODEC FFZAP_THREADS ZOPFLI_ITER
+    export OK SKIP FAIL TOTAL
+
+    if has rust-parallel; then
+      printf '%s\0' "${files[@]}" | rust-parallel -0 -j "$JOBS" bash -c 'source <(declare -f process opt_image opt_video opt_audio outpath has); process "$1"' _ {}
+    elif has parallel; then
+      printf '%s\0' "${files[@]}" | parallel -0 -j "$JOBS" --no-notice process {}
+    else
+      printf '%s\0' "${files[@]}" | xargs -0 -r -P "$JOBS" -n1 bash -c 'source <(declare -f process opt_image opt_video opt_audio outpath has); process "$1"' _
+    fi
   else
-    for f in "${files[@]}"; do process_file "$f"; done
+    for f in "${files[@]}"; do process "$f"; done
   fi
-  # Stats
-  log "" "Complete: Processed=$PROCESSED Skipped=$SKIPPED Failed=$FAILED"
+
+  log "Done: OK=$OK Skip=$SKIP Fail=$FAIL"
 }
 
 main "$@"

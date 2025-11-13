@@ -13,17 +13,17 @@ declare -A cfg=([boot_size]="1024M" [ssh]=0 [dry_run]=0 [debug]=0 [keep_source]=
 declare src_path="" tgt_path="" IS_BLOCK=0 SRC_IMG="" WORKDIR="" LOOP_DEV="" TGT_DEV="" TGT_LOOP="" BOOT_PART="" ROOT_PART="" LOCK_FD=-1 LOCK_FILE="" STOPPED_UDISKS2=0
 
 # Logging
-log() { printf '[%s] %s\n' "$(date +%T)" "${1-}"; }
-info() { log "INFO: $1"; }
-warn() { log "WARN: $1" >&2; }
-error() {
+log(){ printf '[%s] %s\n' "$(date +%T)" "${1-}"; }
+info(){ log "INFO: $1"; }
+warn(){ log "WARN: $1" >&2; }
+error(){
   log "ERROR: $1" >&2
   exit 1
 }
-debug() { ((cfg[debug])) && log "DEBUG: $1" || :; }
+debug(){ ((cfg[debug])) && log "DEBUG: $1" || :; }
 
 # Execute respecting dry-run
-run() {
+run(){
   ((cfg[dry_run])) && {
     info "[DRY] $*"
     return 0
@@ -33,7 +33,7 @@ run() {
 }
 
 # Derive partition paths using bash pattern matching
-derive_partition_paths() {
+derive_partition_paths(){
   local dev=${1:-}
   [[ -z $dev ]] && {
     BOOT_PART=""
@@ -50,7 +50,7 @@ derive_partition_paths() {
 }
 
 # Wait for partition devices
-wait_for_partitions() {
+wait_for_partitions(){
   local boot=$1 root=$2 dev=${3:-$TGT_DEV} i
   ((cfg[dry_run])) && return 0
 
@@ -67,7 +67,7 @@ wait_for_partitions() {
 }
 
 # Refresh partition table
-refresh_partitions() {
+refresh_partitions(){
   local dev=$1
   derive_partition_paths "$dev"
   ((cfg[dry_run])) && return 0
@@ -108,7 +108,7 @@ refresh_partitions() {
 }
 
 # Device locking
-acquire_device_lock() {
+acquire_device_lock(){
   local path=$1
   [[ -z $path ]] && return 0
 
@@ -120,7 +120,7 @@ acquire_device_lock() {
   debug "Lock acquired: $LOCK_FILE (fd=$LOCK_FD)"
 }
 
-release_device_lock() {
+release_device_lock(){
   ((LOCK_FD >= 0)) && {
     debug "Releasing lock"
     exec {LOCK_FD}>&-
@@ -130,7 +130,7 @@ release_device_lock() {
 }
 
 # Setup workspace
-prepare() {
+prepare(){
   info "Setting up workspace"
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}")
   SRC_IMG="${WORKDIR}/source.img"
@@ -139,7 +139,7 @@ prepare() {
 }
 
 # Cleanup
-cleanup() {
+cleanup(){
   debug "Cleaning up"
   local dir
 
@@ -161,7 +161,7 @@ cleanup() {
 }
 
 # Check dependencies
-check_deps() {
+check_deps(){
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync tar xz blkid partprobe lsblk flock)
   local -a missing_cmds=()
   local cmd
@@ -182,7 +182,7 @@ check_deps() {
 }
 
 # Force unmount device
-force_umount_device() {
+force_umount_device(){
   local dev=$1 parts part
 
   # Kill any processes using the device
@@ -219,7 +219,7 @@ force_umount_device() {
 }
 
 # Process source
-process_source() {
+process_source(){
   info "Processing: $src_path"
 
   if [[ $src_path == *.xz ]]; then
@@ -236,7 +236,7 @@ process_source() {
 }
 
 # Setup target
-setup_target() {
+setup_target(){
   info "Setting up: $tgt_path"
   acquire_device_lock "$tgt_path"
 
@@ -285,7 +285,7 @@ setup_target() {
 }
 
 # Partition target
-partition_target() {
+partition_target(){
   info "Partitioning"
 
   # For block devices, ensure complete device release before partitioning
@@ -350,7 +350,7 @@ partition_target() {
 }
 
 # Mount filesystems
-mount_all() {
+mount_all(){
   info "Mounting"
   ((cfg[dry_run])) && return 0
 
@@ -374,7 +374,7 @@ mount_all() {
 }
 
 # Copy data
-copy_data() {
+copy_data(){
   info "Copying data"
   ((cfg[dry_run])) && return 0
 
@@ -396,7 +396,7 @@ copy_data() {
 }
 
 # Update config
-update_config() {
+update_config(){
   info "Updating config for F2FS"
   ((cfg[dry_run])) && return 0
 
@@ -447,7 +447,7 @@ update_config() {
 }
 
 # Setup first boot configuration
-setup_boot() {
+setup_boot(){
   info "Setting up first boot"
   ((cfg[dry_run])) && return 0
 
@@ -543,7 +543,7 @@ setup_boot() {
 }
 
 # Complete
-finalize() {
+finalize(){
   info "Finalizing"
   ((cfg[dry_run])) || sync
 
@@ -552,7 +552,7 @@ finalize() {
   info "First boot will be ~30s slower while F2FS tools install and resize"
 }
 
-usage() {
+usage(){
   cat <<-EOF
 	Usage: ${0##*/} [OPTIONS] [SOURCE] [TARGET]
 
@@ -589,7 +589,7 @@ usage() {
   exit 0
 }
 
-main() {
+main(){
   while getopts "b:i:d:sknxh" opt; do
     case $opt in
     b) cfg[boot_size]=$OPTARG ;;

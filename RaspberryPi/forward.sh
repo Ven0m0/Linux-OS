@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-# Source shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/lib/common.sh"
 
 # Setup environment
-setup_environment
+set -euo pipefail
+shopt -s nullglob globstar execfail
+IFS=$'\n\t'
 
 net.ipv4.ip_forward=1
 net.ipv6.conf.all.forwarding=1

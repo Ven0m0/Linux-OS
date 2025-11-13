@@ -1,8 +1,48 @@
 #!/usr/bin/env bash
-# Source common library
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/common.sh
-source "${SCRIPT_DIR}/lib/common.sh" || exit 1
+
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar
+
+# Check if command exists
+has(){ command -v "$1" &>/dev/null; }
+
+# Logging function
+log(){ printf '%b\n' "$*"; }
+
+# Detect available privilege escalation tool
+get_priv_cmd(){
+  local cmd
+  for cmd in sudo-rs sudo doas; do
+    if has "$cmd"; then
+      printf '%s' "$cmd"
+      return 0
+    fi
+  done
+  [[ $EUID -eq 0 ]] || { echo "No privilege tool found and not running as root" >&2; exit 1; }
+  printf ''
+}
+
+# Initialize privilege tool
+init_priv(){
+  local priv_cmd; priv_cmd=$(get_priv_cmd)
+  [[ -n $priv_cmd && $EUID -ne 0 ]] && "$priv_cmd" -v
+  printf '%s' "$priv_cmd"
+}
+
+# Run command with privilege escalation
+run_priv(){
+  local priv_cmd="${PRIV_CMD:-}"
+  [[ -z $priv_cmd ]] && priv_cmd=$(get_priv_cmd)
+  if [[ $EUID -eq 0 || -z $priv_cmd ]]; then
+    "$@"
+  else
+    "$priv_cmd" -- "$@"
+  fi
+}
+
+# Error handling
+die(){ echo "Error: $*" >&2; exit 1; }
 
 # Initialize privilege tool
 PRIV_CMD=$(init_priv)

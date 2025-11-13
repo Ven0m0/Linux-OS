@@ -1,12 +1,42 @@
 #!/usr/bin/env bash
-# Source shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../lib/common.sh"
-source "${SCRIPT_DIR}/../lib/cleaning.sh"
 
-# Setup environment and export DEBIAN_FRONTEND
-setup_environment
+# Setup environment
+set -euo pipefail
+shopt -s nullglob globstar execfail
+IFS=$'\n\t'
+
+# Install packages without user interaction
 export DEBIAN_FRONTEND=noninteractive
+
+# Configure dpkg to exclude documentation and locales
+configure_dpkg_nodoc() {
+  local dpkg_config='path-exclude /usr/share/doc/*
+path-exclude /usr/share/help/*
+path-exclude /usr/share/man/*
+path-exclude /usr/share/groff/*
+path-exclude /usr/share/info/*
+path-exclude /usr/share/lintian/*
+path-exclude /usr/share/linda/*
+# we need to keep copyright files for legal reasons
+path-include /usr/share/doc/*/copyright'
+
+  echo "$dpkg_config" | sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null
+  echo "Configured dpkg to exclude documentation in future installations"
+}
+
+# Remove system documentation files
+clean_documentation() {
+  echo "Removing documentation files..."
+  find /usr/share/doc/ -depth -type f ! -name copyright -delete 2>/dev/null || :
+  find /usr/share/doc/ -name '*.gz' -delete 2>/dev/null || :
+  find /usr/share/doc/ -name '*.pdf' -delete 2>/dev/null || :
+  find /usr/share/doc/ -name '*.tex' -delete 2>/dev/null || :
+  find /usr/share/doc/ -type d -empty -delete 2>/dev/null || :
+
+  echo "Removing man pages and related files..."
+  sudo rm -rf /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* \
+    /usr/share/linda/* /var/cache/man/* /usr/share/man/* 2>/dev/null || :
+}
 
 echo "Install Pi-Hole"
 curl -sSL https://install.pi-hole.net | sudo bash

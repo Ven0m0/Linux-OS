@@ -2,9 +2,7 @@
 #
 # DESCRIPTION: Automated Raspberry Pi system optimization and tooling setup
 #              Targets: Debian/Raspbian, DietPi
-
-set -Eeuo pipefail
-shopt -s nullglob globstar extglob dotglob
+set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive HOME="/home/${SUDO_USER:-$USER}"
 

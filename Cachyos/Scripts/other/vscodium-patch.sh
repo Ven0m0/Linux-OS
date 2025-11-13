@@ -26,7 +26,6 @@ download_file(){
     die "aria2c, curl, or wget required"
   fi
 }
-
 #──────────── XDG Patches ─────────────────
 add_mime_type(){ grep -qE "^MimeType=.*\b${1};" "$2" || sed -i -E "s#^(MimeType=.*;)\$#\1${1};#" "$2"; }
 fix_15741(){ add_mime_type 'inode/directory' "$1"; }
@@ -50,7 +49,6 @@ find_vscode_files(){
      /usr/share/applications/vscodium*.desktop \
      2>/dev/null | grep -vE '\-url-handler.desktop$'
 }
-
 #──────────── VSCodium Marketplace ────────
 vscodium_marketplace(){
   local prod="${1:-/usr/share/vscodium/resources/app/product.json}" revert="${2:-0}"
@@ -75,7 +73,6 @@ vscodium_marketplace(){
     printf '%b\n' "${GRN}VSCodium → MS Marketplace${DEF}"
   fi
 }
-
 #──────────── Sign Fix ────────────────────
 fix_sign(){
   local path="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js"
@@ -86,7 +83,6 @@ fix_sign(){
     sed -i 's|import("node-ovsx-sign")|import("@vscode/vsce-sign")|g' "$path"
   fi
 }
-
 #──────────── Code-Features ───────────────
 features_patch(){
   local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-features/patch.json}" cache="${3:-/usr/share/code-features/cache.json}"

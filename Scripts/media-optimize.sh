@@ -20,7 +20,7 @@ log(){ printf '%s\n' "$*"; }
 declare -g QUALITY=85 VIDEO_CRF=27 AUDIO_BITRATE=128
 declare -g LOSSLESS=1 RECURSIVE=0 DRY_RUN=0 INPLACE=0 KEEP_ORIG=0
 declare -g OUTPUT_DIR="" FORMAT="" MEDIA_TYPE="all" MIN_SAVE=0
-declare -g JOBS=$(nproc) SUFFIX="_opt" TUI=0 SKIP_OPT=0
+declare -g JOBS="$(nproc)" SUFFIX="_opt" TUI=0 SKIP_OPT=0
 declare -gi TOTAL=0 PROCESSED=0 SKIPPED=0 FAILED=0
 # -- File discovery --
 find_media(){
@@ -28,11 +28,11 @@ find_media(){
   [[ $RECURSIVE -eq 0 ]] && depth_arg="-d 1"
   local -a exts=(jpg jpeg png gif svg webp avif jxl tiff tif bmp mp4 mkv mov webm avi flv opus flac mp3 m4a aac ogg wav)
   if has fdf; then
-    local -a args=(-tf --no-require-git $depth_arg)
+    local -a args=(-tf --no-require-git "$depth_arg")
     for e in "${exts[@]}"; do args+=(-e "$e"); done
     "${TOOLS[fdf]}" "${args[@]}" "$dir" 2>/dev/null
   elif has fd fdfind; then
-    local -a args=(-tf --no-require-git $depth_arg)
+    local -a args=(-tf --no-require-git "$depth_arg")
     for e in "${exts[@]}"; do args+=(-e "$e"); done
     "${TOOLS[fd]}" "${args[@]}" "$dir" 2>/dev/null
   else
@@ -103,7 +103,7 @@ optimize_image(){
       png)
         has oxipng && oxipng -o max -q "$tmp" &>/dev/null
         [[ $LOSSLESS -eq 0 ]] && has pngquant && pngquant --quality="$QUALITY"-100 -f "$tmp" -o "${tmp}.2" &>/dev/null && mv "${tmp}.2" "$tmp";;
-      jpg|jpeg) has jpegoptim && jpegoptim $([ $LOSSLESS -eq 0 ] && echo "--max=$QUALITY") -q -f --stdout "$tmp" >"${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp";;
+      jpg|jpeg) has jpegoptim && jpegoptim "$([[ "$LOSSLESS" -eq 0 ]] && echo "--max=$QUALITY")" -q -f --stdout "$tmp" >"${tmp}.2" 2>/dev/null && mv "${tmp}.2" "$tmp";;
       gif)
         has gifsicle && gifsicle -O3 "$tmp" -o "${tmp}.2" &>/dev/null && mv "${tmp}.2" "$tmp";;
       svg)

@@ -3,18 +3,15 @@ set -Eeuo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C
-
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-
 #──────────── Core Helpers ────────────────
 has(){ command -v "$1" &>/dev/null; }
 die(){ printf '%b\n' "${RED}Error:${DEF} $*" >&2; exit "${2:-1}"; }
-
 JQ=$(has jaq && echo jaq || has jq && echo jq || die "jq/jaq required")
 
 download_file(){

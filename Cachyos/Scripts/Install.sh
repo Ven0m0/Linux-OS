@@ -141,47 +141,36 @@ else
 fi
 
 # soar package manager
-if ! has soar; then
-  msg "Installing soar"
-  curl -fsL "https://raw.githubusercontent.com/pkgforge/soar/main/install.sh" | sh 2>/dev/null || :
-  export PATH="$HOME/.local/share/soar/bin:$PATH"
-else
+if has soar; then
   msg "Configuring soar"
-  soar self update || :
-  soar S && soar u --no-verify || :
+  soar self update
+  soar S && soar u --no-verify
   soar_pkgs=()
   for pkg in "${soar_pkgs[@]}"; do 
-    soar s "$pkg" && soar i -yq "$pkg" || : 
-    soar ls 2>/dev/null | grep -q "$pkg" || soar i -yq "$pkg" || : 
+    soar s "$pkg" && soar i -yq "$pkg" || { soar ls 2>/dev/null | grep -q "$pkg" || soar i -yq "$pkg"; }
   done
   soar i -yq 'sstrip.upx.ss#github.com.pkgforge-dev.super-strip'
 fi
 
 # Shell integration
 fish_setup(){
-  mkdir -p "$HOME/.config/fish/conf.d" 2>/dev/null || :
-  fish -c "fish_update_completions" 2>/dev/null || :
+  mkdir -p "${HOME}/.config/fish/conf.d"
+  fish -c "fish_update_completions"
   if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
     fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher update" 2>/dev/null &
     fishplug=(acomagu/fish-async-prompt kyohsuke/fish-evalcache eugene-babichenko/fish-codegen-cache
       oh-my-fish/plugin-xdg wk/plugin-ssh-term-helper scaryrawr/cheat.sh.fish y3owk1n/fish-x scaryrawr/zoxide
       kpbaks/autols.fish patrickf1/fzf.fish jorgebucaran/autopair.fish wawa19933/fish-systemd
-      halostatue/fish-rust kpbaks/zellij.fish)
+      halostatue/fish-rust kpbaks/zellij.fish); wait
     printf '%s\n' "${fishplug[@]}" | fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher install" 2>/dev/null || :
   fi
 }
-bash_setup(){
-  mkdir -p "$HOME/.config/bash" 2>/dev/null || :
-  curl -fsSL "https://raw.githubusercontent.com/duong-db/fzf-simple-completion/refs/heads/main/fzf-simple-completion.sh" \
-    -o "$HOME/.config/bash/fzf-simple-completion.sh" && chmod +x "$_" 2>/dev/null
-}
 zsh_setup(){
-  [[ ! -f "$HOME/.zshenv" ]] && echo 'export ZDOTDIR="$HOME/.config/zsh"' > "$HOME/.zshenv"
-  mkdir -p "$HOME/.config/zsh" 2>/dev/null || :
-  [[ ! -d "$HOME/.local/share/antidote" ]] && git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "$HOME/.local/share/antidote"
+  [[ ! -f "${HOME}/.zshenv" ]] && echo 'export ZDOTDIR="$HOME/.config/zsh"' > "${HOME}/.zshenv"
+  mkdir -p "${HOME}/.config/zsh"
+  [[ ! -d "${HOME}/.local/share/antidote" ]] && git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "${HOME}/.local/share/antidote"
 }
-
-declare -A shell_setups=([zsh]=zsh_setup [fish]=fish_setup [bash]=bash_setup)
+declare -A shell_setups=([zsh]=zsh_setup [fish]=fish_setup
 for sh in "${!shell_setups[@]}"; do
   has "$sh" && "${shell_setups[$sh]}" &
 done
@@ -189,40 +178,38 @@ done
 # Enable services
 srvc=(irqbalance prelockd memavaild uresourced preload pci-latency)
 for sv in "${srvc[@]}"; do 
-  sudo systemctl is-enabled "$svc" || sudo systemctl enable --now "$sv" || :
+  sudo systemctl is-enabled "$svc" || sudo systemctl enable --now "$sv"
 done
-
 wait
 
 # System maintenance
 has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry \
   '(-disable={config_update,system,tldr,maza,yazi,micro})' 2>/dev/null || :
-has fc-cache && sudo fc-cache -f 2>/dev/null
-has update-desktop-database && sudo update-desktop-database 2>/dev/null
-has fwupdmgr && { sudo fwupdmgr refresh -y 2>/dev/null; sudo fwupdtool update 2>/dev/null; } || :
+has fc-cache && sudo fc-cache -f
+has update-desktop-database && sudo update-desktop-database
+has fwupdmgr && { sudo fwupdmgr refresh -y 2>/dev/null; sudo fwupdtool update; } || :
 
 # Initramfs rebuild
 if has update-initramfs; then
-  sudo update-initramfs 2>/dev/null || :
+  sudo update-initramfs || :
 elif has limine-mkinitcpio; then
-  sudo limine-mkinitcpio 2>/dev/null || :
+  sudo limine-mkinitcpio || :
 elif has mkinitcpio; then
-  sudo mkinitcpio -P 2>/dev/null || :
-elif has /usr/lib/booster/regenerate_images; then
-  sudo /usr/lib/booster/regenerate_images 2>/dev/null || :
+  sudo mkinitcpio -P || :
+elif [[ -x /usr/lib/booster/regenerate_images ]]; then
+  sudo /usr/lib/booster/regenerate_images || :
 elif has dracut-rebuild; then
-  sudo dracut-rebuild 2>/dev/null || :
+  sudo dracut-rebuild || :
 else
   msg "⚠ initramfs generator not found"
 fi
 
 # Cleanup
 sudo pacman -Rns --noconfirm "$(pacman -Qdtq 2>/dev/null)" 2>/dev/null || :
-sudo pacman -Sccq --noconfirm 2>/dev/null || :
 paru -Scc --noconfirm || sudo pacman -Scc --noconfirm
 (( aur )) && "${pkgmgr[@]}" -Sccq --noconfirm 2>/dev/null || :
-sudo journalctl --rotate -q &>/dev/null; sudo journalctl --rotate --vacuum-size=50M -q 2>/dev/null
+sudo journalctl --rotate -q; sudo journalctl --rotate --vacuum-size=50M -q
 sudo fstrim -a
 
 msg "Setup complete! Restart shell."
-[[ -f "$HOME/Desktop/failed_pkgs.msg" ]] && msg "⚠ Check ~/Desktop/failed_pkgs.msg"
+[[ -f "${HOME}/failed_pkgs.msg" ]] && msg "⚠ Check ~/failed_pkgs.msg"

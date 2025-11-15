@@ -50,10 +50,10 @@ pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yas
   gamemode lib32-gamemode mangohud lib32-mangohud prismlauncher obs-studio luxtorpeda-git
   dxvk-gplasync-bin rustup python-pip uv github-cli bun-bin cod-bin biome yamlfmt
   eza bat fd ripgrep sd dust skim fzf shfmt shellcheck shellharden fastfetch cachyos-gaming-applications
-  pay-respects fclones topgrade bauh flatpak partitionmanager vx-bin kbuilder
+  pay-respects fclones topgrade bauh flatpak partitionmanager kbuilder
   cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher xdg-ninja cylon
   makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an jdk-temurin jdk25-graalvm-bin
-  vscodium-electron vk-hdr-layer-kwin6-git
+  vscodium-electron vk-hdr-layer-kwin6-git soar zoi-bin 
 )
 
 # Install packages

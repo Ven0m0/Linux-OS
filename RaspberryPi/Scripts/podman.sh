@@ -6,6 +6,6 @@ LC_ALL=C DEBIAN_FRONTEND=noninteractive
 sudo apt-get update -y
 sudo apt-get install -y podman podman-docker
 sudo touch /etc/containers/nodocker  
-systemctl enable --now podman.socket
+sudo systemctl enable --now podman.socket
 export DOCKER_HOST=unix:///run/podman/podman.sock  
 docker-compose up

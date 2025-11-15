@@ -53,7 +53,8 @@ pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yas
   pay-respects fclones topgrade bauh flatpak partitionmanager kbuilder
   cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher xdg-ninja cylon
   makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an jdk-temurin jdk25-graalvm-bin
-  vscodium-electron vk-hdr-layer-kwin6-git soar zoi-bin 
+  vscodium-electron vk-hdr-layer-kwin6-git soar zoi-bin cargo-binstall cargo-edit cargo-c cargo-update cargo-outdated
+  cargo-make cargo-llvm-cov cargo-cache cargo-machete cargo-pgo cargo-binutils cargo-udeps cargo-pkgbuild
 )
 
 # Install packages

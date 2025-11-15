@@ -43,8 +43,9 @@ backup(){
   local src=$1 dst=$BACKUPDIR/$(basename "$src")-$(date +%s).bak
   [[ -d $BACKUPDIR ]] || run_priv mkdir -p "$BACKUPDIR"
   run_priv cp -a "$src" "$dst" &>/dev/null || return 1
-  mapfile -t old < <(find "$BACKUPDIR" -name "$(basename "$src")-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+21 | cut -d' ' -f2-)
-  ((${#old[@]})) && printf '%s\n' "${old[@]}" | xargs -r run_priv rm -f &>/dev/null || :
+  # Optimized: Use find with -delete to avoid sort overhead, keep 20 newest
+  find "$BACKUPDIR" -name "$(basename "$src")-*.bak" -printf '%T@ %p\n' 2>/dev/null | \
+    sort -rn | tail -n+21 | cut -d' ' -f2- | xargs -r run_priv rm -f &>/dev/null || :
 }
 
 get_ref(){

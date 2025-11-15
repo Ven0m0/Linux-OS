@@ -76,10 +76,16 @@ run_priv(){
 print_banner(){
   local banner="$1" title="${2:-}"
   local flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
-  mapfile -t lines <<<"$banner"
+
+  # Optimized: Use read loop instead of mapfile to avoid subprocess
+  local -a lines=()
+  while IFS= read -r line || [[ -n $line ]]; do
+    lines+=("$line")
+  done <<<"$banner"
+
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
-    for line in "${lines[@]}"; do printf '%s%s%s\n' "${flag_colors[0]}" "$line" "$DEF"; done
+    printf '%s%s%s\n' "${flag_colors[0]}" "${lines[0]}" "$DEF"
   else
     for i in "${!lines[@]}"; do
       local segment_index=$((i * (segments - 1) / (line_count - 1)))
@@ -282,35 +288,31 @@ clean_sqlite_dbs(){
 #============ Process Management ============
 # Wait for processes to exit, kill if timeout
 ensure_not_running_any(){
-  local timeout=6 p running_procs=()
-  # Batch check all processes once instead of individually
+  local timeout=6 p
+  # Optimized: Use single pgrep with pattern instead of multiple calls
+  local pattern=$(printf '%s|' "$@"); pattern=${pattern%|}
+
+  # Quick check if any processes are running
+  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
+
+  # Show waiting message for found processes
   for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &>/dev/null && running_procs+=("$p")
+    pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
   done
-  # Only process running programs
-  [[ ${#running_procs[@]} -eq 0 ]] && return
-  # Wait for all processes in parallel using single loop
-  for p in "${running_procs[@]}"; do
-    printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
-  done
-  # Single wait loop checking all processes
+
+  # Single wait loop checking all processes with one pgrep call
   local wait_time=$timeout
   while ((wait_time-- > 0)); do
-    local still_running=0
-    for p in "${running_procs[@]}"; do
-      pgrep -x -u "$USER" "$p" &>/dev/null && ((still_running++))
-    done
-    ((still_running == 0)) && return
+    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
     sleep 1
   done
-  # Kill any remaining processes
-  for p in "${running_procs[@]}"; do
-    if pgrep -x -u "$USER" "$p" &>/dev/null; then
-      printf '  %s\n' "${RED}Killing ${p}...${DEF}"
-      pkill -KILL -x -u "$USER" "$p" &>/dev/null || :
-    fi
-  done
-  sleep 1
+
+  # Kill any remaining processes (single pkill call)
+  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null; then
+    printf '  %s\n' "${RED}Killing remaining processes...${DEF}"
+    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
+    sleep 1
+  fi
 }
 
 #============ Browser Profile Detection ============

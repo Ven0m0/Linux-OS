@@ -107,9 +107,10 @@ refresh_partitions(){
   
   derive_partition_paths "$dev"
   (( cfg[dry_run] )) && return 0
-  
-  sync; sync
-  
+
+  # Optimized: Single sync is sufficient
+  sync
+
   if [[ $dev == /dev/loop* ]]; then
     dbg "Loop device partition refresh: $dev"
     
@@ -308,8 +309,8 @@ force_umount_device(){
     [[ -n $part ]] && umount -fl "$part" &>/dev/null 2>&1 || :
   done
   
-  # Kernel cache drop
-  sync; sync
+  # Kernel cache drop (sync once before cache drop)
+  sync
   echo 3 >/proc/sys/vm/drop_caches 2>/dev/null || :
   
   # Final process kill
@@ -409,10 +410,10 @@ partition_target(){
       sleep 2
     fi
     
-    sync; sync
+    sync
     sleep 2
   fi
-  
+
   # Loop device refresh before partitioning
   if [[ $TGT_DEV == /dev/loop* ]] && (( !cfg[dry_run] )); then
     losetup -d "$TGT_DEV" &>/dev/null || :
@@ -425,7 +426,8 @@ partition_target(){
   # Zero MBR + partition table
   (( cfg[dry_run] )) || {
     dd if=/dev/zero of="$TGT_DEV" bs=1M count=10 conv=fsync status=none 2>/dev/null || :
-    sync; sync
+    # conv=fsync already syncs; one additional sync is sufficient
+    sync
     sleep 2
   }
   
@@ -454,8 +456,8 @@ partition_target(){
   info "Creating filesystems"
   run_with_retry 3 2 mkfs.vfat -F32 -I -n BOOT "$BOOT_PART"
   run_with_retry 3 2 mkfs.f2fs -f -O extra_attr,inode_checksum,sb_checksum -l ROOT "$ROOT_PART"
-  
-  sync; sync
+
+  sync
   sleep 2
 }
 

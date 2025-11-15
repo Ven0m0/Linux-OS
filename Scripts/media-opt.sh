@@ -280,14 +280,18 @@ EOF
   [[ ${#files[@]} -eq 0 ]] && die "No files"
   log "Files: ${#files[@]} | Jobs: $JOBS | Mode: $([[ $LOSSLESS -eq 1 ]] && echo Lossless || echo "Lossy Q=$QUALITY") | Img: $IMG_FMT | Vid: $VID_CODEC"
   if ((JOBS>1)); then
+    # Optimized: Export functions and variables once for all parallel jobs
     export -f process opt_image opt_video opt_audio outpath has
     export QUALITY VIDEO_CRF AUDIO_BR LOSSLESS OUTDIR KEEP DRY TYPE SUFFIX TMPDIR R G Y X IMG_FMT VID_CODEC FFZAP_THREADS ZOPFLI_ITER OK SKIP FAIL TOTAL
     if has rust-parallel; then
-      printf '%s\0' "${files[@]}" | rust-parallel -0 -j "$JOBS" bash -c 'source <(declare -f process opt_image opt_video opt_audio outpath has); process "$1"' _ {}
+      # rust-parallel with simple bash -c (functions already exported)
+      printf '%s\0' "${files[@]}" | rust-parallel -0 -j "$JOBS" bash -c 'process "$1"' _ {}
     elif has parallel; then
+      # GNU parallel handles exported functions automatically
       printf '%s\0' "${files[@]}" | parallel -0 -j "$JOBS" --no-notice process {}
     else
-      printf '%s\0' "${files[@]}" | xargs -0 -r -P "$JOBS" -n1 bash -c 'source <(declare -f process opt_image opt_video opt_audio outpath has); process "$1"' _
+      # xargs with bash -c (functions already exported via export -f)
+      printf '%s\0' "${files[@]}" | xargs -0 -r -P "$JOBS" -n1 bash -c 'process "$1"' _ {}
     fi
   else
     for f in "${files[@]}"; do process "$f"; done

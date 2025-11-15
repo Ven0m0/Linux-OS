@@ -1,9 +1,7 @@
-#!/usr/bin/env bash
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}" SHELL="$(command -v bash &>/dev/null)"
+#!/usr/bin/env bash -euo pipefail
+shopt -s nullglob globstar; IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}" SHELL="$(command -v bash &>/dev/null)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd "$CRIPTDIR"
-
 #============ Core Helper Functions ============
 has(){ command -v "$1" &>/dev/null; }
 have(){ command -v "$1" 2>/dev/null; }
@@ -11,7 +9,6 @@ have(){ command -v "$1" 2>/dev/null; }
 # Custom msg functions for this script
 msg(){ printf '%b\n' "$*"; }
 die(){ msg "$'\e[31m'Error:$'\e[0m' $*" >&2; exit "${2:-1}"; }
-
 # Package manager detection
 if has paru; then pkgmgr=(paru) aur=1
 else pkgmgr=(sudo pacman) aur=0
@@ -22,7 +19,6 @@ jobs=$(nproc 2>/dev/null || echo 4)
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTFLAGS="${RUSTFLAGS:-'-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'}" \
   OPT_LEVEL=3 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_OPT_LEVEL=3 UV_COMPILE_BYTECODE=1  PYTHONOPTIMIZE=2
 unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
-
 # System preparation
 localectl set-locale C.UTF-8
 sudo chmod -R 744 ~/.ssh; sudo chmod -R 744 ~/.gnupg

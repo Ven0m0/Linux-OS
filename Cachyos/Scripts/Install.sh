@@ -14,7 +14,6 @@ die(){ msg "$'\e[31m'Error:$'\e[0m' $*" >&2; exit "${2:-1}"; }
 
 # Package manager detection
 if has paru; then pkgmgr=(paru) aur=1
-elif has yay; then pkgmgr=(yay) aur=1
 else pkgmgr=(sudo pacman) aur=0
 fi
 # Additional build environment settings specific to this script
@@ -26,21 +25,18 @@ unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
 
 # System preparation
 localectl set-locale C.UTF-8
-sudo chmod -R 744 ~/.ssh
-sudo chmod -R 744 ~/.gnupg
-ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
-ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+sudo chmod -R 744 ~/.ssh; sudo chmod -R 744 ~/.gnupg
+ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts; ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 sudo chown -c root:root /etc/doas.conf; sudo chmod -c 0400 /etc/doas.conf
 sudo modprobe zram tcp_bbr adios
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
-sudo pacman-key --init || :
-sudo pacman-key --populate archlinux cachyos || :
-sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm || :
+sudo pacman-key --init
+sudo pacman-key --populate archlinux cachyos; sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm || :
 sudo pacman -Syyu --noconfirm || :
 
 # Package list
 pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
-  "${aur:+}" paru polly optipng svgo graphicsmagick yadm micro hyfetch polkit-kde-agent
+  "${aur:+}" paru polly optipng svgo graphicsmagick yadm mise micro hyfetch polkit-kde-agent
   pigz lrzip pixz plzip lbzip2 pbzip2 minizip-ng zstd lz4 xz bleachbit bleachbit-admin cleanerml-git
   preload irqbalance auto-cpufreq thermald cpupower cpupower-gui zoxide starship openrgb
   profile-sync-daemon profile-cleaner prelockd uresourced modprobed-db cachyos-ksm-settings
@@ -56,7 +52,6 @@ pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yas
   vscodium-electron vk-hdr-layer-kwin6-git soar zoi-bin cargo-binstall cargo-edit cargo-c cargo-update cargo-outdated
   cargo-make cargo-llvm-cov cargo-cache cargo-machete cargo-pgo cargo-binutils cargo-udeps cargo-pkgbuild
 )
-
 # Install packages
 mapfile -t inst < <(pacman -Qq 2>/dev/null)
 declare -A have; for p in "${inst[@]}"; do have[$p]=1; done
@@ -64,12 +59,12 @@ miss=(); for p in "${pkgs[@]}"; do [[ -n ${have[$p]} ]] || miss+=("$p"); done
 if (( ${#miss[@]} )); then
   msg "Installing ${#miss[@]} pkgs"
   if (( aur )); then
-    "${pkgmgr[@]}" -Sq --needed --noconfirm --sudoloop --skipreview --batchinstall --mflags '--nocheck --skipinteg --skippgpcheck --skipchecksums' \
-      --gpgflags '--batch -q --yes --skip-verify' "${miss[@]}" 2>/dev/null || {
-      msgfile="$HOME/Desktop/failed_pkgs.msg"; msg "Batch failed → $msgfile"; rm -f "$msgfile"
-      for p in "${miss[@]}"; do "${pkgmgr[@]}" -Qi "$p" &>/dev/null || echo "$p" >> "$msgfile"; done; }
+    paru -Sq --needed --noconfirm --sudoloop --skipreview --batchinstall --nocheck --mflags '--nocheck --skipinteg --skippgpcheck --skipchecksums' \
+      --gpgflags '--batch -q --yes --skip-verify' --cleanafter --removemake "${miss[@]}" 2>/dev/null || {
+      msgfile="${HOME}/failed_pkgs.msg"; msg "Batch failed → $msgfile"; rm -f "$msgfile"
+      for p in "${miss[@]}"; do paru -Qi "$p" 2>/dev/null || echo "$p" >> "$msgfile"; done; }
   else
-    sudo pacman -Sq --needed --noconfirm "${miss[@]}" 2>/dev/null || die "Install failed"
+    sudo pacman -Sq --needed --noconfirm --disable-download-timeout "${miss[@]}" 2>/dev/null || die "Install failed"
   fi
 fi
 

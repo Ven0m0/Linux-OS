@@ -32,12 +32,11 @@ ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 sudo chown -c root:root /etc/doas.conf; sudo chmod -c 0400 /etc/doas.conf
 sudo modprobe zram tcp_bbr adios
-
 [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
-sudo pacman-key --init 2>/dev/null || :
-sudo pacman-key --populate archlinux cachyos 2>/dev/null || :
-"${pkgmgr[@]}" -Syq archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null || :
-"${pkgmgr[@]}" -Syyuq --noconfirm 2>/dev/null || :
+sudo pacman-key --init || :
+sudo pacman-key --populate archlinux cachyos || :
+sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm || :
+sudo pacman -Syyu --noconfirm || :
 
 # Package list
 pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
@@ -54,7 +53,7 @@ pkgs=(git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yas
   pay-respects fclones topgrade bauh flatpak partitionmanager vx-bin kbuilder
   cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher xdg-ninja cylon
   makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an jdk-temurin jdk25-graalvm-bin
-  vscodium-electron
+  vscodium-electron vk-hdr-layer-kwin6-git
 )
 
 # Install packages

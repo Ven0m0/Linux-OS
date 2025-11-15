@@ -521,66 +521,70 @@ run_clean() {
   )
   clean_paths "${steam_paths[@]/%/*}" 2>/dev/null || :
 
-  # NVIDIA
-  run_priv rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null || :
+  # Optimized: Run independent cleanup tasks in parallel for better performance
+  log "🔄${BLU}Cleaning applications (parallel)...${DEF}"
 
-  # Python history
-  log "🔄${BLU}Securing Python history...${DEF}"
-  local python_history="${HOME}/.python_history"
-  [[ ! -f $python_history ]] && { touch "$python_history" 2>/dev/null || :; }
-  run_priv chattr +i "$(realpath "$python_history")" &>/dev/null || :
+  # NVIDIA cleanup (background)
+  { run_priv rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null || :; } &
 
-  # Firefox cleanup
-  log "🔄${BLU}Cleaning Firefox...${DEF}"
-  local firefox_paths=(
-    "${HOME}/.mozilla/firefox/*/bookmarkbackups"
-    "${HOME}/.mozilla/firefox/*/saved-telemetry-pings"
-    "${HOME}/.mozilla/firefox/*/sessionstore-logs"
-    "${HOME}/.mozilla/firefox/*/sessionstore-backups"
-    "${HOME}/.cache/mozilla/"
-    "${HOME}/.var/app/org.mozilla.firefox/cache/"
-    "${HOME}/snap/firefox/common/.cache/"
-  )
-  clean_paths "${firefox_paths[@]}" 2>/dev/null || :
+  # Python history (background)
+  {
+    local python_history="${HOME}/.python_history"
+    [[ ! -f $python_history ]] && { touch "$python_history" 2>/dev/null || :; }
+    run_priv chattr +i "$(realpath "$python_history")" &>/dev/null || :
+  } &
 
-  # Firefox crashes with Python - fixed heredoc format
-  if has python3; then
-    python3 <<'EOF' &>/dev/null
-import glob, os
-for pattern in ['~/.mozilla/firefox/*/crashes/*', '~/.mozilla/firefox/*/crashes/events/*']:
-  for path in glob.glob(os.path.expanduser(pattern)):
-    if os.path.isfile(path):
-      try: os.remove(path)
-      except: pass
-EOF
-  fi
+  # Firefox cleanup (background)
+  {
+    local firefox_paths=(
+      "${HOME}/.mozilla/firefox/*/bookmarkbackups"
+      "${HOME}/.mozilla/firefox/*/saved-telemetry-pings"
+      "${HOME}/.mozilla/firefox/*/sessionstore-logs"
+      "${HOME}/.mozilla/firefox/*/sessionstore-backups"
+      "${HOME}/.cache/mozilla/"
+      "${HOME}/.var/app/org.mozilla.firefox/cache/"
+      "${HOME}/snap/firefox/common/.cache/"
+    )
+    clean_paths "${firefox_paths[@]}" 2>/dev/null || :
+    # Firefox crashes cleanup using find (no Python overhead)
+    [[ -d "${HOME}/.mozilla/firefox" ]] && \
+      find "${HOME}/.mozilla/firefox" -type d -name 'crashes' -exec find {} -type f -delete \; 2>/dev/null || :
+  } &
 
-  # Wine cleanup
-  log "🔄${BLU}Cleaning Wine...${DEF}"
-  local wine_paths=(
-    "${HOME}/.wine/drive_c/windows/temp/"
-    "${HOME}/.cache/wine/"
-    "${HOME}/.cache/winetricks/"
-  )
-  clean_paths "${wine_paths[@]/%/*}" 2>/dev/null || :
+  # Wine cleanup (background)
+  {
+    local wine_paths=(
+      "${HOME}/.wine/drive_c/windows/temp/"
+      "${HOME}/.cache/wine/"
+      "${HOME}/.cache/winetricks/"
+    )
+    clean_paths "${wine_paths[@]/%/*}" 2>/dev/null || :
+  } &
 
-  # GTK recent files
-  local gtk_paths=(
-    "/.recently-used.xbel"
-    "${HOME}/.local/share/recently-used.xbel"
-    "${HOME}/snap/*/*/.local/share/recently-used.xbel"
-    "${HOME}/.var/app/*/data/recently-used.xbel"
-  )
-  clean_paths "${gtk_paths[@]}" 2>/dev/null || :
+  # GTK recent files (background)
+  {
+    local gtk_paths=(
+      "/.recently-used.xbel"
+      "${HOME}/.local/share/recently-used.xbel"
+      "${HOME}/snap/*/*/.local/share/recently-used.xbel"
+      "${HOME}/.var/app/*/data/recently-used.xbel"
+    )
+    clean_paths "${gtk_paths[@]}" 2>/dev/null || :
+  } &
 
-  # KDE recent files
-  local kde_paths=(
-    "${HOME}/.local/share/RecentDocuments/*.desktop"
-    "${HOME}/.kde/share/apps/RecentDocuments/*.desktop"
-    "${HOME}/.kde4/share/apps/RecentDocuments/*.desktop"
-    "${HOME}/.var/app/*/data/*.desktop"
-  )
-  clean_paths "${kde_paths[@]}" 2>/dev/null || :
+  # KDE recent files (background)
+  {
+    local kde_paths=(
+      "${HOME}/.local/share/RecentDocuments/*.desktop"
+      "${HOME}/.kde/share/apps/RecentDocuments/*.desktop"
+      "${HOME}/.kde4/share/apps/RecentDocuments/*.desktop"
+      "${HOME}/.var/app/*/data/*.desktop"
+    )
+    clean_paths "${kde_paths[@]}" 2>/dev/null || :
+  } &
+
+  # Wait for all parallel cleanup tasks to complete
+  wait
 
   # Trim disks
   log "🔄${BLU}Trimming disks...${DEF}"

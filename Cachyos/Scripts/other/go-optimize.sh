@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 LC_ALL=C
-
-export CGO_ENABLED=0 GOGC=200 GOMAXPROCS="$(nproc)" GOFLAGS="-ldflags=-s -w -trimpath -modcacherw -pgo auto"
+# CGO_ENABLED=0 GOFLAGS="-ldflags=-s -w -trimpath -modcacherw -pgo auto"
+export GOGC=200 GOMAXPROCS="$(nproc)" GOFLAGS="-ldflags=-s -w -trimpath -modcacherw"
 go telemetry off
 go install github.com/dkorunic/betteralign/cmd/betteralign@latest
 go install github.com/johnsiilver/goptimizer@latest

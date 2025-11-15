@@ -29,9 +29,8 @@
 <summary><b>Script start template</b></summary>
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
+#!/usr/bin/env bash -euo pipefail
+shopt -s nullglob globstar; IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
 export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
 builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
 [[ $EUID -ne 0 ]] && sudo -v

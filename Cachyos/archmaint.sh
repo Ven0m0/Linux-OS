@@ -355,9 +355,12 @@ run_clean() {
 
   # Package management cleanup
   log "🔄${BLU}Removing orphaned packages...${DEF}"
-  mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || :)
-  if [[ ${#orphans[@]} -gt 0 ]]; then
-    run_priv pacman -Rns "${orphans[@]}" --noconfirm &>/dev/null || :
+  # Optimized: Use pacman directly instead of array
+  local orphans_list
+  orphans_list=$(pacman -Qdtq 2>/dev/null || :)
+  if [[ -n $orphans_list ]]; then
+    # Use xargs to pass arguments efficiently
+    printf '%s\n' "$orphans_list" | xargs -r run_priv pacman -Rns --noconfirm &>/dev/null || :
   fi
 
   log "🔄${BLU}Cleaning package cache...${DEF}"
@@ -381,9 +384,8 @@ run_clean() {
 
   # Kill CPU-intensive processes
   log "🔄${BLU}Checking for CPU-intensive processes...${DEF}"
-  while read -r pid; do
-    [[ -n $pid ]] && run_priv kill -9 "$pid" &>/dev/null || :
-  done < <(ps aux --sort=-%cpu 2>/dev/null | awk '{if($3>50.0) print $2}' | tail -n +2)
+  # Optimized: Use xargs instead of while-read loop for better performance
+  ps aux --sort=-%cpu 2>/dev/null | awk 'NR>1 && $3>50.0 {print $2}' | xargs -r run_priv kill -9 &>/dev/null || :
 
   # Reset swap
   log "🔄${BLU}Resetting swap space...${DEF}"

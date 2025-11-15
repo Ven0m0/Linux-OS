@@ -15,7 +15,7 @@ else pkgmgr=(sudo pacman) aur=0
 fi
 # Additional build environment settings specific to this script
 jobs=$(nproc 2>/dev/null || echo 4)
-[[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
+[[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf &>/dev/null
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true RUSTFLAGS="${RUSTFLAGS:-'-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'}" \
   OPT_LEVEL=3 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_OPT_LEVEL=3 UV_COMPILE_BYTECODE=1  PYTHONOPTIMIZE=2
 unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE

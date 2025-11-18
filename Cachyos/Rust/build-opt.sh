@@ -2,7 +2,7 @@
 shopt -s nullglob globstar inherit_errexit
 export LC_ALL=C LANG=C
 sudo -v
-cleanup() {
+cleanup(){
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
   cargo-cache -efg &>/dev/null
@@ -24,12 +24,12 @@ PGO=0
 BOLT=0
 GIT=0
 ARGS=()
-debug() {
+debug(){
   export RUST_LOG=trace RUST_BACKTRACE=1
   set -x
 }
 
-usage() {
+usage(){
   cat <<EOF >&2
 Usage: $0 [-m|-mold] [-l|--locked] <crate> [-h|--help]
 
@@ -144,7 +144,7 @@ CARGO_NIGHTLY="-Z gc -Z git -Z gitoxide -Zno-embed-metadata -Zfewer-names"
 # RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=polly"
 # -Z llvm-plugins=LLVMPolly.so -C llvm-args=-polly-vectorizer=stripmine
 # -Z llvm-plugins=/usr/lib/LLVMPolly.so
-profileon() {
+profileon(){
   sudo sh -c "echo 0 > /proc/sys/kernel/randomize_va_space"
   sudo sh -c "echo 0 > /proc/sys/kernel/nmi_watchdog"
   sudo sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
@@ -154,7 +154,7 @@ profileon() {
   PGOFLAGS="-Cstrip=debuginfo -Zdebug-info-for-profiling"
   RUSTFLAGS="${RUSTFLAGS} ${PGOFLAGS}"
 }
-profileoff() {
+profileoff(){
   sudo sh -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo"
   PGOFLAGS="-Cstrip=symbols"
 }

@@ -2,11 +2,11 @@
 
 ## Repository Overview
 
-**Linux-OS** is a comprehensive collection of scripts and resources for managing, optimizing, and customizing Linux distributions, with primary focus on Arch-based systems (CachyOS, EndeavourOS) and Raspberry Pi self-hosting. The repository contains 100+ shell scripts emphasizing performance optimization, privacy hardening, and modern tooling.
+**Linux-OS** is a comprehensive collection of scripts and resources for managing, optimizing, and customizing Linux distributions, with primary focus on Arch-based systems (CachyOS, EndeavourOS) and Raspberry Pi self-hosting. The repository contains 45 actively maintained shell scripts emphasizing performance optimization, privacy hardening, and modern tooling.
 
-**Statistics**: 100 shell scripts | 89 config/documentation files | ~273 lines eliminated via lib/common.sh
+**Statistics**: 45 shell scripts | 79 config/documentation files | ~273 lines eliminated via lib/common.sh
 
-**Recent Focus**: Parallel execution optimization (commit: e4c56c6), Podman/Docker improvements
+**Recent Focus**: Cleanup and script consolidation (commits: 947711b, f63d908), Parallel execution optimization (commit: e4c56c6)
 
 ## Core Directives
 Autonomous execution. Minimal confirmations. Token-efficient responses. Primary focus: Bash scripts & system configs.
@@ -48,17 +48,27 @@ y=Yes n=No c=Continue r=Review u=Undo | cfg=config impl=implementation arch=arch
 │       ├── Install.sh          # Automated package installation
 │       ├── AutoSetup.sh        # System configuration automation
 │       ├── Privacy-Config.sh   # Privacy hardening
+│       ├── Fix.sh              # System fixes and troubleshooting
+│       ├── bench.sh / bench-cp.sh  # Benchmarking utilities
+│       ├── bleachbit.sh        # BleachBit cleaners installation
+│       ├── fstab-tune.sh       # Filesystem tuning
+│       ├── gamemd.sh           # Gaming-related optimizations
 │       ├── Android/            # Android device optimization
 │       ├── MC/                 # Minecraft server management
 │       ├── WIP/                # Work-in-progress scripts
+│       │   └── Toolkit/        # Development toolkit utilities
 │       ├── other/              # Miscellaneous utilities
 │       └── shell-tools/        # Shell utility scripts
+│           └── dietpi/         # DietPi-specific tools
 ├── RaspberryPi/                # Raspberry Pi specific scripts
 │   ├── lib/                    # Pi-specific libraries (common.sh, cleaning.sh, text.sh)
 │   ├── update.sh               # Pi system updates
 │   ├── PiClean.sh              # Pi cleanup utilities
 │   ├── raspi-f2fs.sh           # F2FS filesystem conversion (1,032 lines)
-│   ├── Scripts/Setup.sh        # Pi server setup (15,194 bytes)
+│   ├── privacy-script.sh       # Pi privacy hardening
+│   ├── forward.sh              # Port forwarding utilities
+│   ├── Scripts/                # Pi automation scripts
+│   │   └── Nextcloud/          # Nextcloud server setup
 │   └── dots/                   # Configuration files (apt.conf, apt-fast.conf)
 ├── Scripts/                    # General cross-platform scripts
 ├── Linux-Settings/             # System configuration references (Compiler.txt, Kernel.txt)
@@ -71,13 +81,16 @@ y=Yes n=No c=Continue r=Review u=Undo | cfg=config impl=implementation arch=arch
 ## Key Files & Components
 
 ### Critical Scripts (curl-able from README.md)
-- **Cachyos/Updates.sh** (169 lines) - System update automation
-- **Cachyos/Clean.sh** (208 lines) - System cleanup with smart cache management
-- **Cachyos/Rank.sh** (322 lines) - Mirror ranking with parallel testing
+- **Cachyos/Updates.sh** - System update automation with package manager detection
+- **Cachyos/Clean.sh** - System cleanup with smart cache management
+- **Cachyos/Rank.sh** - Mirror ranking with parallel testing
 - **Cachyos/archmaint.sh** (705 lines) - Comprehensive maintenance suite
-- **Cachyos/Scripts/Install.sh** (10,083 bytes) - Automated package installation
-- **Cachyos/Scripts/AutoSetup.sh** (10,437 bytes) - System configuration
+- **Cachyos/Scripts/Install.sh** - Automated package installation
+- **Cachyos/Scripts/AutoSetup.sh** - System configuration automation
+- **Cachyos/Scripts/Privacy-Config.sh** - Privacy hardening configuration
+- **Cachyos/Scripts/bleachbit.sh** - BleachBit extra cleaners installation
 - **RaspberryPi/raspi-f2fs.sh** (1,032 lines) - F2FS conversion utility
+- **RaspberryPi/privacy-script.sh** - Raspberry Pi privacy hardening
 
 ### Library System (DRY Principle)
 **Cachyos/lib/common.sh** (15,945 bytes) - Eliminates ~273 lines of duplication across 8 scripts
@@ -92,10 +105,15 @@ y=Yes n=No c=Continue r=Review u=Undo | cfg=config impl=implementation arch=arch
 - `text.sh` (3,701 bytes) - Banner/text utilities
 
 ### Configuration Files
-- **.editorconfig** - Universal formatting (shfmt, 2-space indent, bash variant detection)
-- **.shellcheckrc** - Linting rules (enable=all, specific exclusions: SC2086, SC1090/1091)
+- **.editorconfig** - Universal formatting (shfmt, 2-space indent, bash variant detection, auto shell variant)
+- **.shellcheckrc** - Linting rules (enable=all, specific exclusions, source-path=SCRIPTDIR)
 - **.gitattributes** (2,381 bytes) - Git file handling
 - **.gitignore** (2,160 bytes) - Security files, build artifacts, editor configs
+
+### Package Manifests
+- **Cachyos/packages-repo.txt** - Repository packages list (178 packages)
+- **Cachyos/packages-aur.txt** - AUR packages list
+- Primary tools: cargo toolchain (cargo-c, cargo-cache, cargo-llvm-cov, cargo-pgo, sccache), modern CLI utilities (bat, dust, eza, fd), performance tools (hyperfine, btop, glances)
 
 ### Documentation Structure
 - **README.md** - Quick-start with curl commands
@@ -145,6 +163,7 @@ source "$SCRIPT_DIR/lib/common.sh" || {
 
 ### Package Management
 - **Detection Chain**: `paru` → `yay` → `pacman` (Arch-based) | `apt`/`nala` (Debian-based)
+- **Privilege Escalation Chain**: `sudo-rs` → `sudo` → `doas` (detected via lib/common.sh)
 - **Pre-Installation Checks**: `pacman -Q pkg` | `flatpak list` | `cargo install --list`
 - **Distro-Specific Hints**: Include installation commands for both ecosystems
   - Example: `(Arch: pacman -S tool)` `(Debian: apt-get install -y tool)`
@@ -192,6 +211,7 @@ shellharden --replace file.sh
 
 ### ShellCheck Exclusions (see .shellcheckrc)
 Disabled checks with justification:
+- **SC1072/SC1073/SC1078/SC1079/SC1083**: Parse errors in specific contexts
 - **SC2086**: Word splitting desired for specific use cases
 - **SC1090/1091**: Dynamic source paths (source resolution follows SCRIPTDIR)
 - **SC2002**: Useless cat (acceptable for readability in pipelines)
@@ -230,10 +250,11 @@ Process: Write failing test (Red) → Implement minimal passing code (Green) →
 All must be true: Tests pass | Zero warnings | Single logical unit | Clear message
 Preference: Small, frequent, independent commits
 
-**Recent Commit Pattern**:
+**Recent Commit Pattern** (as of Nov 2025):
+- Script cleanup and consolidation (removed outdated scripts: Install-old.sh, Repoadd.sh, Env.sh, shopt.sh, minify-opt.sh)
 - Performance optimizations (parallel execution)
 - Container tooling updates (Podman)
-- Single-purpose changes
+- Single-purpose, atomic changes
 
 ### Code Quality Standards
 - Single responsibility per function/module
@@ -368,9 +389,22 @@ Use: `/template [template-name]`
 - Set appropriate file permissions (644 for data, 755 for scripts)
 - Never log sensitive information
 
+## Recent Repository Changes
+
+### Nov 2025 Cleanup Sprint
+- Removed deprecated scripts (Install-old.sh, Repoadd.sh, Env.sh, shopt.sh, minify-opt.sh)
+- Consolidated overlapping functionality
+- Reduced script count from 100+ to 45 actively maintained scripts
+- Updated CLAUDE.MD with current repository state
+
+### Performance Improvements (commit: e4c56c6)
+- Parallel execution optimization in core scripts
+- Enhanced batch operations
+- Improved subprocess management
+
 ---
 
-**Last Updated**: 2025-11-15 (commit: e4c56c6 - parallel execution optimizations)
+**Last Updated**: 2025-11-18 (commit: 947711b - cleanup and script consolidation)
 **Maintainer**: Ven0m0
 **Contributors**: copilot-swe-agent[bot], Claude
 

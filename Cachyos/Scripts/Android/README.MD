@@ -201,3 +201,5 @@ curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 - https://github.com/android-hacker/VirtualXposed
 - https://github.com/risin42/NagramX
 - https://github.com/Nahvine/ADB_Toolbox
+- https://github.com/Th3-R3p4ck3r/ApkPatcher
+- https://github.com/TechnoIndian/ApkPatcher

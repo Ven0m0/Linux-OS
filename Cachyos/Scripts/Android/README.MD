@@ -197,3 +197,7 @@ curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 - https://github.com/LeNerd46/SpotifyPlus
 - https://github.com/7723mod/NPatch
 - https://github.com/pumPCin/AntiSplit-M
+- https://github.com/ReSo7200/InstaEclipse
+- https://github.com/android-hacker/VirtualXposed
+- https://github.com/risin42/NagramX
+- https://github.com/Nahvine/ADB_Toolbox

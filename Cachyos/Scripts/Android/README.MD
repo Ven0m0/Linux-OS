@@ -194,3 +194,6 @@ curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 
 - https://modules.lsposed.org/
 - https://github.com/trinhnv1205/optimize/blob/main/menu/fullscreen_immersive_getsure.sh (might fix 3-button navigation bar)
+- https://github.com/LeNerd46/SpotifyPlus
+- https://github.com/7723mod/NPatch
+- https://github.com/pumPCin/AntiSplit-M

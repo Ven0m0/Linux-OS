@@ -31,14 +31,12 @@ export -f minify_css; export grn red rst ylw
 
 minify_html(){
   local f=$1 tmp=$(mktemp); local len_in=$(wc -c <"$f") len_out
-  if command -v minhtml &>/dev/null; then
-    minhtml --minify-css --minify-js --minify-doctype --allow-optimal-entities --allow-removing-spaces-between-attributes --allow-noncompliant-unquoted-attribute-values "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+  if command -v minify &>/dev/null; then
+    minify -q --type html -o "$tmp" "$f" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   elif command -v bunx &>/dev/null; then
     bunx --bun @minify-html/node-cli "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify-html failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   elif command -v npx &>/dev/null; then
     npx -y @minify-html/node-cli "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify-html failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
-  elif command -v minify &>/dev/null; then
-    minify --type html -o "$tmp" "$f" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
     rm -f "$tmp"; printf "%s⊘%s %s (no html minifier)\n" "$ylw" "$rst" "${f##*/}"; return 0
   fi

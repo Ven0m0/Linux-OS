@@ -92,6 +92,11 @@ process(){
     (( ${#html[@]} > 0 )) && printf "%s\n" "${html[@]}" | parallel -j"$jobs" minify_html {} || :
     (( ${#json[@]} > 0 )) && printf "%s\n" "${json[@]}" | parallel -j"$jobs" minify_json {} || :
     (( ${#yaml[@]} > 0 )) && printf "%s\n" "${yaml[@]}" | parallel -j"$jobs" fmt_yaml {} || :
+  elif command -v xargs &>/dev/null; then
+    (( ${#css[@]} > 0 )) && printf "%s\n" "${css[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_css "$@"' _ {} || :
+    (( ${#html[@]} > 0 )) && printf "%s\n" "${html[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_html "$@"' _ {} || :
+    (( ${#json[@]} > 0 )) && printf "%s\n" "${json[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_json "$@"' _ {} || :
+    (( ${#yaml[@]} > 0 )) && printf "%s\n" "${yaml[@]}" | xargs -r -P"$jobs" -I{} bash -c 'fmt_yaml "$@"' _ {} || :
   else
     for f in "${css[@]}"; do minify_css "$f" || :; done
     for f in "${html[@]}"; do minify_html "$f" || :; done

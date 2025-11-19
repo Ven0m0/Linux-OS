@@ -2,8 +2,12 @@ Nextcloud alternative
 
 - https://github.com/DioCrafts/OxiCloud
 
+**apt-fast**
+- https://github.com/ilikenwf/apt-fast
+_DOWNLOADER='aria2c --no-conf -c -j ${_MAXNUM} -x ${_MAXCONPERSRV} -s ${_SPLITCON} -i ${DLLIST} --min-split-size=${_MINSPLITSZ} --stream-piece-selector=${_PIECEALGO} --connect-timeout=600 --timeout=600 -m0'
 
-
+_MINSPLITSZ=2M
+_MAXNUM=6
 
 https://github.com/Rudxain/dotfiles
 

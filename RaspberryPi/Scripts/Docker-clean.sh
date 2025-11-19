@@ -62,7 +62,6 @@ EOF
 
 # On MacOS, restarting Docker Desktop for Mac might take a long time
 poll_for_docker_readiness() {
-  # TODO: add new line at the end of polling
   printf 'Waiting for docker engine to start:\n'
 
   local i=0
@@ -73,7 +72,7 @@ poll_for_docker_readiness() {
     tput el
   done
 
-  printf '\n'
+  printf '\n\n'
 }
 
 # Checks if a particular program is installed

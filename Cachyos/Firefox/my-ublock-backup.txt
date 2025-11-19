@@ -50,7 +50,7 @@
     "https://filters.adtidy.org/extension/ublock/filters/101_optimized.txt",
     "https://filters.adtidy.org/extension/ublock/filters/118_optimized.txt",
     "https://filters.adtidy.org/extension/ublock/filters/122_optimized.txt",
-    "https://raw.githubusercontent.com/Ven0m0/Ven0m0-Adblock/main/Combination-Minimal.txt"
+    "https://raw.githubusercontent.com/Ven0m0/Ven0m0-Adblock/main/lists/sources/Combination.txt"
   ],
   "hiddenSettings": {
     "allowGenericProceduralFilters": true,

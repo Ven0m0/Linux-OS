@@ -1,94 +1,213 @@
-### Install rustup  
+# Rust Tools and Optimization Scripts
+
+This directory contains scripts and documentation for working with Rust, including advanced build optimizations, PGO/BOLT profiling, and Rust replacements for GNU utilities.
+
+## Scripts
+
+### cargo-build.sh
+**Unified Rust build script with PGO/BOLT optimization support**
+
+A comprehensive build script that consolidates features from multiple optimization scripts. Supports:
+- Standard cargo build and install operations
+- Profile-Guided Optimization (PGO) in two phases: instrumentation and optimization
+- Binary Optimization and Layout Tool (BOLT) for additional performance gains
+- Advanced compiler flags and linker options (mold, lld)
+- Git cleanup and project maintenance
+- sccache integration for faster builds
+
+**Usage:**
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy,rustc-dev -t x86_64-unknown-linux-gnu,wasm32-unknown-unknown -y
+# Install optimized crates
+./cargo-build.sh --install ripgrep fd bat
+
+# Build with PGO instrumentation
+./cargo-build.sh --pgo 1
+
+# Build with PGO optimization (after profiling)
+./cargo-build.sh --pgo 2
+
+# Build with PGO + BOLT
+./cargo-build.sh --pgo 2 --bolt
+
+# Install with mold linker
+./cargo-build.sh --install --mold eza
 ```
-### Minimal install
+
+### rustify.sh
+**System-wide Rust utility installation script**
+
+Installs Rust replacements for GNU utilities and system tools, including:
+- uutils-coreutils, diffutils, findutils, procps, tar, sed
+- Modern alternatives: ripgrep, fd, dust, cpz/rmz, etc.
+- update-alternatives setup for Arch Linux
+- oxidizr-arch for automatic Rust utility adoption
+
+**Warning:** This script makes system-wide changes. Review before running.
+
+### Strip-rust.sh
+**Simple utility to strip Rust binaries**
+
+Strips symbols from all Rust binaries in `~/.cargo/bin/` to reduce file size.
+
+```bash
+./Strip-rust.sh
+```
+
+## Documentation
+
+### readme.md (this file)
+Overview and guide for the Rust directory.
+
+### wip.txt
+**Comprehensive reference for Rust optimization flags**
+
+Contains:
+- RUSTFLAGS for various optimization levels
+- PGO and BOLT workflow documentation
+- C/C++ compiler flags (CFLAGS, CXXFLAGS, LDFLAGS)
+- Environment variable configurations
+- Cargo maintenance commands
+- Useful project links
+
+### Preprocess.md
+**Preprocessing tools for Rust crates**
+
+Documentation on tools and commands for preprocessing and optimizing crates before building:
+- Code minification tools (rustminify, minhtml)
+- Dependency cleanup (cargo-shear, cargo-machete)
+- Asset optimization workflows
+
+### Rust-atlernatives.txt
+**Extensive list of Rust alternatives and tools**
+
+A curated list of Rust crates organized by category:
+- Cargo utilities and extensions
+- System utilities (coreutils replacements)
+- Search tools (ripgrep, fd, etc.)
+- File management and compression
+- Network utilities
+- Editors and terminals
+- And much more...
+
+## Quick Start
+
+### Install Rustup (Minimal Nightly)
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y
-```  
-### Minimal nightly  
-```bash
-rustup default nightly && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
-```  
-### Minimal stable  
-```bash
-rustup default stable && rustup set profile minimal && rustup set default-host x86_64-unknown-linux-gnu
+rustup default nightly
+rustup set profile minimal
+rustup set default-host x86_64-unknown-linux-gnu
 ```
 
-### Some componements commonly required  
+### Common Components
 ```bash
-rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu rust-std-wasm32-unknown-unknown rust-std-wasm32-wasip2
+rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu
 ```
 
-<details>
-<summary><b>Flags:</b></summary>
-
+### Build with Optimizations
+For quick optimized builds:
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode -Zunstable-options -Zdylib-lto -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Zprecise-enum-drop-elaboration=yes -Zno-embed-metadata -Clink-arg=-fuse-ld=mold -Clink-arg=-flto -Cllvm-args=-enable-dfa-jump-thread"
+export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cpanic=abort -Zunstable-options -Ztune-cpu=native"
+export RUSTC_BOOTSTRAP=1
+cargo +nightly build --release
 ```
 
-Safe RUSTFLAGS:
+For advanced PGO/BOLT optimizations, use the `cargo-build.sh` script.
 
+## Optimization Levels
+
+### Level 1: Basic Optimizations (Fast)
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Clinker-plugin-lto -Clink-arg=-fuse-ld=mold -Cpanic=abort -Zunstable-options -Ztune-cpu=native -Cllvm-args=-enable-dfa-jump-thread -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none" OPT_LEVEL=3 CARGO_INCREMENTAL=0 RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Cstrip=symbols"
+cargo build --release
 ```
+
+### Level 2: Advanced Optimizations (Recommended)
 ```bash
-LC_ALL=C cargo +nightly -Zgit -Zgitoxide -Zno-embed-metadata -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort install 
+./cargo-build.sh --build
 ```
+Uses LTO, native CPU tuning, aggressive inlining, and more.
 
+### Level 3: PGO (Profile-Guided Optimization)
 ```bash
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Zunstable-options -Ztune-cpu=native -Cpanic=abort -Cllvm-args=-enable-dfa-jump-thread"
+# Phase 1: Instrument
+./cargo-build.sh --pgo 1
+
+# Run workload to collect profiles
+./target/release/binary <typical-workload>
+
+# Merge profiles
+llvm-profdata merge -output=default.profdata ./pgo_data
+
+# Phase 2: Optimize
+./cargo-build.sh --pgo 2
 ```
 
-```Linkers
--Clink-arg=-fuse-ld=lld
--Clink-arg=-fuse-ld=mold
-```
-
-**Full std build**
+### Level 4: PGO + BOLT (Maximum Performance)
 ```bash
-export RUSTC_BOOTSTRAP=1 CARGO_INCREMENTAL=0 OPT_LEVEL=3 CARGO_PROFILE_RELEASE_LTO=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_WRAPPER=sccache
-export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Clinker-plugin-lto -Clink-arg=-fuse-ld=mold -Cllvm-args=-enable-dfa-jump-thread -Cpanic=immediate-abort -Zunstable-options -Ztune-cpu=native -Zfunction-sections -Zfmt-debug=none -Zlocation-detail=none -Zprecise-enum-drop-elaboration=yes -Zdefault-visibility=hidden"
-cargo +nightly -Zunstable-options -Zavoid-dev-deps -Zbuild-std=std,panic_abort -Zbuild-std-features=panic_immediate_abort install -f 
+# Run PGO phases first, then:
+./cargo-build.sh --pgo 2 --bolt
+
+# Run instrumented binary
+./target/release/binary-bolt-instrumented <workload>
+
+# Finalize BOLT optimization
+cargo pgo bolt optimize --with-pgo
 ```
 
-```bash
-export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
-  -fno-semantic-interposition -fdata-sections -ffunction-sections -ftree-vectorize \
-	-fomit-frame-pointer -fvisibility=hidden -fmerge-all-constants -finline-functions \
-  -fjump-tables -pthread -fshort-enums -fshort-wchar -feliminate-unused-debug-types -feliminate-unused-debug-symbols"
-```
-```bash
-export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers"
-```
-```bash
-export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
-         -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations \
-         -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
-```
+## Performance Tips
 
-### TODO
-```bash
--Clto=fat -Zvirtual-function-elimination
-```
+1. **Use sccache** for faster recompilation:
+   ```bash
+   cargo install sccache
+   export RUSTC_WRAPPER=sccache
+   ```
 
-</details>
+2. **Parallel builds**:
+   ```bash
+   export CARGO_BUILD_JOBS=$(nproc)
+   ```
 
+3. **Use modern linker** (mold or lld):
+   ```bash
+   ./cargo-build.sh --install --mold <crate>
+   ```
 
-# Rust apps/resources
+4. **Clean unused dependencies regularly**:
+   ```bash
+   cargo install cargo-shear cargo-machete cargo-cache
+   cargo-shear --fix
+   cargo-machete --fix
+   cargo-cache -g -f -e clean-unref
+   ```
 
-### [Crates.io rust projects](https://crates.io)
+## Resources
 
-### [Lib.rs rust apps](https://lib.rs)
+### Official Documentation
+- [The Rust Performance Book](https://nnethercote.github.io/perf-book/)
+- [Min-sized Rust](https://github.com/johnthagen/min-sized-rust)
+- [Cargo std-aware](https://github.com/rust-lang/wg-cargo-std-aware)
 
-### [Rust libhunt](https://rust.libhunt.com)
+### Package Registries
+- [Crates.io](https://crates.io) - Official Rust package registry
+- [Lib.rs](https://lib.rs) - Alternative Rust package index
+- [Rust Libhunt](https://rust.libhunt.com) - Trending Rust projects
 
-### [Min-sized-rust](https://github.com/johnthagen/min-sized-rust)
+### Learning
+- [Rustlings](https://rustlings.rust-lang.org) - Interactive Rust exercises
+- [Rust Learning](https://github.com/ctjhoa/rust-learning) - Curated learning resources
 
-### [Std aware cargo](https://github.com/rust-lang/wg-cargo-std-aware)
+## Notes
 
-# Learn Rust
+- All scripts assume a Linux environment with sudo access
+- PGO/BOLT require collecting runtime profiles, so use representative workloads
+- Some optimization flags are unstable and require nightly Rust
+- Always test optimized binaries thoroughly before deploying
 
-### [Rustlings](https://rustlings.rust-lang.org)
+## Contributing
 
-### [Rust-learning](https://github.com/ctjhoa/rust-learning)
+When adding new scripts or optimizations:
+1. Document usage and purpose clearly
+2. Test on multiple Rust versions (stable and nightly)
+3. Include performance comparisons where relevant
+4. Update this README with any new additions

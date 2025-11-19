@@ -1,228 +1,291 @@
-# https://github.com/raphamorim/rio/blob/main/Cargo.toml
+# Rust Optimization Flags Reference
+
+## Profile Configuration for PGO/BOLT
+
+### Enable profiling mode
+```bash
+profileon() {
+  sudo sh -c "echo 0 > /proc/sys/kernel/randomize_va_space"
+  sudo sh -c "echo 0 > /proc/sys/kernel/nmi_watchdog"
+  sudo sh -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+  sudo sh -c "echo 0 > /proc/sys/kernel/kptr_restrict"
+  sudo sh -c "echo 0 > /proc/sys/kernel/perf_event_paranoid"
+  sudo cpupower frequency-set --governor performance
+}
+
+profileoff() {
+  sudo sh -c "echo 1 > /proc/sys/kernel/randomize_va_space"
+  sudo sh -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo"
+}
+```
+
+## Cargo Profile Configuration
+
+### Optimized release profile (Cargo.toml)
+```toml
 [profile.release]
-strip = "symbols"           # See split-debuginfo - allows us to drop the size by ~65%
-split-debuginfo = "packed"  # generates a separate *.dwp/*.dSYM so the binary can get stripped
+strip = "symbols"
+split-debuginfo = "packed"
 debug = false
 codegen-units = 1
 incremental = false
 lto = "fat"
-panic = "abort"             # reduces binary size by ~50% in combination with -Zbuild-std-features=panic_immediate_abort
+panic = "abort"
 opt-level = "3"
 debug-assertions = false
 overflow-checks = false
+```
 
-RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Clto=fat -Cembed-bitcode=y -Crelro-level=off -Cdebuginfo=0 -Cforce-frame-pointers=no -Clink-dead-code=no -Zunstable-options -Ztune-cpu=native -Zprecise-enum-drop-elaboration=y -Zfunction-sections -Cllvm-args=-enable-dfa-jump-thread -Zbuild-std=std,panic_abort-Zbuild-std-features=panic_immediate_abort,force_alloc_jemalloc,threads -Zpanic-abort-tests -Zmerge-functions=aliases -Zvirtual-function-elimination -Zfmt-debug=none -Zlocation-detail=none -Clink-arg=-fuse-ld=lld"
-unset CARGO_ENCODED_RUSTFLAGS
-export OPT_LEVEL=3
-export CPP="clang-cpp"
-export AR="llvm-ar" NM="llvm-nm" RANLIB="llvm-ranlib"
-export STRIP="llvm-strip"
-export CC="clang" CXX="clang++"
-export CARGO_INCREMENTAL=0
-export RUSTC_BOOTSTRAP=1 RUSTUP_TOOLCHAIN=nightly
-export CARGO_BUILD_JOBS="$jobs"
+## Advanced RUSTFLAGS
 
--Cllvm-args=-enable-dfa-jump-thread
--Cllvm-args="-loop-vectorize -slp-vectorize"
+### Base optimization flags
+```bash
+-Copt-level=3
+-Ctarget-cpu=native
+-Ccodegen-units=1
+-Clto=fat
+-Clinker-plugin-lto
+-Ztune-cpu=native
+-Cstrip=symbols
+-Cpanic=abort
+```
 
+### Experimental unstable flags
+```bash
+-Zunstable-options
+-Zfewer-names
+-Zcombine-cgu
+-Zmerge-functions=aliases
+-Zvirtual-function-elimination
+-Zno-embed-metadata
+-Zfunction-sections
+-Zlocation-detail=none
+-Zfmt-debug=none
+-Zprecise-enum-drop-elaboration=yes
+-Zdefault-visibility=hidden
+```
 
---lto-emit-llvm
+### Build std with optimizations
+```bash
 -Zbuild-std=std,panic_abort
 -Zbuild-std-features=panic_immediate_abort
-# -Z build-std-features=panic_immediate_abort,force_alloc_jemalloc,threads
--Z panic-abort-tests
+```
 
--Z unstable-options -Z fewer-names -Z combine-cgu
--Zmerge-functions=aliases
--Z relax-elf-relocations
--Zvirtual-function-elimination
-RUSTFLAGS="-C passes=mem2reg,simplifycfg,instcombine,gvn,loop-unroll,licm"
+### PGO-specific flags (2nd compilation)
+```bash
+-Cprofile-use=./default.profdata
+-Cprofile-correction
+-Cllvm-args=-pgo-warn-missing-function
+```
 
-PGO 2nd compilation:
--C profile-correction
--Cllvm-args=-pgo-warn-missing-function -Cprofile-use
+### BOLT preparation
+```bash
+-Clink-args=-Wl,--emit-relocs
+```
 
-CARGO_PROFILE_RELEASE_LTO
+## LLVM Args
 
-# Testing required:
--Z tls-model=local-exec
-# -Z tls-model=initial-exec # smaller apps
--C link-arg=--enable-new-dtags
--C link-arg=--compact-branches -C link-arg=--icf=all 
--C link-arg=-plugin-opt=--fat-lto-objects -C link-arg=-plugin-opt=--lto-aa-pipeline -C link-arg=-Wl,-plugin-opt=--lto-newpm-passes
+### Jump threading and vectorization
+```bash
+-Cllvm-args=-enable-dfa-jump-thread
+-Cllvm-args=-loop-vectorize
+-Cllvm-args=-slp-vectorize
+```
 
--C link-arg=-Wl,--ignore-data-address-equality
--C link-arg=-Wl,--ignore-function-address-equality
-LDFLAGS=(
--Wl,--ignore-data-address-equality
--Wl,--ignore-function-address-equality
-)
-mold doesnt have: --ignore-function-address-equality
+### Polly optimization (experimental)
+```bash
+-Cllvm-args=-polly
+-Cllvm-args=-polly-vectorizer=polly
+-Cllvm-args=-polly-tiling
+```
 
+## Link Flags
 
+### For mold linker
+```bash
+-Clink-arg=-fuse-ld=mold
+```
 
-# Profile accuracy
-profileon () {
-    echo "Performance profiling on"
-    sudo bash -c "echo 0 > /proc/sys/kernel/randomize_va_space" || (sudo sysctl -w kernel.randomize_va_space=0)
-    sudo bash -c "echo 0 > /proc/sys/kernel/nmi_watchdog" || (sudo sysctl -w kernel.nmi_watchdog=0)
-    sudo bash -c "echo 1 > /sys/devices/system/cpu/intel_pstate/no_turbo"
-    sudo cpupower frequency-set --governor performance
-}
+### For lld linker
+```bash
+-Clink-arg=-fuse-ld=lld
+```
 
-profileoff () {
-    echo "Performance profiling off"
-    sudo bash -c "echo 1 > /proc/sys/kernel/randomize_va_space"
-    sudo bash -c "echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo"
-}
+### Advanced link optimizations
+```bash
+-Clink-arg=-Wl,-O3
+-Clink-arg=-Wl,-gc-sections
+-Clink-arg=-Wl,--icf=all
+-Clink-arg=-Wl,--lto-O3
+-Clink-arg=-Wl,-z,now
+-Clink-arg=-Wl,-z,relro
+-Clink-arg=-Wl,-z,pack-relative-relocs
+```
 
+## C/C++ Flags
 
+### CFLAGS
+```bash
+export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
+  -fno-semantic-interposition -fdata-sections -ffunction-sections -ftree-vectorize \
+  -fomit-frame-pointer -fvisibility=hidden -fmerge-all-constants -finline-functions \
+  -fjump-tables -pthread -fshort-enums -fshort-wchar -feliminate-unused-debug-types \
+  -feliminate-unused-debug-symbols"
+```
 
-# Git
-https://github.com/milobanks/greatness
-https://github.com/SuperCuber/dotter
-https://github.com/oknozor/toml-bombadil
-https://github.com/volllly/rotz
-https://github.com/plamorg/ambit
-https://crates.io/crates/ldfm
-https://crates.io/crates/dfm
-https://github.com/Addvilz/dots
-https://github.com/comtrya/comtrya
-https://github.com/RaphGL/Tuckr
-https://github.com/elkowar/yolk
-https://github.com/644/compressimages
-https://github.com/jkool702/forkrun
-https://crates.io/crates/trees-rs
-fisher install meaningful-ooo/sponge
-fisher install acomagu/fish-async-prompt
+### CXXFLAGS
+```bash
+export CXXFLAGS="$CFLAGS -fsized-deallocation -fstrict-vtable-pointers"
+```
 
-shopt -u checkhash
+### LDFLAGS
+```bash
+export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now \
+  -Wl,-z,pack-relative-relocs -Wl,-gc-sections -Wl,--compress-relocations \
+  -Wl,--discard-locals -Wl,--strip-all -Wl,--icf=all"
+```
 
-CCACHE_COMPRESS=true
-CCACHE_COMPRESSLEVEL=3
-CCACHE_INODECACHE=true
+## PGO Workflow
 
+### 1. Build instrumented binary
+```bash
+export RUSTFLAGS="-Cprofile-generate=./pgo_data -Cembed-bitcode=yes <other flags>"
+cargo build --release
+```
 
+### 2. Run workload to collect profiles
+```bash
+./target/release/binary <typical workload>
+# OR use perf for sampling-based profiling
+perf record -e cycles:u -j any,u -- ./target/release/binary <args>
+```
 
-RUSTFLAGS="-C link-args=-Wl,--emit-relocs" cargo build --release
-echo "Build a BOLT instrumented binary using the PGO profiles..."
+### 3. Merge profiles
+```bash
+llvm-profdata merge -output=default.profdata ./pgo_data
+```
+
+### 4. Build optimized binary
+```bash
+export RUSTFLAGS="-Cprofile-use=./default.profdata -Cprofile-correction <other flags>"
+cargo build --release
+```
+
+## BOLT Workflow
+
+### 1. Build with relocs for BOLT
+```bash
+export RUSTFLAGS="-Clink-args=-Wl,--emit-relocs <other pgo flags>"
+cargo pgo build
+```
+
+### 2. Instrument for BOLT
+```bash
 cargo pgo bolt build --with-pgo
-echo "Runing the binary to gather BOLT profiles..."
-./target/.../<binary>-bolt-instrumented
-echo "Optimizing binary with BOLT (and PGO) using the gathered profiles..."
+```
+
+### 3. Run instrumented binary
+```bash
+./target/release/<binary>-bolt-instrumented <workload>
+```
+
+### 4. Optimize with BOLT
+```bash
 cargo pgo bolt optimize --with-pgo
+```
 
-cargo pgo test || cargo pgo bench
+### BOLT options (manual)
+```bash
+llvm-bolt <binary> -o <binary>.bolt \
+  --data=<profile> \
+  --reorder-blocks=ext-tsp \
+  --reorder-functions=hfsort+ \
+  --split-functions \
+  --split-all-cold \
+  --split-eh \
+  --icf=all \
+  --dyno-stat \
+  --use-gnu-stack \
+  --peepholes=all
+```
 
-# https://kobzol.github.io/rust/cargo/2023/07/28/rust-cargo-pgo.html
-# trick to get 1 file for EACH perf record to prevent overrides
-LLVM_PROFILE_FILE=./target/pgo-profiles/%m_%p.profraw
-  ./target/release/x86_64-unknown-linux-gnu/foo
+## Environment Variables
 
-PGO:
--C passes=block-placement
+### Cargo
+```bash
+export CARGO_INCREMENTAL=0
+export RUSTC_BOOTSTRAP=1
+export CARGO_PROFILE_RELEASE_LTO=true
+export CARGO_BUILD_JOBS=$(nproc)
+export CARGO_CACHE_RUSTC_INFO=1
+export CARGO_HTTP_MULTIPLEXING=true
+export CARGO_NET_GIT_FETCH_WITH_CLI=true
+export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
+```
 
-After bolt:
--C passes=strip,adce
+### Compiler toolchain
+```bash
+export CC=clang
+export CXX=clang++
+export AR=llvm-ar
+export NM=llvm-nm
+export RANLIB=llvm-ranlib
+export STRIP=llvm-strip
+```
 
--C profile-correction
--Cllvm-args=-pgo-warn-missing-function -Cprofile-use
+### With sccache
+```bash
+export CC="sccache clang"
+export CXX="sccache clang++"
+export RUSTC_WRAPPER=sccache
+```
 
-cargo clean
-cargo-cache -efg >/dev/null 2>&1
+### Memory allocator (jemalloc)
+```bash
+export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
+export _RJEM_MALLOC_CONF="$MALLOC_CONF"
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
+```
+
+## Useful Cargo Commands
+
+### Maintenance
+```bash
 cargo update --recursive
-cargo-upgrade upgrade --recursive true --pinned allow
-cargo-fmt --all
-cargo clippy --fix
-cargo-sort -w --order package,dependencies,features
-cargo-udeps udeps --workspace --release --all-features --target x86_64-unknown-linux-gnu --keep-going
-cargo-udeps udeps --bins --lib --release
+cargo fix --workspace --all-targets --allow-dirty -r
+cargo clippy --fix --workspace --allow-dirty
+cargo fmt --all
+cargo-cache -g -f -e clean-unref
+```
+
+### Dependency cleanup
+```bash
+cargo +nightly udeps --workspace --release --all-features
+cargo-shear --fix
 cargo-machete --fix
 cargo-machete --fix --with-metadata
-cargo-minify --workspace --allow-dirty --allow-staged --allow-no-vcs
-cargo-minify --workspace --allow-dirty --allow-staged --allow-no-vcs --apply
-cargo fix --workspace --edition-idioms --allow-dirty --allow-staged --allow-no-vcs --bins --lib -r
+```
 
-
-
----------------------------------------
-Snippet:
-
+### Fast install snippet
+```bash
 cargo-fast-install() {
   RUSTUP_TOOLCHAIN=nightly \
   RUSTC_BOOTSTRAP=1 \
-  RUSTFLAGS="-Z build-std=std,panic_abort -C target-cpu=native -C prefer-inline -Clto=thin -Ccodegen-units=1" \
+  RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Clto=thin -Ccodegen-units=1" \
   cargo install "$@"
 }
-cargo-fast-install sd fd skim
+```
 
-echo "🚀 Installing $CRATE with optimized flags..."
+## Useful Projects
 
----------------------------------------
+### Dotfile managers
+- https://github.com/RaphGL/Tuckr
+- https://github.com/levinion/stor
+- https://github.com/SuperCuber/dotter
+- https://github.com/oknozor/toml-bombadil
+- https://github.com/comtrya/comtrya
 
-cargo +nightly build --bins --lib -r --ignore-rust-version --keep-going -Z unstable-options -Zno-embed-metadata
-
-
--Z tls-model=local-exec
-# -Z tls-model=initial-exec # smaller apps
--Z relax-elf-relocations
--Z virtual-function-elimination
-
-
-# Bolt:
-LD_PRELOAD=/usr/lib/libmimalloc.so
---lto-emit-llvm
--Z build-std=std,panic_abort
--Z build-std-features=panic_immediate_abort
--Z panic-abort-tests
-
-llvm-bolt <executable> -o <executable>.bolt -data=perf.fdata BOLT_OPTIONS
-
-bolt -icf=1 vs -icf=all and -reorder-functions=hfsort vs -reorder-functions=hfsort+
--mllvm -pgo-temporal-instrumentation 
--mllvm-pgo-cold-func-opt=minsize 
--Wl,-mllvm,-enable-ext-tsp-block-placement=1
-
-# CFLAG error prevention
--Wno-profile-instr-unprofiled -Wno-profile-instr-out-of-date -Wno-backend-plugin
-
-
-
-# https://github.com/llvm/llvm-project/blob/main/bolt/README.md
-# For apps
-perf record -e cycles:u -j any,u -o perf.data -- <executable> <args> ...
-# For services
-$ perf record -e cycles:u -j any,u -a -o perf.data -- sleep 180
-
-# Branch filtering via "-b"
-perf record -b 
-
-# better clang pgo sampling: 
--fsample-profile-use-profi
-# better DWARF for sampling
--fdebug-info-for-profiling -funique-internal-linkage-names
-# other clang pgo tweaks
--fbasic-block-sections=all
-
--fprofile-instr-generate
-
-# sampling profiles generated by external profilers:
--fprofile-sample-use / -fauto-profile
-
-# https://android-developers.googleblog.com/2023/12/faster-rust-toolchains-for-android.html
-# BOLT options:
---peepholes=all
---data=<path-to-profile>
---reorder-blocks=ext-tsp
-–-reorder-functions=hfsort+
---split-functions
---split-all-cold
---split-eh
---dyno-stat
--icf=all
--use-gnu-stack
-
-Extra clang pgo:
--mllvm -pgo-temporal-instrumentation -Wl,-mllvm,-enable-ext-tsp-block-placement=1
-
-
+### Utilities
+- https://github.com/644/compressimages
+- https://github.com/jkool702/forkrun
+- https://crates.io/crates/trees-rs

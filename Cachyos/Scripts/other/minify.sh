@@ -15,14 +15,12 @@ check_deps(){
 minify_css(){
   local f=$1 tmp=$(mktemp); local len_in=$(wc -c <"$f") len_out
   [[ $f =~ \.min\.css$ ]] && return 0
-  if command -v minhtml &>/dev/null; then
-    minhtml --minify-css --minify-js --minify-doctype --allow-optimal-entities --allow-removing-spaces-between-attributes --allow-noncompliant-unquoted-attribute-values "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
-  elif command -v bunx &>/dev/null; then
+  if command -v bunx &>/dev/null; then
     bunx --bun lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
     npx -y lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   fi
-  len_out=$(wc -c <"$tmp") mv -f "$tmp" "$f"
+  len_out=$(wc -c <"$tmp"); mv -f "$tmp" "$f"
   printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"
 }
 export -f minify_css; export grn red rst

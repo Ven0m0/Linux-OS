@@ -8,6 +8,8 @@ _DOWNLOADER='aria2c --no-conf -c -j ${_MAXNUM} -x ${_MAXCONPERSRV} -s ${_SPLITCO
 
 _MINSPLITSZ=2M
 _MAXNUM=6
+DOWNLOADBEFORE=true
+_APTMGR=apt-get
 
 https://github.com/Rudxain/dotfiles
 

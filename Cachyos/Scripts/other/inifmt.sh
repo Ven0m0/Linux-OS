@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
+shopt -s nullglob globstar
+LC_ALL=C LANG=C
 # https://github.com/lkrms/vscode-inifmt as a command
 #
 # @description
@@ -15,7 +16,6 @@ main() {
   [[ -n "${align_columns_if_first_matches-}" ]] && awk_opts+=(-v "align_columns_if_first_matches=${align_columns_if_first_matches}")
   [[ -n "${align_comments-}" ]] && awk_opts+=(-v "align_comments=${align_comments}")
   [[ -n "${comment_regex-}" ]] && awk_opts+=(-v "comment_regex=${comment_regex}")
-
   awk "${awk_opts[@]}" '
     BEGIN {
       FS = " +"

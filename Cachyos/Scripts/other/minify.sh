@@ -13,74 +13,59 @@ check_deps(){
 }
 
 minify_css(){
-  local f=$1 tmp len_in len_out
-  len_in=$(wc -c <"$f")
+  local f=$1 tmp=$(mktemp); local len_in=$(wc -c <"$f") len_out
   [[ $f =~ \.min\.css$ ]] && return 0
-  tmp=$(mktemp)
   if command -v minhtml &>/dev/null; then
-    minhtml --minify-css --allow-optimal-entities --allow-removing-spaces-between-attributes "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    minhtml --minify-css --minify-js --minify-doctype --allow-optimal-entities --allow-removing-spaces-between-attributes --allow-noncompliant-unquoted-attribute-values "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   elif command -v bunx &>/dev/null; then
-    bunx lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    bunx --bun lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
     npx -y lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   fi
-  len_out=$(wc -c <"$tmp")
-  mv "$tmp" "$f"
+  len_out=$(wc -c <"$tmp") mv -f "$tmp" "$f"
   printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"
 }
-export -f minify_css
-export grn red rst
+export -f minify_css; export grn red rst
 
 minify_html(){
-  local f=$1 tmp len_in len_out
-  len_in=$(wc -c <"$f")
-  tmp=$(mktemp)
+  local f=$1 tmp=$(mktemp); local len_in=$(wc -c <"$f") len_out
   if command -v minhtml &>/dev/null; then
-    minhtml --minify-css --allow-optimal-entities --allow-removing-spaces-between-attributes "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    minhtml --minify-css --minify-js --minify-doctype --allow-optimal-entities --allow-removing-spaces-between-attributes --allow-noncompliant-unquoted-attribute-values "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minhtml failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   elif command -v bunx &>/dev/null; then
-    bunx @minify-html/node-cli "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify-html failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    bunx --bun @minify-html/node-cli "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify-html failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
     npx -y @minify-html/node-cli "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify-html failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   fi
-  len_out=$(wc -c <"$tmp")
-  mv "$tmp" "$f"
+  len_out=$(wc -c <"$tmp"); mv -f "$tmp" "$f"
   printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"
 }
 export -f minify_html
 
 minify_json(){
-  local f=$1 tmp len_in len_out
-  len_in=$(wc -c <"$f")
+  local f="$1" tmp=$(mktemp); local len_in=$(wc -c <"$f") len_out
   [[ $f =~ \.min\.json$|package(-lock)?\.json$ ]] && return 0
-  tmp=$(mktemp)
   if command -v jaq &>/dev/null; then
-    jaq -c . "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (jaq failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    jaq -c --indent 2 . "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (jaq failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
-    jq -c . "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (jq failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    jq -c --indent 2 . "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (jq failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   fi
-  len_out=$(wc -c <"$tmp")
-  mv "$tmp" "$f"
+  len_out=$(wc -c <"$tmp"); mv -f "$tmp" "$f"
   printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"
 }
 export -f minify_json
 
 fmt_yaml(){
-  local f=$1 tmp len_in len_out
-  len_in=$(wc -c <"$f")
-  tmp=$(mktemp)
+  local f="$1" len_out; local len_in=$(wc -c <"$f") tmp=$(mktemp)
   if command -v yamlfmt &>/dev/null; then
-    yamlfmt "$f" -out "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (yamlfmt failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
-    len_out=$(wc -c <"$tmp")
-    mv "$tmp" "$f"
+    yamlfmt -q "$f" -out "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (yamlfmt failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    len_out=$(wc -c <"$tmp"); mv -f "$tmp" "$f"
     printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"
   else
     rm -f "$tmp"
-    printf "%s⊘%s %s (yamlfmt not installed)\n" "$ylw" "$rst" "${f##*/}"
-    return 0
+    printf "%s⊘%s %s (yamlfmt not installed)\n" "$ylw" "$rst" "${f##*/}"; return 0
   fi
 }
-export -f fmt_yaml
-export ylw
+export -f fmt_yaml; export ylw
 
 process(){
   local -a css=() html=() json=() yaml=()
@@ -97,7 +82,6 @@ process(){
   fi
   local -i total=$(( ${#css[@]} + ${#html[@]} + ${#json[@]} + ${#yaml[@]} ))
   (( total == 0 )) && { printf "%s⊘%s No files found\n" "$ylw" "$rst"; return 0; }
-
   if command -v rust-parallel &>/dev/null; then
     (( ${#css[@]} > 0 )) && printf "%s\n" "${css[@]}" | rust-parallel -j"$jobs" minify_css {} || :
     (( ${#html[@]} > 0 )) && printf "%s\n" "${html[@]}" | rust-parallel -j"$jobs" minify_html {} || :
@@ -116,6 +100,5 @@ process(){
   fi
   printf "\n%s✓%s Processed %d files\n" "$grn" "$rst" "$total"
 }
-
 main(){ check_deps; process; }
 main

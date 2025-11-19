@@ -32,13 +32,9 @@ export -f minify_css; export grn red rst ylw
 minify_html(){
   local f=$1 tmp=$(mktemp); local len_in=$(wc -c <"$f") len_out
   if command -v minify &>/dev/null; then
-    minify -q --type html -o "$tmp" "$f" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
-  elif command -v bunx &>/dev/null; then
-    bunx --bun @minify-html/node-cli "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify-html failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
-  elif command -v npx &>/dev/null; then
-    npx -y @minify-html/node-cli "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify-html failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+    minify --type html -o "$tmp" "$f" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
-    rm -f "$tmp"; printf "%s⊘%s %s (no html minifier)\n" "$ylw" "$rst" "${f##*/}"; return 0
+    rm -f "$tmp"; printf "%s⊘%s %s (minify not installed)\n" "$ylw" "$rst" "${f##*/}"; return 0
   fi
   len_out=$(wc -c <"$tmp"); mv -f "$tmp" "$f"
   printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"

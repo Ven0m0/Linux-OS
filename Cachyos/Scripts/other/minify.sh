@@ -5,9 +5,10 @@ readonly out="${1:-.}"
 readonly jobs=$(nproc 2>/dev/null || echo 4)
 readonly red=$'\e[31m' grn=$'\e[32m' ylw=$'\e[33m' rst=$'\e[0m'
 
+has(){ command -v "$1" &>/dev/null; }
 check_deps(){
   local -a missing=()
-  command -v bunx &>/dev/null || command -v npx &>/dev/null || missing+=(bun/node)
+  command -v minify &>/dev/null || command -v bunx &>/dev/null || command -v npx &>/dev/null || missing+=(minify/bun/node)
   command -v jaq &>/dev/null || command -v jq &>/dev/null || command -v minify &>/dev/null || missing+=(jaq/jq/minify)
   (( ${#missing[@]} > 0 )) && { printf "%s✗%s Missing: %s\n" "$red" "$rst" "${missing[*]}" >&2; exit 1; }
 }
@@ -15,12 +16,12 @@ check_deps(){
 minify_css(){
   local f=$1 tmp=$(mktemp); local len_in=$(wc -c <"$f") len_out
   [[ $f =~ \.min\.css$ ]] && return 0
-  if command -v bunx &>/dev/null; then
+  if has minify; then
+    minify --type css -o "$tmp" "$f" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+  elif has bunx; then
     bunx --bun lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   elif command -v npx &>/dev/null; then
     npx -y lightningcss --minify "$f" -o "$tmp" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
-  elif command -v minify &>/dev/null; then
-    minify --type css -o "$tmp" "$f" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
     rm -f "$tmp"; printf "%s⊘%s %s (no css minifier)\n" "$ylw" "$rst" "${f##*/}"; return 0
   fi
@@ -63,8 +64,10 @@ minify_xml(){
   [[ $f =~ \.min\.xml$ ]] && return 0
   if command -v minify &>/dev/null; then
     minify --type xml -o "$tmp" "$f" &>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
+  elif command -v xmllint &>/dev/null; then
+    xmllint --noblanks "$f" >"$tmp" 2>/dev/null || { rm -f "$tmp"; printf "%s✗%s %s (xmllint failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1; }
   else
-    rm -f "$tmp"; printf "%s⊘%s %s (minify not installed)\n" "$ylw" "$rst" "${f##*/}"; return 0
+    rm -f "$tmp"; printf "%s⊘%s %s (no xml minifier)\n" "$ylw" "$rst" "${f##*/}"; return 0
   fi
   len_out=$(wc -c <"$tmp"); mv -f "$tmp" "$f"
   printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"

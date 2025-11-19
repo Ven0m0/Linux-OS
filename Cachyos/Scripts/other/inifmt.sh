@@ -10,7 +10,7 @@ LC_ALL=C LANG=C
 #
 # @arg $1 string Path to INI file (optional, default: stdin)
 
-main() {
+main(){
   local -a awk_opts=()
   [[ -n "${align_all_columns-}" ]] && awk_opts+=(-v "align_all_columns=${align_all_columns}")
   [[ -n "${align_columns_if_first_matches-}" ]] && awk_opts+=(-v "align_columns_if_first_matches=${align_columns_if_first_matches}")
@@ -148,5 +148,4 @@ main() {
     }
   ' "$@"
 }
-
 main "$@"

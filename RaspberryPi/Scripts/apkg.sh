@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 # apt-fuzz — optimized sk/fzf TUI for apt/nala/apt-fast on Raspberry Pi/DietPi
 # Features: fuzzy search, cached previews, multi-select, backup/restore, prefetching
 
 # Source shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
+[[ $SCRIPT_DIR == "${BASH_SOURCE[0]}" ]] && SCRIPT_DIR="."
+cd "$SCRIPT_DIR" || exit 1
+SCRIPT_DIR="$PWD"
 # ============ Inlined from lib/common.sh ============
 export LC_ALL=C LANG=C
 export DEBIAN_FRONTEND=noninteractive
@@ -35,7 +39,7 @@ find_with_fallback() { local ftype="${1:--f}" pattern="${2:-*}" search_path="${3
 # Setup environment
 setup_environment
 shopt -s extglob  # Add extra glob option not in setup_environment
-: "${HOME:=$(getent passwd "$USER" 2>/dev/null | cut -d: -f6)}"
+: "${HOME:=$(awk -F: -v u="$USER" '$1==u{print $6}' /etc/passwd 2>/dev/null)}"
 : "${XDG_CACHE_HOME:=${HOME}/.cache}"
 CACHE_DIR="${XDG_CACHE_HOME%/}/apt-fuzz"
 CACHE_INDEX="${CACHE_DIR}/.index"

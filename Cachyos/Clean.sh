@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 # Source common library
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
+[[ $SCRIPT_DIR == "${BASH_SOURCE[0]}" ]] && SCRIPT_DIR="."
+cd "$SCRIPT_DIR" || exit 1
+SCRIPT_DIR="$PWD"
 
 # ============ Inlined from lib/common.sh ============
 set -euo pipefail
@@ -628,7 +632,7 @@ main(){
   [[ $EUID -ne 0 ]] && "$PRIV_CMD" -v || :
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
-  space_before=$(run_priv du -sh / 2>/dev/null | cut -f1)
+  space_before=$(run_priv du -sh / 2>/dev/null | awk '{print $1}')
   sync; echo 3 | run_priv tee /proc/sys/vm/drop_caches &>/dev/null || :
   # Dev caches
   if has cargo-cache; then cargo cache -efg &>/dev/null || :; cargo cache -ef trim --limit 1B &>/dev/null || :; fi
@@ -644,7 +648,7 @@ main(){
   system_clean
 
   capture_disk_usage disk_after
-  space_after=$(run_priv du -sh / 2>/dev/null | cut -f1)
+  space_after=$(run_priv du -sh / 2>/dev/null | awk '{print $1}')
   printf '\n%s\n' "${GRN}System cleaned${DEF}"
   printf '==> %s %s\n' "${BLU}Disk usage before:${DEF}" "$disk_before"
   printf '==> %s %s\n' "${GRN}Disk usage after:${DEF}" "$disk_after"

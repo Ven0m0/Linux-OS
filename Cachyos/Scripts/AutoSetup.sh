@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 # Source common library
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
+[[ $SCRIPT_DIR == "${BASH_SOURCE[0]}" ]] && SCRIPT_DIR="."
+cd "$SCRIPT_DIR" || exit 1
+SCRIPT_DIR="$PWD"
 
 # ============ Inlined from lib/common.sh ============
 set -euo pipefail; IFS=$'
@@ -84,7 +88,7 @@ clean_paths(){ local paths=("$@") path; local existing_paths=(); for path in "${
 clean_with_sudo(){ local paths=("$@") path; local existing_paths=(); for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done; [[ ${#existing_paths[@]} -gt 0 ]] && run_priv rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :; }
 _DOWNLOAD_TOOL_CACHED=""
 get_download_tool(){ local skip_aria2=0; [[ ${1:-} == --no-aria2 ]] && skip_aria2=1; if [[ -n $_DOWNLOAD_TOOL_CACHED && $skip_aria2 -eq 0 ]]; then printf '%s' "$_DOWNLOAD_TOOL_CACHED"; return 0; fi; local tool; if [[ $skip_aria2 -eq 0 ]] && has aria2c; then tool=aria2c; elif has curl; then tool=curl; elif has wget2; then tool=wget2; elif has wget; then tool=wget; else return 1; fi; [[ $skip_aria2 -eq 0 ]] && _DOWNLOAD_TOOL_CACHED=$tool; printf '%s' "$tool"; }
-download_file(){ local url=$1 output=$2 tool; tool=$(get_download_tool) || return 1; case $tool in aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "$(dirname "$output")" -o "$(basename "$output")" "$url" ;; curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;; wget2) wget2 -q -O "$output" "$url" ;; wget) wget -qO "$output" "$url" ;; *) return 1 ;; esac; }
+download_file(){ local url=$1 output=$2 tool; tool=$(get_download_tool) || return 1; case $tool in aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "${output%/*}" -o "${output##*/}" "$url" ;; curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;; wget2) wget2 -q -O "$output" "$url" ;; wget) wget -qO "$output" "$url" ;; *) return 1 ;; esac; }
 cleanup_pacman_lock(){ run_priv rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
 # ============ End of inlined lib/common.sh ============
 

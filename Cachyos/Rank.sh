@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 # Source common library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -93,7 +94,7 @@ clean_with_sudo(){ local paths=("$@") path; local existing_paths=(); for path in
 #============ Download Tool Detection ============
 _DOWNLOAD_TOOL_CACHED=""
 get_download_tool(){ local skip_aria2=0; [[ ${1:-} == --no-aria2 ]] && skip_aria2=1; if [[ -n $_DOWNLOAD_TOOL_CACHED && $skip_aria2 -eq 0 ]]; then printf '%s' "$_DOWNLOAD_TOOL_CACHED"; return 0; fi; local tool; if [[ $skip_aria2 -eq 0 ]] && has aria2c; then tool=aria2c; elif has curl; then tool=curl; elif has wget2; then tool=wget2; elif has wget; then tool=wget; else return 1; fi; [[ $skip_aria2 -eq 0 ]] && _DOWNLOAD_TOOL_CACHED=$tool; printf '%s' "$tool"; }
-download_file(){ local url=$1 output=$2 tool; tool=$(get_download_tool) || return 1; case $tool in aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "$(dirname "$output")" -o "$(basename "$output")" "$url" ;; curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;; wget2) wget2 -q -O "$output" "$url" ;; wget) wget -qO "$output" "$url" ;; *) return 1 ;; esac; }
+download_file(){ local url=$1 output=$2 tool; tool=$(get_download_tool) || return 1; case $tool in aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "${output%/*}" -o "${output##*/}" "$url" ;; curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;; wget2) wget2 -q -O "$output" "$url" ;; wget) wget -qO "$output" "$url" ;; *) return 1 ;; esac; }
 
 cleanup_pacman_lock(){ run_priv rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
 # ============ End of inlined lib/common.sh ============
@@ -134,12 +135,12 @@ cleanup(){ ((${#TMP[@]})) && rm -f "${TMP[@]}" &>/dev/null || :; }
 trap cleanup EXIT INT TERM
 
 backup(){
-  local src=$1 dst=$BACKUPDIR/$(basename "$src")-$(date +%s).bak
+  local src=$1 dst=$BACKUPDIR/${src##*/}-$(date +%s).bak
   [[ -d $BACKUPDIR ]] || run_priv mkdir -p "$BACKUPDIR"
   run_priv cp -a "$src" "$dst" &>/dev/null || return 1
   # Optimized: Use find with -delete to avoid sort overhead, keep 20 newest
-  find "$BACKUPDIR" -name "$(basename "$src")-*.bak" -printf '%T@ %p\n' 2>/dev/null | \
-    sort -rn | tail -n+21 | cut -d' ' -f2- | xargs -r run_priv rm -f &>/dev/null || :
+  find "$BACKUPDIR" -name "${src##*/}-*.bak" -printf '%T@ %p\n' 2>/dev/null | \
+    sort -rn | tail -n+21 | awk '{$1=""; print substr($0,2)}' | xargs -r run_priv rm -f &>/dev/null || :
 }
 
 get_ref(){
@@ -194,7 +195,7 @@ rank_rate(){
     --comment-prefix='# ' \
     --output-prefix='Server = ' \
     --path-to-return='$repo/os/$arch' \
-    < <(grep -Eo 'https?://[^ ]+' "$file" | sort -u) 2>/dev/null || {
+    < <(awk 'match($0, /https?:\/\/[^ ]+/) {url=substr($0, RSTART, RLENGTH); if(!seen[url]++) arr[++n]=url} END {n=asort(arr); for(i=1; i<=n; i++) print arr[i]}' "$file") 2>/dev/null || {
       warn "rate-mirrors failed for $name, falling back"
       rank_manual "$file"
       return
@@ -274,18 +275,18 @@ benchmark(){
 
 restore(){
   [[ -d $BACKUPDIR ]] || die "No backup dir"
-  mapfile -t baks < <(find "$BACKUPDIR" -name "*-mirrorlist-*.bak" -printf '%T@ %p\n' | sort -rn | cut -d' ' -f2-)
+  mapfile -t baks < <(find "$BACKUPDIR" -name "*-mirrorlist-*.bak" -printf '%T@ %p\n' | sort -rn | awk '{$1=""; print substr($0,2)}')
   ((${#baks[@]})) || die "No backups found"
-  
+
   printf "${C}Available backups:${Z}\n"
   for i in "${!baks[@]}"; do
-    printf "%2d. %s\n" $((i+1)) "$(basename "${baks[$i]}")"
+    printf "%2d. %s\n" $((i+1)) "${baks[$i]##*/}"
   done
-  
+
   read -rp "Select [1-${#baks[@]}]: " n
   [[ $n =~ ^[0-9]+$ && $n -ge 1 && $n -le ${#baks[@]} ]] || die "Invalid selection"
-  
-  local tgt=$(basename "${baks[$((n-1))]}" | sed 's/-[0-9]\+\.bak$//')
+
+  local tgt=$(sed 's/-[0-9]\+\.bak$//' <<<"${baks[$((n-1))]##*/}")
   run_priv cp "${baks[$((n-1))]}" "$MIRRORDIR/$tgt" || die "Restore failed"
   info "Restored $tgt"
   run_priv pacman -Sy &>/dev/null || :
@@ -314,8 +315,9 @@ opt_all(){
     local f repo
     for f in "$MIRRORDIR"/*mirrorlist; do
       [[ -L $f || $f == "$MIRRORDIR/mirrorlist" ]] && continue
-      repo=$(basename "$f" "-mirrorlist")
-      [[ $repo == "$(basename "$f")" ]] && continue
+      repo=${f##*/}
+      repo=${repo%-mirrorlist}
+      [[ $repo == "${f##*/}" ]] && continue
       [[ " ${REPOS[*]} " =~ " $repo " ]] && continue
       rank_rate "$repo" "$f" || :
     done
@@ -336,7 +338,7 @@ opt_all(){
 show_current(){
   local file=${1:-$MIRRORDIR/mirrorlist}
   [[ -r $file ]] || die "Cannot read $file"
-  printf "${C}Current mirrors in %s:${Z}\n" "$(basename "$file")"
+  printf "${C}Current mirrors in %s:${Z}\n" "${file##*/}"
   grep '^Server' "$file" | head -n10 | nl -w2 -s'. ' | sed "s|^|  ${B}|;s|$|${Z}|"
 }
 
@@ -370,7 +372,7 @@ menu(){
 
 usage(){
   cat <<EOF
-Usage: $(basename "$0") [OPTIONS]
+Usage: ${0##*/} [OPTIONS]
 
 Options:
   -o, --optimize        Optimize all mirrors (fetches fresh Arch mirrorlist)
@@ -383,17 +385,17 @@ Options:
   -h, --help            Show this help
 
 Examples:
-  $(basename "$0")              # Interactive menu
-  $(basename "$0") -o           # Optimize all (with fresh Arch mirrors)
-  $(basename "$0") -c US -o     # Optimize for US mirrors
-  $(basename "$0") -b           # Benchmark current
+  ${0##*/}              # Interactive menu
+  ${0##*/} -o           # Optimize all (with fresh Arch mirrors)
+  ${0##*/} -c US -o     # Optimize for US mirrors
+  ${0##*/} -b           # Benchmark current
 EOF
   exit 0
 }
 
 main(){
   [[ $EUID -eq 0 || $# -gt 0 ]] || exec "$PRIV_CMD" -E "$0" "$@"
-  run_priv mkdir -p "$(dirname "$LOGFILE")" "$BACKUPDIR" &>/dev/null || :
+  run_priv mkdir -p "${LOGFILE%/*}" "$BACKUPDIR" &>/dev/null || :
   
   while (($#)); do
     case $1 in

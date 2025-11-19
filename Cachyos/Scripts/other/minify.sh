@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail; shopt -s nullglob globstar
-LC_ALL=C LANG=C
+export LC_ALL=C LANG=C
 readonly out="${1:-.}"
 readonly jobs=$(nproc 2>/dev/null || echo 4)
 readonly red=$'\e[31m' grn=$'\e[32m' ylw=$'\e[33m' rst=$'\e[0m'

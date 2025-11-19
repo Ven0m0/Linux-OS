@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-LC_ALL=C
+shopt -s nullglob globstar
+LC_ALL=C LANG=C
 # CGO_ENABLED=0 GOFLAGS="-ldflags=-s -w -trimpath -modcacherw -pgo auto"
 export GOGC=200 GOMAXPROCS="$(nproc)" GOFLAGS="-ldflags=-s -w -trimpath -modcacherw"
 go telemetry off

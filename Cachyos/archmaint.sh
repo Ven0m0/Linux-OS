@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 # Source common library
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 
 # ============ Inlined from lib/common.sh ============
 set -euo pipefail
@@ -442,7 +443,7 @@ download_file(){
   # shellcheck disable=SC2119
   tool=$(get_download_tool) || return 1
   case $tool in
-    aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "$(dirname "$output")" -o "$(basename "$output")" "$url" ;;
+    aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "${output%/*}" -o "${output##*/}" "$url" ;;
     curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;;
     wget2) wget2 -q -O "$output" "$url" ;;
     wget) wget -qO "$output" "$url" ;;
@@ -780,14 +781,14 @@ run_clean() {
   # Capture disk usage before cleanup
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
-  space_before=$(run_priv du -sh / 2>/dev/null | cut -f1)
+  space_before=$(run_priv du -sh / 2>/dev/null | awk '{print $1}')
 
   log "🔄${BLU}Starting system cleanup...${DEF}"
 
   # Drop caches
   sync
   log "🔄${BLU}Dropping cache...${DEF}"
-  echo 3 | run_priv tee /proc/sys/vm/drop_caches &>/dev/null
+  run_priv tee /proc/sys/vm/drop_caches &>/dev/null <<<3
 
   # Store and sort modprobed database
   if has modprobed-db; then
@@ -1070,7 +1071,7 @@ run_clean() {
   # Show disk usage results
   log "${GRN}System cleaned!${DEF}"
   capture_disk_usage disk_after
-  space_after=$(run_priv du -sh / 2>/dev/null | cut -f1)
+  space_after=$(run_priv du -sh / 2>/dev/null | awk '{print $1}')
 
   log "==> ${BLU}Disk usage before cleanup:${DEF} ${disk_before}"
   log "==> ${GRN}Disk usage after cleanup: ${DEF} ${disk_after}"
@@ -1095,7 +1096,7 @@ trap 'exit 143' TERM
 #=========== CLI Interface =============
 show_usage() {
   cat <<EOF
-Usage: $(basename "$0") [OPTIONS] COMMAND
+Usage: ${0##*/} [OPTIONS] COMMAND
 
 Arch Linux system maintenance script for updating and cleaning.
 
@@ -1111,10 +1112,10 @@ Options:
   -n, --dry-run    Show what would be done without making changes
 
 Examples:
-  $(basename "$0") update         # Update system packages and components
-  $(basename "$0") clean          # Clean system caches and temporary files
-  $(basename "$0") -y clean       # Clean without prompting
-  $(basename "$0") -qn update     # Quiet dry-run update
+  ${0##*/} update         # Update system packages and components
+  ${0##*/} clean          # Clean system caches and temporary files
+  ${0##*/} -y clean       # Clean without prompting
+  ${0##*/} -qn update     # Quiet dry-run update
 EOF
 }
 

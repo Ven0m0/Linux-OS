@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -Eeuo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'
+set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
@@ -9,19 +8,9 @@ has(){ command -v "$1" &>/dev/null; }
 msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
 die(){ printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; exit "${2:-1}"; }
-#──────────── Privilege Setup ────────────
-get_priv(){
-  local c
-  for c in sudo-rs sudo doas; do
-    has "$c" && { printf '%s' "$c"; return 0; }
-  done
-  [[ $EUID -eq 0 ]] || die "No priv tool found"
-}
-PRIV=${PRIV:-$(get_priv)}
-[[ -n $PRIV && $EUID -ne 0 ]] && "$PRIV" -v || :
-run_priv(){ [[ $EUID -eq 0 || -z $PRIV ]] && "$@" || "$PRIV" -- "$@"; }
+#──────────── Setup ────────────
+check_supported_isa_level(){ /lib/ld-linux-x86-64.so.2 --help | grep "$1 (supported, searched)" >/dev/null; echo "$?"; }
 
-#──────────── Package Manager ────────────
 if has paru; then pkgmgr=(paru) aur=1
 else pkgmgr=(sudo pacman) aur=0
 fi
@@ -46,13 +35,13 @@ setup_repositories(){
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   )
   has_repo(){ grep -qF -- "$1" "$conf"; }
-  add_block(){ printf '%s\n' "$1" | run_priv tee -a "$conf" >/dev/null; }
+  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
-    run_priv pacman-key --keyserver keyserver.ubuntu.com -r "$chaotic_key" &>/dev/null || :
-    yes | run_priv pacman-key --lsign-key "$chaotic_key" &>/dev/null || :
-    run_priv pacman --noconfirm --needed -U "${chaotic_urls[@]}" &>/dev/null || :
+    sudo pacman-key --keyserver keyserver.ubuntu.com -r "$chaotic_key" &>/dev/null || :
+    yes | sudo pacman-key --lsign-key "$chaotic_key" &>/dev/null || :
+    sudo pacman --noconfirm --needed -U "${chaotic_urls[@]}" &>/dev/null || :
     add_block '[chaotic-aur]
 Include = /etc/pacman.d/chaotic-mirrorlist'
   fi
@@ -68,7 +57,7 @@ Server = https://pkgbuild.com/~artafinde/repo'
     if (( aur )); then
       paru --noconfirm --skipreview --needed -S alhp-keyring alhp-mirrorlist &>/dev/null || :
     else
-      run_priv pacman --noconfirm --needed -S alhp-keyring alhp-mirrorlist &>/dev/null || :
+      sudo pacman --noconfirm --needed -S alhp-keyring alhp-mirrorlist &>/dev/null || :
     fi
     add_block '[core-x86-64-v3]
 Include = /etc/pacman.d/alhp-mirrorlist
@@ -109,11 +98,11 @@ Include = /etc/pacman.d/endeavouros-mirrorlist'
     local tmp; tmp=$(mktemp -d)
     (cd "$tmp" && curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o repo.tar.xz && \
      tar xf repo.tar.xz && cd cachyos-repo && chmod +x cachyos-repo.sh && \
-     run_priv bash cachyos-repo.sh) || warn "CachyOS repo setup failed"
+     sudo bash cachyos-repo.sh) || warn "CachyOS repo setup failed"
     rm -rf "$tmp"
   fi
   # Sync if repos were added
-  run_priv pacman -Syy --noconfirm &>/dev/null || :
+  sudo pacman -Syy --noconfirm &>/dev/null || :
 }
 
 #══════════════════════════════════════════════════════════════
@@ -125,13 +114,13 @@ init_system(){
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
   [[ -d ~/.gnupg ]] && chmod -R 700 ~/.gnupg
   ssh-keyscan -H aur.archlinux.org github.com >> ~/.ssh/known_hosts 2>/dev/null || :
-  [[ -f /etc/doas.conf ]] && { run_priv chown root:root /etc/doas.conf; run_priv chmod 0400 /etc/doas.conf; }
-  run_priv modprobe zram tcp_bbr &>/dev/null || :
-  [[ -f /var/lib/pacman/db.lck ]] && run_priv rm -f /var/lib/pacman/db.lck || :
-  run_priv pacman-key --init &>/dev/null || :
-  run_priv pacman-key --populate archlinux cachyos &>/dev/null || :
-  run_priv pacman -Sy archlinux-keyring cachyos-keyring --noconfirm &>/dev/null || :
-  run_priv pacman -Syyu --noconfirm || :
+  [[ -f /etc/doas.conf ]] && { sudo chown root:root /etc/doas.conf; sudo chmod 0400 /etc/doas.conf; }
+  sudo modprobe zram tcp_bbr &>/dev/null || :
+  [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck || :
+  sudo pacman-key --init &>/dev/null || :
+  sudo pacman-key --populate archlinux cachyos &>/dev/null || :
+  sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm &>/dev/null || :
+  sudo pacman -Syyu --noconfirm || :
 }
 
 #══════════════════════════════════════════════════════════════
@@ -174,7 +163,7 @@ install_packages(){
       done
     }
   else
-    run_priv pacman -S --needed --noconfirm --disable-download-timeout "${missing[@]}" || die "Install failed"
+    sudo pacman -S --needed --noconfirm --disable-download-timeout "${missing[@]}" || die "Install failed"
   fi
 }
 
@@ -306,7 +295,7 @@ enable_services(){
   msg "Enabling services"
   local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency)
   for sv in "${svcs[@]}"; do
-    systemctl is-enabled "$sv" &>/dev/null || run_priv systemctl enable --now "$sv" &>/dev/null || :
+    systemctl is-enabled "$sv" &>/dev/null || sudo systemctl enable --now "$sv" &>/dev/null || :
   done
 }
 
@@ -316,19 +305,19 @@ enable_services(){
 maintenance(){
   msg "Running maintenance"
   has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry 2>/dev/null || :
-  has fc-cache && run_priv fc-cache -f || :
-  has update-desktop-database && run_priv update-desktop-database || :
+  has fc-cache && sudo fc-cache -f || :
+  has update-desktop-database && sudo update-desktop-database || :
   if has fwupdmgr; then
-    run_priv fwupdmgr refresh -y &>/dev/null || :
-    run_priv fwupdmgr update &>/dev/null || :
+    sudo fwupdmgr refresh -y &>/dev/null || :
+    sudo fwupdmgr update &>/dev/null || :
   fi
   
   # Initramfs rebuild
-  if has update-initramfs; then run_priv update-initramfs || :
-  elif has limine-mkinitcpio; then run_priv limine-mkinitcpio || :
-  elif has mkinitcpio; then run_priv mkinitcpio -P || :
-  elif [[ -x /usr/lib/booster/regenerate_images ]]; then run_priv /usr/lib/booster/regenerate_images || :
-  elif has dracut-rebuild; then run_priv dracut-rebuild || :
+  if has update-initramfs; then sudo update-initramfs || :
+  elif has limine-mkinitcpio; then sudo limine-mkinitcpio || :
+  elif has mkinitcpio; then sudo mkinitcpio -P || :
+  elif [[ -x /usr/lib/booster/regenerate_images ]]; then sudo /usr/lib/booster/regenerate_images || :
+  elif has dracut-rebuild; then sudo dracut-rebuild || :
   else warn "No initramfs generator found"
   fi
 }
@@ -338,11 +327,11 @@ maintenance(){
 #══════════════════════════════════════════════════════════════
 cleanup(){
   msg "Cleaning up"
-  run_priv pacman -Rns --noconfirm "$(pacman -Qdtq 2>/dev/null)" 2>/dev/null || :
-  (( aur )) && paru -Scc --noconfirm 2>/dev/null || run_priv pacman -Scc --noconfirm 2>/dev/null || :
-  run_priv journalctl --rotate -q 2>/dev/null || :
-  run_priv journalctl --vacuum-size=50M -q 2>/dev/null || :
-  run_priv fstrim -av 2>/dev/null || :
+  sudo pacman -Rns --noconfirm "$(pacman -Qdtq 2>/dev/null)" 2>/dev/null || :
+  (( aur )) && paru -Scc --noconfirm 2>/dev/null || sudo pacman -Scc --noconfirm 2>/dev/null || :
+  sudo journalctl --rotate -q 2>/dev/null || :
+  sudo journalctl --vacuum-size=50M -q 2>/dev/null || :
+  sudo fstrim -av 2>/dev/null || :
 }
 
 #══════════════════════════════════════════════════════════════

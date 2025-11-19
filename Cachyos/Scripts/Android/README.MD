@@ -203,3 +203,6 @@ curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cac
 - https://github.com/Nahvine/ADB_Toolbox
 - https://github.com/Th3-R3p4ck3r/ApkPatcher
 - https://github.com/TechnoIndian/ApkPatcher
+
+TODO: fork this repo and optimize it (merge it into a single python script and add graphicsmagick)
+- https://github.com/charwasp/modify/

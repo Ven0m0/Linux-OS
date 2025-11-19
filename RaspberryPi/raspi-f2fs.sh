@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 #
 # DESCRIPTION: Flash Raspberry Pi images with F2FS root filesystem
 #              Production-hardened for DietPi/RaspiOS on SD cards
@@ -304,14 +305,14 @@ force_umount_device(){
   
   # Unmount all partitions
   mapfile -t parts < <(lsblk -nlo NAME,MOUNTPOINT "$dev" 2>/dev/null | awk '$2 {print "/dev/"$1}')
-  
+
   for part in "${parts[@]}"; do
     [[ -n $part ]] && umount -fl "$part" &>/dev/null 2>&1 || :
   done
-  
+
   # Kernel cache drop (sync once before cache drop)
   sync
-  echo 3 >/proc/sys/vm/drop_caches 2>/dev/null || :
+  printf '3\n' >/proc/sys/vm/drop_caches 2>/dev/null || :
   
   # Final process kill
   has fuser && {
@@ -374,8 +375,8 @@ setup_target(){
     (( cfg[dry_run] )) || {
       # Detach any existing loops for this path
       local -a existing=()
-      mapfile -t existing < <(losetup -j "$tgt_path" 2>/dev/null | cut -d: -f1)
-      
+      mapfile -t existing < <(losetup -j "$tgt_path" 2>/dev/null | awk -F: '{print $1}')
+
       for loop in "${existing[@]}"; do
         [[ -n $loop ]] && losetup -d "$loop" &>/dev/null || :
       done
@@ -503,9 +504,9 @@ copy_data(){
   
   local -a dirs=(boot root)
   local dir size_mb free_mb
-  
+
   for dir in "${dirs[@]}"; do
-    size_mb=$(du -sm "${WORKDIR}/$dir" | cut -f1)
+    size_mb=$(du -sm "${WORKDIR}/$dir" | awk '{print $1}')
     free_mb=$(awk '/^MemAvailable:/ {print int($2/1024)}' /proc/meminfo)
     
     # RAM buffer if we have 2x headroom and >10MB

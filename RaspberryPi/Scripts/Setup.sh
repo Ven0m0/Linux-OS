@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 #
 # DESCRIPTION: Automated Raspberry Pi system optimization and tooling setup
 #              Targets: Debian/Raspbian, DietPi
@@ -149,8 +150,8 @@ clean_docs(){
   run_priv rm -rf /usr/share/{groff,info,lintian,linda,man}/* /var/cache/man/* 2>/dev/null || :
   
   # Keep only en_GB locale
-  run_priv bash -c "cd /usr/share/locale && ls | grep -v en_GB | xargs rm -rf" 2>/dev/null || :
-  run_priv bash -c "cd /usr/share/X11/locale && ls | grep -v en_GB | xargs rm -rf" 2>/dev/null || :
+  run_priv bash -c 'cd /usr/share/locale && for d in *; do [[ $d != en_GB ]] && rm -rf "$d"; done' 2>/dev/null || :
+  run_priv bash -c 'cd /usr/share/X11/locale && for d in *; do [[ $d != en_GB ]] && rm -rf "$d"; done' 2>/dev/null || :
   
   run_priv apt-get remove --purge -y '*texlive*' '*-doc' 2>/dev/null || :
 }
@@ -189,10 +190,10 @@ EOF
 
   # I/O scheduler tuning
   for dev in /sys/block/sd*[!0-9]/queue/iosched/fifo_batch; do
-    [[ -f $dev ]] && echo 32 | run_priv tee "$dev" >/dev/null || :
+    [[ -f $dev ]] && run_priv tee "$dev" >/dev/null <<<32 || :
   done
   for dev in /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch; do
-    [[ -f $dev ]] && echo 32 | run_priv tee "$dev" >/dev/null || :
+    [[ -f $dev ]] && run_priv tee "$dev" >/dev/null <<<32 || :
   done
 
   # Filesystem optimizations

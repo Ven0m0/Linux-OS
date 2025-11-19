@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 #──────────── Colors ────────────
@@ -9,7 +10,7 @@ msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
 die(){ printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; exit "${2:-1}"; }
 #──────────── Setup ────────────
-check_supported_isa_level(){ /lib/ld-linux-x86-64.so.2 --help | grep "$1 (supported, searched)" >/dev/null; echo "$?"; }
+check_supported_isa_level(){ /lib/ld-linux-x86-64.so.2 --help | grep -q "$1 (supported, searched)"; echo "$?"; }
 
 if has paru; then pkgmgr=(paru) aur=1
 else pkgmgr=(sudo pacman) aur=0
@@ -158,8 +159,8 @@ install_packages(){
       --gpgflags '--batch -q --yes --skip-verify' --cleanafter --removemake "${missing[@]}" 2>/dev/null || {
       local fail="${HOME}/failed_pkgs.txt"
       msg "Batch install failed → $fail"
-      printf '%s\n' "${missing[@]}" | while read -r p; do
-        pacman -Qq "$p" &>/dev/null || echo "$p" >> "$fail"
+      for p in "${missing[@]}"; do
+        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p" >> "$fail"
       done
     }
   else
@@ -327,7 +328,8 @@ maintenance(){
 #══════════════════════════════════════════════════════════════
 cleanup(){
   msg "Cleaning up"
-  sudo pacman -Rns --noconfirm "$(pacman -Qdtq 2>/dev/null)" 2>/dev/null || :
+  local orphans
+  orphans=$(pacman -Qdtq 2>/dev/null) && sudo pacman -Rns --noconfirm $orphans 2>/dev/null || :
   (( aur )) && paru -Scc --noconfirm 2>/dev/null || sudo pacman -Scc --noconfirm 2>/dev/null || :
   sudo journalctl --rotate -q 2>/dev/null || :
   sudo journalctl --vacuum-size=50M -q 2>/dev/null || :

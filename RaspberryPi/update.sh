@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 # Setup environment
 set -euo pipefail; shopt -s nullglob globstar execfail
 IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive PRUNE_MODULES=1 SKIP_VCLIBS=1
 # Initialize working directory
-WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKDIR="${BASH_SOURCE[0]%/*}"
+[[ $WORKDIR == "${BASH_SOURCE[0]}" ]] && WORKDIR="."
 cd "$WORKDIR" || { echo "Failed to change to working directory: $WORKDIR" >&2; exit 1; }
+WORKDIR="$PWD"
 # Color constants for terminal output
 LBLU=$'\e[38;5;117m'
 PNK=$'\e[38;5;218m'

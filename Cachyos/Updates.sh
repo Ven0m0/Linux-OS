@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-19 - Applied bash optimization techniques
 # Standalone system update script for Arch-based systems.
 
 set -euo pipefail

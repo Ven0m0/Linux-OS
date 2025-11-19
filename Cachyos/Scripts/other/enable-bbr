@@ -4,19 +4,15 @@
 current_algo=$(sysctl net.ipv4.tcp_congestion_control | awk '{print $3}')
 
 if [[ $current_algo == "bbr" ]]; then
-  echo "BBR is already enabled."
-  exit 0
+  echo "BBR is already enabled."; exit 0
 fi
 
 echo "Enabling BBR..."
-
 # Load the BBR kernel module
 sudo modprobe tcp_bbr
-
 # Add BBR to the sysctl configuration
 echo "net.core.default_qdisc=fq" | sudo tee -a /etc/sysctl.conf
 echo "net.ipv4.tcp_congestion_control=bbr" | sudo tee -a /etc/sysctl.conf
-
 # Apply the changes
 sudo sysctl -p
 

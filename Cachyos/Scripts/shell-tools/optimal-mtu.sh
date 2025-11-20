@@ -3,9 +3,10 @@ set -euo pipefail
 has(){ command -v -- "$1" &>/dev/null; }
 die(){ echo "ERROR: $*" >&2; exit 1; }
 
+# TODO: check if https://github.com/MrAminiDev/NetOptix/blob/main/scripts/mtu.sh could be useful
+
 find_mtu(){
   local srv=${1:-8.8.8.8} lo=1200 hi=1500 mid opt iface
-  
   echo "Testing MTU to $srv..."
   ping -c1 -W1 "$srv" &>/dev/null || die "Server $srv unreachable"
   ping -M do -s$((lo-28)) -c1 "$srv" &>/dev/null || die "Min MTU $lo not viable"

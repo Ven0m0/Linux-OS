@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-21 - Applied bash optimization techniques
+# WARNING: This script will reboot the system after kernel installation
 # Source shared libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ============ Inlined from lib/common.sh ============

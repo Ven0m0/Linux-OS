@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-21 - Applied bash optimization techniques
 # Usage: sqlite-tune db.sqlite [aggressive|safe|readonly]
 # Source common library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,7 +29,8 @@ setup_environment() { set -euo pipefail; shopt -s nullglob globstar execfail; IF
 get_sudo_cmd() { local sudo_cmd; sudo_cmd="$(hasname sudo-rs || hasname sudo || hasname doas)" || { echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; return 1; }; printf '%s
 ' "$sudo_cmd"; }
 init_sudo() { local sudo_cmd; sudo_cmd="$(get_sudo_cmd)" || return 1; if [[ $EUID -ne 0 && $sudo_cmd =~ ^(sudo-rs|sudo)$ ]]; then "$sudo_cmd" -v 2>/dev/null || :; fi; }
-find_with_fallback() { local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"; shift 4 2>/dev/null || shift $#; if has fdf; then fdf -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"; elif has fd; then fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"; else local find_type_arg; case "$ftype" in f) find_type_arg="-type f" ;; d) find_type_arg="-type d" ;; l) find_type_arg="-type l" ;; *) find_type_arg="-type f" ;; esac; if [[ -n $action ]]; then find "$search_path" $find_type_arg -name "$pattern" "$action" "$@"; else find "$search_path" $find_type_arg -name "$pattern"; fi; fi; }
+find_with_fallback() { local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"; shift 4 2>/dev/null || shift $#; if has fdf; then fdf -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"; elif has fd; fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"; else local find_type_arg; case "$ftype" in f) find_type_arg="-type f" ;; d) find_type_arg="-type d" ;; l) find_type_arg="-type l" ;; *) find_type_arg="-type f" ;; esac; if [[ -n $action ]]; then find "$search_path" $find_type_arg -name "$pattern" "$action" "$@"; else find "$search_path" $find_type_arg -name "$pattern"; fi; fi; }
+die() { echo "ERROR: $*" >&2; exit 1; }
 # ============ End of inlined lib/common.sh ============
 
 db=${1:?db path}

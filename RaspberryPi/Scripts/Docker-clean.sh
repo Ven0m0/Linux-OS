@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+# Optimized: 2025-11-21 - Applied bash optimization techniques
 # Set shell options:
 #   -e, exit immediately if a command exits with a non-zero status
 #   -o pipefail, means that if any element of the pipeline fails, then the pipeline as a whole will fail.
@@ -7,6 +7,7 @@
 set -euo pipefail
 shopt -s nullglob globstar execfail
 IFS=$'\n\t'
+export LC_ALL=C LANG=C
 
 DONT_RESTART_DOCKER_ENGINE=0
 DONT_ASK_CONFIRMATION=0

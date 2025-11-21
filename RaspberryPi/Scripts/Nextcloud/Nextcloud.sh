@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-21 - Applied bash optimization techniques
+# WARNING: This script contains hardcoded values and incomplete setup
+# TODO: Configure variables before running
 # Source shared libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ============ Inlined from lib/common.sh ============
@@ -34,42 +37,89 @@ setup_environment
 
 sudo apt-get update && sudo apt-get upgrade -y
 
+# Configuration variables - CUSTOMIZE THESE
+NEXTCLOUD_DOMAIN="${NEXTCLOUD_DOMAIN:-cloud.example.com}"
+DB_NAME="${DB_NAME:-nextcloud}"
+DB_USER="${DB_USER:-ncuser}"
+DB_PASS="${DB_PASS:-$(openssl rand -base64 32)}"  # Generate random password
+TIMEZONE="${TIMEZONE:-UTC}"
+
+echo "=== Nextcloud Installation Script ==="
+echo "Domain: $NEXTCLOUD_DOMAIN"
+echo "Database: $DB_NAME"
+echo "DB User: $DB_USER"
+echo "DB Password: (generated)"
+echo "Timezone: $TIMEZONE"
+echo ""
+read -p "Proceed with installation? (y/N) " -n 1 -r
+echo
+[[ ! $REPLY =~ ^[Yy]$ ]] && { echo "Installation cancelled"; exit 0; }
+
 # Install Nginx, MariaDB, PHP-FPM and required PHP modules
+echo "Installing dependencies..."
 sudo apt-get install -y nginx mariadb-server \
   php-fpm php-mysql php-cli php-zip php-xml php-mbstring php-curl php-gd \
-  php-bcmath php-gmp php-intl php-imagick php-json php-xmlreader php-xmlwriter \
-  php-simplexml zip unzip wget curl openssl redis-server
+  php-bcmath php-gmp php-intl php-imagick php-apcu php-redis \
+  zip unzip wget curl openssl redis-server
 
-apt-cache search redis
-APCu
-intl
-imagick
+# Find PHP version
+PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+PHP_INI="/etc/php/$PHP_VERSION/fpm/php.ini"
 
-ls /etc/php/*/fpm/php.ini
-ls /etc/php/
-memory_limit = 512M
-upload_max_filesize = 512M
-post_max_size = 512M
-max_execution_time = 300
-cgi.fix_pathinfo = 0
-date.timezone = Europe/Berlin
+if [[ -f $PHP_INI ]]; then
+  echo "Configuring PHP ($PHP_INI)..."
+  sudo sed -i "s/memory_limit = .*/memory_limit = 512M/" "$PHP_INI"
+  sudo sed -i "s/upload_max_filesize = .*/upload_max_filesize = 512M/" "$PHP_INI"
+  sudo sed -i "s/post_max_size = .*/post_max_size = 512M/" "$PHP_INI"
+  sudo sed -i "s/max_execution_time = .*/max_execution_time = 300/" "$PHP_INI"
+  sudo sed -i "s/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/" "$PHP_INI"
+  sudo sed -i "s|;date.timezone =|date.timezone = $TIMEZONE|" "$PHP_INI"
+  sudo systemctl restart "php$PHP_VERSION-fpm"
+fi
 
-sudo systemctl restart php*-fpm
-
+# Secure MariaDB
+echo "Securing MariaDB..."
 sudo mysql_secure_installation
 
-sudo mysql -u root -p <<EOF
-CREATE DATABASE nextcloud CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-CREATE USER 'ncuser'@'localhost' IDENTIFIED BY 'strongpassword';
-GRANT ALL ON nextcloud.* TO 'ncuser'@'localhost';
+# Create database and user
+echo "Creating Nextcloud database..."
+sudo mysql <<EOF
+CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
-sudo chown -R www-data:www-data /var/www/nextcloud
-sudo chmod -R 755 /var/www/nextcloud
+# Create Nextcloud directory if it doesn't exist
+if [[ ! -d /var/www/nextcloud ]]; then
+  echo "WARNING: /var/www/nextcloud does not exist. Please download and extract Nextcloud first."
+  echo "Visit: https://nextcloud.com/install/"
+else
+  sudo chown -R www-data:www-data /var/www/nextcloud
+  sudo chmod -R 755 /var/www/nextcloud
+fi
 
-sudo touch /etc/nginx/sites-available/nextcloud.conf
+# Install certbot for SSL
+echo "Installing certbot..."
+sudo apt-get install -y certbot python3-certbot-nginx
 
-sudo apt install certbot python3-certbot-nginx -y
-sudo certbot --nginx -d cloud.example.com
-sudo certbot renew --dry-run
+echo ""
+echo "=== Installation Summary ==="
+echo "Database credentials saved to: /root/.nextcloud-db-credentials"
+sudo tee /root/.nextcloud-db-credentials >/dev/null <<CREDS
+DB_NAME=$DB_NAME
+DB_USER=$DB_USER
+DB_PASS=$DB_PASS
+CREDS
+sudo chmod 600 /root/.nextcloud-db-credentials
+
+echo ""
+echo "=== Next Steps ==="
+echo "1. Configure Nginx: sudo nano /etc/nginx/sites-available/nextcloud.conf"
+echo "2. Enable site: sudo ln -s /etc/nginx/sites-available/nextcloud.conf /etc/nginx/sites-enabled/"
+echo "3. Test config: sudo nginx -t"
+echo "4. Reload Nginx: sudo systemctl reload nginx"
+echo "5. Get SSL certificate: sudo certbot --nginx -d $NEXTCLOUD_DOMAIN"
+echo "6. Complete Nextcloud setup via web interface"
+echo ""
+echo "Database credentials: /root/.nextcloud-db-credentials"

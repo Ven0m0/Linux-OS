@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-21 - Applied bash optimization techniques
 # https://privacy.sexy — v0.13.8 — Mon, 19 May 2025 19:20:17 GMT
+
+# Setup environment
+set -euo pipefail
+shopt -s nullglob globstar execfail
+IFS=$'\n\t'
+export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 
 # Check if a command exists
 has() {

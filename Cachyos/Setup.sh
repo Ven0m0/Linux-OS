@@ -16,7 +16,7 @@ DOTFILES_TOOL="yadm"
 if has paru; then
   PKG="paru -S --needed --noconfirm"
   paru -Syu --needed --noconfirm --skipreview >/dev/null
-if has pacman; then
+elif has pacman; then
   PKG="sudo pacman -S --needed --noconfirm"
   sudo pacman -Syu --needed --noconfirm >/dev/null
 elif has apt-get; then

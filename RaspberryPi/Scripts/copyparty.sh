@@ -1,24 +1,31 @@
 #!/usr/bin/env bash
+# Optimized: 2025-11-21 - Applied bash optimization techniques
 # Source shared libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Setup environment - just need the LC_ALL/LANG export
-export LC_ALL=C LANG=C
+# Setup environment
+set -euo pipefail
+shopt -s nullglob globstar execfail
+IFS=$'\n\t'
+export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 
 # UID/GID >= 100 (or <1000 for system account)
 uid=200
 gid=200
 
-# Create group
-echo "copyparty:x:$gid:" >>/etc/group
-
-# Create user
-echo "copyparty:x:$uid:$gid:Copyparty user:/var/lib/copyparty:/sbin/nologin" >>/etc/passwd
-echo "copyparty:!::0:99999:7:::" >>/etc/shadow
+# Create group, user, and home directory
+echo "Creating copyparty user and group..."
+if ! getent group copyparty >/dev/null; then
+  echo "copyparty:x:$gid:" | sudo tee -a /etc/group >/dev/null
+fi
+if ! getent passwd copyparty >/dev/null; then
+  echo "copyparty:x:$uid:$gid:Copyparty user:/var/lib/copyparty:/sbin/nologin" | sudo tee -a /etc/passwd >/dev/null
+  echo "copyparty:!::0:99999:7:::" | sudo tee -a /etc/shadow >/dev/null
+fi
 
 # Create home dir
-mkdir -p /var/lib/copyparty
-chown "$uid":"$gid" /var/lib/copyparty
+sudo mkdir -p /var/lib/copyparty
+sudo chown "$uid":"$gid" /var/lib/copyparty
 
 # python3 /usr/local/bin/copyparty-en.py -e2dsa --ftp 3921 -z -i unix:777:/dev/shm/party.sock
 bg_run() {

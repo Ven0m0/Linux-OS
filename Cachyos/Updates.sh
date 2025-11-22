@@ -103,6 +103,8 @@ main(){
       uv pip install -Uq --system --no-break-system-packages "${outdated[@]}" &>/dev/null || :
     fi
   }
+
+
   
   update_maintenance(){
     log "🔄${BLU} System Maintenance${DEF}"
@@ -110,7 +112,8 @@ main(){
     for cmd in fc-cache-reload update-desktop-database update-pciids update-smart-drivedb fwupdmgr; do
       has "$cmd" && sudo "$cmd" &>/dev/null || :
     done
-    
+    echo "Updating time..."
+    sudo systemctl restart systemd-timesyncd
     if has bootctl && [[ -d /sys/firmware/efi ]]; then
       sudo bootctl update &>/dev/null || :
     fi
@@ -123,7 +126,7 @@ main(){
       sudo /usr/lib/booster/regenerate_images &>/dev/null || :
     fi
   }
-  
+
   #============ Execution ============
   log "\n${GRN} Meow! System Update Starting (> ^ <)${DEF}"
   update_system

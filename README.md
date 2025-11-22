@@ -89,6 +89,7 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 - [AUR PKG](https://aur.archlinux.org)
 - [Crates.io](https://crates.io)
 - [FlatHub](https://flathub.org)
+- [AppImages](https://portable-linux-apps.github.io/apps)
 - [Lure.sh](https://lure.sh)
 - [Basher](https://www.basher.it/package)
 - [bpkg](https://bpkg.sh)

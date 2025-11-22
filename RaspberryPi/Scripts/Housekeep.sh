@@ -8,7 +8,7 @@ export LC_ALL=C LANG=C
 echo "Running DietPi housekeeping tasks..."
 
 # Run optimal MTU configuration
-if command -v dietpi-optimal_mtu &>/dev/null; then
+if command -v dietpi-optimal_mtu &> /dev/null; then
   echo "Running dietpi-optimal_mtu..."
   dietpi-optimal_mtu
 elif [[ -x /boot/dietpi/func/dietpi-optimal_mtu ]]; then
@@ -17,7 +17,7 @@ elif [[ -x /boot/dietpi/func/dietpi-optimal_mtu ]]; then
 fi
 
 # Run DietPi cleaner
-if command -v dietpi-cleaner &>/dev/null; then
+if command -v dietpi-cleaner &> /dev/null; then
   echo "Running dietpi-cleaner..."
   dietpi-cleaner
 elif [[ -x /boot/dietpi/dietpi-cleaner ]]; then

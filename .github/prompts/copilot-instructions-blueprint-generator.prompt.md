@@ -6,6 +6,7 @@ mode: 'agent'
 # Copilot Instructions Blueprint Generator
 
 ## Configuration Variables
+
 ${PROJECT_TYPE="Auto-detect|.NET|Java|JavaScript|TypeScript|React|Angular|Python|Multiple|Other"} <!-- Primary technology -->
 ${ARCHITECTURE_STYLE="Layered|Microservices|Monolithic|Domain-Driven|Event-Driven|Serverless|Mixed"} <!-- Architectural approach -->
 ${CODE_QUALITY_FOCUS="Maintainability|Performance|Security|Accessibility|Testability|All"} <!-- Quality priorities -->
@@ -279,6 +280,7 @@ To create the copilot-instructions.md file, first analyze the codebase to:
 ### 3. Implementation Notes
 
 The final copilot-instructions.md should:
+
 - Be placed in the .github/copilot directory
 - Reference only patterns and standards that exist in the codebase
 - Include explicit version compatibility requirements
@@ -292,4 +294,3 @@ Important: Only include guidance based on patterns actually observed in the code
 ## Expected Output
 
 A comprehensive copilot-instructions.md file that will guide GitHub Copilot to produce code that is perfectly compatible with your existing technology versions and follows your established patterns and architecture.
-

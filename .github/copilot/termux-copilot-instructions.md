@@ -13,12 +13,15 @@ When generating code for this repository:
 ## Technology Version Detection
 
 ### Shell Environment
+
 - **Primary Shell**: Bash 5.x in Termux environment
 - **Configuration Shell**: Zsh with Zinit plugin manager
 - **Shebang Pattern**: `#!/data/data/com.termux/files/usr/bin/env bash` for Termux scripts
 
 ### Tool Ecosystem
+
 **Modern Tools (Preferred)**:
+
 - File finding: `fd` over `find`
 - Text search: `ripgrep` (rg) over `grep`
 - File viewing: `bat` over `less`
@@ -26,6 +29,7 @@ When generating code for this repository:
 - Navigation: `zoxide` over `cd`
 
 **Package Managers**:
+
 - Termux: `pkg install package-name`
 - Arch Linux: `pacman -S --needed package-name`
 - Debian/Ubuntu: `sudo apt-get install -y package-name`
@@ -33,6 +37,7 @@ When generating code for this repository:
 ## Codebase Patterns
 
 ### Mandatory Script Structure
+
 ```bash
 #!/data/data/com.termux/files/usr/bin/env bash
 set -euo pipefail
@@ -56,6 +61,7 @@ trap 'trap - TERM; exit 143' TERM
 ```
 
 ### Error Handling Patterns
+
 - Always quote variables: `"$variable"` not `$variable`
 - Use `set -euo pipefail` for strict error handling
 - Implement signal trapping for clean exits
@@ -63,6 +69,7 @@ trap 'trap - TERM; exit 143' TERM
 - Use `|| true` for non-critical operations that may fail
 
 ### Performance Patterns
+
 - Prefer parameter expansion over external commands
 - Use arrays instead of repeated external tool calls
 - Implement parallel processing with `xargs -P`
@@ -70,6 +77,7 @@ trap 'trap - TERM; exit 143' TERM
 - Use process substitution to avoid subshells
 
 ### Dependency Checking Pattern
+
 ```bash
 require_deps() {
   local miss=()
@@ -88,11 +96,13 @@ require_deps() {
 ## File Organization Standards
 
 ### Script Location and Naming
+
 - Executable utilities: `bin/script-name.sh`
 - Configuration files: `.config/bash/` or appropriate XDG directory
 - Termux-specific: `.termux/termux.properties`
 
 ### Configuration Management
+
 - Use environment variables for configuration
 - Support command-line flag overrides
 - Provide sensible defaults
@@ -101,6 +111,7 @@ require_deps() {
 ## Code Quality Standards
 
 ### Maintainability
+
 - Write self-documenting code with clear function names
 - Keep functions focused on single responsibilities
 - Use consistent naming conventions throughout
@@ -108,6 +119,7 @@ require_deps() {
 - Include brief but sufficient comments for complex logic
 
 ### Performance
+
 - Use built-in Bash features over external commands
 - Implement parallel processing for batch operations
 - Cache results of expensive operations
@@ -115,6 +127,7 @@ require_deps() {
 - Target <100ms startup time for utilities
 
 ### Security
+
 - Validate all user input before processing
 - Use `mktemp` for temporary files
 - Never use `eval` with untrusted input
@@ -124,6 +137,7 @@ require_deps() {
 ## Testing Approach
 
 ### Validation Patterns
+
 - Use `shellcheck` for static analysis
 - Format with `shfmt -i 2 -ci -sr`
 - Test on Termux, Arch, and Debian where possible
@@ -131,6 +145,7 @@ require_deps() {
 - Test error conditions and edge cases
 
 ### Manual Testing
+
 - Verify scripts work without optional dependencies
 - Test with both modern tools and fallbacks
 - Confirm proper error messages and exit codes
@@ -139,12 +154,14 @@ require_deps() {
 ## Platform-Specific Guidelines
 
 ### Termux Optimizations
+
 - Use Termux API when available (`termux-*` commands)
 - Handle Android-specific paths correctly
 - Support Termux storage access patterns
 - Integrate with Android clipboard and sharing
 
 ### Cross-Platform Compatibility
+
 - Detect platform and adjust behavior accordingly
 - Provide appropriate package installation hints
 - Handle different versions of common tools
@@ -153,6 +170,7 @@ require_deps() {
 ## Documentation Requirements
 
 ### Usage Function Template
+
 ```bash
 usage() {
   cat <<EOF
@@ -177,6 +195,7 @@ EOF
 ```
 
 ### Inline Documentation
+
 - Document complex algorithms or logic
 - Explain platform-specific workarounds
 - Include examples for non-obvious usage
@@ -185,12 +204,14 @@ EOF
 ## Integration Guidelines
 
 ### Zsh Environment Compatibility
+
 - Scripts should work when called from Zsh
 - Respect existing environment variables
 - Don't conflict with Zinit plugin system
 - Maintain compatibility with existing aliases
 
 ### Tool Integration Patterns
+
 ```bash
 # Prefer modern tools with fallbacks
 if has fd; then
@@ -205,6 +226,7 @@ fi
 ## Project-Specific Guidance
 
 ### Image Processing Scripts
+
 - Support JPEG, PNG, WebP, AVIF, GIF, SVG formats
 - Use parallel processing for batch operations
 - Provide quality control parameters
@@ -212,6 +234,7 @@ fi
 - Handle both lossy and lossless optimization
 
 ### Android/ADB Integration
+
 - Verify device connection before operations
 - Handle authorization prompts gracefully
 - Provide clear error messages for common failures
@@ -219,6 +242,7 @@ fi
 - Clean up temporary files after operations
 
 ### Dotfiles Management
+
 - Create atomic symlinks with backup capability
 - Verify source files exist before linking
 - Support both relative and absolute paths
@@ -235,4 +259,3 @@ fi
 - Test thoroughly on Termux before considering the script complete
 
 When in doubt, examine the existing scripts in `bin/` directory for examples of proper implementation patterns, especially `img.sh`, `media.sh`, and `revanced-helper.sh` which demonstrate the preferred architecture and coding style.
-

@@ -5,7 +5,7 @@ G_OBTAIN_CPU_TEMP() {
   local temp
   # - Odroid N2/ASUS/Sparky: Requires special case as in other array this would break SBC temp readouts with 2 zones
   if [[ ($G_HW_MODEL == 15 || $G_HW_MODEL == 52 || $G_HW_MODEL == 70) && -f '/sys/class/thermal/thermal_zone1/temp' ]]; then
-    read -r temp </sys/class/thermal/thermal_zone1/temp
+    read -r temp < /sys/class/thermal/thermal_zone1/temp
 
   # - Others
   else
@@ -26,7 +26,7 @@ G_OBTAIN_CPU_TEMP() {
     # shellcheck disable=SC2068
     for i in "${afp_temperature[@]}"; do
       [[ -f $i ]] || continue
-      read -r temp <"$i"
+      read -r temp < "$i"
       [[ $temp -gt 0 ]] && break # Trust only positive temperatures for now (strings are treated as "0")
     done
   fi

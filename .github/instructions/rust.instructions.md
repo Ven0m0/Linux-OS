@@ -5,7 +5,7 @@ applyTo: '**/*.rs'
 
 # Rust Coding Conventions and Best Practices
 
-Follow idiomatic Rust practices and community standards when writing Rust code. 
+Follow idiomatic Rust practices and community standards when writing Rust code.
 
 These instructions are based on [The Rust Book](https://doc.rust-lang.org/book/), [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/), [RFC 430 naming conventions](https://github.com/rust-lang/rfcs/blob/master/text/0430-finalizing-naming-conventions.md), and the broader Rust community at [users.rust-lang.org](https://users.rust-lang.org).
 
@@ -77,13 +77,16 @@ These instructions are based on [The Rust Book](https://doc.rust-lang.org/book/)
 ## API Design Guidelines
 
 ### Common Traits Implementation
+
 Eagerly implement common traits where appropriate:
+
 - `Copy`, `Clone`, `Eq`, `PartialEq`, `Ord`, `PartialOrd`, `Hash`, `Debug`, `Display`, `Default`
 - Use standard conversion traits: `From`, `AsRef`, `AsMut`
 - Collections should implement `FromIterator` and `Extend`
 - Note: `Send` and `Sync` are auto-implemented by the compiler when safe; avoid manual implementation unless using `unsafe` code
 
 ### Type Safety and Predictability
+
 - Use newtypes to provide static distinctions
 - Arguments should convey meaning through types; prefer specific types over generic `bool` parameters
 - Use `Option<T>` appropriately for truly optional values
@@ -91,6 +94,7 @@ Eagerly implement common traits where appropriate:
 - Only smart pointers should implement `Deref` and `DerefMut`
 
 ### Future Proofing
+
 - Use sealed traits to protect against downstream implementations
 - Structs should have private fields
 - Functions should validate their arguments
@@ -121,6 +125,7 @@ Eagerly implement common traits where appropriate:
 Before publishing or reviewing Rust code, ensure:
 
 ### Core Requirements
+
 - [ ] **Naming**: Follows RFC 430 naming conventions
 - [ ] **Traits**: Implements `Debug`, `Clone`, `PartialEq` where appropriate
 - [ ] **Error Handling**: Uses `Result<T, E>` and provides meaningful error types
@@ -128,6 +133,7 @@ Before publishing or reviewing Rust code, ensure:
 - [ ] **Testing**: Comprehensive test coverage including edge cases
 
 ### Safety and Quality
+
 - [ ] **Safety**: No unnecessary `unsafe` code, proper error handling
 - [ ] **Performance**: Efficient use of iterators, minimal allocations
 - [ ] **API Design**: Functions are predictable, flexible, and type-safe

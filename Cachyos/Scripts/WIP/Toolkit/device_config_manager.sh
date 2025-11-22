@@ -13,11 +13,11 @@ log() {
 }
 
 check_adb() {
-  command -v adb &>/dev/null || {
+  command -v adb &> /dev/null || {
     echo "Error: adb not found. Please install Android platform tools."
     return 1
   }
-  adb get-state &>/dev/null || {
+  adb get-state &> /dev/null || {
     echo "Error: No device connected or unauthorized."
     return 1
   }
@@ -93,7 +93,7 @@ apply_device_configs() {
 apply_config() {
   local section="$1" key="$2" value="$3"
   log_debug "Setting ${section}/${key}=${value}"
-  adb shell cmd device_config put "$section" "$key" "$value" >/dev/null 2>&1 \
+  adb shell cmd device_config put "$section" "$key" "$value" > /dev/null 2>&1 \
     || log "Failed to set ${section}/${key}=${value}"
 }
 
@@ -246,7 +246,7 @@ reset_device_configs() {
 
   # Reset each section
   for section in "${sections[@]}"; do
-    adb shell cmd device_config reset "$section" >/dev/null 2>&1 || log "Failed to reset section: $section"
+    adb shell cmd device_config reset "$section" > /dev/null 2>&1 || log "Failed to reset section: $section"
   done
 
   log "Device configurations reset successfully"

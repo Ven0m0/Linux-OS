@@ -6,11 +6,13 @@ A collection of scripts and resources for managing and customizing Linux distrib
 <summary><b>Arch scripts</b></summary>
 
 Update:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Updates.sh | bash
 ```
 
 Clean:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Clean.sh | bash
 ```
@@ -131,9 +133,9 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 - [Online tools](https://tools.waytolearnx.com/en)
 - [FFMPEG flag generator](https://alfg.github.io/ffmpeg-commander)
 
-## TODO:
+## TODO
 
-- https://github.com/sn99/Optimizing-linux
+- <https://github.com/sn99/Optimizing-linux>
 
 ```bash
 curl -fsSL https://christitus.com/linuxdev | bash

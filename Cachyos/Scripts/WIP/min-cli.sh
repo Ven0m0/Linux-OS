@@ -17,7 +17,7 @@ IFS=$'\n\t'
 #  - Prefers rust-parallel if present; falls back to xargs -P
 
 # Defaults
-JOBS=$(nproc 2>/dev/null || echo 4)
+JOBS=$(nproc 2> /dev/null || echo 4)
 LOSSY=0
 DRYRUN=0
 KEEPBACKUP=0
@@ -68,16 +68,16 @@ while (($#)); do
 done
 
 # Find fd / fdfind / find
-if command -v fd &>/dev/null; then
+if command -v fd &> /dev/null; then
   FD_BIN=fd
 else
   FD_BIN="find"
 fi
 
 # Choose parallel runner: prefer rust-parallel if available, else use xargs
-if command -v rust-parallel &>/dev/null; then
+if command -v rust-parallel &> /dev/null; then
   PARALLEL_BIN=rust-parallel
-elif command -v parallel &>/dev/null; then
+elif command -v parallel &> /dev/null; then
   PARALLEL_BIN=parallel
 else
   PARALLEL_BIN=""
@@ -88,7 +88,7 @@ OPT_SCRIPT="$TMPDIR/min-cli.sh"
 
 # helper to get file size portably
 filesize_prog() {
-  if stat -c%s "$1" &>/dev/null; then
+  if stat -c%s "$1" &> /dev/null; then
     stat -c%s "$1"
   else
     stat -f%z "$1"
@@ -96,7 +96,7 @@ filesize_prog() {
 }
 
 # Write the per-file optimization script (self-contained)
-cat >"$OPT_SCRIPT" <<'BASH'
+cat > "$OPT_SCRIPT" << 'BASH'
 #!/usr/bin/env bash
 set -euo pipefail
 file="$1"
@@ -297,12 +297,12 @@ if [[ $KEEPBACKUP -eq 1 ]]; then echo "BACKUPS will be kept as file.bak"; fi
 if [[ -n $PARALLEL_BIN ]] && [[ $PARALLEL_BIN == "rust-parallel" ]]; then
   # rust-parallel expects an input file with command lines (one per line)
   CMDF="$TMPDIR/cmds.txt"
-  : >"$CMDF"
+  : > "$CMDF"
   # construct safe shell-quoted command lines
   while IFS= read -r -d '' f; do
     # use printf %q for safe single-argument quoting
     esc=$(printf "%q" "$f")
-    printf '%s\n' "\"$OPT_SCRIPT\" $esc" >>"$CMDF"
+    printf '%s\n' "\"$OPT_SCRIPT\" $esc" >> "$CMDF"
   done < <(emit_file_list)
   if [[ $DRYRUN -eq 1 ]]; then
     echo "[DRY] Would run rust-parallel reading commands from $CMDF (first lines):"

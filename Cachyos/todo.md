@@ -1,11 +1,11 @@
 # Todo
 
-- https://wiki.archlinux.org/title/List_of_applications/Documents#Console
-- https://wiki.archlinux.org/title/List_of_applications/Internet#Firefox_spin-offs
-- https://www.commandlinefu.com/commands/browse
-- https://wiki.archlinux.org/title/Domain_name_resolution
-- https://github.com/macp3o/linux-tweaks
-- https://github.com/644/compressimages
+- <https://wiki.archlinux.org/title/List_of_applications/Documents#Console>
+- <https://wiki.archlinux.org/title/List_of_applications/Internet#Firefox_spin-offs>
+- <https://www.commandlinefu.com/commands/browse>
+- <https://wiki.archlinux.org/title/Domain_name_resolution>
+- <https://github.com/macp3o/linux-tweaks>
+- <https://github.com/644/compressimages>
 
 # Dotfiles
 
@@ -24,12 +24,12 @@ https://github.com/elkowar/yolk
 https://github.com/deadc0de6/dotdrop
 ```
 
-
 ```bash
 git clone --depth 1--shallow-submodules --filter='blob:none'
 ```
 
 ## PGO
+
 ```bash
 RUSTFLAGS="-C llvm-args=-polly -C llvm-args=-polly-vectorizer=stripmine -Zllvm-plugins=/usr/lib/LLVMPolly.so"
 # define PGO_PROFILE_DIR to use a custom directory for the profile data
@@ -119,17 +119,17 @@ cargo install webcomp
 https://codeberg.org/TotallyLeGIT/doasedit
 ```
 
-* Java:
+- Java:
 
-- https://www.graalvm.org/22.2/reference-manual/native-image/guides/optimize-native-executable-with-pgo
-- https://www.graalvm.org/22.2/reference-manual/native-image/optimizations-and-performance/MemoryManagement
-- https://github.com/XDream8/kiss-repo/blob/main/bin/openjdk17-jdk/build
-- https://gitlab.com/arkboi/dotfiles
-- https://lancache.net
-- https://github.com/XDream8/kiss-repo/blob/main/core/mawk/build
-- https://github.com/DanielFGray/fzf-scripts
-- https://crates.io/crates/autokernel
-- https://crates.io/crates/cargo-trim
-- https://crates.io/crates/cargo-unused-features
+- <https://www.graalvm.org/22.2/reference-manual/native-image/guides/optimize-native-executable-with-pgo>
+- <https://www.graalvm.org/22.2/reference-manual/native-image/optimizations-and-performance/MemoryManagement>
+- <https://github.com/XDream8/kiss-repo/blob/main/bin/openjdk17-jdk/build>
+- <https://gitlab.com/arkboi/dotfiles>
+- <https://lancache.net>
+- <https://github.com/XDream8/kiss-repo/blob/main/core/mawk/build>
+- <https://github.com/DanielFGray/fzf-scripts>
+- <https://crates.io/crates/autokernel>
+- <https://crates.io/crates/cargo-trim>
+- <https://crates.io/crates/cargo-unused-features>
 - cargo install config-edit
-- https://github.com/Toqozz/wired-notify
+- <https://github.com/Toqozz/wired-notify>

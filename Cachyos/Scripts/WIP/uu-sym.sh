@@ -9,7 +9,7 @@ PKG="uutils-coreutils"
 SAFE_TOOLS=(
 cat ls cp mv rm mkdir rmdir echo printf printenv env yes pwd dirname basename
 touch stat dd du df head tail wc sort uniq cut tr fold split join
-uname date id whoami groups true false test [ sleep install more hostname
+uname date id whoami groups true false test '[' sleep install more hostname
 chown chmod dircolors ln kill nice nohup nproc fmt numfmt seq realpath readlink
 users uptime tty who
 )

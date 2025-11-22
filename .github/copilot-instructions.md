@@ -17,6 +17,7 @@
 ## 3. Development Practices
 
 ### Change & Commit Hygiene
+
 - **TDD Workflow**: Follow a Red → Green → Refactor cycle.
 - **Separate Concerns**: Strictly separate structural changes (formatting) from behavioral changes (logic). Never mix them in the same commit.
 - **Atomic Commits**: Commits must be small, frequent, and independent. A commit is ready only when:
@@ -26,6 +27,7 @@
     4. The commit message is clear and concise.
 
 ### Code Quality
+
 - **Single Responsibility**: Functions and modules should do one thing well.
 - **Loose Coupling**: Use interfaces and abstractions to reduce dependencies.
 - **Fail Fast**: Use early returns and guard clauses.
@@ -34,6 +36,7 @@
 ## 4. Language-Specific Guidelines
 
 ### **Bash**
+
 - **Strict Mode**: `set -Eeuo pipefail`, `shopt -s nullglob globstar`, `IFS=$'\n\t'`, `export LC_ALL=C LANG=C`.
 - **Idioms**: Prefer native bashisms: arrays, `mapfile -t`, `[[...]]`, parameter expansion. Avoid parsing `ls`, `eval`, and backticks.
 - **Tooling**: Prefer modern Rust-based tools (`fd->find`, `rg->grep`, `bat->cat`, `sd->sed`, `zoxide`, `choose->cut`, `jaq->jq`, `bun->pnpm->npm`, `uv->pip`, `mawk->awk/gawk`, `sk->fzf`, `rust-parallel->parallel->xargs`) with fallbacks to traditional counterparts.
@@ -41,23 +44,27 @@
 - **Linting**: `shfmt -i 2 -bn -ln bash -s`, `shellcheck -a -x` (zero warnings), `shellharden`.
 
 ### **Rust**
+
 - **Error Handling**: Use `Result<T, E>` and the `?` operator. Use `thiserror` or `anyhow` for rich errors. Avoid `unwrap()`/`expect()` in library code.
 - **Style**: Format with `rustfmt`. Lint with `cargo clippy -- -D warnings`.
 - **Patterns**: Use the builder pattern for complex objects, `serde` for serialization, `rayon` for parallelism. Prefer iterators and borrowing over indexing and `clone()`.
 - **API Design**: Implement common traits (`Debug`, `Clone`, `Default`, etc.). Use newtypes for type safety. Public APIs must be documented.
 
 ### **Python**
+
 - **Style**: Follow PEP 8. Format with `black` or `ruff format`. Lint with `ruff` or `flake8`.
 - **Typing**: Use type hints (`typing` module) for all functions and variables.
 - **Docstrings**: Follow PEP 257.
 - **Structure**: Break complex functions into smaller, single-purpose units.
 
 ### **Markdown**
+
 - **Structure**: Use `##` for H2 and `###` for H3. Limit nesting.
 - **Code Blocks**: Use fenced code blocks with language identifiers.
 - **Line Length**: Soft wrap at 80-100 characters for readability.
 
 ## 5. Performance Optimization
+
 - **Measure First**: Profile and benchmark before optimizing.
 - **Focus on Hot Paths**: Optimize the most frequently executed code.
 - **Caching**: Use in-memory (Redis), DB, and frontend caching where appropriate. Invalidate correctly.
@@ -65,6 +72,7 @@
 - **Database**: Use indexes, analyze query plans (`EXPLAIN`), and avoid N+1 queries.
 
 ## 6. GitHub Actions
+
 - **Security**: Use OIDC for cloud auth, set least-privilege `permissions` for `GITHUB_TOKEN`, and scan for secrets.
 - **Performance**: Use caching for dependencies and build outputs. Use matrix strategies for parallel jobs.
 - **Structure**: Maintain clean, modular workflows. Use composite actions or reusable workflows to reduce duplication.

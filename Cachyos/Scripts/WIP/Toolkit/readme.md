@@ -10,7 +10,9 @@
 - Rust tools (optional but recommended): ```cargo install compresscli imgc simagef pixelsqueeze ffzap```
 
 - For SVT-AV1 video encoding:
+
   ```bash
   git clone https://github.com/nekotrix/SVT-AV1-Essential && cd SVT-AV1-Essential && bash install.sh
   ```
+
   or ```paru --skipreview --noconfirm -S svt-av1-essential-git```

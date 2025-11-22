@@ -66,6 +66,7 @@ has(){ command -v "$1" &>/dev/null; }
    - bat -> cat
 
 ## Testing Requirements
+
 1. ShellCheck validation
 2. Shellharden validation
 3. shfmt validation
@@ -73,6 +74,7 @@ has(){ command -v "$1" &>/dev/null; }
 5. Performance benchmarks
 
 ## Style Guide
+
 1. Use shellcheck directives sparingly
 2. Implement safe defaults
 3. Use built-ins over external commands
@@ -80,6 +82,7 @@ has(){ command -v "$1" &>/dev/null; }
 5. Apply consistent formatting (shfmt)
 
 ## Performance
+
 1. Minimize subshells
 2. Use parameter expansion
 3. Optimize file operations
@@ -87,6 +90,7 @@ has(){ command -v "$1" &>/dev/null; }
 5. Use native bash arithmetic
 
 ## Validation
+
 1. Run shellcheck --severity=style
 2. Execute full test suite
 3. Verify POSIX compliance

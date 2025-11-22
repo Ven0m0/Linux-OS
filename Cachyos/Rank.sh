@@ -36,42 +36,46 @@ export RATE_MIRRORS_PROTOCOL=https RATE_MIRRORS_ALLOW_ROOT=true \
   RATE_MIRRORS_ENTRY_COUNTRY="$COUNTRY" CONCURRENCY
 
 #============ Helper Functions ============
-has(){ command -v "$1" &>/dev/null; }
+has() { command -v "$1" &> /dev/null; }
 
-log(){ printf "[%s] %s\n" "$1" "${@:2}" | tee -a "$LOGFILE" >&2; }
-die(){ log ERROR "$@"; cleanup; exit 1; }
-info(){ log INFO "$@"; }
-warn(){ log WARN "$@"; }
+log() { printf "[%s] %s\n" "$1" "${@:2}" | tee -a "$LOGFILE" >&2; }
+die() {
+  log ERROR "$@"
+  cleanup
+  exit 1
+}
+info() { log INFO "$@"; }
+warn() { log WARN "$@"; }
 
-cleanup(){ ((${#TMP[@]})) && rm -f "${TMP[@]}" &>/dev/null || :; }
+cleanup() { ((${#TMP[@]})) && rm -f "${TMP[@]}" &> /dev/null || :; }
 trap cleanup EXIT INT TERM
 
 #============ Core Functions ============
-backup(){
+backup() {
   local src=$1 dst=$BACKUPDIR/${src##*/}-$(date +%s).bak
   [[ -d $BACKUPDIR ]] || sudo mkdir -p "$BACKUPDIR"
-  sudo cp -a "$src" "$dst" &>/dev/null || return 1
+  sudo cp -a "$src" "$dst" &> /dev/null || return 1
 
   # Keep only 20 newest backups
-  find "$BACKUPDIR" -name "${src##*/}-*.bak" -printf '%T@ %p\n' 2>/dev/null | \
-    sort -rn | tail -n+21 | awk '{$1=""; print substr($0,2)}' | \
-    xargs -r sudo rm -f &>/dev/null || :
+  find "$BACKUPDIR" -name "${src##*/}-*.bak" -printf '%T@ %p\n' 2> /dev/null \
+    | sort -rn | tail -n+21 | awk '{$1=""; print substr($0,2)}' \
+    | xargs -r sudo rm -f &> /dev/null || :
 }
 
-get_ref(){
+get_ref() {
   local url=https://mirror.alpix.eu/endeavouros/repo/$STATE_FILE
-  REF_LEVEL=$(curl -sf -m10 "$url" 2>/dev/null | head -n1)
+  REF_LEVEL=$(curl -sf -m10 "$url" 2> /dev/null | head -n1)
   [[ $REF_LEVEL =~ ^[0-9]+$ ]] || REF_LEVEL=""
   [[ $VERBOSE = yes && $REF_LEVEL ]] && info "Ref level: $REF_LEVEL"
 }
 
-test_speed(){
+test_speed() {
   local url=$1${TEST_PKG}
-  curl -o /dev/null -sf -w '%{speed_download}' --connect-timeout 5 -m10 "$url" 2>/dev/null | \
-    awk '{printf "%.0f",$1}' || echo 0
+  curl -o /dev/null -sf -w '%{speed_download}' --connect-timeout 5 -m10 "$url" 2> /dev/null \
+    | awk '{printf "%.0f",$1}' || echo 0
 }
 
-rank_manual(){
+rank_manual() {
   local file=$1 tmp=$(mktemp)
   TMP+=("$tmp")
 
@@ -87,8 +91,8 @@ rank_manual(){
   done
 
   # Test in parallel
-  printf '%s\n' "${urls[@]}" | \
-    xargs -P"$CONCURRENCY" -I{} bash -c '
+  printf '%s\n' "${urls[@]}" \
+    | xargs -P"$CONCURRENCY" -I{} bash -c '
       spd=$(curl -o /dev/null -sf -w "%{speed_download}" --connect-timeout 5 -m10 "{}'"$TEST_PKG"'" 2>/dev/null | \
         awk "{printf \"%.0f\",\$1}" || printf 0)
       printf "%s %s\n" "$spd" "{}"
@@ -97,14 +101,17 @@ rank_manual(){
   {
     printf "## Ranked %s\n\n" "$(date)"
     awk '{print "Server = " $2}' "$tmp.spd"
-  } | sudo tee "$tmp" >/dev/null
+  } | sudo tee "$tmp" > /dev/null
 
   sudo install -m644 -b -S -T "$tmp" "$file"
 }
 
-rank_rate(){
+rank_rate() {
   local name=$1 file=${2:-$MIRRORDIR/${1}-mirrorlist}
-  [[ -r $file ]] || { warn "Missing $file"; return 1; }
+  [[ -r $file ]] || {
+    warn "Missing $file"
+    return 1
+  }
 
   local tmp=$(mktemp)
   TMP+=("$tmp")
@@ -124,16 +131,16 @@ rank_rate(){
     } END {
       n=asort(arr);
       for(i=1; i<=n; i++) print arr[i]
-    }' "$file") 2>/dev/null || {
-      warn "rate-mirrors failed for $name, falling back"
-      rank_manual "$file"
-      return
-    }
+    }' "$file") 2> /dev/null || {
+    warn "rate-mirrors failed for $name, falling back"
+    rank_manual "$file"
+    return
+  }
 
   sudo install -m644 -b -S -T "$tmp" "$file"
 }
 
-rank_arch_fresh(){
+rank_arch_fresh() {
   local url="${1:-$ARCH_URL}" path="$MIRRORDIR/mirrorlist" tmp=$(mktemp)
   TMP+=("$tmp")
 
@@ -153,20 +160,24 @@ rank_arch_fresh(){
     url=$3; sub(/\$.*/,"",url);
     if(!seen[url]++)print url
   }' "$tmp.dl")
-  ((${#urls[@]}>0)) || die "No server entries found"
+  ((${#urls[@]} > 0)) || die "No server entries found"
 
   info "Ranking ${#urls[@]} fresh Arch mirrors"
-  printf '%s\n' "${urls[@]}" | \
-    rate-mirrors --save="$tmp" stdin \
+  printf '%s\n' "${urls[@]}" \
+    | rate-mirrors --save="$tmp" stdin \
       --path-to-test="extra/os/x86_64/extra.files" \
       --path-to-return="\$repo/os/\$arch" \
       --comment-prefix="# " --output-prefix="Server = " \
-    || { warn "rate-mirrors failed, falling back"; rank_manual "$path"; return; }
+    || {
+      warn "rate-mirrors failed, falling back"
+      rank_manual "$path"
+      return
+    }
 
   sudo install -m644 -b -S -T "$tmp" "$path"
 }
 
-rank_reflector(){
+rank_reflector() {
   local file=$1 tmp=$(mktemp)
   TMP+=("$tmp")
 
@@ -176,7 +187,7 @@ rank_reflector(){
   local -a args=(--save "$tmp" --protocol https --latest 20 --sort rate -n"$MAX_MIRRORS" --threads "$CONCURRENCY")
   [[ $COUNTRY =~ ^[A-Z]{2}$ ]] && args+=(--country "$COUNTRY")
 
-  sudo reflector "${args[@]}" &>/dev/null || {
+  sudo reflector "${args[@]}" &> /dev/null || {
     warn "reflector failed, falling back"
     rank_manual "$file"
     return
@@ -185,7 +196,7 @@ rank_reflector(){
   sudo install -m644 -b -S -T "$tmp" "$file"
 }
 
-benchmark(){
+benchmark() {
   local file=${1:-$MIRRORDIR/mirrorlist}
   mapfile -t srvs < <(awk '/^Server/ {print $3}' "$file" | head -n5)
   ((${#srvs[@]})) || die "No servers in $file"
@@ -196,46 +207,46 @@ benchmark(){
     local srv=${srvs[$i]} host=${srv#*://}
     host=${host%%/*}
 
-    printf "${C}%d: %s${Z}\n" $((i+1)) "$host"
+    printf "${C}%d: %s${Z}\n" $((i + 1)) "$host"
 
     local spd=$(test_speed "$srv")
-    if ((spd>0)); then
+    if ((spd > 0)); then
       printf "  Speed: ${G}%.2f MB/s${Z}\n" "$(awk "BEGIN{print $spd/1048576}")"
     else
       printf "  Speed: ${R}FAIL${Z}\n"
     fi
 
-    local png=$(ping -c1 -W2 "$host" 2>/dev/null | awk -F'[= ]' '/time=/{print $(NF-1)}')
+    local png=$(ping -c1 -W2 "$host" 2> /dev/null | awk -F'[= ]' '/time=/{print $(NF-1)}')
     [[ $png ]] && printf "  Ping:  ${G}%s ms${Z}\n" "$png" || printf "  Ping:  ${Y}N/A${Z}\n"
   done
 }
 
-restore(){
+restore() {
   [[ -d $BACKUPDIR ]] || die "No backup dir"
 
-  mapfile -t baks < <(find "$BACKUPDIR" -name "*-mirrorlist-*.bak" -printf '%T@ %p\n' | \
-    sort -rn | awk '{$1=""; print substr($0,2)}')
+  mapfile -t baks < <(find "$BACKUPDIR" -name "*-mirrorlist-*.bak" -printf '%T@ %p\n' \
+    | sort -rn | awk '{$1=""; print substr($0,2)}')
   ((${#baks[@]})) || die "No backups found"
 
   printf "${C}Available backups:${Z}\n"
   for i in "${!baks[@]}"; do
-    printf "%2d. %s\n" $((i+1)) "${baks[$i]##*/}"
+    printf "%2d. %s\n" $((i + 1)) "${baks[$i]##*/}"
   done
 
   read -rp "Select [1-${#baks[@]}]: " n
   [[ $n =~ ^[0-9]+$ && $n -ge 1 && $n -le ${#baks[@]} ]] || die "Invalid selection"
 
-  local tgt=$(sed 's/-[0-9]\+\.bak$//' <<<"${baks[$((n-1))]##*/}")
-  sudo cp "${baks[$((n-1))]}" "$MIRRORDIR/$tgt" || die "Restore failed"
+  local tgt=$(sed 's/-[0-9]\+\.bak$//' <<< "${baks[$((n - 1))]##*/}")
+  sudo cp "${baks[$((n - 1))]}" "$MIRRORDIR/$tgt" || die "Restore failed"
   info "Restored $tgt"
-  sudo pacman -Sy &>/dev/null || :
+  sudo pacman -Sy &> /dev/null || :
 }
 
-opt_all(){
+opt_all() {
   info "Starting optimization (country: $COUNTRY)"
   sudo pacman -Syyuq --noconfirm --needed || :
-  sudo pacman-db-upgrade --nocolor &>/dev/null || :
-  has keyserver-rank && sudo keyserver-rank --yes &>/dev/null || :
+  sudo pacman-db-upgrade --nocolor &> /dev/null || :
+  has keyserver-rank && sudo keyserver-rank --yes &> /dev/null || :
 
   [[ -f /etc/eos-rankmirrors.disabled ]] && source /etc/eos-rankmirrors.disabled || :
   get_ref
@@ -272,19 +283,19 @@ opt_all(){
     done
   fi
 
-  sudo chmod 644 "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
+  sudo chmod 644 "$MIRRORDIR"/*mirrorlist* 2> /dev/null || :
   info "Updated all mirrorlists"
   sudo pacman -Syyq --noconfirm --needed || :
 }
 
-show_current(){
+show_current() {
   local file=${1:-$MIRRORDIR/mirrorlist}
   [[ -r $file ]] || die "Cannot read $file"
   printf "${C}Current mirrors in %s:${Z}\n" "${file##*/}"
   grep '^Server' "$file" | head -n10 | nl -w2 -s'. ' | sed "s|^|  ${B}|;s|$|${Z}|"
 }
 
-menu(){
+menu() {
   while :; do
     printf "\n${C}${D}╔═══════════════════════════════════╗\n"
     printf "║  Mirror Optimizer [%-2s]          ║\n" "$COUNTRY"
@@ -299,21 +310,28 @@ menu(){
     read -rp "${D}>${Z} " c
 
     case $c in
-      1) opt_all;;
-      2) benchmark;;
-      3) show_current;;
-      4) restore;;
-      5) read -rp "Country code (2-letter): " cc; COUNTRY=${cc^^}; export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY;;
-      6) [[ $VERBOSE = yes ]] && VERBOSE=no || VERBOSE=yes;;
-      7|q|Q) break;;
-      *) printf "${R}Invalid choice${Z}\n";;
+    1) opt_all ;;
+    2) benchmark ;;
+    3) show_current ;;
+    4) restore ;;
+    5)
+      read -rp "Country code (2-letter): " cc
+      COUNTRY=${cc^^}
+      export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY
+      ;;
+    6) [[ $VERBOSE = yes ]] && VERBOSE=no || VERBOSE=yes ;;
+    7 | q | Q) break ;;
+    *) printf "${R}Invalid choice${Z}\n" ;;
     esac
-    [[ $c =~ ^[1-6]$ ]] && { printf "\n${Y}Press Enter to continue...${Z}"; read -rs; }
+    [[ $c =~ ^[1-6]$ ]] && {
+      printf "\n${Y}Press Enter to continue...${Z}"
+      read -rs
+    }
   done
 }
 
-usage(){
-  cat <<EOF
+usage() {
+  cat << EOF
 Usage: ${0##*/} [OPTIONS]
 
 Options:
@@ -336,24 +354,43 @@ EOF
 }
 
 #============ Main ============
-main(){
+main() {
   # Initialize privilege
   sync
 
   [[ $EUID -eq 0 || $# -gt 0 ]] || exec "$PRIV_CMD" -E "$0" "$@"
-  sudo mkdir -p "${LOGFILE%/*}" "$BACKUPDIR" &>/dev/null || :
+  sudo mkdir -p "${LOGFILE%/*}" "$BACKUPDIR" &> /dev/null || :
 
   while (($#)); do
     case $1 in
-      -o|--optimize) opt_all; exit;;
-      -b|--benchmark) benchmark "${2:-}"; exit;;
-      -s|--show) show_current "${2:-}"; exit;;
-      -r|--restore) restore; exit;;
-      -c|--country) COUNTRY=${2^^}; export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY; shift;;
-      -t|--timeout) TIMEOUT=$2; shift;;
-      -v|--verbose) VERBOSE=yes;;
-      -h|--help) usage;;
-      *) die "Unknown option: $1 (use -h for help)";;
+    -o | --optimize)
+      opt_all
+      exit
+      ;;
+    -b | --benchmark)
+      benchmark "${2:-}"
+      exit
+      ;;
+    -s | --show)
+      show_current "${2:-}"
+      exit
+      ;;
+    -r | --restore)
+      restore
+      exit
+      ;;
+    -c | --country)
+      COUNTRY=${2^^}
+      export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY
+      shift
+      ;;
+    -t | --timeout)
+      TIMEOUT=$2
+      shift
+      ;;
+    -v | --verbose) VERBOSE=yes ;;
+    -h | --help) usage ;;
+    *) die "Unknown option: $1 (use -h for help)" ;;
     esac
     shift
   done

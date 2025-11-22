@@ -1,19 +1,26 @@
 #!/usr/bin/env bash
 # AveYo: shader_cache.sh | clears Steam, games, GPU shader/log/crash caches on Linux
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
+export LC_ALL=C LANG=C
 
 steam_root="${STEAM_ROOT:-$HOME/.steam/steam}"
 [[ -d "$steam_root" ]] || steam_root="$HOME/.local/share/Steam"
-[[ -d "$steam_root" ]] || { printf "Steam not found\n" >&2; exit 1; }
+[[ -d "$steam_root" ]] || {
+  printf "Steam not found\n" >&2
+  exit 1
+}
 
 declare -A games=(
   [730]="cs2:Counter-Strike Global Offensive:csgo"
 )
 
 kill_procs=(steam steamwebhelper cs2)
-pkill -15 -x "${kill_procs[@]}" || :; sleep 1
-pkill -9 -x "${kill_procs[@]}" || :; sleep 1
+pkill -15 -x "${kill_procs[@]}" || :
+sleep 1
+pkill -9 -x "${kill_procs[@]}" || :
+sleep 1
 
 logs=("$steam_root/logs" "$steam_root/dumps")
 for dir in "${logs[@]}"; do
@@ -21,7 +28,7 @@ for dir in "${logs[@]}"; do
 done
 # Per-game: delete crashdumps, shader cache
 for appid in "${!games[@]}"; do
-  IFS=':' read -r exe gamedir mod <<<"${games[$appid]}"
+  IFS=':' read -r exe gamedir mod <<< "${games[$appid]}"
   game="$steam_root/steamapps/common/$gamedir"
   [[ -d "$game" ]] || continue
   # Crash dumps

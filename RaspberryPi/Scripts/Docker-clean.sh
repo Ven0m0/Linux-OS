@@ -34,7 +34,7 @@ done
 # Asks user for confirmation interactively
 ask_user_for_confirmation() {
 
-  cat <<EOF
+  cat << EOF
 
 ==============================================
 This script reclaims disk space by removing stale and unused Docker data:
@@ -66,7 +66,7 @@ poll_for_docker_readiness() {
   printf 'Waiting for docker engine to start:\n'
 
   local i=0
-  while ! docker system info >/dev/null 2>&1; do
+  while ! docker system info > /dev/null 2>&1; do
     printf '.%.0s' {1.."$i"}
     i=$((i + 1))
     sleep 1
@@ -78,7 +78,7 @@ poll_for_docker_readiness() {
 
 # Checks if a particular program is installed
 is_program_installed() {
-  command -v "$1" &>/dev/null
+  command -v "$1" &> /dev/null
 }
 
 # Restarts the Docker engine

@@ -1,32 +1,28 @@
 #!/usr/bin/env bash
-# Optimized: 2025-11-21 - Applied bash optimization techniques
+# Optimized: 2025-11-22 - Applied bash optimization techniques
 # Source shared libraries
-SCRIPT_DIR="$(cd "${"${BASH_SOURCE[0]}"%/*}" && pwd)"
+SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 # ============ Inlined from lib/common.sh ============
 export LC_ALL=C LANG=C
 export DEBIAN_FRONTEND=noninteractive
 export HOME="/home/${SUDO_USER:-$USER}"
 set -euo pipefail
 shopt -s nullglob globstar execfail
-IFS=$'
-	'
+IFS=$'\n\t'
 has(){ command -v -- "$1" &>/dev/null>/dev/null; }
 hasname(){
   local x
   if ! x=$(type -P -- "$1"); then return 1; fi
-  printf '%s
-' "${x##*/}"
+  printf '%s\n' "${x##*/}"
 }
 is_program_installed(){ command -v "$1" &>/dev/null>/dev/null; }
 get_workdir(){
   local script="${BASH_SOURCE[1]:-$0}"
-  builtin cd -- "${-- "$script"%/*}" && printf '%s
-' "$PWD"
+  builtin cd -- "${script%/*}" && printf '%s\n' "$PWD"
 }
 init_workdir(){
   local workdir
-  workdir="$(builtin cd -- "${-- "${BASH_SOURCE[1]:-}"%/*}" && printf '%s
-' "$PWD")"
+  workdir="$(builtin cd -- "${BASH_SOURCE[1]:-$0}" && builtin cd -- "${BASH_SOURCE[1]%/*}" && printf '%s\n' "$PWD")"
   cd "$workdir" || {
     echo "Failed to change to working directory: $workdir" >&2
     exit 1
@@ -54,8 +50,7 @@ fi; }
 setup_environment(){
   set -euo pipefail
   shopt -s nullglob globstar execfail
-  IFS=$'
-	'
+  IFS=$'\n\t'
 }
 get_sudo_cmd(){
   local sudo_cmd
@@ -63,8 +58,7 @@ get_sudo_cmd(){
     echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
     return 1
   }
-  printf '%s
-' "$sudo_cmd"
+  printf '%s\n' "$sudo_cmd"
 }
 init_sudo(){
   local sudo_cmd

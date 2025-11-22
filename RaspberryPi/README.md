@@ -1,4 +1,28 @@
-# <img height="30" src="https://cdn.freebiesupply.com/logos/large/2x/raspberry-pi-logo-png-transparent.png" alt="Pi"> Raspberry pi related stuff
+# <img height="30" src="https://cdn.freebiesupply.com/logos/large/2x/raspberry-pi-logo-png-transparent.png" alt="Pi"> Raspberry Pi Related Stuff
+
+## Folder Structure
+
+```
+RaspberryPi/
+├── docs/              # Documentation and reference files
+│   ├── Commands.txt   # Common command reference
+│   ├── dietpi.txt     # DietPi configuration notes
+│   ├── pihole.txt     # Pi-hole configuration
+│   ├── sqlite-reference.txt  # SQLite optimization tips
+│   └── TODO.md        # Task list and notes
+├── Scripts/           # Executable scripts
+│   ├── Setup.sh       # System setup automation
+│   ├── Docker-clean.sh # Docker cleanup
+│   ├── docker.sh      # Docker configuration
+│   └── ...
+├── dots/              # Dotfiles and configurations
+├── PiClean.sh         # System cleanup script
+├── update.sh          # System update script
+├── raspi-f2fs.sh      # F2FS filesystem conversion
+└── README.md          # This file
+```
+
+## Quick Start Scripts
 
 ### Updates
 
@@ -35,8 +59,7 @@ https://gitlab.com/volian/nala/-/blob/main/docs/nala-fetch.8.rst?ref_type=heads
 <summary><b>Raspberry pi os on f2fs</b></summary>
 
 - download an os image ([DietPi](https://dietpi.com) or [Raspberry Pi OS](https://www.raspberrypi.com/software))
-- change the filenames to fit your usecase in [raspberry-fs.sh](RaspberryPi/raspberry-fs.sh)
-- have [raspberry_f2fs.sh](RaspberryPi/raspberry_f2fs.sh) and the image in the same path as the raspberry-fs.sh script
+- use the [raspi-f2fs.sh](raspi-f2fs.sh) script to convert the image to F2FS
 - answer the prompts
 - success
 
@@ -44,18 +67,21 @@ further links:
 - <https://github.com/aarontc/raspbian-f2fs>
 - <https://github.com/d-a-v/raspbian-f2fs>
 - <https://github.com/timothybrown/raspbian-f2fs>
-  
+
 </details>
 <details>
-<summary><b>Dieti:</b></summary>
+<summary><b>DietPi Server Stacks</b></summary>
 
-- Raspberry pi 4: LEMP (Ngix, Mariadb, PHP)
-- Raspberry pi 3: LLSP (Lighttpd, Sqlite, PHP
+- Raspberry pi 4: LEMP (Nginx, MariaDB, PHP)
+- Raspberry pi 3: LLSP (Lighttpd, SQLite, PHP)
 
-[Ngix](https://docs.nginx.com/nginx/admin-guide)
-[Lighttpd](https://www.lighttpd.net)
-[MariaDB](https://mariadb.org/documentation/#getting-started)
-[Sqlite](https://www.sqlite.org/quickstart.html)
+Reference Documentation:
+- [Nginx](https://docs.nginx.com/nginx/admin-guide)
+- [Lighttpd](https://www.lighttpd.net)
+- [MariaDB](https://mariadb.org/documentation/#getting-started)
+- [SQLite](https://www.sqlite.org/quickstart.html)
+
+See [docs/dietpi.txt](docs/dietpi.txt) for detailed DietPi configuration
 
 </details>
 <details>

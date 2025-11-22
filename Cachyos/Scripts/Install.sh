@@ -111,17 +111,18 @@ Include = /etc/pacman.d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 init_system(){
   msg "Initializing system"
-  localectl set-locale C.UTF-8 2>/dev/null || :
+  localectl set-locale C.UTF-8 >/dev/null
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
   [[ -d ~/.gnupg ]] && chmod -R 700 ~/.gnupg
   ssh-keyscan -H aur.archlinux.org github.com >> ~/.ssh/known_hosts 2>/dev/null || :
   [[ -f /etc/doas.conf ]] && { sudo chown root:root /etc/doas.conf; sudo chmod 0400 /etc/doas.conf; }
-  sudo modprobe zram tcp_bbr &>/dev/null || :
-  [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck || :
-  sudo pacman-key --init &>/dev/null || :
-  sudo pacman-key --populate archlinux cachyos &>/dev/null || :
-  sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm &>/dev/null || :
-  sudo pacman -Syyu --noconfirm || :
+  modprobed-db store &>/dev/null; sudo modprobed-db store &>/dev/null
+  sudo modprobe zram tcp_bbr kvm kvm-intel >/dev/null
+  [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck
+  sudo pacman-key --init &>/dev/null
+  sudo pacman-key --populate archlinux cachyos &>/dev/null
+  sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null
+  sudo pacman -Syyu --noconfirm 2>/dev/null
 }
 
 #══════════════════════════════════════════════════════════════
@@ -186,17 +187,13 @@ setup_flatpak(){
 setup_rust(){
   if ! has rustup; then
     msg "Installing Rust"
-    local tmp; tmp=$(mktemp)
-    curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs > "$tmp"
-    bash "$tmp" --profile minimal --default-toolchain nightly -y -q \
-      -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy 2>/dev/null
-    rm "$tmp"
+    bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs)" -- -y --profile minimal -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
     export PATH="$HOME/.cargo/bin:$PATH"
   else
     rustup default nightly &>/dev/null || :
     rustup set profile minimal &>/dev/null || :
     rustup self upgrade-data &>/dev/null || :
-    rustup update &>/dev/null || :
+    rustup update 2>/dev/null || :
   fi
   has sccache && export RUSTC_WRAPPER=sccache
   
@@ -204,12 +201,11 @@ setup_rust(){
   has cargo || return 0
   msg "Installing Rust tools"
   local -a crates=(
-    cpz xcp crabz rmz parel ffzap cargo-diet crab-fetch cargo-list minhtml cargo-minify
-    rimage ripunzip terminal_tools imagineer docker-image-pusher image-optimizer dui-cli
-    imgc pixelsqueeze bgone dupimg simagef compresscli dssim img-squeeze lq parallel-sh
+    xcp crabz parel cargo-diet cargo-list cargo-minify
+    ripunzip terminal_tools imagineer docker-image-pusher dui-cli
+    imgc pixelsqueeze bgone dupimg simagef dssim img-squeeze lq parallel-sh
     frep dupe-krill bssh vicut aq-cli
   )
-  cargo install cargo-binstall -q 2>/dev/null || :
   cargo install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata \
     --locked -f "${crates[@]}" 2>/dev/null || cargo binstall -y "${crates[@]}" 2>/dev/null || :
 }

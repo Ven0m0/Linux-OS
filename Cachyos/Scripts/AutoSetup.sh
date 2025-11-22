@@ -1,21 +1,8 @@
 #!/usr/bin/env bash
-# Optimized: 2025-11-19 - Applied bash optimization techniques
-# Source common library
-SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
-[[ $SCRIPT_DIR == "${BASH_SOURCE[0]}" ]] && SCRIPT_DIR="."
-cd "$SCRIPT_DIR" || exit 1
-SCRIPT_DIR="$PWD"
-
-#============ Core Functions ============
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-
-export LC_ALL=C LANG=C LANGUAGE=C
-
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 #============ Colors ============
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
-
 #============ Helper Functions ============
 has(){ command -v "$1" &>/dev/null; }
 log(){ printf '%b\n' "$*"; }
@@ -25,7 +12,6 @@ die(){ printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; exit "${2:-1}"; }
 
 # Determine the device mounted at root
 ROOT_DEV=$(findmnt -n -o SOURCE /)
-
 # Check the filesystem type of the root device
 FSTYPE=$(findmnt -n -o FSTYPE /)
 
@@ -37,8 +23,6 @@ else
   log "Root filesystem is not ext4 (detected: $FSTYPE). Skipping tune2fs."
 fi
 
-sudo balooctl6 disable && sudo balooctl6 purge
-
 log "Applying Breeze Dark theme"
 kwriteconfig6 --file ~/.config/kdeglobals --group General --key ColorScheme "BreezeDark"
 plasma-apply-desktoptheme breeze-dark
@@ -47,8 +31,6 @@ sed -i 's/opacity = 0.8/opacity = 1.0/' "$HOME/.config/alacritty/alacritty.toml"
 
 # Locale
 locale -a | grep -q '^en_US\.utf8$' && { export LANG='en_US.UTF-8' LANGUAGE='en_US'; } || export LANG='C.UTF-8'
-
-sudo curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Linux-Settings/etc/sysctl.d/99-tweak-settings.conf -o /etc/sysctl.d/99-tweak-settings.conf
 
 log "Debloat and fixup"
 sudo pacman -Rns cachyos-v4-mirrorlist --noconfirm || :
@@ -79,16 +61,14 @@ sudo sed -i -e 's/AutoEnable.*/AutoEnable = false/' /etc/bluetooth/main.conf
 sudo sed -i -e 's/FastConnectable.*/FastConnectable = false/' /etc/bluetooth/main.conf
 sudo sed -i -e 's/ReconnectAttempts.*/ReconnectAttempts = 1/' /etc/bluetooth/main.conf
 sudo sed -i -e 's/ReconnectIntervals.*/ReconnectIntervals = 1/' /etc/bluetooth/main.conf
-
 log "Reduce systemd timeout"
 sudo sed -i -e 's/#DefaultTimeoutStartSec.*/DefaultTimeoutStartSec=5s/g' /etc/systemd/system.conf
 sudo sed -i -e 's/#DefaultTimeoutStopSec.*/DefaultTimeoutStopSec=5s/g' /etc/systemd/system.conf
-
-## Set zram
+log "Set zram"
 sudo sed -i -e 's/#ALGO.*/ALGO=lz4/g' /etc/default/zramswap
 sudo sed -i -e 's/PERCENT.*/PERCENT=25/g' /etc/default/zramswap
 
-## Flush bluetooth
+log "Flush bluetooth"
 sudo rm -rfd /var/lib/bluetooth/*
 
 log "Disable plymouth"
@@ -97,11 +77,9 @@ sudo systemctl mask plymouth-start.service >/dev/null 2>&1
 sudo systemctl mask plymouth-quit.service >/dev/null 2>&1
 sudo systemctl mask plymouth-quit-wait.service >/dev/null 2>&1
 
-## Disable file indexer
-balooctl suspend
-balooctl disable
-balooctl purge
-sudo systemctl disable plasma-baloorunner
+log "Disable file indexer"
+sudo balooctl6 suspend; sudo balooctl6 disable && sudo balooctl6 purge
+sudo systemctl disable --now plasma-baloorunner
 for dir in "$HOME" "$HOME"/*/; do touch "$dir/.metadata_never_index" "$dir/.noindex" "$dir/.nomedia" "$dir/.trackerignore"; done
 
 log "Enable write cache"

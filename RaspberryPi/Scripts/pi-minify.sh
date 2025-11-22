@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
 # DESCRIPTION: Raspberry Pi system minimization & optimization suite
-#              Aggressive cleanup, ZRAM setup, SWAP mgmt, package purge
+#              Aggressive cleanup, ZRAM setup, SWAP mgmt, package purge, privacy hardening
 set -euo pipefail
-shopt -s nullglob globstar
+shopt -s nullglob globstar execfail
 IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 
@@ -50,7 +50,7 @@ ask(){
 
 usage(){
   cat <<'EOF'
-pi-minify.sh - Raspberry Pi system minimization & cleanup
+pi-minify.sh - Raspberry Pi system minimization, cleanup & privacy hardening
 
 Usage: pi-minify.sh [OPTIONS]
 
@@ -64,6 +64,9 @@ Operations:
   • dpkg nodoc configuration + doc/man/locale purge
   • APT cache cleanup + orphan removal
   • Old kernel purge (keeps current)
+  • Privacy hardening (popcon, reportbug, crash dumps, logs)
+  • Clean privacy data (screenshots, recently-used, zeitgeist)
+  • Disable Python history permanently
   • Optional: SWAP→ZRAM migration
   • Optional: X11/dev package removal
   • Log/cache/history cleanup
@@ -214,15 +217,124 @@ clean_caches(){
   run rm -rf ~/.cache/* ~/.thumbnails/* ~/.cache/thumbnails/* 2>/dev/null || :
   sudo rm -rf /root/.cache/* 2>/dev/null || :
 
+  # Trash directories
+  run rm -rf ~/.local/share/Trash/* 2>/dev/null || :
+  sudo rm -rf /root/.local/share/Trash/* 2>/dev/null || :
+  run rm -rf ~/snap/*/*/.local/share/Trash/* 2>/dev/null || :
+  run rm -rf ~/.var/app/*/data/Trash/* 2>/dev/null || :
+
   # History files
   unset HISTFILE
   run rm -f ~/.{bash,python}_history 2>/dev/null || :
   sudo rm -f /root/.{bash,python}_history 2>/dev/null || :
+  history -c 2>/dev/null || :
 
   # Log truncation
   while IFS= read -r logfile; do
     echo -ne '' | sudo tee "$logfile" >/dev/null
   done < <(find /var/log -type f)
+}
+
+# ────────────────────────────────────────────────────────────
+# Privacy & Security Hardening
+# ────────────────────────────────────────────────────────────
+clean_crash_dumps(){
+  log "Cleaning crash dumps and core dumps"
+
+  if has coredumpctl; then
+    sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
+  fi
+  sudo rm -rf /var/crash/* 2>/dev/null || :
+  sudo rm -rf /var/lib/systemd/coredump/* 2>/dev/null || :
+}
+
+clean_system_logs(){
+  log "Clearing system logs (journald)"
+
+  if has journalctl; then
+    sudo journalctl --vacuum-time=1s
+  fi
+  sudo rm -rf /run/log/journal/* 2>/dev/null || :
+  sudo rm -rf /var/log/journal/* 2>/dev/null || :
+}
+
+disable_python_history(){
+  log "Disabling Python history permanently"
+
+  local history_file="$HOME/.python_history"
+  if [[ ! -f $history_file ]]; then
+    touch "$history_file"
+  fi
+  sudo chattr +i "$(realpath "$history_file")" 2>/dev/null || :
+}
+
+remove_popcon(){
+  log "Removing Popularity Contest (popcon)"
+
+  # Disable participation
+  local config_file='/etc/popularity-contest.conf'
+  if [[ -f $config_file ]]; then
+    sudo sed -i '/PARTICIPATE/c\PARTICIPATE=no' "$config_file"
+  fi
+
+  # Remove cron entry
+  local cronjob_path="/etc/cron.daily/popularity-contest"
+  if [[ -f $cronjob_path && -x $cronjob_path ]]; then
+    sudo chmod -x "$cronjob_path"
+  fi
+
+  # Remove package
+  if has apt-get; then
+    local pkg='popularity-contest'
+    if status="$(dpkg-query -W --showformat='${db:Status-Status}' "$pkg" 2>&1)" \
+      && [[ $status == installed ]]; then
+      sudo apt-get purge -y "$pkg"
+    fi
+  fi
+}
+
+remove_reportbug(){
+  log "Removing reportbug packages"
+
+  if ! has apt-get; then
+    return 0
+  fi
+
+  local pkgs=('reportbug' 'python3-reportbug' 'reportbug-gtk')
+  for pkg in "${pkgs[@]}"; do
+    if status="$(dpkg-query -W --showformat='${db:Status-Status}' "$pkg" 2>&1)" \
+      && [[ $status == installed ]]; then
+      sudo apt-get purge -y "$pkg"
+    fi
+  done
+}
+
+clean_privacy_data(){
+  log "Cleaning privacy-sensitive data"
+
+  # Zeitgeist activity logs
+  sudo rm -rf {/root,/home/*}/.local/share/zeitgeist 2>/dev/null || :
+
+  # Screenshots
+  run rm -rf ~/Pictures/Screenshots/* 2>/dev/null || :
+  if [[ -d ~/Pictures ]]; then
+    # Ubuntu screenshots
+    find ~/Pictures -name 'Screenshot from *.png' -delete 2>/dev/null || :
+    # KDE screenshots
+    find ~/Pictures -name 'Screenshot_*' -delete 2>/dev/null || :
+  fi
+  # ksnip screenshots
+  find ~ -name 'ksnip_*' -delete 2>/dev/null || :
+
+  # GTK recently used files
+  run rm -f /.recently-used.xbel 2>/dev/null || :
+  run rm -f ~/.local/share/recently-used.xbel* 2>/dev/null || :
+  run rm -f ~/snap/*/*/.local/share/recently-used.xbel 2>/dev/null || :
+  run rm -f ~/.var/app/*/data/recently-used.xbel 2>/dev/null || :
+
+  # privacy.sexy logs and history
+  run rm -rf "$HOME/.config/privacy.sexy/runs"/* 2>/dev/null || :
+  run rm -rf "$HOME/.config/privacy.sexy/logs"/* 2>/dev/null || :
 }
 
 # ────────────────────────────────────────────────────────────
@@ -314,7 +426,7 @@ disable_extra_ttys(){
 main(){
   parse_args "$@"
 
-  log "${BLD}Raspberry Pi System Minification${DEF}"
+  log "${BLD}Raspberry Pi System Minification & Privacy Hardening${DEF}"
   log "Mode: $([[ ${cfg[dry_run]} -eq 1 ]] && echo 'DRY-RUN' || echo 'LIVE')"
   log "Interactive: $([[ ${cfg[interactive]} -eq 1 ]] && echo 'YES' || echo 'NO')"
   log "Aggressive: $([[ ${cfg[aggressive]} -eq 1 ]] && echo 'YES' || echo 'NO')"
@@ -327,6 +439,14 @@ main(){
   purge_packages
   cleanup_apt
   clean_caches
+
+  # Privacy hardening (always)
+  clean_crash_dumps
+  clean_system_logs
+  disable_python_history
+  remove_popcon
+  remove_reportbug
+  clean_privacy_data
 
   # Aggressive cleanup (conditional)
   [[ ${cfg[aggressive]} -eq 1 ]] && purge_aggressive
@@ -344,7 +464,7 @@ main(){
 
   track_disk "After"
 
-  log "${GRN}✓${DEF} Minification complete"
+  log "${GRN}✓${DEF} Minification & privacy hardening complete"
   log "Disk before: ${cfg[disk_before]}"
   log "Disk after:  ${cfg[disk_after]}"
   warn "Reboot recommended to fully apply changes"

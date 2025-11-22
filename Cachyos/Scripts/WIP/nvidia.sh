@@ -9,7 +9,7 @@
 # ==============================================================================
 
 # --- GPU Detection ---
-if [ -n "$(lspci | grep -i 'nvidia')" ]; then
+if [[ -n "$(lspci | grep -i 'nvidia')" ]]; then
   # --- Driver Selection ---
   # Turing (16xx, 20xx), Ampere (30xx), Ada (40xx), and newer recommend the open-source kernel modules
   if echo "$(lspci | grep -i 'nvidia')" | grep -q -E "RTX [2-9][0-9]|GTX 16"; then
@@ -20,11 +20,11 @@ if [ -n "$(lspci | grep -i 'nvidia')" ]; then
 
   # Check which kernel is installed and set appropriate headers package
   KERNEL_HEADERS="linux-headers" # Default
-  if pacman -Q linux-zen &> /dev/null; then
+  if pacman -Q linux-zen &>/dev/null>/dev/null; then
     KERNEL_HEADERS="linux-zen-headers"
-  elif pacman -Q linux-lts &> /dev/null; then
+  elif pacman -Q linux-lts &>/dev/null>/dev/null; then
     KERNEL_HEADERS="linux-lts-headers"
-  elif pacman -Q linux-hardened &> /dev/null; then
+  elif pacman -Q linux-hardened &>/dev/null>/dev/null; then
     KERNEL_HEADERS="linux-hardened-headers"
   fi
 
@@ -46,7 +46,7 @@ if [ -n "$(lspci | grep -i 'nvidia')" ]; then
   sudo pacman -S --needed --noconfirm "${PACKAGES_TO_INSTALL[@]}"
 
   # Configure modprobe for early KMS
-  echo "options nvidia_drm modeset=1" | sudo tee /etc/modprobe.d/nvidia.conf > /dev/null
+  echo "options nvidia_drm modeset=1" | sudo tee /etc/modprobe.d/nvidia.conf >/dev/null
 
   # Configure mkinitcpio for early loading
   MKINITCPIO_CONF="/etc/mkinitcpio.conf"
@@ -68,8 +68,8 @@ if [ -n "$(lspci | grep -i 'nvidia')" ]; then
 
   # Add NVIDIA environment variables to hyprland.conf
   HYPRLAND_CONF="$HOME/.config/hypr/hyprland.conf"
-  if [ -f "$HYPRLAND_CONF" ]; then
-    cat >> "$HYPRLAND_CONF" << 'EOF'
+  if [[ -f "$HYPRLAND_CONF" ]]; then
+    cat >> "$HYPRLAND_CONF" <<'EOF'
 
 # NVIDIA environment variables
 env = NVD_BACKEND,direct

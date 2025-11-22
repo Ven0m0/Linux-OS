@@ -17,7 +17,7 @@ IFS=$'\n\t'
 #  - Prefers rust-parallel if present; falls back to xargs -P
 
 # Defaults
-JOBS=$(nproc 2> /dev/null || echo 4)
+JOBS=$(nproc 2>/dev/null || echo 4)
 LOSSY=0
 DRYRUN=0
 KEEPBACKUP=0
@@ -68,16 +68,16 @@ while (($#)); do
 done
 
 # Find fd / fdfind / find
-if command -v fd &> /dev/null; then
+if command -v fd &>/dev/null>/dev/null; then
   FD_BIN=fd
 else
   FD_BIN="find"
 fi
 
 # Choose parallel runner: prefer rust-parallel if available, else use xargs
-if command -v rust-parallel &> /dev/null; then
+if command -v rust-parallel &>/dev/null>/dev/null; then
   PARALLEL_BIN=rust-parallel
-elif command -v parallel &> /dev/null; then
+elif command -v parallel &>/dev/null>/dev/null; then
   PARALLEL_BIN=parallel
 else
   PARALLEL_BIN=""
@@ -87,8 +87,8 @@ TMPDIR="$(mktemp -d)"
 OPT_SCRIPT="$TMPDIR/min-cli.sh"
 
 # helper to get file size portably
-filesize_prog() {
-  if stat -c%s "$1" &> /dev/null; then
+filesize_prog(){
+  if stat -c%s "$1" &>/dev/null>/dev/null; then
     stat -c%s "$1"
   else
     stat -f%z "$1"
@@ -145,7 +145,7 @@ tmpf="$(mktemp "${file}.XXXXXX")"
 case "$ext_l" in
   png)
     # 1) pngquant (lossy) optionally
-    if [ "$lossy_flag" -eq 1 ] && has pngquant; then
+    if [[ "$lossy_flag" -eq 1 ]] && has pngquant; then
       pngquant --quality=65-90 --speed=1 --strip --output "$tmpf" -- "$file" &>/dev/null || :
       replace_if_smaller "$file" "$tmpf" || :
     fi
@@ -157,7 +157,7 @@ case "$ext_l" in
     fi
     # 3) flaca (lossless mega-opt) preference: run flaca over file (it writes in-place)
     if has flaca; then
-      if [ "$dryrun" -eq 1 ]; then
+      if [[ "$dryrun" -eq 1 ]]; then
         echo "[DRY] would run: flaca \"$file\""
       else
         flaca --no-symlinks --preserve-times "$file" &>/dev/null || :
@@ -168,7 +168,7 @@ case "$ext_l" in
   jpg|jpeg)
     # prefer flaca (lossless heavy) if available
     if has flaca; then
-      if [ "$dryrun" -eq 1 ]; then
+      if [[ "$dryrun" -eq 1 ]]; then
         echo "[DRY] would run: flaca \"$file\""
       else
         flaca --no-symlinks --preserve-times "$file" &>/dev/null || :
@@ -177,12 +177,12 @@ case "$ext_l" in
     fi
     # jpegoptim: lossless Huffman optimization or lossy with --max
     if has jpegoptim; then
-      if [ "$lossy_flag" -eq 1 ]; then
+      if [[ "$lossy_flag" -eq 1 ]]; then
         jpegoptim --strip-all --all-progressive --max=85 --stdin --stdout < "$file" > "$tmpf" 2>/dev/null || :
         replace_if_smaller "$file" "$tmpf" || :
       else
         # lossless
-        if [ "$dryrun" -eq 1 ]; then
+        if [[ "$dryrun" -eq 1 ]]; then
           echo "[DRY] would run: jpegoptim --strip-all \"$file\""
         else
           jpegoptim --strip-all --all-progressive --preserve "$file" &>/dev/null || :
@@ -192,7 +192,7 @@ case "$ext_l" in
     ;;
   webp)
     # For existing webp: try cwebp re-encode via dwebp/cwebp chain? skip for safety unless --lossy
-    if [ "$lossy_flag" -eq 1 ] && has cwebp && has dwebp; then
+    if [[ "$lossy_flag" -eq 1 ]] && has cwebp && has dwebp; then
       dwebp "$file" -o "$tmpf.png" &>/dev/null || :
       cwebp -q 80 "$tmpf.png" -o "$tmpf" &>/dev/null || :
       rm -f "$tmpf.png"
@@ -201,21 +201,21 @@ case "$ext_l" in
     ;;
   avif)
     # AVIF: re-encode with avifenc if present (lossy). Avoid default unless --lossy.
-    if [ "$lossy_flag" -eq 1 ] && has avifenc; then
+    if [[ "$lossy_flag" -eq 1 ]] && has avifenc; then
       avifenc --min 30 --max 40 --codec aom --speed 4 --output "$tmpf" "$file" &>/dev/null || :
       replace_if_smaller "$file" "$tmpf" || :
     fi
     ;;
   jxl|jxlx|jxl)
     # jpeg-xl: try cjxl if available (re-encode)
-    if [ "$lossy_flag" -eq 1 ] && has cjxl; then
+    if [[ "$lossy_flag" -eq 1 ]] && has cjxl; then
       cjxl "$file" "$tmpf" &>/dev/null || :
       replace_if_smaller "$file" "$tmpf" || :
     fi
     ;;
   gif)
     if has gifsicle; then
-      if [ "$dryrun" -eq 1 ]; then
+      if [[ "$dryrun" -eq 1 ]]; then
         echo "[DRY] would run: gifsicle -O3 --batch \"$file\""
       else
         gifsicle -O3 --batch "$file" &>/dev/null || :
@@ -226,14 +226,14 @@ case "$ext_l" in
   svg)
     # scour or svgo
     if has scour; then
-      if [ "$dryrun" -eq 1 ]; then
+      if [[ "$dryrun" -eq 1 ]]; then
         echo "[DRY] would run: scour -i \"$file\" -o \"$tmpf\" --enable-viewboxing --remove-metadata"
       else
         scour -i "$file" -o "$tmpf" --enable-viewboxing --remove-metadata &>/dev/null || :
         replace_if_smaller "$file" "$tmpf" || :
       fi
     elif has svgo; then
-      if [ "$dryrun" -eq 1 ]; then
+      if [[ "$dryrun" -eq 1 ]]; then
         echo "[DRY] would run: svgo \"$file\" -o \"$tmpf\""
       else
         svgo "$file" -o "$tmpf" &>/dev/null || :
@@ -244,14 +244,14 @@ case "$ext_l" in
   html|htm)
     # html minify via 'minify' or 'html-minifier' if present
     if has minify; then
-      if [ "$dryrun" -eq 1 ]; then
+      if [[ "$dryrun" -eq 1 ]]; then
         echo "[DRY] would run: minify --type html \"$file\" > \"$tmpf\""
       else
         minify --type html "$file" > "$tmpf" 2>/dev/null || :
         replace_if_smaller "$file" "$tmpf" || :
       fi
     elif has html-minifier; then
-      if [ "$dryrun" -eq 1 ]; then
+      if [[ "$dryrun" -eq 1 ]]; then
         echo "[DRY] would run: html-minifier --collapse-whitespace \"$file\" -o \"$tmpf\""
       else
         html-minifier --collapse-whitespace "$file" -o "$tmpf" 2>/dev/null || :
@@ -265,13 +265,13 @@ case "$ext_l" in
 esac
 
 # final cleanup
-[ -f "$tmpf" ] && rm -f -- "$tmpf" || :
+[[ -f "$tmpf" ]] && rm -f -- "$tmpf" || :
 BASH
 
 chmod +x "$OPT_SCRIPT"
 
 # Build list command that emits null-separated file paths
-emit_file_list() {
+emit_file_list(){
   if [[ -n $FD_BIN ]]; then
     # prefer fd/fdfind
     "$FD_BIN" -0 -H -I -e png -e jpg -e jpeg -e webp -e avif -e jxl -e gif -e svg -e html . "$TARGET"

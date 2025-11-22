@@ -2,31 +2,19 @@
 LC_ALL=C LANG=C
 # https://github.com/YurinDoctrine/adbloat
 
-start() {
-  adb shell pm list packages -3 \
-    | cut -d ':' -f 2 \
-    | tr -d '\r' \
-    | xargs -L1 -t adb shell pm uninstall -k --user 0
-
-  adb shell pm list packages -s \
-    | cut -d ':' -f 2 \
-    | tr -d '\r' \
-    | xargs -L1 -t adb shell pm clear --user 0
-
-  adb shell pm list packages \
-    | cut -d ':' -f 2 \
-    | tr -d '\r' \
-    | xargs -L1 -t adb shell pm reset-permissions -p
-
+start(){
+  adb shell pm list packages -3 | cut -d: -f2 | tr -d '\r' | xargs -L1 -t adb shell pm uninstall -k --user 0
+  adb shell pm list packages -s | cut -d: -f2 | tr -d '\r' | xargs -L1 -t adb shell pm clear --user 0
+  adb shell pm list packages | cut -d: -f2 | tr -d '\r' | xargs -L1 -t adb shell pm reset-permissions -p
   adb shell pm uninstall --user 0 com.google.android.googlequicksearchbox
 }
 
-tweaks() {
+tweaks(){
   echo -e "Applying Tweaks ..."
 
   # Batch all adb shell commands for massive performance improvement
   # This reduces 1100+ separate ADB connections to just 1
-  adb shell << 'TWEAKS_EOF'
+  adb shell <<'TWEAKS_EOF'
 device_config put runtime_native_boot pin_camera false
 device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
 device_config put launcher enable_quick_launch_v2 true
@@ -1132,9 +1120,9 @@ pm bg-dexopt-job
 TWEAKS_EOF
 
   # Handle metadata indexing optimization separately
-  for d in $(adb shell ls -a sdcard 2> /dev/null); do
-    adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore" 2> /dev/null || :
-  done
+  while IFS= read -r d; do
+    adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore" 2>/dev/null || :
+  done < <(adb shell ls -a sdcard 2>/dev/null)
 
   echo -e "ALL DONE!"
   echo -e ""
@@ -1148,10 +1136,8 @@ TWEAKS_EOF
 clear
 adb wait-for-device
 adb devices
-echo -e "Uninstall bloat apps? (NOT RECOMMENDED)"
-echo -e "yes/no"
-read -p '>_:' ans
-if [[ $ans == "yes" ]]; then
-  start
-fi
+echo "Uninstall bloat apps? (NOT RECOMMENDED)"
+echo "yes/no"
+read -rp '>_:' ans
+[[ $ans == "yes" ]] && start
 tweaks

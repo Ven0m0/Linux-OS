@@ -4,7 +4,7 @@
 # Simplified config injection without newline-handling, password-masking,
 # backups or DietPi-specific notifications.
 
-G_CONFIG_INJECT() {
+G_CONFIG_INJECT(){
   : "${G_PROGRAM_NAME:=G_CONFIG_INJECT}"
   local pattern=${1//\//\\/}
   local setting=$2
@@ -77,7 +77,7 @@ G_CONFIG_INJECT() {
 
 # Simple, signal-friendly sleep without external command
 G_SLEEP_FD=
-G_SLEEP() {
+G_SLEEP(){
   [[ -n $G_SLEEP_FD ]] || exec {G_SLEEP_FD}<> <(:)
   read -rt "$1" -u "$G_SLEEP_FD" || :
 }

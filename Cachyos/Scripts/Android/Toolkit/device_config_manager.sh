@@ -8,23 +8,23 @@ shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 
 # Helper functions
-log() {
+log(){
   printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"
 }
 
-check_adb() {
-  command -v adb &> /dev/null || {
+check_adb(){
+  command -v adb &>/dev/null>/dev/null || {
     echo "Error: adb not found. Please install Android platform tools."
     return 1
   }
-  adb get-state &> /dev/null || {
+  adb get-state &>/dev/null>/dev/null || {
     echo "Error: No device connected or unauthorized."
     return 1
   }
 }
 
 # Apply all optimized config settings to the connected device
-apply_device_configs() {
+apply_device_configs(){
   local section key value
   log "Applying optimized device configurations..."
 
@@ -90,15 +90,15 @@ apply_device_configs() {
 }
 
 # Apply config settings for a specific section
-apply_config() {
+apply_config(){
   local section="$1" key="$2" value="$3"
   log_debug "Setting ${section}/${key}=${value}"
-  adb shell cmd device_config put "$section" "$key" "$value" > /dev/null 2>&1 \
+  adb shell cmd device_config put "$section" "$key" "$value" >/dev/null 2>&1 \
     || log "Failed to set ${section}/${key}=${value}"
 }
 
 # Apply additional system commands that aren't device_config settings
-apply_system_commands() {
+apply_system_commands(){
   log "Applying system commands..."
 
   # WiFi settings
@@ -178,12 +178,12 @@ apply_system_commands() {
   adb shell settings put global enhanced_processing 1
   adb shell settings put global omap.enhancement true
 
-  vk_set() {
+  vk_set(){
     adb shell setprop debug.renderengine.backend skiavk
     adb shell setprop debug.hwui.renderer skiavk
     adb shell setprop debug.hwui.use_vulkan true
   }
-  gl_set() {
+  gl_set(){
     adb shell setprop debug.renderengine.backend skiaglthreaded
     adb shell setprop debug.hwui.renderer skiagl
     adb shell setprop debug.hwui.use_vulkan false
@@ -229,12 +229,12 @@ apply_system_commands() {
 }
 
 # Debug logging - only prints when DEBUG is set
-log_debug() {
+log_debug(){
   [[ ${DEBUG:-0} -eq 1 ]] && printf '[DEBUG %s] %s\n' "$(date +%H:%M:%S)" "$*" || :
 }
 
 # Reset all configurations to default
-reset_device_configs() {
+reset_device_configs(){
   log "Resetting device configurations to default..."
 
   # List sections to reset
@@ -246,14 +246,14 @@ reset_device_configs() {
 
   # Reset each section
   for section in "${sections[@]}"; do
-    adb shell cmd device_config reset "$section" > /dev/null 2>&1 || log "Failed to reset section: $section"
+    adb shell cmd device_config reset "$section" >/dev/null 2>&1 || log "Failed to reset section: $section"
   done
 
   log "Device configurations reset successfully"
 }
 
 # Main function
-main() {
+main(){
   check_adb || exit 1
 
   # Parse command line arguments

@@ -70,7 +70,7 @@ unzip -q "$WORKDIR/redexed.apk" -d "$WORKDIR/apk_unpack"
 cp "$WORKDIR/classes.dex" "$WORKDIR/apk_unpack/"
 cd "$WORKDIR/apk_unpack" || exit
 zip -q -r ../repackaged.apk .
-cd - > /dev/null || exit
+cd - >/dev/null || exit
 
 echo "[8/10] Aligning APK..."
 "$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk"
@@ -90,6 +90,6 @@ find "$WORKDIR/final_unpack/res" -iname "*.jpg" -exec "$JPEGOPTIM" --strip-all {
 # Rezip final APK
 cd "$WORKDIR/final_unpack" || exit
 "$SEVENZIP" a -tzip -mx=9 ../"$OUTPUT_APK" .
-cd - > /dev/null || exit
+cd - >/dev/null || exit
 
 echo "✅ Optimized APK created at: $WORKDIR/$OUTPUT_APK"

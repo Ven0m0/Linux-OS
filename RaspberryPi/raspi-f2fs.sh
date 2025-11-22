@@ -29,19 +29,19 @@ declare -g LOCK_FD=-1 LOCK_FILE="" STOPPED_UDISKS2=0
 declare -ga MOUNTED_DIRS=()
 
 # Logging
-log() { printf '[%s] %s\n' "$(date +%T)" "$*"; }
-info() { log "INFO: $*"; }
-warn() { log "WARN: $*" >&2; }
-err() { log "ERROR: $*" >&2; }
-die() {
+log(){ printf '[%s] %s\n' "$(date +%T)" "$*"; }
+info(){ log "INFO: $*"; }
+warn(){ log "WARN: $*" >&2; }
+err(){ log "ERROR: $*" >&2; }
+die(){
   err "$*"
   cleanup
   exit 1
 }
-dbg() { ((cfg[debug])) && log "DEBUG: $*" || :; }
+dbg(){ ((cfg[debug])) && log "DEBUG: $*" || :; }
 
 # Execute w/ dry-run support
-run() {
+run(){
   ((cfg[dry_run])) && {
     info "[DRY] $*"
     return 0
@@ -51,12 +51,12 @@ run() {
 }
 
 # Safe command execution with retries
-run_with_retry() {
+run_with_retry(){
   local -i attempts=${1:-3} delay=${2:-2} i
   shift 2
 
   for ((i = 1; i <= attempts; i++)); do
-    if "$@" 2> /dev/null; then
+    if "$@" 2>/dev/null; then
       return 0
     fi
     ((i < attempts)) && {
@@ -69,7 +69,7 @@ run_with_retry() {
 }
 
 # Derive partition paths (nvme/mmcblk/loop use 'p' separator)
-derive_partition_paths() {
+derive_partition_paths(){
   local dev=${1:?}
 
   if [[ $dev == *@(nvme|mmcblk|loop)* ]]; then
@@ -84,7 +84,7 @@ derive_partition_paths() {
 }
 
 # Wait for partition devices with exponential backoff
-wait_for_partitions() {
+wait_for_partitions(){
   local boot=${1:?} root=${2:?} dev=${3:-}
   local -i i sleep_ms=100
 
@@ -98,8 +98,8 @@ wait_for_partitions() {
 
     # Aggressive refresh every 3s
     ((i % 6 == 5 && ${#dev})) && {
-      partprobe -s "$dev" &> /dev/null || :
-      has udevadm && udevadm settle --timeout=5 &> /dev/null || :
+      partprobe -s "$dev" &>/dev/null>/dev/null || :
+      has udevadm && udevadm settle --timeout=5 &>/dev/null>/dev/null || :
     }
 
     # Exponential backoff capped at 1s
@@ -111,7 +111,7 @@ wait_for_partitions() {
 }
 
 # Refresh partition table with multiple fallback strategies
-refresh_partitions() {
+refresh_partitions(){
   local dev=${1:?}
 
   derive_partition_paths "$dev"
@@ -125,7 +125,7 @@ refresh_partitions() {
 
     # Detach and reattach with -P for partition scan
     local old_dev=$dev
-    losetup -d "$dev" &> /dev/null || :
+    losetup -d "$dev" &>/dev/null>/dev/null || :
     sleep 1
 
     TGT_LOOP=$(losetup --show -f -P "$tgt_path")
@@ -145,20 +145,20 @@ refresh_partitions() {
 
       # Strategy 1: blockdev
       if has blockdev; then
-        blockdev --flushbufs "$dev" &> /dev/null || :
-        blockdev --rereadpt "$dev" 2> /dev/null && break
+        blockdev --flushbufs "$dev" &>/dev/null>/dev/null || :
+        blockdev --rereadpt "$dev" 2>/dev/null && break
       fi
 
       # Strategy 2: partprobe
-      partprobe -s "$dev" 2> /dev/null && break
+      partprobe -s "$dev" 2>/dev/null && break
 
       # Strategy 3: partx (if available)
       if has partx; then
-        partx -u "$dev" 2> /dev/null && break
+        partx -u "$dev" 2>/dev/null && break
       fi
     done
 
-    has udevadm && udevadm settle --timeout=10 &> /dev/null || sleep 3
+    has udevadm && udevadm settle --timeout=10 &>/dev/null>/dev/null || sleep 3
   fi
 
   derive_partition_paths "$TGT_DEV"
@@ -166,7 +166,7 @@ refresh_partitions() {
 }
 
 # Device locking with flock
-acquire_device_lock() {
+acquire_device_lock(){
   local path=${1:?}
 
   LOCK_FILE="/run/lock/raspi-f2fs-${path//[^[:alnum:]]/_}.lock"
@@ -178,7 +178,7 @@ acquire_device_lock() {
   dbg "Lock acquired: $LOCK_FILE (fd=$LOCK_FD)"
 }
 
-release_device_lock() {
+release_device_lock(){
   ((LOCK_FD >= 0)) && {
     dbg "Releasing lock fd=$LOCK_FD"
     exec {LOCK_FD}>&- || :
@@ -189,34 +189,34 @@ release_device_lock() {
 }
 
 # Track mounted directories for guaranteed cleanup
-track_mount() {
+track_mount(){
   local dir=${1:?}
   MOUNTED_DIRS+=("$dir")
   dbg "Tracked mount: $dir"
 }
 
 # Safe unmount with force fallback
-safe_umount() {
+safe_umount(){
   local dir=${1:?}
   local -i attempt
 
   mountpoint -q "$dir" || return 0
 
   for ((attempt = 1; attempt <= 3; attempt++)); do
-    if umount "$dir" &> /dev/null; then
+    if umount "$dir" &>/dev/null>/dev/null; then
       dbg "Unmounted: $dir"
       return 0
     fi
 
     ((attempt == 2)) && {
       warn "Force unmount: $dir"
-      has fuser && fuser -km "$dir" &> /dev/null 2>&1 || :
+      has fuser && fuser -km "$dir" &>/dev/null>/dev/null 2>&1 || :
       sleep 1
     }
 
     ((attempt == 3)) && {
       warn "Lazy unmount fallback: $dir"
-      umount -l "$dir" &> /dev/null || :
+      umount -l "$dir" &>/dev/null>/dev/null || :
       return 0
     }
 
@@ -227,7 +227,7 @@ safe_umount() {
 }
 
 # Comprehensive cleanup with ordering guarantees
-cleanup() {
+cleanup(){
   local -i exit_code=$?
 
   set +e # Continue cleanup on errors
@@ -242,18 +242,18 @@ cleanup() {
   # Detach loop devices
   [[ -n ${LOOP_DEV:-} && -b ${LOOP_DEV} ]] && {
     dbg "Detaching source loop: $LOOP_DEV"
-    losetup -d "$LOOP_DEV" &> /dev/null || :
+    losetup -d "$LOOP_DEV" &>/dev/null>/dev/null || :
   }
 
   [[ -n ${TGT_LOOP:-} && -b ${TGT_LOOP} ]] && {
     dbg "Detaching target loop: $TGT_LOOP"
-    losetup -d "$TGT_LOOP" &> /dev/null || :
+    losetup -d "$TGT_LOOP" &>/dev/null>/dev/null || :
   }
 
   # Restart services
   ((STOPPED_UDISKS2)) && {
     dbg "Restarting udisks2"
-    systemctl start udisks2.service 2> /dev/null || :
+    systemctl start udisks2.service 2>/dev/null || :
   }
 
   # Release lock
@@ -271,10 +271,10 @@ cleanup() {
 }
 
 # Check command availability
-has() { command -v -- "$1" &> /dev/null; }
+has(){ command -v -- "$1" &>/dev/null>/dev/null; }
 
 # Dependency validation
-check_deps() {
+check_deps(){
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync tar xz blkid partprobe lsblk flock blockdev sync)
   local -a missing=() pkg_hints=()
   local cmd
@@ -299,7 +299,7 @@ check_deps() {
 }
 
 # Force device release (aggressive)
-force_umount_device() {
+force_umount_device(){
   local dev=${1:?}
   local -a parts=()
 
@@ -307,26 +307,26 @@ force_umount_device() {
 
   # Kill processes with device handles
   has fuser && {
-    fuser -km "$dev" &> /dev/null 2>&1 || :
+    fuser -km "$dev" &>/dev/null>/dev/null 2>&1 || :
     sleep 1
   }
 
   # Unmount all partitions
-  mapfile -t parts < <(lsblk -nlo NAME,MOUNTPOINT "$dev" 2> /dev/null | awk '$2 {print "/dev/"$1}')
+  mapfile -t parts < <(lsblk -nlo NAME,MOUNTPOINT "$dev" 2>/dev/null | awk '$2 {print "/dev/"$1}')
 
   for part in "${parts[@]}"; do
-    [[ -n $part ]] && umount -fl "$part" &> /dev/null 2>&1 || :
+    [[ -n $part ]] && umount -fl "$part" &>/dev/null>/dev/null 2>&1 || :
   done
 
   # Kernel cache drop (sync once before cache drop)
   sync
-  printf '3\n' > /proc/sys/vm/drop_caches 2> /dev/null || :
+  printf '3\n' > /proc/sys/vm/drop_caches 2>/dev/null || :
 
   # Final process kill
   has fuser && {
-    fuser -km "$dev" &> /dev/null 2>&1 || :
+    fuser -km "$dev" &>/dev/null>/dev/null 2>&1 || :
     for part in "${parts[@]}"; do
-      [[ -b $part ]] && fuser -km "$part" &> /dev/null 2>&1 || :
+      [[ -b $part ]] && fuser -km "$part" &>/dev/null>/dev/null 2>&1 || :
     done
   }
 
@@ -334,7 +334,7 @@ force_umount_device() {
 }
 
 # Process source image
-process_source() {
+process_source(){
   info "Processing source: $src_path"
 
   [[ -f $src_path || -b $src_path ]] || die "Source not found: $src_path"
@@ -353,7 +353,7 @@ process_source() {
 }
 
 # Setup target device/image
-setup_target() {
+setup_target(){
   info "Target setup: $tgt_path"
 
   acquire_device_lock "$tgt_path"
@@ -371,27 +371,27 @@ setup_target() {
 
       force_umount_device "$tgt_path"
 
-      has hdparm && hdparm -z "$tgt_path" &> /dev/null 2>&1 || :
+      has hdparm && hdparm -z "$tgt_path" &>/dev/null>/dev/null 2>&1 || :
       sync
       sync
       sleep 2
     }
 
     TGT_DEV=$tgt_path
-    ((cfg[dry_run])) || blockdev --flushbufs "$TGT_DEV" &> /dev/null || :
+    ((cfg[dry_run])) || blockdev --flushbufs "$TGT_DEV" &>/dev/null>/dev/null || :
   else
     # Image file target
     ((cfg[dry_run])) || {
       # Detach any existing loops for this path
       local -a existing=()
-      mapfile -t existing < <(losetup -j "$tgt_path" 2> /dev/null | awk -F: '{print $1}')
+      mapfile -t existing < <(losetup -j "$tgt_path" 2>/dev/null | awk -F: '{print $1}')
 
       for loop in "${existing[@]}"; do
-        [[ -n $loop ]] && losetup -d "$loop" &> /dev/null || :
+        [[ -n $loop ]] && losetup -d "$loop" &>/dev/null>/dev/null || :
       done
     }
 
-    local -i size_mb=$(($(stat -c%s "$SRC_IMG" 2> /dev/null || echo 0) / 1048576 + 256))
+    local -i size_mb=$(($(stat -c%s "$SRC_IMG" 2>/dev/null || echo 0) / 1048576 + 256))
 
     info "Creating ${size_mb}MB image file"
     run truncate -s "${size_mb}M" "$tgt_path"
@@ -406,7 +406,7 @@ setup_target() {
 }
 
 # Partition target with comprehensive safety
-partition_target() {
+partition_target(){
   info "Partitioning: $TGT_DEV"
 
   # Pre-partition device prep
@@ -414,9 +414,9 @@ partition_target() {
     force_umount_device "$TGT_DEV"
 
     # Stop automounters temporarily
-    if systemctl is-active udisks2.service &> /dev/null; then
+    if systemctl is-active udisks2.service &>/dev/null>/dev/null; then
       warn "Stopping udisks2 for partitioning"
-      systemctl stop udisks2.service 2> /dev/null && STOPPED_UDISKS2=1 || :
+      systemctl stop udisks2.service 2>/dev/null && STOPPED_UDISKS2=1 || :
       sleep 2
     fi
 
@@ -426,7 +426,7 @@ partition_target() {
 
   # Loop device refresh before partitioning
   if [[ $TGT_DEV == /dev/loop* ]] && ((!cfg[dry_run])); then
-    losetup -d "$TGT_DEV" &> /dev/null || :
+    losetup -d "$TGT_DEV" &>/dev/null>/dev/null || :
     sync
     sleep 1
     TGT_LOOP=$(losetup --show -f "$tgt_path") || die "Loop reattach failed"
@@ -435,7 +435,7 @@ partition_target() {
 
   # Zero MBR + partition table
   ((cfg[dry_run])) || {
-    dd if=/dev/zero of="$TGT_DEV" bs=1M count=10 conv=fsync status=none 2> /dev/null || :
+    dd if=/dev/zero of="$TGT_DEV" bs=1M count=10 conv=fsync status=none 2>/dev/null || :
     # conv=fsync already syncs; one additional sync is sufficient
     sync
     sleep 2
@@ -472,7 +472,7 @@ partition_target() {
 }
 
 # Mount all filesystems with tracking
-mount_all() {
+mount_all(){
   info "Mounting filesystems"
   ((cfg[dry_run])) && return 0
 
@@ -507,7 +507,7 @@ mount_all() {
 }
 
 # Copy data with RAM buffering optimization
-copy_data() {
+copy_data(){
   info "Copying filesystem data"
   ((cfg[dry_run])) && return 0
 
@@ -532,7 +532,7 @@ copy_data() {
 }
 
 # Update boot/root configuration for F2FS
-update_config() {
+update_config(){
   info "Configuring F2FS boot parameters"
   ((cfg[dry_run])) && return 0
 
@@ -551,8 +551,8 @@ update_config() {
   [[ -f $cmdline ]] && {
     info "Patching cmdline.txt"
     sed -i \
-      -e "s|root=[^ ]*|root=PARTUUID=$root_uuid|" \
-      -e "s|rootfstype=[^ ]*|rootfstype=f2fs|" \
+      -e "s|root=[^ ]]*|root=PARTUUID=$root_uuid|" \
+      -e "s|rootfstype=[^ ]]*|rootfstype=f2fs|" \
       -e 's|rootwait|rootwait rootdelay=5|' \
       -e 's| init=/usr/lib/raspi-config/init_resize\.sh||' \
       -e 's| init=/usr/lib/raspberrypi-sys-mods/firstboot||' \
@@ -613,25 +613,25 @@ setup_boot(){
 	# Hook to include f2fs-tools in initramfs
 
 	PREREQ=""
-	prereqs() { echo "$PREREQ"; }
+	prereqs(){ echo "$PREREQ"; }
 	case $1 in prereqs) prereqs; exit 0;; esac
 
 	. /usr/share/initramfs-tools/hook-functions
 
 	# Copy f2fs utilities if they exist
-	if [ -x /usr/sbin/resize.f2fs ]; then
+	if [[ -x /usr/sbin/resize.f2fs ]]; then
 	  copy_exec /usr/sbin/resize.f2fs /sbin
 	fi
-	if [ -x /usr/sbin/fsck.f2fs ]; then
+	if [[ -x /usr/sbin/fsck.f2fs ]]; then
 	  copy_exec /usr/sbin/fsck.f2fs /sbin
 	fi
-	if [ -x /usr/sbin/mkfs.f2fs ]; then
+	if [[ -x /usr/sbin/mkfs.f2fs ]]; then
 	  copy_exec /usr/sbin/mkfs.f2fs /sbin
 	fi
 
 	# Copy required libraries
 	for lib in /lib/*/libf2fs.so* /usr/lib/*/libf2fs.so*; do
-	  [ -e "$lib" ] && copy_exec "$lib"
+	  [[ -e "$lib" ]] && copy_exec "$lib"
 	done
 
 	exit 0
@@ -646,7 +646,7 @@ setup_boot(){
 	# F2FS resize script - runs in initramfs before root mount
 
 	PREREQ=""
-	prereqs() { echo "$PREREQ"; }
+	prereqs(){ echo "$PREREQ"; }
 	case $1 in prereqs) prereqs; exit 0;; esac
 
 	. /scripts/functions
@@ -669,26 +669,26 @@ setup_boot(){
 	done
 
 	# Exit early if no root found
-	[ -z "$ROOT_PARTUUID" ] && [ -z "$ROOT_DEV" ] && exit 0
+	[[ -z "$ROOT_PARTUUID" ]] && [[ -z "$ROOT_DEV" ]] && exit 0
 
 	# Resolve PARTUUID to device
-	if [ -n "$ROOT_PARTUUID" ]; then
+	if [[ -n "$ROOT_PARTUUID" ]]; then
 	  wait_for_udev 10
-	  ROOT_DEV=$(blkid -t PARTUUID="$ROOT_PARTUUID" -o device 2> /dev/null)
+	  ROOT_DEV=$(blkid -t PARTUUID="$ROOT_PARTUUID" -o device 2>/dev/null)
 	fi
 
 	# Exit if device not found
-	[ -z "$ROOT_DEV" ] || [ ! -b "$ROOT_DEV" ] && exit 0
+	[[ -z "$ROOT_DEV" ]] || [[ ! -b "$ROOT_DEV" ]] && exit 0
 
 	# Find boot partition (typically same disk, partition 1)
 	BOOT_DEV="${ROOT_DEV%[0-9]*}1"
-	[ "$BOOT_DEV" = "$ROOT_DEV" ] && BOOT_DEV="${ROOT_DEV%p[0-9]*}p1"
+	[[ "$BOOT_DEV" = "$ROOT_DEV" ]] && BOOT_DEV="${ROOT_DEV%p[0-9]*}p1"
 
 	# Mount boot partition temporarily to check flag
-	if [ -b "$BOOT_DEV" ]; then
+	if [[ -b "$BOOT_DEV" ]]; then
 	  mount -t vfat -o ro "$BOOT_DEV" "$RESIZE_FLAG_DIR" 2>/dev/null || exit 0
 
-	  if [ -f "$RESIZE_FLAG_DIR/.f2fs-resized" ]; then
+	  if [[ -f "$RESIZE_FLAG_DIR/.f2fs-resized" ]]; then
 	    umount "$RESIZE_FLAG_DIR" 2>/dev/null
 	    exit 0
 	  fi
@@ -707,7 +707,7 @@ setup_boot(){
 	  if resize.f2fs "$ROOT_DEV" >/dev/null 2>&1; then
 	    log_success_msg "F2FS resize completed"
 	    # Create flag to prevent future resize attempts
-	    [ -d "$RESIZE_FLAG_DIR" ] && touch "$RESIZE_FLAG_DIR/.f2fs-resized" 2>/dev/null
+	    [[ -d "$RESIZE_FLAG_DIR" ]] && touch "$RESIZE_FLAG_DIR/.f2fs-resized" 2>/dev/null
 	  else
 	    log_failure_msg "F2FS resize failed (non-fatal)"
 	  fi
@@ -716,7 +716,7 @@ setup_boot(){
 	fi
 
 	# Cleanup
-	[ -d "$RESIZE_FLAG_DIR" ] && umount "$RESIZE_FLAG_DIR" 2>/dev/null
+	[[ -d "$RESIZE_FLAG_DIR" ]] && umount "$RESIZE_FLAG_DIR" 2>/dev/null
 
 	exit 0
 	INITRAMFS_SCRIPT
@@ -805,7 +805,7 @@ setup_boot(){
 	ROOT_UUID=$(awk '$2=="/" && $1~/^PARTUUID=/ {gsub(/PARTUUID=/,"",$1); print $1}' /etc/fstab)
 	[[ -z $ROOT_UUID ]] && exit 0
 
-	ROOT_DEV=$(blkid -t PARTUUID="$ROOT_UUID" -o device 2> /dev/null)
+	ROOT_DEV=$(blkid -t PARTUUID="$ROOT_UUID" -o device 2>/dev/null)
 	[[ -z $ROOT_DEV || ! -b $ROOT_DEV ]] && exit 0
 
 	echo "==> Resizing F2FS root filesystem (fallback method)..."
@@ -941,7 +941,7 @@ usage(){
 }
 
 # Prepare workspace
-prepare() {
+prepare(){
   info "Preparing workspace"
 
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" raspi-f2fs.XXXXXX) || die "mktemp failed"
@@ -953,7 +953,7 @@ prepare() {
 }
 
 # Main entry point
-main() {
+main(){
   local opt
 
   while getopts "b:i:d:sknxh" opt; do
@@ -986,8 +986,8 @@ main() {
     info "Select source image"
 
     src_path=$(
-      has fd && fd -e img -e xz . "$HOME" 2> /dev/null | fzf --prompt="Source: " \
-        || find "$HOME" -type f \( -name "*.img" -o -name "*.img.xz" \) 2> /dev/null | fzf --prompt="Source: "
+      has fd && fd -e img -e xz . "$HOME" 2>/dev/null | fzf --prompt="Source: " \
+        || find "$HOME" -type f \( -name "*.img" -o -name "*.img.xz" \) 2>/dev/null | fzf --prompt="Source: "
     )
     [[ -z $src_path ]] && die "No source selected"
   }
@@ -1011,7 +1011,7 @@ main() {
     info "Select target device"
 
     tgt_path=$(
-      lsblk -dno NAME,SIZE,TYPE,RM 2> /dev/null \
+      lsblk -dno NAME,SIZE,TYPE,RM 2>/dev/null \
         | awk '$3=="disk" && ($4=="1" || $4=="0")' \
         | fzf --prompt="Target: " \
         | awk '{print "/dev/"$1}'

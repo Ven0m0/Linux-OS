@@ -84,7 +84,7 @@ WEATHER=$(<"$tmp_weather")
 rm -f "$tmp_ip" "$tmp_weather"
 
 # CPU/GPU
-CPU="$(awk -O -F: '/^model name/ {gsub(/^[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
+CPU="$(awk -O -F: '/^model name/ {gsub(/^[[ \t]+/, "", $2); print $2; exit}' /proc/cpuinfo)"
 if command -v nvidia-smi &>/dev/null; then
   GPU=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n1)
 else
@@ -96,7 +96,7 @@ else
         prod=substr(name,RSTART,RLENGTH)
       else
         prod=name
-      gsub(/^[ \t]+|[ \t]+$/,"",prod)
+      gsub(/^[[ \t]+|[[ \t]+$/,"",prod)
       print prod; exit
     }' <(lspci 2>/dev/null))
 fi

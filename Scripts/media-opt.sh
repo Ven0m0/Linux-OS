@@ -12,19 +12,19 @@ declare -g OUTDIR="" TYPE="all" SUFFIX="_opt"
 declare -g IMG_FMT="webp" VID_CODEC="av1"
 declare -gi TOTAL=0 OK=0 SKIP=0 FAIL=0
 # -- Helpers --
-die() {
+die(){
   printf '%s%s%s\n' "$R" "$*" "$X" >&2
   exit 1
 }
-warn() { printf '%s%s%s\n' "$Y" "$*" "$X" >&2; }
-log() { printf '%s\n' "$*"; }
-has() { command -v "$1" &> /dev/null; }
+warn(){ printf '%s%s%s\n' "$Y" "$*" "$X" >&2; }
+log(){ printf '%s\n' "$*"; }
+has(){ command -v "$1" &>/dev/null>/dev/null; }
 # -- Cleanup --
 TMPDIR=$(mktemp -d)
-cleanup() { rm -rf "$TMPDIR"; }
+cleanup(){ rm -rf "$TMPDIR"; }
 trap cleanup EXIT
 # -- Find files (filtered, recursive) --
-find_files() {
+find_files(){
   local dir=${1:-.}
   local -a img=(jpg jpeg png gif webp avif jxl tiff bmp) vid=(mp4 mkv mov webm avi flv) aud=(opus flac mp3 m4a aac ogg wav) exts=()
   case $TYPE in
@@ -36,22 +36,22 @@ find_files() {
   if has fd; then
     local -a args=(-tf --no-require-git -S+10k)
     for e in "${exts[@]}"; do args+=(-e "$e"); done
-    fd "${args[@]}" "$dir" 2> /dev/null | grep -v "$SUFFIX"
+    fd "${args[@]}" "$dir" 2>/dev/null | grep -v "$SUFFIX"
   else
     find "$dir" -type f ! -name "*${SUFFIX}*" -size +10k \( \
       $(printf -- "-o -iname *.%s " "${exts[@]}") \
-      \) 2> /dev/null | sed 's/^-o //'
+      \) 2>/dev/null | sed 's/^-o //'
   fi
 }
 # -- Output path --
-outpath() {
+outpath(){
   local src=$1 fmt=${2:-${src##*.}}
-  local dir=${OUTDIR:-$(dirname "$src")} base=$(basename "$src")
+  local dir=${OUTDIR:-${"$src"%/*}} base=${"$src"##*/}
   local name="${base%.*}"
   echo "$dir/${name}${SUFFIX}.${fmt}"
 }
 # -- Image optimization --
-opt_image() {
+opt_image(){
   local src=$1 ext="${src##*.}" && ext="${ext,,}"
   local out=$(outpath "$src" "$IMG_FMT")
   [[ -f $out && $KEEP -eq 1 ]] && {
@@ -59,24 +59,24 @@ opt_image() {
     return 0
   }
   [[ $DRY -eq 1 ]] && {
-    log "[DRY] $(basename "$src") → $IMG_FMT"
+    log "[DRY] ${"$src"##*/} → $IMG_FMT"
     return 0
   }
-  local tmp="$TMPDIR/$(basename "$src")"
+  local tmp="$TMPDIR/${"$src"##*/}"
   cp "$src" "$tmp" || return 1
   if [[ $IMG_FMT != "$ext" ]]; then
     if has rimage; then
       local cmd="$IMG_FMT"
       [[ $IMG_FMT == "webp" ]] && cmd="mozjpeg"
-      [[ $LOSSLESS -eq 0 ]] && rimage "$cmd" -q "$QUALITY" -d "$TMPDIR" "$tmp" &> /dev/null || {
+      [[ $LOSSLESS -eq 0 ]] && rimage "$cmd" -q "$QUALITY" -d "$TMPDIR" "$tmp" &>/dev/null>/dev/null || {
         rm -f "$tmp"
         return 1
       }
-      [[ $LOSSLESS -eq 1 ]] && rimage "$cmd" -d "$TMPDIR" "$tmp" &> /dev/null || {
+      [[ $LOSSLESS -eq 1 ]] && rimage "$cmd" -d "$TMPDIR" "$tmp" &>/dev/null>/dev/null || {
         rm -f "$tmp"
         return 1
       }
-      local converted="$TMPDIR/$(basename "$src" ."$ext").$IMG_FMT"
+      local converted="$TMPDIR/${"$src" ."$ext"##*/}.$IMG_FMT"
       [[ -f $converted ]] && mv "$converted" "$out" || {
         rm -f "$tmp"
         return 1
@@ -85,15 +85,15 @@ opt_image() {
       case $IMG_FMT in
       webp)
         has cwebp && {
-          [[ $LOSSLESS -eq 1 ]] && cwebp -lossless "$tmp" -o "$out" &> /dev/null \
-            || cwebp -q "$QUALITY" -m 6 "$tmp" -o "$out" &> /dev/null
+          [[ $LOSSLESS -eq 1 ]] && cwebp -lossless "$tmp" -o "$out" &>/dev/null>/dev/null \
+            || cwebp -q "$QUALITY" -m 6 "$tmp" -o "$out" &>/dev/null>/dev/null
         }
         ;;
-      avif) has avifenc && avifenc -s 6 -j "$JOBS" --min 0 --max 60 "$tmp" "$out" &> /dev/null ;;
+      avif) has avifenc && avifenc -s 6 -j "$JOBS" --min 0 --max 60 "$tmp" "$out" &>/dev/null>/dev/null ;;
       jxl)
         has cjxl && {
-          [[ $LOSSLESS -eq 1 ]] && cjxl "$tmp" "$out" -d 0 -e 7 &> /dev/null \
-            || cjxl "$tmp" "$out" -q "$QUALITY" -e 7 &> /dev/null
+          [[ $LOSSLESS -eq 1 ]] && cjxl "$tmp" "$out" -d 0 -e 7 &>/dev/null>/dev/null \
+            || cjxl "$tmp" "$out" -q "$QUALITY" -e 7 &>/dev/null>/dev/null
         }
         ;;
       esac
@@ -102,41 +102,41 @@ opt_image() {
   else
     if [[ $LOSSLESS -eq 1 ]]; then
       if has flaca; then
-        flaca --preserve-times "$tmp" &> /dev/null || {
+        flaca --preserve-times "$tmp" &>/dev/null>/dev/null || {
           rm -f "$tmp"
           return 1
         }
       else
         case $ext in
         png)
-          has oxipng && oxipng -o max -q "$tmp" &> /dev/null
-          has optipng && optipng -o7 -quiet "$tmp" &> /dev/null
+          has oxipng && oxipng -o max -q "$tmp" &>/dev/null>/dev/null
+          has optipng && optipng -o7 -quiet "$tmp" &>/dev/null>/dev/null
           ;;
-        jpg | jpeg) has jpegoptim && jpegoptim --strip-all -q "$tmp" &> /dev/null ;;
+        jpg | jpeg) has jpegoptim && jpegoptim --strip-all -q "$tmp" &>/dev/null>/dev/null ;;
         webp) has cwebp && {
           local t="${tmp}.webp"
-          cwebp -lossless "$tmp" -o "$t" &> /dev/null && mv "$t" "$tmp"
+          cwebp -lossless "$tmp" -o "$t" &>/dev/null>/dev/null && mv "$t" "$tmp"
         } ;;
         esac
       fi
     else
       if has rimage; then
-        rimage mozjpeg -q "$QUALITY" -d "$TMPDIR" "$tmp" &> /dev/null || {
+        rimage mozjpeg -q "$QUALITY" -d "$TMPDIR" "$tmp" &>/dev/null>/dev/null || {
           rm -f "$tmp"
           return 1
         }
-        local opt="$TMPDIR/$(basename "$tmp")"
+        local opt="$TMPDIR/${"$tmp"##*/}"
         [[ -f $opt ]] && mv -f "$opt" "$tmp"
       else
         case $ext in
         png)
-          has oxipng && oxipng -o max -q "$tmp" &> /dev/null
-          has pngquant && pngquant --quality="$QUALITY"-100 -f "$tmp" -o "${tmp}.2" &> /dev/null && mv "${tmp}.2" "$tmp"
+          has oxipng && oxipng -o max -q "$tmp" &>/dev/null>/dev/null
+          has pngquant && pngquant --quality="$QUALITY"-100 -f "$tmp" -o "${tmp}.2" &>/dev/null>/dev/null && mv "${tmp}.2" "$tmp"
           ;;
-        jpg | jpeg) has jpegoptim && jpegoptim --max="$QUALITY" -q -f "$tmp" &> /dev/null ;;
+        jpg | jpeg) has jpegoptim && jpegoptim --max="$QUALITY" -q -f "$tmp" &>/dev/null>/dev/null ;;
         webp) has cwebp && {
           local t="${tmp}.webp"
-          cwebp -q "$QUALITY" -m 6 "$tmp" -o "$t" &> /dev/null && mv "$t" "$tmp"
+          cwebp -q "$QUALITY" -m 6 "$tmp" -o "$t" &>/dev/null>/dev/null && mv "$t" "$tmp"
         } ;;
         esac
       fi
@@ -147,10 +147,10 @@ opt_image() {
     ((FAIL++))
     return 1
   }
-  local orig=$(stat -c%s "$src" 2> /dev/null || echo 0)
-  local new=$(stat -c%s "$out" 2> /dev/null || echo 0)
+  local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
+  local new=$(stat -c%s "$out" 2>/dev/null || echo 0)
   if ((new > 0 && new < orig)); then
-    printf '%s → %d%%\n' "$(basename "$src")" "$((100 - new * 100 / orig))"
+    printf '%s → %d%%\n' "${"$src"##*/}" "$((100 - new * 100 / orig))"
     [[ $KEEP -eq 0 ]] && rm -f "$src"
     ((OK++))
   else
@@ -160,14 +160,14 @@ opt_image() {
 }
 
 # -- Video optimization --
-opt_video() {
+opt_video(){
   local src=$1 out=$(outpath "$src")
   [[ -f $out && $KEEP -eq 1 ]] && {
     ((SKIP++))
     return 0
   }
   [[ $DRY -eq 1 ]] && {
-    log "[DRY] $(basename "$src")"
+    log "[DRY] ${"$src"##*/}"
     return 0
   }
   has ffmpeg || {
@@ -175,7 +175,7 @@ opt_video() {
     ((FAIL++))
     return 1
   }
-  local enc=$(ffmpeg -hide_banner -encoders 2> /dev/null)
+  local enc=$(ffmpeg -hide_banner -encoders 2>/dev/null)
   local vc="libx264"
   case $VID_CODEC in
   av1)
@@ -194,11 +194,11 @@ opt_video() {
   libx265) vargs=(-c:v libx265 -preset medium -crf "$VIDEO_CRF") ;;
   *) vargs=(-c:v libx264 -preset medium -crf "$VIDEO_CRF") ;;
   esac
-  local tmp="$TMPDIR/$(basename "$out")"
+  local tmp="$TMPDIR/${"$out"##*/}"
   if has ffzap; then
-    ffzap -i "$src" -f "${vargs[*]} ${aargs[*]}" -o "$tmp" -t "$FFZAP_THREADS" --overwrite &> /dev/null
+    ffzap -i "$src" -f "${vargs[*]} ${aargs[*]}" -o "$tmp" -t "$FFZAP_THREADS" --overwrite &>/dev/null>/dev/null
   elif has ffmpeg; then
-    ffmpeg -i "$src" "${vargs[@]}" "${aargs[@]}" -y "$tmp" &> /dev/null
+    ffmpeg -i "$src" "${vargs[@]}" "${aargs[@]}" -y "$tmp" &>/dev/null>/dev/null
   else
     return 1
   fi
@@ -206,11 +206,11 @@ opt_video() {
     ((FAIL++))
     return 1
   }
-  local orig=$(stat -c%s "$src" 2> /dev/null || echo 0)
-  local new=$(stat -c%s "$tmp" 2> /dev/null || echo 0)
+  local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
+  local new=$(stat -c%s "$tmp" 2>/dev/null || echo 0)
   if ((new > 0 && new < orig)); then
     mv -f "$tmp" "$out"
-    printf '%s → %d%%\n' "$(basename "$src")" "$((100 - new * 100 / orig))"
+    printf '%s → %d%%\n' "${"$src"##*/}" "$((100 - new * 100 / orig))"
     [[ $KEEP -eq 0 ]] && rm -f "$src"
     ((OK++))
   else
@@ -219,7 +219,7 @@ opt_video() {
   fi
 }
 # -- Audio optimization --
-opt_audio() {
+opt_audio(){
   local src=$1 ext="${src##*.}"
   local out=$(outpath "$src" "opus")
   [[ $ext == "opus" ]] && {
@@ -231,7 +231,7 @@ opt_audio() {
     return 0
   }
   [[ $DRY -eq 1 ]] && {
-    log "[DRY] $(basename "$src") → opus"
+    log "[DRY] ${"$src"##*/} → opus"
     return 0
   }
   has ffmpeg || {
@@ -239,11 +239,11 @@ opt_audio() {
     ((FAIL++))
     return 1
   }
-  local tmp="$TMPDIR/$(basename "$out")"
+  local tmp="$TMPDIR/${"$out"##*/}"
   if has ffzap; then
-    ffzap -i "$src" -f "-c:a libopus -b:a ${AUDIO_BR}k" -o "$tmp" -t "$FFZAP_THREADS" --overwrite &> /dev/null
+    ffzap -i "$src" -f "-c:a libopus -b:a ${AUDIO_BR}k" -o "$tmp" -t "$FFZAP_THREADS" --overwrite &>/dev/null>/dev/null
   elif has ffmpeg; then
-    ffmpeg -i "$src" -c:a libopus -b:a "${AUDIO_BR}k" -y "$tmp" &> /dev/null
+    ffmpeg -i "$src" -c:a libopus -b:a "${AUDIO_BR}k" -y "$tmp" &>/dev/null>/dev/null
   else
     return 1
   fi
@@ -251,11 +251,11 @@ opt_audio() {
     ((FAIL++))
     return 1
   }
-  local orig=$(stat -c%s "$src" 2> /dev/null || echo 0)
-  local new=$(stat -c%s "$tmp" 2> /dev/null || echo 0)
+  local orig=$(stat -c%s "$src" 2>/dev/null || echo 0)
+  local new=$(stat -c%s "$tmp" 2>/dev/null || echo 0)
   if ((new > 0 && new < orig)); then
     mv "$tmp" "$out"
-    printf '%s → opus %d%%\n' "$(basename "$src")" "$((100 - new * 100 / orig))"
+    printf '%s → opus %d%%\n' "${"$src"##*/}" "$((100 - new * 100 / orig))"
     [[ $KEEP -eq 0 ]] && rm -f "$src"
     ((OK++))
   else
@@ -264,7 +264,7 @@ opt_audio() {
   fi
 }
 # -- Dispatcher --
-process() {
+process(){
   local f=$1 ext="${f##*.}" && ext="${ext,,}"
   ((TOTAL++))
   case $ext in
@@ -276,11 +276,11 @@ process() {
 }
 
 # -- Main --
-main() {
+main(){
   while [[ $# -gt 0 ]]; do
     case "$1" in
     -h | --help)
-      cat << 'EOF'
+      cat <<'EOF'
 optimize - Media optimizer (recursive, filtered)
 
 USAGE: optimize [OPTIONS] [paths...]

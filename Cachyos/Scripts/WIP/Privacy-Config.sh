@@ -12,25 +12,25 @@ CYN=$'\e[36m'
 DEF=$'\e[0m'
 
 # Check if command exists
-has() { command -v "$1" &> /dev/null; }
+has(){ command -v "$1" &>/dev/null>/dev/null; }
 
 # Override HOME for SUDO_USER context
 export HOME="/home/${SUDO_USER:-$USER}"
 
-print_banner() {
-  cat << 'EOF'
+print_banner(){
+  cat <<'EOF'
 🔒 Privacy Configuration Script
 ================================
 EOF
 }
 
-vscode_json_set() {
+vscode_json_set(){
   local prop=$1 val=$2
   has python3 || {
     printf '%b\n' "${YLW}Skipping VSCode setting (no python3): $prop${DEF}"
     return 1
   }
-  python3 << EOF
+  python3 <<EOF
 from pathlib import Path
 import os, json, sys
 property_name='$prop'
@@ -61,7 +61,7 @@ EOF
   return $?
 }
 
-configure_vscode() {
+configure_vscode(){
   printf '%b\n' "${MGN}Configuring VSCode privacy settings...${DEF}"
   local settings_changed=0
 
@@ -99,7 +99,7 @@ configure_vscode() {
   printf '%b\n' "${GRN}VSCode: $settings_changed settings changed${DEF}"
 }
 
-configure_firefox() {
+configure_firefox(){
   printf '%b\n' "${MGN}Configuring Firefox privacy settings...${DEF}"
   local prefs_changed=0
 
@@ -134,7 +134,7 @@ configure_firefox() {
       local prefs_file="$profile/user.js"
       touch "$prefs_file"
       for pref in "${firefox_prefs[@]}"; do
-        if ! grep -qF "$pref" "$prefs_file" 2> /dev/null; then
+        if ! grep -qF "$pref" "$prefs_file" 2>/dev/null; then
           echo "$pref" >> "$prefs_file"
           ((prefs_changed++))
         fi
@@ -146,21 +146,21 @@ configure_firefox() {
   printf '%b\n' "${GRN}Firefox: $prefs_changed preferences set${DEF}"
 }
 
-configure_python_history() {
+configure_python_history(){
   printf '%b\n' "${MGN}Disabling Python history...${DEF}"
   local history_file="$HOME/.python_history"
   if [[ ! -f $history_file ]]; then
     touch "$history_file"
     printf '  %b\n' "${GRN}✓ Created $history_file${DEF}"
   fi
-  if sudo chattr +i "$history_file" &> /dev/null; then
+  if sudo chattr +i "$history_file" &>/dev/null>/dev/null; then
     printf '  %b\n' "${GRN}✓ Made immutable${DEF}"
   else
     printf '  %b\n' "${YLW}⚠ Could not set immutable (chattr not available)${DEF}"
   fi
 }
 
-main() {
+main(){
   print_banner
   local total_changes=0
 

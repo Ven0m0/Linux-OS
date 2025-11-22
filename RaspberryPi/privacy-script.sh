@@ -9,8 +9,8 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 
 # Check if a command exists
-has() {
-  command -v -- "$1" &> /dev/null
+has(){
+  command -v -- "$1" &>/dev/null>/dev/null
 }
 
 # Require root privileges - auto-elevate if needed
@@ -24,47 +24,47 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Clean crash dumps and core dumps
-clean_crash_dumps() {
-  if command -v coredumpctl > /dev/null 2>&1; then
-    sudo coredumpctl --quiet --no-legend clean 2> /dev/null || :
+clean_crash_dumps(){
+  if command -v coredumpctl >/dev/null 2>&1; then
+    sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
   fi
-  sudo rm -rf /var/crash/* 2> /dev/null || :
-  sudo rm -rf /var/lib/systemd/coredump/* 2> /dev/null || :
+  sudo rm -rf /var/crash/* 2>/dev/null || :
+  sudo rm -rf /var/lib/systemd/coredump/* 2>/dev/null || :
 }
 
 # Clean APT package manager cache
-clean_apt_cache() {
+clean_apt_cache(){
   sudo apt-get clean -yq
   sudo apt-get autoclean -yq
   sudo apt-get autoremove --purge -yq
 }
 
 # Clean system cache directories
-clean_cache_dirs() {
-  sudo rm -rf /tmp/* 2> /dev/null || :
-  sudo rm -rf /var/tmp/* 2> /dev/null || :
-  sudo rm -rf /var/cache/apt/archives/* 2> /dev/null || :
-  rm -rf ~/.cache/* 2> /dev/null || :
-  sudo rm -rf /root/.cache/* 2> /dev/null || :
-  rm -rf ~/.thumbnails/* 2> /dev/null || :
-  rm -rf ~/.cache/thumbnails/* 2> /dev/null || :
+clean_cache_dirs(){
+  sudo rm -rf /tmp/* 2>/dev/null || :
+  sudo rm -rf /var/tmp/* 2>/dev/null || :
+  sudo rm -rf /var/cache/apt/archives/* 2>/dev/null || :
+  rm -rf ~/.cache/* 2>/dev/null || :
+  sudo rm -rf /root/.cache/* 2>/dev/null || :
+  rm -rf ~/.thumbnails/* 2>/dev/null || :
+  rm -rf ~/.cache/thumbnails/* 2>/dev/null || :
 }
 
 # Empty trash directories
-clean_trash() {
-  rm -rf ~/.local/share/Trash/* 2> /dev/null || :
-  sudo rm -rf /root/.local/share/Trash/* 2> /dev/null || :
-  rm -rf ~/snap/*/*/.local/share/Trash/* 2> /dev/null || :
-  rm -rf ~/.var/app/*/data/Trash/* 2> /dev/null || :
+clean_trash(){
+  rm -rf ~/.local/share/Trash/* 2>/dev/null || :
+  sudo rm -rf /root/.local/share/Trash/* 2>/dev/null || :
+  rm -rf ~/snap/*/*/.local/share/Trash/* 2>/dev/null || :
+  rm -rf ~/.var/app/*/data/Trash/* 2>/dev/null || :
 }
 
 # Clean shell and Python history files
-clean_history_files() {
-  rm -f ~/.python_history 2> /dev/null || :
-  sudo rm -f /root/.python_history 2> /dev/null || :
-  rm -f ~/.bash_history 2> /dev/null || :
-  sudo rm -f /root/.bash_history 2> /dev/null || :
-  history -c 2> /dev/null || :
+clean_history_files(){
+  rm -f ~/.python_history 2>/dev/null || :
+  sudo rm -f /root/.python_history 2>/dev/null || :
+  rm -f ~/.bash_history 2>/dev/null || :
+  sudo rm -f /root/.bash_history 2>/dev/null || :
+  history -c 2>/dev/null || :
 }
 
 # --Disable Python history for future interactive commands--
@@ -85,7 +85,7 @@ else
 fi
 
 echo '--- Remove Popularity Contest (`popcon`) package'
-if ! command -v 'apt-get' &> /dev/null; then
+if ! command -v 'apt-get' &>/dev/null>/dev/null; then
   echo 'Skipping because "apt-get" is not found.'
 else
   apt_package_name='popularity-contest'
@@ -114,7 +114,7 @@ else
 fi
 
 echo '--- Remove `reportbug` package'
-if ! command -v 'apt-get' &> /dev/null; then
+if ! command -v 'apt-get' &>/dev/null>/dev/null; then
   echo 'Skipping because "apt-get" is not found.'
 else
   apt_package_name='reportbug'
@@ -128,7 +128,7 @@ else
 fi
 
 echo '--- Remove Python modules for `reportbug`'
-if ! command -v 'apt-get' &> /dev/null; then
+if ! command -v 'apt-get' &>/dev/null>/dev/null; then
   echo 'Skipping because "apt-get" is not found.'
 else
   apt_package_name='python3-reportbug'
@@ -143,7 +143,7 @@ fi
 
 # ----Remove UI for reportbug (`reportbug-gtk` package)-----
 echo '--- Remove UI for reportbug (`reportbug-gtk` package)'
-if ! command -v 'apt-get' &> /dev/null; then
+if ! command -v 'apt-get' &>/dev/null>/dev/null; then
   echo 'Skipping because "apt-get" is not found.'
 else
   apt_package_name='reportbug-gtk'

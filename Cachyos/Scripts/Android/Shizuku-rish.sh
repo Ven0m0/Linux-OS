@@ -3,7 +3,7 @@
 adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS
 
 LC_ALL=C LANG=C
-BASEDIR=$(dirname "${0}")
+BASEDIR=${"${0}"%/*}
 BIN=/data/data/com.termux/files/usr/bin
 HOME=/data/data/com.termux/files/home
 DEX="${BASEDIR}/rish_shizuku.dex"
@@ -15,7 +15,7 @@ if [[ ! -f $DEX ]]; then
 fi
 
 # Create a Shizuku script file
-tee "${BIN}/shizuku" > /dev/null << EOF
+tee "${BIN}/shizuku" >/dev/null <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Make a list of open ports
@@ -53,10 +53,10 @@ EOF
 dex="${HOME}/rish_shizuku.dex"
 
 # Create a Rish script file
-tee "${BIN}/rish" > /dev/null << EOF
+tee "${BIN}/rish" >/dev/null <<EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
-[ -z "\$RISH_APPLICATION_ID" ] && export RISH_APPLICATION_ID="com.termux"
+[[ -z "\$RISH_APPLICATION_ID" ]] && export RISH_APPLICATION_ID="com.termux"
 
 /system/bin/app_process -Djava.class.path="${dex}" /system/bin --nice-name=rish rikka.shizuku.shell.ShizukuShellLoader "\${@}"
 EOF

@@ -1,6 +1,6 @@
 # Returns current CPU temp 'C
 # - print_full_info=1	Optional input to print full colour text output and temp warnings
-G_OBTAIN_CPU_TEMP() {
+G_OBTAIN_CPU_TEMP(){
   # Read CPU temp from file
   local temp
   # - Odroid N2/ASUS/Sparky: Requires special case as in other array this would break SBC temp readouts with 2 zones
@@ -44,28 +44,28 @@ G_OBTAIN_CPU_TEMP() {
     else
       local temp_f=$((temp * 9 / 5 + 32))
       if ((temp >= 70)); then
-        echo -e "\e[1;31mWARNING: $temp °C / $temp_f °F : Reducing the life of your device\e[0m"
+        printf "%b\n" "\e[1;31mWARNING: $temp °C / $temp_f °F : Reducing the life of your device\e[0m"
 
       elif ((temp >= 60)); then
-        echo -e "\e[38;5;202m$temp °C / $temp_f °F \e[90m: Running hot, not recommended\e[0m"
+        printf "%b\n" "\e[38;5;202m$temp °C / $temp_f °F \e[90m: Running hot, not recommended\e[0m"
 
       elif ((temp >= 50)); then
-        echo -e "\e[1;33m$temp °C / $temp_f °F \e[90m: Running warm, but safe\e[0m"
+        printf "%b\n" "\e[1;33m$temp °C / $temp_f °F \e[90m: Running warm, but safe\e[0m"
 
       elif ((temp >= 40)); then
-        echo -e "\e[1;32m$temp °C / $temp_f °F \e[90m: Optimal temperature\e[0m"
+        printf "%b\n" "\e[1;32m$temp °C / $temp_f °F \e[90m: Optimal temperature\e[0m"
 
       elif ((temp >= 30)); then
-        echo -e "\e[1;36m$temp °C / $temp_f °F \e[90m: Cool runnings\e[0m"
+        printf "%b\n" "\e[1;36m$temp °C / $temp_f °F \e[90m: Cool runnings\e[0m"
       else
-        echo -e "\e[1;36m$temp °C / $temp_f °F \e[90m: Who put me in the freezer!\e[0m"
+        printf "%b\n" "\e[1;36m$temp °C / $temp_f °F \e[90m: Who put me in the freezer!\e[0m"
       fi
     fi
   fi
 }
 
 # Returns current CPU usage in %
-G_OBTAIN_CPU_USAGE() {
+G_OBTAIN_CPU_USAGE(){
 
   local usage=0
 

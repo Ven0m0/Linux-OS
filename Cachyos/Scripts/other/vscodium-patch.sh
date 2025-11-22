@@ -8,7 +8,7 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Core Helpers ────────────────
-has(){ command -v "$1" &> /dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 die(){ printf '%b\n' "${RED}Error:${DEF} $*" >&2; exit "${2:-1}"; }
 JQ=$(has jaq && echo jaq || has jq && echo jq || die "jq/jaq required")
 
@@ -35,12 +35,9 @@ xdg_patch(){
     *.desktop)
       fix_214741 "$file"
       fix_15741 "$file"
-      printf '%b\n' "${GRN}✓${DEF} $file"
-      ;;
+      printf '%b\n' "${GRN}✓${DEF} $file" ;;
     */package.json)
-      fix_129953 "$file"
-      printf '%b\n' "${GRN}✓${DEF} $file"
-      ;;
+      fix_129953 "$file"; printf '%b\n' "${GRN}✓${DEF} $file" ;;
     *) printf '%b\n' "${YLW}?${DEF} $file" ;;
     esac
   done
@@ -52,7 +49,13 @@ find_vscode_files(){
     /usr/share/applications/code*.desktop \
     /usr/share/applications/vscode*.desktop \
     /usr/share/applications/vscodium*.desktop \
-    2> /dev/null | grep -vE '\-url-handler.desktop$'
+    2>/dev/null | grep -vE '\-url-handler.desktop$'
+}
+xdg_datafolder(){
+  local prod="${1:-/usr/share/vscodium/resources/app/product.json}"
+  [[ ! -f $prod ]] && die "Not found: $prod"
+  sed -i 's|"dataFolderName": ".*"|"dataFolderName": ".local/share/codium"|' "$prod"
+  printf '%b\n' "${GRN}✓ XDG dataFolderName → .local/share/codium${DEF}"
 }
 #──────────── VSCodium Marketplace ────────
 vscodium_marketplace(){
@@ -85,29 +88,24 @@ fix_sign(){
   [[ ${1:-0} -eq 1 ]] && sed -i 's|import("@vscode/vsce-sign")|import("node-ovsx-sign")|g' "$path" \
     || sed -i 's|import("node-ovsx-sign")|import("@vscode/vsce-sign")|g' "$path"
 }
-#──────────── VSCodium Product Patcher (fnr1r-style) ────────────
-# Comprehensive product.json patcher - merges all MS features into VSCodium
+#──────────── VSCodium Product Patcher ────
 vscodium_prod_patch(){
   local vscodium_prod="${1:-/usr/share/vscodium/resources/app/product.json}"
   local backup="${vscodium_prod}.backup.$$"
   local work="/tmp/vscodium-patch.$$"
   local vscode_prod="$work/product.json"
   [[ ! -f $vscodium_prod ]] && die "VSCodium product.json not found: $vscodium_prod"
-  # Get VSCodium version to match VSCode release
   local vscodium_ver
-  vscodium_ver=$($JQ -r '.version // empty' "$vscodium_prod" 2> /dev/null)
+  vscodium_ver=$($JQ -r '.version // empty' "$vscodium_prod" 2>/dev/null)
   [[ -z $vscodium_ver ]] && die "Cannot determine VSCodium version"
   mkdir -p "$work" || die "Failed to create work dir"
   echo "Fetching VSCode $vscodium_ver product.json..."
   local url="https://update.code.visualstudio.com/${vscodium_ver}/linux-x64/stable"
   download_file "$url" "$work/vscode.tgz" || { rm -rf "$work"; die "Download failed"; }
   tar xf "$work/vscode.tgz" -C "$work" --strip-components=3 \
-    VSCode-linux-x64/resources/app/product.json 2> /dev/null || { rm -rf "$work"; die "Failed to extract product.json from archive"; }
-  [[ ! -f $vscode_prod ]] && { rm -rf "$work"; die "VSCode product.json not found in archive";  }
-  # Backup original
+    VSCode-linux-x64/resources/app/product.json 2>/dev/null || { rm -rf "$work"; die "Failed to extract product.json"; }
+  [[ ! -f $vscode_prod ]] && { rm -rf "$work"; die "VSCode product.json not found in archive"; }
   cp -f "$vscodium_prod" "$backup" || { rm -rf "$work"; die "Backup failed"; }
-  # Comprehensive merge: all MS features + telemetry disabled
-  # Based on fnr1r/vscodium-prod-patcher approach
   $JQ -s '
     .[0] as $vscodium | .[1] as $vscode |
     $vscodium + {
@@ -178,24 +176,22 @@ vscodium_prod_patch(){
       aiRelatedInformationUrl: $vscode.aiRelatedInformationUrl,
       defaultChatAgent: $vscode.defaultChatAgent
     }
-  ' "$vscodium_prod" "$vscode_prod" > "${vscodium_prod}.tmp" || {
-    mv -f "$backup" "$vscodium_prod"
-    rm -rf "$work"
+  ' "$vscodium_prod" "$vscode_prod" >"${vscodium_prod}.tmp" || {
+    mv -f "$backup" "$vscodium_prod"; rm -rf "$work"
     die "JQ merge failed"
   }
   mv -f "${vscodium_prod}.tmp" "$vscodium_prod" || {
-    mv -f "$backup" "$vscodium_prod"
-    rm -rf "$work"
+    mv -f "$backup" "$vscodium_prod"; rm -rf "$work"
     die "Failed to write patched product.json"
   }
+  sed -i 's|"dataFolderName": ".*"|"dataFolderName": ".local/share/codium"|' "$vscodium_prod"
   rm -rf "$work"
   printf '%b\n' "${GRN}✓ VSCodium product.json patched (backup: $backup)${DEF}"
-  echo "  Merged all MS features, telemetry disabled"
+  echo "  Merged all MS features, telemetry disabled, XDG-compliant"
 }
 vscodium_prod_restore(){
   local vscodium_prod="${1:-/usr/share/vscodium/resources/app/product.json}" backup
-  # Find most recent backup
-  backup=$(ls -t "${vscodium_prod}.backup."* 2> /dev/null | head -1)
+  backup=$(ls -t "${vscodium_prod}.backup."* 2>/dev/null | head -1)
   [[ -z $backup ]] && die "No backup found for $vscodium_prod"
   cp -f "$backup" "$vscodium_prod" || die "Restore failed"
   printf '%b\n' "${GRN}✓ Restored from $backup${DEF}"
@@ -207,15 +203,15 @@ features_patch(){
   local tmp="${prod}.tmp.$$"
   [[ ! -f $prod ]] && printf '%b\n' "${YLW}WARN: $prod missing (install extra/code)${DEF}" && return 0
   [[ ! -f $patch ]] && die "Patch missing: $patch"
-  [[ ! -f $cache ]] && printf '{}' > "$cache"
+  [[ ! -f $cache ]] && printf '{}' >"$cache"
   $JQ -s '
     .[0] as $prod | .[1] as $patch |
     ($prod | to_entries | map(select(.key as $k | $patch | has($k))) | from_entries) as $saved |
     ($prod + $patch) as $merged |
     {product: $merged, cache: $saved}
-  ' "$prod" "$patch" > "$tmp" || return 1
-  $JQ -r '.product' "$tmp" > "$prod" && $JQ -r '.cache' "$tmp" > "$cache" || return 1
-  rm -f "$tmp" &> /dev/null || :
+  ' "$prod" "$patch" >"$tmp" || return 1
+  $JQ -r '.product' "$tmp" >"$prod" && $JQ -r '.cache' "$tmp" >"$cache" || return 1
+  rm -f "$tmp" &>/dev/null || :
   printf '%b\n' "${GRN}Applied code-features${DEF}"
 }
 features_restore(){
@@ -225,12 +221,12 @@ features_restore(){
     .[0] as $prod | .[1] as $patch | .[2] as $cache |
     ($prod | to_entries | map(select(.key as $k | ($patch | has($k)) | not)) | from_entries) as $cleaned |
     ($cleaned + $cache)
-  ' "$prod" "$patch" "$cache" > "${prod}.tmp.$$" || return 1
+  ' "$prod" "$patch" "$cache" >"${prod}.tmp.$$" || return 1
   mv -f "${prod}.tmp.$$" "$prod" || return 1
   printf '%b\n' "${GRN}Restored code-features${DEF}"
 }
 features_update(){
-  local ver="${1:-$($JQ -r .version /usr/lib/code/product.json 2> /dev/null)}" patch="${2:-./patch.json}"
+  local ver="${1:-$($JQ -r .version /usr/lib/code/product.json 2>/dev/null)}" patch="${2:-./patch.json}"
   local work="/tmp/code-features.$$" url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
   [[ -z $ver ]] && die "Version required"
   mkdir -p "$work" || return 1
@@ -246,7 +242,7 @@ features_update(){
     tunnelApplicationName tunnelApplicationConfig)
   $JQ -r --argjson keys "$(printf '%s\n' "${keys[@]}" | $JQ -R . | $JQ -s .)" \
     'reduce $keys[] as $k ({}; . + {($k): (getpath($k | split("."))?)}) | . + {enableTelemetry: false}' \
-    "$work/VSCode-linux-x64/resources/app/product.json" > "$patch" || {
+    "$work/VSCode-linux-x64/resources/app/product.json" >"$patch" || {
     rm -rf "$work"; return 1
   }
   rm -rf "$work"
@@ -260,15 +256,15 @@ marketplace_patch(){
   local tmp="${prod}.tmp.$$"
   [[ ! -f $prod ]] && printf '%b\n' "${YLW}WARN: $prod missing (install extra/code)${DEF}" && return 0
   [[ ! -f $patch ]] && die "Patch missing: $patch"
-  [[ ! -f $cache ]] && printf '{}' > "$cache"
+  [[ ! -f $cache ]] && printf '{}' >"$cache"
   $JQ -s '
     .[0] as $prod | .[1] as $patch |
     ($prod | to_entries | map(select(.key as $k | $patch | has($k))) | from_entries) as $saved |
     ($prod + $patch) as $merged |
     {product: $merged, cache: $saved}
-  ' "$prod" "$patch" > "$tmp" || return 1
-  $JQ -r '.product' "$tmp" > "$prod" && $JQ -r '.cache' "$tmp" > "$cache" || return 1
-  rm -f "$tmp" &> /dev/null || :
+  ' "$prod" "$patch" >"$tmp" || return 1
+  $JQ -r '.product' "$tmp" >"$prod" && $JQ -r '.cache' "$tmp" >"$cache" || return 1
+  rm -f "$tmp" &>/dev/null || :
   fix_sign 0
   printf '%b\n' "${GRN}Applied code-marketplace${DEF}"
 }
@@ -279,7 +275,7 @@ marketplace_restore(){
     .[0] as $prod | .[1] as $patch | .[2] as $cache |
     ($prod | to_entries | map(select(.key as $k | ($patch | has($k)) | not)) | from_entries) as $cleaned |
     ($cleaned + $cache)
-  ' "$prod" "$patch" "$cache" > "${prod}.tmp.$$" || return 1
+  ' "$prod" "$patch" "$cache" >"${prod}.tmp.$$" || return 1
   mv -f "${prod}.tmp.$$" "$prod" || return 1
   fix_sign 1
   printf '%b\n' "${GRN}Restored code-marketplace${DEF}"
@@ -298,7 +294,7 @@ marketplace_update(){
     extensionAllowedBadgeProvidersRegex msftInternalDomains linkProtectionTrustedDomains)
   $JQ -r --argjson keys "$(printf '%s\n' "${keys[@]}" | $JQ -R . | $JQ -s .)" \
     'reduce $keys[] as $k ({}; . + {($k): .[$k]})' \
-    "$work/VSCode-linux-x64/resources/app/product.json" > "$patch" || { rm -rf "$work"; return 1; }
+    "$work/VSCode-linux-x64/resources/app/product.json" >"$patch" || { rm -rf "$work"; return 1; }
   rm -rf "$work"
   printf '%b\n' "${GRN}Updated $patch${DEF}"
   [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD
@@ -308,6 +304,7 @@ marketplace_update(){
 main(){
   case "${1:-}" in
   xdg | --xdg) xdg_patch ;;
+  xdg-data | --xdg-data) xdg_datafolder "${2:-}" ;;
   vscodium | --vscodium) vscodium_marketplace "${2:-}" 0 ;;
   vscodium-restore | --vscodium-restore) vscodium_marketplace "${2:-}" 1 ;;
   vscodium-prod | --vscodium-prod) vscodium_prod_patch "${2:-}" ;;
@@ -327,18 +324,19 @@ main(){
     find_vscode_files | xdg_patch
     vscodium_prod_patch "${2:-}" ;;
   *)
-    cat >&2 << 'EOF'
+    cat >&2 <<'EOF'
 Usage: vscodium-patch.sh <cmd> [args]
 
 XDG:
   xdg                              Apply desktop patches (stdin)
+  xdg-data [prod]                  Force XDG-compliant dataFolderName
 
 VSCodium (Simple):
   vscodium [prod]                  → MS Marketplace
   vscodium-restore [prod]          ← Open-VSX
 
-VSCodium (Comprehensive - fnr1r style):
-  vscodium-prod [prod]             Merge ALL MS features from VSCode
+VSCodium (Comprehensive):
+  vscodium-prod [prod]             Merge ALL MS features + XDG data dir
   vscodium-prod-restore [prod]     Restore from backup
 
 Features (VSCode):
@@ -353,24 +351,20 @@ Marketplace (VSCode):
 
 Combined:
   all [vscodium-prod]              Apply all patches (simple)
-  all-vscodium [prod]              Apply all + comprehensive VSCodium patch
+  all-vscodium [prod]              Apply all + comprehensive VSCodium
 
 Examples:
   # XDG fixes
   find_vscode_files | sudo vscodium-patch.sh xdg
   
-  # VSCodium marketplace switch
-  sudo vscodium-patch.sh vscodium
+  # XDG dataFolderName override
+  sudo vscodium-patch.sh xdg-data
   
-  # Comprehensive VSCodium patching (recommended)
+  # Comprehensive VSCodium (recommended)
   sudo vscodium-patch.sh vscodium-prod
-  sudo vscodium-patch.sh vscodium-prod-restore
   
   # VSCode patches
   sudo vscodium-patch.sh mkt && sudo vscodium-patch.sh feat
-  
-  # Update patch definitions
-  vscodium-patch.sh mkt-update 1.95.0
   
   # All-in-one VSCodium
   sudo vscodium-patch.sh all-vscodium

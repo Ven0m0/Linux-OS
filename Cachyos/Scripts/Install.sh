@@ -146,7 +146,7 @@ install_packages(){
     makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an jdk-temurin jdk25-graalvm-bin
     vscodium-electron vk-hdr-layer-kwin6-git soar zoi-bin cargo-binstall cargo-edit cargo-c cargo-update
     cargo-outdated cargo-make cargo-llvm-cov cargo-cache cargo-machete cargo-pgo cargo-binutils
-    cargo-udeps cargo-pkgbuild
+    cargo-udeps cargo-pkgbuild simagef-bin crabz
   )
   msg "Checking packages"
   mapfile -t installed < <(pacman -Qq 2>/dev/null)
@@ -196,18 +196,11 @@ setup_rust(){
     rustup update 2>/dev/null || :
   fi
   has sccache && export RUSTC_WRAPPER=sccache
-  
   # Cargo utilities
   has cargo || return 0
   msg "Installing Rust tools"
-  local -a crates=(
-    xcp crabz parel cargo-diet cargo-list cargo-minify
-    ripunzip terminal_tools imagineer docker-image-pusher dui-cli
-    imgc pixelsqueeze bgone dupimg simagef dssim img-squeeze lq parallel-sh
-    frep dupe-krill bssh vicut aq-cli
-  )
-  cargo install -Zunstable-options -Zgit -Zgitoxide -Zavoid-dev-deps -Zno-embed-metadata \
-    --locked -f "${crates[@]}" 2>/dev/null || cargo binstall -y "${crates[@]}" 2>/dev/null || :
+  local -a crates=()
+  cargo install --locked -f "${crates[@]}" || cargo binstall -y "${crates[@]}" || :
 }
 
 #══════════════════════════════════════════════════════════════
@@ -217,29 +210,28 @@ setup_tools(){
   # Micro editor
   if has micro; then
     msg "Configuring micro"
-    local -a plugins=(fish fzf wc filemanager cheat linter lsp autofmt detectindent editorconfig
-      misspell comment diff jump bounce autoclose manipulator joinLines literate status ftoptions)
+    local -a plugins=(fish fzf wc filemanager linter lsp autofmt detectindent editorconfig misspell diff ftoptions literate status)
     micro -plugin install "${plugins[@]}" &>/dev/null &
     micro -plugin update &>/dev/null &
   fi
   # GitHub CLI
   if has gh; then
     msg "Installing gh extensions"
-    local -a exts=(gennaro-tedesco/gh-f gennaro-tedesco/gh-s seachicken/gh-poi redraw/gh-install
-      k1LoW/gh-grep 2KAbhishek/gh-repo-man HaywardMorihara/gh-tidy gizmo385/gh-lazy)
+    local -a exts=(gennaro-tedesco/gh-f gennaro-tedesco/gh-s seachicken/gh-poi
+      2KAbhishek/gh-repo-man HaywardMorihara/gh-tidy gizmo385/gh-lazy)
     gh extension install "${exts[@]}" 2>/dev/null || :
   fi
   # Mise
   if has mise; then
     msg "Configuring mise"
     mise settings set experimental true
-    mise trust
-    mise doctor 2>/dev/null || :
+    mise trust -y; mise doctor -y
+    mise up -y || :
   fi
   # SDKMAN
   if [[ ! -d "$HOME/.sdkman" ]]; then
     msg "Installing SDKMAN"
-    curl -fsSL "https://get.sdkman.io?ci=true" | bash 2>/dev/null || :
+    bash -c "curl -fsSL 'https://get.sdkman.io?ci=true'"
   fi
   export SDKMAN_DIR="$HOME/.sdkman"
   if [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then

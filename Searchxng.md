@@ -1,6 +1,6 @@
 
-https://docs.searxng.org/admin/installation-scripts.html#installation-scripts
-https://docs.searxng.org/admin/installation-nginx.html
+<https://docs.searxng.org/admin/installation-scripts.html#installation-scripts>
+<https://docs.searxng.org/admin/installation-nginx.html>
 
 **Install on arch**
 
@@ -21,5 +21,3 @@ mkdir -p /etc/nginx/default.apps-available
 ```
 
 **Install on debian**
-
-

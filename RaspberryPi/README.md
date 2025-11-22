@@ -1,6 +1,5 @@
 # <img height="30" src="https://cdn.freebiesupply.com/logos/large/2x/raspberry-pi-logo-png-transparent.png" alt="Pi"> Raspberry pi related stuff
 
-
 ### Updates
 
 ```bash
@@ -25,10 +24,10 @@ https://gitlab.com/volian/nala/-/blob/main/docs/nala-fetch.8.rst?ref_type=heads
 
 - [Pi-Apps-bash](https://github.com/Itai-Nelken/PiApps-terminal_bash-edition)
 
-	```bash
-	wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
-	```
- 
+ ```bash
+ wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
+ ```
+
 - [cylon-deb](https://github.com/gavinlyonsrepo/cylon-deb)
 
 </details>
@@ -42,9 +41,9 @@ https://gitlab.com/volian/nala/-/blob/main/docs/nala-fetch.8.rst?ref_type=heads
 - success
 
 further links:
-* https://github.com/aarontc/raspbian-f2fs
-* https://github.com/d-a-v/raspbian-f2fs
-* https://github.com/timothybrown/raspbian-f2fs
+- <https://github.com/aarontc/raspbian-f2fs>
+- <https://github.com/d-a-v/raspbian-f2fs>
+- <https://github.com/timothybrown/raspbian-f2fs>
   
 </details>
 <details>
@@ -53,15 +52,13 @@ further links:
 - Raspberry pi 4: LEMP (Ngix, Mariadb, PHP)
 - Raspberry pi 3: LLSP (Lighttpd, Sqlite, PHP
 
-
 [Ngix](https://docs.nginx.com/nginx/admin-guide)
 [Lighttpd](https://www.lighttpd.net)
 [MariaDB](https://mariadb.org/documentation/#getting-started)
 [Sqlite](https://www.sqlite.org/quickstart.html)
 
-
 </details>
-<details> 
+<details>
 <summary><b>CasaOS</b></summary>
 
 - Install [CasaOS](https://casaos.zimaspace.com)
@@ -99,7 +96,8 @@ curl -fsSL https://get.casaos.io/update | sudo bash
   <details>
     <summary><b>Install</b></summary>
 
-    https://cosmos-cloud.io/doc/1%20index/#automatic-installation
+    <https://cosmos-cloud.io/doc/1%20index/#automatic-installation>
+
     ```bash
     # IF YOU NEED TO CHANGE THE PORTS, DO IT BEFORE RUNNING THE COMMAND
     # You can overwrite any other env var by adding them here
@@ -111,10 +109,13 @@ curl -fsSL https://get.casaos.io/update | sudo bash
     # If you are happy with the result, you can run the command
     curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
     ```
+
     One liner:
+
     ```bash
     env COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443 curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
     ```
+
   </details>
 
 - [yunohost](https://yunohost.org)
@@ -122,7 +123,7 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 - [Homepage docker](https://github.com/gethomepage/homepage)
   <details>
     <summary><b>Install</b></summary>
-    
+
     ```bash
     docker run --name homepage \
       -e HOMEPAGE_ALLOWED_HOSTS=gethomepage.dev \
@@ -134,6 +135,7 @@ curl -fsSL https://get.casaos.io/update | sudo bash
       --restart unless-stopped \
       ghcr.io/gethomepage/homepage:latest
     ```
+
   </details>
 
 - [ShellHub](https://www.shellhub.io)

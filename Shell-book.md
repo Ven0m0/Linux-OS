@@ -25,6 +25,7 @@
 </details>
 
 ## Bash snippets
+
 <details>
 <summary><b>Script start template</b></summary>
 
@@ -56,6 +57,7 @@ pe(){ printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
 sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
 #─────────────────────────────────────────────────────────────
 ```
+
 </details>
 <details>
 <summary><b>Ascii color table</b></summary>
@@ -88,22 +90,27 @@ FGRGB(){ printf $'\e[38;2;%s;%s;%sm' "$1" "$2" "$3"; }
 BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 #─────────────────────────────────────────
 ```
+
 </details>
 <details>
 <summary><b>Basename</b></summary>
 
 Usage: basename "path" ["suffix"]
+
 ```bash
 bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
 ```
+
 </details>
 <details>
 <summary><b>Dirname</b></summary>
 
 Usage: dirname "path"
+
 ```bash
 dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
 ```
+
 </details>
 <details>
 <summary><b>Date</b></summary>
@@ -113,14 +120,17 @@ Usage: date "format"
 Prints either current date 'day/month-hour-minute' or whatever you give it via 'date <arg>'
 
 See: 'man strftime' for format.
+
 ```bash
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 ```
+
 </details>
 <details>
 <summary><b>Faster cat</b></summary>
 
 Hyperfine Summary:
+
 ```bash
 $ hyperfine -w 5 -S bash -i "cat /etc/hostname" 'printf '%s\n' "$(</etc/hostname)"'
 
@@ -138,6 +148,7 @@ Summary
 ```bash
 fcat(){ printf '%s\n' "$(<${1})"; }
 ```
+
 </details>
 <details>
 <summary><b>Sleep replacement in bash</b></summary>
@@ -145,6 +156,7 @@ fcat(){ printf '%s\n' "$(<${1})"; }
 ```bash
 #sleepy(){ read -rt "$1" <> <(:) &>/dev/null || :; }
 ```
+
 </details>
 <details>
 <summary><b>Use regex on a string</b></summary>
@@ -171,6 +183,7 @@ regex(){
     [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
 }
 ```
+
 </details>
 <details>
 <summary><b>Split a string on a delimiter</b></summary>
@@ -216,6 +229,7 @@ name
 is
 john
 ```
+
 </details>
 <details>
 <summary><b>Trim quotes from a string</b></summary>
@@ -237,6 +251,7 @@ $ var="'Hello', \"World\""
 $ trim_quotes "$var"
 Hello, World
 ```
+
 </details>
 <details>
 <summary><b>Strip all instances of pattern from string</b></summary>
@@ -262,6 +277,7 @@ TheQuickBrownFox
 $ strip_all "The Quick Brown Fox" "Quick "
 The Brown Fox
 ```
+
 </details>
 <details>
 <summary><b>Strip first occurrence of pattern from string</b></summary>
@@ -284,6 +300,7 @@ Th Quick Brown Fox
 $ strip "The Quick Brown Fox" "[[:space:]]"
 TheQuick Brown Fox
 ```
+
 </details>
 <details>
 <summary><b>Remove duplicate array elements</b></summary>&nbsp;
@@ -329,6 +346,7 @@ red
 green
 blue
 ```
+
 </details>
 <details>
 <summary><b>Loop over the contents of a file</b></summary>
@@ -338,6 +356,7 @@ while read -r line; do
     printf '%s\n' "$line"
 done < "file"
 ```
+
 </details>
 <details>
 <summary><b>Loop over files and directories</b></summary>
@@ -372,6 +391,7 @@ for file in ~/Pictures/**/*; do
 done
 shopt -u globstar
 ```
+
 </details>
 <details>
 <summary><b>Extract lines between two markers</b></summary>
@@ -398,6 +418,7 @@ extract(){
 $ extract ~/projects/pure-bash/README.md '```sh' '```'
 # Output here...
 ```
+
 </details>
 <details>
 <summary><b>Variables</b></summary>
@@ -504,6 +525,7 @@ echo {apples,oranges,pears,grapes}
 # Remove dirs Movies, Music and ISOS from ~/Downloads/.
 rm -rf ~/Downloads/{Movies,Music,ISOS}
 ```
+
 </details>
 
 **Misc**

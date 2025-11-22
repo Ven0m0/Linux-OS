@@ -1,11 +1,13 @@
 ## Tools/commannds for preprocessing a crate before installing it
 
-### Rustflags:
+### Rustflags
+
 ```bash
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cembed-bitcode=yes -Zunstable-options -Zdylib-lto -Zdefault-visibility=hidden -Ztune-cpu=native -Cpanic=abort -Zprecise-enum-drop-elaboration=yes -Zlocation-detail=none -Crelro-level=off -Zno-embed-metadata -Clinker=clang -Clink-arg=-fuse-ld=lld -Cllvm-args=-enable-dfa-jump-thread"
 ```
 
 Other flags
+
 ```bash
 export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
          -fno-semantic-interposition -fdata-sections -ffunction-sections \
@@ -14,6 +16,7 @@ export CFLAGS="-march=native -mtune=native -O3 -pipe -fno-plt -Wno-error \
 ```
 
 ### Fix and clean for the crate before build/install
+
 ```bash
 cargo update --recursive
 cargo fix --workspace --all-targets --all-features -r --bins --allow-dirty
@@ -39,6 +42,7 @@ cg-bundler --pretty --m2 --validate --debounce 250 || cg-bundler --pretty -m --v
 ```
 
 **Install deps**
+
 ```bash
 cargo install minhtml
 cargo install rustminify-cli
@@ -47,21 +51,24 @@ cargo install cg-bundler
 ```
 
 ### LLVM args
+
 ```bash
 -Cllvm-args=-enable-dfa-jump-thread -Cllvm-args=-enable-misched -Cllvm-args=-enable-gvn-hoist -Cllvm-args=-enable-gvn-sink -Cllvm-args=-enable-loopinterchange -Cllvm-args=-enable-tail-merge
 ```
+
 experimental:
+
 ```bash
 -Cllvm-args=-enable-pipeliner
 ```
 
 pgo
+
 ```bash
 -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort
 ```
 
-
 todo"
 
-- https://crates.io/crates/auto-allocator
-- https://crates.io/crates/mpatch
+- <https://crates.io/crates/auto-allocator>
+- <https://crates.io/crates/mpatch>

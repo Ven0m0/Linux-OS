@@ -6,7 +6,7 @@ sudo -v
 
 # Gnu utils
 sudo pacman --needed --noconfirm -S uutils-coreutils
-paru -S uutils-diffutils uutils-findutils uutils-procps-git 
+paru -S uutils-diffutils uutils-findutils uutils-procps-git
 # Sed
 paru -S uutils-sed-git
 sudo pacman --needed --noconfirm -S sd
@@ -37,7 +37,7 @@ sudo pacman --needed --noconfirm -S zenity --noconfirm --needed
 cargo install --git "https://github.com/fthomys/update-alternatives"
 pbin="$(command -v update-alternatives || echo ${HOME}/.cargo/bin/update-alternatives)"
 sudo ln -sf "$pbin" "/usr/local/bin/$(basename $pbin)"
-sudo cat > "/etc/pacman.d/hooks/update-alternatives.hook" <<'EOF'
+sudo cat > "/etc/pacman.d/hooks/update-alternatives.hook" << 'EOF'
 [Trigger]
 Operation = Install
 Operation = Upgrade

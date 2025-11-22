@@ -1,4 +1,4 @@
-# Raspberry pi useful scripts:
+# Raspberry pi useful scripts
 
 [Apt-fuzz](/RaspberryPi/Scripts/apt-fuzz)
 
@@ -51,9 +51,7 @@ Or just clone the repo and execute the script:
 git clone https://github.com/samoshkin/docker-reclaim-disk-space && chmod +x ./docker-reclaim-disk-space/script.sh && ./docker-reclaim-disk-space/script.sh
 ```
 
-
 ## Build OS
 
-
-- https://github.com/OctoPrint/CustoPiZer
-- 
+- <https://github.com/OctoPrint/CustoPiZer>
+-

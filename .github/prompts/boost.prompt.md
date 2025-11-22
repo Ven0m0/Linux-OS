@@ -17,4 +17,3 @@ Use tools to gather sufficient information about the task.
 If you need clarification on some of the details, ask specific questions to the user ONE AT A TIME.
 
 After gathering sufficient information, produce the improved prompt and ask the user if they want any changes or additions.
-

@@ -26,6 +26,7 @@ Goal: compress thought process and output (−30–50% tokens) without degrading
 ## Symbol System
 
 ### Logic & Flow
+
 | Sym | Meaning | Example |
 |:--:|:--|:--|
 | → | leads to/causes | auth.js:45 → 🛡️ sec risk |
@@ -38,6 +39,7 @@ Goal: compress thought process and output (−30–50% tokens) without degrading
 | ∵ | because | slow ∵ O(n²) |
 
 ### Status & Progress
+
 | Sym | Meaning |
 |:--:|:--|
 | ✅ | success/done |
@@ -48,6 +50,7 @@ Goal: compress thought process and output (−30–50% tokens) without degrading
 | 🚨 | critical |
 
 ### Technical Domains
+
 | Sym | Domain |
 |:--:|:--|
 | ⚡ | performance |
@@ -94,6 +97,7 @@ Goal: compress thought process and output (−30–50% tokens) without degrading
 - Use » for sequences, & to combine, \| for alternatives
 
 Examples:
+
 ```text
 build ✅ » test 🔄 » deploy ⏳
 ⚡ perf: slow ∵ O(n²) ⇒ opt to O(n)
@@ -104,14 +108,17 @@ auth.js:45 → 🛡️ sec vuln in user val()
 ## Use Cases
 
 ✅ Effective
+
 - Long debugging, large code reviews, CI/CD monitoring, progress reports, error tracking
 
 ❌ Avoid
+
 - Beginner tutoring, formal docs, initial requirements, non-technical comms
 
 ## Response Templates
 
 ### Findings
+
 ```text
 scope: <area> — summary ✅/⚠️/❌
 ∵ <root-cause> ⇒ <effect>
@@ -119,6 +126,7 @@ act: 1) <fix> 2) <verify> 3) <guard>
 ```
 
 ### Plan
+
 ```text
 plan » tasks: A » B » C
 risk: <item> (sev: <L/M/H>) ∴ <mitigation>
@@ -126,6 +134,7 @@ done: <n>/<N> ✅; eta: <t>
 ```
 
 ### CI/CD
+
 ```text
 build ✅; test 🔄 (failures: <n>); deploy ⏳
 ∵ <module>/<fn> at <file:line>
@@ -157,4 +166,3 @@ act: rerun scope:<pkg>; patch:<pr/branch>
 - Elevate to normal mode for ambiguity, safety, or critical correctness
 - Keep symbol/abbrev set stable for readability
 - Use brief, evidence-based rationale; avoid hidden multi-step reasoning
-

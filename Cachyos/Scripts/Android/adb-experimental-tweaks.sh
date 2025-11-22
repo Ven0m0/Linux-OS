@@ -26,7 +26,7 @@ tweaks() {
 
   # Batch all adb shell commands for massive performance improvement
   # This reduces 1100+ separate ADB connections to just 1
-  adb shell <<'TWEAKS_EOF'
+  adb shell << 'TWEAKS_EOF'
 device_config put runtime_native_boot pin_camera false
 device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
 device_config put launcher enable_quick_launch_v2 true
@@ -1132,8 +1132,8 @@ pm bg-dexopt-job
 TWEAKS_EOF
 
   # Handle metadata indexing optimization separately
-  for d in $(adb shell ls -a sdcard 2>/dev/null); do
-    adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore" 2>/dev/null || :
+  for d in $(adb shell ls -a sdcard 2> /dev/null); do
+    adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore" 2> /dev/null || :
   done
 
   echo -e "ALL DONE!"

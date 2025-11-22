@@ -22,10 +22,10 @@ if [ ! -n "${WIRELESS_REGDOM}" ]; then
     # Check if we have a two letter country code
     if [[ "$COUNTRY" =~ ^[A-Z]{2}$ ]]; then
       # Append it to the wireless-regdom conf file that is used at boot
-      echo "WIRELESS_REGDOM=\"$COUNTRY\"" | sudo tee -a /etc/conf.d/wireless-regdom >/dev/null
+      echo "WIRELESS_REGDOM=\"$COUNTRY\"" | sudo tee -a /etc/conf.d/wireless-regdom > /dev/null
 
       # Also set it one off now
-      if command -v iw &>/dev/null; then
+      if command -v iw &> /dev/null; then
         sudo iw reg set ${COUNTRY}
       fi
     fi

@@ -8,7 +8,7 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Banner ────────────────────
 printf '\e]1;%s\a\e]2;%s\a' "Updates" "Updates" # Terminal title
 banner=$(
-  cat <<'EOF'
+  cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -18,7 +18,7 @@ banner=$(
 EOF
 )
 # Split banner into array
-mapfile -t banner_lines <<<"$banner"
+mapfile -t banner_lines <<< "$banner"
 lines=${#banner_lines[@]}
 # Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
 flag_colors=(

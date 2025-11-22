@@ -11,7 +11,7 @@ mkdir -p kernel
 cd kernel
 
 echo "Grabbing kernel and patches..."
-rm -r patches 2>/dev/null || : # just in case
+rm -r patches 2> /dev/null || : # just in case
 git clone --depth=1 https://github.com/t2linux/linux-t2-patches patches
 pkgver=$(curl -sL https://github.com/t2linux/T2-Ubuntu-Kernel/releases/latest/ | grep "<title>Release" | awk -F " " '{print $2}' | cut -d "v" -f 2 | cut -d "-" -f 1)
 _srcname=linux-${pkgver}
@@ -23,10 +23,10 @@ cd "$_srcname"
 # ^ out of date, applied in patch 1001
 echo "Applying patches..."
 for patch in ../patches/*.patch; do
-  patch -Np1 <"$patch"
+  patch -Np1 < "$patch"
 done
 
-zcat /proc/config.gz >.config
+zcat /proc/config.gz > .config
 kernelver=$(make kernelversion)
 localver=$(grep 'CONFIG_LOCALVERSION=' .config | awk -F '"' '{print $2}')
 kernelmajminver=$(echo "$kernelver" | awk -F "." '{print $1 "." $2}')
@@ -41,7 +41,7 @@ if [[ -n $rtpatchfile ]]; then
   xz -d "../patches/$rtpatchfile" || :
 
   echo "Applying real-time patches..."
-  patch -Np1 <"../patches/$(echo "$rtpatchfile" | head -c -4)" || :
+  patch -Np1 < "../patches/$(echo "$rtpatchfile" | head -c -4)" || :
 else
   echo "Real-time patches not grabbed."
 fi

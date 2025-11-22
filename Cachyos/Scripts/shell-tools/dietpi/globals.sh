@@ -70,7 +70,7 @@ G_CONFIG_INJECT() {
   fi
 
   # 5) Fallback: append to end
-  [[ -s $file ]] || echo '# Added by bash_helpers' >>"$file"
+  [[ -s $file ]] || echo '# Added by bash_helpers' >> "$file"
   sed -Ei "\$a\\${setting}" "$file" || return 1
   echo "[$G_PROGRAM_NAME] Appended setting to end of $file"
 }

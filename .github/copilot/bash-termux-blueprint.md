@@ -17,12 +17,14 @@ When generating code for this repository:
 ## Technology Stack Detection
 
 ### Primary Technologies
+
 - **Shell**: Bash 5.x (Termux environment)
 - **Configuration Shell**: Zsh with Zinit plugin manager
 - **Modern CLI Tools**: fd, ripgrep (rg), bat, eza, zoxide, dust, broot
 - **Traditional Fallbacks**: find, grep, sed, awk, less, ls
 
 ### Platform Detection Patterns
+
 ```bash
 # Detect Termux environment
 if [[ -d "/data/data/com.termux" ]]; then
@@ -37,6 +39,7 @@ fi
 ## Code Style and Standards
 
 ### Mandatory Script Header
+
 ```bash
 #!/data/data/com.termux/files/usr/bin/env bash  # For Termux scripts
 # OR
@@ -49,12 +52,14 @@ export LC_ALL=C LANG=C LANGUAGE=C
 ```
 
 ### Indentation and Formatting
+
 - **Indentation**: 2 spaces (no tabs)
 - **Line Length**: 80 characters maximum where practical
 - **Function Style**: `function_name() { ... }` format
 - **Variable Naming**: `CONSTANTS_UPPER`, `local_vars_lower`, `readonly` for immutable values
 
 ### Required Safety Patterns
+
 ```bash
 # Signal handling
 cleanup() { :; }
@@ -85,12 +90,14 @@ require_deps() {
 ## Architectural Patterns
 
 ### Single-File Design Philosophy
+
 - No external library sourcing by default
 - Keep helper functions inline
 - Minimize startup time (<100ms target)
 - Self-documenting code with usage functions
 
 ### Preferred Constructs
+
 - **Arrays**: Use arrays and associative arrays over external processing
 - **Here-strings**: `cmd <<<"$var"` instead of `echo "$var" | cmd`
 - **Input Processing**: `while IFS= read -r` for robust line reading
@@ -99,6 +106,7 @@ require_deps() {
 - **Output Capture**: `ret=$(fn ...)` pattern
 
 ### Tool Preference Hierarchy
+
 ```bash
 # File finding: fd > find
 if has fd; then
@@ -121,6 +129,7 @@ PAGER=${PAGER:-$(command -v bat || command -v less || echo cat)}
 ## Performance Optimization Patterns
 
 ### Parallel Processing
+
 ```bash
 # Parallel file processing
 printf '%s\0' "${files[@]}" | xargs -0 -n1 -P"$(nproc 2>/dev/null || echo 1)" process_file
@@ -130,12 +139,14 @@ JOBS="${JOBS:-$(nproc 2>/dev/null || echo 1)}"
 ```
 
 ### Memory Efficiency
+
 - Use parameter expansion over external commands where possible
 - Avoid unnecessary subshells
 - Use process substitution for pipeline state preservation
 - Prefer built-in operations over external tools
 
 ### I/O Optimization
+
 ```bash
 # Fast file reading for small files
 fcat() { printf '%s\n' "$(<"$1")"; }
@@ -152,12 +163,14 @@ bname() {
 ## Error Handling Standards
 
 ### Defensive Programming
+
 - Quote all variables: `"$var"` not `$var`
 - Never parse `ls` output
 - Avoid untrusted `eval`
 - Use `|| true` for non-critical failures that should not abort
 
 ### File Operations
+
 ```bash
 # Atomic writes
 write_temp_then_move() {
@@ -178,6 +191,7 @@ backup_file() {
 ## Configuration Management
 
 ### Command Line Arguments
+
 ```bash
 # Standard getopts pattern
 QUIET=0 VERBOSE=0 DRYRUN=0 ASSUME_YES=0
@@ -202,6 +216,7 @@ parse_args() {
 ```
 
 ### Environment Variable Patterns
+
 - Prefer environment variable overrides: `FOO=1 script -o out`
 - Use `${VAR:-default}` for defaults
 - Export only when necessary for child processes
@@ -209,11 +224,13 @@ parse_args() {
 ## Testing and Quality Assurance
 
 ### Linting Requirements
+
 - **shellcheck**: Mandatory static analysis
 - **shfmt**: Formatting with `-i 2 -ci -sr` flags
 - **Test Framework**: bats-core for functional tests (when scripts stabilize)
 
 ### Validation Patterns
+
 ```bash
 # Input validation
 validate_file() {
@@ -235,6 +252,7 @@ confirm() {
 ## Termux-Specific Patterns
 
 ### Path Handling
+
 ```bash
 # Termux-aware path resolution
 TERMUX_PREFIX="/data/data/com.termux/files/usr"
@@ -244,6 +262,7 @@ fi
 ```
 
 ### Package Management
+
 ```bash
 # Cross-platform package installation hints
 install_hint() {
@@ -259,6 +278,7 @@ install_hint() {
 ```
 
 ### Android Integration
+
 ```bash
 # Termux API integration patterns
 if has termux-clipboard-set; then
@@ -271,6 +291,7 @@ fi
 ## Documentation Standards
 
 ### Usage Function Template
+
 ```bash
 usage() {
   cat <<EOF
@@ -299,6 +320,7 @@ EOF
 ```
 
 ### Inline Documentation
+
 - Minimal but sufficient comments
 - Document non-obvious behavior
 - Include examples for complex functions
@@ -307,6 +329,7 @@ EOF
 ## File Organization
 
 ### Repository Structure
+
 ```
 /
 ├── .github/
@@ -322,6 +345,7 @@ EOF
 ```
 
 ### Script Naming Conventions
+
 - Executable scripts: `script-name.sh` in `bin/`
 - Library functions: `_helper-functions.sh` (if needed)
 - Configuration: `.config/bash/script-name.conf`
@@ -329,11 +353,13 @@ EOF
 ## Integration Patterns
 
 ### Zsh Configuration Integration
+
 - Scripts should work in both Bash and when called from Zsh
 - Respect Zsh environment variables when present
 - Maintain compatibility with Zinit plugin system
 
 ### Modern Tool Integration
+
 ```bash
 # Tool detection and configuration
 setup_modern_tools() {
@@ -362,6 +388,7 @@ setup_modern_tools() {
 ## Security Considerations
 
 ### Safe Scripting Practices
+
 - Always quote variables in potentially unsafe contexts
 - Validate user input before processing
 - Use `mktemp` for temporary files
@@ -369,6 +396,7 @@ setup_modern_tools() {
 - Set restrictive permissions on sensitive files
 
 ### Privilege Handling
+
 ```bash
 # Sudo detection and caching
 check_sudo() {
@@ -389,11 +417,13 @@ check_sudo() {
 ## Performance Benchmarks
 
 ### Startup Time Targets
+
 - Simple utilities: <50ms
 - Complex utilities: <100ms
 - Setup scripts: <500ms
 
 ### Memory Usage Guidelines
+
 - Avoid loading large files into memory
 - Use streaming where possible
 - Prefer external tools for heavy processing
@@ -401,12 +431,14 @@ check_sudo() {
 ## Deployment and Distribution
 
 ### Installation Pattern
+
 - Single-command installation via curl
 - Dependency verification before execution
 - Graceful fallbacks for missing tools
 - Cross-platform compatibility checks
 
 ### Update Mechanism
+
 ```bash
 # Self-updating pattern
 update_script() {
@@ -427,18 +459,21 @@ update_script() {
 ## Project-Specific Guidelines
 
 ### Image and Media Processing
+
 - Support common formats: JPEG, PNG, WebP, AVIF, GIF, SVG
 - Parallel processing for batch operations
 - Quality control with configurable parameters
 - Progress reporting for long operations
 
 ### Android/ADB Integration
+
 - Safe device detection and authorization checks
 - Graceful handling of disconnections
 - Progress reporting for large data transfers
 - Temporary file cleanup after operations
 
 ### Dotfiles Management
+
 - Atomic symlink creation with backups
 - Cross-platform path resolution
 - Dependency verification before installation
@@ -447,12 +482,14 @@ update_script() {
 ## Maintenance Guidelines
 
 ### Code Reviews
+
 - Verify shellcheck compliance
 - Test on multiple platforms (Termux, Arch, Debian)
 - Validate performance targets
 - Ensure proper error handling
 
 ### Regular Updates
+
 - Keep tool preference lists current
 - Update installation hints for new platforms
 - Refresh dependency versions
@@ -461,4 +498,3 @@ update_script() {
 ---
 
 *This blueprint should be consulted before creating or modifying any Bash scripts in this repository. It represents the accumulated best practices and patterns observed in the existing codebase.*
-

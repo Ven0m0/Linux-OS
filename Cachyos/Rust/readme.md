@@ -5,9 +5,11 @@ This directory contains scripts and documentation for working with Rust, includi
 ## Scripts
 
 ### cargo-build.sh
+
 **Unified Rust build script with PGO/BOLT optimization support**
 
 A comprehensive build script that consolidates features from multiple optimization scripts. Supports:
+
 - Standard cargo build and install operations
 - Profile-Guided Optimization (PGO) in two phases: instrumentation and optimization
 - Binary Optimization and Layout Tool (BOLT) for additional performance gains
@@ -16,6 +18,7 @@ A comprehensive build script that consolidates features from multiple optimizati
 - sccache integration for faster builds
 
 **Usage:**
+
 ```bash
 # Install optimized crates
 ./cargo-build.sh --install ripgrep fd bat
@@ -34,9 +37,11 @@ A comprehensive build script that consolidates features from multiple optimizati
 ```
 
 ### rustify.sh
+
 **System-wide Rust utility installation script**
 
 Installs Rust replacements for GNU utilities and system tools, including:
+
 - uutils-coreutils, diffutils, findutils, procps, tar, sed
 - Modern alternatives: ripgrep, fd, dust, cpz/rmz, etc.
 - update-alternatives setup for Arch Linux
@@ -45,6 +50,7 @@ Installs Rust replacements for GNU utilities and system tools, including:
 **Warning:** This script makes system-wide changes. Review before running.
 
 ### Strip-rust.sh
+
 **Simple utility to strip Rust binaries**
 
 Strips symbols from all Rust binaries in `~/.cargo/bin/` to reduce file size.
@@ -56,12 +62,15 @@ Strips symbols from all Rust binaries in `~/.cargo/bin/` to reduce file size.
 ## Documentation
 
 ### readme.md (this file)
+
 Overview and guide for the Rust directory.
 
 ### wip.txt
+
 **Comprehensive reference for Rust optimization flags**
 
 Contains:
+
 - RUSTFLAGS for various optimization levels
 - PGO and BOLT workflow documentation
 - C/C++ compiler flags (CFLAGS, CXXFLAGS, LDFLAGS)
@@ -70,17 +79,21 @@ Contains:
 - Useful project links
 
 ### Preprocess.md
+
 **Preprocessing tools for Rust crates**
 
 Documentation on tools and commands for preprocessing and optimizing crates before building:
+
 - Code minification tools (rustminify, minhtml)
 - Dependency cleanup (cargo-shear, cargo-machete)
 - Asset optimization workflows
 
 ### Rust-atlernatives.txt
+
 **Extensive list of Rust alternatives and tools**
 
 A curated list of Rust crates organized by category:
+
 - Cargo utilities and extensions
 - System utilities (coreutils replacements)
 - Search tools (ripgrep, fd, etc.)
@@ -92,6 +105,7 @@ A curated list of Rust crates organized by category:
 ## Quick Start
 
 ### Install Rustup (Minimal Nightly)
+
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal --default-toolchain nightly -y
 rustup default nightly
@@ -100,12 +114,15 @@ rustup set default-host x86_64-unknown-linux-gnu
 ```
 
 ### Common Components
+
 ```bash
 rustup component add llvm-tools-x86_64-unknown-linux-gnu llvm-bitcode-linker-x86_64-unknown-linux-gnu clippy-x86_64-unknown-linux-gnu
 ```
 
 ### Build with Optimizations
+
 For quick optimized builds:
+
 ```bash
 export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols -Clto=fat -Cpanic=abort -Zunstable-options -Ztune-cpu=native"
 export RUSTC_BOOTSTRAP=1
@@ -117,18 +134,22 @@ For advanced PGO/BOLT optimizations, use the `cargo-build.sh` script.
 ## Optimization Levels
 
 ### Level 1: Basic Optimizations (Fast)
+
 ```bash
 RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Cstrip=symbols"
 cargo build --release
 ```
 
 ### Level 2: Advanced Optimizations (Recommended)
+
 ```bash
 ./cargo-build.sh --build
 ```
+
 Uses LTO, native CPU tuning, aggressive inlining, and more.
 
 ### Level 3: PGO (Profile-Guided Optimization)
+
 ```bash
 # Phase 1: Instrument
 ./cargo-build.sh --pgo 1
@@ -144,6 +165,7 @@ llvm-profdata merge -output=default.profdata ./pgo_data
 ```
 
 ### Level 4: PGO + BOLT (Maximum Performance)
+
 ```bash
 # Run PGO phases first, then:
 ./cargo-build.sh --pgo 2 --bolt
@@ -158,22 +180,26 @@ cargo pgo bolt optimize --with-pgo
 ## Performance Tips
 
 1. **Use sccache** for faster recompilation:
+
    ```bash
    cargo install sccache
    export RUSTC_WRAPPER=sccache
    ```
 
 2. **Parallel builds**:
+
    ```bash
    export CARGO_BUILD_JOBS=$(nproc)
    ```
 
 3. **Use modern linker** (mold or lld):
+
    ```bash
    ./cargo-build.sh --install --mold <crate>
    ```
 
 4. **Clean unused dependencies regularly**:
+
    ```bash
    cargo install cargo-shear cargo-machete cargo-cache
    cargo-shear --fix
@@ -184,16 +210,19 @@ cargo pgo bolt optimize --with-pgo
 ## Resources
 
 ### Official Documentation
+
 - [The Rust Performance Book](https://nnethercote.github.io/perf-book/)
 - [Min-sized Rust](https://github.com/johnthagen/min-sized-rust)
 - [Cargo std-aware](https://github.com/rust-lang/wg-cargo-std-aware)
 
 ### Package Registries
+
 - [Crates.io](https://crates.io) - Official Rust package registry
 - [Lib.rs](https://lib.rs) - Alternative Rust package index
 - [Rust Libhunt](https://rust.libhunt.com) - Trending Rust projects
 
 ### Learning
+
 - [Rustlings](https://rustlings.rust-lang.org) - Interactive Rust exercises
 - [Rust Learning](https://github.com/ctjhoa/rust-learning) - Curated learning resources
 
@@ -207,6 +236,7 @@ cargo pgo bolt optimize --with-pgo
 ## Contributing
 
 When adding new scripts or optimizations:
+
 1. Document usage and purpose clearly
 2. Test on multiple Rust versions (stable and nightly)
 3. Include performance comparisons where relevant

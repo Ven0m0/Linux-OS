@@ -7,12 +7,14 @@ applyTo: "**/*.{sh,bash}"
 These instructions define how GitHub Copilot should propose Bash and related shell content for this repo. Follow the patterns and templates here before inventing new ones.
 
 Scope and targets
+
 - Primary language: Bash (bashisms preferred).
 - Targets: Arch/Wayland and Debian/Raspbian (Pi). Keep scripts portable across both.
 - Audience: power users; allow experimental apps and flags.
 - Tone: blunt, factual; compact logs and messages.
 
 Repository map
+
 - Cachyos/: Arch-focused setup
   - Scripts/: AIO installers (curlable entrypoints)
   - Rust/: toolchains
@@ -25,6 +27,7 @@ Repository map
 - Root docs (Shell-book.md, Tweaks.txt, todo.md): house style, helpers, pending work. Reuse helpers from there before adding new ones.
 
 Formatting
+
 - Shebang: #!/usr/bin/env bash
 - Options (top of file): set -Eeuo pipefail; shopt -s nullglob globstar extglob dotglob
 - IFS: IFS=$'\n\t' when line-splitting needed
@@ -32,6 +35,7 @@ Formatting
 - No hidden Unicode (no U+202F, U+200B, U+00AD). No trailing whitespace.
 
 Bash idioms (must)
+
 - Prefer Bash-native over external: arrays, assoc arrays, mapfile -t, here-strings <<<, process substitution < <(), parameter expansion, [[ ... ]] and regex with =~, printf over echo.
 - Capture output: ret=$(fn)
 - Line loops: while IFS= read -r line; do ...; done
@@ -42,12 +46,14 @@ Bash idioms (must)
 - Never parse ls; avoid eval and backticks.
 
 Tooling preferences
+
 - Prefer Rust tools with graceful fallbacks:
   - fd (fallback: find; on Debian, fdfind), rg (fallback: grep -E), bat (fallback: cat), sd (fallback: sed -E), zoxide (fallback: cd)
 - Short CLI flags by default; add long aliases only for UX parity.
 - Avoid unnecessary external calls; batch I/O; cache computed values.
 
 Security, safety, robustness
+
 - set -Eeuo pipefail; shopt -s nullglob globstar extglob dotglob
 - Quote variables unless intentional glob/split.
 - Use mktemp for tempdirs/files; cleanup on EXIT.
@@ -55,32 +61,38 @@ Security, safety, robustness
 - Avoid leaking credentials; prefer env/const/config over hardcoding.
 
 Privilege and package managers
+
 - Use `sudo` for privilege escalation.
 - Package managers: paru → yay → pacman (Arch); apt/dpkg (Debian).
 - Check before install: pacman -Q pkg, flatpak list, cargo install --list.
 
 Wayland and OS detection
+
 - Wayland: [[ ${XDG_SESSION_TYPE:-} == wayland || -n ${WAYLAND_DISPLAY:-} ]]
 - Arch: have pacman; Debian: have apt; Pi specifics guarded by uname -m.
 
 Logging and UX
+
 - Provide -q (quiet), -v (verbose), -y (assume yes) flags.
 - Default non-interactive; surface prompts only with explicit flags.
 - Compact, informative logs; one-liner errors with context and line numbers.
 
 Linting, hardening, tests
+
 - shfmt -i 2 -ci -sr
 - shellcheck (zero warnings; use directives sparingly)
 - shellharden for selective scripts
 - Tests: bats-core (unit), integration, distro compatibility (Arch/Debian), performance checks for critical paths.
 
 Performance
+
 - Minimize forks/subshells; prefer parameter expansion and builtins.
 - Parallelize safely: xargs -0 -r -P "$(nproc)"
 - Prefer fixed-string grep -F and anchored patterns; narrow scope.
 - Cache lookups (e.g., FD="$(command -v fd || command -v fdfind || :)")
 
 Do not
+
 - Do not target POSIX /bin/sh; we target Bash 4+ (5+ ideal).
 - Do not parse ls; do not use eval; do not use backticks.
 - Do not add hidden Unicode; do not introduce trailing whitespace.
@@ -258,26 +270,31 @@ AUR_FLAGS=(--needed --noconfirm --removemake --cleanafter --sudoloop --skiprevie
 ```
 
 Network operations
+
 - Use hardened curl: curl -fsSL --proto '=https' --tlsv1.3
 - Prefer retries/backoff for flaky endpoints; avoid needless downloads.
 - Update README curl snippets when entrypoints change:
-  - curl -fsSL https://raw.githubusercontent.com/Ven0m0/repo/main/...
+  - curl -fsSL <https://raw.githubusercontent.com/Ven0m0/repo/main/>...
 
 Device and file operations (Pi and imaging)
+
 - Derive partition suffix: [[ $dev == *@(nvme|mmcblk|loop)* ]] && p="${dev}p1" || p="${dev}1"
 - Wait for device nodes with retry loop; use udevadm settle when needed.
 - Always umount recursively in cleanup; detach loop devices; ignore errors but log.
 
 Interactive mode
+
 - When src/tgt paths missing, allow fzf selection; fallback to find if fd unavailable:
   - command -v fd &>/dev/null && fd -e img ... | fzf || find ... | fzf
 
 Data collection and processing
+
 - mapfile -t arr < <(cmd)
 - Filter config/package lists:
   - mapfile -t arr < <(grep -v '^\s*#' file.txt | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//' | grep -v '^$')
 
 Testing and validation
+
 - Unit: bats-core
 - Integration: repo-scripted scenarios (Arch/Debian)
 - Static: shellcheck --severity=style
@@ -286,11 +303,13 @@ Testing and validation
 - Perf: hyperfine or simple timers for critical paths
 
 Style guide highlights
+
 - Follow Google Shell Style where sensible; prefer our repo conventions when they conflict.
 - Use builtins first; use grep -E/sed -E only when required.
 - Keep functions small, single-responsibility; early returns; explicit deps.
 
 Common helpers (reuse from Shell-book.md)
+
 - sleepy: read -rt "${1:-1}" -- <> <(:) &>/dev/null || :
 - fcat: printf '%s\n' "$(<${1})"
 - regex extraction: [[ $s =~ re ]] && printf '%s\n' "${BASH_REMATCH[1]}"
@@ -298,22 +317,26 @@ Common helpers (reuse from Shell-book.md)
 - bname/dname: parameter-expansion implementations; avoid spawning coreutils when hot.
 
 Modern tools with fallbacks
+
 - fd/find, rg/grep, bat/cat, sd/sed, zoxide/cd, bun/npm
 - Provide graceful behavior if modern tools missing; do not hard fail for niceties.
 
 Commit and quality discipline
+
 - TDD flow: Red → Green → Refactor
 - Change types: Structural (format/org, no behavior delta) vs Behavioral (fn add/mod/del). Never mix both in one commit.
 - Commit only when tests pass, zero warnings, single unit, clear message; prefer small, independent commits.
 - Design: single responsibility, loose coupling, early returns, avoid over-abstraction, eliminate duplication, clear intent.
 
 Token efficiency (for logs/comments)
+
 - Symbols: → leads, ⇒ converts, ← rollback, ⇄ bidir, & and, | or, » then, ∴ therefore, ∵ because
 - Status: ✅ done, ❌ fail, ⚠️ warn, 🔄 active, ⏳ pending, 🚨 critical
 - Domains: ⚡ perf, 🔍 analysis, 🔧 cfg, 🛡️ sec, 📦 deploy, 🎨 UI, 🏗️ arch, 🗄️ DB, ⚙️ backend, 🧪 test
 - Abbrev: cfg, impl, arch, req, deps, val, auth, qual, sec, err, opts
 
 Review checklist for Copilot
+
 - Starts with #!/usr/bin/env bash, set -Eeuo pipefail, shopt flags.
 - Uses arrays/mapfile/[[ ... ]] and parameter expansion; avoids parsing ls/using eval/backticks.
 - Logging helpers present; traps for cleanup and ERR with line numbers.
@@ -323,7 +346,8 @@ Review checklist for Copilot
 - Linted (shfmt, shellcheck); minimal external calls; parallelized safely.
 
 Reference docs
-- Bash Manual: https://www.gnu.org/software/bash/manual/
-- Google Shell Style: https://google.github.io/styleguide/shellguide.html
-- ShellCheck: https://www.shellcheck.net/wiki/
-- Pure-bash-bible: https://github.com/dylanaraps/pure-bash-bible
+
+- Bash Manual: <https://www.gnu.org/software/bash/manual/>
+- Google Shell Style: <https://google.github.io/styleguide/shellguide.html>
+- ShellCheck: <https://www.shellcheck.net/wiki/>
+- Pure-bash-bible: <https://github.com/dylanaraps/pure-bash-bible>

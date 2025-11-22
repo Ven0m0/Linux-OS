@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-19 - Applied bash optimization techniques
 # Setup environment
-set -euo pipefail; shopt -s nullglob globstar execfail
+set -euo pipefail
+shopt -s nullglob globstar execfail
 IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive PRUNE_MODULES=1 SKIP_VCLIBS=1
 # Initialize working directory
 WORKDIR="${BASH_SOURCE[0]%/*}"
 [[ $WORKDIR == "${BASH_SOURCE[0]}" ]] && WORKDIR="."
-cd "$WORKDIR" || { echo "Failed to change to working directory: $WORKDIR" >&2; exit 1; }
+cd "$WORKDIR" || {
+  echo "Failed to change to working directory: $WORKDIR" >&2
+  exit 1
+}
 WORKDIR="$PWD"
 # Color constants for terminal output
 LBLU=$'\e[38;5;117m'
@@ -15,12 +19,13 @@ PNK=$'\e[38;5;218m'
 BWHT=$'\e[97m'
 DEF=$'\e[0m'
 # Check if a command exists
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &> /dev/null; }
 # Display colorized banner with gradient effect
-display_banner(){
-  local banner_text="$1"; shift
+display_banner() {
+  local banner_text="$1"
+  shift
   local -a flag_colors=("$@")
-  mapfile -t banner_lines <<<"$banner_text"
+  mapfile -t banner_lines <<< "$banner_text"
   local lines=${#banner_lines[@]}
   local segments=${#flag_colors[@]}
   if ((lines <= 1)); then
@@ -36,17 +41,17 @@ display_banner(){
   fi
 }
 # Clean APT package manager cache
-clean_apt_cache(){
+clean_apt_cache() {
   sudo apt-get clean -y
   sudo apt-get autoclean -y
   sudo apt-get autoremove --purge -y
 }
 # Load DietPi globals if available
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
+load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :; }
 
 #============ Banner ====================
 banner=$(
-  cat <<'EOF'
+  cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -63,13 +68,13 @@ sync
 #=============================================================
 # Clean APT lists before update
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
-run_apt(){ sudo apt-get -y --allow-releaseinfo-change -o Acquire::Languages none -o APT::Get::Fix-Missing true -o APT::Get::Fix-Broken true "$1" "$@"; }
+run_apt() { sudo apt-get -y --allow-releaseinfo-change -o Acquire::Languages none -o APT::Get::Fix-Missing true -o APT::Get::Fix-Broken true "$1" "$@"; }
 if has apt-fast; then
   sudo apt-fast update -y --allow-releaseinfo-change
   sudo apt-fast upgrade -y --no-install-recommends
   sudo apt-fast dist-upgrade -y --no-install-recommends
   clean_apt_cache
-  sudo apt-fast autopurge -yq 2>/dev/null || :
+  sudo apt-fast autopurge -yq 2> /dev/null || :
 elif has nala; then
   sudo nala upgrade --no-install-recommends
   sudo nala clean
@@ -83,12 +88,12 @@ else
   clean_apt_cache
 fi
 # Check's the broken packages and fix them
-sudo dpkg --configure -a >/dev/null
+sudo dpkg --configure -a > /dev/null
 
 sudo dietpi-update 1 || sudo /boot/dietpi/dietpi-update 1
 has pihole && sudo pihole -up
 has rpi-eeprom-update && sudo rpi-eeprom-update -a
-has rpi-update && sudo SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0 PRUNE_MODULES=1  SKIP_VCLIBS=1 rpi-update 2>/dev/null || :
+has rpi-update && sudo SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0 PRUNE_MODULES=1 SKIP_VCLIBS=1 rpi-update 2> /dev/null || :
 #sudo JUST_CHECK=1 rpi-update
 # https://github.com/raspberrypi/rpi-update/blob/master/rpi-update
 # Test:

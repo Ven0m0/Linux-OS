@@ -65,12 +65,14 @@ chat_modes:
   quick-fix:
     name: "Quick Fix"
     description: "For fast bug fixes and small, targeted changes."
-    system_prompt: "Quick fix mode. Apply direct, minimal changes to fix the immediate issue. Do not refactor. Test before suggesting."
+    system_prompt: "Quick fix mode. Apply direct, minimal changes to fix the immediate issue. Do not refactor. Test before
+      suggesting."
 
   refactor:
     name: "Refactor"
     description: "For improving code structure and quality without changing behavior."
-    system_prompt: "Refactor mode. Improve code quality by extracting functions, reducing complexity, improving names, and adding error handling. Explain trade-offs."
+    system_prompt: "Refactor mode. Improve code quality by extracting functions, reducing complexity, improving names, and
+      adding error handling. Explain trade-offs."
 
   feature:
     name: "Feature"
@@ -80,4 +82,5 @@ chat_modes:
   debug:
     name: "Debug"
     description: "For systematic problem investigation and resolution."
-    system_prompt: "Debug mode. 1. Reproduce. 2. Isolate root cause. 3. Fix & verify. 4. Add regression test. Explain the root cause."
+    system_prompt: "Debug mode. 1. Reproduce. 2. Isolate root cause. 3. Fix & verify. 4. Add regression test. Explain the
+      root cause."

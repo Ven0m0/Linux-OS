@@ -121,34 +121,25 @@ cache() {
   has yay && yay -Sccq --noconfirm
 }
 
-# SSH fix
-run_priv chmod -R 744 ~/.ssh
-run_priv chmod -R 744 ~/.gnupg
+log "Fix SSH/GPG permissions"
+run_priv chmod -R 700 ~/.{ssh,gnupg}
 
-# Fix keyrings
-run_priv rm -rf /etc/pacman.d/gnupg/ # Force-remove the old keyrings
-run_priv pacman -Sy archlinux-keyring --noconfirm || sudo pacman -Sy archlinux-keyring --noconfirm
-run_priv pacman-key --refresh-keys
-run_priv pacman-key --init                                                        # Initialize the keyring
-run_priv pacman-key --populate                                                    # Populate the keyring
-run_priv pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com # Manually import the CachyOS key
-run_priv pacman-key --lsign-key F3B607488DB35A47                                  # Manually sign the key
+log "Fix keyrings"
+run_priv rm -rf /etc/pacman.d/gnupg/ /var/lib/pacman/sync
+run_priv pacman -Sy archlinux-keyring --noconfirm
+run_priv pacman-key --init
+run_priv pacman-key --populate
+run_priv pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
+run_priv pacman-key --lsign-key F3B607488DB35A47
 run_priv pacman-key --lsign cachyos
-run_priv rm -R /var/lib/pacman/sync # Remove the synced databases to force a fresh download
+run_priv pacman-key --refresh-keys
 
-log "Fixing Fakeroot error"
-run_priv pacman -Sy --needed base-devel
+log "Fix base-devel"
+run_priv pacman -Sy --needed base-devel --noconfirm
 
-log "Fixing wlogout pgp keyring error"
-# Prefer aria2 -> curl -> wget2 -> wget for downloads
-if has aria2c; then
-  aria2c -q -d /tmp -o wlogout.asc https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F && gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc
-elif has curl; then
+log "Import wlogout GPG key"
+download_file https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F /tmp/wlogout.asc && \
+  gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc || \
   curl -sS https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
-elif has wget2; then
-  wget2 -qO- https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
-else
-  wget -qO- https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
-fi
 
 run_priv pacman -Syyu --noconfirm

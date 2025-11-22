@@ -33,7 +33,8 @@ eval "$PKG" "$DOTFILES_TOOL"
 # --- CLONE DOTFILES & APPLY ---
 log "Cloning and applying dotfiles..."
 if [[ $DOTFILES_TOOL == "yadm" ]]; then
-  echo "TODO: yadm"
+  yadm clone "$DOTFILES_REPO"
+  yadm bootstrap 2>/dev/null || true  # Run bootstrap if it exists
 elif [[ $DOTFILES_TOOL == "chezmoi" ]]; then
   chezmoi init "$DOTFILES_REPO"
   chezmoi apply -v

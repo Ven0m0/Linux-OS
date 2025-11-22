@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C LANG=C
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
@@ -9,14 +8,11 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #──────────── Core Helpers ────────────────
-has() { command -v "$1" &> /dev/null; }
-die() {
-  printf '%b\n' "${RED}Error:${DEF} $*" >&2
-  exit "${2:-1}"
-}
+has(){ command -v "$1" &> /dev/null; }
+die(){ printf '%b\n' "${RED}Error:${DEF} $*" >&2; exit "${2:-1}"; }
 JQ=$(has jaq && echo jaq || has jq && echo jq || die "jq/jaq required")
 
-download_file() {
+download_file(){
   local url=$1 out=$2
   if has aria2c; then
     aria2c -q --max-tries=3 --retry-wait=1 -d "$(dirname "$out")" -o "$(basename "$out")" "$url"
@@ -29,11 +25,11 @@ download_file() {
   fi
 }
 #──────────── XDG Patches ─────────────────
-add_mime_type() { grep -qE "^MimeType=.*\b${1};" "$2" || sed -i -E "s#^(MimeType=.*;)\$#\1${1};#" "$2"; }
-fix_15741() { add_mime_type 'inode/directory' "$1"; }
-fix_129953() { sed -i -E 's/"desktopName":[[:space:]]*"(.+)-url-handler\.desktop"/"desktopName": "\1.desktop"/' "$1"; }
-fix_214741() { add_mime_type 'text/plain' "$1"; }
-xdg_patch() {
+add_mime_type(){ grep -qE "^MimeType=.*\b${1};" "$2" || sed -i -E "s#^(MimeType=.*;)\$#\1${1};#" "$2"; }
+fix_15741(){ add_mime_type 'inode/directory' "$1"; }
+fix_129953(){ sed -i -E 's/"desktopName":[[:space:]]*"(.+)-url-handler\.desktop"/"desktopName": "\1.desktop"/' "$1"; }
+fix_214741(){ add_mime_type 'text/plain' "$1"; }
+xdg_patch(){
   while read -r file; do
     case "$file" in
     *.desktop)
@@ -49,7 +45,7 @@ xdg_patch() {
     esac
   done
 }
-find_vscode_files() {
+find_vscode_files(){
   ls /usr/lib/code*/package.json \
     /opt/visual-studio-code*/resources/app/package.json \
     /opt/vscodium*/resources/app/package.json \
@@ -59,7 +55,7 @@ find_vscode_files() {
     2> /dev/null | grep -vE '\-url-handler.desktop$'
 }
 #──────────── VSCodium Marketplace ────────
-vscodium_marketplace() {
+vscodium_marketplace(){
   local prod="${1:-/usr/share/vscodium/resources/app/product.json}" revert="${2:-0}"
   [[ ! -f $prod ]] && die "Not found: $prod" 1
   if [[ $revert -eq 1 ]]; then
@@ -83,7 +79,7 @@ vscodium_marketplace() {
   fi
 }
 #──────────── Sign Fix ────────────────────
-fix_sign() {
+fix_sign(){
   local path="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js"
   [[ ! -f $path ]] && return 0
   [[ ${1:-0} -eq 1 ]] && sed -i 's|import("@vscode/vsce-sign")|import("node-ovsx-sign")|g' "$path" \
@@ -91,7 +87,7 @@ fix_sign() {
 }
 #──────────── VSCodium Product Patcher (fnr1r-style) ────────────
 # Comprehensive product.json patcher - merges all MS features into VSCodium
-vscodium_prod_patch() {
+vscodium_prod_patch(){
   local vscodium_prod="${1:-/usr/share/vscodium/resources/app/product.json}"
   local backup="${vscodium_prod}.backup.$$"
   local work="/tmp/vscodium-patch.$$"
@@ -104,24 +100,12 @@ vscodium_prod_patch() {
   mkdir -p "$work" || die "Failed to create work dir"
   echo "Fetching VSCode $vscodium_ver product.json..."
   local url="https://update.code.visualstudio.com/${vscodium_ver}/linux-x64/stable"
-  download_file "$url" "$work/vscode.tgz" || {
-    rm -rf "$work"
-    die "Download failed"
-  }
+  download_file "$url" "$work/vscode.tgz" || { rm -rf "$work"; die "Download failed"; }
   tar xf "$work/vscode.tgz" -C "$work" --strip-components=3 \
-    VSCode-linux-x64/resources/app/product.json 2> /dev/null || {
-    rm -rf "$work"
-    die "Failed to extract product.json from archive"
-  }
-  [[ ! -f $vscode_prod ]] && {
-    rm -rf "$work"
-    die "VSCode product.json not found in archive"
-  }
+    VSCode-linux-x64/resources/app/product.json 2> /dev/null || { rm -rf "$work"; die "Failed to extract product.json from archive"; }
+  [[ ! -f $vscode_prod ]] && { rm -rf "$work"; die "VSCode product.json not found in archive";  }
   # Backup original
-  cp -f "$vscodium_prod" "$backup" || {
-    rm -rf "$work"
-    die "Backup failed"
-  }
+  cp -f "$vscodium_prod" "$backup" || { rm -rf "$work"; die "Backup failed"; }
   # Comprehensive merge: all MS features + telemetry disabled
   # Based on fnr1r/vscodium-prod-patcher approach
   $JQ -s '
@@ -208,7 +192,7 @@ vscodium_prod_patch() {
   printf '%b\n' "${GRN}✓ VSCodium product.json patched (backup: $backup)${DEF}"
   echo "  Merged all MS features, telemetry disabled"
 }
-vscodium_prod_restore() {
+vscodium_prod_restore(){
   local vscodium_prod="${1:-/usr/share/vscodium/resources/app/product.json}" backup
   # Find most recent backup
   backup=$(ls -t "${vscodium_prod}.backup."* 2> /dev/null | head -1)
@@ -218,7 +202,7 @@ vscodium_prod_restore() {
 }
 
 #──────────── Code-Features ───────────────
-features_patch() {
+features_patch(){
   local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-features/patch.json}" cache="${3:-/usr/share/code-features/cache.json}"
   local tmp="${prod}.tmp.$$"
   [[ ! -f $prod ]] && printf '%b\n' "${YLW}WARN: $prod missing (install extra/code)${DEF}" && return 0
@@ -234,7 +218,7 @@ features_patch() {
   rm -f "$tmp" &> /dev/null || :
   printf '%b\n' "${GRN}Applied code-features${DEF}"
 }
-features_restore() {
+features_restore(){
   local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-features/patch.json}" cache="${3:-/usr/share/code-features/cache.json}"
   [[ ! -f $prod || ! -f $patch || ! -f $cache ]] && die "Files missing"
   $JQ -s '
@@ -245,20 +229,14 @@ features_restore() {
   mv -f "${prod}.tmp.$$" "$prod" || return 1
   printf '%b\n' "${GRN}Restored code-features${DEF}"
 }
-features_update() {
+features_update(){
   local ver="${1:-$($JQ -r .version /usr/lib/code/product.json 2> /dev/null)}" patch="${2:-./patch.json}"
   local work="/tmp/code-features.$$" url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
   [[ -z $ver ]] && die "Version required"
   mkdir -p "$work" || return 1
   echo "⬇ VSCode $ver..."
-  download_file "$url" "$work/code.tgz" || {
-    rm -rf "$work"
-    return 1
-  }
-  tar xf "$work/code.tgz" -C "$work" || {
-    rm -rf "$work"
-    return 1
-  }
+  download_file "$url" "$work/code.tgz" || { rm -rf "$work"; return 1; }
+  tar xf "$work/code.tgz" -C "$work" || { rm -rf "$work"; return 1; }
   local -a keys=(nameShort nameLong applicationName serverApplicationName urlProtocol
     dataFolderName serverDataFolderName webUrl webEndpointUrl webEndpointUrlTemplate
     webviewContentExternalBaseUrlTemplate commandPaletteSuggestedCommandIds extensionKeywords
@@ -269,8 +247,7 @@ features_update() {
   $JQ -r --argjson keys "$(printf '%s\n' "${keys[@]}" | $JQ -R . | $JQ -s .)" \
     'reduce $keys[] as $k ({}; . + {($k): (getpath($k | split("."))?)}) | . + {enableTelemetry: false}' \
     "$work/VSCode-linux-x64/resources/app/product.json" > "$patch" || {
-    rm -rf "$work"
-    return 1
+    rm -rf "$work"; return 1
   }
   rm -rf "$work"
   printf '%b\n' "${GRN}Updated $patch${DEF}"
@@ -278,7 +255,7 @@ features_update() {
 }
 
 #──────────── Code-Marketplace ────────────
-marketplace_patch() {
+marketplace_patch(){
   local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-marketplace/patch.json}" cache="${3:-/usr/share/code-marketplace/cache.json}"
   local tmp="${prod}.tmp.$$"
   [[ ! -f $prod ]] && printf '%b\n' "${YLW}WARN: $prod missing (install extra/code)${DEF}" && return 0
@@ -295,7 +272,7 @@ marketplace_patch() {
   fix_sign 0
   printf '%b\n' "${GRN}Applied code-marketplace${DEF}"
 }
-marketplace_restore() {
+marketplace_restore(){
   local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-marketplace/patch.json}" cache="${3:-/usr/share/code-marketplace/cache.json}"
   [[ ! -f $prod || ! -f $patch || ! -f $cache ]] && die "Files missing"
   $JQ -s '
@@ -307,37 +284,28 @@ marketplace_restore() {
   fix_sign 1
   printf '%b\n' "${GRN}Restored code-marketplace${DEF}"
 }
-marketplace_update() {
+marketplace_update(){
   local ver="${1}" patch="${2:-./patch.json}"
   local work="/tmp/code-marketplace.$$" url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
   [[ -z $ver ]] && die "Version required"
   mkdir -p "$work" || return 1
   echo "⬇ VSCode $ver..."
-  download_file "$url" "$work/code.tgz" || {
-    rm -rf "$work"
-    return 1
-  }
-  tar xf "$work/code.tgz" -C "$work" || {
-    rm -rf "$work"
-    return 1
-  }
+  download_file "$url" "$work/code.tgz" || { rm -rf "$work"; return 1; }
+  tar xf "$work/code.tgz" -C "$work" || { rm -rf "$work"; return 1; }
   local -a keys=(extensionsGallery extensionRecommendations keymapExtensionTips
     languageExtensionTips configBasedExtensionTips webExtensionTips
     virtualWorkspaceExtensionTips remoteExtensionTips extensionAllowedBadgeProviders
     extensionAllowedBadgeProvidersRegex msftInternalDomains linkProtectionTrustedDomains)
   $JQ -r --argjson keys "$(printf '%s\n' "${keys[@]}" | $JQ -R . | $JQ -s .)" \
     'reduce $keys[] as $k ({}; . + {($k): .[$k]})' \
-    "$work/VSCode-linux-x64/resources/app/product.json" > "$patch" || {
-    rm -rf "$work"
-    return 1
-  }
+    "$work/VSCode-linux-x64/resources/app/product.json" > "$patch" || { rm -rf "$work"; return 1; }
   rm -rf "$work"
   printf '%b\n' "${GRN}Updated $patch${DEF}"
   [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD
 }
 
 #──────────── Main ────────────────────────
-main() {
+main(){
   case "${1:-}" in
   xdg | --xdg) xdg_patch ;;
   vscodium | --vscodium) vscodium_marketplace "${2:-}" 0 ;;
@@ -354,12 +322,10 @@ main() {
     find_vscode_files | xdg_patch
     vscodium_marketplace "${2:-}" 0
     marketplace_patch
-    features_patch
-    ;;
+    features_patch ;;
   all-vscodium | --all-vscodium)
     find_vscode_files | xdg_patch
-    vscodium_prod_patch "${2:-}"
-    ;;
+    vscodium_prod_patch "${2:-}" ;;
   *)
     cat >&2 << 'EOF'
 Usage: vscodium-patch.sh <cmd> [args]
@@ -415,8 +381,7 @@ Defaults:
   Features:    /usr/share/code-features/{patch,cache}.json
   Marketplace: /usr/share/code-marketplace/{patch,cache}.json
 EOF
-    return 1
-    ;;
+    return 1;;
   esac
 }
 main "$@"

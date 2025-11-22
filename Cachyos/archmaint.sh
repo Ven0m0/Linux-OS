@@ -40,37 +40,6 @@ confirm(){
   [[ $ans == [Yy]* ]]
 }
 
-#============ Privilege Escalation ============
-# Detect available privilege escalation tool
-get_priv_cmd(){
-  local cmd
-  for cmd in sudo-rs sudo doas; do
-    if has "$cmd"; then
-      printf '%s' "$cmd"
-      return 0
-    fi
-  done
-  [[ $EUID -eq 0 ]] || die "No privilege tool found and not running as root"
-  printf ''
-}
-
-# Initialize privilege tool
-init_priv(){
-  local priv_cmd; priv_cmd=$(get_priv_cmd)
-  [[ -n $priv_cmd && $EUID -ne 0 ]] && "$priv_cmd" -v
-  printf '%s' "$priv_cmd"
-}
-# Run command with privilege escalation
-run_priv(){
-  local priv_cmd="${PRIV_CMD:-}"
-  [[ -z $priv_cmd ]] && priv_cmd=$(get_priv_cmd)
-  if [[ $EUID -eq 0 || -z $priv_cmd ]]; then
-    "$@"
-  else
-    "$priv_cmd" -- "$@"
-  fi
-}
-
 #============ Banner Printing Functions ============
 # Print banner with trans flag gradient
 # Usage: print_banner "banner_text" [title]
@@ -177,9 +146,9 @@ run_system_maintenance(){
   has "$cmd" || return 0
   case "$cmd" in
     modprobed-db) "$cmd" store &>/dev/null || :;;
-    hwclock | updatedb | chwd) run_priv "$cmd" "${args[@]}" &>/dev/null || :;;
-    mandb) run_priv "$cmd" -q &>/dev/null || mandb -q &>/dev/null || :;;
-    *) run_priv "$cmd" "${args[@]}" &>/dev/null || :;;
+    hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null || :;;
+    mandb) sudo "$cmd" -q &>/dev/null || mandb -q &>/dev/null || :;;
+    *) sudo "$cmd" "${args[@]}" &>/dev/null || :;;
   esac
 }
 
@@ -406,7 +375,7 @@ clean_with_sudo(){
     _expand_wildcards "$path" existing_paths
   done
   # Batch delete all existing paths at once with single sudo call
-  [[ ${#existing_paths[@]} -gt 0 ]] && run_priv rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
 #============ Download Tool Detection ============
@@ -453,7 +422,7 @@ download_file(){
 
 # Additional function for archmaint.sh
 cleanup_pacman_lock(){
-  run_priv rm -f /var/lib/pacman/db.lck &>/dev/null || :
+  sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
 }
 # ============ End of inlined lib/common.sh ============
 
@@ -467,11 +436,6 @@ MODE=""
 # Override log function to respect QUIET
 log() { ((QUIET)) || xecho "$*"; }
 
-# Initialize privilege tool (renamed from SUDO to PRIV_CMD for consistency)
-PRIV_CMD=$(init_priv)
-export PRIV_CMD
-# Keep SUDO as alias for backward compatibility
-SUDO="$PRIV_CMD"
 
 
 
@@ -489,22 +453,22 @@ update_system_packages() {
   cleanup_pacman_lock
 
   # Update keyring and file databases
-  run_priv "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &>/dev/null || :
+  sudo "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &>/dev/null || :
 
   # Update file database only if it doesn't exist
-  [[ -f /var/lib/pacman/sync/core.files ]] || run_priv pacman -Fy --noconfirm &>/dev/null || :
+  [[ -f /var/lib/pacman/sync/core.files ]] || sudo pacman -Fy --noconfirm &>/dev/null || :
 
   # Run system updates
   if [[ $pkgmgr == paru ]]; then
     local args=(--noconfirm --needed --mflags '--skipinteg --skippgpcheck'
       --bottomup --skipreview --cleanafter --removemake
-      --sudoloop --sudo "$SUDO" "${aur_opts[@]}")
+      --sudoloop --sudo sudo "${aur_opts[@]}")
     log "🔄${BLU}Updating AUR packages with ${pkgmgr}...${DEF}"
     "$pkgmgr" -Suyy "${args[@]}" &>/dev/null || :
     "$pkgmgr" -Sua --devel "${args[@]}" &>/dev/null || :
   else
     log "🔄${BLU}Updating system with pacman...${DEF}"
-    run_priv pacman -Suyy --noconfirm --needed &>/dev/null || :
+    sudo pacman -Suyy --noconfirm --needed &>/dev/null || :
   fi
 }
 
@@ -514,15 +478,15 @@ update_with_topgrade() {
     local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
     local disable_root=(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})
     LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${disable_user[@]}" &>/dev/null || :
-    LC_ALL=C run_priv topgrade -cy --skip-notify --no-self-update --no-retry "${disable_root[@]}" &>/dev/null || :
+    LC_ALL=C sudo topgrade -cy --skip-notify --no-self-update --no-retry "${disable_root[@]}" &>/dev/null || :
   fi
 }
 
 update_flatpak() {
   if has flatpak; then
     log "🔄${BLU}Updating Flatpak...${DEF}"
-    run_priv flatpak update -y --noninteractive --appstream &>/dev/null || :
-    run_priv flatpak update -y --noninteractive --system --force-remove &>/dev/null || :
+    sudo flatpak update -y --noninteractive --appstream &>/dev/null || :
+    sudo flatpak update -y --noninteractive --system --force-remove &>/dev/null || :
   fi
 }
 
@@ -530,7 +494,7 @@ update_rust() {
   if has rustup; then
     log "🔄${BLU}Updating Rust...${DEF}"
     rustup update
-    run_priv rustup update
+    sudo rustup update
     rustup self upgrade-data
 
     if has cargo; then
@@ -579,7 +543,7 @@ update_shells() {
   fi
 
   # Update tldr cache
-  has tldr && run_priv tldr -cuq || :
+  has tldr && sudo tldr -cuq || :
 }
 
 update_python() {
@@ -636,9 +600,9 @@ update_system_utils() {
     cmd_args="${cmd#*:}"
     if has "$cmd_name"; then
       if [[ -n $cmd_args ]]; then
-        run_priv "$cmd_name" "$cmd_args" &>/dev/null || :
+        sudo "$cmd_name" "$cmd_args" &>/dev/null || :
       else
-        run_priv "$cmd_name" &>/dev/null || :
+        sudo "$cmd_name" &>/dev/null || :
       fi
     fi
   done
@@ -648,18 +612,18 @@ update_system_utils() {
   # Update firmware
   if has fwupdmgr; then
     log "🔄${BLU}Updating firmware...${DEF}"
-    run_priv fwupdmgr refresh -y || :
-    run_priv fwupdtool update || :
+    sudo fwupdmgr refresh -y || :
+    sudo fwupdtool update || :
   fi
 }
 
 update_boot() {
   log "🔍${BLU}Checking boot configuration...${DEF}"
   # Update systemd-boot if installed
-  if [[ -d /sys/firmware/efi ]] && has bootctl && run_priv bootctl is-installed -q &>/dev/null; then
+  if [[ -d /sys/firmware/efi ]] && has bootctl && sudo bootctl is-installed -q &>/dev/null; then
     log "✅${GRN}systemd-boot detected, updating${DEF}"
-    run_priv bootctl update -q &>/dev/null
-    run_priv bootctl cleanup -q &>/dev/null
+    sudo bootctl update -q &>/dev/null
+    sudo bootctl cleanup -q &>/dev/null
   else
     log "❌${YLW}systemd-boot not present, skipping${DEF}"
   fi
@@ -667,22 +631,22 @@ update_boot() {
   # Update sdboot-manage if available
   if has sdboot-manage; then
     log "🔄${BLU}Updating sdboot-manage...${DEF}"
-    run_priv sdboot-manage remove &>/dev/null || :
-    run_priv sdboot-manage update &>/dev/null || :
+    sudo sdboot-manage remove &>/dev/null || :
+    sudo sdboot-manage update &>/dev/null || :
   fi
 
   # Update initramfs
   log "🔄${BLU}Updating initramfs...${DEF}"
   if has update-initramfs; then
-    run_priv update-initramfs
+    sudo update-initramfs
   else
     local found_initramfs=0
     for cmd in limine-mkinitcpio mkinitcpio dracut-rebuild; do
       if has "$cmd"; then
         if [[ $cmd == mkinitcpio ]]; then
-          run_priv "$cmd" -P || :
+          sudo "$cmd" -P || :
         else
-          run_priv "$cmd" || :
+          sudo "$cmd" || :
         fi
         found_initramfs=1
         break
@@ -691,7 +655,7 @@ update_boot() {
 
     # Special case for booster
     if [[ $found_initramfs -eq 0 && -x /usr/lib/booster/regenerate_images ]]; then
-      run_priv /usr/lib/booster/regenerate_images || :
+      sudo /usr/lib/booster/regenerate_images || :
     elif [[ $found_initramfs -eq 0 ]]; then
       log "${YLW}No initramfs generator found, please update manually${DEF}"
     fi
@@ -769,7 +733,7 @@ clean_with_sudo() {
     fi
   done
   # Batch delete all existing paths at once with single sudo call
-  [[ ${#existing_paths[@]} -gt 0 ]] && run_priv rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
 run_clean() {
@@ -781,19 +745,19 @@ run_clean() {
   # Capture disk usage before cleanup
   local disk_before disk_after space_before space_after
   capture_disk_usage disk_before
-  space_before=$(run_priv du -sh / 2>/dev/null | awk '{print $1}')
+  space_before=$(sudo du -sh / 2>/dev/null | awk '{print $1}')
 
   log "🔄${BLU}Starting system cleanup...${DEF}"
 
   # Drop caches
   sync
   log "🔄${BLU}Dropping cache...${DEF}"
-  run_priv tee /proc/sys/vm/drop_caches &>/dev/null <<<3
+  sudo tee /proc/sys/vm/drop_caches &>/dev/null <<<3
 
   # Store and sort modprobed database
   if has modprobed-db; then
     log "🔄${BLU}Storing kernel modules...${DEF}"
-    run_priv modprobed-db store
+    sudo modprobed-db store
 
     local db_files=("${HOME}/.config/modprobed.db" "${HOME}/.local/share/modprobed.db")
     for db in "${db_files[@]}"; do
@@ -804,7 +768,7 @@ run_clean() {
   # Network cleanup
   log "🔄${BLU}Flushing network caches...${DEF}"
   has dhclient && dhclient -r &>/dev/null || :
-  run_priv resolvectl flush-caches &>/dev/null || :
+  sudo resolvectl flush-caches &>/dev/null || :
 
   # Package management cleanup
   log "🔄${BLU}Removing orphaned packages...${DEF}"
@@ -813,12 +777,12 @@ run_clean() {
   orphans_list=$(pacman -Qdtq 2>/dev/null || :)
   if [[ -n $orphans_list ]]; then
     # Use xargs to pass arguments efficiently
-    printf '%s\n' "$orphans_list" | xargs -r run_priv pacman -Rns --noconfirm &>/dev/null || :
+    printf '%s\n' "$orphans_list" | xargs -r sudo pacman -Rns --noconfirm &>/dev/null || :
   fi
 
   log "🔄${BLU}Cleaning package cache...${DEF}"
-  run_priv pacman -Scc --noconfirm &>/dev/null || :
-  run_priv paccache -rk0 -q &>/dev/null || :
+  sudo pacman -Scc --noconfirm &>/dev/null || :
+  sudo paccache -rk0 -q &>/dev/null || :
 
   # Python package manager cleanup
   if has uv; then
@@ -838,25 +802,25 @@ run_clean() {
   # Kill CPU-intensive processes
   log "🔄${BLU}Checking for CPU-intensive processes...${DEF}"
   # Optimized: Use xargs instead of while-read loop for better performance
-  ps aux --sort=-%cpu 2>/dev/null | awk 'NR>1 && $3>50.0 {print $2}' | xargs -r run_priv kill -9 &>/dev/null || :
+  ps aux --sort=-%cpu 2>/dev/null | awk 'NR>1 && $3>50.0 {print $2}' | xargs -r sudo kill -9 &>/dev/null || :
 
   # Reset swap
   log "🔄${BLU}Resetting swap space...${DEF}"
-  run_priv swapoff -a &>/dev/null || :
-  run_priv swapon -a &>/dev/null || :
+  sudo swapoff -a &>/dev/null || :
+  sudo swapon -a &>/dev/null || :
 
   # Clean log files and crash dumps
   log "🔄${BLU}Cleaning logs and crash dumps...${DEF}"
   # Use fd if available, fallback to find - optimize with batch delete
   if has fd; then
-    run_priv fd -H -t f -e log -d 4 --changed-before 7d . /var/log -X rm &>/dev/null || :
-    run_priv fd -H -t f -p "core.*" -d 2 --changed-before 7d . /var/crash -X rm &>/dev/null || :
+    sudo fd -H -t f -e log -d 4 --changed-before 7d . /var/log -X rm &>/dev/null || :
+    sudo fd -H -t f -p "core.*" -d 2 --changed-before 7d . /var/crash -X rm &>/dev/null || :
   else
     # Use -delete for better performance than -exec rm
-    run_priv find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
-    run_priv find /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
+    sudo find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
+    sudo find /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
   fi
-  run_priv find /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
+  sudo find /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
 
   # Clean cache files
   log "🔄${BLU}Cleaning cache files...${DEF}"
@@ -881,7 +845,7 @@ run_clean() {
     find "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
   fi
 
-  run_priv systemd-tmpfiles --clean &>/dev/null || :
+  sudo systemd-tmpfiles --clean &>/dev/null || :
 
   # Clean system and user cache directories
   clean_with_sudo "${cache_dirs[@]/%/*}"
@@ -923,8 +887,8 @@ run_clean() {
 
   # Clean system logs
   log "🔄${BLU}Cleaning system logs...${DEF}"
-  run_priv rm -f --preserve-root -- /var/log/pacman.log &>/dev/null || :
-  run_priv journalctl --rotate --vacuum-size=1 --flush --sync -q &>/dev/null || :
+  sudo rm -f --preserve-root -- /var/log/pacman.log &>/dev/null || :
+  sudo journalctl --rotate --vacuum-size=1 --flush --sync -q &>/dev/null || :
   clean_with_sudo /run/log/journal/* /var/log/journal/* /root/.local/share/zeitgeist/* /home/*/.local/share/zeitgeist/* 2>/dev/null || :
 
   # Clean history files
@@ -978,13 +942,13 @@ run_clean() {
   log "🔄${BLU}Cleaning applications (parallel)...${DEF}"
 
   # NVIDIA cleanup (background)
-  { run_priv rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null || :; } &
+  { sudo rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null || :; } &
 
   # Python history (background)
   {
     local python_history="${HOME}/.python_history"
     [[ ! -f $python_history ]] && { touch "$python_history" 2>/dev/null || :; }
-    run_priv chattr +i "$(realpath "$python_history")" &>/dev/null || :
+    sudo chattr +i "$(realpath "$python_history")" &>/dev/null || :
   } &
 
   # Firefox cleanup (background)
@@ -1041,12 +1005,12 @@ run_clean() {
 
   # Trim disks
   log "🔄${BLU}Trimming disks...${DEF}"
-  run_priv fstrim -a --quiet-unsupported &>/dev/null || :
-  run_priv fstrim -A --quiet-unsupported &>/dev/null || :
+  sudo fstrim -a --quiet-unsupported &>/dev/null || :
+  sudo fstrim -A --quiet-unsupported &>/dev/null || :
 
   # Rebuild font cache
   log "🔄${BLU}Rebuilding font cache...${DEF}"
-  run_priv fc-cache -f &>/dev/null || :
+  sudo fc-cache -f &>/dev/null || :
 
   # SDK cleanup
   has sdk && sdk flush tmp &>/dev/null || :
@@ -1060,7 +1024,7 @@ run_clean() {
     if has xhost; then
       xhost si:localuser:root &>/dev/null || :
       xhost si:localuser:"$USER" &>/dev/null || :
-      LC_ALL=C LANG=C run_priv bleachbit -c --preset &>/dev/null || :
+      LC_ALL=C LANG=C sudo bleachbit -c --preset &>/dev/null || :
     elif has pkexec; then
       LC_ALL=C LANG=C pkexec bleachbit -c --preset &>/dev/null || :
     else
@@ -1071,7 +1035,7 @@ run_clean() {
   # Show disk usage results
   log "${GRN}System cleaned!${DEF}"
   capture_disk_usage disk_after
-  space_after=$(run_priv du -sh / 2>/dev/null | awk '{print $1}')
+  space_after=$(sudo du -sh / 2>/dev/null | awk '{print $1}')
 
   log "==> ${BLU}Disk usage before cleanup:${DEF} ${disk_before}"
   log "==> ${GRN}Disk usage after cleanup: ${DEF} ${disk_after}"

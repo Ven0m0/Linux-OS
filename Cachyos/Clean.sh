@@ -14,37 +14,6 @@ BLU=$'\e[34m' GRN=$'\e[32m' YLW=$'\e[33m' MGN=$'\e[35m' DEF=$'\e[0m'
 #============ Helper Functions ============
 has(){ command -v "$1" &>/dev/null; }
 
-# Detect privilege escalation tool
-get_priv_cmd(){
-  local cmd
-  for cmd in sudo-rs sudo doas; do
-    if has "$cmd"; then
-      printf '%s' "$cmd"
-      return 0
-    fi
-  done
-  [[ $EUID -eq 0 ]] || { echo "No privilege tool found" >&2; exit 1; }
-  printf ''
-}
-
-# Initialize privilege tool
-init_priv(){
-  local priv_cmd; priv_cmd=$(get_priv_cmd)
-  [[ -n $priv_cmd && $EUID -ne 0 ]] && "$priv_cmd" -v
-  printf '%s' "$priv_cmd"
-}
-
-# Run command with privilege
-run_priv(){
-  local priv_cmd="${PRIV_CMD:-}"
-  [[ -z $priv_cmd ]] && priv_cmd=$(get_priv_cmd)
-  if [[ $EUID -eq 0 || -z $priv_cmd ]]; then
-    "$@"
-  else
-    "$priv_cmd" -- "$@"
-  fi
-}
-
 # Get package manager
 get_pkg_manager(){
   if has paru; then
@@ -220,7 +189,7 @@ privacy_clean(){
   # History files
   rm -f "$HOME"/.{bash,zsh,python}_history "$HOME"/.history \
     "$HOME"/.local/share/fish/fish_history &>/dev/null || :
-  run_priv rm -f /root/.{bash,zsh,python}_history /root/.history &>/dev/null || :
+  sudo rm -f /root/.{bash,zsh,python}_history /root/.history &>/dev/null || :
 
   # Thumbnails and recent files
   rm -rf "$HOME"/.thumbnails/* "$HOME"/.cache/thumbnails/* &>/dev/null || :
@@ -230,11 +199,11 @@ privacy_clean(){
 pkg_cache_clean(){
   if has pacman; then
     local pkgmgr; pkgmgr=$(get_pkg_manager)
-    run_priv paccache -rk0 -q &>/dev/null || :
-    run_priv "$pkgmgr" -Scc --noconfirm &>/dev/null || :
+    sudo paccache -rk0 -q &>/dev/null || :
+    sudo "$pkgmgr" -Scc --noconfirm &>/dev/null || :
   fi
 
-  has apt-get && { run_priv apt-get clean &>/dev/null || :; run_priv apt-get autoclean &>/dev/null || :; }
+  has apt-get && { sudo apt-get clean &>/dev/null || :; sudo apt-get autoclean &>/dev/null || :; }
 }
 
 snap_flatpak_trim(){
@@ -243,56 +212,52 @@ snap_flatpak_trim(){
   if has snap; then
     printf '%s\n' "🔄${BLU}Removing old Snap revisions...${DEF}"
     while read -r name version rev tracking publisher notes; do
-      [[ ${notes:-} == *disabled* ]] && run_priv snap remove "$name" --revision "$rev" &>/dev/null || :
+      [[ ${notes:-} == *disabled* ]] && sudo snap remove "$name" --revision "$rev" &>/dev/null || :
     done < <(snap list --all 2>/dev/null || :)
     rm -rf "$HOME"/snap/*/*/.cache/* &>/dev/null || :
   fi
 
-  run_priv rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
+  sudo rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
 }
 
 system_clean(){
   printf '%s\n' "🔄${BLU}System cleanup...${DEF}"
 
   # DNS cache
-  run_priv resolvectl flush-caches &>/dev/null || :
-  run_priv systemd-resolve --flush-caches &>/dev/null || :
+  sudo resolvectl flush-caches &>/dev/null || :
+  sudo systemd-resolve --flush-caches &>/dev/null || :
 
   # Package caches
   pkg_cache_clean
 
   # Journal
-  run_priv journalctl --rotate -q &>/dev/null || :
-  run_priv journalctl --vacuum-size=10M -q &>/dev/null || :
-  run_priv find /var/log -type f -name '*.old' -delete &>/dev/null || :
+  sudo journalctl --rotate -q &>/dev/null || :
+  sudo journalctl --vacuum-size=10M -q &>/dev/null || :
+  sudo find /var/log -type f -name '*.old' -delete &>/dev/null || :
 
   # Swap
-  run_priv swapoff -a &>/dev/null || :
-  run_priv swapon -a &>/dev/null || :
+  sudo swapoff -a &>/dev/null || :
+  sudo swapon -a &>/dev/null || :
 
   # Temp files
-  run_priv systemd-tmpfiles --clean &>/dev/null || :
+  sudo systemd-tmpfiles --clean &>/dev/null || :
   rm -rf "$HOME/.local/share/Trash"/* &>/dev/null || :
   rm -rf "$HOME/.var/app"/*/cache/* &>/dev/null || :
-  run_priv rm -rf /tmp/* /var/tmp/* &>/dev/null || :
+  sudo rm -rf /tmp/* /var/tmp/* &>/dev/null || :
 
   # Bleachbit
-  has bleachbit && { bleachbit -c --preset &>/dev/null || :; run_priv bleachbit -c --preset &>/dev/null || :; }
+  has bleachbit && { bleachbit -c --preset &>/dev/null || :; sudo bleachbit -c --preset &>/dev/null || :; }
 
   # Trim
-  run_priv fstrim -a --quiet-unsupported &>/dev/null || :
+  sudo fstrim -a --quiet-unsupported &>/dev/null || :
 
   # Font cache
-  has fc-cache && run_priv fc-cache -r &>/dev/null || :
+  has fc-cache && sudo fc-cache -r &>/dev/null || :
 }
 
 #============ Main ============
 main(){
   banner
-
-  # Initialize privilege
-  PRIV_CMD=$(init_priv)
-  [[ $EUID -ne 0 ]] && "$PRIV_CMD" -v || :
 
   # Capture before state
   local disk_before disk_after
@@ -300,7 +265,7 @@ main(){
 
   # Drop caches
   sync
-  echo 3 | run_priv tee /proc/sys/vm/drop_caches &>/dev/null || :
+  echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null || :
 
   # Dev caches
   has cargo-cache && { cargo cache -efg &>/dev/null || :; cargo cache -ef trim --limit 1B &>/dev/null || :; }

@@ -38,34 +38,6 @@ export RATE_MIRRORS_PROTOCOL=https RATE_MIRRORS_ALLOW_ROOT=true \
 #============ Helper Functions ============
 has(){ command -v "$1" &>/dev/null; }
 
-get_priv_cmd(){
-  local cmd
-  for cmd in sudo-rs sudo doas; do
-    if has "$cmd"; then
-      printf '%s' "$cmd"
-      return 0
-    fi
-  done
-  [[ $EUID -eq 0 ]] || { echo "No privilege tool found" >&2; exit 1; }
-  printf ''
-}
-
-init_priv(){
-  local priv_cmd; priv_cmd=$(get_priv_cmd)
-  [[ -n $priv_cmd && $EUID -ne 0 ]] && "$priv_cmd" -v
-  printf '%s' "$priv_cmd"
-}
-
-run_priv(){
-  local priv_cmd="${PRIV_CMD:-}"
-  [[ -z $priv_cmd ]] && priv_cmd=$(get_priv_cmd)
-  if [[ $EUID -eq 0 || -z $priv_cmd ]]; then
-    "$@"
-  else
-    "$priv_cmd" -- "$@"
-  fi
-}
-
 log(){ printf "[%s] %s\n" "$1" "${@:2}" | tee -a "$LOGFILE" >&2; }
 die(){ log ERROR "$@"; cleanup; exit 1; }
 info(){ log INFO "$@"; }
@@ -77,13 +49,13 @@ trap cleanup EXIT INT TERM
 #============ Core Functions ============
 backup(){
   local src=$1 dst=$BACKUPDIR/${src##*/}-$(date +%s).bak
-  [[ -d $BACKUPDIR ]] || run_priv mkdir -p "$BACKUPDIR"
-  run_priv cp -a "$src" "$dst" &>/dev/null || return 1
+  [[ -d $BACKUPDIR ]] || sudo mkdir -p "$BACKUPDIR"
+  sudo cp -a "$src" "$dst" &>/dev/null || return 1
 
   # Keep only 20 newest backups
   find "$BACKUPDIR" -name "${src##*/}-*.bak" -printf '%T@ %p\n' 2>/dev/null | \
     sort -rn | tail -n+21 | awk '{$1=""; print substr($0,2)}' | \
-    xargs -r run_priv rm -f &>/dev/null || :
+    xargs -r sudo rm -f &>/dev/null || :
 }
 
 get_ref(){
@@ -125,9 +97,9 @@ rank_manual(){
   {
     printf "## Ranked %s\n\n" "$(date)"
     awk '{print "Server = " $2}' "$tmp.spd"
-  } | run_priv tee "$tmp" >/dev/null
+  } | sudo tee "$tmp" >/dev/null
 
-  run_priv install -m644 -b -S -T "$tmp" "$file"
+  sudo install -m644 -b -S -T "$tmp" "$file"
 }
 
 rank_rate(){
@@ -158,7 +130,7 @@ rank_rate(){
       return
     }
 
-  run_priv install -m644 -b -S -T "$tmp" "$file"
+  sudo install -m644 -b -S -T "$tmp" "$file"
 }
 
 rank_arch_fresh(){
@@ -191,7 +163,7 @@ rank_arch_fresh(){
       --comment-prefix="# " --output-prefix="Server = " \
     || { warn "rate-mirrors failed, falling back"; rank_manual "$path"; return; }
 
-  run_priv install -m644 -b -S -T "$tmp" "$path"
+  sudo install -m644 -b -S -T "$tmp" "$path"
 }
 
 rank_reflector(){
@@ -204,13 +176,13 @@ rank_reflector(){
   local -a args=(--save "$tmp" --protocol https --latest 20 --sort rate -n"$MAX_MIRRORS" --threads "$CONCURRENCY")
   [[ $COUNTRY =~ ^[A-Z]{2}$ ]] && args+=(--country "$COUNTRY")
 
-  run_priv reflector "${args[@]}" &>/dev/null || {
+  sudo reflector "${args[@]}" &>/dev/null || {
     warn "reflector failed, falling back"
     rank_manual "$file"
     return
   }
 
-  run_priv install -m644 -b -S -T "$tmp" "$file"
+  sudo install -m644 -b -S -T "$tmp" "$file"
 }
 
 benchmark(){
@@ -254,16 +226,16 @@ restore(){
   [[ $n =~ ^[0-9]+$ && $n -ge 1 && $n -le ${#baks[@]} ]] || die "Invalid selection"
 
   local tgt=$(sed 's/-[0-9]\+\.bak$//' <<<"${baks[$((n-1))]##*/}")
-  run_priv cp "${baks[$((n-1))]}" "$MIRRORDIR/$tgt" || die "Restore failed"
+  sudo cp "${baks[$((n-1))]}" "$MIRRORDIR/$tgt" || die "Restore failed"
   info "Restored $tgt"
-  run_priv pacman -Sy &>/dev/null || :
+  sudo pacman -Sy &>/dev/null || :
 }
 
 opt_all(){
   info "Starting optimization (country: $COUNTRY)"
-  run_priv pacman -Syyuq --noconfirm --needed || :
-  run_priv pacman-db-upgrade --nocolor &>/dev/null || :
-  has keyserver-rank && run_priv keyserver-rank --yes &>/dev/null || :
+  sudo pacman -Syyuq --noconfirm --needed || :
+  sudo pacman-db-upgrade --nocolor &>/dev/null || :
+  has keyserver-rank && sudo keyserver-rank --yes &>/dev/null || :
 
   [[ -f /etc/eos-rankmirrors.disabled ]] && source /etc/eos-rankmirrors.disabled || :
   get_ref
@@ -273,7 +245,7 @@ opt_all(){
 
     if has cachyos-rate-mirrors; then
       info "Using cachyos-rate-mirrors"
-      run_priv cachyos-rate-mirrors || :
+      sudo cachyos-rate-mirrors || :
     else
       for repo in "${REPOS[@]}"; do
         [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_rate "$repo" || :
@@ -300,9 +272,9 @@ opt_all(){
     done
   fi
 
-  run_priv chmod 644 "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
+  sudo chmod 644 "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
   info "Updated all mirrorlists"
-  run_priv pacman -Syyq --noconfirm --needed || :
+  sudo pacman -Syyq --noconfirm --needed || :
 }
 
 show_current(){
@@ -366,11 +338,10 @@ EOF
 #============ Main ============
 main(){
   # Initialize privilege
-  PRIV_CMD=$(init_priv)
   sync
 
   [[ $EUID -eq 0 || $# -gt 0 ]] || exec "$PRIV_CMD" -E "$0" "$@"
-  run_priv mkdir -p "${LOGFILE%/*}" "$BACKUPDIR" &>/dev/null || :
+  sudo mkdir -p "${LOGFILE%/*}" "$BACKUPDIR" &>/dev/null || :
 
   while (($#)); do
     case $1 in

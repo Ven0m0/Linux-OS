@@ -20,15 +20,7 @@ warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
 err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
 die(){ err "$1"; exit "${2:-1}"; }
 
-# Privilege (sudo-rs → sudo → doas)
-get_priv(){
-  local c
-  for c in sudo-rs sudo doas; do has "$c" && { printf '%s' "$c"; return 0; }; done
-  [[ $EUID -eq 0 ]] || die "No privilege escalation tool found"
-}
-PRIV_CMD=${PRIV_CMD:-$(get_priv)}
-[[ $EUID -ne 0 ]] && "$PRIV_CMD" -v || :
-run_priv(){ [[ $EUID -eq 0 ]] && "$@" || "$PRIV_CMD" -- "$@"; }
+# Privilege
 
 # Config flags
 declare -A cfg=([dry_run]=0 [skip_external]=0 [minimal]=0 [quiet]=0)
@@ -87,7 +79,7 @@ parse_args(){
 configure_apt(){
   log "Configuring APT for performance & reliability"
   
-  run_priv tee /etc/apt/apt.conf.d/99parallel >/dev/null <<'EOF'
+  sudo tee /etc/apt/apt.conf.d/99parallel >/dev/null <<'EOF'
 APT::Acquire::Retries "5";
 Acquire::Queue-Mode "access";
 Acquire::Languages "none";
@@ -98,7 +90,7 @@ APT { Get { Assume-Yes "true"; Fix-Broken "true"; Fix-Missing "true"; List-Clean
 APT::Acquire::Max-Parallel-Downloads "5";
 EOF
 
-  run_priv tee /etc/apt/apt.conf.d/50-unattended-upgrades >/dev/null <<'EOF'
+  sudo tee /etc/apt/apt.conf.d/50-unattended-upgrades >/dev/null <<'EOF'
 APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::AutocleanInterval "7";
 APT::Periodic::Download-Upgradeable-Packages "1";
@@ -108,17 +100,17 @@ APT::Periodic::Update-Package-Lists "1";
 Unattended-Upgrade::MinimalSteps "true";
 EOF
 
-  run_priv tee /etc/apt/apt.conf.d/01disable-log >/dev/null <<'EOF'
+  sudo tee /etc/apt/apt.conf.d/01disable-log >/dev/null <<'EOF'
 Dir::Log::Terminal "";
 EOF
 
-  run_priv tee /etc/apt/apt.conf.d/71debconf >/dev/null <<'EOF'
+  sudo tee /etc/apt/apt.conf.d/71debconf >/dev/null <<'EOF'
 DPkg::Options {
    "--force-confdef";
 };
 EOF
 
-  run_priv tee /etc/dpkg/dpkg.cfg.d/force-unsafe-io >/dev/null <<'EOF'
+  sudo tee /etc/dpkg/dpkg.cfg.d/force-unsafe-io >/dev/null <<'EOF'
 force-unsafe-io
 EOF
 }
@@ -129,7 +121,7 @@ EOF
 configure_dpkg_nodoc(){
   log "Configuring dpkg to exclude documentation"
   
-  run_priv tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null <<'EOF'
+  sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null <<'EOF'
 path-exclude /usr/share/doc/*
 path-exclude /usr/share/help/*
 path-exclude /usr/share/man/*
@@ -147,13 +139,13 @@ clean_docs(){
   run find /usr/share/doc/ -depth -type f ! -name copyright -delete 2>/dev/null || :
   run find /usr/share/doc/ -name '*.gz' -o -name '*.pdf' -o -name '*.tex' -delete 2>/dev/null || :
   run find /usr/share/doc/ -type d -empty -delete 2>/dev/null || :
-  run_priv rm -rf /usr/share/{groff,info,lintian,linda,man}/* /var/cache/man/* 2>/dev/null || :
+  sudo rm -rf /usr/share/{groff,info,lintian,linda,man}/* /var/cache/man/* 2>/dev/null || :
   
   # Keep only en_GB locale
-  run_priv bash -c 'cd /usr/share/locale && for d in *; do [[ $d != en_GB ]] && rm -rf "$d"; done' 2>/dev/null || :
-  run_priv bash -c 'cd /usr/share/X11/locale && for d in *; do [[ $d != en_GB ]] && rm -rf "$d"; done' 2>/dev/null || :
+  sudo bash -c 'cd /usr/share/locale && for d in *; do [[ $d != en_GB ]] && rm -rf "$d"; done' 2>/dev/null || :
+  sudo bash -c 'cd /usr/share/X11/locale && for d in *; do [[ $d != en_GB ]] && rm -rf "$d"; done' 2>/dev/null || :
   
-  run_priv apt-get remove --purge -y '*texlive*' '*-doc' 2>/dev/null || :
+  sudo apt-get remove --purge -y '*texlive*' '*-doc' 2>/dev/null || :
 }
 
 # ────────────────────────────────────────────────────────────
@@ -163,23 +155,23 @@ optimize_system(){
   log "Applying system-level optimizations"
   
   # Disable unnecessary services
-  run_priv systemctl mask NetworkManager-wait-online.service 2>/dev/null || :
-  run_priv tee /etc/NetworkManager/conf.d/20-connectivity.conf >/dev/null <<'EOF'
+  sudo systemctl mask NetworkManager-wait-online.service 2>/dev/null || :
+  sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf >/dev/null <<'EOF'
 [connectivity]
 enabled=false
 EOF
 
   # Disable SELinux if present
   if [[ -f /etc/selinux/config ]]; then
-    run_priv tee /etc/selinux/config >/dev/null <<'EOF'
+    sudo tee /etc/selinux/config >/dev/null <<'EOF'
 SELINUX=disabled
 SELINUXTYPE=minimum
 EOF
-    run_priv setenforce 0 2>/dev/null || :
+    sudo setenforce 0 2>/dev/null || :
   fi
 
   # Power management & module tuning
-  run_priv tee /etc/modprobe.d/misc.conf >/dev/null <<'EOF'
+  sudo tee /etc/modprobe.d/misc.conf >/dev/null <<'EOF'
 options cec debug=0
 options pstore backend=null
 options snd_hda_intel power_save=1
@@ -190,10 +182,10 @@ EOF
 
   # I/O scheduler tuning
   for dev in /sys/block/sd*[!0-9]/queue/iosched/fifo_batch; do
-    [[ -f $dev ]] && run_priv tee "$dev" >/dev/null <<<32 || :
+    [[ -f $dev ]] && sudo tee "$dev" >/dev/null <<<32 || :
   done
   for dev in /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch; do
-    [[ -f $dev ]] && run_priv tee "$dev" >/dev/null <<<32 || :
+    [[ -f $dev ]] && sudo tee "$dev" >/dev/null <<<32 || :
   done
 
   # Filesystem optimizations
@@ -202,38 +194,38 @@ EOF
   home_dev=$(findmnt -n -o SOURCE /home 2>/dev/null || echo "$root_dev")
   
   [[ -n $root_dev ]] && {
-    run_priv tune2fs -o journal_data_writeback "$root_dev" 2>/dev/null || :
-    run_priv tune2fs -O ^has_journal,fast_commit "$root_dev" 2>/dev/null || :
-    run_priv tune2fs -c 0 -i 0 "$root_dev" 2>/dev/null || :
-    run_priv tune2fs -O ^metadata_csum,^quota "$root_dev" 2>/dev/null || :
+    sudo tune2fs -o journal_data_writeback "$root_dev" 2>/dev/null || :
+    sudo tune2fs -O ^has_journal,fast_commit "$root_dev" 2>/dev/null || :
+    sudo tune2fs -c 0 -i 0 "$root_dev" 2>/dev/null || :
+    sudo tune2fs -O ^metadata_csum,^quota "$root_dev" 2>/dev/null || :
   }
   
   [[ -n $home_dev && $home_dev != "$root_dev" ]] && {
-    run_priv tune2fs -o journal_data_writeback "$home_dev" 2>/dev/null || :
-    run_priv tune2fs -O ^has_journal,fast_commit "$home_dev" 2>/dev/null || :
-    run_priv tune2fs -c 0 -i 0 "$home_dev" 2>/dev/null || :
-    run_priv tune2fs -O ^metadata_csum,^quota "$home_dev" 2>/dev/null || :
+    sudo tune2fs -o journal_data_writeback "$home_dev" 2>/dev/null || :
+    sudo tune2fs -O ^has_journal,fast_commit "$home_dev" 2>/dev/null || :
+    sudo tune2fs -c 0 -i 0 "$home_dev" 2>/dev/null || :
+    sudo tune2fs -O ^metadata_csum,^quota "$home_dev" 2>/dev/null || :
   }
 
   # Network interface optimization
   if ip -o link | grep -q wlan; then
-    run_priv tee /etc/modprobe.d/wlan.conf >/dev/null <<'EOF'
+    sudo tee /etc/modprobe.d/wlan.conf >/dev/null <<'EOF'
 options iwlwifi power_save=1
 options iwlmvm power_scheme=3
 options rfkill default_state=0 master_switch_mode=0
 EOF
     has ethtool && {
-      run_priv ethtool -K wlan0 gro on gso on 2>/dev/null || :
+      sudo ethtool -K wlan0 gro on gso on 2>/dev/null || :
     }
   else
     has ethtool && {
-      run_priv ethtool -K eth0 gro off gso off 2>/dev/null || :
-      run_priv ethtool -C eth0 adaptive-rx on adaptive-tx on 2>/dev/null || :
+      sudo ethtool -K eth0 gro off gso off 2>/dev/null || :
+      sudo ethtool -C eth0 adaptive-rx on adaptive-tx on 2>/dev/null || :
     }
   fi
 
   # Journald optimization
-  run_priv tee /etc/systemd/journald.conf.d/optimization.conf >/dev/null <<'EOF'
+  sudo tee /etc/systemd/journald.conf.d/optimization.conf >/dev/null <<'EOF'
 [Journal]
 ForwardToSyslog=no
 ForwardToKMsg=no
@@ -241,17 +233,17 @@ ForwardToConsole=no
 ForwardToWall=no
 Compress=yes
 EOF
-  run_priv journalctl --rotate --vacuum-time=1s 2>/dev/null || :
+  sudo journalctl --rotate --vacuum-time=1s 2>/dev/null || :
 
   # Disable core dumps
-  run_priv tee /etc/sysctl.d/50-coredump.conf >/dev/null <<'EOF'
+  sudo tee /etc/sysctl.d/50-coredump.conf >/dev/null <<'EOF'
 kernel.core_pattern=/dev/null
 kernel.hung_task_timeout_secs=0
 EOF
-  run_priv sysctl -w kernel.hung_task_timeout_secs=0 2>/dev/null || :
+  sudo sysctl -w kernel.hung_task_timeout_secs=0 2>/dev/null || :
 
   # Update initramfs
-  has update-initramfs && run_priv update-initramfs -u -k all || :
+  has update-initramfs && sudo update-initramfs -u -k all || :
 }
 
 # ────────────────────────────────────────────────────────────
@@ -261,12 +253,12 @@ configure_ssh(){
   log "Configuring SSH/Dropbear"
   
   [[ -f /etc/default/dropbear ]] && {
-    run_priv sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
+    sudo sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
   }
   
   [[ -f /etc/ssh/sshd_config ]] && {
-    run_priv sed -i -E 's/#?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
-    run_priv sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    sudo sed -i -E 's/#?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
+    sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
   }
 }
 
@@ -282,8 +274,8 @@ install_core_tools(){
     btrfs-progs
   )
   
-  run_priv apt-get update
-  run_priv apt-get install -y "${tools[@]}"
+  sudo apt-get update
+  sudo apt-get install -y "${tools[@]}"
   
   # fd symlink
   [[ -f /usr/bin/fdfind && ! -f "$HOME/.local/bin/fd" ]] && {
@@ -299,14 +291,14 @@ install_extended_tools(){
   
   # Eza (modern ls replacement)
   if ! has eza; then
-    run_priv mkdir -p /etc/apt/keyrings
+    sudo mkdir -p /etc/apt/keyrings
     wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | \
-      run_priv gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
+      sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
     echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | \
-      run_priv tee /etc/apt/sources.list.d/gierens.list >/dev/null
-    run_priv chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-    run_priv apt-get update
-    run_priv apt-get install -y eza
+      sudo tee /etc/apt/sources.list.d/gierens.list >/dev/null
+    sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+    sudo apt-get update
+    sudo apt-get install -y eza
   fi
 
   # Zoxide (smarter cd)
@@ -323,19 +315,19 @@ install_package_managers(){
   log "Installing alternative package managers"
   # apt-fast
   if ! has apt-fast; then
-    run_priv mkdir -p /etc/apt/keyrings /etc/apt/sources.list.d
+    sudo mkdir -p /etc/apt/keyrings /etc/apt/sources.list.d
     curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBC5934FD3DEBD4DAEA544F791E2824A7F22B44BD" | \
-      run_priv gpg --dearmor -o /etc/apt/keyrings/apt-fast.gpg
+      sudo gpg --dearmor -o /etc/apt/keyrings/apt-fast.gpg
     echo "deb [signed-by=/etc/apt/keyrings/apt-fast.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main" | \
-      run_priv tee /etc/apt/sources.list.d/apt-fast.list >/dev/null
-    run_priv apt-get update
-    run_priv apt-get install -y apt-fast
+      sudo tee /etc/apt/sources.list.d/apt-fast.list >/dev/null
+    sudo apt-get update
+    sudo apt-get install -y apt-fast
   fi
   # deb-get
   if ! has deb-get; then
-    run_priv apt-get install -y curl lsb-release wget
+    sudo apt-get install -y curl lsb-release wget
     curl -sL https://raw.githubusercontent.com/wimpysworld/deb-get/main/deb-get | \
-      run_priv bash -s install deb-get
+      sudo bash -s install deb-get
   fi
   # eget (binary installer)
   if ! has eget; then
@@ -347,7 +339,7 @@ install_package_managers(){
   fi
   # pacstall
   if ! has pacstall; then
-    run_priv bash -c "$(curl -fsSL https://pacstall.dev/q/install)"
+    sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install)"
   fi
 }
 
@@ -362,7 +354,7 @@ install_external(){
   # Pi-hole
   if ! has pihole; then
     warn "Pi-hole installer is interactive - proceeding"
-    curl -sSL https://install.pi-hole.net | run_priv bash
+    curl -sSL https://install.pi-hole.net | sudo bash
   fi
 
   # PiApps
@@ -394,8 +386,8 @@ main(){
   install_package_managers
   install_external
   # Final cleanup
-  run_priv apt-get autoremove -y
-  run_priv apt-get autoclean
+  sudo apt-get autoremove -y
+  sudo apt-get autoclean
   has flatpak && run flatpak uninstall --unused --delete-data -y || :
   log "${GRN}✓${DEF} Setup complete"
   warn "Reboot recommended to apply all optimizations"

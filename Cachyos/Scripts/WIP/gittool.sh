@@ -2,11 +2,11 @@
 # Speed up git
 export LC_ALL=C LANG=C
 
-githousekeep() {
-  local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+githousekeep(){
+  local workdir="$(cd -- "${-- "${BASH_SOURCE[0]:-}"%/*}" && pwd)"
   cd -- "$workdir" || return 1
   local dir="${1:-$workdir}"
-  if ! git -C "$dir" rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  if ! git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     printf 'Not a git work tree: %s\n' "$dir" >&2
     return 1
   fi
@@ -18,9 +18,9 @@ githousekeep() {
   git -C "$dir" for-each-ref --format='%(refname:short)' refs/heads \
     --merged=origin/HEAD \
     | grep -Ev '^(main|master|dev|release|HEAD)$' \
-    | xargs --no-run-if-empty -r -n1 git -C "$dir" branch -d 2> /dev/null || :
+    | xargs --no-run-if-empty -r -n1 git -C "$dir" branch -d 2>/dev/null || :
   # Prune origin: stop tracking branches that do not exist in origin
-  git -C "$dir" remote prune origin > /dev/null || :
+  git -C "$dir" remote prune origin >/dev/null || :
   # Ensure each submodule itself is forcibly synced to the remote tip and cleaned
   git -C "$dir" submodule foreach --recursive '
     echo "  Submodule: $name ($sm_path)"
@@ -40,21 +40,21 @@ githousekeep() {
   git -C "$dir" gc --auto --aggressive --prune=now --quiet
   git -C "$dir" clean -fdXq
 }
-gitdate() {
-  local workdir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+gitdate(){
+  local workdir="$(cd -- "${-- "${BASH_SOURCE[0]:-}"%/*}" && pwd)"
   cd -- "$workdir" || return 1
   local dir="${1:-$workdir}"
-  if ! git -C "$dir" rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+  if ! git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     printf 'Not a git work tree: %s\n' "$dir" >&2
     return 1
   fi
   printf '\e[1mUpdating: %s\e[0m\n' "$dir"
   # Keep remote-tracking refs tidy
-  git -C "$dir" remote prune origin > /dev/null
+  git -C "$dir" remote prune origin >/dev/null
   # Fetch
   git -C "$dir" fetch --prune --no-tags --filter=blob:none origin || git -C "$dir" fetch --prune --no-tags origin
   # if rebase failed try to abort and continue
-  git -C "$dir" pull --rebase --autostash --prune origin HEAD || git -C "$dir" rebase --abort &> /dev/null
+  git -C "$dir" pull --rebase --autostash --prune origin HEAD || git -C "$dir" rebase --abort &>/dev/null>/dev/null
   # Sync submodule URLs
   git -C "$dir" submodule sync --recursive
   # Update submodules with fallback

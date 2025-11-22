@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tput check
 #──────────── Color & Effects ────────────
-if command -v tput > /dev/null 2>&1 && [[ -n $TERM ]] && tput setaf 0 > /dev/null 2>&1; then
+if command -v tput >/dev/null 2>&1 && [[ -n $TERM ]] && tput setaf 0 >/dev/null 2>&1; then
   # tput-based
   DEF=$(tput sgr0) BLD=$(tput bold) DIM=$(tput dim) UND=$(tput smul)
   INV=$(tput rev) HID=$(tput invis)

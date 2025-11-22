@@ -88,7 +88,7 @@ main(){
       }
     }
     function a_replace_field(value, _next) {
-      if (!match($0, "^ *[^ ]+( +[^ ]+){" (i - 1) "}")) {
+      if (!match($0, "^ *[^ ]]+( +[^ ]]+){" (i - 1) "}")) {
         $i = value
         return
       }

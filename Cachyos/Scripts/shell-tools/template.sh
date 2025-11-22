@@ -10,7 +10,7 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 #─────────────────────────────────────────
-cd -- "$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && pwd)"
+cd -- "$(cd -- "${-- "${BASH_SOURCE[0]:-}"%/*}" && pwd)"
 
 if [[ $EUID -ne 0 ]]; then
   echo "This script requires root privileges. Validating with sudo..."

@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
 export LC_ALL=C LANG=C
 
-nekofetch() {
+nekofetch(){
   local CAT="${1:-}" JT="${2:-}" IT="${3:-}"
   local JSONT IMGT endpoints formats img_url fmt tmpfile
   # pick json tool
-  if [[ -n $JT ]] && command -v "$JT" &> /dev/null; then
+  if [[ -n $JT ]] && command -v "$JT" &>/dev/null>/dev/null; then
     JSONT="$JT"
-  elif command -v jaq &> /dev/null; then
+  elif command -v jaq &>/dev/null>/dev/null; then
     JSONT=jaq
-  elif command -v jq &> /dev/null; then
+  elif command -v jq &>/dev/null>/dev/null; then
     JSONT=jq
   else
     printf 'error: no json tool found (jaq or jq required)\n' >&2
     return 1
   fi
   # pick image tool
-  if [[ -n $IT ]] && command -v "$IT" &> /dev/null; then
+  if [[ -n $IT ]] && command -v "$IT" &>/dev/null>/dev/null; then
     IMGT="$IT"
-  elif command -v chafa &> /dev/null; then
+  elif command -v chafa &>/dev/null>/dev/null; then
     IMGT=chafa
   else
     IMGT=cat
@@ -68,7 +68,7 @@ nekofetch() {
     trap 'rm -f "$tmpfile"' EXIT
     curl -s "$img_url" > "$tmpfile"
     # try to run renderer, else fall back to printing path
-    if command -v "$IMGT" &> /dev/null; then
+    if command -v "$IMGT" &>/dev/null>/dev/null; then
       "$IMGT" "$tmpfile"
     else
       printf 'image saved to: %s\n' "$tmpfile"

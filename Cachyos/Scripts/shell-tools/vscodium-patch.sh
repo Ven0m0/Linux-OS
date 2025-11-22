@@ -15,7 +15,7 @@ JQ=$(has jaq && echo jaq || has jq && echo jq || die "jq/jaq required")
 download_file(){
   local url=$1 out=$2
   if has aria2c; then
-    aria2c -q --max-tries=3 --retry-wait=1 -d "$(dirname "$out")" -o "$(basename "$out")" "$url"
+    aria2c -q --max-tries=3 --retry-wait=1 -d "${"$out"%/*}" -o "${"$out"##*/}" "$url"
   elif has curl; then
     curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$out"
   elif has wget; then

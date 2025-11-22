@@ -26,5 +26,5 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 if [[ -n "$profile" ]]; then
-  exec "$(dirname "$0")/android-toolkit.sh" optimize --profile "$profile" "${args[@]}"
-else exec "$(dirname "$0")/android-toolkit.sh" optimize "${args[@]}"; fi
+  exec "${"$0"%/*}/android-toolkit.sh" optimize --profile "$profile" "${args[@]}"
+else exec "${"$0"%/*}/android-toolkit.sh" optimize "${args[@]}"; fi

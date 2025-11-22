@@ -15,7 +15,7 @@ sudo sysctl -w net.ipv6.conf.all.forwarding=1
 sudo sysctl -w net.ipv6.conf.default.forwarding=1
 
 # Make changes persistent
-sudo tee /etc/sysctl.d/99-ip-forward.conf > /dev/null << 'EOF'
+sudo tee /etc/sysctl.d/99-ip-forward.conf >/dev/null <<'EOF'
 net.ipv4.ip_forward=1
 net.ipv6.conf.all.forwarding=1
 net.ipv6.conf.default.forwarding=1

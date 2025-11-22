@@ -3,38 +3,38 @@ set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C
 readonly out="${1:-.}"
-readonly jobs=$(nproc 2> /dev/null || echo 4)
+readonly jobs=$(nproc 2>/dev/null || echo 4)
 readonly red=$'\e[31m' grn=$'\e[32m' ylw=$'\e[33m' rst=$'\e[0m'
 
-has() { command -v "$1" &> /dev/null; }
-check_deps() {
+has(){ command -v "$1" &>/dev/null>/dev/null; }
+check_deps(){
   local -a missing=()
-  command -v minify &> /dev/null || command -v bunx &> /dev/null || command -v npx &> /dev/null || missing+=(minify/bun/node)
-  command -v jaq &> /dev/null || command -v jq &> /dev/null || command -v minify &> /dev/null || missing+=(jaq/jq/minify)
+  command -v minify &>/dev/null>/dev/null || command -v bunx &>/dev/null>/dev/null || command -v npx &>/dev/null>/dev/null || missing+=(minify/bun/node)
+  command -v jaq &>/dev/null>/dev/null || command -v jq &>/dev/null>/dev/null || command -v minify &>/dev/null>/dev/null || missing+=(jaq/jq/minify)
   ((${#missing[@]} > 0)) && {
     printf "%s✗%s Missing: %s\n" "$red" "$rst" "${missing[*]}" >&2
     exit 1
   }
 }
 
-minify_css() {
+minify_css(){
   local f=$1 tmp=$(mktemp)
   local len_in=$(wc -c < "$f") len_out
   [[ $f =~ \.min\.css$ ]] && return 0
   if has minify; then
-    minify --type css -o "$tmp" "$f" &> /dev/null || {
+    minify --type css -o "$tmp" "$f" &>/dev/null>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
     }
   elif has bunx; then
-    bunx --bun lightningcss --minify "$f" -o "$tmp" &> /dev/null || {
+    bunx --bun lightningcss --minify "$f" -o "$tmp" &>/dev/null>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
     }
-  elif command -v npx &> /dev/null; then
-    npx -y lightningcss --minify "$f" -o "$tmp" &> /dev/null || {
+  elif command -v npx &>/dev/null>/dev/null; then
+    npx -y lightningcss --minify "$f" -o "$tmp" &>/dev/null>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (lightningcss failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
@@ -51,11 +51,11 @@ minify_css() {
 export -f minify_css
 export grn red rst ylw
 
-minify_html() {
+minify_html(){
   local f=$1 tmp=$(mktemp)
   local len_in=$(wc -c < "$f") len_out
-  if command -v minify &> /dev/null; then
-    minify --type html -o "$tmp" "$f" &> /dev/null || {
+  if command -v minify &>/dev/null>/dev/null; then
+    minify --type html -o "$tmp" "$f" &>/dev/null>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
@@ -71,24 +71,24 @@ minify_html() {
 }
 export -f minify_html
 
-minify_json() {
+minify_json(){
   local f="$1" tmp=$(mktemp)
   local len_in=$(wc -c < "$f") len_out
   [[ $f =~ \.min\.json$|package(-lock)?\.json$ ]] && return 0
-  if command -v jaq &> /dev/null; then
-    jaq -c --indent 2 . "$f" > "$tmp" 2> /dev/null || {
+  if command -v jaq &>/dev/null>/dev/null; then
+    jaq -c --indent 2 . "$f" > "$tmp" 2>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (jaq failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
     }
-  elif command -v jq &> /dev/null; then
-    jq -c --indent 2 . "$f" > "$tmp" 2> /dev/null || {
+  elif command -v jq &>/dev/null>/dev/null; then
+    jq -c --indent 2 . "$f" > "$tmp" 2>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (jq failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
     }
-  elif command -v minify &> /dev/null; then
-    minify --type json -o "$tmp" "$f" &> /dev/null || {
+  elif command -v minify &>/dev/null>/dev/null; then
+    minify --type json -o "$tmp" "$f" &>/dev/null>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
@@ -104,18 +104,18 @@ minify_json() {
 }
 export -f minify_json
 
-minify_xml() {
+minify_xml(){
   local f="$1" tmp=$(mktemp)
   local len_in=$(wc -c < "$f") len_out
   [[ $f =~ \.min\.xml$ ]] && return 0
-  if command -v minify &> /dev/null; then
-    minify --type xml -o "$tmp" "$f" &> /dev/null || {
+  if command -v minify &>/dev/null>/dev/null; then
+    minify --type xml -o "$tmp" "$f" &>/dev/null>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (minify failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
     }
-  elif command -v xmllint &> /dev/null; then
-    xmllint --noblanks "$f" > "$tmp" 2> /dev/null || {
+  elif command -v xmllint &>/dev/null>/dev/null; then
+    xmllint --noblanks "$f" > "$tmp" 2>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (xmllint failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
@@ -131,11 +131,11 @@ minify_xml() {
 }
 export -f minify_xml
 
-fmt_yaml() {
+fmt_yaml(){
   local f="$1" len_out
   local len_in=$(wc -c < "$f") tmp=$(mktemp)
-  if command -v yamlfmt &> /dev/null; then
-    yamlfmt -q "$f" -out "$tmp" &> /dev/null || {
+  if command -v yamlfmt &>/dev/null>/dev/null; then
+    yamlfmt -q "$f" -out "$tmp" &>/dev/null>/dev/null || {
       rm -f "$tmp"
       printf "%s✗%s %s (yamlfmt failed)\n" "$red" "$rst" "${f##*/}" >&2
       return 1
@@ -151,39 +151,39 @@ fmt_yaml() {
 }
 export -f fmt_yaml
 
-process() {
+process(){
   local -a css=() html=() json=() xml=() yaml=()
-  if command -v fd &> /dev/null; then
-    mapfile -t css < <(fd -ecss -tf -E'*.min.css' -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2> /dev/null)
-    mapfile -t html < <(fd -ehtml -ehtm -tf -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2> /dev/null)
-    mapfile -t json < <(fd -ejson -tf -E'*.min.json' -E'package*.json' -Enode_modules -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2> /dev/null)
-    mapfile -t xml < <(fd -exml -tf -E'*.min.xml' -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2> /dev/null)
-    mapfile -t yaml < <(fd -eyml -eyaml -tf -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2> /dev/null)
+  if command -v fd &>/dev/null>/dev/null; then
+    mapfile -t css < <(fd -ecss -tf -E'*.min.css' -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
+    mapfile -t html < <(fd -ehtml -ehtm -tf -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
+    mapfile -t json < <(fd -ejson -tf -E'*.min.json' -E'package*.json' -Enode_modules -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
+    mapfile -t xml < <(fd -exml -tf -E'*.min.xml' -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
+    mapfile -t yaml < <(fd -eyml -eyaml -tf -Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor . "$out" 2>/dev/null)
   else
-    mapfile -t css < <(find "$out" -type f -name '*.css' ! -name '*.min.css' ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2> /dev/null)
-    mapfile -t html < <(find "$out" -type f \( -name '*.html' -o -name '*.htm' \) ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2> /dev/null)
-    mapfile -t json < <(find "$out" -type f -name '*.json' ! -name '*.min.json' ! -name 'package*.json' ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2> /dev/null)
-    mapfile -t xml < <(find "$out" -type f -name '*.xml' ! -name '*.min.xml' ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2> /dev/null)
-    mapfile -t yaml < <(find "$out" -type f \( -name '*.yml' -o -name '*.yaml' \) ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2> /dev/null)
+    mapfile -t css < <(find "$out" -type f -name '*.css' ! -name '*.min.css' ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
+    mapfile -t html < <(find "$out" -type f \( -name '*.html' -o -name '*.htm' \) ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
+    mapfile -t json < <(find "$out" -type f -name '*.json' ! -name '*.min.json' ! -name 'package*.json' ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
+    mapfile -t xml < <(find "$out" -type f -name '*.xml' ! -name '*.min.xml' ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
+    mapfile -t yaml < <(find "$out" -type f \( -name '*.yml' -o -name '*.yaml' \) ! -path '*/.git/*' ! -path '*/node_modules/*' ! -path '*/dist/*' ! -path '*/.cache/*' ! -path '*/build/*' ! -path '*/target/*' ! -path '*/__pycache__/*' ! -path '*/.venv/*' ! -path '*/.npm/*' ! -path '*/vendor/*' 2>/dev/null)
   fi
   local -i total=$((${#css[@]} + ${#html[@]} + ${#json[@]} + ${#xml[@]} + ${#yaml[@]}))
   ((total == 0)) && {
     printf "%s⊘%s No files found\n" "$ylw" "$rst"
     return 0
   }
-  if command -v rust-parallel &> /dev/null; then
+  if command -v rust-parallel &>/dev/null>/dev/null; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | rust-parallel -j"$jobs" minify_css {} || :
     ((${#html[@]} > 0)) && printf "%s\n" "${html[@]}" | rust-parallel -j"$jobs" minify_html {} || :
     ((${#json[@]} > 0)) && printf "%s\n" "${json[@]}" | rust-parallel -j"$jobs" minify_json {} || :
     ((${#xml[@]} > 0)) && printf "%s\n" "${xml[@]}" | rust-parallel -j"$jobs" minify_xml {} || :
     ((${#yaml[@]} > 0)) && printf "%s\n" "${yaml[@]}" | rust-parallel -j"$jobs" fmt_yaml {} || :
-  elif command -v parallel &> /dev/null; then
+  elif command -v parallel &>/dev/null>/dev/null; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | parallel -j"$jobs" minify_css {} || :
     ((${#html[@]} > 0)) && printf "%s\n" "${html[@]}" | parallel -j"$jobs" minify_html {} || :
     ((${#json[@]} > 0)) && printf "%s\n" "${json[@]}" | parallel -j"$jobs" minify_json {} || :
     ((${#xml[@]} > 0)) && printf "%s\n" "${xml[@]}" | parallel -j"$jobs" minify_xml {} || :
     ((${#yaml[@]} > 0)) && printf "%s\n" "${yaml[@]}" | parallel -j"$jobs" fmt_yaml {} || :
-  elif command -v xargs &> /dev/null; then
+  elif command -v xargs &>/dev/null>/dev/null; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_css "$@"' _ {} || :
     ((${#html[@]} > 0)) && printf "%s\n" "${html[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_html "$@"' _ {} || :
     ((${#json[@]} > 0)) && printf "%s\n" "${json[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_json "$@"' _ {} || :
@@ -198,7 +198,7 @@ process() {
   fi
   printf "\n%s✓%s Processed %d files\n" "$grn" "$rst" "$total"
 }
-main() {
+main(){
   check_deps
   process
 }

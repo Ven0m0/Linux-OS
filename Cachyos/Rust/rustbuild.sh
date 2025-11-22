@@ -51,5 +51,5 @@ cargo q build --release # if you installed cargo-q
 cargo pgo build --bin your_app
 
 # 11. Strip and report size
-strip target/release/"$(basename "$PWD")"
-ls -lh target/release/"$(basename "$PWD")"
+strip target/release/"${"$PWD"##*/}"
+ls -lh target/release/"${"$PWD"##*/}"

@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-21 - Applied bash optimization techniques
-# WARNING: This script contains hardcoded values and incomplete setup
-# TODO: Configure variables before running
+#
+# Configuration:
+# Set these environment variables before running to customize the installation:
+#   NEXTCLOUD_DOMAIN - Your Nextcloud domain (default: cloud.example.com)
+#   DB_NAME          - Database name (default: nextcloud)
+#   DB_USER          - Database user (default: ncuser)
+#   DB_PASS          - Database password (default: auto-generated)
+#   TIMEZONE         - System timezone (default: UTC)
+#
+# Example usage:
+#   NEXTCLOUD_DOMAIN=mycloud.example.com TIMEZONE=America/New_York ./Nextcloud.sh
+#
 # Source shared libraries
 SCRIPT_DIR="$(cd "${"${BASH_SOURCE[0]}"%/*}" && pwd)"
 # ============ Inlined from lib/common.sh ============

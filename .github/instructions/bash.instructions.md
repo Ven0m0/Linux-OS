@@ -55,7 +55,7 @@ Security, safety, robustness
 - Avoid leaking credentials; prefer env/const/config over hardcoding.
 
 Privilege and package managers
-- Privilege escalation order: sudo-rs → sudo → doas. Store chosen tool; use via run_priv().
+- Use `sudo` for privilege escalation.
 - Package managers: paru → yay → pacman (Arch); apt/dpkg (Debian).
 - Check before install: pacman -Q pkg, flatpak list, cargo install --list.
 
@@ -111,18 +111,8 @@ err(){ xecho "${RED}ERROR:${DEF} $*" >&2; }
 die(){ err "$*"; exit "${2:-1}"; }
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
 
-# Privilege (sudo-rs → sudo → doas)
-get_priv_cmd(){
-  local c
-  for c in sudo-rs sudo doas; do
-    has "$c" && { printf '%s' "$c"; return 0; }
-  done
-  [[ $EUID -eq 0 ]] || die "No privilege tool found and not root."
-}
-PRIV_CMD=${PRIV_CMD:-$(get_priv_cmd || true)}
-[[ -n ${PRIV_CMD:-} && $EUID -ne 0 ]] && "$PRIV_CMD" -v || :
-
-run_priv(){ [[ $EUID -eq 0 || -z ${PRIV_CMD:-} ]] && "$@" || "$PRIV_CMD" -- "$@"; }
+# Privilege
+# Use sudo directly for commands requiring elevated privileges
 
 # Package managers
 pm_detect(){
@@ -145,7 +135,7 @@ cleanup(){
   set +e
   [[ -n ${LOCK_FD:-} ]] && exec {LOCK_FD}>&- || :
   [[ -n ${LOOP_DEV:-} && -b ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" || :
-  [[ -n ${MNT_PT:-} ]] && mountpoint -q -- "${MNT_PT}" && run_priv umount -R "${MNT_PT}" || :
+  [[ -n ${MNT_PT:-} ]] && mountpoint -q -- "${MNT_PT}" && sudo umount -R "${MNT_PT}" || :
   [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
 }
 on_err(){ err "failed at line ${1:-?}"; }
@@ -327,7 +317,7 @@ Review checklist for Copilot
 - Starts with #!/usr/bin/env bash, set -Eeuo pipefail, shopt flags.
 - Uses arrays/mapfile/[[ ... ]] and parameter expansion; avoids parsing ls/using eval/backticks.
 - Logging helpers present; traps for cleanup and ERR with line numbers.
-- Privilege via run_priv(); pkg manager detection; Arch/Debian paths handled.
+- Privilege via sudo; pkg manager detection; Arch/Debian paths handled.
 - Rust tools preferred with fallbacks; Wayland checks when relevant.
 - Flags parsed via short options (-q -v -y -o); supports --help/--version.
 - Linted (shfmt, shellcheck); minimal external calls; parallelized safely.

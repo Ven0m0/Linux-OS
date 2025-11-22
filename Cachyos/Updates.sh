@@ -20,37 +20,6 @@ has(){ command -v "$1" &>/dev/null; }
 # Logging function
 log(){ printf '%b\n' "$*"; }
 
-# Detect available privilege escalation tool
-get_priv_cmd(){
-  local cmd
-  for cmd in sudo-rs sudo doas; do
-    if has "$cmd"; then
-      printf '%s' "$cmd"
-      return 0
-    fi
-  done
-  [[ $EUID -eq 0 ]] || { echo "No privilege tool found and not running as root" >&2; exit 1; }
-  printf ''
-}
-
-# Initialize privilege tool
-init_priv(){
-  local priv_cmd; priv_cmd=$(get_priv_cmd)
-  [[ -n $priv_cmd && $EUID -ne 0 ]] && "$priv_cmd" -v
-  printf '%s' "$priv_cmd"
-}
-
-# Run command with privilege escalation
-run_priv(){
-  local priv_cmd="${PRIV_CMD:-}"
-  [[ -z $priv_cmd ]] && priv_cmd=$(get_priv_cmd)
-  if [[ $EUID -eq 0 || -z $priv_cmd ]]; then
-    "$@"
-  else
-    "$priv_cmd" -- "$@"
-  fi
-}
-
 # Package manager detection with caching
 _PKG_MGR_CACHED=""
 _AUR_OPTS_CACHED=()
@@ -79,10 +48,7 @@ get_aur_opts(){
 }
 
 main(){
-  # Initialize privilege tool
-  PRIV_CMD=$(init_priv)
-  
-  cleanup(){ run_priv rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
+  cleanup(){ sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
   trap cleanup EXIT INT TERM
   #============ Update Functions ============
   update_system(){
@@ -92,10 +58,10 @@ main(){
     pkgmgr=$(get_pkg_manager)
     mapfile -t aur_opts < <(get_aur_opts)
     cleanup
-    run_priv "$pkgmgr" -Sy --needed archlinux-keyring --noconfirm &>/dev/null || :
-    [[ -f /var/lib/pacman/sync/core.files ]] || run_priv pacman -Fy --noconfirm &>/dev/null || :
+    sudo "$pkgmgr" -Sy --needed archlinux-keyring --noconfirm &>/dev/null || :
+    [[ -f /var/lib/pacman/sync/core.files ]] || sudo pacman -Fy --noconfirm &>/dev/null || :
     if [[ $pkgmgr == pacman ]]; then
-      run_priv pacman -Syu --noconfirm
+      sudo pacman -Syu --noconfirm
     else
       local args=(--noconfirm --needed --sudoloop --bottomup --skipreview --cleanafter --removemake "${aur_opts[@]}")
       "$pkgmgr" -Sua --devel "${args[@]}" &>/dev/null || :
@@ -110,7 +76,7 @@ main(){
       topgrade -yc --no-retry "${user_flags[@]}" &>/dev/null || :
     fi
     if has flatpak; then
-      run_priv flatpak update -y --noninteractive --appstream &>/dev/null || :
+      sudo flatpak update -y --noninteractive --appstream &>/dev/null || :
       flatpak update -y --noninteractive &>/dev/null || :
     fi
     if has rustup; then
@@ -142,19 +108,19 @@ main(){
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
     for cmd in fc-cache-reload update-desktop-database update-pciids update-smart-drivedb fwupdmgr; do
-      has "$cmd" && run_priv "$cmd" &>/dev/null || :
+      has "$cmd" && sudo "$cmd" &>/dev/null || :
     done
     
     if has bootctl && [[ -d /sys/firmware/efi ]]; then
-      run_priv bootctl update &>/dev/null || :
+      sudo bootctl update &>/dev/null || :
     fi
     
     if has mkinitcpio; then
-      run_priv mkinitcpio -P &>/dev/null || :
+      sudo mkinitcpio -P &>/dev/null || :
     elif has dracut; then
-      run_priv dracut --regenerate-all --force &>/dev/null || :
+      sudo dracut --regenerate-all --force &>/dev/null || :
     elif [[ -x /usr/lib/booster/regenerate_images ]]; then
-      run_priv /usr/lib/booster/regenerate_images &>/dev/null || :
+      sudo /usr/lib/booster/regenerate_images &>/dev/null || :
     fi
   }
   

@@ -14,21 +14,6 @@ xecho(){ printf '%b
 log(){ xecho "$*"; }
 die(){ xecho "${RED}Error:${DEF} $*" >&2; exit 1; }
 confirm(){ local msg="$1"; printf '%s [y/N]: ' "$msg" >&2; read -r ans; [[ $ans == [Yy]* ]]; }
-get_priv_cmd(){ local cmd; for cmd in sudo-rs sudo doas; do if has "$cmd"; then printf '%s' "$cmd"; return 0; fi; done; [[ $EUID -eq 0 ]] || die "No privilege tool found and not running as root"; printf ''; }
-init_priv(){ local priv_cmd; priv_cmd=$(get_priv_cmd); [[ -n $priv_cmd && $EUID -ne 0 ]] && "$priv_cmd" -v; printf '%s' "$priv_cmd"; }
-run_priv(){ local priv_cmd="${PRIV_CMD:-}"; [[ -z $priv_cmd ]] && priv_cmd=$(get_priv_cmd); if [[ $EUID -eq 0 || -z $priv_cmd ]]; then "$@"; else "$priv_cmd" -- "$@"; fi; }
-print_banner(){ local banner="$1" title="${2:-}"; local flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU"); local -a lines=(); while IFS= read -r line || [[ -n $line ]]; do lines+=("$line"); done <<<"$banner"; local line_count=${#lines[@]} segments=${#flag_colors[@]}; if ((line_count <= 1)); then printf '%s%s%s
-' "${flag_colors[0]}" "${lines[0]}" "$DEF"; else for i in "${!lines[@]}"; do local segment_index=$((i * (segments - 1) / (line_count - 1))); ((segment_index >= segments)) && segment_index=$((segments - 1)); printf '%s%s%s
-' "${flag_colors[segment_index]}" "${lines[i]}" "$DEF"; done; fi; [[ -n $title ]] && xecho "$title"; }
-get_update_banner(){ cat <<'EOF'
-██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
-██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
-██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
-██║   ██║██╔═══╝ ██║  ██║██╔══██║   ██║   ██╔══╝  ╚════██║
-╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ███████╗███████║
- ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
-EOF
-}
 get_clean_banner(){ cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
@@ -40,7 +25,7 @@ EOF
 }
 print_named_banner(){ local name="$1" title="${2:-Meow (> ^ <)}" banner; case "$name" in update) banner=$(get_update_banner) ;; clean) banner=$(get_clean_banner) ;; *) die "Unknown banner name: $name" ;; esac; print_banner "$banner" "$title"; }
 setup_build_env(){ [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null; export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"; export CFLAGS="-march=native -mtune=native -O3 -pipe"; export CXXFLAGS="$CFLAGS"; export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"; export; export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always; export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1; local nproc_count; nproc_count=$(nproc 2>/dev/null || echo 4); export MAKEFLAGS="-j${nproc_count}"; export NINJAFLAGS="-j${nproc_count}"; if has clang && has clang++; then export CC=clang CXX=clang++ AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib; if has ld.lld; then export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"; fi; fi; has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"; }
-run_system_maintenance(){ local cmd=$1; shift; local args=("$@"); has "$cmd" || return 0; case "$cmd" in modprobed-db) "$cmd" store &>/dev/null || :;; hwclock | updatedb | chwd) run_priv "$cmd" "${args[@]}" &>/dev/null || :;; mandb) run_priv "$cmd" -q &>/dev/null || mandb -q &>/dev/null || :;; *) run_priv "$cmd" "${args[@]}" &>/dev/null || :;; esac; }
+run_system_maintenance(){ local cmd=$1; shift; local args=("$@"); has "$cmd" || return 0; case "$cmd" in modprobed-db) "$cmd" store &>/dev/null || :;; hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null || :;; mandb) sudo "$cmd" -q &>/dev/null || mandb -q &>/dev/null || :;; *) sudo "$cmd" "${args[@]}" &>/dev/null || :;; esac; }
 capture_disk_usage(){ local var_name=$1; local -n ref="$var_name"; ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'); }
 find_files(){ if has fd; then fd -H "$@"; else find "$@"; fi; }
 find0(){ local root="$1"; shift; if has fdf; then fdf -H -0 "$@" . "$root"; elif has fd; then fd -H -0 "$@" . "$root"; else find "$root" "$@" -print0; fi; }
@@ -81,17 +66,16 @@ chrome_profiles(){ local root=$1 d; for d in "$root"/Default "$root"/"Profile "*
 ' "$d"; done; }
 _expand_wildcards(){ local path=$1; local -n result_ref=$2; if [[ $path == *\** ]]; then shopt -s nullglob; local -a items=($path); for item in "${items[@]}"; do [[ -e $item ]] && result_ref+=("$item"); done; shopt -u nullglob; else [[ -e $path ]] && result_ref+=("$path"); fi; }
 clean_paths(){ local paths=("$@") path; local existing_paths=(); for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done; [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :; }
-clean_with_sudo(){ local paths=("$@") path; local existing_paths=(); for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done; [[ ${#existing_paths[@]} -gt 0 ]] && run_priv rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :; }
+clean_with_sudo(){ local paths=("$@") path; local existing_paths=(); for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done; [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :; }
 _DOWNLOAD_TOOL_CACHED=""
 get_download_tool(){ local skip_aria2=0; [[ ${1:-} == --no-aria2 ]] && skip_aria2=1; if [[ -n $_DOWNLOAD_TOOL_CACHED && $skip_aria2 -eq 0 ]]; then printf '%s' "$_DOWNLOAD_TOOL_CACHED"; return 0; fi; local tool; if [[ $skip_aria2 -eq 0 ]] && has aria2c; then tool=aria2c; elif has curl; then tool=curl; elif has wget2; then tool=wget2; elif has wget; then tool=wget; else return 1; fi; [[ $skip_aria2 -eq 0 ]] && _DOWNLOAD_TOOL_CACHED=$tool; printf '%s' "$tool"; }
 download_file(){ local url=$1 output=$2 tool; tool=$(get_download_tool) || return 1; case $tool in aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "$(dirname "$output")" -o "$(basename "$output")" "$url" ;; curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;; wget2) wget2 -q -O "$output" "$url" ;; wget) wget -qO "$output" "$url" ;; *) return 1 ;; esac; }
-cleanup_pacman_lock(){ run_priv rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
+cleanup_pacman_lock(){ sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
 # ============ End of inlined lib/common.sh ============
 
 
 
 # Initialize privilege tool
-PRIV_CMD=$(init_priv)
 
 # f2fs-fstab-tune.sh
 # Interactive F2FS fstab entry updater for root filesystem
@@ -103,7 +87,7 @@ fs_type=$(findmnt -n -o FSTYPE "${device:-/}")
 [[ "$fs_type" != "f2fs" ]] && die "Root fs isn't F2FS (detected type: ${fs_type}). Exiting."
 
 # Get UUID
-UUID=$(run_priv blkid -s UUID -o value "$device")
+UUID=$(sudo blkid -s UUID -o value "$device")
 # Desktop vs Server presets
 desktop_opts="defaults,noatime,mode=adaptive,memory=normal,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,checkpoint_merge,background_gc=on"
 server_opts="defaults,noatime,nodiratime,mode=adaptive,memory=high,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,checkpoint_merge,background_gc=sync,flush_merge,nobarrier"
@@ -126,12 +110,12 @@ read -rp "Proceed to update /etc/fstab with these options? [Y/n] " confirm
 
 # Backup fstab
 backup="/etc/fstab.bak.$(printf '%(%F-%H-%M)T' -1)"
-run_priv cp -f -- /etc/fstab "$backup"
+sudo cp -f -- /etc/fstab "$backup"
 printf '%s\n' "Backup saved to ${backup}"
 # Remove existing root entry by UUID
-run_priv sed -i "\|^UUID=${UUID}[[:space:]]\+/[[:space:]]\+f2fs|d" /etc/fstab
+sudo sed -i "\|^UUID=${UUID}[[:space:]]\+/[[:space:]]\+f2fs|d" /etc/fstab
 # Append new entry
-printf "UUID=%s\t/\tf2fs\t%s\t0\t1\n" "$UUID" "$opts" | run_priv tee -a /etc/fstab > /dev/null
+printf "UUID=%s\t/\tf2fs\t%s\t0\t1\n" "$UUID" "$opts" | sudo tee -a /etc/fstab > /dev/null
 printf '%s\n' "/etc/fstab updated."
 printf '%s\n' "To apply immediately, run:"
 printf '%s\n' " sudo mount -o remount,${opts} /"

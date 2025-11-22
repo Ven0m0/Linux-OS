@@ -221,6 +221,10 @@ run_priv sed -i -e 's/^#CrashShell=.*/CrashShell=no/' /etc/systemd/system.conf
 run_priv sed -i -e 's/^#DumpCore=.*/DumpCore=no/' /etc/systemd/user.conf
 run_priv sed -i -e 's/^#CrashShell=.*/CrashShell=no/' /etc/systemd/user.conf
 
+# Prevent systemd-networkd-wait-online timeout on boot
+sudo systemctl disable systemd-networkd-wait-online.service
+sudo systemctl mask systemd-networkd-wait-online.service
+
 #--Update CA
 run_priv update-ca-trust
 

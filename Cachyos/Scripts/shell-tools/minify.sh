@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob
+set -euo pipefail; shopt -s nullglob globstar
 export LC_ALL=C LANG=C LANGUAGE=C; IFS=$'\n\t'
 readonly out="${1:-.}"
 readonly jobs=$(nproc 2>/dev/null || echo 4)
@@ -9,6 +9,7 @@ check_deps(){
   local -a missing=()
   has minify || has bunx || has npx || missing+=(minify/bun/node)
   has jaq || has jq || has minify || missing+=(jaq/jq/minify)
+  has awk || missing+=(awk)
   ((${#missing[@]} > 0)) && { printf "%s✗%s Missing: %s\n" "$red" "$rst" "${missing[*]}" >&2; exit 1; }
 }
 minify_css(){
@@ -91,44 +92,29 @@ minify_xml(){
 }
 export -f minify_xml
 minify_pdf(){
-  local f="$1" tmp_gs=$(mktemp --suffix=.pdf) tmp_pop=$(mktemp --suffix=.pdf)
-  local len_in=$(wc -c < "$f") len_gs len_pop
+  local f="$1" tmp=$(mktemp --suffix=.pdf) len_in=$(wc -c < "$f") len_out tool
   [[ $f =~ \.min\.pdf$ ]] && return 0
   if has pdfinfo; then
     local prod=$(pdfinfo "$f" 2>/dev/null | grep -F Producer || :)
-    if [[ $prod =~ Ghostscript|cairo ]]; then
-      printf "%s⊘%s %s (already processed)\n" "$ylw" "$rst" "${f##*/}"
-      rm -f "$tmp_gs" "$tmp_pop"
-      return 0
-    fi
+    [[ $prod =~ Ghostscript|cairo ]] && {
+      printf "%s⊘%s %s (already processed)\n" "$ylw" "$rst" "${f##*/}"; rm -f "$tmp"; return 0
+    }
   fi
-  local gs_ok=0 pop_ok=0
-  if has gs; then
-    gs -q -dSAFER -dBATCH -dNOPAUSE -sDEVICE=pdfwrite -dCompatibilityLevel=1.7 \
-      -dDetectDuplicateImages=true -dSubsetFonts=true -dCompressFonts=true \
-      -sOutputFile="$tmp_gs" -c 33550336 setvmthreshold -f "$f" &>/dev/null && gs_ok=1 || rm -f "$tmp_gs"
-  fi
-  if has pdftocairo; then
-    pdftocairo -pdf "$f" "$tmp_pop" &>/dev/null && pop_ok=1 || rm -f "$tmp_pop"
-  fi
-  if [[ $gs_ok -eq 0 && $pop_ok -eq 0 ]]; then
-    printf "%s✗%s %s (gs+cairo failed)\n" "$red" "$rst" "${f##*/}" >&2
-    rm -f "$tmp_gs" "$tmp_pop"
-    return 1
-  fi
-  [[ $gs_ok -eq 1 ]] && len_gs=$(wc -c < "$tmp_gs") || len_gs=999999999
-  [[ $pop_ok -eq 1 ]] && len_pop=$(wc -c < "$tmp_pop") || len_pop=999999999
-  if [[ $len_pop -lt $len_gs && $len_pop -lt $len_in ]]; then
-    mv -f "$tmp_pop" "$f"
-    rm -f "$tmp_gs"
-    printf "%s✓%s %s (%d → %d, cairo)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_pop"
-  elif [[ $len_gs -lt $len_in ]]; then
-    mv -f "$tmp_gs" "$f"
-    rm -f "$tmp_pop"
-    printf "%s✓%s %s (%d → %d, gs)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_gs"
+  if has qpdf && qpdf --linearize --object-streams=generate --compress-streams=y --recompress-flate "$f" "$tmp" &>/dev/null; then
+    tool=qpdf
+  elif has gs && gs -q -dSAFER -dBATCH -dNOPAUSE -sDEVICE=pdfwrite -dCompatibilityLevel=1.7 \
+    -dDetectDuplicateImages=true -dSubsetFonts=true -dCompressFonts=true \
+    -sOutputFile="$tmp" -c 33550336 setvmthreshold -f "$f" &>/dev/null; then
+    tool=gs
   else
-    rm -f "$tmp_gs" "$tmp_pop"
-    printf "%s⊘%s %s (no reduction)\n" "$ylw" "$rst" "${f##*/}"
+    rm -f "$tmp"; printf "%s✗%s %s (no optimizer)\n" "$red" "$rst" "${f##*/}" >&2; return 1
+  fi
+  len_out=$(wc -c < "$tmp")
+  if ((len_out < len_in)); then
+    mv -f "$tmp" "$f"
+    printf "%s✓%s %s (%d → %d, %s)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out" "$tool"
+  else
+    rm -f "$tmp"; printf "%s⊘%s %s (no reduction)\n" "$ylw" "$rst" "${f##*/}"
   fi
 }
 export -f minify_pdf
@@ -146,8 +132,22 @@ fmt_yaml(){
   fi
 }
 export -f fmt_yaml
+fmt_ini(){
+  local f="$1" tmp=$(mktemp) len_in=$(wc -c < "$f") len_out
+  awk 'function t(s){gsub(/^[ \t]+|[ \t]+$/,"",s);return s}
+    /^[ \t]*([;#]|$)/ {print; next}
+    /^[ \t]*\[/       {print t($0); next}
+    match($0,/=/)     {print t(substr($0,1,RSTART-1)) " = " t(substr($0,RSTART+1)); next}
+  ' "$f" > "$tmp" 2>/dev/null || {
+    rm -f "$tmp"; printf "%s✗%s %s (awk failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1
+  }
+  len_out=$(wc -c < "$tmp")
+  mv -f "$tmp" "$f"
+  printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"
+}
+export -f fmt_ini
 process(){
-  local -a css=() html=() json=() xml=() pdf=() yaml=()
+  local -a css=() html=() json=() xml=() pdf=() yaml=() ini=()
   local ex='-Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor'
   if has fd; then
     mapfile -t css < <(fd -ecss -tf -E'*.min.css' $ex . "$out" 2>/dev/null)
@@ -156,6 +156,7 @@ process(){
     mapfile -t xml < <(fd -exml -tf -E'*.min.xml' $ex . "$out" 2>/dev/null)
     mapfile -t pdf < <(fd -epdf -tf -E'*.min.pdf' $ex . "$out" 2>/dev/null)
     mapfile -t yaml < <(fd -eyml -eyaml -tf $ex . "$out" 2>/dev/null)
+    mapfile -t ini < <(fd -eini -tf $ex . "$out" 2>/dev/null)
   else
     local fp='! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/.cache/*" ! -path "*/build/*" ! -path "*/target/*" ! -path "*/__pycache__/*" ! -path "*/.venv/*" ! -path "*/.npm/*" ! -path "*/vendor/*"'
     mapfile -t css < <(eval "find '$out' -type f -name '*.css' ! -name '*.min.css' $fp 2>/dev/null")
@@ -164,8 +165,9 @@ process(){
     mapfile -t xml < <(eval "find '$out' -type f -name '*.xml' ! -name '*.min.xml' $fp 2>/dev/null")
     mapfile -t pdf < <(eval "find '$out' -type f -name '*.pdf' ! -name '*.min.pdf' $fp 2>/dev/null")
     mapfile -t yaml < <(eval "find '$out' -type f \\( -name '*.yml' -o -name '*.yaml' \\) $fp 2>/dev/null")
+    mapfile -t ini < <(eval "find '$out' -type f -name '*.ini' $fp 2>/dev/null")
   fi
-  local -i total=$((${#css[@]} + ${#html[@]} + ${#json[@]} + ${#xml[@]} + ${#pdf[@]} + ${#yaml[@]}))
+  local -i total=$((${#css[@]} + ${#html[@]} + ${#json[@]} + ${#xml[@]} + ${#pdf[@]} + ${#yaml[@]} + ${#ini[@]}))
   ((total == 0)) && { printf "%s⊘%s No files found\n" "$ylw" "$rst"; return 0; }
   if has rust-parallel; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | rust-parallel -j"$jobs" minify_css {} || :
@@ -174,6 +176,7 @@ process(){
     ((${#xml[@]} > 0)) && printf "%s\n" "${xml[@]}" | rust-parallel -j"$jobs" minify_xml {} || :
     ((${#pdf[@]} > 0)) && printf "%s\n" "${pdf[@]}" | rust-parallel -j"$jobs" minify_pdf {} || :
     ((${#yaml[@]} > 0)) && printf "%s\n" "${yaml[@]}" | rust-parallel -j"$jobs" fmt_yaml {} || :
+    ((${#ini[@]} > 0)) && printf "%s\n" "${ini[@]}" | rust-parallel -j"$jobs" fmt_ini {} || :
   elif has parallel; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | parallel -j"$jobs" minify_css {} || :
     ((${#html[@]} > 0)) && printf "%s\n" "${html[@]}" | parallel -j"$jobs" minify_html {} || :
@@ -181,6 +184,7 @@ process(){
     ((${#xml[@]} > 0)) && printf "%s\n" "${xml[@]}" | parallel -j"$jobs" minify_xml {} || :
     ((${#pdf[@]} > 0)) && printf "%s\n" "${pdf[@]}" | parallel -j"$jobs" minify_pdf {} || :
     ((${#yaml[@]} > 0)) && printf "%s\n" "${yaml[@]}" | parallel -j"$jobs" fmt_yaml {} || :
+    ((${#ini[@]} > 0)) && printf "%s\n" "${ini[@]}" | parallel -j"$jobs" fmt_ini {} || :
   elif has xargs; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_css "$@"' _ {} || :
     ((${#html[@]} > 0)) && printf "%s\n" "${html[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_html "$@"' _ {} || :
@@ -188,6 +192,7 @@ process(){
     ((${#xml[@]} > 0)) && printf "%s\n" "${xml[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_xml "$@"' _ {} || :
     ((${#pdf[@]} > 0)) && printf "%s\n" "${pdf[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_pdf "$@"' _ {} || :
     ((${#yaml[@]} > 0)) && printf "%s\n" "${yaml[@]}" | xargs -r -P"$jobs" -I{} bash -c 'fmt_yaml "$@"' _ {} || :
+    ((${#ini[@]} > 0)) && printf "%s\n" "${ini[@]}" | xargs -r -P"$jobs" -I{} bash -c 'fmt_ini "$@"' _ {} || :
   else
     for f in "${css[@]}"; do minify_css "$f" || :; done
     for f in "${html[@]}"; do minify_html "$f" || :; done
@@ -195,6 +200,7 @@ process(){
     for f in "${xml[@]}"; do minify_xml "$f" || :; done
     for f in "${pdf[@]}"; do minify_pdf "$f" || :; done
     for f in "${yaml[@]}"; do fmt_yaml "$f" || :; done
+    for f in "${ini[@]}"; do fmt_ini "$f" || :; done
   fi
   printf "\n%s✓%s Processed %d files\n" "$grn" "$rst" "$total"
 }

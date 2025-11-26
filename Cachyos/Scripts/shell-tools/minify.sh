@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob
 export LC_ALL=C LANG=C LANGUAGE=C; IFS=$'\n\t'
 readonly out="${1:-.}"
 readonly jobs=$(nproc 2>/dev/null || echo 4)

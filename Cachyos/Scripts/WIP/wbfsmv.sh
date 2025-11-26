@@ -1,81 +1,117 @@
 #!/usr/bin/env bash
-set -uo pipefail; shopt -s nullglob dotglob
-LC_ALL=C have_wit=0
-command -v wit &>/dev/null && have_wit=1
-
-# get 6-char ID from file (wbfs/iso/wia/ciso/whatever)
-get_id_from_file() {
+# Rename/move Wii game files into "Game Name [GAMEID]/GAMEID.wbfs"
+# - supports .wbfs .iso .ciso .wia .wdf
+# - optional conversion: --convert / -c  (uses wit copy --wbfs)
+# - patches region to EUROPE in-place when needed (wit ed --region EUROPE -ii -r)
+# Usage: ./wbfsmv.sh [-c|--convert]
+set -uo pipefail
+shopt -s nullglob dotglob
+convert=0
+while (( $# )); do
+  case $1 in
+    -c|--convert) convert=1; shift ;;
+    -*) printf 'Unknown arg: %s\n' "$1" >&2; exit 2 ;;
+    *) break ;;
+  esac
+done
+command -v dd &>/dev/null || { printf 'dd missing\n' >&2; exit 1; }
+command -v wit &>/dev/null && have_wit=1 || have_wit=0
+# read 6-byte ID at offset 0x200 (512) or via wit ID6
+get_id_from_file(){
   local f=$1 id
-  if ((have_wit)); then
-    # wit ID6 prints the ID or nothing on error
-    id=$(wit ID6 -- "$f" 2>/dev/null) || id=""
+  if (( have_wit )); then
+    id=$(wit ID6 -- "$f" 2>/dev/null) || id=
     id=${id%%$'\n'*}
   fi
-  # offset 0x200 (512) 6 bytes, dd may produce NULs; strip them
-  [[ -z $id ]] && id=$(dd if="$f" bs=1 skip=512 count=6 2>/dev/null | tr -d '\0' || true)
-  printf '%s' "${id^^}" # uppercase
+  if [[ -z $id ]]; then
+    id=$(dd if="$f" bs=1 skip=512 count=6 2>/dev/null | tr -d '\0' || true)
+  fi
+  printf '%s' "${id^^}"
 }
 # normalize display name: replace _ and - with space, collapse spaces, trim
-norm_name() {
-  local s="$1"
-  s=${s//_/ }
-  s=${s//-/ }
-  # collapse multiple spaces and trim
+norm_name(){
+  local s=$1
+  s=${s//_/ } ; s=${s//-/ }
+  # collapse multi spaces and trim
   printf '%s' "$s" | sed -E 's/  +/ /g; s/^ //; s/ $//'
 }
-# process files (wbfs/iso/etc)
+# ensure region EUROPE/PAL via wit; callable with filename
+region_fix_if_needed(){
+  local f=$1 region
+  [[ $have_wit -eq 1 ]] || return 0
+  region=$(wit dump -ll -- "$f" 2>/dev/null | grep -m1 "Region" | awk '{print $3}' || true)
+  [[ -n $region ]] && [[ $region = "EUROPE" ]] && region=PAL
+  if [[ -z $region || $region != PAL ]]; then
+    # edit in-place, recursive flag harmless; ignore non-critical errors
+    wit ed --region EUROPE -ii -r -- "$f" &>/dev/null || :
+  fi
+}
+exts="wbfs iso ciso wia wdf"
+# ---- handle top-level files ----
 for f in *; do
   [[ -f $f ]] || continue
-  [[ $f == .* ]] && continue
-  # if file already inside a correctly named dir, skip (we only handle top-level)
-  # only handle wbfs/iso/ciso/wia/wdf etc — but check common extensions
+  [[ $f = .* ]] && continue
   case "${f,,}" in
-  *.wbfs | *.iso | *.ciso | *.wia | *.wdf) ;;
-  *) continue ;;
+    *.wbfs|*.iso|*.ciso|*.wia|*.wdf) ;;
+    *) continue ;;
   esac
-  # if filename already contains [ID]
   if [[ $f =~ \[([A-Z0-9]{6})\] ]]; then
-    id=${BASH_REMATCH[1]}
-    name=${f//\[$id\]/}
-    name=${name%.*}
-    name=$(norm_name "$name")
+    id=${BASH_REMATCH[1]}; name=${f//\[$id\]/}
+    name=${name%.*}; name=$(norm_name "$name")
   else
     id=$(get_id_from_file "$f")
     [[ ${#id} -eq 6 ]] || continue
     name=${f%.*}
     name=$(norm_name "$name")
   fi
+  # region fix before conversion/move
+  region_fix_if_needed "$f"
   newdir="${name} [${id}]"
   mkdir -p -- "$newdir" &>/dev/null || :
-  # move and rename to GAMEID.wbfs (keep extension wbfs if input was iso -> convert not attempted)
-  mv -f -- "$f" "$newdir/${id}.wbfs" 2>/dev/null || mv -- "$f" "$newdir/${id}${f##*.}" 2>/dev/null || :
+  case "${f,,}" in
+    *.wbfs)
+      # already wbfs: just move and rename to GAMEID.wbfs
+      mv -n -- "$f" "$newdir/${id}.wbfs" 2>/dev/null || mv -- "$f" "$newdir/${id}.wbfs" 2>/dev/null || :
+      ;;
+    *)
+      if (( convert )) && (( have_wit )); then
+        # try conversion to wbfs; quiet, move original as backup on success
+        if wit copy --wbfs -- "$f" "$newdir/${id}.wbfs" &>/dev/null; then
+          mv -n -- "$f" "$newdir/" 2>/dev/null || mv -- "$f" "$newdir/" 2>/dev/null || :
+        else
+          # conversion failed -> move original into dir, keep ext
+          mv -n -- "$f" "$newdir/${id}.${f##*.}" 2>/dev/null || mv -- "$f" "$newdir/${id}.${f##*.}" 2>/dev/null || :
+        fi
+      else
+        mv -n -- "$f" "$newdir/${id}.${f##*.}" 2>/dev/null || mv -- "$f" "$newdir/${id}.${f##*.}" 2>/dev/null || :
+      fi
+      ;;
+  esac
 done
-# process directories (try to read a .wbfs/.iso inside to get ID)
+# ---- handle top-level directories ----
 for d in *; do
   [[ -d $d ]] || continue
-  # skip already-correct dirs
   [[ $d =~ \[[A-Z0-9]{6}\] ]] && continue
-  # find candidate file inside (prefer wbfs then iso)
-  id=""
-  for ext in wbfs iso ciso wia wdf; do
-    for g in "$d"/*."$ext"; do
-      [[ -f $g ]] || continue
-      id=$(get_id_from_file "$g")
-      [[ ${#id} -eq 6 ]] && break 2
+  id="" g=""
+  for e in $exts; do
+    for candidate in "$d"/*."$e"; do
+      [[ -f $candidate ]] || continue
+      id=$(get_id_from_file "$candidate")
+      [[ ${#id} -eq 6 ]] && { g=$candidate; break 2; }
     done
   done
-  # if not found, try first file in dir
   if [[ -z $id ]]; then
-    for g in "$d"/*; do
-      [[ -f $g ]] || continue
-      id=$(get_id_from_file "$g")
-      [[ ${#id} -eq 6 ]] && break
+    for candidate in "$d"/*; do
+      [[ -f $candidate ]] || continue
+      id=$(get_id_from_file "$candidate")
+      [[ ${#id} -eq 6 ]] && { g=$candidate; break; }
     done
   fi
   [[ ${#id} -eq 6 ]] || continue
+  # attempt region fix on discovered file inside dir (no conversion inside dirs)
+  [[ -n $g ]] && region_fix_if_needed "$g"
   name=$(norm_name "$d")
   newdir="${name} [${id}]"
-  # avoid clobbering existing correct dir
   [[ -e $newdir ]] && continue
-  mv -f -- "$d" "$newdir" 2>/dev/null || :
+  mv -n -- "$d" "$newdir" 2>/dev/null || mv -- "$d" "$newdir" 2>/dev/null || :
 done

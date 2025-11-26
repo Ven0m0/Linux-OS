@@ -52,11 +52,11 @@ gitdate(){
   # Keep remote-tracking refs tidy
   git -C "$dir" remote prune origin >/dev/null
   # Fetch
-  git -C "$dir" fetch --prune --no-tags --filter=blob:none origin || git -C "$dir" fetch --prune --no-tags origin
+  git -C "$dir" -c protocol.file.allow=always fetch --prune --no-tags --filter=blob:none origin || git -C "$dir" -c protocol.file.allow=always fetch --prune --no-tags origin
   # if rebase failed try to abort and continue
-  git -C "$dir" pull --rebase --autostash --prune origin HEAD || git -C "$dir" rebase --abort &>/dev/null>/dev/null
+  git -C "$dir" -c protocol.file.allow=always pull --rebase --autostash --prune origin HEAD || git -C "$dir" rebase --abort &>/dev/null>/dev/null
   # Sync submodule URLs
-  git -C "$dir" submodule sync --recursive
+  git -C "$dir" -c protocol.file.allow=always submodule sync --recursive
   # Update submodules with fallback
   git -C "$dir" -c protocol.file.allow=always submodule update --init --recursive --remote --filter=blob:none --depth 1 --single-branch --jobs 8 \
     || git -C "$dir" -c protocol.file.allow=always submodule update --init --recursive --remote --depth 1 --jobs 8 \

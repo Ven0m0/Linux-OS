@@ -1,381 +1,129 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t' LC_ALL=C LANG=C
-#──────────── Color & Effects ────────────
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m'
-DEF=$'\e[0m' BLD=$'\e[1m'
-#──────────── Core Helpers ────────────────
+set -uo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'; LC_ALL=C
+R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
+warn(){ printf '%b\n' "${Y}WARN:${D} $*" >&2; }
+die(){ printf '%b\n' "${R}ERR:${D} $*" >&2; exit "${2:-1}"; }
 has(){ command -v "$1" &>/dev/null; }
-die(){ printf '%b\n' "${RED}Error:${DEF} $*" >&2; exit "${2:-1}"; }
-JQ=$(has jaq && echo jaq || has jq && echo jq || die "jq/jaq required")
+has jaq && JQ=jaq || JQ=jq; has "$JQ" || die "Need jq/jaq"
 
-download_file(){
-  local url=$1 out=$2
-  if has aria2c; then
-    aria2c -q --max-tries=3 --retry-wait=1 -d "${"$out"%/*}" -o "${"$out"##*/}" "$url"
-  elif has curl; then
-    curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$out"
-  elif has wget; then
-    wget -qO "$out" "$url"
-  else
-    die "aria2c, curl, or wget required"
-  fi
+# Keys to migrate from VSCode -> VSCodium
+KEYS_PROD=(nameShort nameLong applicationName dataFolderName serverDataFolderName darwinBundleIdentifier linuxIconName licenseUrl extensionAllowedProposedApi extensionEnabledApiProposals extensionKind extensionPointExtensionKind extensionSyncedKeys extensionVirtualWorkspacesSupport extensionsGallery extensionTips extensionImportantTips exeBasedExtensionTips configBasedExtensionTips keymapExtensionTips languageExtensionTips remoteExtensionTips webExtensionTips virtualWorkspaceExtensionTips trustedExtensionAuthAccess trustedExtensionUrlPublicKeys auth configurationSync "configurationSync.store" editSessions "editSessions.store" settingsSync aiConfig commandPaletteSuggestedCommandIds extensionRecommendations extensionKeywords extensionAllowedBadgeProviders extensionAllowedBadgeProvidersRegex linkProtectionTrustedDomains msftInternalDomains documentationUrl introductoryVideosUrl tipsAndTricksUrl newsletterSignupUrl releaseNotesUrl keyboardShortcutsUrlMac keyboardShortcutsUrlLinux keyboardShortcutsUrlWin quality settingsSearchUrl tasConfig tunnelApplicationName tunnelApplicationConfig serverApplicationName serverGreeting urlProtocol webUrl webEndpointUrl webEndpointUrlTemplate webviewContentExternalBaseUrlTemplate builtInExtensions extensionAllowedExtensionKinds crash aiRelatedInformationUrl defaultChatAgent)
+
+dl(){
+  local u="$1" o="$2"; mkdir -p "${o%/*}"
+  if has aria2c; then aria2c -q --max-tries=3 --retry-wait=1 -d "${o%/*}" -o "${o##*/}" "$u"
+  elif has curl; then curl -fsSL --retry 3 --http2 --tlsv1.2 "$u" -o "$o"
+  elif has wget; then wget -qO "$o" "$u"
+  else die "Need aria2c/curl/wget"; fi
 }
-#──────────── XDG Patches ─────────────────
-add_mime_type(){ grep -qE "^MimeType=.*\b${1};" "$2" || sed -i -E "s#^(MimeType=.*;)\$#\1${1};#" "$2"; }
-fix_15741(){ add_mime_type 'inode/directory' "$1"; }
-fix_129953(){ sed -i -E 's/"desktopName":[[:space:]]*"(.+)-url-handler\.desktop"/"desktopName": "\1.desktop"/' "$1"; }
-fix_214741(){ add_mime_type 'text/plain' "$1"; }
+# ─── XDG & Files ───
 xdg_patch(){
-  while read -r file; do
-    case "$file" in
-    *.desktop)
-      fix_214741 "$file"
-      fix_15741 "$file"
-      printf '%b\n' "${GRN}✓${DEF} $file" ;;
-    */package.json)
-      fix_129953 "$file"; printf '%b\n' "${GRN}✓${DEF} $file" ;;
-    *) printf '%b\n' "${YLW}?${DEF} $file" ;;
-    esac
+  while read -r f; do
+    case "$f" in
+      *.desktop)
+        grep -q "text/plain" "$f" || sed -i -E 's#^(MimeType=.*);$#\1;text/plain;#' "$f"
+        grep -q "inode/directory" "$f" || sed -i -E 's#^(MimeType=.*);$#\1;inode/directory;#' "$f" ;;
+      */package.json) sed -i -E 's/"desktopName":[[:space:]]*"(.+)-url-handler\.desktop"/"desktopName": "\1.desktop"/' "$f" ;;
+    esac; printf '%b\n' "${G}✓${D} $f"
   done
 }
-find_vscode_files(){
-  ls /usr/lib/code*/package.json \
-    /opt/visual-studio-code*/resources/app/package.json \
-    /opt/vscodium*/resources/app/package.json \
-    /usr/share/applications/code*.desktop \
-    /usr/share/applications/vscode*.desktop \
-    /usr/share/applications/vscodium*.desktop \
-    2>/dev/null | grep -vE '\-url-handler.desktop$'
+find_files(){
+  printf '%s\n' /usr/lib/code*/package.json /opt/visual-studio-code*/resources/app/package.json \
+    /opt/vscodium*/resources/app/package.json /usr/share/applications/{code,vscode,vscodium}*.desktop \
+    | grep -vE '\-url-handler.desktop$'
 }
-xdg_datafolder(){
-  local prod="${1:-/usr/share/vscodium/resources/app/product.json}"
-  [[ ! -f $prod ]] && die "Not found: $prod"
-  sed -i 's|"dataFolderName": ".*"|"dataFolderName": ".local/share/codium"|' "$prod"
-  printf '%b\n' "${GRN}✓ XDG dataFolderName → .local/share/codium${DEF}"
+
+# ─── JSON Logic ───
+# $1=prod $2=patch $3=cache
+apply_json(){
+  [[ ! -f $1 ]] && { warn "$1 missing"; return 0; }
+  [[ ! -f $2 ]] && die "Patch missing: $2"
+  [[ ! -f $3 ]] && echo '{}' >"$3"
+  local t="$1.tmp.$$"
+  "$JQ" -s '.[0] as $b|.[1] as $p|($b|to_entries|map(select(.key as $k|$p|has($k)))|from_entries) as $c|($b+$p)|{p:.,c:$c}' "$1" "$2" >"$t" || return 1
+  "$JQ" -r .p "$t" >"$1" && "$JQ" -r .c "$t" >"$3" && rm "$t" && printf '%b\n' "${G}Applied to $1${D}"
 }
-#──────────── VSCodium Marketplace ────────
-vscodium_marketplace(){
-  local prod="${1:-/usr/share/vscodium/resources/app/product.json}" revert="${2:-0}"
-  [[ ! -f $prod ]] && die "Not found: $prod" 1
-  if [[ $revert -eq 1 ]]; then
-    sed -i \
-      -e 's/^[[:blank:]]*"serviceUrl":.*/    "serviceUrl": "https:\/\/open-vsx.org\/vscode\/gallery",/' \
-      -e '/^[[:blank:]]*"cacheUrl/d' \
-      -e 's/^[[:blank:]]*"itemUrl":.*/    "itemUrl": "https:\/\/open-vsx.org\/vscode\/item"/' \
-      -e '/^[[:blank:]]*"linkProtectionTrustedDomains/d' \
-      -e '/^[[:blank:]]*"documentationUrl/i\  "linkProtectionTrustedDomains": ["https://open-vsx.org"],' \
-      "$prod"
-    printf '%b\n' "${GRN}Restored VSCodium → Open-VSX${DEF}"
+# $1=prod $2=patch $3=cache
+restore_json(){
+  [[ ! -f $1 || ! -f $3 ]] && die "Files missing for $1"
+  local t="$1.tmp.$$"
+  "$JQ" -s '.[0] as $b|.[1] as $p|.[2] as $c|($b|to_entries|map(select(.key as $k|($p|has($k))|not))|from_entries)+$c' "$1" "$2" "$3" >"$t" || return 1
+  mv "$t" "$1" && printf '%b\n' "${G}Restored $1${D}"
+}
+# $1=ver $2=out_patch $3=keys_array_name
+update_json(){
+  local v="$1" out="$2" work="/tmp/code-up.$$" u="https://update.code.visualstudio.com/${1}/linux-x64/stable"
+  [[ -z $v ]] && die "Version required"
+  local -n kref=$3; echo "⬇ VSCode $v..."
+  dl "$u" "$work/c.tgz" || { rm -rf "$work"; return 1; }
+  tar xf "$work/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json
+  "$JQ" -r --argjson k "$(printf '%s\n' "${kref[@]}" | "$JQ" -R . | "$JQ" -s .)" \
+    'reduce $k[] as $x ({}; . + {($x): (getpath($x|split("."))?)}) | . + {enableTelemetry:false}' \
+    "$work/product.json" >"$out"
+  rm -rf "$work"; printf '%b\n' "${G}Updated $out${D}"
+  [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD || :
+}
+
+# ─── Specifics ───
+sign_fix(){
+  local f="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js"
+  [[ -f $f ]] && sed -i "s|import(\"${1:-@vscode/vsce-sign}\")|import(\"${2:-node-ovsx-sign}\")|g" "$f"
+}
+repo_swap(){
+  local f="${1:-/usr/share/vscodium/resources/app/product.json}"
+  [[ ! -f $f ]] && die "No product.json"
+  if [[ ${2:-0} -eq 1 ]]; then
+    sed -i -e 's|"serviceUrl":.*|"serviceUrl": "https://open-vsx.org/vscode/gallery",|' \
+           -e '/"cacheUrl/d' -e 's|"itemUrl":.*|"itemUrl": "https://open-vsx.org/vscode/item"|' \
+           -e '/"linkProtectionTrustedDomains/d' -e '/"documentationUrl/i\  "linkProtectionTrustedDomains": ["https://open-vsx.org"],' "$f"
+    printf '%b\n' "${G}Repo: Open-VSX${D}"
   else
-    sed -i \
-      -e 's/^[[:blank:]]*"serviceUrl":.*/    "serviceUrl": "https:\/\/marketplace.visualstudio.com\/_apis\/public\/gallery",/' \
-      -e '/^[[:blank:]]*"cacheUrl/d' \
-      -e '/^[[:blank:]]*"serviceUrl/a\    "cacheUrl": "https:\/\/vscode.blob.core.windows.net\/gallery\/index",' \
-      -e 's/^[[:blank:]]*"itemUrl":.*/    "itemUrl": "https:\/\/marketplace.visualstudio.com\/items"/' \
-      -e '/^[[:blank:]]*"linkProtectionTrustedDomains/d' \
-      "$prod"
-    printf '%b\n' "${GRN}VSCodium → MS Marketplace${DEF}"
+    sed -i -e 's|"serviceUrl":.*|"serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery",|' \
+           -e '/"cacheUrl/d' -e '/"serviceUrl/a\    "cacheUrl": "https://vscode.blob.core.windows.net/gallery/index",' \
+           -e 's|"itemUrl":.*|"itemUrl": "https://marketplace.visualstudio.com/items"|' \
+           -e '/"linkProtectionTrustedDomains/d' "$f"
+    printf '%b\n' "${G}Repo: MS Marketplace${D}"
   fi
 }
-#──────────── Sign Fix ────────────────────
-fix_sign(){
-  local path="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js"
-  [[ ! -f $path ]] && return 0
-  [[ ${1:-0} -eq 1 ]] && sed -i 's|import("@vscode/vsce-sign")|import("node-ovsx-sign")|g' "$path" \
-    || sed -i 's|import("node-ovsx-sign")|import("@vscode/vsce-sign")|g' "$path"
-}
-#──────────── VSCodium Product Patcher ────
-vscodium_prod_patch(){
-  local vscodium_prod="${1:-/usr/share/vscodium/resources/app/product.json}"
-  local backup="${vscodium_prod}.backup.$$"
-  local work="/tmp/vscodium-patch.$$"
-  local vscode_prod="$work/product.json"
-  [[ ! -f $vscodium_prod ]] && die "VSCodium product.json not found: $vscodium_prod"
-  local vscodium_ver
-  vscodium_ver=$($JQ -r '.version // empty' "$vscodium_prod" 2>/dev/null)
-  [[ -z $vscodium_ver ]] && die "Cannot determine VSCodium version"
-  mkdir -p "$work" || die "Failed to create work dir"
-  echo "Fetching VSCode $vscodium_ver product.json..."
-  local url="https://update.code.visualstudio.com/${vscodium_ver}/linux-x64/stable"
-  download_file "$url" "$work/vscode.tgz" || { rm -rf "$work"; die "Download failed"; }
-  tar xf "$work/vscode.tgz" -C "$work" --strip-components=3 \
-    VSCode-linux-x64/resources/app/product.json 2>/dev/null || { rm -rf "$work"; die "Failed to extract product.json"; }
-  [[ ! -f $vscode_prod ]] && { rm -rf "$work"; die "VSCode product.json not found in archive"; }
-  cp -f "$vscodium_prod" "$backup" || { rm -rf "$work"; die "Backup failed"; }
-  $JQ -s '
-    .[0] as $vscodium | .[1] as $vscode |
-    $vscodium + {
-      nameShort: $vscode.nameShort,
-      nameLong: $vscode.nameLong,
-      applicationName: $vscode.applicationName,
-      dataFolderName: $vscode.dataFolderName,
-      serverDataFolderName: $vscode.serverDataFolderName,
-      darwinBundleIdentifier: $vscode.darwinBundleIdentifier,
-      linuxIconName: $vscode.linuxIconName,
-      licenseUrl: $vscode.licenseUrl,
-      extensionAllowedProposedApi: $vscode.extensionAllowedProposedApi,
-      extensionEnabledApiProposals: $vscode.extensionEnabledApiProposals,
-      extensionKind: $vscode.extensionKind,
-      extensionPointExtensionKind: $vscode.extensionPointExtensionKind,
-      extensionSyncedKeys: $vscode.extensionSyncedKeys,
-      extensionVirtualWorkspacesSupport: $vscode.extensionVirtualWorkspacesSupport,
-      extensionsGallery: $vscode.extensionsGallery,
-      extensionTips: $vscode.extensionTips,
-      extensionImportantTips: $vscode.extensionImportantTips,
-      exeBasedExtensionTips: $vscode.exeBasedExtensionTips,
-      configBasedExtensionTips: $vscode.configBasedExtensionTips,
-      keymapExtensionTips: $vscode.keymapExtensionTips,
-      languageExtensionTips: $vscode.languageExtensionTips,
-      remoteExtensionTips: $vscode.remoteExtensionTips,
-      webExtensionTips: $vscode.webExtensionTips,
-      virtualWorkspaceExtensionTips: $vscode.virtualWorkspaceExtensionTips,
-      trustedExtensionAuthAccess: $vscode.trustedExtensionAuthAccess,
-      trustedExtensionUrlPublicKeys: $vscode.trustedExtensionUrlPublicKeys,
-      auth: $vscode.auth,
-      configurationSync: $vscode.configurationSync,
-      "configurationSync.store": $vscode."configurationSync.store",
-      editSessions: $vscode.editSessions,
-      "editSessions.store": $vscode."editSessions.store",
-      settingsSync: $vscode.settingsSync,
-      aiConfig: $vscode.aiConfig,
-      commandPaletteSuggestedCommandIds: $vscode.commandPaletteSuggestedCommandIds,
-      extensionRecommendations: $vscode.extensionRecommendations,
-      extensionKeywords: $vscode.extensionKeywords,
-      extensionAllowedBadgeProviders: $vscode.extensionAllowedBadgeProviders,
-      extensionAllowedBadgeProvidersRegex: $vscode.extensionAllowedBadgeProvidersRegex,
-      linkProtectionTrustedDomains: $vscode.linkProtectionTrustedDomains,
-      msftInternalDomains: $vscode.msftInternalDomains,
-      documentationUrl: $vscode.documentationUrl,
-      introductoryVideosUrl: $vscode.introductoryVideosUrl,
-      tipsAndTricksUrl: $vscode.tipsAndTricksUrl,
-      newsletterSignupUrl: $vscode.newsletterSignupUrl,
-      releaseNotesUrl: $vscode.releaseNotesUrl,
-      keyboardShortcutsUrlMac: $vscode.keyboardShortcutsUrlMac,
-      keyboardShortcutsUrlLinux: $vscode.keyboardShortcutsUrlLinux,
-      keyboardShortcutsUrlWin: $vscode.keyboardShortcutsUrlWin,
-      quality: $vscode.quality,
-      settingsSearchUrl: $vscode.settingsSearchUrl,
-      tasConfig: $vscode.tasConfig,
-      tunnelApplicationName: $vscode.tunnelApplicationName,
-      tunnelApplicationConfig: $vscode.tunnelApplicationConfig,
-      serverApplicationName: $vscode.serverApplicationName,
-      serverGreeting: $vscode.serverGreeting,
-      urlProtocol: $vscode.urlProtocol,
-      webUrl: $vscode.webUrl,
-      webEndpointUrl: $vscode.webEndpointUrl,
-      webEndpointUrlTemplate: $vscode.webEndpointUrlTemplate,
-      webviewContentExternalBaseUrlTemplate: $vscode.webviewContentExternalBaseUrlTemplate,
-      builtInExtensions: $vscode.builtInExtensions,
-      extensionAllowedExtensionKinds: $vscode.extensionAllowedExtensionKinds,
-      crash: $vscode.crash,
-      enableTelemetry: false,
-      aiRelatedInformationUrl: $vscode.aiRelatedInformationUrl,
-      defaultChatAgent: $vscode.defaultChatAgent
-    }
-  ' "$vscodium_prod" "$vscode_prod" >"${vscodium_prod}.tmp" || {
-    mv -f "$backup" "$vscodium_prod"; rm -rf "$work"
-    die "JQ merge failed"
-  }
-  mv -f "${vscodium_prod}.tmp" "$vscodium_prod" || {
-    mv -f "$backup" "$vscodium_prod"; rm -rf "$work"
-    die "Failed to write patched product.json"
-  }
-  sed -i 's|"dataFolderName": ".*"|"dataFolderName": ".local/share/codium"|' "$vscodium_prod"
-  rm -rf "$work"
-  printf '%b\n' "${GRN}✓ VSCodium product.json patched (backup: $backup)${DEF}"
-  echo "  Merged all MS features, telemetry disabled, XDG-compliant"
-}
-vscodium_prod_restore(){
-  local vscodium_prod="${1:-/usr/share/vscodium/resources/app/product.json}" backup
-  backup=$(ls -t "${vscodium_prod}.backup."* 2>/dev/null | head -1)
-  [[ -z $backup ]] && die "No backup found for $vscodium_prod"
-  cp -f "$backup" "$vscodium_prod" || die "Restore failed"
-  printf '%b\n' "${GRN}✓ Restored from $backup${DEF}"
-}
 
-#──────────── Code-Features ───────────────
-features_patch(){
-  local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-features/patch.json}" cache="${3:-/usr/share/code-features/cache.json}"
-  local tmp="${prod}.tmp.$$"
-  [[ ! -f $prod ]] && printf '%b\n' "${YLW}WARN: $prod missing (install extra/code)${DEF}" && return 0
-  [[ ! -f $patch ]] && die "Patch missing: $patch"
-  [[ ! -f $cache ]] && printf '{}' >"$cache"
-  $JQ -s '
-    .[0] as $prod | .[1] as $patch |
-    ($prod | to_entries | map(select(.key as $k | $patch | has($k))) | from_entries) as $saved |
-    ($prod + $patch) as $merged |
-    {product: $merged, cache: $saved}
-  ' "$prod" "$patch" >"$tmp" || return 1
-  $JQ -r '.product' "$tmp" >"$prod" && $JQ -r '.cache' "$tmp" >"$cache" || return 1
-  rm -f "$tmp" &>/dev/null || :
-  printf '%b\n' "${GRN}Applied code-features${DEF}"
+vscodium_prod_full(){
+  local dst="${1:-/usr/share/vscodium/resources/app/product.json}"
+  local work="/tmp/vp.$$" v src="$work/product.json"
+  [[ ! -f $dst ]] && die "Missing $dst"
+  v=$("$JQ" -r '.version//empty' "$dst") || die "No version"
+  cp "$dst" "${dst}.backup.$$(date +%s)"; dl "https://update.code.visualstudio.com/$v/linux-x64/stable" "$work/c.tgz"
+  tar xf "$work/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json
+  "$JQ" -s --argjson k "$(printf '%s\n' "${KEYS_PROD[@]}" | "$JQ" -R . | "$JQ" -s .)" \
+    '.[0] as $d | .[1] as $s | $d + ($s | with_entries(select(.key as $x | $k | index($x)))) | . + {enableTelemetry:false}' \
+    "$dst" "$src" > "${dst}.tmp" && mv "${dst}.tmp" "$dst"
+  sed -i 's|"dataFolderName": ".*"|"dataFolderName": ".local/share/codium"|' "$dst"
+  rm -rf "$work"; printf '%b\n' "${G}✓ Patched VSCodium Full${D}"
 }
-features_restore(){
-  local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-features/patch.json}" cache="${3:-/usr/share/code-features/cache.json}"
-  [[ ! -f $prod || ! -f $patch || ! -f $cache ]] && die "Files missing"
-  $JQ -s '
-    .[0] as $prod | .[1] as $patch | .[2] as $cache |
-    ($prod | to_entries | map(select(.key as $k | ($patch | has($k)) | not)) | from_entries) as $cleaned |
-    ($cleaned + $cache)
-  ' "$prod" "$patch" "$cache" >"${prod}.tmp.$$" || return 1
-  mv -f "${prod}.tmp.$$" "$prod" || return 1
-  printf '%b\n' "${GRN}Restored code-features${DEF}"
+vscodium_restore(){
+  local d="${1:-/usr/share/vscodium/resources/app/product.json}"
+  local b; b=$(find "${d%/*}" -maxdepth 1 -name "${d##*/}.backup.*" -printf "%T@ %p\n" | sort -rn | head -1 | cut -d' ' -f2-)
+  [[ -z $b ]] && die "No backup"
+  cp -f "$b" "$d" && printf '%b\n' "${G}✓ Restored $b${D}"
 }
-features_update(){
-  local ver="${1:-$($JQ -r .version /usr/lib/code/product.json 2>/dev/null)}" patch="${2:-./patch.json}"
-  local work="/tmp/code-features.$$" url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
-  [[ -z $ver ]] && die "Version required"
-  mkdir -p "$work" || return 1
-  echo "⬇ VSCode $ver..."
-  download_file "$url" "$work/code.tgz" || { rm -rf "$work"; return 1; }
-  tar xf "$work/code.tgz" -C "$work" || { rm -rf "$work"; return 1; }
-  local -a keys=(nameShort nameLong applicationName serverApplicationName urlProtocol
-    dataFolderName serverDataFolderName webUrl webEndpointUrl webEndpointUrlTemplate
-    webviewContentExternalBaseUrlTemplate commandPaletteSuggestedCommandIds extensionKeywords
-    aiConfig settingsSearchUrl extensionEnabledApiProposals tasConfig extensionKind
-    extensionPointExtensionKind extensionSyncedKeys extensionVirtualWorkspacesSupport
-    trustedExtensionAuthAccess auth "configurationSync.store" "editSessions.store"
-    tunnelApplicationName tunnelApplicationConfig)
-  $JQ -r --argjson keys "$(printf '%s\n' "${keys[@]}" | $JQ -R . | $JQ -s .)" \
-    'reduce $keys[] as $k ({}; . + {($k): (getpath($k | split("."))?)}) | . + {enableTelemetry: false}' \
-    "$work/VSCode-linux-x64/resources/app/product.json" >"$patch" || {
-    rm -rf "$work"; return 1
-  }
-  rm -rf "$work"
-  printf '%b\n' "${GRN}Updated $patch${DEF}"
-  [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD
-}
-
-#──────────── Code-Marketplace ────────────
-marketplace_patch(){
-  local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-marketplace/patch.json}" cache="${3:-/usr/share/code-marketplace/cache.json}"
-  local tmp="${prod}.tmp.$$"
-  [[ ! -f $prod ]] && printf '%b\n' "${YLW}WARN: $prod missing (install extra/code)${DEF}" && return 0
-  [[ ! -f $patch ]] && die "Patch missing: $patch"
-  [[ ! -f $cache ]] && printf '{}' >"$cache"
-  $JQ -s '
-    .[0] as $prod | .[1] as $patch |
-    ($prod | to_entries | map(select(.key as $k | $patch | has($k))) | from_entries) as $saved |
-    ($prod + $patch) as $merged |
-    {product: $merged, cache: $saved}
-  ' "$prod" "$patch" >"$tmp" || return 1
-  $JQ -r '.product' "$tmp" >"$prod" && $JQ -r '.cache' "$tmp" >"$cache" || return 1
-  rm -f "$tmp" &>/dev/null || :
-  fix_sign 0
-  printf '%b\n' "${GRN}Applied code-marketplace${DEF}"
-}
-marketplace_restore(){
-  local prod="${1:-/usr/lib/code/product.json}" patch="${2:-/usr/share/code-marketplace/patch.json}" cache="${3:-/usr/share/code-marketplace/cache.json}"
-  [[ ! -f $prod || ! -f $patch || ! -f $cache ]] && die "Files missing"
-  $JQ -s '
-    .[0] as $prod | .[1] as $patch | .[2] as $cache |
-    ($prod | to_entries | map(select(.key as $k | ($patch | has($k)) | not)) | from_entries) as $cleaned |
-    ($cleaned + $cache)
-  ' "$prod" "$patch" "$cache" >"${prod}.tmp.$$" || return 1
-  mv -f "${prod}.tmp.$$" "$prod" || return 1
-  fix_sign 1
-  printf '%b\n' "${GRN}Restored code-marketplace${DEF}"
-}
-marketplace_update(){
-  local ver="${1}" patch="${2:-./patch.json}"
-  local work="/tmp/code-marketplace.$$" url="https://update.code.visualstudio.com/${ver}/linux-x64/stable"
-  [[ -z $ver ]] && die "Version required"
-  mkdir -p "$work" || return 1
-  echo "⬇ VSCode $ver..."
-  download_file "$url" "$work/code.tgz" || { rm -rf "$work"; return 1; }
-  tar xf "$work/code.tgz" -C "$work" || { rm -rf "$work"; return 1; }
-  local -a keys=(extensionsGallery extensionRecommendations keymapExtensionTips
-    languageExtensionTips configBasedExtensionTips webExtensionTips
-    virtualWorkspaceExtensionTips remoteExtensionTips extensionAllowedBadgeProviders
-    extensionAllowedBadgeProvidersRegex msftInternalDomains linkProtectionTrustedDomains)
-  $JQ -r --argjson keys "$(printf '%s\n' "${keys[@]}" | $JQ -R . | $JQ -s .)" \
-    'reduce $keys[] as $k ({}; . + {($k): .[$k]})' \
-    "$work/VSCode-linux-x64/resources/app/product.json" >"$patch" || { rm -rf "$work"; return 1; }
-  rm -rf "$work"
-  printf '%b\n' "${GRN}Updated $patch${DEF}"
-  [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD
-}
-
-#──────────── Main ────────────────────────
+# ─── Main ───
 main(){
+  local C_P="/usr/lib/code/product.json" C_DIR="/usr/share"
   case "${1:-}" in
-  xdg | --xdg) xdg_patch ;;
-  xdg-data | --xdg-data) xdg_datafolder "${2:-}" ;;
-  vscodium | --vscodium) vscodium_marketplace "${2:-}" 0 ;;
-  vscodium-restore | --vscodium-restore) vscodium_marketplace "${2:-}" 1 ;;
-  vscodium-prod | --vscodium-prod) vscodium_prod_patch "${2:-}" ;;
-  vscodium-prod-restore | --vscodium-prod-restore) vscodium_prod_restore "${2:-}" ;;
-  feat | --feat) features_patch "${2:-}" "${3:-}" "${4:-}" ;;
-  feat-restore | --feat-restore) features_restore "${2:-}" "${3:-}" "${4:-}" ;;
-  feat-update | --feat-update) features_update "${2:-}" "${3:-}" ;;
-  mkt | --mkt) marketplace_patch "${2:-}" "${3:-}" "${4:-}" ;;
-  mkt-restore | --mkt-restore) marketplace_restore "${2:-}" "${3:-}" "${4:-}" ;;
-  mkt-update | --mkt-update) marketplace_update "${2:-}" "${3:-}" ;;
-  all | --all)
-    find_vscode_files | xdg_patch
-    vscodium_marketplace "${2:-}" 0
-    marketplace_patch
-    features_patch ;;
-  all-vscodium | --all-vscodium)
-    find_vscode_files | xdg_patch
-    vscodium_prod_patch "${2:-}" ;;
-  *)
-    cat >&2 <<'EOF'
-Usage: vscodium-patch.sh <cmd> [args]
-
-XDG:
-  xdg                              Apply desktop patches (stdin)
-  xdg-data [prod]                  Force XDG-compliant dataFolderName
-
-VSCodium (Simple):
-  vscodium [prod]                  → MS Marketplace
-  vscodium-restore [prod]          ← Open-VSX
-
-VSCodium (Comprehensive):
-  vscodium-prod [prod]             Merge ALL MS features + XDG data dir
-  vscodium-prod-restore [prod]     Restore from backup
-
-Features (VSCode):
-  feat [prod] [patch] [cache]      Apply patch
-  feat-restore [prod] [patch]      Restore
-  feat-update [ver] [patch.json]   Update from upstream
-
-Marketplace (VSCode):
-  mkt [prod] [patch] [cache]       Apply patch
-  mkt-restore [prod] [patch]       Restore
-  mkt-update <ver> [patch.json]    Update from upstream
-
-Combined:
-  all [vscodium-prod]              Apply all patches (simple)
-  all-vscodium [prod]              Apply all + comprehensive VSCodium
-
-Examples:
-  # XDG fixes
-  find_vscode_files | sudo vscodium-patch.sh xdg
-  
-  # XDG dataFolderName override
-  sudo vscodium-patch.sh xdg-data
-  
-  # Comprehensive VSCodium (recommended)
-  sudo vscodium-patch.sh vscodium-prod
-  
-  # VSCode patches
-  sudo vscodium-patch.sh mkt && sudo vscodium-patch.sh feat
-  
-  # All-in-one VSCodium
-  sudo vscodium-patch.sh all-vscodium
-
-Defaults:
-  VSCode:      /usr/lib/code/product.json
-  VSCodium:    /usr/share/vscodium/resources/app/product.json
-  Features:    /usr/share/code-features/{patch,cache}.json
-  Marketplace: /usr/share/code-marketplace/{patch,cache}.json
-EOF
-    return 1;;
+    xdg) xdg_patch ;;
+    xdg-data) f="${2:-/usr/share/vscodium/resources/app/product.json}"; sed -i 's|"dataFolderName": ".*"|"dataFolderName": ".local/share/codium"|' "$f" && echo "✓ DataFolder" ;;
+    vscodium) repo_swap "${2:-}" 0 ;;
+    vscodium-restore) repo_swap "${2:-}" 1 ;;
+    vscodium-prod) vscodium_prod_full "${2:-}" ;;
+    vscodium-prod-restore) vscodium_restore "${2:-}" ;;
+    feat) apply_json "${2:-$C_P}" "${3:-$C_DIR/code-features/patch.json}" "${4:-$C_DIR/code-features/cache.json}" ;;
+    feat-restore) restore_json "${2:-$C_P}" "${3:-$C_DIR/code-features/patch.json}" "${4:-$C_DIR/code-features/cache.json}" ;;
+    feat-update) update_json "${2:-}" "${3:-./patch.json}" KEYS_PROD ;; # Using PROD keys as superset
+    mkt) apply_json "${2:-$C_P}" "${3:-$C_DIR/code-marketplace/patch.json}" "${4:-$C_DIR/code-marketplace/cache.json}"; sign_fix node-ovsx-sign ;;
+    mkt-restore) restore_json "${2:-$C_P}" "${3:-$C_DIR/code-marketplace/patch.json}" "${4:-$C_DIR/code-marketplace/cache.json}"; sign_fix ;;
+    mkt-update) K=(extensionsGallery extensionRecommendations keymapExtensionTips languageExtensionTips configBasedExtensionTips webExtensionTips virtualWorkspaceExtensionTips remoteExtensionTips extensionAllowedBadgeProviders extensionAllowedBadgeProvidersRegex msftInternalDomains linkProtectionTrustedDomains); update_json "${2:-}" "${3:-./patch.json}" K ;;
+    all) find_files | xdg_patch; repo_swap "" 0; apply_json "$C_P" "$C_DIR/code-marketplace/patch.json" "$C_DIR/code-marketplace/cache.json"; apply_json "$C_P" "$C_DIR/code-features/patch.json" "$C_DIR/code-features/cache.json"; sign_fix node-ovsx-sign ;;
+    all-vscodium) find_files | xdg_patch; vscodium_prod_full "${2:-}" ;;
+    *) printf "Usage: %s {xdg|xdg-data|vscodium[-prod][-restore]|feat[-restore|-update]|mkt[-restore|-update]|all[-vscodium]}\n" "$0"; exit 1 ;;
   esac
 }
 main "$@"

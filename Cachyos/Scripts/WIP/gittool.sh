@@ -58,8 +58,8 @@ gitdate(){
   # Sync submodule URLs
   git -C "$dir" submodule sync --recursive
   # Update submodules with fallback
-  git -C "$dir" submodule update --init --recursive --remote --filter=blob:none --depth 1 --single-branch --jobs 8 \
-    || git -C "$dir" submodule update --init --recursive --remote --depth 1 --jobs 8 \
-    || git -C "$dir" submodule update --init --recursive --remote --jobs 8
+  git -C "$dir" -c protocol.file.allow=always submodule update --init --recursive --remote --filter=blob:none --depth 1 --single-branch --jobs 8 \
+    || git -C "$dir" -c protocol.file.allow=always submodule update --init --recursive --remote --depth 1 --jobs 8 \
+    || git -C "$dir" -c protocol.file.allow=always submodule update --init --recursive --remote --jobs 8
   printf '\e[1mUpdate complete: %s\e[0m\n' "$dir"
 }

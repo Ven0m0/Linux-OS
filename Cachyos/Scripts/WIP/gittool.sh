@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Speed up git
-export LC_ALL=C LANG=C
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C LANG=C LANGUAGE=C
 
 githousekeep(){
   local workdir="$(cd -- "${-- "${BASH_SOURCE[0]:-}"%/*}" && pwd)"

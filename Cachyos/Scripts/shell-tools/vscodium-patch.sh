@@ -24,6 +24,7 @@ xdg_patch(){
         grep -q "text/plain" "$f" || sed -i -E 's#^(MimeType=.*);$#\1;text/plain;#' "$f"
         grep -q "inode/directory" "$f" || sed -i -E 's#^(MimeType=.*);$#\1;inode/directory;#' "$f" ;;
       */package.json) sed -i -E 's/"desktopName":[[:space:]]*"(.+)-url-handler\.desktop"/"desktopName": "\1.desktop"/' "$f" ;;
+      *) echo "none found" ;;
     esac; printf '%b\n' "${G}✓${D} $f"
   done
 }
@@ -32,7 +33,6 @@ find_files(){
     /opt/vscodium*/resources/app/package.json /usr/share/applications/{code,vscode,vscodium}*.desktop \
     | grep -vE '\-url-handler.desktop$'
 }
-
 # ─── JSON Logic ───
 # $1=prod $2=patch $3=cache
 apply_json(){
@@ -54,7 +54,7 @@ restore_json(){
 update_json(){
   local v="$1" out="$2" work="/tmp/code-up.$$" u="https://update.code.visualstudio.com/${1}/linux-x64/stable"
   [[ -z $v ]] && die "Version required"
-  local -n kref=$3; echo "⬇ VSCode $v..."
+  local -n kref="$3"; echo "⬇ VSCode $v..."
   dl "$u" "$work/c.tgz" || { rm -rf "$work"; return 1; }
   tar xf "$work/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json
   "$JQ" -r --argjson k "$(printf '%s\n' "${kref[@]}" | "$JQ" -R . | "$JQ" -s .)" \
@@ -85,14 +85,13 @@ repo_swap(){
     printf '%b\n' "${G}Repo: MS Marketplace${D}"
   fi
 }
-
 vscodium_prod_full(){
   local dst="${1:-/usr/share/vscodium/resources/app/product.json}"
-  local work="/tmp/vp.$$" v src="$work/product.json"
+  local work="/tmp/vp.$$" v; local src="${work}/product.json"
   [[ ! -f $dst ]] && die "Missing $dst"
   v=$("$JQ" -r '.version//empty' "$dst") || die "No version"
-  cp "$dst" "${dst}.backup.$$(date +%s)"; dl "https://update.code.visualstudio.com/$v/linux-x64/stable" "$work/c.tgz"
-  tar xf "$work/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json
+  cp "$dst" "${dst}.backup.$$(date +%s)"; dl "https://update.code.visualstudio.com/$v/linux-x64/stable" "${work}/c.tgz"
+  tar xf "${work}/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json
   "$JQ" -s --argjson k "$(printf '%s\n' "${KEYS_PROD[@]}" | "$JQ" -R . | "$JQ" -s .)" \
     '.[0] as $d | .[1] as $s | $d + ($s | with_entries(select(.key as $x | $k | index($x)))) | . + {enableTelemetry:false}' \
     "$dst" "$src" > "${dst}.tmp" && mv "${dst}.tmp" "$dst"

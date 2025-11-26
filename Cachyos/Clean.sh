@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 # Enhanced system cleaning with profile-cleaner integration
-set -euo pipefail
+set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'
-shopt -s nullglob globstar
-export LC_ALL=C LANG=C LANGUAGE=C
+export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
 
 #============ Colors ============
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 BLU=$'\e[34m' GRN=$'\e[32m' YLW=$'\e[33m' MGN=$'\e[35m' DEF=$'\e[0m'
-
 #============ Helper Functions ============
-has(){ command -v "$1" &>/dev/null; }
-
+has(){ command -v -- "$1" &>/dev/null; }
 get_pkg_manager(){
   if has paru; then
     printf 'paru'
@@ -21,11 +18,7 @@ get_pkg_manager(){
     printf 'pacman'
   fi
 }
-
-capture_disk_usage(){
-  df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'
-}
-
+capture_disk_usage(){ df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'; }
 # Enhanced SQLite vacuum with reporting
 vacuum_sqlite(){
   local db=$1 s_old s_new saved
@@ -94,24 +87,20 @@ mozilla_profiles(){
       case $key in
         IsRelative) is_rel=$val ;;
         Path)
-          path_val=$val
+          path_val="$val"
           if [[ $is_rel -eq 0 ]]; then
             [[ -d $path_val ]] && printf '%s\n' "$path_val"
           else
             [[ -d $base/$path_val ]] && printf '%s\n' "$base/$path_val"
           fi
-          path_val='' is_rel=1
-          ;;
+          path_val='' is_rel=1 ;;
       esac
     done < <(grep -E '^(IsRelative|Path)=' "$base/profiles.ini" 2>/dev/null)
   fi
 }
-
 chrome_profiles(){
-  local root=$1
-  for d in "$root"/Default "$root"/"Profile "*; do
-    [[ -d $d ]] && printf '%s\n' "$d"
-  done
+  local root="$1"
+  for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
 }
 
 #============ Banner ============
@@ -128,15 +117,15 @@ banner(){
 clean_browsers(){
   printf '%s\n' "🔄${BLU}Cleaning browsers...${DEF}"
   local moz_bases=(
-    "$HOME/.mozilla/firefox"
-    "$HOME/.librewolf"
-    "$HOME/.floorp"
-    "$HOME/.waterfox"
-    "$HOME/.moonchild productions/pale moon"
-    "$HOME/.conkeror.mozdev.org/conkeror"
-    "$HOME/.var/app/org.mozilla.firefox/.mozilla/firefox"
-    "$HOME/.var/app/io.gitlab.librewolf-community/.mozilla/firefox"
-    "$HOME/snap/firefox/common/.mozilla/firefox"
+    "${HOME}/.mozilla/firefox"
+    "${HOME}/.librewolf"
+    "${HOME}/.floorp"
+    "${HOME}/.waterfox"
+    "${HOME}/.moonchild productions/pale moon"
+    "${HOME}/.conkeror.mozdev.org/conkeror"
+    "${HOME}/.var/app/org.mozilla.firefox/.mozilla/firefox"
+    "${HOME}/.var/app/io.gitlab.librewolf-community/.mozilla/firefox"
+    "${HOME}/snap/firefox/common/.mozilla/firefox"
   )
   ensure_not_running firefox librewolf floorp waterfox palemoon conkeror
   for base in "${moz_bases[@]}"; do
@@ -158,15 +147,15 @@ clean_browsers(){
     "$HOME/snap/firefox/common/.cache"/* &>/dev/null || :
   ensure_not_running google-chrome chromium brave-browser brave opera vivaldi midori qupzilla
   local chrome_dirs=(
-    "$HOME/.config/google-chrome"
-    "$HOME/.config/chromium"
-    "$HOME/.config/BraveSoftware/Brave-Browser"
-    "$HOME/.config/opera"
-    "$HOME/.config/vivaldi"
-    "$HOME/.config/midori"
-    "$HOME/.var/app/com.google.Chrome/config/google-chrome"
-    "$HOME/.var/app/org.chromium.Chromium/config/chromium"
-    "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser"
+    "${HOME}/.config/google-chrome"
+    "${HOME}/.config/chromium"
+    "${HOME}/.config/BraveSoftware/Brave-Browser"
+    "${HOME}/.config/opera"
+    "${HOME}/.config/vivaldi"
+    "${HOME}/.config/midori"
+    "${HOME}/.var/app/com.google.Chrome/config/google-chrome"
+    "${HOME}/.var/app/org.chromium.Chromium/config/chromium"
+    "${HOME}/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser"
   )
   for root in "${chrome_dirs[@]}"; do
     [[ -d $root ]] || continue
@@ -182,10 +171,10 @@ clean_browsers(){
 clean_mail_clients(){
   printf '%s\n' "📧${BLU}Cleaning mail clients...${DEF}"
   local mail_bases=(
-    "$HOME/.thunderbird"
-    "$HOME/.icedove"
-    "$HOME/.mozilla-thunderbird"
-    "$HOME/.var/app/org.mozilla.Thunderbird/.thunderbird"
+    "${HOME}/.thunderbird"
+    "${HOME}/.icedove"
+    "${HOME}/.mozilla-thunderbird"
+    "${HOME}/.var/app/org.mozilla.Thunderbird/.thunderbird"
   )
   ensure_not_running thunderbird icedove
   for base in "${mail_bases[@]}"; do
@@ -199,7 +188,7 @@ clean_mail_clients(){
 clean_electron(){
   local apps=("Code" "VSCodium" "Microsoft/Microsoft Teams")
   for app in "${apps[@]}"; do
-    local d="$HOME/.config/$app"
+    local d="${HOME}/.config/$app"
     [[ -d $d ]] || continue
     rm -rf "$d"/{Cache,GPUCache,"Code Cache",logs,Crashpad} &>/dev/null || :
   done
@@ -207,24 +196,21 @@ clean_electron(){
 
 privacy_clean(){
   printf '%s\n' "🔒${MGN}Privacy cleanup...${DEF}"
-  rm -f "$HOME"/.{bash,zsh,python}_history "$HOME"/.history \
-    "$HOME"/.local/share/fish/fish_history &>/dev/null || :
+  rm -f "${HOME}"/.{bash,zsh,python}_history "${HOME}/.history" \
+    "${HOME}"/.local/share/fish/fish_history &>/dev/null || :
   sudo rm -f /root/.{bash,zsh,python}_history /root/.history &>/dev/null || :
-  rm -rf "$HOME"/.thumbnails/* "$HOME"/.cache/thumbnails/* &>/dev/null || :
-  rm -f "$HOME"/.recently-used.xbel "$HOME"/.local/share/recently-used.xbel* &>/dev/null || :
+  rm -rf "${HOME}"/.thumbnails/* "${HOME}"/.cache/thumbnails/* &>/dev/null || :
+  rm -f "${HOME}"/.recently-used.xbel "${HOME}"/.local/share/recently-used.xbel* &>/dev/null || :
 }
 
 pkg_cache_clean(){
   if has pacman; then
-    local pkgmgr
-    pkgmgr=$(get_pkg_manager)
+    local pkgmgr=$(get_pkg_manager)
     sudo paccache -rk0 -q &>/dev/null || :
     sudo "$pkgmgr" -Scc --noconfirm &>/dev/null || :
+    has paru && paru -Scc --noconfirm &>/dev/null || :
   fi
-  has apt-get && {
-    sudo apt-get clean &>/dev/null || :
-    sudo apt-get autoclean &>/dev/null || :
-  }
+  has apt-get && { sudo apt-get clean -y &>/dev/null; sudo apt-get autoclean &>/dev/null; }
 }
 
 snap_flatpak_trim(){
@@ -234,7 +220,7 @@ snap_flatpak_trim(){
     while read -r name version rev tracking publisher notes; do
       [[ ${notes:-} == *disabled* ]] && sudo snap remove "$name" --revision "$rev" &>/dev/null || :
     done < <(snap list --all 2>/dev/null || :)
-    rm -rf "$HOME"/snap/*/*/.cache/* &>/dev/null || :
+    rm -rf "${HOME}"/snap/*/*/.cache/* &>/dev/null || :
   fi
   sudo rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
 }
@@ -250,34 +236,24 @@ system_clean(){
   sudo swapoff -a &>/dev/null || :
   sudo swapon -a &>/dev/null || :
   sudo systemd-tmpfiles --clean &>/dev/null || :
-  rm -rf "$HOME/.local/share/Trash"/* &>/dev/null || :
-  rm -rf "$HOME/.var/app"/*/cache/* &>/dev/null || :
+  rm -rf "${HOME}/.local/share/Trash"/* &>/dev/null || :
+  rm -rf "${HOME}/.var/app"/*/cache/* &>/dev/null || :
   sudo rm -rf /tmp/* /var/tmp/* &>/dev/null || :
-  has bleachbit && {
-    bleachbit -c --preset &>/dev/null || :
-    sudo bleachbit -c --preset &>/dev/null || :
-  }
+  has bleachbit && { bleachbit -c --preset &>/dev/null || :; sudo bleachbit -c --preset &>/dev/null || :; }
   sudo fstrim -a --quiet-unsupported &>/dev/null || :
   has fc-cache && sudo fc-cache -r &>/dev/null || :
+  has localepurge && { localepurge &>/dev/null || :; sudo localepurge &>/dev/null; }
 }
 
 #============ Main ============
 main(){
-  banner
-  local disk_before disk_after
-  disk_before=$(capture_disk_usage)
-  sync
+  banner; sync
+  local disk_before=$(capture_disk_usage) disk_after
   echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null || :
-  has cargo-cache && {
-    cargo cache -efg &>/dev/null || :
-    cargo cache -ef trim --limit 1B &>/dev/null || :
-  }
+  has cargo-cache && { cargo cache -efg &>/dev/null || :; cargo cache -ef trim --limit 1B &>/dev/null || :; }
   has uv && uv clean -q &>/dev/null || :
   has bun && bun pm cache rm &>/dev/null || :
-  has pnpm && {
-    pnpm prune &>/dev/null || :
-    pnpm store prune &>/dev/null || :
-  }
+  has pnpm && { pnpm prune &>/dev/null || :; pnpm store prune &>/dev/null || :; }
   clean_browsers
   clean_mail_clients
   clean_electron
@@ -289,5 +265,4 @@ main(){
   printf '==> %s %s\n' "${BLU}Disk usage before:${DEF}" "$disk_before"
   printf '==> %s %s\n' "${GRN}Disk usage after:${DEF}" "$disk_after"
 }
-
 main "$@"

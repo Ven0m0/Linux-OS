@@ -120,7 +120,7 @@ for entry in "$TARGET"/*; do
         else
           mv -n -- "$entry" "$newdir/${id}.${entry##*.}" 2>/dev/null || mv -- "$entry" "$newdir/${id}.${entry##*.}" 2>/dev/null || :
         fi ;;
-        
+
     esac
     continue
   fi
@@ -130,7 +130,7 @@ for entry in "$TARGET"/*; do
     # skip if dir already contains [ID]
     [[ $(basename -- "$entry") =~ \[[A-Z0-9]{6}\] ]] && continue
     id=; g=
-    for e in $exts; do
+    for e in "${exts[@]}"; do
       for candidate in "$entry"/*."$e"; do
         [[ -f $candidate ]] || continue
         id=$(get_id_from_file "$candidate")

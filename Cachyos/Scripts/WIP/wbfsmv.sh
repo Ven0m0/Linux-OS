@@ -30,8 +30,7 @@ get_id_from_file(){
 }
 # normalize display name: replace _ and - with space, collapse spaces, trim
 norm_name(){
-  local s=$1
-  s=${s//_/ } ; s=${s//-/ }
+  local s="$1"; s="${s//_/ }" ; s="${s//-/ }"
   # collapse multi spaces and trim
   printf '%s' "$s" | sed -E 's/  +/ /g; s/^ //; s/ $//'
 }
@@ -61,18 +60,15 @@ for f in *; do
   else
     id=$(get_id_from_file "$f")
     [[ ${#id} -eq 6 ]] || continue
-    name=${f%.*}
-    name=$(norm_name "$name")
+    name=${f%.*}; name=$(norm_name "$name")
   fi
   # region fix before conversion/move
   region_fix_if_needed "$f"
   newdir="${name} [${id}]"
   mkdir -p -- "$newdir" &>/dev/null || :
   case "${f,,}" in
-    *.wbfs)
-      # already wbfs: just move and rename to GAMEID.wbfs
-      mv -n -- "$f" "$newdir/${id}.wbfs" 2>/dev/null || mv -- "$f" "$newdir/${id}.wbfs" 2>/dev/null || :
-      ;;
+    # already wbfs: just move and rename to GAMEID.wbfs
+    *.wbfs) mv -n -- "$f" "$newdir/${id}.wbfs" 2>/dev/null || mv -- "$f" "$newdir/${id}.wbfs" 2>/dev/null || : ;;
     *)
       if (( convert )) && (( have_wit )); then
         # try conversion to wbfs; quiet, move original as backup on success
@@ -84,8 +80,7 @@ for f in *; do
         fi
       else
         mv -n -- "$f" "$newdir/${id}.${f##*.}" 2>/dev/null || mv -- "$f" "$newdir/${id}.${f##*.}" 2>/dev/null || :
-      fi
-      ;;
+      fi ;;
   esac
 done
 # ---- handle top-level directories ----
@@ -93,7 +88,7 @@ for d in *; do
   [[ -d $d ]] || continue
   [[ $d =~ \[[A-Z0-9]{6}\] ]] && continue
   id="" g=""
-  for e in $exts; do
+  for e in "${exts[@]}"; do
     for candidate in "$d"/*."$e"; do
       [[ -f $candidate ]] || continue
       id=$(get_id_from_file "$candidate")

@@ -34,7 +34,7 @@ service_ctl(){
 pkg_installed(){
   local PkgIn=$1
 
-  if pacman -Qi "$PkgIn" &>/dev/null>/dev/null; then
+  if pacman -Qi "$PkgIn" &>/dev/null; then
     #echo "${PkgIn} is already installed..."
     return 0
   else
@@ -46,7 +46,7 @@ pkg_installed(){
 pkg_available(){
   local PkgIn=$1
 
-  if pacman -Si "$PkgIn" &>/dev/null>/dev/null; then
+  if pacman -Si "$PkgIn" &>/dev/null; then
     #echo "${PkgIn} available in arch repo..."
     return 0
   else
@@ -58,7 +58,7 @@ aur_available(){
   local PkgIn=$1
   chk_aurh
 
-  if "$aurhlpr" -Si "$PkgIn" &>/dev/null>/dev/null; then
+  if "$aurhlpr" -Si "$PkgIn" &>/dev/null; then
     #echo "${PkgIn} available in aur repo..."
     return 0
   else

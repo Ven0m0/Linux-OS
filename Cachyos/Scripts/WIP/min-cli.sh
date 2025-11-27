@@ -68,16 +68,16 @@ while (($#)); do
 done
 
 # Find fd / fdfind / find
-if command -v fd &>/dev/null>/dev/null; then
+if command -v fd &>/dev/null; then
   FD_BIN=fd
 else
   FD_BIN="find"
 fi
 
 # Choose parallel runner: prefer rust-parallel if available, else use xargs
-if command -v rust-parallel &>/dev/null>/dev/null; then
+if command -v rust-parallel &>/dev/null; then
   PARALLEL_BIN=rust-parallel
-elif command -v parallel &>/dev/null>/dev/null; then
+elif command -v parallel &>/dev/null; then
   PARALLEL_BIN=parallel
 else
   PARALLEL_BIN=""
@@ -88,7 +88,7 @@ OPT_SCRIPT="$TMPDIR/min-cli.sh"
 
 # helper to get file size portably
 filesize_prog(){
-  if stat -c%s "$1" &>/dev/null>/dev/null; then
+  if stat -c%s "$1" &>/dev/null; then
     stat -c%s "$1"
   else
     stat -f%z "$1"

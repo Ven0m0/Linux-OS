@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-has(){ command -v -- "$1" &>/dev/null>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 die(){
   echo "ERROR: $*" >&2
   exit 1
@@ -30,13 +30,13 @@ find_mtu(){
   fi
 
   echo "Testing MTU to $srv (IPv$ipver)..."
-  $ping_cmd -c1 -W1 "$srv" &>/dev/null>/dev/null || die "Server $srv unreachable"
-  $ping_cmd -M do -s$((lo - overhead)) -c1 "$srv" &>/dev/null>/dev/null || die "Min MTU $lo not viable"
+  $ping_cmd -c1 -W1 "$srv" &>/dev/null || die "Server $srv unreachable"
+  $ping_cmd -M do -s$((lo - overhead)) -c1 "$srv" &>/dev/null || die "Min MTU $lo not viable"
 
   opt=$lo
   while ((lo <= hi)); do
     mid=$(((lo + hi) / 2))
-    if $ping_cmd -M do -s$((mid - overhead)) -c1 "$srv" &>/dev/null>/dev/null 2>&1; then
+    if $ping_cmd -M do -s$((mid - overhead)) -c1 "$srv" &>/dev/null 2>&1; then
       opt=$mid
       lo=$((mid + 1))
     else
@@ -83,7 +83,7 @@ find_mtu(){
       sudo nmcli con mod "$conn" 802-3-ethernet.mtu "$opt"
       echo "Persistent via NetworkManager: $conn"
     fi
-  elif [[ -d /etc/netplan ]] && ls /etc/netplan/*.yaml &>/dev/null>/dev/null; then
+  elif [[ -d /etc/netplan ]] && ls /etc/netplan/*.yaml &>/dev/null; then
     local netplan_file=$(ls /etc/netplan/*.yaml | head -1)
     echo "Updating Netplan config: $netplan_file"
     if grep -q "mtu:" "$netplan_file" 2>/dev/null; then
@@ -91,18 +91,18 @@ find_mtu(){
     else
       echo "  Add 'mtu: $opt' under the $iface interface in $netplan_file"
     fi
-    sudo netplan apply &>/dev/null>/dev/null || echo "Run 'sudo netplan apply' to activate"
+    sudo netplan apply &>/dev/null || echo "Run 'sudo netplan apply' to activate"
     echo "Persistent via Netplan: $netplan_file"
   elif [[ -d /etc/systemd/network ]]; then
     local nwfile="/etc/systemd/network/99-$iface-mtu.network"
-    sudo tee "$nwfile" &>/dev/null>/dev/null <<EOF
+    sudo tee "$nwfile" &>/dev/null <<EOF
 [Match]
 Name=$iface
 
 [Link]
 MTUBytes=$opt
 EOF
-    sudo systemctl restart systemd-networkd &>/dev/null>/dev/null || :
+    sudo systemctl restart systemd-networkd &>/dev/null || :
     echo "Persistent via systemd-networkd: $nwfile"
   else
     echo "Manual persistence needed - add to /etc/network/interfaces"

@@ -7,7 +7,7 @@ export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 #──────────── Helpers ────────────
-has(){ command -v "$1" &>/dev/null>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
 die(){
@@ -28,7 +28,7 @@ fi
 
 #──────────── Build Environment ────────────
 jobs=$(nproc 2>/dev/null || echo 4)
-[[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf &>/dev/null>/dev/null
+[[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf &>/dev/null
 export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true \
   RUSTFLAGS="${RUSTFLAGS:-'-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'}" \
   OPT_LEVEL=3 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_OPT_LEVEL=3 \
@@ -50,9 +50,9 @@ setup_repositories(){
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
-    sudo pacman-key --keyserver keyserver.ubuntu.com -r "$chaotic_key" &>/dev/null>/dev/null || :
-    yes | sudo pacman-key --lsign-key "$chaotic_key" &>/dev/null>/dev/null || :
-    sudo pacman --noconfirm --needed -U "${chaotic_urls[@]}" &>/dev/null>/dev/null || :
+    sudo pacman-key --keyserver keyserver.ubuntu.com -r "$chaotic_key" &>/dev/null || :
+    yes | sudo pacman-key --lsign-key "$chaotic_key" &>/dev/null || :
+    sudo pacman --noconfirm --needed -U "${chaotic_urls[@]}" &>/dev/null || :
     add_block '[chaotic-aur]
 Include = /etc/pacman.d/chaotic-mirrorlist'
   fi
@@ -66,9 +66,9 @@ Server = https://pkgbuild.com/~artafinde/repo'
   if ! has_repo '[core-x86-64-v3]'; then
     msg "Adding ALHP repos"
     if ((aur)); then
-      paru --noconfirm --skipreview --needed -S alhp-keyring alhp-mirrorlist &>/dev/null>/dev/null || :
+      paru --noconfirm --skipreview --needed -S alhp-keyring alhp-mirrorlist &>/dev/null || :
     else
-      sudo pacman --noconfirm --needed -S alhp-keyring alhp-mirrorlist &>/dev/null>/dev/null || :
+      sudo pacman --noconfirm --needed -S alhp-keyring alhp-mirrorlist &>/dev/null || :
     fi
     add_block '[core-x86-64-v3]
 Include = /etc/pacman.d/alhp-mirrorlist
@@ -92,12 +92,12 @@ Include = /etc/pacman.d/mirrorlist'
     tmp=$(mktemp -d)
     local repo=https://github.com/endeavouros-team/PKGBUILDS.git
     if has gix; then
-      gix clone --depth=1 --no-tags "$repo" "$tmp" &>/dev/null>/dev/null
+      gix clone --depth=1 --no-tags "$repo" "$tmp" &>/dev/null
     else
-      git clone --depth=1 --filter=blob:none --no-tags "$repo" "$tmp" &>/dev/null>/dev/null
+      git clone --depth=1 --filter=blob:none --no-tags "$repo" "$tmp" &>/dev/null
     fi
     for d in endeavouros-keyring endeavouros-mirrorlist; do
-      (cd "$tmp/$d" && makepkg -sirc --skippgpcheck --skipchecksums --skipinteg --nocheck --noconfirm --needed &>/dev/null>/dev/null)
+      (cd "$tmp/$d" && makepkg -sirc --skippgpcheck --skipchecksums --skipinteg --nocheck --noconfirm --needed &>/dev/null)
     done
     rm -rf "$tmp"
     add_block '[endeavouros]
@@ -105,7 +105,7 @@ SigLevel = Optional TrustAll
 Include = /etc/pacman.d/endeavouros-mirrorlist'
   fi
   # CachyOS
-  if ! pacman -Qq cachyos-mirrorlist &>/dev/null>/dev/null; then
+  if ! pacman -Qq cachyos-mirrorlist &>/dev/null; then
     msg "Adding CachyOS repo"
     local tmp
     tmp=$(mktemp -d)
@@ -115,7 +115,7 @@ Include = /etc/pacman.d/endeavouros-mirrorlist'
     rm -rf "$tmp"
   fi
   # Sync if repos were added
-  sudo pacman -Syy --noconfirm &>/dev/null>/dev/null || :
+  sudo pacman -Syy --noconfirm &>/dev/null || :
 }
 
 #══════════════════════════════════════════════════════════════
@@ -131,12 +131,12 @@ init_system(){
     sudo chown root:root /etc/doas.conf
     sudo chmod 0400 /etc/doas.conf
   }
-  modprobed-db store &>/dev/null>/dev/null
-  sudo modprobed-db store &>/dev/null>/dev/null
+  modprobed-db store &>/dev/null
+  sudo modprobed-db store &>/dev/null
   sudo modprobe zram tcp_bbr kvm kvm-intel >/dev/null
   [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck
-  sudo pacman-key --init &>/dev/null>/dev/null
-  sudo pacman-key --populate archlinux cachyos &>/dev/null>/dev/null
+  sudo pacman-key --init &>/dev/null
+  sudo pacman-key --populate archlinux cachyos &>/dev/null
   sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null
   sudo pacman -Syyu --noconfirm 2>/dev/null
 }
@@ -182,7 +182,7 @@ install_packages(){
       local fail="${HOME}/failed_pkgs.txt"
       msg "Batch install failed → $fail"
       for p in "${missing[@]}"; do
-        pacman -Qq "$p" &>/dev/null>/dev/null || printf '%s\n' "$p" >> "$fail"
+        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p" >> "$fail"
       done
     }
   else
@@ -196,7 +196,7 @@ install_packages(){
 setup_flatpak(){
   has flatpak || return 0
   msg "Configuring Flatpak"
-  flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo &>/dev/null>/dev/null || :
+  flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo &>/dev/null || :
   local -a apps=(io.github.wiiznokes.fan-control)
   ((${#apps[@]})) && flatpak install -y flathub "${apps[@]}" 2>/dev/null || :
   flatpak update -y --noninteractive 2>/dev/null || :
@@ -211,9 +211,9 @@ setup_rust(){
     bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs)" -- -y --profile minimal -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
     export PATH="$HOME/.cargo/bin:$PATH"
   else
-    rustup default nightly &>/dev/null>/dev/null || :
-    rustup set profile minimal &>/dev/null>/dev/null || :
-    rustup self upgrade-data &>/dev/null>/dev/null || :
+    rustup default nightly &>/dev/null || :
+    rustup set profile minimal &>/dev/null || :
+    rustup self upgrade-data &>/dev/null || :
     rustup update 2>/dev/null || :
   fi
   has sccache && export RUSTC_WRAPPER=sccache
@@ -232,8 +232,8 @@ setup_tools(){
   if has micro; then
     msg "Configuring micro"
     local -a plugins=(fish fzf wc filemanager linter lsp autofmt detectindent editorconfig misspell diff ftoptions literate status)
-    micro -plugin install "${plugins[@]}" &>/dev/null>/dev/null &
-    micro -plugin update &>/dev/null>/dev/null &
+    micro -plugin install "${plugins[@]}" &>/dev/null &
+    micro -plugin update &>/dev/null &
   fi
   # GitHub CLI
   if has gh; then
@@ -265,7 +265,7 @@ setup_tools(){
   if has soar; then
     msg "Configuring soar"
     soar self update 2>/dev/null || :
-    soar S &>/dev/null>/dev/null && soar u --no-verify &>/dev/null>/dev/null || :
+    soar S &>/dev/null && soar u --no-verify &>/dev/null || :
     soar i -yq 'sstrip.upx.ss#github.com.pkgforge-dev.super-strip' 2>/dev/null || :
   fi
 }
@@ -306,7 +306,7 @@ enable_services(){
   msg "Enabling services"
   local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency)
   for sv in "${svcs[@]}"; do
-    systemctl is-enabled "$sv" &>/dev/null>/dev/null || sudo systemctl enable --now "$sv" &>/dev/null>/dev/null || :
+    systemctl is-enabled "$sv" &>/dev/null || sudo systemctl enable --now "$sv" &>/dev/null || :
   done
 }
 
@@ -319,8 +319,8 @@ maintenance(){
   has fc-cache && sudo fc-cache -f || :
   has update-desktop-database && sudo update-desktop-database || :
   if has fwupdmgr; then
-    sudo fwupdmgr refresh -y &>/dev/null>/dev/null || :
-    sudo fwupdmgr update &>/dev/null>/dev/null || :
+    sudo fwupdmgr refresh -y &>/dev/null || :
+    sudo fwupdmgr update &>/dev/null || :
   fi
 
   # Initramfs rebuild

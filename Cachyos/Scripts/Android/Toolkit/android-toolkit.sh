@@ -9,7 +9,7 @@ export LC_ALL=C LANG=C
 
 # Colors
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MAG=$'\e[35m' CYN=$'\e[36m' RST=$'\e[0m'
-has(){ command -v "$1" &>/dev/null>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
 # Globals
 VERSION="2.0.0"
@@ -18,7 +18,7 @@ DEVICE="" JOBS="$(nproc 2>/dev/null || echo 4)"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/android-toolkit"
 CONFIG_FILE="${CONFIG_DIR}/config.toml"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/android-toolkit"
-mkdir -p "$CONFIG_DIR" "$CACHE_DIR" &>/dev/null>/dev/null || :
+mkdir -p "$CONFIG_DIR" "$CACHE_DIR" &>/dev/null || :
 
 # WhatsApp paths
 declare -a WA_OPUS_PATHS=(
@@ -66,13 +66,13 @@ confirm(){
 ensure_conn(){
   if [[ $USE_SHIZUKU -eq 1 ]]; then
     has rish || die "rish not found. Install Shizuku and enable CLI."
-    rish id &>/dev/null>/dev/null || die "Shizuku not connected."
+    rish id &>/dev/null || die "Shizuku not connected."
     log info "Using Shizuku (rish)"
     return 0
   fi
   has adb || die "adb not found. Install Android SDK platform-tools."
   if [[ -n $DEVICE ]]; then
-    adb -s "$DEVICE" get-state &>/dev/null>/dev/null || die "Device $DEVICE not connected/authorized."
+    adb -s "$DEVICE" get-state &>/dev/null || die "Device $DEVICE not connected/authorized."
     ADB=(adb -s "$DEVICE")
   else
     mapfile -t devs < <(adb devices | awk 'NR>1 && $2=="device"{print $1}')

@@ -78,12 +78,12 @@ device_ok(){
     }
     return 0
   fi
-  command -v "$ADB" &>/dev/null>/dev/null || {
+  command -v "$ADB" &>/dev/null || {
     err "adb not found"
     return 1
   }
-  "$ADB" start-server &>/dev/null>/dev/null || :
-  "$ADB" get-state &>/dev/null>/dev/null || {
+  "$ADB" start-server &>/dev/null || :
+  "$ADB" get-state &>/dev/null || {
     err "No device; enable USB debugging"
     return 1
   }
@@ -296,13 +296,13 @@ cmd_cache_clean(){
   device_ok || return 1
   sec "Clear app caches"
   if ((IS_TERMUX)); then
-    ash pm list packages -3 | cut -d: -f2 | xargs -r -n1 -P"$NPROC" ash pm clear --cache-only &>/dev/null>/dev/null || :
-    ash pm list packages -s | cut -d: -f2 | xargs -r -n1 -P"$NPROC" ash pm clear --cache-only &>/dev/null>/dev/null || :
+    ash pm list packages -3 | cut -d: -f2 | xargs -r -n1 -P"$NPROC" ash pm clear --cache-only &>/dev/null || :
+    ash pm list packages -s | cut -d: -f2 | xargs -r -n1 -P"$NPROC" ash pm clear --cache-only &>/dev/null || :
   else
     "$ADB" shell pm list packages -3 2>/dev/null | cut -d: -f2 \
-      | xargs -r -n1 -P"$NPROC" -I{} "$ADB" shell pm clear --cache-only {} &>/dev/null>/dev/null || :
+      | xargs -r -n1 -P"$NPROC" -I{} "$ADB" shell pm clear --cache-only {} &>/dev/null || :
     "$ADB" shell pm list packages -s 2>/dev/null | cut -d: -f2 \
-      | xargs -r -n1 -P"$NPROC" -I{} "$ADB" shell pm clear --cache-only {} &>/dev/null>/dev/null || :
+      | xargs -r -n1 -P"$NPROC" -I{} "$ADB" shell pm clear --cache-only {} &>/dev/null || :
   fi
   ash pm trim-caches 128G
   ash logcat -b all -c
@@ -342,7 +342,7 @@ cmd_aapt2_opt(){
   local in="${1:-target/release/app-unsigned.apk}"
   local out="${2:-target/release/app-optimized.apk}"
   sec "AAPT2 optimize"
-  command -v aapt2 &>/dev/null>/dev/null || {
+  command -v aapt2 &>/dev/null || {
     err "aapt2 not found"
     return 1
   }
@@ -353,8 +353,8 @@ cmd_aapt2_opt(){
     return 1
   }
   mkdir -p "${"$out"%/*}"
-  aapt2 compile --dir res -o compiled-res.zip &>/dev/null>/dev/null || :
-  aapt2 link -o linked-res.apk -I "$jar" --manifest AndroidManifest.xml --java gen compiled-res.zip &>/dev/null>/dev/null || :
+  aapt2 compile --dir res -o compiled-res.zip &>/dev/null || :
+  aapt2 link -o linked-res.apk -I "$jar" --manifest AndroidManifest.xml --java gen compiled-res.zip &>/dev/null || :
   aapt2 optimize --collapse-resource-names --shorten-resource-paths --enable-sparse-encoding -o "$out" "$in"
   ok "Saved → $out"
 }
@@ -368,24 +368,24 @@ task_pkg_maint(){
   info "Cleaning..."
   pkg clean -y
   pkg autoclean -y
-  apt-get autoremove -y &>/dev/null>/dev/null || :
+  apt-get autoremove -y &>/dev/null || :
   ok "Packages updated"
 }
 
 task_cache_termux(){
   sec "Cache cleanup"
   local cleaned=()
-  command -v uv &>/dev/null>/dev/null && {
-    uv cache clean --force &>/dev/null>/dev/null
-    uv cache prune &>/dev/null>/dev/null
+  command -v uv &>/dev/null && {
+    uv cache clean --force &>/dev/null
+    uv cache prune &>/dev/null
     cleaned+=(uv)
   }
-  command -v pip &>/dev/null>/dev/null && {
-    pip cache purge &>/dev/null>/dev/null
+  command -v pip &>/dev/null && {
+    pip cache purge &>/dev/null
     cleaned+=(pip)
   }
   [[ -d "$HOME/.npm" ]] && {
-    npm cache clean --force &>/dev/null>/dev/null
+    npm cache clean --force &>/dev/null
     cleaned+=(npm)
   }
   [[ -d "$HOME/.cache" ]] && {
@@ -428,7 +428,7 @@ task_large_files(){
 
 task_updatedb(){
   sec "Update locate DB"
-  command -v updatedb &>/dev/null>/dev/null || {
+  command -v updatedb &>/dev/null || {
     warn "Install: pkg install findutils"
     return
   }

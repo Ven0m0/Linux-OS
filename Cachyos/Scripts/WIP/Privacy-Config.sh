@@ -12,7 +12,7 @@ CYN=$'\e[36m'
 DEF=$'\e[0m'
 
 # Check if command exists
-has(){ command -v "$1" &>/dev/null>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
 # Override HOME for SUDO_USER context
 export HOME="/home/${SUDO_USER:-$USER}"
@@ -153,7 +153,7 @@ configure_python_history(){
     touch "$history_file"
     printf '  %b\n' "${GRN}✓ Created $history_file${DEF}"
   fi
-  if sudo chattr +i "$history_file" &>/dev/null>/dev/null; then
+  if sudo chattr +i "$history_file" &>/dev/null; then
     printf '  %b\n' "${GRN}✓ Made immutable${DEF}"
   else
     printf '  %b\n' "${YLW}⚠ Could not set immutable (chattr not available)${DEF}"

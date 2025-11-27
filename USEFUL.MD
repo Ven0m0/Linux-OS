@@ -19,3 +19,13 @@
 | `<link rel="modulepreload">` | High-priority loading of current page JavaScript modules | Use to preload high-priority JavaScript modules for strategic performance improvements. |
 | `<link rel="prefetch">` | Pre-populating the HTTP cache | Use to prefetch same-site future navigation resources or subresources used on those pages. Uses HTTP cache therefore has a number of issues with document prefetches, such as being potentially blocked by Cache-Control headers. Use the Speculation Rules API for document prefetches instead, where it is supported. |
 | `<link rel="prerender">` | Preparing for the next navigation | Deprecated; you are advised not to use this. Use Speculation Rules API prerender instead, where it is supported. |
+
+
+
+
+
+## Useful websites
+
+**Discord related**
+- https://autocompressor.net/av1
+- https://autocompressor.net

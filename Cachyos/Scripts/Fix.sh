@@ -7,7 +7,7 @@ shopt -s nullglob globstar
 LC_ALL=C LANG=C
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m' MGN=$'\e[35m' PNK=$'\e[38;5;218m' DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
-has(){ command -v "$1" &>/dev/null>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "$*"; }
 die(){
@@ -61,7 +61,7 @@ print_named_banner(){
   print_banner "$banner" "$title"
 }
 setup_build_env(){
-  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null>/dev/null
+  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
   export CFLAGS="-march=native -mtune=native -O3 -pipe"
   export CXXFLAGS="$CFLAGS"
@@ -84,7 +84,7 @@ run_system_maintenance(){
   shift
   local args=("$@")
   has "$cmd" || return 0
-  case "$cmd" in modprobed-db) "$cmd" store &>/dev/null>/dev/null || : ;; hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null>/dev/null || : ;; mandb) sudo "$cmd" -q &>/dev/null>/dev/null || mandb -q &>/dev/null>/dev/null || : ;; *) sudo "$cmd" "${args[@]}" &>/dev/null>/dev/null || : ;; esac
+  case "$cmd" in modprobed-db) "$cmd" store &>/dev/null || : ;; hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null || : ;; mandb) sudo "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;; *) sudo "$cmd" "${args[@]}" &>/dev/null || : ;; esac
 }
 capture_disk_usage(){
   local var_name=$1
@@ -156,7 +156,7 @@ vacuum_sqlite(){
 '
     return
   }
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null>/dev/null || {
+  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || {
     printf '0
 '
     return
@@ -179,18 +179,18 @@ ensure_not_running_any(){
   local timeout=6 p
   local pattern=$(printf '%s|' "$@")
   pattern=${pattern%|}
-  pgrep -x -u "$USER" -f "$pattern" &>/dev/null>/dev/null || return
-  for p in "$@"; do pgrep -x -u "$USER" "$p" &>/dev/null>/dev/null && printf '  %s
+  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
+  for p in "$@"; do pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s
 ' "${YLW}Waiting for ${p} to exit...${DEF}"; done
   local wait_time=$timeout
   while ((wait_time-- > 0)); do
-    pgrep -x -u "$USER" -f "$pattern" &>/dev/null>/dev/null || return
+    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
     sleep 1
   done
-  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null>/dev/null; then
+  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null; then
     printf '  %s
 ' "${RED}Killing remaining processes...${DEF}"
-    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null>/dev/null || :
+    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
     sleep 1
   fi
 }
@@ -254,13 +254,13 @@ clean_paths(){
   local paths=("$@") path
   local existing_paths=()
   for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done
-  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 clean_with_sudo(){
   local paths=("$@") path
   local existing_paths=()
   for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done
-  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 _DOWNLOAD_TOOL_CACHED=""
 get_download_tool(){
@@ -285,7 +285,7 @@ download_file(){
 # https://wiki.cachyos.org/cachyos_basic/faq/
 
 update(){
-  sudo rm -f /var/lib/pacman/db.lck &>/dev/null>/dev/null || :
+  sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
   sudo pacman -Syu --noconfirm
   has paru && paru -Syu --noconfirm --skipreview
 }

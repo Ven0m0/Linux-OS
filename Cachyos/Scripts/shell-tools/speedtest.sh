@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Download
 down=$(curl -sf4 -o /dev/null -w "%{speed_download}" https://speed.cloudflare.com/__down?bytes=100000000)
 awk -v s="$down" 'BEGIN {printf "Download: %.2f Mbps\n", (s*8)/(1024*1024)}'

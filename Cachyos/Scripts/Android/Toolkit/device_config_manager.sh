@@ -13,11 +13,11 @@ log(){
 }
 
 check_adb(){
-  command -v adb &>/dev/null>/dev/null || {
+  command -v adb &>/dev/null || {
     echo "Error: adb not found. Please install Android platform tools."
     return 1
   }
-  adb get-state &>/dev/null>/dev/null || {
+  adb get-state &>/dev/null || {
     echo "Error: No device connected or unauthorized."
     return 1
   }

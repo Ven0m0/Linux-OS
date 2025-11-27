@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # ==============================================================================
 # Hyprland NVIDIA Setup Script for Arch Linux
 # ==============================================================================
@@ -20,11 +21,11 @@ if [[ -n "$(lspci | grep -i 'nvidia')" ]]; then
 
   # Check which kernel is installed and set appropriate headers package
   KERNEL_HEADERS="linux-headers" # Default
-  if pacman -Q linux-zen &>/dev/null>/dev/null; then
+  if pacman -Q linux-zen &>/dev/null; then
     KERNEL_HEADERS="linux-zen-headers"
-  elif pacman -Q linux-lts &>/dev/null>/dev/null; then
+  elif pacman -Q linux-lts &>/dev/null; then
     KERNEL_HEADERS="linux-lts-headers"
-  elif pacman -Q linux-hardened &>/dev/null>/dev/null; then
+  elif pacman -Q linux-hardened &>/dev/null; then
     KERNEL_HEADERS="linux-hardened-headers"
   fi
 

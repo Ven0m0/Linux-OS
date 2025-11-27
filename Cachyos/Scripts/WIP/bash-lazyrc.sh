@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # --- autoload dirs ---
 func_dirs="$HOME/.bash/functions.d" # lazy function scripts
 config_dirs="$HOME/.bash/configs"   # normal config scripts

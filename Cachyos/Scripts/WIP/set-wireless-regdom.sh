@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # First check that wireless-regdb is there
 if [[ -f "/etc/conf.d/wireless-regdom" ]]; then
   unset WIRELESS_REGDOM
@@ -25,7 +26,7 @@ if [[ ! -n "${WIRELESS_REGDOM}" ]]; then
       echo "WIRELESS_REGDOM=\"$COUNTRY\"" | sudo tee -a /etc/conf.d/wireless-regdom >/dev/null
 
       # Also set it one off now
-      if command -v iw &>/dev/null>/dev/null; then
+      if command -v iw &>/dev/null; then
         sudo iw reg set ${COUNTRY}
       fi
     fi

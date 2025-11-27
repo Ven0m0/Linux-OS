@@ -61,7 +61,7 @@ human_size(){
 }
 
 # Check for tool availability and install guidance if missing
-has(){ command -v "$1" &>/dev/null>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
 require_tool(){
   local tool="$1" pkg="${2:-$1}" alt="${3:-}"

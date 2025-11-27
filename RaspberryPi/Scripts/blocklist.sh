@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-21 - Applied bash optimization techniques
-# WARNING: This script contains incomplete code fragments from hblock
-# TODO: Complete implementation or integrate with hblock properly
+# Completed: 2025-11-27 - Integrated with hblock for blocklist management
+# This script manages ad/tracker blocklists using hblock
 # Source shared libraries
 SCRIPT_DIR="$(cd "${"${BASH_SOURCE[0]}"%/*}" && pwd)"
 # ============ Inlined from lib/common.sh ============
@@ -155,16 +155,42 @@ removeReservedTLDs(){
     -e '/\.test$/d'
 }
 
-# TODO: The following code is incomplete and references undefined variables
-# To use this script properly, either:
-# 1. Use the full hblock script: https://github.com/hectorm/hblock
-# 2. Define the required variables (sourcesFile, blocklistFile, etc.)
-# 3. Implement missing functions (printInfo, sanitizeBlocklist, createTemp)
-#
-# Example usage with hblock:
-#   curl -o /tmp/hblock 'https://raw.githubusercontent.com/hectorm/hblock/master/hblock'
-#   bash /tmp/hblock
+# Main blocklist functionality using hblock
+main(){
+  local hblock_url='https://raw.githubusercontent.com/hectorm/hblock/master/hblock'
+  local hblock_temp
 
-echo "blocklist.sh: Incomplete script - please integrate with hblock or define missing variables"
-echo "See: https://github.com/hectorm/hblock"
-exit 1
+  echo "${BLD}${CYN}Blocklist Manager${DEF}"
+  echo "Using hblock for ad/tracker blocking"
+  echo ""
+
+  # Check if hblock is installed
+  if has hblock; then
+    echo "${GRN}✓${DEF} hblock is installed"
+    echo "Running hblock..."
+    sudo hblock "$@"
+  else
+    echo "${YLW}⚠${DEF} hblock is not installed"
+    echo "Downloading and running hblock temporarily..."
+
+    hblock_temp=$(mktemp /tmp/hblock.XXXXXX)
+
+    if curl -fsSL "$hblock_url" -o "$hblock_temp"; then
+      echo "${GRN}✓${DEF} Downloaded hblock successfully"
+      chmod +x "$hblock_temp"
+      sudo bash "$hblock_temp" "$@"
+      rm -f "$hblock_temp"
+
+      echo ""
+      echo "To install hblock permanently, visit: https://github.com/hectorm/hblock"
+    else
+      echo "${RED}✗${DEF} Failed to download hblock"
+      echo "Please install hblock manually or check your internet connection"
+      rm -f "$hblock_temp"
+      return 1
+    fi
+  fi
+}
+
+# Run main function with all arguments
+main "$@"

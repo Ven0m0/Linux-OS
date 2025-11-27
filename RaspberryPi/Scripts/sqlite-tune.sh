@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-21 - Applied bash optimization techniques
 # Usage: sqlite-tune db.sqlite [aggressive|safe|readonly]
-# Source common library
-SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
-# shellcheck source=../lib/common.sh
 # ============ Inlined from lib/common.sh ============
 export LC_ALL=C LANG=C
 export DEBIAN_FRONTEND=noninteractive

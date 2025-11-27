@@ -15,16 +15,14 @@ IFS=$'
 has(){ command -v -- "$1" &>/dev/null; }
 hasname(){ local x; if ! x=$(type -P -- "$1"); then return 1; fi; printf '%s
 ' "${x##*/}"; }
-is_program_installed(){ command -v "$1" &>/dev/null; }
-get_workdir(){ local script="${BASH_SOURCE[1]:-$0}"; builtin cd -- "${script%/*}" && printf '%s\n' "$PWD"; }
-init_workdir(){ local workdir; workdir="$(builtin cd -- "${BASH_SOURCE[1]:-$0%/*}" && printf '%s\n
-' "$PWD")"; cd "$workdir" || { echo "Failed to change to working directory: $workdir" >&2; exit 1; }; }
+has(){ command -v "$1" &>/dev/null; }
+wdir(){ local script="${BASH_SOURCE[1]:-$0}"; builtin cd -- "${script%/*}" && printf '%s\n' "$PWD"; }
+init_wdir(){ local wdir; wdir="$(builtin cd -- "${BASH_SOURCE[1]:-$0%/*}" && printf '%s\n
+' "$PWD")"; cd "$wdir" || { echo "Failed to change to working directory: $wdir" >&2; exit 1; }; }
 require_root(){ if [[ $EUID -ne 0 ]]; then local script_path; script_path=$([[ ${BASH_SOURCE[1]:-$0} == /* ]] && echo "${BASH_SOURCE[1]:-$0}" || echo "$PWD/${BASH_SOURCE[1]:-$0}"); sudo "$script_path" "$@" || { echo 'Administrator privileges are required.' >&2; exit 1; }; exit 0; fi; }
 check_root(){ if [[ $EUID -ne 0 ]]; then echo "This script must be run as root." >&2; exit 1; fi; }
 load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 run_dietpi_cleanup(){ if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then echo "Warning: dietpi-update failed (both standard and fallback commands)." >&2; fi; sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null || G_SUDO dietpi-logclear 2 2>/dev/null || :; sudo /boot/dietpi/func/dietpi-cleaner 2 2>/dev/null || G_SUDO dietpi-cleaner 2 2>/dev/null || :; fi; }
-setup_environment(){ set -euo pipefail; shopt -s nullglob globstar execfail; IFS=$'
-	'; }
 get_sudo_cmd(){ local sudo_cmd; sudo_cmd="$(hasname sudo-rs || hasname sudo || hasname doas)" || { echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2; return 1; }; printf '%s
 ' "$sudo_cmd"; }
 init_sudo(){ local sudo_cmd; sudo_cmd="$(get_sudo_cmd)" || return 1; if [[ $EUID -ne 0 && $sudo_cmd =~ ^(sudo-rs|sudo)$ ]]; then "$sudo_cmd" -v 2>/dev/null || :; fi; }
@@ -34,10 +32,7 @@ die(){ echo "ERROR: $*" >&2; exit 1; }
 
 db=${1:?db path}
 mode=${2:-safe}
-
-run(){
-  sqlite3 "$db" "$1"
-}
+run(){ sqlite3 "$db" "$1"; }
 
 case $mode in
 safe)
@@ -48,8 +43,7 @@ safe)
   run 'PRAGMA temp_store=MEMORY;'
   run 'PRAGMA mmap_size=67108864;'
   run 'PRAGMA cache_size=-65536;'
-  run 'PRAGMA optimize;'
-  ;;
+  run 'PRAGMA optimize;' ;;
 aggressive)
   run 'PRAGMA foreign_keys=ON;'
   run 'PRAGMA journal_mode=WAL;'
@@ -59,15 +53,11 @@ aggressive)
   run 'PRAGMA mmap_size=268435456;'
   run 'PRAGMA cache_size=-262144;'
   run 'PRAGMA cache_spill=OFF;'
-  run 'PRAGMA optimize;'
-  ;;
+  run 'PRAGMA optimize;' ;;
 readonly)
   # Assumes you open DB with immutable=1 externally if possible
   run 'PRAGMA query_only=ON;'
   run 'PRAGMA mmap_size=268435456;'
-  run 'PRAGMA cache_size=-131072;'
-  ;;
-*)
-  die "unknown mode $mode"
-  ;;
+  run 'PRAGMA cache_size=-131072;' ;;
+*) die "unknown mode $mode" ;;
 esac

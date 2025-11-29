@@ -2,10 +2,8 @@
 # wbfsmv.sh - organize Wii games for USB Loader GX: "Game Name [GAMEID]/GAMEID.wbfs"
 # Usage: wbfsmv.sh [-c|--convert] [-t|--trim] [-n|--dry-run] [-v|--verbose] [target_dir]
 # Env: WBFSMV_REGION (default: PAL) - region to set (PAL|NTSC|JAP|KOR|FREE)
-set -euo pipefail
-shopt -s nullglob globstar extglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
+set -euo pipefail; shopt -s nullglob globstar extglob
+IFS=$'\n\t' LC_ALL=C LANG=C
 
 convert=0 trim=0 dry=0 verbose=0
 REGION=${WBFSMV_REGION:-PAL}
@@ -28,8 +26,7 @@ Environment:
 EOF
       exit 0 ;;
     *) printf 'Unknown arg: %s\n' "$1" >&2; exit 2 ;;
-  esac
-  shift
+  esac; shift
 done
 
 TARGET=${1:-.}
@@ -57,7 +54,7 @@ get_id(){
 }
 
 get_title(){
-  local f=$1
+  local f="$1"
   ((have_wit)) || return 0
   wit dump -ll -- "$f" 2>/dev/null | awk -F': ' '
     /^(Disc )?Title[[:space:]]*:/ && $2!="" {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2; exit}

@@ -321,5 +321,10 @@ log "Import wlogout GPG key"
 download_file https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F /tmp/wlogout.asc \
   && gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc \
   || curl -sS https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F | gpg --import -
-
 sudo pacman -Syyu --noconfirm
+# Setup GPG configuration with multiple keyservers for better reliability
+sudo mkdir -p /etc/gnupg
+sudo cp ~/.local/share/omarchy/default/gpg/dirmngr.conf /etc/gnupg/
+sudo chmod 644 /etc/gnupg/dirmngr.conf
+sudo gpgconf --kill dirmngr || :
+sudo gpgconf --launch dirmngr || :

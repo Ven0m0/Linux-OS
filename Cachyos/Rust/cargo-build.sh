@@ -314,8 +314,8 @@ ZFLAGS=(
 
 # Combine all RUSTFLAGS
 export RUSTFLAGS="${RUSTFLAGS_BASE[*]} ${LFLAGS[*]} ${ZFLAGS[*]} ${EXTRA_LINK[*]}"
-export CFLAGS="${CFLAGS}"
-export CXXFLAGS="${CXXFLAGS}"
+export CFLAGS="$CFLAGS"
+export CXXFLAGS="$CXXFLAGS"
 export LDFLAGS="${LDFLAGS[*]}"
 
 # Additional cargo install flags
@@ -369,7 +369,7 @@ install)
   sync
   for crate in "${CRATES[@]}"; do
     echo "→ Installing $crate..."
-    cargo +nightly "${INSTALL_FLAGS[@]}" install $LOCKED_FLAG "${MISC_OPT[@]}" "$crate"
+    cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate"
     echo "✅ $crate installed in $HOME/.cargo/bin"
   done
   ;;

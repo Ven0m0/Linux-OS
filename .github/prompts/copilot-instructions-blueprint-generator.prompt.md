@@ -1,6 +1,6 @@
 ---
-description: 'Technology-agnostic blueprint generator for creating comprehensive copilot-instructions.md files that guide GitHub Copilot to produce code consistent with project standards, architecture patterns, and exact technology versions by analyzing existing codebase patterns and avoiding assumptions.'
-mode: 'agent'
+description: "Technology-agnostic blueprint generator for creating comprehensive copilot-instructions.md files that guide GitHub Copilot to produce code consistent with project standards, architecture patterns, and exact technology versions by analyzing existing codebase patterns and avoiding assumptions."
+mode: "agent"
 ---
 
 # Copilot Instructions Blueprint Generator
@@ -81,6 +81,7 @@ When context files don't provide specific guidance:
 ## Code Quality Standards
 
 ${CODE_QUALITY_FOCUS.includes("Maintainability") || CODE_QUALITY_FOCUS == "All" ? `### Maintainability
+
 - Write self-documenting code with clear naming
 - Follow the naming and organization conventions evident in the codebase
 - Follow established patterns for consistency
@@ -88,6 +89,7 @@ ${CODE_QUALITY_FOCUS.includes("Maintainability") || CODE_QUALITY_FOCUS == "All" 
 - Limit function complexity and length to match existing patterns` : ""}
 
 ${CODE_QUALITY_FOCUS.includes("Performance") || CODE_QUALITY_FOCUS == "All" ? `### Performance
+
 - Follow existing patterns for memory and resource management
 - Match existing patterns for handling computationally expensive operations
 - Follow established patterns for asynchronous operations
@@ -95,6 +97,7 @@ ${CODE_QUALITY_FOCUS.includes("Performance") || CODE_QUALITY_FOCUS == "All" ? `#
 - Optimize according to patterns evident in the codebase` : ""}
 
 ${CODE_QUALITY_FOCUS.includes("Security") || CODE_QUALITY_FOCUS == "All" ? `### Security
+
 - Follow existing patterns for input validation
 - Apply the same sanitization techniques used in the codebase
 - Use parameterized queries matching existing patterns
@@ -102,6 +105,7 @@ ${CODE_QUALITY_FOCUS.includes("Security") || CODE_QUALITY_FOCUS == "All" ? `### 
 - Handle sensitive data according to existing patterns` : ""}
 
 ${CODE_QUALITY_FOCUS.includes("Accessibility") || CODE_QUALITY_FOCUS == "All" ? `### Accessibility
+
 - Follow existing accessibility patterns in the codebase
 - Match ARIA attribute usage with existing components
 - Maintain keyboard navigation support consistent with existing code
@@ -109,6 +113,7 @@ ${CODE_QUALITY_FOCUS.includes("Accessibility") || CODE_QUALITY_FOCUS == "All" ? 
 - Apply text alternative patterns consistent with the codebase` : ""}
 
 ${CODE_QUALITY_FOCUS.includes("Testability") || CODE_QUALITY_FOCUS == "All" ? `### Testability
+
 - Follow established patterns for testable code
 - Match dependency injection approaches used in the codebase
 - Apply the same patterns for managing dependencies
@@ -119,12 +124,14 @@ ${CODE_QUALITY_FOCUS.includes("Testability") || CODE_QUALITY_FOCUS == "All" ? `#
 
 ${DOCUMENTATION_LEVEL == "Minimal" ?
 `- Match the level and style of comments found in existing code
+
 - Document according to patterns observed in the codebase
 - Follow existing patterns for documenting non-obvious behavior
 - Use the same format for parameter descriptions as existing code` : ""}
 
 ${DOCUMENTATION_LEVEL == "Standard" ?
 `- Follow the exact documentation format found in the codebase
+
 - Match the XML/JSDoc style and completeness of existing comments
 - Document parameters, returns, and exceptions in the same style
 - Follow existing patterns for usage examples
@@ -132,6 +139,7 @@ ${DOCUMENTATION_LEVEL == "Standard" ?
 
 ${DOCUMENTATION_LEVEL == "Comprehensive" ?
 `- Follow the most detailed documentation patterns found in the codebase
+
 - Match the style and completeness of the best-documented code
 - Document exactly as the most thoroughly documented files do
 - Follow existing patterns for linking documentation
@@ -141,6 +149,7 @@ ${DOCUMENTATION_LEVEL == "Comprehensive" ?
 
 ${TESTING_REQUIREMENTS.includes("Unit") || TESTING_REQUIREMENTS == "All" ?
 `### Unit Testing
+
 - Match the exact structure and style of existing unit tests
 - Follow the same naming conventions for test classes and methods
 - Use the same assertion patterns found in existing tests
@@ -149,6 +158,7 @@ ${TESTING_REQUIREMENTS.includes("Unit") || TESTING_REQUIREMENTS == "All" ?
 
 ${TESTING_REQUIREMENTS.includes("Integration") || TESTING_REQUIREMENTS == "All" ?
 `### Integration Testing
+
 - Follow the same integration test patterns found in the codebase
 - Match existing patterns for test data setup and teardown
 - Use the same approach for testing component interactions
@@ -156,18 +166,21 @@ ${TESTING_REQUIREMENTS.includes("Integration") || TESTING_REQUIREMENTS == "All" 
 
 ${TESTING_REQUIREMENTS.includes("E2E") || TESTING_REQUIREMENTS == "All" ?
 `### End-to-End Testing
+
 - Match the existing E2E test structure and patterns
 - Follow established patterns for UI testing
 - Apply the same approach for verifying user journeys` : ""}
 
 ${TESTING_REQUIREMENTS.includes("TDD") || TESTING_REQUIREMENTS == "All" ?
 `### Test-Driven Development
+
 - Follow TDD patterns evident in the codebase
 - Match the progression of test cases seen in existing code
 - Apply the same refactoring patterns after tests pass` : ""}
 
 ${TESTING_REQUIREMENTS.includes("BDD") || TESTING_REQUIREMENTS == "All" ?
 `### Behavior-Driven Development
+
 - Match the existing Given-When-Then structure in tests
 - Follow the same patterns for behavior descriptions
 - Apply the same level of business focus in test cases` : ""}
@@ -175,6 +188,7 @@ ${TESTING_REQUIREMENTS.includes("BDD") || TESTING_REQUIREMENTS == "All" ?
 ## Technology-Specific Guidelines
 
 ${PROJECT_TYPE == ".NET" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "Multiple" ? `### .NET Guidelines
+
 - Detect and strictly adhere to the specific .NET version in use
 - Use only C# language features compatible with the detected version
 - Follow LINQ usage patterns exactly as they appear in the codebase
@@ -183,6 +197,7 @@ ${PROJECT_TYPE == ".NET" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "Mu
 - Use the same collection types and patterns found in existing code` : ""}
 
 ${PROJECT_TYPE == "Java" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "Multiple" ? `### Java Guidelines
+
 - Detect and adhere to the specific Java version in use
 - Follow the exact same design patterns found in the codebase
 - Match exception handling patterns from existing code
@@ -190,6 +205,7 @@ ${PROJECT_TYPE == "Java" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "Mu
 - Apply the dependency injection patterns evident in existing code` : ""}
 
 ${PROJECT_TYPE == "JavaScript" || PROJECT_TYPE == "TypeScript" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "Multiple" ? `### JavaScript/TypeScript Guidelines
+
 - Detect and adhere to the specific ECMAScript/TypeScript version in use
 - Follow the same module import/export patterns found in the codebase
 - Match TypeScript type definitions with existing patterns
@@ -197,6 +213,7 @@ ${PROJECT_TYPE == "JavaScript" || PROJECT_TYPE == "TypeScript" || PROJECT_TYPE =
 - Follow error handling patterns from similar files` : ""}
 
 ${PROJECT_TYPE == "React" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "Multiple" ? `### React Guidelines
+
 - Detect and adhere to the specific React version in use
 - Match component structure patterns from existing components
 - Follow the same hooks and lifecycle patterns found in the codebase
@@ -204,6 +221,7 @@ ${PROJECT_TYPE == "React" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "M
 - Match prop typing and validation patterns from existing code` : ""}
 
 ${PROJECT_TYPE == "Angular" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "Multiple" ? `### Angular Guidelines
+
 - Detect and adhere to the specific Angular version in use
 - Follow the same component and module patterns found in the codebase
 - Match decorator usage exactly as seen in existing code
@@ -211,6 +229,7 @@ ${PROJECT_TYPE == "Angular" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == 
 - Follow existing patterns for component communication` : ""}
 
 ${PROJECT_TYPE == "Python" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "Multiple" ? `### Python Guidelines
+
 - Detect and adhere to the specific Python version in use
 - Follow the same import organization found in existing modules
 - Match type hinting approaches if used in the codebase
@@ -221,16 +240,19 @@ ${PROJECT_TYPE == "Python" || PROJECT_TYPE == "Auto-detect" || PROJECT_TYPE == "
 
 ${VERSIONING == "Semantic" ?
 `- Follow Semantic Versioning patterns as applied in the codebase
+
 - Match existing patterns for documenting breaking changes
 - Follow the same approach for deprecation notices` : ""}
 
 ${VERSIONING == "CalVer" ?
 `- Follow Calendar Versioning patterns as applied in the codebase
+
 - Match existing patterns for documenting changes
 - Follow the same approach for highlighting significant changes` : ""}
 
 ${VERSIONING == "Custom" ?
 `- Match the exact versioning pattern observed in the codebase
+
 - Follow the same changelog format used in existing documentation
 - Apply the same tagging conventions used in the project` : ""}
 

@@ -1,4 +1,3 @@
-
 <https://docs.searxng.org/admin/installation-scripts.html#installation-scripts>
 <https://docs.searxng.org/admin/installation-nginx.html>
 

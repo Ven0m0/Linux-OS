@@ -1,6 +1,6 @@
 ---
-applyTo: '**'
-description: 'The most comprehensive, practical, and engineer-authored performance optimization instructions for all languages, frameworks, and stacks. Covers frontend, backend, and database best practices with actionable guidance, scenario-based checklists, troubleshooting, and pro tips.'
+applyTo: "**"
+description: "The most comprehensive, practical, and engineer-authored performance optimization instructions for all languages, frameworks, and stacks. Covers frontend, backend, and database best practices with actionable guidance, scenario-based checklists, troubleshooting, and pro tips."
 ---
 
 # Performance Optimization Best Practices
@@ -14,7 +14,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 ## General Principles
 
 - **Measure First, Optimize Second:** Always profile and measure before optimizing. Use benchmarks, profilers, and monitoring tools to identify real bottlenecks. Guessing is the enemy of performance.
-  - *Pro Tip:* Use tools like Chrome DevTools, Lighthouse, New Relic, Datadog, Py-Spy, or your language's built-in profilers.
+  - _Pro Tip:_ Use tools like Chrome DevTools, Lighthouse, New Relic, Datadog, Py-Spy, or your language's built-in profilers.
 - **Optimize for the Common Case:** Focus on optimizing code paths that are most frequently executed. Don't waste time on rare edge cases unless they're critical.
 - **Avoid Premature Optimization:** Write clear, maintainable code first; optimize only when necessary. Premature optimization can make code harder to read and maintain.
 - **Minimize Resource Usage:** Use memory, CPU, network, and disk resources efficiently. Always ask: "Can this be done with less?"
@@ -31,9 +31,9 @@ Performance isn't just a buzzword—it's the difference between a product people
 ### Rendering and DOM
 
 - **Minimize DOM Manipulations:** Batch updates where possible. Frequent DOM changes are expensive.
-  - *Anti-pattern:* Updating the DOM in a loop. Instead, build a document fragment and append it once.
+  - _Anti-pattern:_ Updating the DOM in a loop. Instead, build a document fragment and append it once.
 - **Virtual DOM Frameworks:** Use React, Vue, or similar efficiently—avoid unnecessary re-renders.
-  - *React Example:* Use `React.memo`, `useMemo`, and `useCallback` to prevent unnecessary renders.
+  - _React Example:_ Use `React.memo`, `useMemo`, and `useCallback` to prevent unnecessary renders.
 - **Keys in Lists:** Always use stable keys in lists to help virtual DOM diffing. Avoid using array indices as keys unless the list is static.
 - **Avoid Inline Styles:** Inline styles can trigger layout thrashing. Prefer CSS classes.
 - **CSS Animations:** Use CSS transitions/animations over JavaScript for smoother, GPU-accelerated effects.
@@ -210,7 +210,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 ### Query Optimization
 
 - **Indexes:** Use indexes on columns that are frequently queried, filtered, or joined. Monitor index usage and drop unused indexes.
-- **Avoid SELECT *:** Select only the columns you need. Reduces I/O and memory usage.
+- **Avoid SELECT \*:** Select only the columns you need. Reduces I/O and memory usage.
 - **Parameterized Queries:** Prevent SQL injection and improve plan caching.
 - **Query Plans:** Analyze and optimize query execution plans. Use `EXPLAIN` in SQL databases.
 - **Avoid N+1 Queries:** Use joins or batch queries to avoid repeated queries in loops.
@@ -248,7 +248,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 ### Common Database Pitfalls
 
 - Missing or unused indexes.
-- SELECT * in production queries.
+- SELECT \* in production queries.
 - Not monitoring slow queries.
 - Ignoring replication lag.
 - Not archiving old data.
@@ -278,7 +278,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 - [ ] Are performance-critical code paths documented and tested?
 - [ ] Are there automated tests or benchmarks for performance-sensitive code?
 - [ ] Are there alerts for performance regressions?
-- [ ] Are there any anti-patterns (e.g., SELECT *, blocking I/O, global variables)?
+- [ ] Are there any anti-patterns (e.g., SELECT \*, blocking I/O, global variables)?
 
 ---
 
@@ -333,13 +333,13 @@ Performance isn't just a buzzword—it's the difference between a product people
 
 ```javascript
 // BAD: Triggers API call on every keystroke
-input.addEventListener('input', (e) => {
+input.addEventListener("input", (e) => {
   fetch(`/search?q=${e.target.value}`);
 });
 
 // GOOD: Debounce API calls
 let timeout;
-input.addEventListener('input', (e) => {
+input.addEventListener("input", (e) => {
   clearTimeout(timeout);
   timeout = setTimeout(() => {
     fetch(`/search?q=${e.target.value}`);
@@ -386,10 +386,10 @@ result = expensive_function(x)
 
 ```javascript
 // BAD: Blocking file read
-const data = fs.readFileSync('file.txt');
+const data = fs.readFileSync("file.txt");
 
 // GOOD: Non-blocking file read
-fs.readFile('file.txt', (err, data) => {
+fs.readFile("file.txt", (err, data) => {
   if (err) throw err;
   // process data
 });
@@ -412,14 +412,14 @@ p.sort_stats('cumulative').print_stats(10)
 ### Example 7: Using Redis for Caching in Node.js
 
 ```javascript
-const redis = require('redis');
+const redis = require("redis");
 const client = redis.createClient();
 
 function getCachedData(key, fetchFunction) {
   return new Promise((resolve, reject) => {
     client.get(key, (err, data) => {
       if (data) return resolve(JSON.parse(data));
-      fetchFunction().then(result => {
+      fetchFunction().then((result) => {
         client.setex(key, 3600, JSON.stringify(result));
         resolve(result);
       });

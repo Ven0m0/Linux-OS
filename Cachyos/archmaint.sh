@@ -373,12 +373,12 @@ chrome_profiles(){
 # Helper to expand wildcard paths safely
 _expand_wildcards(){
   local path=$1
-  local -n result_ref=$2
+  local -n result_ref="$2"
   if [[ $path == *\** ]]; then
     # Use globbing directly and collect existing items
     shopt -s nullglob
     # shellcheck disable=SC2206  # Intentional globbing for wildcard expansion
-    local -a items=($path)
+    local -a items=("$path")
     for item in "${items[@]}"; do
       [[ -e $item ]] && result_ref+=("$item")
     done
@@ -731,7 +731,7 @@ clean_paths(){
       # Use globbing directly and collect existing items
       shopt -s nullglob
       # shellcheck disable=SC2206
-      local -a items=($path)
+      local -a items=("$path")
       for item in "${items[@]}"; do
         [[ -e $item ]] && existing_paths+=("$item")
       done
@@ -754,7 +754,7 @@ clean_with_sudo(){
       # Use globbing directly and collect existing items
       shopt -s nullglob
       # shellcheck disable=SC2206
-      local -a items=($path)
+      local -a items=("$path")
       for item in "${items[@]}"; do
         [[ -e $item ]] && existing_paths+=("$item")
       done

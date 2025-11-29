@@ -31,11 +31,11 @@ while getopts dhrp: options; do
     h) longhelp;;
     p) LINK="$OPTARG";;
     r) if [[ -d "$VOLATILE" ]]; then
-         mv "$VOLATILE" ~/.mozilla/firefox/"${LINK}"-copy
-         mv ~/.mozilla/firefox/"${LINK}"{,-trash}
-         mv ~/.mozilla/firefox/"${STATIC}"{,-trash}
-         mv ~/.mozilla/firefox/"${LINK}"{-copy,}
-         rm -rf ~/.mozilla/firefox/{"${LINK}","${STATIC}"}-trash
+         mv "$VOLATILE" ~/.mozilla/firefox/"$LINK"-copy
+         mv ~/.mozilla/firefox/"$LINK"{,-trash}
+         mv ~/.mozilla/firefox/"$STATIC"{,-trash}
+         mv ~/.mozilla/firefox/"$LINK"{-copy,}
+         rm -rf ~/.mozilla/firefox/{"$LINK","$STATIC"}-trash
        else
          echo "Error: Volatile directory not found at $VOLATILE" >&2
          exit 1

@@ -37,7 +37,7 @@ else
   find -O3 . -type f \( -name "*.html" -o -name "*.js" -o -name "*.css" \) -exec minhtml --minify-js --minify-css --minify-css-level-2 --remove-bangs \
     --keep-closing-tags --keep-spaces-between-attributes --ensure-spec-compliant-unquoted-attribute-values {} \;
 fi
-pitufo --minify -m 10 -p "$PWD" 
+pitufo --minify -m 10 -p "$PWD"
 cg-bundler --pretty --m2 --validate --debounce 250 || cg-bundler --pretty -m --validate --debounce 250
 ```
 

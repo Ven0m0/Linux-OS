@@ -10,7 +10,7 @@ export LC_ALL="C"
 set -euo pipefail
 shopt -s nullglob globstar
 # IFS=$'\n\t'
-cd -- "$(cd -- "${-- "${BASH_SOURCE[0]:-}"%/*}" && pwd)"
+cd -- "$(dirname -- "$(readlink -f "${BASH_SOURCE[0]}")")"
 
 if [[ $EUID -ne 0 ]]; then
   echo "This script requires root privileges. Validating with sudo..."
@@ -19,6 +19,18 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
   }
 fi
+
+chk_aurh(){
+  if command -v paru &>/dev/null; then
+    aurhlpr="paru"
+  elif command -v yay &>/dev/null; then
+    aurhlpr="yay"
+  else
+    echo "No AUR helper found (paru/yay)."
+    exit 1
+  fi
+}
+
 service_ctl(){
   local ServChk=$1
 

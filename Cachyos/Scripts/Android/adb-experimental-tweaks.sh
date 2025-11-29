@@ -6,10 +6,14 @@ LC_ALL=C LANG=C
 # For a safer, optimized subset, use: ./android-optimize.sh experimental
 
 start(){
-  adb shell pm list packages -3 | cut -d: -f2 | tr -d '\r' | xargs -L1 -t adb shell pm uninstall -k --user 0
-  adb shell pm list packages -s | cut -d: -f2 | tr -d '\r' | xargs -L1 -t adb shell pm clear --user 0
-  adb shell pm list packages | cut -d: -f2 | tr -d '\r' | xargs -L1 -t adb shell pm reset-permissions -p
-  adb shell pm uninstall --user 0 com.google.android.googlequicksearchbox
+  echo "Starting aggressive cleanup (on-device)..."
+  # Run loops directly on device to avoid ADB latency overhead (1 call vs 1000+)
+  adb shell '
+    for pkg in $(pm list packages -3 | cut -d: -f2); do pm uninstall -k --user 0 "$pkg"; done
+    for pkg in $(pm list packages -s | cut -d: -f2); do pm clear --user 0 "$pkg"; done
+    for pkg in $(pm list packages | cut -d: -f2); do pm reset-permissions -p "$pkg"; done
+    pm uninstall --user 0 com.google.android.googlequicksearchbox
+  '
 }
 
 tweaks(){

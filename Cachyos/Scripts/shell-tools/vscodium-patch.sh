@@ -1,11 +1,47 @@
 #!/usr/bin/env bash
-# VSCode/VSCodium patcher - XDG, marketplace, and feature patches
+# VSCode/VSCodium patcher - XDG, marketplace, feature, and privacy patches
 set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'; LC_ALL=C
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
 warn(){ printf '%b\n' "${Y}⚠${D} $*" >&2; }
 die(){ printf '%b\n' "${R}✗${D} $*" >&2; exit "${2:-1}"; }
 has(){ command -v "$1" &>/dev/null; }
 ok(){ printf '%b\n' "${G}✓${D} $*"; }
+
+vscode_json_set(){
+  local prop=$1 val=$2
+  has python3 || { warn "No python3: $prop"; return 1; }
+  python3 <<EOF
+from pathlib import Path
+import os, json, sys
+property_name='$prop'
+target=json.loads('$val')
+home_dir=f'/home/{os.getenv("SUDO_USER",os.getenv("USER"))}'
+settings_files=[
+  f'{home_dir}/.config/Code/User/settings.json',
+  f'{home_dir}/.var/app/com.visualstudio.code/config/Code/User/settings.json',
+  f'{home_dir}/.config/VSCodium/User/settings.json',
+  f'{home_dir}/.var/app/com.vscodium.codium/config/VSCodium/User/settings.json'
+]
+changed=0
+for sf in settings_files:
+  file=Path(sf)
+  if not file.exists():
+    file.parent.mkdir(parents=True,exist_ok=True)
+    file.write_text('{}')
+  content=file.read_text()
+  if not content.strip(): content='{}'
+  try: obj=json.loads(content)
+  except json.JSONDecodeError:
+    print(f'Invalid JSON in {sf}',file=sys.stderr)
+    continue
+  if property_name in obj and obj[property_name]==target: continue
+  obj[property_name]=target
+  file.write_text(json.dumps(obj,indent=2))
+  changed+=1
+sys.exit(0 if changed>0 else 1)
+EOF
+}
+
 JQ=; has jaq && JQ=jaq || JQ=jq
 has "$JQ" || die "Need jq/jaq"
 
@@ -126,6 +162,41 @@ vscodium_restore(){
   cp -f "$b" "$d" && ok "Restored ← $b"
 }
 
+configure_privacy(){
+  printf '%bConfiguring VSCode/VSCodium privacy settings...%b\n' "$Y" "$D"
+  local changed=0
+  local settings=(
+    'telemetry.telemetryLevel;"off"'
+    'telemetry.enableTelemetry;false'
+    'telemetry.enableCrashReporter;false'
+    'workbench.enableExperiments;false'
+    'update.mode;"none"'
+    'update.channel;"none"'
+    'update.showReleaseNotes;false'
+    'npm.fetchOnlinePackageInfo;false'
+    'git.autofetch;false'
+    'workbench.settings.enableNaturalLanguageSearch;false'
+    'typescript.disableAutomaticTypeAcquisition;true'
+    'workbench.experimental.editSessions.enabled;false'
+    'workbench.experimental.editSessions.autoStore;false'
+    'workbench.editSessions.autoResume;false'
+    'workbench.editSessions.continueOn;false'
+    'extensions.autoUpdate;false'
+    'extensions.autoCheckUpdates;false'
+    'extensions.showRecommendationsOnlyOnDemand;true'
+  )
+  for setting in "${settings[@]}"; do
+    IFS=';' read -r prop val <<< "$setting"
+    if vscode_json_set "$prop" "$val"; then
+      printf '  %b %s\n' "${G}✓${D}" "$prop"
+      ((changed++))
+    else
+      printf '  %b %s\n' "${Y}→${D}" "$prop"
+    fi
+  done
+  ok "Privacy: $changed settings changed"
+}
+
 main(){
   local CP="/usr/lib/code/product.json" CD="/usr/share"
   case ${1:-} in
@@ -150,16 +221,19 @@ main(){
       # shellcheck disable=SC2034 # K used via nameref in update_json
       local -a K=(extensionsGallery extensionRecommendations keymapExtensionTips languageExtensionTips configBasedExtensionTips webExtensionTips virtualWorkspaceExtensionTips remoteExtensionTips extensionAllowedBadgeProviders extensionAllowedBadgeProvidersRegex msftInternalDomains linkProtectionTrustedDomains)
       update_json "${2:-}" "${3:-./patch.json}" K ;;
+    privacy) configure_privacy ;;
     all)
       xdg_patch
       repo_swap "" 0
       json_op apply "$CP" "$CD/code-marketplace/patch.json" "$CD/code-marketplace/cache.json"
       json_op apply "$CP" "$CD/code-features/patch.json" "$CD/code-features/cache.json"
-      sign_fix node-ovsx-sign ;;
+      sign_fix node-ovsx-sign
+      configure_privacy ;;
     all-vscodium)
       xdg_patch
-      vscodium_prod_full "${2:-}" ;;
-    *) printf "Usage: %s {xdg|xdg-data|vscodium[-prod][-restore]|feat[-restore|-update]|mkt[-restore|-update]|all[-vscodium]}\n" "$0"; exit 1 ;;
+      vscodium_prod_full "${2:-}"
+      configure_privacy ;;
+    *) printf "Usage: %s {xdg|xdg-data|vscodium[-prod][-restore]|feat[-restore|-update]|mkt[-restore|-update]|privacy|all[-vscodium]}\n" "$0"; exit 1 ;;
   esac
 }
 main "$@"

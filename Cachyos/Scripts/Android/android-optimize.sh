@@ -492,17 +492,17 @@ interactive(){
     read -rp "Select: " c args
     case "$c" in
     1) cmd_device_all ;;
-    2) cmd_monolith $args ;;
+    2) cmd_monolith "$args" ;;
     3) cmd_cache_clean ;;
-    4) cmd_index_nomedia $args ;;
-    5) cmd_wa_clean $args ;;
-    6) ((IS_TERMUX)) && cmd_termux_full || cmd_aapt2_opt $args ;;
+    4) cmd_index_nomedia "$args" ;;
+    5) cmd_wa_clean "$args" ;;
+    6) ((IS_TERMUX)) && cmd_termux_full || cmd_aapt2_opt "$args" ;;
     7) ((IS_TERMUX)) && task_pkg_maint || task_pkg_maint ;;
     8) ((IS_TERMUX)) && task_cache_termux || task_cache_termux ;;
     9) ((IS_TERMUX)) && task_fs_hygiene || task_fs_hygiene ;;
-    0) task_large_files $args ;;
+    0) task_large_files "$args" ;;
     u) task_updatedb ;;
-    a) ((IS_TERMUX)) && cmd_aapt2_opt $args || : ;;
+    a) ((IS_TERMUX)) && cmd_aapt2_opt "$args" || : ;;
     q | Q) break ;;
     *) warn "Invalid" ;;
     esac

@@ -247,10 +247,10 @@ chrome_profiles(){
 }
 _expand_wildcards(){
   local path=$1
-  local -n result_ref=$2
+  local -n result_ref="$2"
   if [[ $path == *\** ]]; then
     shopt -s nullglob
-    local -a items=($path)
+    local -a items=("$path")
     for item in "${items[@]}"; do [[ -e $item ]] && result_ref+=("$item"); done
     shopt -u nullglob
   else [[ -e $path ]] && result_ref+=("$path"); fi

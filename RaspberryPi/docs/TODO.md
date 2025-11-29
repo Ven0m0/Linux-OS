@@ -5,12 +5,12 @@ Nextcloud alternative
 **apt-fast**
 
 - <https://github.com/ilikenwf/apt-fast>
-_DOWNLOADER='aria2c --no-conf -c -j ${_MAXNUM} -x ${_MAXCONPERSRV} -s ${_SPLITCON} -i ${DLLIST} --min-split-size=${_MINSPLITSZ} --stream-piece-selector=${_PIECEALGO} --connect-timeout=600 --timeout=600 -m0'
+  \_DOWNLOADER='aria2c --no-conf -c -j ${_MAXNUM} -x ${_MAXCONPERSRV} -s ${_SPLITCON} -i ${DLLIST} --min-split-size=${\_MINSPLITSZ} --stream-piece-selector=${\_PIECEALGO} --connect-timeout=600 --timeout=600 -m0'
 
-_MINSPLITSZ=2M
-_MAXNUM=6
+\_MINSPLITSZ=2M
+\_MAXNUM=6
 DOWNLOADBEFORE=true
-_APTMGR=apt-get
+\_APTMGR=apt-get
 
 <https://github.com/Rudxain/dotfiles>
 

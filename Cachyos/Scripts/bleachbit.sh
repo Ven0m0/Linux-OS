@@ -17,7 +17,7 @@ mkdir -p /root/.config/bleachbit/cleaners
 mkdir -p "${HOME}/.config/bleachbit"
 for dst in "${dsts[@]}"; do
   install -d "$dst" || :
-  for file in "${src}"/*; do
+  for file in "$src"/*; do
     [[ -f $file ]] || continue
     fname="${file##*/}"
     ln -f "$file" "$dst/$fname" || :

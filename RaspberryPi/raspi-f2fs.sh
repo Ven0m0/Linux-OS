@@ -52,7 +52,7 @@ run(){
 
 # Safe command execution with retries
 run_with_retry(){
-  local -i attempts=${1:-3} delay=${2:-2} i
+  local -i attempts="${1:-3}" delay="${2:-2}" i
   shift 2
 
   for ((i = 1; i <= attempts; i++)); do
@@ -104,7 +104,7 @@ wait_for_partitions(){
 
     # Exponential backoff capped at 1s
     ((sleep_ms < 1000)) && sleep_ms=$((sleep_ms * 11 / 10))
-    sleep "0.$(printf '%03d' $sleep_ms)"
+    sleep "0.$(printf '%03d' "$sleep_ms")"
   done
 
   die "Partitions unavailable after 30s: boot=$boot root=$root"

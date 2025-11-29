@@ -196,11 +196,11 @@ clean_electron(){
 
 privacy_clean(){
   printf '%s\n' "🔒${MGN}Privacy cleanup...${DEF}"
-  rm -f "${HOME}"/.{bash,zsh,python}_history "${HOME}/.history" \
-    "${HOME}"/.local/share/fish/fish_history &>/dev/null || :
+  rm -f "$HOME"/.{bash,zsh,python}_history "${HOME}/.history" \
+    "$HOME"/.local/share/fish/fish_history &>/dev/null || :
   sudo rm -f /root/.{bash,zsh,python}_history /root/.history &>/dev/null || :
-  rm -rf "${HOME}"/.thumbnails/* "${HOME}"/.cache/thumbnails/* &>/dev/null || :
-  rm -f "${HOME}"/.recently-used.xbel "${HOME}"/.local/share/recently-used.xbel* &>/dev/null || :
+  rm -rf "$HOME"/.thumbnails/* "$HOME"/.cache/thumbnails/* &>/dev/null || :
+  rm -f "$HOME"/.recently-used.xbel "$HOME"/.local/share/recently-used.xbel* &>/dev/null || :
 }
 
 pkg_cache_clean(){
@@ -220,7 +220,7 @@ snap_flatpak_trim(){
     while read -r name version rev tracking publisher notes; do
       [[ ${notes:-} == *disabled* ]] && sudo snap remove "$name" --revision "$rev" &>/dev/null || :
     done < <(snap list --all 2>/dev/null || :)
-    rm -rf "${HOME}"/snap/*/*/.cache/* &>/dev/null || :
+    rm -rf "$HOME"/snap/*/*/.cache/* &>/dev/null || :
   fi
   sudo rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
 }

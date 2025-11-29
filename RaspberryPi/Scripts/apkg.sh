@@ -16,14 +16,14 @@ set -euo pipefail
 shopt -s nullglob globstar execfail
 IFS=$'
 	'
-has(){ command -v -- "$1" &>/dev/null>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 hasname(){
   local x
   if ! x=$(type -P -- "$1"); then return 1; fi
   printf '%s
 ' "${x##*/}"
 }
-is_program_installed(){ command -v "$1" &>/dev/null>/dev/null; }
+is_program_installed(){ command -v "$1" &>/dev/null; }
 get_workdir(){
   local script="${BASH_SOURCE[1]:-$0}"
   builtin cd -- "${-- "$script"%/*}" && printf '%s
@@ -51,7 +51,7 @@ check_root(){ if [[ $EUID -ne 0 ]]; then
   echo "This script must be run as root." >&2
   exit 1
 fi; }
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null>/dev/null || :; }
+load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 run_dietpi_cleanup(){ if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
   if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then echo "Warning: dietpi-update failed (both standard and fallback commands)." >&2; fi
   sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null || G_SUDO dietpi-logclear 2 2>/dev/null || :
@@ -99,14 +99,14 @@ CACHE_INDEX="${CACHE_DIR}/.index"
 : "${APT_FUZZ_CACHE_MAX_BYTES:=52428800}"
 : "${APT_FUZZ_ANSI:=1}"
 : "${APT_FUZZ_PREFETCH_JOBS:=4}"
-mkdir -p -- "$CACHE_DIR" &>/dev/null>/dev/null
+mkdir -p -- "$CACHE_DIR" &>/dev/null
 
 trap 'ps -o pid= --ppid=$$ 2>/dev/null | xargs -r kill 2>/dev/null; exit' EXIT SIGINT SIGTERM
 
 # Tool detection
-if command -v sk &>/dev/null>/dev/null; then
+if command -v sk &>/dev/null; then
   FINDER=sk
-elif command -v fzf &>/dev/null>/dev/null; then
+elif command -v fzf &>/dev/null; then
   FINDER=fzf
 else
   echo "Install skim (sk) or fzf" >&2
@@ -114,14 +114,14 @@ else
 fi
 
 find_cache_files(){ :; }
-if command -v fd &>/dev/null>/dev/null; then
-  FIND_TOOL=fd
+if command -v fd &>/dev/null; then
+  FIND_TOOL="fd"
   find_cache_files(){ fd -0 -d 1 -tf . "$CACHE_DIR" 2>/dev/null; }
-elif command -v fdfind &>/dev/null>/dev/null; then
-  FIND_TOOL=fdfind
+elif command -v fdfind &>/dev/null; then
+  FIND_TOOL="fdfind"
   find_cache_files(){ fdfind -0 -d 1 -tf . "$CACHE_DIR" 2>/dev/null; }
 else
-  FIND_TOOL=find
+  FIND_TOOL="find"
   find_cache_files(){ find -O3 "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null; }
 fi
 
@@ -131,12 +131,12 @@ FINDER_OPTS=(--layout=reverse-list --tiebreak=index --no-sort --no-hscroll)
 
 # Manager detection
 declare -A MANAGERS=([apt]=1)
-command -v nala &>/dev/null>/dev/null && MANAGERS[nala]=1
-command -v apt-fast &>/dev/null>/dev/null && MANAGERS[apt - fast]=1
+command -v nala &>/dev/null && MANAGERS[nala]=1
+command -v apt-fast &>/dev/null && MANAGERS[apt-fast]=1
 PRIMARY_MANAGER="${APT_FUZZ_MANAGER:-apt}"
 [[ -z ${MANAGERS[$PRIMARY_MANAGER]:-} ]] && PRIMARY_MANAGER=apt
 [[ -n ${MANAGERS[nala]:-} ]] && PRIMARY_MANAGER=nala
-[[ -z ${MANAGERS[nala]:-} && -n ${MANAGERS[apt - fast]:-} ]] && PRIMARY_MANAGER=apt-fast
+[[ -z ${MANAGERS[nala]:-} && -n ${MANAGERS[apt-fast]:-} ]] && PRIMARY_MANAGER=apt-fast
 
 byte_to_human(){
   local bytes="${1:-0}" i=0 pow=1
@@ -145,7 +145,8 @@ byte_to_human(){
     pow=$((pow * 1024))
     i=$((i + 1))
   done
-  local v10=$(((bytes * 10 + (pow / 2)) / pow)) w=$((v10 / 10)) d=$((v10 % 10))
+  local v10=$(((bytes * 10 + (pow / 2)) / pow))
+  local w=$((v10 / 10)) d=$((v10 % 10))
   ((d > 0)) && printf '%d.%d%s' "$w" "$d" "${units[i]}" || printf '%d%s' "$w" "${units[i]}"
 }
 
@@ -479,9 +480,9 @@ if (($# > 0)); then
       echo "Usage: $0 $1 <pkgs...>" >&2
       exit 2
     }
-    cmd="$1"
+    action="$1"
     shift
-    run_mgr "$cmd" "$@"
+    run_mgr "$action" "$@"
     exit 0
     ;;
   help | -h | --help)

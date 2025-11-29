@@ -140,11 +140,11 @@ sudo loginctl enable-linger "$(whoami)"
 if systemctl is-active --quiet firewalld; then
     echo "Configuring firewalld..."
     sudo firewall-cmd --permanent --add-service=samba
-    sudo firewall-cmd --permanent --add-port=${COPYPARTY_PORT}/tcp
+    sudo firewall-cmd --permanent --add-port="$COPYPARTY_PORT"/tcp
     sudo firewall-cmd --reload
 elif systemctl is-active --quiet ufw; then
     echo "Configuring ufw..."
-    sudo ufw allow ${COPYPARTY_PORT}/tcp
+    sudo ufw allow "$COPYPARTY_PORT"/tcp
     sudo ufw allow Samba
 fi
 

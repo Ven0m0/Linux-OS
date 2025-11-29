@@ -150,13 +150,13 @@ process(){
   local -a css=() html=() json=() xml=() pdf=() yaml=() ini=()
   local ex='-Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor'
   if has fd; then
-    mapfile -t css < <(fd -ecss -tf -E'*.min.css' $ex . "$out" 2>/dev/null)
-    mapfile -t html < <(fd -ehtml -ehtm -tf $ex . "$out" 2>/dev/null)
-    mapfile -t json < <(fd -ejson -tf -E'*.min.json' -E'package*.json' $ex . "$out" 2>/dev/null)
-    mapfile -t xml < <(fd -exml -tf -E'*.min.xml' $ex . "$out" 2>/dev/null)
-    mapfile -t pdf < <(fd -epdf -tf -E'*.min.pdf' $ex . "$out" 2>/dev/null)
-    mapfile -t yaml < <(fd -eyml -eyaml -tf $ex . "$out" 2>/dev/null)
-    mapfile -t ini < <(fd -eini -tf $ex . "$out" 2>/dev/null)
+    mapfile -t css < <(fd -ecss -tf -E'*.min.css' "$ex" . "$out" 2>/dev/null)
+    mapfile -t html < <(fd -ehtml -ehtm -tf "$ex" . "$out" 2>/dev/null)
+    mapfile -t json < <(fd -ejson -tf -E'*.min.json' -E'package*.json' "$ex" . "$out" 2>/dev/null)
+    mapfile -t xml < <(fd -exml -tf -E'*.min.xml' "$ex" . "$out" 2>/dev/null)
+    mapfile -t pdf < <(fd -epdf -tf -E'*.min.pdf' "$ex" . "$out" 2>/dev/null)
+    mapfile -t yaml < <(fd -eyml -eyaml -tf "$ex" . "$out" 2>/dev/null)
+    mapfile -t ini < <(fd -eini -tf "$ex" . "$out" 2>/dev/null)
   else
     local fp='! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/.cache/*" ! -path "*/build/*" ! -path "*/target/*" ! -path "*/__pycache__/*" ! -path "*/.venv/*" ! -path "*/.npm/*" ! -path "*/vendor/*"'
     mapfile -t css < <(eval "find '$out' -type f -name '*.css' ! -name '*.min.css' $fp 2>/dev/null")

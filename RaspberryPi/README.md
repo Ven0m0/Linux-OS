@@ -48,9 +48,9 @@ https://gitlab.com/volian/nala/-/blob/main/docs/nala-fetch.8.rst?ref_type=heads
 
 - [Pi-Apps-bash](https://github.com/Itai-Nelken/PiApps-terminal_bash-edition)
 
- ```bash
- wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
- ```
+```bash
+wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | bash
+```
 
 - [cylon-deb](https://github.com/gavinlyonsrepo/cylon-deb)
 
@@ -64,6 +64,7 @@ https://gitlab.com/volian/nala/-/blob/main/docs/nala-fetch.8.rst?ref_type=heads
 - success
 
 further links:
+
 - <https://github.com/aarontc/raspbian-f2fs>
 - <https://github.com/d-a-v/raspbian-f2fs>
 - <https://github.com/timothybrown/raspbian-f2fs>
@@ -76,6 +77,7 @@ further links:
 - Raspberry pi 3: LLSP (Lighttpd, SQLite, PHP)
 
 Reference Documentation:
+
 - [Nginx](https://docs.nginx.com/nginx/admin-guide)
 - [Lighttpd](https://www.lighttpd.net)
 - [MariaDB](https://mariadb.org/documentation/#getting-started)
@@ -112,9 +114,9 @@ curl -fsSL https://get.casaos.io/update | sudo bash
   <details>
     <summary><b>Install</b></summary>
 
-    ```bash
-    curl -L https://setup.runtipi.io | bash
-    ```
+  ```bash
+  curl -L https://setup.runtipi.io | bash
+  ```
 
   </details>
 
@@ -122,25 +124,25 @@ curl -fsSL https://get.casaos.io/update | sudo bash
   <details>
     <summary><b>Install</b></summary>
 
-    <https://cosmos-cloud.io/doc/1%20index/#automatic-installation>
+  <https://cosmos-cloud.io/doc/1%20index/#automatic-installation>
 
-    ```bash
-    # IF YOU NEED TO CHANGE THE PORTS, DO IT BEFORE RUNNING THE COMMAND
-    # You can overwrite any other env var by adding them here
-    export COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443
-    
-    # You can run a dry run to see what will be installed
-    curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s -- --dry-run
-    
-    # If you are happy with the result, you can run the command
-    curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
-    ```
+  ```bash
+  # IF YOU NEED TO CHANGE THE PORTS, DO IT BEFORE RUNNING THE COMMAND
+  # You can overwrite any other env var by adding them here
+  export COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443
 
-    One liner:
+  # You can run a dry run to see what will be installed
+  curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s -- --dry-run
 
-    ```bash
-    env COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443 curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
-    ```
+  # If you are happy with the result, you can run the command
+  curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
+  ```
+
+  One liner:
+
+  ```bash
+  env COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443 curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
+  ```
 
   </details>
 
@@ -150,17 +152,17 @@ curl -fsSL https://get.casaos.io/update | sudo bash
   <details>
     <summary><b>Install</b></summary>
 
-    ```bash
-    docker run --name homepage \
-      -e HOMEPAGE_ALLOWED_HOSTS=gethomepage.dev \
-      -e PUID=1000 \
-      -e PGID=1000 \
-      -p 3000:3000 \
-      -v /path/to/config:/app/config \
-      -v /var/run/docker.sock:/var/run/docker.sock:ro \
-      --restart unless-stopped \
-      ghcr.io/gethomepage/homepage:latest
-    ```
+  ```bash
+  docker run --name homepage \
+    -e HOMEPAGE_ALLOWED_HOSTS=gethomepage.dev \
+    -e PUID=1000 \
+    -e PGID=1000 \
+    -p 3000:3000 \
+    -v /path/to/config:/app/config \
+    -v /var/run/docker.sock:/var/run/docker.sock:ro \
+    --restart unless-stopped \
+    ghcr.io/gethomepage/homepage:latest
+  ```
 
   </details>
 

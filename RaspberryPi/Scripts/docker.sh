@@ -33,7 +33,7 @@ sudo systemctl enable docker
 
 # Give this user privileged Docker access
 echo "Adding user to docker group..."
-sudo usermod -aG docker "${USER}"
+sudo usermod -aG docker "$USER"
 
 # Prevent Docker from preventing boot for network-online.target
 echo "Configuring Docker systemd unit..."

@@ -30,13 +30,13 @@ find_mtu(){
   fi
 
   echo "Testing MTU to $srv (IPv$ipver)..."
-  $ping_cmd -c1 -W1 "$srv" &>/dev/null || die "Server $srv unreachable"
-  $ping_cmd -M do -s$((lo - overhead)) -c1 "$srv" &>/dev/null || die "Min MTU $lo not viable"
+  "$ping_cmd" -c1 -W1 "$srv" &>/dev/null || die "Server $srv unreachable"
+  "$ping_cmd" -M do -s$((lo - overhead)) -c1 "$srv" &>/dev/null || die "Min MTU $lo not viable"
 
   opt=$lo
   while ((lo <= hi)); do
     mid=$(((lo + hi) / 2))
-    if $ping_cmd -M do -s$((mid - overhead)) -c1 "$srv" &>/dev/null 2>&1; then
+    if "$ping_cmd" -M do -s$((mid - overhead)) -c1 "$srv" &>/dev/null 2>&1; then
       opt=$mid
       lo=$((mid + 1))
     else

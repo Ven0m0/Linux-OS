@@ -1,8 +1,8 @@
 <details>
 <summary><b>Bash Package Managers</b></summary>
 
-* [Basher](https://www.basher.it/package)
-* [bpkg](https://bpkg.sh)
+- [Basher](https://www.basher.it/package)
+- [bpkg](https://bpkg.sh)
 
 </details>
 <details>
@@ -10,17 +10,17 @@
   
 * [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
 
-* [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
+- [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
 
-* [Bash Guide](https://guide.bash.academy) &nbsp; [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
+- [Bash Guide](https://guide.bash.academy) &nbsp; [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
 
-* [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
+- [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
 
-* [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)
+- [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)
 
-* [Ascii flag color codes](https://www.flagcolorcodes.com)
+- [Ascii flag color codes](https://www.flagcolorcodes.com)
 
-* [Bash prompt generator](https://bash-prompt-generator.org) &nbsp;&nbsp; [Ezprompt generator](https://ezprompt.net)
+- [Bash prompt generator](https://bash-prompt-generator.org) &nbsp;&nbsp; [Ezprompt generator](https://ezprompt.net)
 
 </details>
 
@@ -413,11 +413,11 @@ extract(){
 
 **Example Usage:**
 
-```shell
+````shell
 # Extract code blocks from MarkDown file.
 $ extract ~/projects/pure-bash/README.md '```sh' '```'
 # Output here...
-```
+````
 
 </details>
 <details>
@@ -425,66 +425,66 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 
 ### Indirection
 
-| Parameter | What does it do? |
-| --------- | ---------------- |
-| `${!VAR}` | Access a variable based on the value of `VAR`.
-| `${!VAR*}` | Expand to `IFS` separated list of variable names starting with `VAR`. |
+| Parameter  | What does it do?                                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `${!VAR}`  | Access a variable based on the value of `VAR`.                                                                                         |
+| `${!VAR*}` | Expand to `IFS` separated list of variable names starting with `VAR`.                                                                  |
 | `${!VAR@}` | Expand to `IFS` separated list of variable names starting with `VAR`. If double-quoted, each variable name expands to a separate word. |
 
 ### Replacement
 
-| Parameter | What does it do? |
-| --------- | ---------------- |
-| `${VAR#PATTERN}` | Remove shortest match of pattern from start of string. |
-| `${VAR##PATTERN}` | Remove longest match of pattern from start of string. |
-| `${VAR%PATTERN}` | Remove shortest match of pattern from end of string. |
-| `${VAR%%PATTERN}` | Remove longest match of pattern from end of string. |
-| `${VAR/PATTERN/REPLACE}` | Replace first match with string.
-| `${VAR//PATTERN/REPLACE}` | Replace all matches with string.
-| `${VAR/PATTERN}` | Remove first match.
-| `${VAR//PATTERN}` | Remove all matches.
+| Parameter                 | What does it do?                                       |
+| ------------------------- | ------------------------------------------------------ |
+| `${VAR#PATTERN}`          | Remove shortest match of pattern from start of string. |
+| `${VAR##PATTERN}`         | Remove longest match of pattern from start of string.  |
+| `${VAR%PATTERN}`          | Remove shortest match of pattern from end of string.   |
+| `${VAR%%PATTERN}`         | Remove longest match of pattern from end of string.    |
+| `${VAR/PATTERN/REPLACE}`  | Replace first match with string.                       |
+| `${VAR//PATTERN/REPLACE}` | Replace all matches with string.                       |
+| `${VAR/PATTERN}`          | Remove first match.                                    |
+| `${VAR//PATTERN}`         | Remove all matches.                                    |
 
 ### Length
 
-| Parameter | What does it do? |
-| --------- | ---------------- |
-| `${#VAR}` | Length of var in characters.
-| `${#ARR[@]}` | Length of array in elements.
+| Parameter    | What does it do?             |
+| ------------ | ---------------------------- |
+| `${#VAR}`    | Length of var in characters. |
+| `${#ARR[@]}` | Length of array in elements. |
 
 ### Expansion
 
-| Parameter | What does it do? |
-| --------- | ---------------- |
-| `${VAR:OFFSET}` | Remove first `N` chars from variable.
-| `${VAR:OFFSET:LENGTH}` | Get substring from `N` character to `N` character. <br> (`${VAR:10:10}`: Get sub-string from char `10` to char `20`)
-| `${VAR:: OFFSET}` | Get first `N` chars from variable.
-| `${VAR:: -OFFSET}` | Remove last `N` chars from variable.
-| `${VAR: -OFFSET}` | Get last `N` chars from variable.
-| `${VAR:OFFSET:-OFFSET}` | Cut first `N` chars and last `N` chars. | `bash 4.2+` |
+| Parameter               | What does it do?                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `${VAR:OFFSET}`         | Remove first `N` chars from variable.                                                                                |
+| `${VAR:OFFSET:LENGTH}`  | Get substring from `N` character to `N` character. <br> (`${VAR:10:10}`: Get sub-string from char `10` to char `20`) |
+| `${VAR:: OFFSET}`       | Get first `N` chars from variable.                                                                                   |
+| `${VAR:: -OFFSET}`      | Remove last `N` chars from variable.                                                                                 |
+| `${VAR: -OFFSET}`       | Get last `N` chars from variable.                                                                                    |
+| `${VAR:OFFSET:-OFFSET}` | Cut first `N` chars and last `N` chars.                                                                              | `bash 4.2+` |
 
 ### Case Modification
 
-| Parameter | What does it do? | CAVEAT |
-| --------- | ---------------- | ------ |
-| `${VAR^}` | Uppercase first character. | `bash 4+` |
-| `${VAR^^}` | Uppercase all characters. | `bash 4+` |
-| `${VAR,}` | Lowercase first character. | `bash 4+` |
-| `${VAR,,}` | Lowercase all characters. | `bash 4+` |
-| `${VAR~}` | Reverse case of first character. | `bash 4+` |
-| `${VAR~~}` | Reverse case of all characters. | `bash 4+` |
+| Parameter  | What does it do?                 | CAVEAT    |
+| ---------- | -------------------------------- | --------- |
+| `${VAR^}`  | Uppercase first character.       | `bash 4+` |
+| `${VAR^^}` | Uppercase all characters.        | `bash 4+` |
+| `${VAR,}`  | Lowercase first character.       | `bash 4+` |
+| `${VAR,,}` | Lowercase all characters.        | `bash 4+` |
+| `${VAR~}`  | Reverse case of first character. | `bash 4+` |
+| `${VAR~~}` | Reverse case of all characters.  | `bash 4+` |
 
 ### Default Value
 
-| Parameter | What does it do? |
-| --------- | ---------------- |
-| `${VAR:-STRING}` | If `VAR` is empty or unset, use `STRING` as its value.
-| `${VAR-STRING}` | If `VAR` is unset, use `STRING` as its value.
-| `${VAR:=STRING}` | If `VAR` is empty or unset, set the value of `VAR` to `STRING`.
-| `${VAR=STRING}` | If `VAR` is unset, set the value of `VAR` to `STRING`.
-| `${VAR:+STRING}` | If `VAR` is not empty, use `STRING` as its value.
-| `${VAR+STRING}` | If `VAR` is set, use `STRING` as its value.
-| `${VAR:?STRING}` | Display an error if empty or unset.
-| `${VAR?STRING}` | Display an error if unset.
+| Parameter        | What does it do?                                                |
+| ---------------- | --------------------------------------------------------------- |
+| `${VAR:-STRING}` | If `VAR` is empty or unset, use `STRING` as its value.          |
+| `${VAR-STRING}`  | If `VAR` is unset, use `STRING` as its value.                   |
+| `${VAR:=STRING}` | If `VAR` is empty or unset, set the value of `VAR` to `STRING`. |
+| `${VAR=STRING}`  | If `VAR` is unset, set the value of `VAR` to `STRING`.          |
+| `${VAR:+STRING}` | If `VAR` is not empty, use `STRING` as its value.               |
+| `${VAR+STRING}`  | If `VAR` is set, use `STRING` as its value.                     |
+| `${VAR:?STRING}` | Display an error if empty or unset.                             |
+| `${VAR?STRING}`  | Display an error if unset.                                      |
 
 ### BRACE EXPANSION
 
@@ -559,7 +559,7 @@ bkr ./some_script.sh # some_script.sh is now running in the background
 
 ```bash
 printf '\e[3J\e[H\e[2J\e[m'
-alias clear 
+alias clear
 
 alias clear "printf '\e[3J\e[H\e[2J\e[m'"
 ```

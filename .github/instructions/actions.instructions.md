@@ -1,6 +1,6 @@
 ---
-applyTo: '.github/workflows/*.yml'
-description: 'Comprehensive guide for building robust, secure, and efficient CI/CD pipelines using GitHub Actions. Covers workflow structure, jobs, steps, environment variables, secret management, caching, matrix strategies, testing, and deployment strategies.'
+applyTo: ".github/workflows/*.yml"
+description: "Comprehensive guide for building robust, secure, and efficient CI/CD pipelines using GitHub Actions. Covers workflow structure, jobs, steps, environment variables, secret management, caching, matrix strategies, testing, and deployment strategies."
 ---
 
 # GitHub Actions CI/CD Best Practices
@@ -162,9 +162,9 @@ jobs:
 
 ```yaml
 permissions:
-  contents: read  # Default is write, explicitly set to read-only for security
+  contents: read # Default is write, explicitly set to read-only for security
   pull-requests: write # Only if workflow needs to update PRs
-  checks: write      # For updating checks
+  checks: write # For updating checks
 
 jobs:
   lint:
@@ -423,7 +423,7 @@ jobs:
 - **Deeper Dive:**
   - **Manual Approvals:** Critical for production deployments, often involving multiple team members, security sign-offs, or change management processes. GitHub Environments support this natively.
   - **Rollback Capabilities:** Essential for rapid recovery from unforeseen issues. Ensure a quick and reliable way to revert to the previous stable state.
-  - **Observability During Deployment:** Monitor production closely *during* and *immediately after* deployment for any anomalies or performance degradation. Use dashboards, alerts, and tracing.
+  - **Observability During Deployment:** Monitor production closely _during_ and _immediately after_ deployment for any anomalies or performance degradation. Use dashboards, alerts, and tracing.
   - **Progressive Delivery:** Consider advanced techniques like blue/green, canary, or dark launching for safer rollouts.
   - **Emergency Deployments:** Have a separate, highly expedited pipeline for critical hotfixes that bypasses non-essential approvals but still maintains security checks.
 - **Guidance for Copilot:**
@@ -627,7 +627,7 @@ This section provides an expanded guide to diagnosing and resolving frequent pro
   - **Dependency Check:**
     - Confirm all application runtime dependencies (libraries, frameworks, external services) are correctly bundled within the container image or installed in the target environment.
   - **Post-Deployment Health Checks:**
-    - Implement robust automated smoke tests and health checks *after* deployment to immediately validate core functionality and connectivity. Trigger rollbacks if these fail.
+    - Implement robust automated smoke tests and health checks _after_ deployment to immediately validate core functionality and connectivity. Trigger rollbacks if these fail.
   - **Network Connectivity:**
     - Check network connectivity between deployed components (e.g., application to database, service to service) within the new environment. Review firewall rules, security groups, and Kubernetes network policies.
   - **Rollback Immediately:**

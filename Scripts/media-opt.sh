@@ -39,7 +39,7 @@ find_files(){
     fd "${args[@]}" "$dir" 2>/dev/null | grep -v "$SUFFIX"
   else
     find "$dir" -type f ! -name "*${SUFFIX}*" -size +10k \( \
-      $(printf -- "-o -iname *.%s " "${exts[@]}") \
+      "$(printf -- "-o -iname *.%s " "${exts[@]}")" \
       \) 2>/dev/null | sed 's/^-o //'
   fi
 }

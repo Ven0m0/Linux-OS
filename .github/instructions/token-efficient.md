@@ -1,7 +1,7 @@
 ---
 name: LLM Token Efficiency Mode
 description: Unified, compressed response style to minimize tokens and LLM work without reducing quality.
-applyTo: '**'
+applyTo: "**"
 ---
 
 # LLM Token Efficiency Mode
@@ -27,42 +27,42 @@ Goal: compress thought process and output (−30–50% tokens) without degrading
 
 ### Logic & Flow
 
-| Sym | Meaning | Example |
-|:--:|:--|:--|
-| → | leads to/causes | auth.js:45 → 🛡️ sec risk |
-| ⇒ | converts to | input ⇒ validated_output |
-| ← | rollback/revert | migration ← rollback |
-| ⇄ | bidirectional | sync ⇄ remote |
-| « | precedes/before | parse « validate |
-| » | then/sequence | build » test » deploy |
-| ∴ | therefore | tests ❌ ∴ build failed |
-| ∵ | because | slow ∵ O(n²) |
+| Sym | Meaning         | Example                  |
+| :-: | :-------------- | :----------------------- |
+|  →  | leads to/causes | auth.js:45 → 🛡️ sec risk |
+|  ⇒  | converts to     | input ⇒ validated_output |
+|  ←  | rollback/revert | migration ← rollback     |
+|  ⇄  | bidirectional   | sync ⇄ remote            |
+|  «  | precedes/before | parse « validate         |
+|  »  | then/sequence   | build » test » deploy    |
+|  ∴  | therefore       | tests ❌ ∴ build failed  |
+|  ∵  | because         | slow ∵ O(n²)             |
 
 ### Status & Progress
 
-| Sym | Meaning |
-|:--:|:--|
-| ✅ | success/done |
-| ❌ | fail/error |
-| ⚠️ | warning |
-| 🔄 | in progress |
-| ⏳ | pending |
-| 🚨 | critical |
+| Sym | Meaning      |
+| :-: | :----------- |
+| ✅  | success/done |
+| ❌  | fail/error   |
+| ⚠️  | warning      |
+| 🔄  | in progress  |
+| ⏳  | pending      |
+| 🚨  | critical     |
 
 ### Technical Domains
 
-| Sym | Domain |
-|:--:|:--|
-| ⚡ | performance |
-| 🔍 | analysis |
-| 🔧 | config/fix |
-| 🛡️ | security |
-| 📦 | deployment/package |
-| 🎨 | design/UI |
-| 🏗️ | architecture |
-| 🗄️ | database |
-| ⚙️ | backend |
-| 🧪 | testing |
+| Sym | Domain             |
+| :-: | :----------------- |
+| ⚡  | performance        |
+| 🔍  | analysis           |
+| 🔧  | config/fix         |
+| 🛡️  | security           |
+| 📦  | deployment/package |
+| 🎨  | design/UI          |
+| 🏗️  | architecture       |
+| 🗄️  | database           |
+| ⚙️  | backend            |
+| 🧪  | testing            |
 
 ## Abbreviation System
 
@@ -152,13 +152,13 @@ act: rerun scope:<pkg>; patch:<pr/branch>
 
 ## Implementation Impact
 
-| Item | Impact |
-|:--|:--|
-| Generated code quality | No change ✅ |
-| Implementation accuracy | No change ✅ |
-| Functionality | No change ✅ |
-| Explanation method | Compressed 🔄 |
-| Context usage | −30–50% ⚡ |
+| Item                    | Impact        |
+| :---------------------- | :------------ |
+| Generated code quality  | No change ✅  |
+| Implementation accuracy | No change ✅  |
+| Functionality           | No change ✅  |
+| Explanation method      | Compressed 🔄 |
+| Context usage           | −30–50% ⚡    |
 
 ## Notes
 

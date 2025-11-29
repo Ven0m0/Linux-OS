@@ -31,15 +31,17 @@ import time
 import sys
 import requests
 import random
-from typing import Dict, Any
+from typing import Dict
 
 PERSPECTIVE_API_URL = "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"
 REQUEST_TIMEOUT = 10  # seconds
+
 
 def make_session() -> requests.Session:
     s = requests.Session()
     s.headers.update({"Content-Type": "application/json"})
     return s
+
 
 def check_toxicity(
     text: str,
@@ -96,15 +98,19 @@ def check_toxicity(
             # 429 -> Too Many Requests: backoff & retry
             if code == 429:
                 backoff = backoff_base * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
-                print(f"Perspective API 429 — backoff {backoff:.2f}s (attempt {attempt}/{max_retries})",
-                      file=sys.stderr)
+                print(
+                    f"Perspective API 429 — backoff {backoff:.2f}s (attempt {attempt}/{max_retries})",
+                    file=sys.stderr,
+                )
                 time.sleep(backoff)
                 continue
             # For 5xx server errors, also retry
             if code and 500 <= code < 600:
                 backoff = backoff_base * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
-                print(f"Perspective API server error {code} — retrying in {backoff:.2f}s (attempt {attempt}/{max_retries})",
-                      file=sys.stderr)
+                print(
+                    f"Perspective API server error {code} — retrying in {backoff:.2f}s (attempt {attempt}/{max_retries})",
+                    file=sys.stderr,
+                )
                 time.sleep(backoff)
                 continue
             # For 4xx other than 429, don't retry
@@ -112,8 +118,10 @@ def check_toxicity(
             return {}
         except (requests.ConnectionError, requests.Timeout) as err:
             backoff = backoff_base * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
-            print(f"Network error {err} — retrying in {backoff:.2f}s (attempt {attempt}/{max_retries})",
-                  file=sys.stderr)
+            print(
+                f"Network error {err} — retrying in {backoff:.2f}s (attempt {attempt}/{max_retries})",
+                file=sys.stderr,
+            )
             time.sleep(backoff)
             continue
         except Exception as e:
@@ -123,20 +131,44 @@ def check_toxicity(
     print("Perspective API: exceeded max retries, skipping item.", file=sys.stderr)
     return {}
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Scan a Reddit user's content for inappropriate material.")
+    parser = argparse.ArgumentParser(
+        description="Scan a Reddit user's content for inappropriate material."
+    )
     parser.add_argument("username", help="Reddit username (without u/)")
-    parser.add_argument("--comments", type=int, default=50, help="Number of comments to fetch")
-    parser.add_argument("--posts", type=int, default=20, help="Number of submissions to fetch")
-    parser.add_argument("--toxicity_threshold", type=float, default=0.7, help="Threshold for flagging")
-    parser.add_argument("--perspective_api_key", required=True, help="Perspective API key")
+    parser.add_argument(
+        "--comments", type=int, default=50, help="Number of comments to fetch"
+    )
+    parser.add_argument(
+        "--posts", type=int, default=20, help="Number of submissions to fetch"
+    )
+    parser.add_argument(
+        "--toxicity_threshold", type=float, default=0.7, help="Threshold for flagging"
+    )
+    parser.add_argument(
+        "--perspective_api_key", required=True, help="Perspective API key"
+    )
     parser.add_argument("--client_id", required=True, help="Reddit API client_id")
-    parser.add_argument("--client_secret", required=True, help="Reddit API client_secret")
+    parser.add_argument(
+        "--client_secret", required=True, help="Reddit API client_secret"
+    )
     parser.add_argument("--user_agent", required=True, help="Reddit user_agent string")
-    parser.add_argument("--output", default="flagged_content.csv", help="CSV output filename")
-    parser.add_argument("--rate_per_min", type=float, default=60.0,
-                        help="Max Perspective requests per minute (default 60). Use lower if you hit quota.")
-    parser.add_argument("--max_retries", type=int, default=5, help="Max retries for Perspective API calls")
+    parser.add_argument(
+        "--output", default="flagged_content.csv", help="CSV output filename"
+    )
+    parser.add_argument(
+        "--rate_per_min",
+        type=float,
+        default=60.0,
+        help="Max Perspective requests per minute (default 60). Use lower if you hit quota.",
+    )
+    parser.add_argument(
+        "--max_retries",
+        type=int,
+        default=5,
+        help="Max retries for Perspective API calls",
+    )
     args = parser.parse_args()
 
     # Derived
@@ -146,7 +178,7 @@ def main():
     reddit = praw.Reddit(
         client_id=args.client_id,
         client_secret=args.client_secret,
-        user_agent=args.user_agent
+        user_agent=args.user_agent,
     )
 
     session = make_session()
@@ -168,20 +200,31 @@ def main():
                 max_retries=args.max_retries,
             )
             if any(score >= args.toxicity_threshold for score in scores.values()):
-                flagged.append({
-                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(comment.created_utc)),
-                    "type": "comment",
-                    "subreddit": str(comment.subreddit),
-                    "content": text,
-                    **scores
-                })
-            print(f"[comments {i}/{args.comments}] checked — flagged so far: {len(flagged)}", end="\r")
+                flagged.append(
+                    {
+                        "timestamp": time.strftime(
+                            "%Y-%m-%d %H:%M:%S", time.localtime(comment.created_utc)
+                        ),
+                        "type": "comment",
+                        "subreddit": str(comment.subreddit),
+                        "content": text,
+                        **scores,
+                    }
+                )
+            print(
+                f"[comments {i}/{args.comments}] checked — flagged so far: {len(flagged)}",
+                end="\r",
+            )
 
         print()  # newline after progress line
 
         # Submissions
         for i, submission in enumerate(user.submissions.new(limit=args.posts), start=1):
-            fulltext = f"{submission.title}\n{submission.selftext}" if (submission.title or submission.selftext) else ""
+            fulltext = (
+                f"{submission.title}\n{submission.selftext}"
+                if (submission.title or submission.selftext)
+                else ""
+            )
             scores = check_toxicity(
                 fulltext,
                 args.perspective_api_key,
@@ -191,14 +234,21 @@ def main():
                 max_retries=args.max_retries,
             )
             if any(score >= args.toxicity_threshold for score in scores.values()):
-                flagged.append({
-                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(submission.created_utc)),
-                    "type": "post",
-                    "subreddit": str(submission.subreddit),
-                    "content": fulltext,
-                    **scores
-                })
-            print(f"[posts {i}/{args.posts}] checked — flagged so far: {len(flagged)}", end="\r")
+                flagged.append(
+                    {
+                        "timestamp": time.strftime(
+                            "%Y-%m-%d %H:%M:%S", time.localtime(submission.created_utc)
+                        ),
+                        "type": "post",
+                        "subreddit": str(submission.subreddit),
+                        "content": fulltext,
+                        **scores,
+                    }
+                )
+            print(
+                f"[posts {i}/{args.posts}] checked — flagged so far: {len(flagged)}",
+                end="\r",
+            )
 
         print()  # newline
 
@@ -212,6 +262,7 @@ def main():
         print(f"Flagged {len(flagged)} items. Saved to {args.output}")
     else:
         print("No inappropriate content detected (or none flagged).")
+
 
 if __name__ == "__main__":
     main()

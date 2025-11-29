@@ -345,7 +345,7 @@ maintenance(){
 cleanup(){
   msg "Cleaning up"
   local orphans
-  orphans=$(pacman -Qdtq 2>/dev/null) && sudo pacman -Rns --noconfirm $orphans 2>/dev/null || :
+  orphans=$(pacman -Qdtq 2>/dev/null) && sudo pacman -Rns --noconfirm "$orphans" 2>/dev/null || :
   ((aur)) && paru -Scc --noconfirm 2>/dev/null || sudo pacman -Scc --noconfirm 2>/dev/null || :
   sudo journalctl --rotate -q 2>/dev/null || :
   sudo journalctl --vacuum-size=50M -q 2>/dev/null || :

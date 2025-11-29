@@ -136,8 +136,10 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 
 ## TODO
 
-- <https://github.com/sn99/Optimizing-linux>
+### Linux Optimization Resources
 
-```bash
-curl -fsSL https://christitus.com/linuxdev | bash
-```
+- Explore optimization techniques from: <https://github.com/sn99/Optimizing-linux>
+- Review Chris Titus Linux development setup:
+  ```bash
+  curl -fsSL https://christitus.com/linuxdev | bash
+  ```

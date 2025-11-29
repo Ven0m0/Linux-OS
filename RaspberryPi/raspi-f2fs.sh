@@ -8,7 +8,7 @@
 set -uo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
+sync; sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
 # Color codes
 declare -r RED=$'\033[0;31m' GRN=$'\033[0;32m' YEL=$'\033[0;33m' BLD=$'\033[1m' DEF=$'\033[0m'
 

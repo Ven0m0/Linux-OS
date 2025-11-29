@@ -35,7 +35,7 @@ shopt -s nullglob globstar; IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
 export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
 builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
 [[ $EUID -ne 0 ]] && sudo -v
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
+sync; sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches' &>/dev/null
 #──────────── Color & Effects ────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

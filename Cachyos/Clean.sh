@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Enhanced system cleaning with profile-cleaner integration
+# Enhanced system cleaning with privacy configuration
 set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
@@ -103,6 +103,49 @@ chrome_profiles(){
   for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
 }
 
+configure_firefox_privacy(){
+  local prefs_changed=0
+  local firefox_prefs=(
+    'user_pref("browser.startup.homepage_override.mstone", "ignore");'
+    'user_pref("browser.newtabpage.enabled", false);'
+    'user_pref("browser.newtabpage.activity-stream.showSponsored", false);'
+    'user_pref("browser.newtabpage.activity-stream.showSponsoredTopSites", false);'
+    'user_pref("geo.enabled", false);'
+    'user_pref("geo.provider.network.url", "");'
+    'user_pref("browser.search.suggest.enabled", false);'
+    'user_pref("network.dns.disablePrefetch", true);'
+    'user_pref("network.prefetch-next", false);'
+    'user_pref("network.predictor.enabled", false);'
+    'user_pref("dom.battery.enabled", false);'
+    'user_pref("privacy.resistFingerprinting", true);'
+    'user_pref("privacy.trackingprotection.enabled", true);'
+    'user_pref("privacy.trackingprotection.socialtracking.enabled", true);'
+    'user_pref("beacon.enabled", false);'
+  )
+  local firefox_dirs=(
+    ~/.mozilla/firefox
+    ~/.var/app/org.mozilla.firefox/.mozilla/firefox
+    ~/snap/firefox/common/.mozilla/firefox
+  )
+  for dir in "${firefox_dirs[@]}"; do
+    [[ ! -d $dir ]] && continue
+    while IFS= read -r profile; do
+      local prefs_file="$profile/user.js"
+      touch "$prefs_file"
+      for pref in "${firefox_prefs[@]}"; do
+        grep -qF "$pref" "$prefs_file" 2>/dev/null || { echo "$pref" >> "$prefs_file"; ((prefs_changed++)); }
+      done
+    done < <(find "$dir" -maxdepth 1 -type d \( -name "*.default*" -o -name "default-*" \))
+  done
+  ((prefs_changed > 0)) && printf '  %s %d prefs\n' "${GRN}Firefox privacy:" "$prefs_changed${DEF}"
+}
+
+configure_python_history(){
+  local history_file="${HOME}/.python_history"
+  [[ -f $history_file ]] || touch "$history_file"
+  sudo chattr +i "$history_file" &>/dev/null && printf '  %s\n' "${GRN}Python history locked${DEF}" || :
+}
+
 #============ Banner ============
 banner(){
   printf '%s\n' "${LBLU} ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ ${DEF}"
@@ -203,6 +246,12 @@ privacy_clean(){
   rm -f "$HOME"/.recently-used.xbel "$HOME"/.local/share/recently-used.xbel* &>/dev/null || :
 }
 
+privacy_config(){
+  printf '%s\n' "🔒${MGN}Privacy configuration...${DEF}"
+  configure_firefox_privacy
+  configure_python_history
+}
+
 pkg_cache_clean(){
   if has pacman; then
     local pkgmgr=$(get_pkg_manager)
@@ -247,6 +296,12 @@ system_clean(){
 
 #============ Main ============
 main(){
+  case ${1:-} in
+    config)
+      banner; privacy_config
+      printf '\n%s\n' "${GRN}Privacy configuration complete${DEF}"
+      return ;;
+  esac
   banner; sync
   local disk_before=$(capture_disk_usage) disk_after
   echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null || :
@@ -258,6 +313,7 @@ main(){
   clean_mail_clients
   clean_electron
   privacy_clean
+  [[ ${1:-} == full ]] && privacy_config
   snap_flatpak_trim
   system_clean
   disk_after=$(capture_disk_usage)

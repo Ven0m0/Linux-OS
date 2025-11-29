@@ -146,8 +146,18 @@ fmt_ini(){
   printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"
 }
 export -f fmt_ini
+fmt_conf(){
+  local f="$1" tmp=$(mktemp) len_in=$(wc -c < "$f") len_out
+  awk 'BEGIN{FS=" +";placeholder="\033";align_all_columns=z_get_var(align_all_columns,0);align_columns_if_first_matches=align_all_columns?0:z_get_var(align_columns_if_first_matches,0);align_columns=align_all_columns||align_columns_if_first_matches;align_comments=z_get_var(align_comments,1);comment_regex=align_comments?z_get_var(comment_regex,"[#;]"):""}/^[[:blank:]]*$/{if(!last_empty){c_print_section();if(output_lines){empty_pending=1}}last_empty=1;next}{sub(/^ +/,"",$0);if(empty_pending){print"";empty_pending=0}last_empty=0;if(align_columns_if_first_matches&&actual_lines&&(!comment_regex||$1!~"^"comment_regex"([^[:blank:]]|$)")&&$1!=setting){b_queue_entries()}entry_line++;section_line++;field_count[entry_line]=0;comment[section_line]="";for(i=1;i<=NF;i++){if(a_process_regex("[\"'\\\\]","(([^ \"'\''\\\\]|\\\\.)*(\"([^\"]|\\\\\")*\"|'\''([^'\'']|\\\\\\')*'\''))*([^ \\\\]|\\\\.|\\\\$)*")){a_store_field(field_value)}else if(comment_regex&&(a_process_regex(comment_regex,comment_regex".*",1))){sub(/ +$/,"",field_value);comment[section_line]=field_value}else if(length($i)){a_store_field($i"");a_replace_field(placeholder)}}if(field_count[entry_line]){if(!actual_lines){setting=entry[entry_line,1]}actual_lines++}}END{c_print_section()}function a_process_regex(r,v,s,_p,_d){if(match($i,r)){if(s&&RSTART>1){a_replace_field(substr($i,1,RSTART-1)" "substr($i,RSTART));return}_p=$0;sub("^( |"placeholder")*","",_p);if(match(_p,"^"v)){field_value=substr(_p,RSTART,RLENGTH);_d=length($0)-length(_p);$0=substr($0,1,RSTART-1+_d)placeholder substr($0,RSTART+RLENGTH+_d);return 1}}}function a_replace_field(v,_n){if(!match($0,"^ *[^ ]+( +[^ ]+){"(i-1)"}")){$i=v;return}_n=substr($0,RLENGTH+1);$0=substr($0,1,RLENGTH);$i="";$0=$0 v _n}function a_store_field(v,_l){field_count[entry_line]=i;entry[entry_line,i]=v;_l=length(v);field_width[i]=_l>field_width[i]?_l:field_width[i]}function b_queue_entries(_o,_i,_j,_l){_o=section_line-entry_line;for(_i=1;_i<=entry_line;_i++){_l="";for(_j=1;_j<=field_count[_i];_j++){if(align_columns&&actual_lines>1&&setting){_l=_l sprintf("%-"field_width[_j]"s ",entry[_i,_j])}else{_l=_l sprintf("%s ",entry[_i,_j])}}sub(" $","",_l);section[_o+_i]=_l}entry_line=0;actual_lines=0;for(_j in field_width){delete field_width[_j]}}function c_print_section(_i,_len,_max,_l){b_queue_entries();for(_i=1;_i<=section_line;_i++){_len=length(section[_i]);_max=_len>_max?_len:_max}for(_i=1;_i<=section_line;_i++){_l=section[_i];if(comment[_i]){_l=(_l~/[^\t]/?sprintf("%-"_max"s ",_l):_l)comment[_i]}print _l;output_lines++}section_line=0}function z_get_var(v,d){return z_is_set(v)?v:d}function z_is_set(v){return!(v==""&&v==0)}' "$f" > "$tmp" 2>/dev/null || {
+    rm -f "$tmp"; printf "%s✗%s %s (awk failed)\n" "$red" "$rst" "${f##*/}" >&2; return 1
+  }
+  len_out=$(wc -c < "$tmp")
+  mv -f "$tmp" "$f"
+  printf "%s✓%s %s (%d → %d)\n" "$grn" "$rst" "${f##*/}" "$len_in" "$len_out"
+}
+export -f fmt_conf
 process(){
-  local -a css=() html=() json=() xml=() pdf=() yaml=() ini=()
+  local -a css=() html=() json=() xml=() pdf=() yaml=() ini=() conf=()
   local ex='-Enode_modules -Edist -E.git -E.cache -Ebuild -Etarget -E__pycache__ -E.venv -E.npm -Evendor'
   if has fd; then
     mapfile -t css < <(fd -ecss -tf -E'*.min.css' "$ex" . "$out" 2>/dev/null)
@@ -157,6 +167,7 @@ process(){
     mapfile -t pdf < <(fd -epdf -tf -E'*.min.pdf' "$ex" . "$out" 2>/dev/null)
     mapfile -t yaml < <(fd -eyml -eyaml -tf "$ex" . "$out" 2>/dev/null)
     mapfile -t ini < <(fd -eini -tf "$ex" . "$out" 2>/dev/null)
+    mapfile -t conf < <(fd -econf -ecfg -tf "$ex" . "$out" 2>/dev/null)
   else
     local fp='! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/.cache/*" ! -path "*/build/*" ! -path "*/target/*" ! -path "*/__pycache__/*" ! -path "*/.venv/*" ! -path "*/.npm/*" ! -path "*/vendor/*"'
     mapfile -t css < <(eval "find '$out' -type f -name '*.css' ! -name '*.min.css' $fp 2>/dev/null")
@@ -166,8 +177,9 @@ process(){
     mapfile -t pdf < <(eval "find '$out' -type f -name '*.pdf' ! -name '*.min.pdf' $fp 2>/dev/null")
     mapfile -t yaml < <(eval "find '$out' -type f \\( -name '*.yml' -o -name '*.yaml' \\) $fp 2>/dev/null")
     mapfile -t ini < <(eval "find '$out' -type f -name '*.ini' $fp 2>/dev/null")
+    mapfile -t conf < <(eval "find '$out' -type f \\( -name '*.conf' -o -name '*.cfg' \\) $fp 2>/dev/null")
   fi
-  local -i total=$((${#css[@]} + ${#html[@]} + ${#json[@]} + ${#xml[@]} + ${#pdf[@]} + ${#yaml[@]} + ${#ini[@]}))
+  local -i total=$((${#css[@]} + ${#html[@]} + ${#json[@]} + ${#xml[@]} + ${#pdf[@]} + ${#yaml[@]} + ${#ini[@]} + ${#conf[@]}))
   ((total == 0)) && { printf "%s⊘%s No files found\n" "$ylw" "$rst"; return 0; }
   if has rust-parallel; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | rust-parallel -j"$jobs" minify_css {} || :
@@ -177,6 +189,7 @@ process(){
     ((${#pdf[@]} > 0)) && printf "%s\n" "${pdf[@]}" | rust-parallel -j"$jobs" minify_pdf {} || :
     ((${#yaml[@]} > 0)) && printf "%s\n" "${yaml[@]}" | rust-parallel -j"$jobs" fmt_yaml {} || :
     ((${#ini[@]} > 0)) && printf "%s\n" "${ini[@]}" | rust-parallel -j"$jobs" fmt_ini {} || :
+    ((${#conf[@]} > 0)) && printf "%s\n" "${conf[@]}" | rust-parallel -j"$jobs" fmt_conf {} || :
   elif has parallel; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | parallel -j"$jobs" minify_css {} || :
     ((${#html[@]} > 0)) && printf "%s\n" "${html[@]}" | parallel -j"$jobs" minify_html {} || :
@@ -185,6 +198,7 @@ process(){
     ((${#pdf[@]} > 0)) && printf "%s\n" "${pdf[@]}" | parallel -j"$jobs" minify_pdf {} || :
     ((${#yaml[@]} > 0)) && printf "%s\n" "${yaml[@]}" | parallel -j"$jobs" fmt_yaml {} || :
     ((${#ini[@]} > 0)) && printf "%s\n" "${ini[@]}" | parallel -j"$jobs" fmt_ini {} || :
+    ((${#conf[@]} > 0)) && printf "%s\n" "${conf[@]}" | parallel -j"$jobs" fmt_conf {} || :
   elif has xargs; then
     ((${#css[@]} > 0)) && printf "%s\n" "${css[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_css "$@"' _ {} || :
     ((${#html[@]} > 0)) && printf "%s\n" "${html[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_html "$@"' _ {} || :
@@ -193,6 +207,7 @@ process(){
     ((${#pdf[@]} > 0)) && printf "%s\n" "${pdf[@]}" | xargs -r -P"$jobs" -I{} bash -c 'minify_pdf "$@"' _ {} || :
     ((${#yaml[@]} > 0)) && printf "%s\n" "${yaml[@]}" | xargs -r -P"$jobs" -I{} bash -c 'fmt_yaml "$@"' _ {} || :
     ((${#ini[@]} > 0)) && printf "%s\n" "${ini[@]}" | xargs -r -P"$jobs" -I{} bash -c 'fmt_ini "$@"' _ {} || :
+    ((${#conf[@]} > 0)) && printf "%s\n" "${conf[@]}" | xargs -r -P"$jobs" -I{} bash -c 'fmt_conf "$@"' _ {} || :
   else
     for f in "${css[@]}"; do minify_css "$f" || :; done
     for f in "${html[@]}"; do minify_html "$f" || :; done
@@ -201,6 +216,7 @@ process(){
     for f in "${pdf[@]}"; do minify_pdf "$f" || :; done
     for f in "${yaml[@]}"; do fmt_yaml "$f" || :; done
     for f in "${ini[@]}"; do fmt_ini "$f" || :; done
+    for f in "${conf[@]}"; do fmt_conf "$f" || :; done
   fi
   printf "\n%s✓%s Processed %d files\n" "$grn" "$rst" "$total"
 }

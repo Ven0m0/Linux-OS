@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Source common library
-SCRIPT_DIR="$(cd "${"${BASH_SOURCE[0]}"%/*}" && pwd)"
 # ============ Inlined from lib/common.sh ============
 set -euo pipefail
 shopt -s nullglob globstar

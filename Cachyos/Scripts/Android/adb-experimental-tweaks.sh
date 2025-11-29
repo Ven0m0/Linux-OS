@@ -2,6 +2,9 @@
 LC_ALL=C LANG=C
 # https://github.com/YurinDoctrine/adbloat
 
+# WARNING: These tweaks are extremely aggressive and may cause instability.
+# For a safer, optimized subset, use: ./android-optimize.sh experimental
+
 start(){
   adb shell pm list packages -3 | cut -d: -f2 | tr -d '\r' | xargs -L1 -t adb shell pm uninstall -k --user 0
   adb shell pm list packages -s | cut -d: -f2 | tr -d '\r' | xargs -L1 -t adb shell pm clear --user 0

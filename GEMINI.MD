@@ -1,79 +1,78 @@
-# Gemini Architect Guide
+# Gemini Context: Linux-OS
 
-## Core Principles
-1. **User Primacy:** User commands override all rules.
-2. **Verification:** Use search for current versions/APIs. State uncertainty.
-3. **Analysis-First:** Compare approaches (pros/cons). Present tradeoffs before implementation.
-4. **Subtraction > Addition:** Simplify before extending.
+This repository is a comprehensive collection of scripts, configurations, and resources for managing, customizing, and optimizing various Linux distributions (Arch/CachyOS, Debian/Raspberry Pi) and Android environments.
 
-## Communication
-- **Tone:** Blunt, factual, precise. No conversational filler.
-- **Format:** 2-space indent. Strip U+202F/U+200B/U+00AD.
-- **Output:** Result-first (`Result ∴ Cause`). Group by domain. Lists ≤7 items.
-- **Abbrev:** cfg=config, impl=implementation, deps=dependencies, val=validation, opt=optimization, Δ=change.
+## 📂 Project Structure
 
-### Symbols for Analysis
-→ leads to | ⇒ converts | ∴ / ∵ therefore/because | ✅ / ❌ success/fail | ⚡ performance | 🛡️ security | 🧪 testing | 🔍 analysis
+- **`Cachyos/`**: Scripts tailored for Arch Linux and CachyOS.
+  - Key actions: System updates (`Updates.sh`), cleaning (`Clean.sh`), mirror ranking (`Rank.sh`), and automated installation/setup.
+  - Includes Rust-related tooling (`Rust/`).
+- **`RaspberryPi/`**: optimization and maintenance scripts for Raspberry Pi OS and DietPi.
+  - Includes `docs/` for specific software configurations (PiHole, CasaOS).
+- **`Android/`**: Tools for Android devices, often utilizing ADB or running within Termux.
+  - Focus on debloating (`android-toolkit.sh`) and optimization.
+- **`Scripts/`**: General-purpose maintenance scripts (Debloat, media optimization).
+- **`.github/`**: CI/CD workflows (`workflows/`) and agent instructions (`instructions/`).
+- **`Linux-Settings/`**: Kernel parameters and submodule tracking.
 
-## Reasoning Patterns
+## 💻 Development Standards
 
-### Architectural Comparison
-**Format:**
-```
-Approach A: [Description]
-  ✅ Pro: [Benefit 1], [Benefit 2]
-  ❌ Con: [Drawback 1], [Drawback 2]
-  ⚡ Perf: [Performance characteristic]
-  
-Approach B: [Description]
-  ✅ Pro: [Benefit 1], [Benefit 2]
-  ❌ Con: [Drawback 1], [Drawback 2]
-  ⚡ Perf: [Performance characteristic]
+### Bash Scripting
 
-Recommendation: [Choice] ∵ [Key reason]
-```
+All scripts must adhere to strict Bash standards to ensure reliability and safety.
 
-### Design Heuristics
-- **Measure first:** Profile before optimizing.
-- **Common case:** Optimize hot paths. Edge cases deprioritized.
-- **Decomposition:** Break complex problems into analyzable units.
-- **Constraint mapping:** Identify hard limits (latency, memory, cost).
+- **Shebang & Safety:**
+  ```bash
+  #!/usr/bin/env bash
+  set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
+  export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+  ```
+- **Idioms:**
+  - Use `[[ ... ]]` for tests.
+  - Use `printf` instead of `echo`.
+  - Process lines with `while IFS= read -r line; do ...; done < <(cmd)`.
+  - **Avoid:** Parsing `ls`, `eval`, backticks.
+- **Linting:** Respect `.shellcheckrc`. Run `shellcheck` on changes.
 
-## Multimodal Analysis
-**Images/Diagrams:**
-- Extract structural patterns, relationships, data flows.
-- Identify inconsistencies, missing elements, optimization opportunities.
-- Generate actionable insights (not just descriptions).
+### Tool Hierarchy
 
-**Code/Config:**
-- Detect anti-patterns, security issues, performance bottlenecks.
-- Suggest architectural improvements with tradeoff analysis.
+Prefer modern, faster replacements when available, but ensure fallbacks exist for portability.
 
-## Technical Context (Minimal)
-**Targets:** Arch/Wayland, Debian/Raspbian, Termux.
-**Bash:** `set -euo pipefail`. Use `[[ ... ]]`, `printf`, `mapfile -t`. Avoid `eval`, parsing `ls`.
-**Tools:** fd→find, rg→grep, jaq→jq, aria2→curl.
+| Task       | Primary Tool   | Fallback |
+| :--------- | :------------- | :------- |
+| **Find**   | `fd`           | `find`   |
+| **Search** | `rg` (ripgrep) | `grep`   |
+| **View**   | `bat`          | `cat`    |
+| **Edit**   | `sd`           | `sed`    |
+| **JSON**   | `jaq`          | `jq`     |
 
-## Performance Analysis Framework
-**Frontend:**
-- DOM manipulation frequency → use virtual DOM/signals
-- Asset size → lazy load, code split
-- Render blocking → defer non-critical resources
+### Package Management
 
-**Backend:**
-- Query patterns → connection pooling, caching strategy
-- I/O bottlenecks → async, batch operations
-- Scaling constraints → horizontal vs vertical, stateless design
+- **Arch:** `paru` -> `yay` -> `pacman`.
+- **Debian:** `apt`.
+- **Privilege Escalation:** `sudo-rs` -> `sudo` -> `doas`.
 
-**Infrastructure:**
-- Latency budget → CDN, edge compute, regional deployment
-- Cost structure → serverless vs containers vs VMs
-- Reliability → failure modes, circuit breakers, degradation
+## 🚀 Common Workflows
 
-## Workflow Guidance
-1. **Analyze:** Understand current state, constraints, goals.
-2. **Design:** Compare architectural options with tradeoffs.
-3. **Validate:** Identify risks, bottlenecks, edge cases.
-4. **Recommend:** Choose approach with clear rationale.
+### Updates
 
-**Output:** High-level design, not implementation details (unless requested).
+- **CachyOS:** `bash Cachyos/Updates.sh`
+- **Raspberry Pi:** `bash RaspberryPi/update.sh`
+
+### Cleaning
+
+- **General:** `bash Scripts/Debloat.sh`
+- **Cachyos:** `bash Cachyos/Clean.sh`
+
+## 📝 Contribution Guidelines
+
+1.  **Surgical Modification:** Prefer editing existing files over creating new ones unless necessary.
+2.  **Debt-First:** Remove clutter and unused dependencies before adding new features.
+3.  **Verification:** Always verify commands and flags. Do not guess.
+4.  **Style:** Keep code concise, formatted (2-space indent), and commented only where logic is complex.
+
+## 🛠️ Key Files
+
+- `README.md`: Primary entry point with "curl | bash" installation examples.
+- `CLAUDE.MD`: Detailed operational manual and style guide (reference this for strict coding rules).
+- `todo.md`: Current task tracking.

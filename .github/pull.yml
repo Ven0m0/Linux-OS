@@ -1,0 +1,6 @@
+version: "1"
+rules:
+  - base: master
+    upstream: Ven0m0:main
+    mergeMethod: rebase # hardreset | merge | rebase | squash | none
+    mergeUnstable: true

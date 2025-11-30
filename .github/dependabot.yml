@@ -14,20 +14,47 @@ updates:
       interval: "weekly"
     ignore:
       - dependency-name: "pip"
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      - dependency-name: "pip"
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
-    versioning-strategy: "increase"
-  - package-ecosystem: "docker"
+    versioning-strategy: "increase-if-necessary"
+  - package-ecosystem: "bun"
     directory: "/"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "devcontainers"
+    versioning-strategy: "increase-if-necessary"
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "rust-toolchain"
     directory: "/"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:
       interval: "weekly"

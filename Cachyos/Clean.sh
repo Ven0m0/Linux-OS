@@ -44,7 +44,7 @@ vacuum_sqlite()0{
 }
 
 # Process SQLite databases with parallel processing
-clean_sqlite_dbs()0{
+clean_sqlite_dbs(){
     local total=0 saved db_list=() count=0
     while IFS= read -r -d '' db; do
         [[ -f $db ]] && db_list+=("$db")

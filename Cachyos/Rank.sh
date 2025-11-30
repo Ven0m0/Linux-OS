@@ -1,22 +1,18 @@
 #!/usr/bin/env bash
-# Mirror ranking and optimization script for Arch-based systems
-set -euo pipefail
+set -euo pipefail; shopt -s nullglob globstar
+# Mirror & Keyserver ranking script for Arch-based systems
+# Merged functionality from keyserver-rank.sh
 IFS=$'\n\t'
-shopt -s nullglob globstar
-
 # Export locale
 export LC_ALL=C LANG=C LANGUAGE=C
-
 # Override environment
-export HOME="/home/${SUDO_USER:-$USER}"
-export SHELL=/bin/bash
-
+export HOME="/home/${SUDO_USER:-$USER}" SHELL=/bin/bash
 #============ Colors ============
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m'
 B='\033[0;34m' C='\033[0;36m' Z='\033[0m' D='\033[1m'
-
 #============ Configuration ============
 MIRRORDIR=/etc/pacman.d
+GPGCONF=/etc/pacman.d/gnupg/gpg.conf
 BACKUPDIR=/etc/pacman.d/.bak
 LOGFILE=/var/log/mirror-rank.log
 COUNTRY=${RATE_MIRRORS_ENTRY_COUNTRY:-$(curl -sf https://ipapi.co/country_code || echo DE)}
@@ -28,38 +24,36 @@ STATE_FILE=state
 VERBOSE=no
 ARCH_URL='https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&use_mirror_status=on'
 REPOS=(cachyos chaotic-aur endeavouros alhp)
+KEYSERVERS=(
+  "hkp://keyserver.ubuntu.com"
+  "hkps://keys.openpgp.org"
+  "hkps://pgp.mit.edu"
+  "hkp://keys.gnupg.net"
+)
 REF_LEVEL=""
 TMP=()
-
 export RATE_MIRRORS_PROTOCOL=https RATE_MIRRORS_ALLOW_ROOT=true \
   RATE_MIRRORS_DISABLE_COMMENTS_IN_FILE=true RATE_MIRRORS_DISABLE_COMMENTS=true \
   RATE_MIRRORS_ENTRY_COUNTRY="$COUNTRY" CONCURRENCY
 
 #============ Helper Functions ============
-has(){ command -v "$1" &>/dev/null>/dev/null; }
-
+has(){ command -v "$1" &>/dev/null; }
 log(){ printf "[%s] %s\n" "$1" "${@:2}" | tee -a "$LOGFILE" >&2; }
-die(){
-  log ERROR "$@"
-  cleanup
-  exit 1
-}
+die(){ log ERROR "$@"; cleanup; exit 1; }
 info(){ log INFO "$@"; }
 warn(){ log WARN "$@"; }
-
-cleanup(){ ((${#TMP[@]})) && rm -f "${TMP[@]}" &>/dev/null>/dev/null || :; }
+cleanup(){ ((${#TMP[@]})) && rm -f "${TMP[@]}" &>/dev/null || :; }
 trap cleanup EXIT INT TERM
 
 #============ Core Functions ============
 backup(){
   local src=$1 dst=$BACKUPDIR/${src##*/}-$(date +%s).bak
   [[ -d $BACKUPDIR ]] || sudo mkdir -p "$BACKUPDIR"
-  sudo cp -a "$src" "$dst" &>/dev/null>/dev/null || return 1
-
+  sudo cp -a "$src" "$dst" &>/dev/null || return 1
   # Keep only 20 newest backups
   find "$BACKUPDIR" -name "${src##*/}-*.bak" -printf '%T@ %p\n' 2>/dev/null \
     | sort -rn | tail -n+21 | awk '{$1=""; print substr($0,2)}' \
-    | xargs -r sudo rm -f &>/dev/null>/dev/null || :
+    | xargs -r sudo rm -f &>/dev/null || :
 }
 
 get_ref(){
@@ -78,18 +72,14 @@ test_speed(){
 rank_manual(){
   local file=$1 tmp=$(mktemp)
   TMP+=("$tmp")
-
   mapfile -t mirs < <(grep -Po '(?<=^Server = ).*' "$file")
   ((${#mirs[@]})) || die "No mirrors in $file"
-
   info "Testing ${#mirs[@]} mirrors (parallel)"
-
   # Extract URLs
   local -a urls=()
   for m in "${mirs[@]}"; do
     urls+=("${m%/\$repo/\$arch}")
   done
-
   # Test in parallel
   printf '%s\n' "${urls[@]}" \
     | xargs -P"$CONCURRENCY" -I{} bash -c '
@@ -97,12 +87,10 @@ rank_manual(){
         awk "{printf \"%.0f\",\$1}" || printf 0)
       printf "%s %s\n" "$spd" "{}"
     ' | awk '$1>0' | sort -rn | head -n"$MAX_MIRRORS" > "$tmp.spd"
-
   {
     printf "## Ranked %s\n\n" "$(date)"
     awk '{print "Server = " $2}' "$tmp.spd"
   } | sudo tee "$tmp" >/dev/null
-
   sudo install -m644 -b -S -T "$tmp" "$file"
 }
 
@@ -112,20 +100,17 @@ rank_rate(){
     warn "Missing $file"
     return 1
   }
-
   local tmp=$(mktemp)
   TMP+=("$tmp")
-
   backup "$file"
   info "Ranking $name via rate-mirrors"
-
   rate-mirrors stdin \
     --save="$tmp" \
     --fetch-mirrors-timeout=300000 \
     --comment-prefix='# ' \
     --output-prefix='Server = ' \
     --path-to-return='$repo/os/$arch' \
-    < <(awk 'match($0, /https?:\/\/[^ ]]+/) {
+    < <(awk 'match($0, /https?:\/\/[^ ]+/) {
       url=substr($0, RSTART, RLENGTH);
       if(!seen[url]++) arr[++n]=url
     } END {
@@ -136,17 +121,14 @@ rank_rate(){
     rank_manual "$file"
     return
   }
-
   sudo install -m644 -b -S -T "$tmp" "$file"
 }
 
 rank_arch_fresh(){
   local url="${1:-$ARCH_URL}" path="$MIRRORDIR/mirrorlist" tmp=$(mktemp)
   TMP+=("$tmp")
-
   [[ -f $path ]] && backup "$path"
   info "Fetching fresh Arch mirrorlist"
-
   if has curl; then
     curl -sfL --retry 3 --retry-delay 1 "$url" -o "$tmp.dl" || die "Download failed"
   elif has wget; then
@@ -154,14 +136,12 @@ rank_arch_fresh(){
   else
     die "Neither curl nor wget available"
   fi
-
   local -a urls
   mapfile -t urls < <(awk '/^#?Server/{
     url=$3; sub(/\$.*/,"",url);
     if(!seen[url]++)print url
   }' "$tmp.dl")
   ((${#urls[@]} > 0)) || die "No server entries found"
-
   info "Ranking ${#urls[@]} fresh Arch mirrors"
   printf '%s\n' "${urls[@]}" \
     | rate-mirrors --save="$tmp" stdin \
@@ -173,49 +153,74 @@ rank_arch_fresh(){
       rank_manual "$path"
       return
     }
-
   sudo install -m644 -b -S -T "$tmp" "$path"
 }
 
 rank_reflector(){
   local file=$1 tmp=$(mktemp)
   TMP+=("$tmp")
-
   backup "$file"
   info "Ranking via reflector"
-
   local -a args=(--save "$tmp" --protocol https --latest 20 --sort rate -n"$MAX_MIRRORS" --threads "$CONCURRENCY")
   [[ $COUNTRY =~ ^[A-Z]{2}$ ]] && args+=(--country "$COUNTRY")
-
-  sudo reflector "${args[@]}" &>/dev/null>/dev/null || {
+  sudo reflector "${args[@]}" &>/dev/null || {
     warn "reflector failed, falling back"
     rank_manual "$file"
     return
   }
-
   sudo install -m644 -b -S -T "$tmp" "$file"
+}
+
+rank_keyservers(){
+  [[ -f $GPGCONF ]] || { warn "No GPG config found at $GPGCONF"; return 1; }
+  backup "$GPGCONF"
+  info "Ranking keyservers..."
+  local best_url="" best_time=99999
+  for url in "${KEYSERVERS[@]}"; do
+    # Convert hkp/hkps to http/https for curl testing
+    local test_url="${url/hkp/http}"
+    test_url="${test_url/http:/http:}" # Ensure single colon if replaced
+    local t_start=$(date +%s%3N)
+    if curl -sIo /dev/null -m 2 "$test_url"; then
+      local t_end=$(date +%s%3N)
+      local t_diff=$((t_end - t_start))
+      info "  $url: ${t_diff}ms"
+      if ((t_diff < best_time)); then
+        best_time=$t_diff
+        best_url=$url
+      fi
+    else
+      warn "  $url: unreachable"
+    fi
+  done
+  if [[ -n $best_url ]]; then
+    info "Best: $best_url ($best_time ms)"
+    # Update config in-place
+    if grep -q "^[[:space:]]*keyserver " "$GPGCONF"; then
+      sudo sed -i "s|^[[:space:]]*keyserver .*|keyserver $best_url|" "$GPGCONF"
+    else
+      echo "keyserver $best_url" | sudo tee -a "$GPGCONF" >/dev/null
+    fi
+  else
+    warn "No reachable keyservers found"
+  fi
 }
 
 benchmark(){
   local file=${1:-$MIRRORDIR/mirrorlist}
   mapfile -t srvs < <(awk '/^Server/ {print $3}' "$file" | head -n5)
   ((${#srvs[@]})) || die "No servers in $file"
-
   printf "${C}${D}Benchmarking top %d mirrors:${Z}\n\n" ${#srvs[@]}
-
   for i in "${!srvs[@]}"; do
     local srv=${srvs[$i]} host=${srv#*://}
     host=${host%%/*}
-
     printf "${C}%d: %s${Z}\n" $((i + 1)) "$host"
-
     local spd=$(test_speed "$srv")
     if ((spd > 0)); then
       printf "  Speed: ${G}%.2f MB/s${Z}\n" "$(awk "BEGIN{print $spd/1048576}")"
     else
       printf "  Speed: ${R}FAIL${Z}\n"
     fi
-
     local png=$(ping -c1 -W2 "$host" 2>/dev/null | awk -F'[= ]]' '/time=/{print $(NF-1)}')
     [[ $png ]] && printf "  Ping:  ${G}%s ms${Z}\n" "$png" || printf "  Ping:  ${Y}N/A${Z}\n"
   done
@@ -223,37 +228,31 @@ benchmark(){
 
 restore(){
   [[ -d $BACKUPDIR ]] || die "No backup dir"
-
   mapfile -t baks < <(find "$BACKUPDIR" -name "*-mirrorlist-*.bak" -printf '%T@ %p\n' \
     | sort -rn | awk '{$1=""; print substr($0,2)}')
   ((${#baks[@]})) || die "No backups found"
-
   printf "${C}Available backups:${Z}\n"
   for i in "${!baks[@]}"; do
     printf "%2d. %s\n" $((i + 1)) "${baks[$i]##*/}"
   done
-
   read -rp "Select [1-${#baks[@]}]: " n
   [[ $n =~ ^[0-9]+$ && $n -ge 1 && $n -le ${#baks[@]} ]] || die "Invalid selection"
-
   local tgt=$(sed 's/-[0-9]\+\.bak$//' <<< "${baks[$((n - 1))]##*/}")
   sudo cp "${baks[$((n - 1))]}" "$MIRRORDIR/$tgt" || die "Restore failed"
   info "Restored $tgt"
-  sudo pacman -Sy &>/dev/null>/dev/null || :
+  sudo pacman -Sy &>/dev/null || :
 }
 
 opt_all(){
   info "Starting optimization (country: $COUNTRY)"
   sudo pacman -Syyuq --noconfirm --needed || :
-  sudo pacman-db-upgrade --nocolor &>/dev/null>/dev/null || :
-  has keyserver-rank && sudo keyserver-rank --yes &>/dev/null>/dev/null || :
-
+  sudo pacman-db-upgrade --nocolor &>/dev/null || :
+  # Use internal keyserver ranker instead of external script
+  rank_keyservers || :
   [[ -f /etc/eos-rankmirrors.disabled ]] && source /etc/eos-rankmirrors.disabled || :
   get_ref
-
   if has rate-mirrors; then
     rank_arch_fresh "$ARCH_URL"
-
     if has cachyos-rate-mirrors; then
       info "Using cachyos-rate-mirrors"
       sudo cachyos-rate-mirrors || :
@@ -262,7 +261,6 @@ opt_all(){
         [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_rate "$repo" || :
       done
     fi
-
     info "Searching for other mirrorlists..."
     local f repo
     for f in "$MIRRORDIR"/*mirrorlist; do
@@ -282,12 +280,10 @@ opt_all(){
       [[ -f $MIRRORDIR/${repo}-mirrorlist ]] && rank_manual "$MIRRORDIR/${repo}-mirrorlist" || :
     done
   fi
-
   sudo chmod 644 "$MIRRORDIR"/*mirrorlist* 2>/dev/null || :
   info "Updated all mirrorlists"
   sudo pacman -Syyq --noconfirm --needed || :
 }
-
 show_current(){
   local file=${1:-$MIRRORDIR/mirrorlist}
   [[ -r $file ]] || die "Cannot read $file"
@@ -306,9 +302,9 @@ menu(){
     printf "  ${B}4)${Z} Restore backup\n"
     printf "  ${B}5)${Z} Set country [%s]\n" "$COUNTRY"
     printf "  ${B}6)${Z} Toggle verbose [%s]\n" "$VERBOSE"
-    printf "  ${B}7)${Z} Exit\n\n"
+    printf "  ${B}7)${Z} Rank keyservers\n"
+    printf "  ${B}8)${Z} Exit\n\n"
     read -rp "${D}>${Z} " c
-
     case $c in
     1) opt_all ;;
     2) benchmark ;;
@@ -320,10 +316,11 @@ menu(){
       export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY
       ;;
     6) [[ $VERBOSE = yes ]] && VERBOSE=no || VERBOSE=yes ;;
-    7 | q | Q) break ;;
+    7) rank_keyservers ;;
+    8 | q | Q) break ;;
     *) printf "${R}Invalid choice${Z}\n" ;;
     esac
-    [[ $c =~ ^[1-6]$ ]] && {
+    [[ $c =~ ^[1-7]$ ]] && {
       printf "\n${Y}Press Enter to continue...${Z}"
       read -rs
     }
@@ -339,6 +336,7 @@ Options:
   -b, --benchmark [F]   Benchmark mirrors (default: $MIRRORDIR/mirrorlist)
   -s, --show [F]        Show current mirrorlist
   -r, --restore         Restore from backup
+  -k, --keys            Rank keyservers
   -c, --country CODE    Set country (2-letter uppercase)
   -t, --timeout SEC     Timeout for tests (default: $TIMEOUT)
   -v, --verbose         Verbose output
@@ -347,55 +345,30 @@ Options:
 Examples:
   ${0##*/}              # Interactive menu
   ${0##*/} -o           # Optimize all
+  ${0##*/} -k           # Rank keyservers
   ${0##*/} -c US -o     # Optimize for US
-  ${0##*/} -b           # Benchmark current
 EOF
   exit 0
 }
-
 #============ Main ============
 main(){
-  # Initialize privilege
   sync
-
-  [[ $EUID -eq 0 || $# -gt 0 ]] || exec "$PRIV_CMD" -E "$0" "$@"
-  sudo mkdir -p "${LOGFILE%/*}" "$BACKUPDIR" &>/dev/null>/dev/null || :
-
+  [[ $EUID -eq 0 || $# -gt 0 ]] || exec "$0" "$@"
+  sudo mkdir -p "${LOGFILE%/*}" "$BACKUPDIR" &>/dev/null || :
   while (($#)); do
     case $1 in
-    -o | --optimize)
-      opt_all
-      exit
-      ;;
-    -b | --benchmark)
-      benchmark "${2:-}"
-      exit
-      ;;
-    -s | --show)
-      show_current "${2:-}"
-      exit
-      ;;
-    -r | --restore)
-      restore
-      exit
-      ;;
-    -c | --country)
-      COUNTRY=${2^^}
-      export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY
-      shift
-      ;;
-    -t | --timeout)
-      TIMEOUT=$2
-      shift
-      ;;
+    -o | --optimize) opt_all exit ;;
+    -b | --benchmark) benchmark "${2:-}"; exit ;;
+    -s | --show) show_current "${2:-}"; exit ;;
+    -r | --restore) restore; exit ;;
+    -k | --keys) rank_keyservers; exit ;;
+    -c | --country) COUNTRY=${2^^}; export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY; shift ;;
+    -t | --timeout) TIMEOUT=$2; shift ;;
     -v | --verbose) VERBOSE=yes ;;
     -h | --help) usage ;;
     *) die "Unknown option: $1 (use -h for help)" ;;
-    esac
-    shift
-  done
-
-  menu
+    esac; shift
+  done; menu
 }
 
 main "$@"

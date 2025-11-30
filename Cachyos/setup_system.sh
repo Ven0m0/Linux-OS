@@ -2,7 +2,7 @@
 # Optimized system setup script
 # Refactored version with improved structure and maintainability
 set -euo pipefail
-shopt -s nullglob globstar extglob
+shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 

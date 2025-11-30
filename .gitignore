@@ -1,182 +1,65 @@
-# ---------------------
-# Git
-# ---------------------
-.git/
-.git
-.github-personal-access-token
-.gitconfig.local
-
-# ---------------------
-# yadm
-# ---------------------
-# Ignore yadm state files but keep repository configuration
-.yadm/repo.git/
-.yadm/archive
-.yadm/encrypt
-.yadm/files.gpg
-# Keep repository .yadm/ configuration files
-!.yadm/bootstrap
-!.yadm/config
-!.yadm/hooks/
-
-# ---------------------
-# Dotfiles / shell history
-# ---------------------
-.*history
-*history
-*lesshst
-*-hst
-fishd.*
-.*hist
-.thumbnails/
-.antidote/
-.zcompcache/
-.zsh_sessions/
-.zcompdump*
-.zsh_history
-*.local.zsh
-*.zwc
-*.zwc.old
-
-# ---------------------
-# XDG user dirs
-# ---------------------
-Desktop/
-Documents/
-Downloads/
-Music/
-Pictures/
-Public/
-Templates/
-Videos/
-
-# ---------------------
-# Security
-# ---------------------
-.gnupg/
-.gitconfig.local
-.ssh/
-.android/
-.config/gh/hosts.yml
-
-# ---------------------
-# Backups
-# ---------------------
-*.bak
-*.gho
-*.ori
-*.orig
-*.rej
-*.TAG
-
-# ---------------------
-# Keep
-# ---------------------
-!.cargo/config.toml
-!.ssh/config
-
-# ---------------------
-# Logs / tmp
-# ---------------------
-*.log
-*.log.*
-log/
-logs/
-*.old
-*.tmp
-tmp/
-*.kate-swp
-*swp.*
-token
-nohup.out
-.~lock.*
-*.lock
-*.lck
-.cache
-.nv/ComputeCache/
-npm-debug.log*
-/package-lock.json
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# ---------------------
-# Linux system / editor files
-# ---------------------
-.directory
-.Trash-*
-.Trashes
-.fuse_hidden*
-*~
-.nfs*
-
-# ---------------------
-# Binary / compiled files
-# ---------------------
-*.com
-*.dll
-*.exe
-*.o
-*.so
+```
+# Compiled and build artifacts
+*.pyc
 __pycache__/
-.pytest_cache/
-*.py[cod]
-*$py.class
-node_modules/
-go/
-jspm_packages/
-dependencies/composer/vendor
-target/
+*.o
+*.obj
+dist/
 build/
-.cargo/
-**/*.rs.bk
-*.mutants.out*/
-.npm
-.eslintcache
-*.tgz
-dist
-result
-result-*
-*.rdb
+*.out
 
-# ---------------------
-# Windows system files
-# ---------------------
+# Dependencies
+.venv/
+venv/
+node_modules/
+.julia/
+.zig/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
 Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
 
-# ---------------------
-# Linter
-# ---------------------
-super-linter.report
-super-linter-output/
-custom-super-linter-output-directory-name/
-super-linter-github-actions-step-summary-output*
-github-step-summary.md
-megalinter-reports/
-**/megalinter-reports/*
-mega-linter.report
-*megalinter_file_names_cspell.txt
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
-# ---------------------
-# Other
-# ---------------------
-.idea
-.ruff_cache/
-.eslintcache
-/package-lock.json
-
-# GitHub Actions leftovers
-github_conf
-# ---------------------
-# VS Code
-# ---------------------
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```

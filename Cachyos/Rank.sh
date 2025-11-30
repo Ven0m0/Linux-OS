@@ -1,116 +1,71 @@
 #!/usr/bin/env bash
 set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'; export LC_ALL=C LANG=C
-[[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
 
 MIRRORDIR="/etc/pacman.d"
+GPGCONF="$MIRRORDIR/gnupg/gpg.conf"
 BACKUPDIR="$MIRRORDIR/.bak"
-ARCHLIST_URL_GLOBAL="https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
-ARCHLIST_URL_DE="https://archlinux.org/mirrorlist/?country=DE&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
-REPOS=(arch cachyos chaotic-aur endeavouros alhp)
-DEFAULT_COUNTRY="DE"
+KEYRANK_LOG="$BACKUPDIR/keyserver-bench-$(printf '%s' "$EPOCHSECONDS").log"
 
-_exists(){ command -v "$1" &>/dev/null; }
+KEYSERVERS=(
+  "hkp://keyserver.ubuntu.com"
+  "hkps://keys.openpgp.org"
+  "hkps://pgp.mit.edu"
+  "hkp://keys.gnupg.net"
+  "hkps://keyserver.ubuntu.com"
+)
+TIMEOUT=3
+MIN_ATTEMPTS=2
+MAX_ATTEMPTS=5
+_log(){ printf '\e[1;36m[KEYRANK]\e[0m %s\n' "$*" >&2; }
+_warn(){ printf '\e[1;33m[KEYRANK:WARN]\e[0m %s\n' "$*" >&2; }
+_err(){ printf '\e[1;31m[KEYRANK:ERR]\e[0m %s\n' "$*" >&2; }
 
-# Dialog selection logic
-select_dialog(){
-  if _exists yad; then
-    yad --title="Mirrorlist Ranker" --width=400 --height=300 --form \
-      --field="Mode:":CB "Temporary,Full-Interactive,Single Mirrorlist,Multi Mirrorlist" \
-      --field="Mirrorlists:":CB "arch,cachyos,chaotic-aur,endeavouros,alhp" 2>/dev/null
-  elif _exists gum; then
-    gum choose "Temporary" "Full-Interactive" "Single Mirrorlist" "Multi Mirrorlist"
-  else
-    printf "Select mode:\n"; select m in Temporary Full-Interactive "Single Mirrorlist" "Multi Mirrorlist"; do
-      echo "$m"; break
-    done
-  fi
-}
-
-pick_mirrorlist(){
-  if _exists yad; then
-    yad --list --title="Select Mirrorlist" --width=300 --height=200 --column="Mirrorlist" "${REPOS[@]}" 2>/dev/null
-  elif _exists gum; then
-    gum choose "${REPOS[@]}"
-  elif _exists fzf; then
-    printf "%s\n" "${REPOS[@]}" | fzf --prompt="Mirrorlist: "
-  else
-    printf "Mirrorlist:\n"; select ml in "${REPOS[@]}"; do
-      echo "$ml"; break
-    done
-  fi
-}
-
-pick_multi_mirrorlists(){
-  if _exists yad; then
-    local opts=(); for r in "${REPOS[@]}"; do opts+=(FALSE "$r"); done
-    yad --list --title="Select Mirrorlists" --multiple --separator=',' --checklist \
-      --width=400 --height=250 --column="Select" --column="Mirrorlists" "${opts[@]}" 2>/dev/null | tr ',' '\n'
-  elif _exists gum; then
-    gum choose --no-limit "${REPOS[@]}"
-  elif _exists fzf; then
-    printf "%s\n" "${REPOS[@]}" | fzf -m --prompt="Mirrorlists: "
-  else
-    printf "Mirrorlists (space delimited): "; read -ra sels; printf "%s\n" "${sels[@]}"
-  fi
-}
-
-backup(){
-  [[ -f $1 ]] || return 0
+backup_gpgconf(){
+  [[ -f $GPGCONF ]] || return
   mkdir -p "$BACKUPDIR"
-  cp -a "$1" "$BACKUPDIR/${1##*/}-$(date +%s).bak"
-  find "$BACKUPDIR" -name "${1##*/}-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+6 | awk '{print $2}' | xargs -r rm -f
+  cp -a "$GPGCONF" "$BACKUPDIR/gpg.conf-$(printf '%s' "$EPOCHSECONDS").bak"
+  # keep six recent
+  find "$BACKUPDIR" -name 'gpg.conf-*.bak' -printf '%T@ %p\n' | sort -rn | tail -n+7 | awk '{print $2}' | xargs -r rm -f
+}
+is_gpgconf_valid(){ grep -qE '^[[:space:]]*keyserver ' "$GPGCONF" 2>/dev/null; }
+
+test_keyserver_latency(){
+  local s=$1 a=${2:-$MIN_ATTEMPTS} u="${s/hkp/http}" t1 t2 ms_sum=0 count=0
+  for n in $(seq 1 "$a"); do
+    t1=$(date +%s%3N)
+    if curl -fso /dev/null -m "$TIMEOUT" --retry 1 --connect-timeout "$TIMEOUT" "$u"; then
+      t2=$(date +%s%3N); ms_sum=$((ms_sum+t2-t1)); count=$((count+1))
+    fi
+  done
+  [[ $count -gt 0 ]] && printf '%s %d\n' "$s" "$((ms_sum/count))"
 }
 
-rank_archlist(){
-  local url="$1" file="$MIRRORDIR/mirrorlist"
-  local tmp; tmp=$(mktemp)
-  curl -sfL "$url" -o "$tmp.mlst" || { rm -f "$tmp" "$tmp.mlst"; return 1; }
-  sd -s '##\s*Server' 'Server' < "$tmp.mlst" > "$tmp.raw" || sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" > "$tmp.raw"
-  rate-mirrors --save="$tmp" --entry-country="$DEFAULT_COUNTRY" --top-mirrors-number-to-retest=5 arch --file "$tmp.raw" &>/dev/null \
-    || { rm -f "$tmp" "$tmp.mlst" "$tmp.raw"; return 1; }
-  install -m644 "$tmp" "$file"; rm -f "$tmp" "$tmp.mlst" "$tmp.raw"
+rank_keyservers(){
+  [[ -f $GPGCONF ]] || { _warn "gpg.conf not found, skipping"; return 1; }
+  backup_gpgconf
+  _log "Testing reachability and latency for keyservers..."
+  declare -a scores
+  for s in "${KEYSERVERS[@]}"; do
+    local line; line=$(test_keyserver_latency "$s" $MAX_ATTEMPTS 2>>"$KEYRANK_LOG") || :
+    [[ $line ]] && scores+=("$line")
+  done
+  if ((${#scores[@]}==0)); then
+    _warn "All keyservers failed; not updating config."; return 2
+  fi
+  printf "%s\n" "${scores[@]}" | sort -k2,2n | tee -a "$KEYRANK_LOG"
+  local best
+  best=$(printf "%s\n" "${scores[@]}" | sort -k2,2n | head -n1 | awk '{print $1}')
+  [[ $best ]] || { _err "No reachable keyserver after ranking"; return 3; }
+  [[ "$(grep -m1 -E '^[[:space:]]*keyserver ' "$GPGCONF" | awk '{print $2}')" == "$best" ]] && {
+    _log "Keyserver unchanged ($best)"; return 0; }
+  _log "Updating gpg.conf: keyserver $best"
+  sed -i -E "s|^[[:space:]]*keyserver .*|keyserver $best|" "$GPGCONF" || {
+    _err "sed failed, manual intervention required"; return 5; }
+  if ! is_gpgconf_valid; then
+    cp "$BACKUPDIR/gpg.conf-"*".bak" "$GPGCONF" 2>/dev/null || _err "restore failed"
+    _err "Config invalid; restored previous backup"; return 6
+  fi
+  _log "Keyserver ranking done. Selected: $best"
 }
-
-rank_repo(){
-  local repo=$1 file="$MIRRORDIR/${repo}-mirrorlist"
-  [[ -f $file ]] || return 0
-  backup "$file"
-  local tmp; tmp=$(mktemp)
-  grep -oP 'https?://[^ ]+' "$file" | sort -u | rate-mirrors --save="$tmp" --entry-country="$DEFAULT_COUNTRY" stdin \
-    --fetch-mirrors-timeout=5000 --path-to-return='$repo/os/$arch' &>/dev/null || { rm -f "$tmp"; return 1; }
-  install -m644 "$tmp" "$file"; rm -f "$tmp"
-}
-
-main(){
-  local choice mirrors
-  choice=$(select_dialog)
-  case $choice in
-    *Temporary*)
-      printf "Temporary mode: Will NOT overwrite existing mirrorlists!\n"
-      mirrors=$(pick_multi_mirrorlists)
-      for m in $mirrors; do
-        if [[ $m == arch ]]; then
-          rank_archlist "$ARCHLIST_URL_DE"
-        else
-          rank_repo "$m"
-        fi
-      done ;;
-    *Single*)
-      mirrors=$(pick_mirrorlist)
-      [[ $mirrors == arch ]] && rank_archlist "$ARCHLIST_URL_DE" || rank_repo "$mirrors" ;;
-    *Multi*)
-      mirrors=$(pick_multi_mirrorlists)
-      for m in $mirrors; do
-        [[ $m == arch ]] && rank_archlist "$ARCHLIST_URL_DE" || rank_repo "$m"
-      done ;;
-    *)
-      printf "Full interactive mode\n"
-      mirrors=$(pick_multi_mirrorlists)
-      for m in $mirrors; do
-        [[ $m == arch ]] && rank_archlist "$ARCHLIST_URL_DE" || rank_repo "$m"
-      done ;;
-  esac
-}
-
-main "$@"
+[[ "${BASH_SOURCE[0]}" == "$0" ]] && rank_keyservers

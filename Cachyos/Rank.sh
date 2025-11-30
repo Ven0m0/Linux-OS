@@ -8,28 +8,42 @@ MIRRORDIR="/etc/pacman.d"
 GPGCONF="$MIRRORDIR/gnupg/gpg.conf"
 BACKUPDIR="$MIRRORDIR/.bak"
 LOGFILE="/var/log/mirror-rank.log"
-
 # Country: Auto-detect with 'DE' fallback
 COUNTRY="${RATE_MIRRORS_ENTRY_COUNTRY:-$(curl -sf https://ipapi.co/country_code || echo DE)}"
 [[ $COUNTRY ]] || COUNTRY="DE"
-
 ARCHLIST_URL_GLOBAL="https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
 ARCHLIST_URL_DE="https://archlinux.org/mirrorlist/?country=DE&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
 REPOS=(cachyos chaotic-aur endeavouros alhp)
-KEYSERVERS=(
-  "hkp://keyserver.ubuntu.com"
+KEYSERVERS=(# We want to use keyservers only with secured (hkps or https) connections!
+  ############ These don't seem to work:
+  ## "pgp.mit.edu"
+  #  "keyring.debian.org"
+  ## "subset.pool.sks-keyservers.net"
+  #  "ipv6.pool.sks-keyservers.net"
+  # hkps://keys.mailvelope.com
+  ## hkps://hkps.pool.sks-keyservers.net
+  # hkps://attester.flowcrypt.com
+  ############ These do seem to work:
   "hkps://keys.openpgp.org"
-  "hkps://pgp.mit.edu"
-  "hkp://keys.gnupg.net"
+  "hkps://keyserver.ubuntu.com"
+  "hkps://zimmermann.mayfirst.org"
+  # "https://keyserver.ubuntu.com"
+  # "https://zimmermann.mayfirst.org"
+  ############ These seem to work but only with hkp:
+  # "hkp://ipv4.pool.sks-keyservers.net"
+  # "hkp://pool.sks-keyservers.net"
+  # "hkp://na.pool.sks-keyservers.net"
+  # "hkp://eu.pool.sks-keyservers.net"
+  # "hkp://oc.pool.sks-keyservers.net"
+  # "hkp://p80.pool.sks-keyservers.net"
+  # hkp://hkps.pool.sks-keyservers.net
 )
-
 # Colors
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m' Z='\033[0m'
 # Helpers
 log(){ printf "${G}[%s]${Z} %s\n" "${1:-INFO}" "${*:2}" | tee -a "$LOGFILE"; }
 warn(){ printf "${Y}[WARN]${Z} %s\n" "$*" >&2; }
 err(){ printf "${R}[ERR]${Z} %s\n" "$*" >&2; }
-
 backup(){
   [[ -f $1 ]] || return 0
   mkdir -p "$BACKUPDIR"
@@ -37,7 +51,6 @@ backup(){
   # Keep 5 recent backups
   find "$BACKUPDIR" -name "${1##*/}-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+6 | awk '{print $2}' | xargs -r rm -f
 }
-
 has(){ command -v "$1" &>/dev/null; }
 
 # Actions
@@ -90,34 +103,29 @@ rank_arch(){
   if ! curl -sfL "$url" -o "$tmp.mlst"; then
     warn "Failed to download Arch mirrorlist"
     rm -f "$tmp" "$tmp.mlst"; return 1
-  fi
-  # Uncomment servers using sed
+  fi # Uncomment servers using sed
   sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" > "$tmp.raw"
   # Rank
   if rate-mirrors --save="$tmp" --entry-country="$COUNTRY" --top-mirrors-number-to-retest=5 arch --file "$tmp.raw" &>/dev/null; then
     install -m644 "$tmp" "$file"
   else
     warn "rate-mirrors failed for Arch"
-  fi
-  rm -f "$tmp" "$tmp.mlst" "$tmp.raw"
+  fi; rm -f "$tmp" "$tmp.mlst" "$tmp.raw"
 }
 
 # Main Execution
 log INFO "Country: $COUNTRY | Tool: rate-mirrors"
 rank_keys || :
-
 if has cachyos-rate-mirrors; then
   log CACHY "Using cachyos-rate-mirrors wrapper..."
   cachyos-rate-mirrors
 else
   # Manual Fallback Logic
-  rank_repo "cachyos"
-  rank_arch
+  rank_repo "cachyos"; rank_arch
   for r in "${REPOS[@]}"; do 
     [[ $r == cachyos ]] || rank_repo "$r"
   done
 fi
-
 log INFO "Syncing DB..."
-pacman -Syyq --noconfirm &>/dev/null
+sudo pacman -Syyq --noconfirm &>/dev/null
 log DONE "Mirrors updated."

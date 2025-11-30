@@ -29,16 +29,23 @@ backup_gpgconf(){
   find "$BACKUPDIR" -name 'gpg.conf-*.bak' -printf '%T@ %p\n' | sort -rn | tail -n+7 | awk '{print $2}' | xargs -r rm -f
 }
 is_gpgconf_valid(){ grep -qE '^[[:space:]]*keyserver ' "$GPGCONF" 2>/dev/null; }
-
 test_keyserver_latency(){
-  local s=$1 a=${2:-$MIN_ATTEMPTS} u="${s/hkp/http}" t1 t2 ms_sum=0 count=0
-  for n in $(seq 1 "$a"); do
-    t1=$(date +%s%3N)
+  local s=$1 a=${2:-$MIN_ATTEMPTS} u="${s/hkp/http}" t1 t2 ms_sum=0 count=0 start_ts end_ts
+  # Native loop instead of seq
+  for ((n=1; n<=a; n++)); do
+    # Use printf to format float EPOCHREALTIME to 3 decimal places (ms), then strip dot
+    printf -v start_ts "%.3f" "${EPOCHREALTIME}"
+    t1="${start_ts/./}"
+    
     if curl -fso /dev/null -m "$TIMEOUT" --retry 1 --connect-timeout "$TIMEOUT" "$u"; then
-      t2=$(date +%s%3N); ms_sum=$((ms_sum+t2-t1)); count=$((count+1))
+      printf -v end_ts "%.3f" "${EPOCHREALTIME}"
+      t2="${end_ts/./}"
+      
+      ms_sum=$((ms_sum + t2 - t1))
+      count=$((count + 1))
     fi
   done
-  [[ $count -gt 0 ]] && printf '%s %d\n' "$s" "$((ms_sum/count))"
+  [[ $count -gt 0 ]] && printf '%s %d\n' "$s" "$((ms_sum / count))"
 }
 
 rank_keyservers(){
@@ -47,7 +54,8 @@ rank_keyservers(){
   _log "Testing reachability and latency for keyservers..."
   declare -a scores
   for s in "${KEYSERVERS[@]}"; do
-    local line; line=$(test_keyserver_latency "$s" $MAX_ATTEMPTS 2>>"$KEYRANK_LOG") || :
+    local line
+    line=$(test_keyserver_latency "$s" $MAX_ATTEMPTS 2>>"$KEYRANK_LOG") || :
     [[ $line ]] && scores+=("$line")
   done
   if ((${#scores[@]}==0)); then
@@ -57,11 +65,13 @@ rank_keyservers(){
   local best
   best=$(printf "%s\n" "${scores[@]}" | sort -k2,2n | head -n1 | awk '{print $1}')
   [[ $best ]] || { _err "No reachable keyserver after ranking"; return 3; }
-  [[ "$(grep -m1 -E '^[[:space:]]*keyserver ' "$GPGCONF" | awk '{print $2}')" == "$best" ]] && {
-    _log "Keyserver unchanged ($best)"; return 0; }
+  if [[ "$(grep -m1 -E '^[[:space:]]*keyserver ' "$GPGCONF" | awk '{print $2}')" == "$best" ]]; then
+    _log "Keyserver unchanged ($best)"; return 0
+  fi
   _log "Updating gpg.conf: keyserver $best"
   sed -i -E "s|^[[:space:]]*keyserver .*|keyserver $best|" "$GPGCONF" || {
-    _err "sed failed, manual intervention required"; return 5; }
+    _err "sed failed, manual intervention required"; return 5
+  }
   if ! is_gpgconf_valid; then
     cp "$BACKUPDIR/gpg.conf-"*".bak" "$GPGCONF" 2>/dev/null || _err "restore failed"
     _err "Config invalid; restored previous backup"; return 6

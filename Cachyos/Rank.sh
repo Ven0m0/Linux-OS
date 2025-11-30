@@ -165,8 +165,7 @@ rank_reflector(){
   [[ $COUNTRY =~ ^[A-Z]{2}$ ]] && args+=(--country "$COUNTRY")
   sudo reflector "${args[@]}" &>/dev/null || {
     warn "reflector failed, falling back"
-    rank_manual "$file"
-    return
+    rank_manual "$file"; return
   }
   sudo install -m644 -b -S -T "$tmp" "$file"
 }
@@ -186,8 +185,7 @@ rank_keyservers(){
       local t_diff=$((t_end - t_start))
       info "  $url: ${t_diff}ms"
       if ((t_diff < best_time)); then
-        best_time=$t_diff
-        best_url=$url
+        best_time=$t_diff; best_url=$url
       fi
     else
       warn "  $url: unreachable"
@@ -313,17 +311,13 @@ menu(){
     5)
       read -rp "Country code (2-letter): " cc
       COUNTRY=${cc^^}
-      export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY
-      ;;
+      export RATE_MIRRORS_ENTRY_COUNTRY=$COUNTRY ;;
     6) [[ $VERBOSE = yes ]] && VERBOSE=no || VERBOSE=yes ;;
     7) rank_keyservers ;;
     8 | q | Q) break ;;
     *) printf "${R}Invalid choice${Z}\n" ;;
     esac
-    [[ $c =~ ^[1-7]$ ]] && {
-      printf "\n${Y}Press Enter to continue...${Z}"
-      read -rs
-    }
+    [[ $c =~ ^[1-7]$ ]] && { printf "\n${Y}Press Enter to continue...${Z}"; read -rs; }
   done
 }
 

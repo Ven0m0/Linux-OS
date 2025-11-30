@@ -1,81 +1,123 @@
 #!/usr/bin/env bash
 set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t'; export LC_ALL=C LANG=C
+[[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
 
+# Config
 MIRRORDIR="/etc/pacman.d"
 GPGCONF="$MIRRORDIR/gnupg/gpg.conf"
 BACKUPDIR="$MIRRORDIR/.bak"
-KEYRANK_LOG="$BACKUPDIR/keyserver-bench-$(printf '%s' "$EPOCHSECONDS").log"
+LOGFILE="/var/log/mirror-rank.log"
 
+# Country: Auto-detect with 'DE' fallback
+COUNTRY="${RATE_MIRRORS_ENTRY_COUNTRY:-$(curl -sf https://ipapi.co/country_code || echo DE)}"
+[[ $COUNTRY ]] || COUNTRY="DE"
+
+ARCHLIST_URL_GLOBAL="https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
+ARCHLIST_URL_DE="https://archlinux.org/mirrorlist/?country=DE&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
+REPOS=(cachyos chaotic-aur endeavouros alhp)
 KEYSERVERS=(
   "hkp://keyserver.ubuntu.com"
   "hkps://keys.openpgp.org"
   "hkps://pgp.mit.edu"
   "hkp://keys.gnupg.net"
-  "hkps://keyserver.ubuntu.com"
 )
-TIMEOUT=3
-MIN_ATTEMPTS=2
-MAX_ATTEMPTS=5
-_log(){ printf '\e[1;36m[KEYRANK]\e[0m %s\n' "$*" >&2; }
-_warn(){ printf '\e[1;33m[KEYRANK:WARN]\e[0m %s\n' "$*" >&2; }
-_err(){ printf '\e[1;31m[KEYRANK:ERR]\e[0m %s\n' "$*" >&2; }
 
-backup_gpgconf(){
-  [[ -f $GPGCONF ]] || return
+# Colors
+R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m' Z='\033[0m'
+# Helpers
+log(){ printf "${G}[%s]${Z} %s\n" "${1:-INFO}" "${*:2}" | tee -a "$LOGFILE"; }
+warn(){ printf "${Y}[WARN]${Z} %s\n" "$*" >&2; }
+err(){ printf "${R}[ERR]${Z} %s\n" "$*" >&2; }
+
+backup(){
+  [[ -f $1 ]] || return 0
   mkdir -p "$BACKUPDIR"
-  cp -a "$GPGCONF" "$BACKUPDIR/gpg.conf-$(printf '%s' "$EPOCHSECONDS").bak"
-  # keep six recent
-  find "$BACKUPDIR" -name 'gpg.conf-*.bak' -printf '%T@ %p\n' | sort -rn | tail -n+7 | awk '{print $2}' | xargs -r rm -f
+  cp -a "$1" "$BACKUPDIR/${1##*/}-$(printf '%s' "$EPOCHSECONDS").bak"
+  # Keep 5 recent backups
+  find "$BACKUPDIR" -name "${1##*/}-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+6 | awk '{print $2}' | xargs -r rm -f
 }
-is_gpgconf_valid(){ grep -qE '^[[:space:]]*keyserver ' "$GPGCONF" 2>/dev/null; }
-test_keyserver_latency(){
-  local s=$1 a=${2:-$MIN_ATTEMPTS} u="${s/hkp/http}" t1 t2 ms_sum=0 count=0 start_ts end_ts
-  # Native loop instead of seq
-  for ((n=1; n<=a; n++)); do
-    # Use printf to format float EPOCHREALTIME to 3 decimal places (ms), then strip dot
-    printf -v start_ts "%.3f" "${EPOCHREALTIME}"
-    t1="${start_ts/./}"
-    
-    if curl -fso /dev/null -m "$TIMEOUT" --retry 1 --connect-timeout "$TIMEOUT" "$u"; then
-      printf -v end_ts "%.3f" "${EPOCHREALTIME}"
-      t2="${end_ts/./}"
-      
-      ms_sum=$((ms_sum + t2 - t1))
-      count=$((count + 1))
+
+has(){ command -v "$1" &>/dev/null; }
+
+# Actions
+rank_keys(){
+  [[ -f $GPGCONF ]] || return 0
+  log KEY "Ranking keyservers..."
+  backup "$GPGCONF"
+  local best="" min=9999 start_ts end_ts t1 t2
+  for u in "${KEYSERVERS[@]}"; do
+    local test_url="${u/hkp/http}"
+    test_url="${test_url/http:/http:}"
+    # Perf: Native Bash timing
+    printf -v start_ts "%.3f" "${EPOCHREALTIME}"; t1="${start_ts/./}"
+    if curl -sIo /dev/null -m2 "$test_url"; then
+      printf -v end_ts "%.3f" "${EPOCHREALTIME}"; t2="${end_ts/./}"
+      local diff=$((t2 - t1))
+      if ((diff < min)); then min=$diff; best=$u; fi
     fi
   done
-  [[ $count -gt 0 ]] && printf '%s %d\n' "$s" "$((ms_sum / count))"
+  if [[ $best ]]; then
+    log KEY "Best: $best ($min ms)"
+    sed -i "s|^[[:space:]]*keyserver .*|keyserver $best|" "$GPGCONF"
+  else
+    warn "No keyservers reachable."
+  fi
 }
 
-rank_keyservers(){
-  [[ -f $GPGCONF ]] || { _warn "gpg.conf not found, skipping"; return 1; }
-  backup_gpgconf
-  _log "Testing reachability and latency for keyservers..."
-  declare -a scores
-  for s in "${KEYSERVERS[@]}"; do
-    local line
-    line=$(test_keyserver_latency "$s" $MAX_ATTEMPTS 2>>"$KEYRANK_LOG") || :
-    [[ $line ]] && scores+=("$line")
-  done
-  if ((${#scores[@]}==0)); then
-    _warn "All keyservers failed; not updating config."; return 2
+rank_repo(){
+  local name=$1 file="$MIRRORDIR/${1}-mirrorlist"
+  [[ -f $file ]] || return 0
+  log REPO "Ranking $name..."
+  backup "$file"
+  local tmp; tmp=$(mktemp)
+  # Pipe URLs directly to rate-mirrors stdin
+  if grep -oP 'https?://[^ ]+' "$file" | sort -u | rate-mirrors --save="$tmp" --entry-country="$COUNTRY" stdin \
+     --fetch-mirrors-timeout=5000 --path-to-return='$repo/os/$arch' &>/dev/null; then
+     install -m644 "$tmp" "$file"
+  else
+     warn "Failed to rank $name"
   fi
-  printf "%s\n" "${scores[@]}" | sort -k2,2n | tee -a "$KEYRANK_LOG"
-  local best
-  best=$(printf "%s\n" "${scores[@]}" | sort -k2,2n | head -n1 | awk '{print $1}')
-  [[ $best ]] || { _err "No reachable keyserver after ranking"; return 3; }
-  if [[ "$(grep -m1 -E '^[[:space:]]*keyserver ' "$GPGCONF" | awk '{print $2}')" == "$best" ]]; then
-    _log "Keyserver unchanged ($best)"; return 0
-  fi
-  _log "Updating gpg.conf: keyserver $best"
-  sed -i -E "s|^[[:space:]]*keyserver .*|keyserver $best|" "$GPGCONF" || {
-    _err "sed failed, manual intervention required"; return 5
-  }
-  if ! is_gpgconf_valid; then
-    cp "$BACKUPDIR/gpg.conf-"*".bak" "$GPGCONF" 2>/dev/null || _err "restore failed"
-    _err "Config invalid; restored previous backup"; return 6
-  fi
-  _log "Keyserver ranking done. Selected: $best"
+  rm -f "$tmp"
 }
-[[ "${BASH_SOURCE[0]}" == "$0" ]] && rank_keyservers
+
+rank_arch(){
+  local file="$MIRRORDIR/mirrorlist" url="$ARCHLIST_URL_GLOBAL"
+  [[ $COUNTRY == "DE" ]] && url="$ARCHLIST_URL_DE"
+  log ARCH "Fetching latest Arch mirrors ($COUNTRY)..."
+  backup "$file"
+  local tmp; tmp=$(mktemp)
+  if ! curl -sfL "$url" -o "$tmp.mlst"; then
+    warn "Failed to download Arch mirrorlist"
+    rm -f "$tmp" "$tmp.mlst"; return 1
+  fi
+  # Uncomment servers using sed
+  sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" > "$tmp.raw"
+  # Rank
+  if rate-mirrors --save="$tmp" --entry-country="$COUNTRY" --top-mirrors-number-to-retest=5 arch --file "$tmp.raw" &>/dev/null; then
+    install -m644 "$tmp" "$file"
+  else
+    warn "rate-mirrors failed for Arch"
+  fi
+  rm -f "$tmp" "$tmp.mlst" "$tmp.raw"
+}
+
+# Main Execution
+log INFO "Country: $COUNTRY | Tool: rate-mirrors"
+rank_keys || :
+
+if has cachyos-rate-mirrors; then
+  log CACHY "Using cachyos-rate-mirrors wrapper..."
+  cachyos-rate-mirrors
+else
+  # Manual Fallback Logic
+  rank_repo "cachyos"
+  rank_arch
+  for r in "${REPOS[@]}"; do 
+    [[ $r == cachyos ]] || rank_repo "$r"
+  done
+fi
+
+log INFO "Syncing DB..."
+pacman -Syyq --noconfirm &>/dev/null
+log DONE "Mirrors updated."

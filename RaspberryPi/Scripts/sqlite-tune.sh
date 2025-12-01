@@ -16,7 +16,7 @@ hasname(){
   printf '%s
 ' "${x##*/}"
 }
-has(){ command -v "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 wdir(){
   local script="${BASH_SOURCE[1]:-$0}"
   builtin cd -- "${script%/*}" && printf '%s\n' "$PWD"

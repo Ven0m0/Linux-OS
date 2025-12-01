@@ -89,11 +89,11 @@ find_mtu_binary(){
   fi
   echo "Testing MTU to $srv (IPv$ipver) via binary search..."
   "$ping_cmd" -c1 -W1 "$srv" &>/dev/null || die "Server $srv unreachable"
-  "$ping_cmd" -M do -s$((lo - overhead)) -c1 "$srv" &>/dev/null || die "Min MTU $lo not viable"
+  "$ping_cmd" -M 'do' -s$((lo - overhead)) -c1 "$srv" &>/dev/null || die "Min MTU $lo not viable"
   opt=$lo
   while ((lo <= hi)); do
     mid=$(((lo + hi) / 2))
-    if "$ping_cmd" -M do -s$((mid - overhead)) -c1 "$srv" &>/dev/null; then
+    if "$ping_cmd" -M 'do' -s$((mid - overhead)) -c1 "$srv" &>/dev/null; then
       opt="$mid"; lo=$((mid + 1))
     else
       hi=$((mid - 1))
@@ -118,12 +118,12 @@ find_mtu_incremental(){
   current="$min_mtu"; last_ok="$min_mtu"
   while ((current <= max_mtu)); do
     printf "Testing MTU: %d...  " "$current"
-    if "$ping_cmd" -M do -s$((current - overhead)) -c1 -W1 "$srv" &>/dev/null; then
+    if "$ping_cmd" -M 'do' -s$((current - overhead)) -c1 -W1 "$srv" &>/dev/null; then
       echo "OK"; last_ok="$current"
     else
       echo "FAIL - retrying..."
       read -rt 0.5 -- <> <(:) &>/dev/null || :
-      if "$ping_cmd" -M do -s$((current - overhead)) -c1 -W1 "$srv" &>/dev/null; then
+      if "$ping_cmd" -M 'do' -s$((current - overhead)) -c1 -W1 "$srv" &>/dev/null; then
         echo "  Retry OK"; last_ok="$current"
       else
         echo "  Retry FAIL - stopping"; break

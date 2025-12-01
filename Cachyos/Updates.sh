@@ -13,7 +13,7 @@ DEF=$'\e[0m'
 
 export HOME="/home/${SUDO_USER:-$USER}"
 
-has(){ command -v "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 
 log(){ printf '%b\n' "$*"; }
 

@@ -7,7 +7,7 @@ export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 #──────────── Helpers ────────────
-has(){ command -v "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
 die(){

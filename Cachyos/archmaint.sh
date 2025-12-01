@@ -24,7 +24,7 @@ export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Core Helper Functions ============
 # Check if command exists
-has(){ command -v "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 
 # Echo with formatting support
 xecho(){ printf '%b\n' "$*"; }

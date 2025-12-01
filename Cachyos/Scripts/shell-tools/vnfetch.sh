@@ -28,7 +28,10 @@ seconds=${rawSeconds%.*} uptime=""
 ((minutes = seconds % 3600 / 60)) && uptime+="$minutes m"
 UPT=${uptime:-$(uptime -p)}
 # Processes
-PROCS=$(find /proc -maxdepth 1 -type d -name '[0-9]*' 2>/dev/null | wc -l)
+shopt -s nullglob
+PROCS=(/proc/[0-9]*)
+PROCS=${#PROCS[@]}
+shopt -u nullglob
 # Packages
 PKG= PKG2= PKG3=
 if command -v pacman &>/dev/null; then

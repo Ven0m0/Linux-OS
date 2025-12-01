@@ -15,13 +15,13 @@ lazyfile(){
 
 autoload_parse(){
   local src=$1 funcs
-  if command -v rg >/dev/null 2>&1; then
+  if command -v rg &>/dev/null; then
     funcs=$(rg -n --no-heading '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*\s*\(\)' "$src")
   else
     funcs=$(grep -Eo '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*\s*\(\)' "$src")
   fi
 
-  if command -v sd >/dev/null 2>&1; then
+  if command -v sd &>/dev/null; then
     funcs=$(printf '%s\n' "$funcs" | sd '^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\).*' '$1')
   else
     funcs=$(printf '%s\n' "$funcs" | sed -E 's/^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\).*/\1/')

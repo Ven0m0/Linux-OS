@@ -63,7 +63,7 @@ clean_trash(){
 }
 # Clean crash dumps and core dumps
 clean_crash_dumps(){
-  if command -v coredumpctl >/dev/null 2>&1; then
+  if command -v coredumpctl &>/dev/null; then
     sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
   fi
   sudo rm -rf /var/crash/* 2>/dev/null || :

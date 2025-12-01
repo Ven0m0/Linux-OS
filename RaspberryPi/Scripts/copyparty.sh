@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-21 - Applied bash optimization techniques
 # Source shared libraries
-SCRIPT_DIR="$(cd "${"${BASH_SOURCE[0]}"%/*}" && pwd)"
+SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 
 # Setup environment
 set -euo pipefail

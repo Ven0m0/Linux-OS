@@ -8,7 +8,7 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 
 # Initialize working directory
-WORKDIR="$(cd "${"${BASH_SOURCE[0]}"%/*}" && pwd)"
+WORKDIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 cd "$WORKDIR" || {
   echo "Failed to change to working directory: $WORKDIR" >&2
   exit 1

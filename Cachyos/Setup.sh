@@ -7,10 +7,10 @@ export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 #──────────── Helpers ────────────
-has(){ command -v "$1" &>/dev/null; }
-msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
-warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
-die(){
+has() { command -v "$1" &>/dev/null; }
+msg() { printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
+warn() { printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
+die() {
   printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2
   exit "${2:-1}"
 }
@@ -33,15 +33,15 @@ unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
 #══════════════════════════════════════════════════════════════
 #  REPOSITORY CONFIGURATION
 #══════════════════════════════════════════════════════════════
-setup_repositories(){
+setup_repositories() {
   local -r conf=/etc/pacman.conf
   local -r chaotic_key=3056513887B78AEB
   local -a chaotic_urls=(
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   )
-  has_repo(){ grep -qF -- "$1" "$conf"; }
-  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
+  has_repo() { grep -qF -- "$1" "$conf"; }
+  add_block() { printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
@@ -116,12 +116,12 @@ Include = /etc/pacman.d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 #  SYSTEM INITIALIZATION
 #══════════════════════════════════════════════════════════════
-init_system(){
+init_system() {
   msg "Initializing system"
   localectl set-locale C.UTF-8 >/dev/null
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
   [[ -d ~/.gnupg ]] && chmod -R 700 ~/.gnupg
-  ssh-keyscan -H aur.archlinux.org github.com >> ~/.ssh/known_hosts 2>/dev/null || :
+  ssh-keyscan -H aur.archlinux.org github.com >>~/.ssh/known_hosts 2>/dev/null || :
   [[ -f /etc/doas.conf ]] && {
     sudo chown root:root /etc/doas.conf
     sudo chmod 0400 /etc/doas.conf
@@ -139,7 +139,7 @@ init_system(){
 #══════════════════════════════════════════════════════════════
 #  PACKAGE INSTALLATION
 #══════════════════════════════════════════════════════════════
-install_packages(){
+install_packages() {
   local -a pkgs=(
     git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
     paru polly optipng svgo graphicsmagick yadm mise micro hyfetch polkit-kde-agent
@@ -177,7 +177,7 @@ install_packages(){
       local fail="${HOME}/failed_pkgs.txt"
       msg "Batch install failed → $fail"
       for p in "${missing[@]}"; do
-        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p" >> "$fail"
+        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p" >>"$fail"
       done
     }
   else
@@ -188,7 +188,7 @@ install_packages(){
 #══════════════════════════════════════════════════════════════
 #  FLATPAK
 #══════════════════════════════════════════════════════════════
-setup_flatpak(){
+setup_flatpak() {
   has flatpak || return 0
   msg "Configuring Flatpak"
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo &>/dev/null || :
@@ -200,7 +200,7 @@ setup_flatpak(){
 #══════════════════════════════════════════════════════════════
 #  RUST TOOLCHAIN
 #══════════════════════════════════════════════════════════════
-setup_rust(){
+setup_rust() {
   if ! has rustup; then
     msg "Installing Rust"
     bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs)" -- -y --profile minimal -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
@@ -222,7 +222,7 @@ setup_rust(){
 #══════════════════════════════════════════════════════════════
 #  EDITOR & SHELL TOOLS
 #══════════════════════════════════════════════════════════════
-setup_tools(){
+setup_tools() {
   # Micro editor
   if has micro; then
     msg "Configuring micro"
@@ -268,7 +268,7 @@ setup_tools(){
 #══════════════════════════════════════════════════════════════
 #  SHELL INTEGRATION
 #══════════════════════════════════════════════════════════════
-setup_shells(){
+setup_shells() {
   # Fish
   if has fish; then
     msg "Configuring Fish shell"
@@ -287,7 +287,7 @@ setup_shells(){
   # Zsh
   if has zsh; then
     msg "Configuring Zsh"
-    [[ -f "$HOME/.zshenv" ]] || echo 'export ZDOTDIR="$HOME/.config/zsh"' > "$HOME/.zshenv"
+    [[ -f "$HOME/.zshenv" ]] || echo 'export ZDOTDIR="$HOME/.config/zsh"' >"$HOME/.zshenv"
     mkdir -p "$HOME/.config/zsh"
     [[ -d "$HOME/.local/share/antidote" ]] \
       || git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "$HOME/.local/share/antidote" 2>/dev/null &
@@ -297,7 +297,7 @@ setup_shells(){
 #══════════════════════════════════════════════════════════════
 #  SYSTEM SERVICES
 #══════════════════════════════════════════════════════════════
-enable_services(){
+enable_services() {
   msg "Enabling services"
   local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency)
   for sv in "${svcs[@]}"; do
@@ -313,7 +313,7 @@ configure_auth_limits() {
   # Increase login lockout to 10 attempts, 2min timeout
   sudo sed -i 's|^\(auth\s\+required\s\+pam_faillock.so\)\s\+preauth.*$|\1 preauth silent deny=10 unlock_time=120|' /etc/pam.d/system-auth
   sudo sed -i 's|^\(auth\s\+\[default=die\]\s\+pam_faillock.so\)\s\+authfail.*$|\1 authfail deny=10 unlock_time=120|' /etc/pam.d/system-auth
-  
+
   # Increase sudo password retries to 10
   echo "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries >/dev/null
   sudo chmod 440 /etc/sudoers.d/passwd-tries
@@ -322,23 +322,23 @@ configure_auth_limits() {
 setup_nvidia() {
   msg "Checking NVIDIA configuration"
   lspci | grep -qi 'nvidia' || return 0
-  
+
   # Select driver: open-source for RTX 20xx+ / GTX 16xx+
   local driver="nvidia-dkms"
   lspci | grep -i 'nvidia' | grep -qE "RTX [2-9][0-9]|GTX 16" && driver="nvidia-open-dkms"
-  
+
   # Detect kernel headers
   local headers="linux-headers"
   pacman -Q linux-zen &>/dev/null && headers="linux-zen-headers"
   pacman -Q linux-lts &>/dev/null && headers="linux-lts-headers"
   pacman -Q linux-hardened &>/dev/null && headers="linux-hardened-headers"
-  
+
   sudo pacman -Syu --noconfirm
   sudo pacman -S --needed --noconfirm "$headers" "$driver" nvidia-utils lib32-nvidia-utils egl-wayland libva-nvidia-driver qt5-wayland qt6-wayland
-  
+
   # Early KMS
   echo "options nvidia_drm modeset=1" | sudo tee /etc/modprobe.d/nvidia.conf >/dev/null
-  
+
   # mkinitcpio: remove old nvidia modules, add fresh
   local conf=/etc/mkinitcpio.conf
   sudo cp "$conf" "${conf}.backup"
@@ -346,7 +346,7 @@ setup_nvidia() {
   sudo sed -i -E 's/^(MODULES=\()/\1nvidia nvidia_modeset nvidia_uvm nvidia_drm /' "$conf"
   sudo sed -i -E 's/  +/ /g' "$conf"
   # Rebuild happens in maintenance step
-  
+
   # Hyprland env vars
   [[ -f "$HOME/.config/hypr/hyprland.conf" ]] && cat >>"$HOME/.config/hypr/hyprland.conf" <<'EOF'
 
@@ -360,15 +360,15 @@ EOF
 setup_printers() {
   msg "Configuring printers"
   sudo systemctl enable --now cups.service
-  
+
   # Disable systemd-resolved mDNS; use avahi
   sudo mkdir -p /etc/systemd/resolved.conf.d
   echo -e "[Resolve]\nMulticastDNS=no" | sudo tee /etc/systemd/resolved.conf.d/10-disable-multicast.conf >/dev/null
   sudo systemctl enable --now avahi-daemon.service
-  
+
   # Enable mDNS in nsswitch
   sudo sed -i 's/^hosts:.*/hosts: mymachines mdns_minimal [NOTFOUND=return] resolve files myhostname dns/' /etc/nsswitch.conf
-  
+
   # Auto-add remote printers
   grep -q '^CreateRemotePrinters Yes' /etc/cups/cups-browsed.conf 2>/dev/null || echo 'CreateRemotePrinters Yes' | sudo tee -a /etc/cups/cups-browsed.conf >/dev/null
   sudo systemctl enable --now cups-browsed.service
@@ -377,18 +377,18 @@ setup_printers() {
 set_wireless_regdom() {
   msg "Setting wireless regdom"
   [[ -f /etc/conf.d/wireless-regdom ]] && . /etc/conf.d/wireless-regdom
-  [[ -n "${WIRELESS_REGDOM:-}" ]] && return 0
-  
+  [[ -n ${WIRELESS_REGDOM:-} ]] && return 0
+
   [[ -e /etc/localtime ]] || return 0
   local tz country
   tz=$(readlink -f /etc/localtime)
   tz=${tz#/usr/share/zoneinfo/}
   country="${tz%%/*}"
-  
+
   # Extract country from zone.tab if not 2-letter code
-  [[ ! "$country" =~ ^[A-Z]{2}$ && -f /usr/share/zoneinfo/zone.tab ]] && country=$(awk -v tz="$tz" '$3 == tz {print $1; exit}' /usr/share/zoneinfo/zone.tab)
-  
-  [[ "$country" =~ ^[A-Z]{2}$ ]] || return 0
+  [[ ! $country =~ ^[A-Z]{2}$ && -f /usr/share/zoneinfo/zone.tab ]] && country=$(awk -v tz="$tz" '$3 == tz {print $1; exit}' /usr/share/zoneinfo/zone.tab)
+
+  [[ $country =~ ^[A-Z]{2}$ ]] || return 0
   echo "WIRELESS_REGDOM=\"$country\"" | sudo tee -a /etc/conf.d/wireless-regdom >/dev/null
   command -v iw &>/dev/null && sudo iw reg set "$country" || :
 }
@@ -396,7 +396,7 @@ set_wireless_regdom() {
 #══════════════════════════════════════════════════════════════
 #  SYSTEM MAINTENANCE
 #══════════════════════════════════════════════════════════════
-maintenance(){
+maintenance() {
   msg "Running maintenance"
   has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry 2>/dev/null || :
   has fc-cache && sudo fc-cache -f || :
@@ -425,7 +425,7 @@ maintenance(){
 #══════════════════════════════════════════════════════════════
 #  AUTO SETUP TWEAKS
 #══════════════════════════════════════════════════════════════
-auto_setup_tweaks(){
+auto_setup_tweaks() {
   msg "Applying AutoSetup system tweaks"
 
   # Filesystem optimizations
@@ -509,20 +509,20 @@ auto_setup_tweaks(){
     balooctl6 purge &>/dev/null || :
   fi
   sudo systemctl disable --now plasma-baloorunner &>/dev/null || :
-  
+
   # Indexing barriers
-  for dir in "$HOME" "$HOME"/*/; do 
+  for dir in "$HOME" "$HOME"/*/; do
     [[ -d $dir ]] && touch "$dir/.metadata_never_index" "$dir/.noindex" "$dir/.nomedia" "$dir/.trackerignore" 2>/dev/null || :
   done
 
   # Write cache & Services
   msg "Enable write cache & Disable logs/services"
   echo "write back" | sudo tee /sys/block/*/queue/write_cache &>/dev/null || :
-  
+
   sudo systemctl mask systemd-update-utmp{,-runlevel,-shutdown}.service systemd-journal-{flush,catalog-update}.service systemd-journald-{dev-log,audit}.socket &>/dev/null || :
   sudo systemctl disable --global speech-dispatcher smartmontools systemd-rfkill.{service,socket} &>/dev/null || :
   sudo systemctl disable speech-dispatcher smartmontools systemd-rfkill.{service,socket} &>/dev/null || :
-  
+
   # Dbus-broker
   if systemctl list-unit-files dbus-broker.service &>/dev/null; then
     msg "Enable dbus-broker"
@@ -538,7 +538,7 @@ auto_setup_tweaks(){
   sudo systemctl disable --now systemd-networkd-wait-online.service &>/dev/null || :
 
   echo "options drm_kms_helper poll=0" | sudo tee /etc/modprobe.d/disable-gpu-polling.conf >/dev/null
-  
+
   # Preload & Pacman config
   [[ -f /etc/preload.conf ]] && sudo sed -i 's/sortstrategy =.*/sortstrategy = 0/' /etc/preload.conf
   [[ -f /etc/pacman.conf ]] && sudo sed -i -e s'/\#LogFile.*/LogFile = /'g /etc/pacman.conf
@@ -555,9 +555,9 @@ auto_setup_tweaks(){
   sudo find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en_GB' -type d -exec rm -rf {} + 2>/dev/null || :
   sudo rm -rf /usr/share/groff /usr/share/info /usr/share/lintian /usr/share/linda /usr/share/man /var/cache/man &>/dev/null || :
   if ((aur)); then
-     paru -Rcc --noconfirm man-pages &>/dev/null || :
+    paru -Rcc --noconfirm man-pages &>/dev/null || :
   else
-     sudo pacman -Rcc --noconfirm man-pages &>/dev/null || :
+    sudo pacman -Rcc --noconfirm man-pages &>/dev/null || :
   fi
 
   # Flatpak fixup
@@ -579,10 +579,10 @@ auto_setup_tweaks(){
   msg "Clean logs & disable crashes"
   sudo rm -rf /var/crash/*
   sudo journalctl --rotate --vacuum-time=0.1 &>/dev/null || :
-  
+
   [[ -f /etc/systemd/journald.conf ]] && sudo sed -i -e 's/^#ForwardTo\(Syslog\|KMsg\|Console\|Wall\)=.*/ForwardTo\1=no/' -e 's/^#Compress=yes/Compress=yes/' /etc/systemd/journald.conf
   [[ -f /etc/logrotate.conf ]] && sudo sed -i -e 's/^#compress/compress/' /etc/logrotate.conf
-  
+
   echo "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf >/dev/null
   sudo sed -i -e 's/^#\(DumpCore\|CrashShell\)=.*/\1=no/' /etc/systemd/{system,user}.conf 2>/dev/null || :
 
@@ -606,12 +606,12 @@ EOF
 
   # VSCode Privacy
   msg "Configure VSCode privacy"
-  _vscode_json_set(){
+  _vscode_json_set() {
     local prop=$1 val=$2
     has python3 || return 0
     python3 -c "from pathlib import Path;import os,json;p='$prop';t=json.loads('$val');h=f'/home/{os.getenv(\"SUDO_USER\",os.getenv(\"USER\"))}';[Path(f).write_text(json.dumps({**json.loads(c if(c:=Path(f).read_text()).strip()else'{}'),p:t},indent=2))for f in[f'{h}/.config/{e}/User/settings.json'for e in['Code','VSCodium','Void']]+[f'{h}/.var/app/com.visualstudio.code/config/Code/User/settings.json']if Path(f).is_file()and(c:=Path(f).read_text())and p not in(o:=json.loads(c if c.strip()else'{}'))or o.get(p)!=t]" 2>/dev/null || :
   }
-  
+
   for setting in \
     'telemetry.telemetryLevel:"off"' \
     'telemetry.enableTelemetry:false' \
@@ -631,7 +631,7 @@ EOF
     'extensions.autoUpdate:false' \
     'extensions.autoCheckUpdates:false' \
     'extensions.showRecommendationsOnlyOnDemand:true'; do
-    IFS=: read -r key val <<< "$setting"
+    IFS=: read -r key val <<<"$setting"
     _vscode_json_set "$key" "$val"
   done
 }
@@ -639,7 +639,7 @@ EOF
 #══════════════════════════════════════════════════════════════
 #  CLEANUP
 #══════════════════════════════════════════════════════════════
-cleanup(){
+cleanup() {
   msg "Cleaning up"
   local orphans
   orphans=$(pacman -Qdtq 2>/dev/null) && sudo pacman -Rns --noconfirm "$orphans" 2>/dev/null || :
@@ -652,7 +652,7 @@ cleanup(){
 #══════════════════════════════════════════════════════════════
 #  MAIN EXECUTION
 #══════════════════════════════════════════════════════════════
-main(){
+main() {
   setup_repositories
   init_system
   install_packages

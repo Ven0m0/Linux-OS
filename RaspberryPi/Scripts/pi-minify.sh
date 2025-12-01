@@ -14,11 +14,11 @@ LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
 # Helpers
-has(){ command -v -- "$1" &>/dev/null; }
-log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
-warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
-err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
-die(){
+has() { command -v -- "$1" &>/dev/null; }
+log() { printf '%b\n' "${GRN}▶${DEF} $*"; }
+warn() { printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
+err() { printf '%b\n' "${RED}✗${DEF} $*" >&2; }
+die() {
   err "$1"
   exit "${2:-1}"
 }
@@ -27,10 +27,10 @@ die(){
 
 # Config
 declare -A cfg=([dry_run]=0 [interactive]=1 [aggressive]=0 [disk_before]=0 [disk_after]=0)
-run(){ ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
+run() { ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
 
 # Disk usage tracking
-track_disk(){
+track_disk() {
   local label=$1
   local usage
   usage=$(df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}')
@@ -39,7 +39,7 @@ track_disk(){
 }
 
 # Interactive prompt
-ask(){
+ask() {
   ((cfg[interactive] == 0)) && return 0
   local prompt=$1 default=${2:-n}
   local reply
@@ -48,7 +48,7 @@ ask(){
   [[ $reply =~ ^[Yy] ]]
 }
 
-usage(){
+usage() {
   cat <<'EOF'
 pi-minify.sh - Raspberry Pi system minimization, cleanup & privacy hardening
 
@@ -77,7 +77,7 @@ CAUTION: Aggressive mode removes X11, -dev packages, and non-current kernels
 EOF
 }
 
-parse_args(){
+parse_args() {
   while (($#)); do
     case "$1" in
     -y | --yes) cfg[interactive]=0 ;;
@@ -104,7 +104,7 @@ parse_args(){
 # ────────────────────────────────────────────────────────────
 # dpkg & Documentation
 # ────────────────────────────────────────────────────────────
-configure_dpkg_nodoc(){
+configure_dpkg_nodoc() {
   log "Configuring dpkg to exclude docs/man/locales"
 
   sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null <<'EOF'
@@ -119,7 +119,7 @@ path-include /usr/share/doc/*/copyright
 EOF
 }
 
-purge_docs(){
+purge_docs() {
   log "Purging documentation, man pages, locales (keep en_GB)"
 
   run find /usr/share/doc/ -depth -type f ! -name copyright -delete 2>/dev/null || :
@@ -137,7 +137,7 @@ purge_docs(){
 # ────────────────────────────────────────────────────────────
 # Package Cleanup
 # ────────────────────────────────────────────────────────────
-purge_packages(){
+purge_packages() {
   log "Removing doc packages, localepurge install"
 
   # localepurge for future locale cleaning
@@ -170,7 +170,7 @@ purge_packages(){
   ((${#orphaned[@]} > 0)) && sudo apt-get purge -y "${orphaned[@]}" || :
 }
 
-purge_aggressive(){
+purge_aggressive() {
   ((cfg[aggressive] == 0)) && return 0
 
   warn "Aggressive mode: removing X11, dev packages, extras"
@@ -188,7 +188,7 @@ purge_aggressive(){
     wireless-tools wpasupplicant libraspberrypi-doc snapd 'cups*' 2>/dev/null || :
 }
 
-cleanup_apt(){
+cleanup_apt() {
   log "APT cleanup: cache, orphans, deborphan"
 
   has deborphan || sudo apt-get install -y deborphan
@@ -207,7 +207,7 @@ cleanup_apt(){
 # ────────────────────────────────────────────────────────────
 # Cache & Temp Cleanup
 # ────────────────────────────────────────────────────────────
-clean_caches(){
+clean_caches() {
   log "Cleaning caches, temp files, history"
 
   # System caches
@@ -238,7 +238,7 @@ clean_caches(){
 # ────────────────────────────────────────────────────────────
 # Privacy & Security Hardening
 # ────────────────────────────────────────────────────────────
-clean_crash_dumps(){
+clean_crash_dumps() {
   log "Cleaning crash dumps and core dumps"
 
   if has coredumpctl; then
@@ -248,7 +248,7 @@ clean_crash_dumps(){
   sudo rm -rf /var/lib/systemd/coredump/* 2>/dev/null || :
 }
 
-clean_system_logs(){
+clean_system_logs() {
   log "Clearing system logs (journald)"
 
   if has journalctl; then
@@ -258,7 +258,7 @@ clean_system_logs(){
   sudo rm -rf /var/log/journal/* 2>/dev/null || :
 }
 
-disable_python_history(){
+disable_python_history() {
   log "Disabling Python history permanently"
 
   local history_file="$HOME/.python_history"
@@ -268,7 +268,7 @@ disable_python_history(){
   sudo chattr +i "$(realpath "$history_file")" 2>/dev/null || :
 }
 
-remove_popcon(){
+remove_popcon() {
   log "Removing Popularity Contest (popcon)"
 
   # Disable participation
@@ -293,7 +293,7 @@ remove_popcon(){
   fi
 }
 
-remove_reportbug(){
+remove_reportbug() {
   log "Removing reportbug packages"
 
   if ! has apt-get; then
@@ -309,7 +309,7 @@ remove_reportbug(){
   done
 }
 
-clean_privacy_data(){
+clean_privacy_data() {
   log "Cleaning privacy-sensitive data"
 
   # Zeitgeist activity logs
@@ -340,7 +340,7 @@ clean_privacy_data(){
 # ────────────────────────────────────────────────────────────
 # ZRAM Setup
 # ────────────────────────────────────────────────────────────
-disable_swap(){
+disable_swap() {
   log "Disabling SWAP partition"
 
   has dphys-swapfile && {
@@ -351,10 +351,10 @@ disable_swap(){
   sudo swapoff -a
 }
 
-enable_zram(){
+enable_zram() {
   log "Enabling ZRAM (compressed swap in RAM)"
 
-  sudo tee /usr/local/bin/zram-init >/dev/null << 'ZRAMSCRIPT'
+  sudo tee /usr/local/bin/zram-init >/dev/null <<'ZRAMSCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -401,19 +401,19 @@ EOF
 # ────────────────────────────────────────────────────────────
 # System Tweaks
 # ────────────────────────────────────────────────────────────
-optimize_fstab(){
+optimize_fstab() {
   log "Optimizing fstab: noatime, nodiratime"
 
   sudo sed -i 's/\(defaults\)/\1,noatime,nodiratime/' /etc/fstab
 }
 
-optimize_systemd(){
+optimize_systemd() {
   log "Reducing systemd stop timeout: 90s→5s"
 
   sudo sed -i 's/#DefaultTimeoutStopSec=90s/DefaultTimeoutStopSec=5s/' /etc/systemd/system.conf
 }
 
-disable_extra_ttys(){
+disable_extra_ttys() {
   [[ ! -f /etc/inittab ]] && return 0
 
   log "Disabling extra TTYs (2-6) for RAM savings"
@@ -423,7 +423,7 @@ disable_extra_ttys(){
 # ────────────────────────────────────────────────────────────
 # Main Orchestration
 # ────────────────────────────────────────────────────────────
-main(){
+main() {
   parse_args "$@"
 
   log "${BLD}Raspberry Pi System Minification & Privacy Hardening${DEF}"

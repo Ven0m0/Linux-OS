@@ -18,7 +18,7 @@ banner=$(
 EOF
 )
 # Split banner into array
-mapfile -t banner_lines <<< "$banner"
+mapfile -t banner_lines <<<"$banner"
 lines=${#banner_lines[@]}
 # Trans flag gradient sequence (top→bottom) using 256 colors for accuracy
 flag_colors=(

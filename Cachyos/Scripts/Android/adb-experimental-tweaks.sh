@@ -5,7 +5,7 @@ LC_ALL=C LANG=C
 # WARNING: These tweaks are extremely aggressive and may cause instability.
 # For a safer, optimized subset, use: ./android-optimize.sh experimental
 
-start(){
+start() {
   echo "Starting aggressive cleanup (on-device)..."
   # Run loops directly on device to avoid ADB latency overhead (1 call vs 1000+)
   adb shell '
@@ -16,7 +16,7 @@ start(){
   '
 }
 
-tweaks(){
+tweaks() {
   echo -e "Applying Tweaks ..."
 
   # Batch all adb shell commands for massive performance improvement

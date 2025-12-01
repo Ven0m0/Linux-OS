@@ -8,7 +8,7 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 
 # Initialize working directory
-WORKDIR="$(cd "${"${BASH_SOURCE[0]}"%/*}" && pwd)"
+WORKDIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 cd "$WORKDIR" || {
   echo "Failed to change to working directory: $WORKDIR" >&2
   exit 1
@@ -63,7 +63,7 @@ clean_trash(){
 }
 # Clean crash dumps and core dumps
 clean_crash_dumps(){
-  if command -v coredumpctl >/dev/null 2>&1; then
+  if command -v coredumpctl &>/dev/null; then
     sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
   fi
   sudo rm -rf /var/crash/* 2>/dev/null || :

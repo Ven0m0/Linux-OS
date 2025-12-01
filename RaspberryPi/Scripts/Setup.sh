@@ -15,11 +15,11 @@ LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
 # Core helpers
-has(){ command -v -- "$1" &>/dev/null; }
-log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
-warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
-err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
-die(){
+has() { command -v -- "$1" &>/dev/null; }
+log() { printf '%b\n' "${GRN}▶${DEF} $*"; }
+warn() { printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
+err() { printf '%b\n' "${RED}✗${DEF} $*" >&2; }
+die() {
   err "$1"
   exit "${2:-1}"
 }
@@ -28,18 +28,18 @@ die(){
 
 # Config flags
 declare -A cfg=([dry_run]=0 [skip_external]=0 [minimal]=0 [quiet]=0)
-run(){ ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
+run() { ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
 
 # Safe cleanup workspace
 WORKDIR=$(mktemp -d)
-cleanup(){
+cleanup() {
   set +e
   [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
 }
 trap cleanup EXIT
 trap 'err "failed at line $LINENO"' ERR
 
-usage(){
+usage() {
   cat <<'EOF'
 pi-setup.sh - Raspberry Pi optimization & tooling automation
 
@@ -61,7 +61,7 @@ Performs:
 EOF
 }
 
-parse_args(){
+parse_args() {
   while (($#)); do
     case "$1" in
     -d | --dry-run) cfg[dry_run]=1 ;;
@@ -92,7 +92,7 @@ parse_args(){
 # ────────────────────────────────────────────────────────────
 # APT Configuration
 # ────────────────────────────────────────────────────────────
-configure_apt(){
+configure_apt() {
   log "Configuring APT for performance & reliability"
 
   sudo tee /etc/apt/apt.conf.d/99parallel >/dev/null <<'EOF'
@@ -134,7 +134,7 @@ EOF
 # ────────────────────────────────────────────────────────────
 # Documentation Cleanup
 # ────────────────────────────────────────────────────────────
-configure_dpkg_nodoc(){
+configure_dpkg_nodoc() {
   log "Configuring dpkg to exclude documentation"
 
   sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null <<'EOF'
@@ -149,7 +149,7 @@ path-include /usr/share/doc/*/copyright
 EOF
 }
 
-clean_docs(){
+clean_docs() {
   log "Removing existing documentation files"
 
   run find /usr/share/doc/ -depth -type f ! -name copyright -delete 2>/dev/null || :
@@ -167,7 +167,7 @@ clean_docs(){
 # ────────────────────────────────────────────────────────────
 # System Optimization
 # ────────────────────────────────────────────────────────────
-optimize_system(){
+optimize_system() {
   log "Applying system-level optimizations"
 
   # Disable unnecessary services
@@ -198,10 +198,10 @@ EOF
 
   # I/O scheduler tuning
   for dev in /sys/block/sd*[!0-9]/queue/iosched/fifo_batch; do
-    [[ -f $dev ]] && sudo tee "$dev" >/dev/null <<< 32 || :
+    [[ -f $dev ]] && sudo tee "$dev" >/dev/null <<<32 || :
   done
   for dev in /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch; do
-    [[ -f $dev ]] && sudo tee "$dev" >/dev/null <<< 32 || :
+    [[ -f $dev ]] && sudo tee "$dev" >/dev/null <<<32 || :
   done
 
   # Filesystem optimizations
@@ -265,7 +265,7 @@ EOF
 # ────────────────────────────────────────────────────────────
 # SSH Configuration
 # ────────────────────────────────────────────────────────────
-configure_ssh(){
+configure_ssh() {
   log "Configuring SSH/Dropbear"
 
   [[ -f /etc/default/dropbear ]] && {
@@ -281,7 +281,7 @@ configure_ssh(){
 # ────────────────────────────────────────────────────────────
 # Modern Tooling Installation
 # ────────────────────────────────────────────────────────────
-install_core_tools(){
+install_core_tools() {
   log "Installing core modern CLI tools"
 
   local tools=(
@@ -300,7 +300,7 @@ install_core_tools(){
   }
 }
 
-install_extended_tools(){
+install_extended_tools() {
   ((cfg[minimal])) && return 0
 
   log "Installing extended tooling suite"
@@ -326,7 +326,7 @@ install_extended_tools(){
 # ────────────────────────────────────────────────────────────
 # External Package Managers
 # ────────────────────────────────────────────────────────────
-install_package_managers(){
+install_package_managers() {
   ((cfg[minimal] || cfg[skip_external])) && return 0
   log "Installing alternative package managers"
   # apt-fast
@@ -362,7 +362,7 @@ install_package_managers(){
 # ────────────────────────────────────────────────────────────
 # External Installers (Pi-hole, PiKISS, PiApps)
 # ────────────────────────────────────────────────────────────
-install_external(){
+install_external() {
   ((cfg[skip_external])) && return 0
 
   log "Running external installers (interactive)"
@@ -387,7 +387,7 @@ install_external(){
 # ────────────────────────────────────────────────────────────
 # Main Execution
 # ────────────────────────────────────────────────────────────
-main(){
+main() {
   parse_args "$@"
   log "${BLD}Raspberry Pi Setup & Optimization${DEF}"
   log "Mode: $([[ ${cfg[dry_run]} -eq 1 ]] && echo 'DRY-RUN' || echo 'LIVE')"

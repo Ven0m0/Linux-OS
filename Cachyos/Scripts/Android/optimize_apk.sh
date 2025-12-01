@@ -25,14 +25,17 @@ SEVENZIP="7z"
 
 # Check tools
 for tool in "$APKTOOL" "$ZIPALIGN" "$APKSIGNER" "$SEVENZIP"; do
-  command -v "$tool" &>/dev/null || { echo "Error: $tool not found"; exit 1; }
+  command -v "$tool" &>/dev/null || {
+    echo "Error: $tool not found"
+    exit 1
+  }
 done
 
 # Input/Output
 INPUT_APK="${1:-}"
 OUTPUT_APK="${2:-}"
 
-if [[ -z "$INPUT_APK" || -z "$OUTPUT_APK" ]]; then
+if [[ -z $INPUT_APK || -z $OUTPUT_APK ]]; then
   echo "Usage: $0 input.apk output.apk"
   exit 1
 fi
@@ -62,11 +65,11 @@ else
 fi
 
 echo "[5/10] Converting DEX to JAR for ProGuard/R8..."
-if command -v "$DEX2JAR" &>/dev/null && [[ -f "$PROGUARD_JAR" ]]; then
+if command -v "$DEX2JAR" &>/dev/null && [[ -f $PROGUARD_JAR ]]; then
   "$DEX2JAR" "$WORKDIR/redexed.apk" -o "$WORKDIR/app.jar"
 
   echo "[6/10] Running ProGuard shrink..."
-  cat > "$WORKDIR/proguard-rules.pro" << EOL
+  cat >"$WORKDIR/proguard-rules.pro" <<EOL
 -keep public class * {
     public *;
 }
@@ -103,7 +106,7 @@ echo "[8/10] Aligning APK..."
 "$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk" >/dev/null
 
 echo "[9/10] Signing APK..."
-if [[ -f "$KEYSTORE_PATH" ]]; then
+if [[ -f $KEYSTORE_PATH ]]; then
   "$APKSIGNER" sign \
     --ks "$KEYSTORE_PATH" --ks-key-alias "$KEY_ALIAS" \
     --ks-pass pass:"$KEYSTORE_PASS" --key-pass pass:"$KEY_PASS" \

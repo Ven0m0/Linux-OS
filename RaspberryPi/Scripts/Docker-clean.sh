@@ -66,7 +66,7 @@ poll_for_docker_readiness(){
   printf 'Waiting for docker engine to start:\n'
 
   local i=0
-  while ! docker system info >/dev/null 2>&1; do
+  while ! docker system info &>/dev/null; do
     printf '.%.0s' {1.."$i"}
     i=$((i + 1))
     sleep 1

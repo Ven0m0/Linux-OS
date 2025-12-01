@@ -26,39 +26,45 @@ EOF
 
 while getopts dhrp: options; do
   case $options in
-    d) echo "default profile directory is ~/.mozilla/firefox/$LINK"
-       exit 0;;
-    h) longhelp;;
-    p) LINK="$OPTARG";;
-    r) if [[ -d "$VOLATILE" ]]; then
-         mv "$VOLATILE" ~/.mozilla/firefox/"$LINK"-copy
-         mv ~/.mozilla/firefox/"$LINK"{,-trash}
-         mv ~/.mozilla/firefox/"$STATIC"{,-trash}
-         mv ~/.mozilla/firefox/"$LINK"{-copy,}
-         rm -rf ~/.mozilla/firefox/{"$LINK","$STATIC"}-trash
-       else
-         echo "Error: Volatile directory not found at $VOLATILE" >&2
-         exit 1
-       fi
-       exit 0;;
-    ?) usage
-       exit 1;;
+  d)
+    echo "default profile directory is ~/.mozilla/firefox/$LINK"
+    exit 0
+    ;;
+  h) longhelp ;;
+  p) LINK="$OPTARG" ;;
+  r)
+    if [[ -d $VOLATILE ]]; then
+      mv "$VOLATILE" ~/.mozilla/firefox/"$LINK"-copy
+      mv ~/.mozilla/firefox/"$LINK"{,-trash}
+      mv ~/.mozilla/firefox/"$STATIC"{,-trash}
+      mv ~/.mozilla/firefox/"$LINK"{-copy,}
+      rm -rf ~/.mozilla/firefox/{"$LINK","$STATIC"}-trash
+    else
+      echo "Error: Volatile directory not found at $VOLATILE" >&2
+      exit 1
+    fi
+    exit 0
+    ;;
+  ?)
+    usage
+    exit 1
+    ;;
   esac
 done
 
-if [[ -z "$LINK" ]]; then
+if [[ -z $LINK ]]; then
   echo "Error: Profile directory not set. Try the -p option" >&2
   exit 1
 fi
 
-[[ -r "$VOLATILE" ]] || install -dm700 "$VOLATILE"
+[[ -r $VOLATILE ]] || install -dm700 "$VOLATILE"
 
 cd ~/.mozilla/firefox || {
   echo "Error: ~/.mozilla/firefox does not exist" >&2
   exit 1
 }
 
-if [[ ! -e "$LINK" ]]; then
+if [[ ! -e $LINK ]]; then
   echo "Error: ~/.mozilla/firefox/$LINK does not exist" >&2
   exit 1
 fi

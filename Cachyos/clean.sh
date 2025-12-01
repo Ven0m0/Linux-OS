@@ -18,7 +18,7 @@ declare -r SQLITE_TIMEOUT=30
 
 #============ Helper Functions ============
 has(){ command -v -- "$1" &>/dev/null; }
-get_pkg_manager()0{
+get_pkg_manager(){
     if has paru; then
         echo 'paru'
     elif has yay; then
@@ -28,16 +28,17 @@ get_pkg_manager()0{
     fi
 }
 
-capture_disk_usage()0{ df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'; }
+capture_disk_usage(){ df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'; }
 
 # Enhanced SQLite vacuum with reporting
-vacuum_sqlite()0{
+vacuum_sqlite(){
     local db=$1 s_old s_new saved
     [[ -f $db ]] || return 0
     [[ -f ${db}-wal || -f ${db}-journal ]] && return 0
     head -c 16 "$db" 2>/dev/null | grep -qF 'SQLite format 3' || return 0
     s_old=$(stat -c%s "$db" 2>/dev/null) || return 0
-    sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; REINDEX; PRAGMA optimize;' &>/dev/null || return 0
+    # VACUUM already rebuilds indices, REINDEX is redundant
+    sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || return 0
     s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
     saved=$((s_old - s_new))
     ((saved > 0)) && echo "$saved"
@@ -67,7 +68,7 @@ clean_sqlite_dbs(){
     ((total > 0)) && printf '  %s %s (%d files)\n' "${GRN}Vacuumed:" "$((total / 1024)) KB${DEF}" "$count"
 }
 
-ensure_not_running()0{
+ensure_not_running(){
     local timeout=6 pattern
     pattern=$(printf '%s|' "$@")
     pattern=${pattern%|}
@@ -84,7 +85,7 @@ ensure_not_running()0{
 }
 
 # Mozilla profile discovery with IsRelative support
-mozilla_profiles()0{
+mozilla_profiles(){
     local base=$1 p is_rel path_val
     [[ -d $base ]] || return 0
     if [[ -f $base/installs.ini ]]; then
@@ -110,12 +111,12 @@ mozilla_profiles()0{
     fi
 }
 
-chrome_profiles()0{
+chrome_profiles(){
     local root="$1"
     for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && echo "$d"; done
 }
 
-configure_firefox_privacy()0{
+configure_firefox_privacy(){
     local prefs_changed=0
     local -a firefox_prefs=(
         'user_pref("browser.startup.homepage_override.mstone", "ignore");'
@@ -151,14 +152,14 @@ configure_firefox_privacy()0{
     done
     ((prefs_changed > 0)) && printf '  %s %d prefs\n' "${GRN}Firefox privacy:" "$prefs_changed${DEF}"
 }
-configure_python_history()0{
+configure_python_history(){
     local history_file="${HOME}/.python_history"
     [[ -f $history_file ]] || touch "$history_file"
     sudo chattr +i "$history_file" &>/dev/null && printf '  %s\n' "${GRN}Python history locked${DEF}" || :
 }
 
 #============ Banner ============
-banner()0{
+banner(){
     printf '%s\n' "${LBLU} ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ ${DEF}"
     printf '%s\n' "${PNK}██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ ${DEF}"
     printf '%s\n' "${BWHT}██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗${DEF}"
@@ -168,7 +169,7 @@ banner()0{
 }
 
 #============ Cleaning Functions ============
-clean_browsers()0{
+clean_browsers(){
     printf '%s\n' "🔄${BLU}Cleaning browsers...${DEF}"
     local -a moz_bases=(
         "${HOME}/.mozilla/firefox"
@@ -223,7 +224,7 @@ clean_browsers()0{
     done
 }
 
-clean_mail_clients()0{
+clean_mail_clients(){
     printf '%s\n' "📧${BLU}Cleaning mail clients...${DEF}"
     local -a mail_bases=(
         "${HOME}/.thunderbird"
@@ -240,7 +241,7 @@ clean_mail_clients()0{
     done
 }
 
-clean_electron()0{
+clean_electron(){
     local -a apps=("Code" "VSCodium" "Microsoft/Microsoft Teams")
     for app in "${apps[@]}"; do
         local d="${HOME}/.config/$app"
@@ -249,7 +250,7 @@ clean_electron()0{
     done
 }
 
-privacy_clean()0{
+privacy_clean(){
     printf '%s\n' "🔒${MGN}Privacy cleanup...${DEF}"
     rm -f "${HOME}/.bash_history" "${HOME}/.zsh_history" "${HOME}/.python_history" "${HOME}/.history" \
         "${HOME}/.local/share/fish/fish_history" &>/dev/null || :
@@ -258,13 +259,13 @@ privacy_clean()0{
     rm -f "${HOME}/.recently-used.xbel" "${HOME}/.local/share/recently-used.xbel"* &>/dev/null || :
 }
 
-privacy_config()0{
+privacy_config(){
     printf '%s\n' "🔒${MGN}Privacy configuration...${DEF}"
     configure_firefox_privacy
     configure_python_history
 }
 
-pkg_cache_clean()0{
+pkg_cache_clean(){
     if has pacman; then
         local pkgmgr=$(get_pkg_manager)
         sudo paccache -rk0 -q &>/dev/null || :
@@ -274,7 +275,7 @@ pkg_cache_clean()0{
     has apt-get && { sudo apt-get clean -y &>/dev/null; sudo apt-get autoclean &>/dev/null; }
 }
 
-snap_flatpak_trim()0{
+snap_flatpak_trim(){
     has flatpak && flatpak uninstall --unused --delete-data -y &>/dev/null || :
     if has snap; then
         printf '%s\n' "🔄${BLU}Removing old Snap revisions...${DEF}"
@@ -286,7 +287,7 @@ snap_flatpak_trim()0{
     sudo rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
 }
 
-system_clean()0{
+system_clean(){
     printf '%s\n' "🔄${BLU}System cleanup...${DEF}"
     sudo resolvectl flush-caches &>/dev/null || :
     sudo systemd-resolve --flush-caches &>/dev/null || :
@@ -307,7 +308,7 @@ system_clean()0{
 }
 
 #============ Main ============
-main()0{
+main(){
     case ${1:-} in
         config)
             banner; privacy_config

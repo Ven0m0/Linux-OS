@@ -19,7 +19,7 @@ PNK=$'\e[38;5;218m'
 BWHT=$'\e[97m'
 DEF=$'\e[0m'
 # Check if a command exists
-has(){ command -v -- "$1" &>/dev/null>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 # Display colorized banner with gradient effect
 display_banner(){
   local banner_text="$1"
@@ -47,7 +47,7 @@ clean_apt_cache(){
   sudo apt-get autoremove --purge -y
 }
 # Load DietPi globals if available
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null>/dev/null || :; }
+load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 
 #============ Banner ====================
 banner=$(

@@ -170,16 +170,16 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # CPU performance mode
-sudo cpupower frequency-set --governor performance &>/dev/null>/dev/null>/dev/null || :
+sudo cpupower frequency-set --governor performance &>/dev/null || :
 
 # Update Rust if requested
 if [[ $MODE == "install" ]]; then
   read -r -p "Update Rust toolchains? [y/N] " ans
-  [[ $ans =~ ^[Yy]$ ]] && rustup update &>/dev/null>/dev/null>/dev/null || :
+  [[ $ans =~ ^[Yy]$ ]] && rustup update &>/dev/null || :
 fi
 
 # Git cleanup
-if [[ $GIT_CLEANUP -eq 1 ]] && git rev-parse --is-inside-work-tree &>/dev/null>/dev/null>/dev/null; then
+if [[ $GIT_CLEANUP -eq 1 ]] && git rev-parse --is-inside-work-tree &>/dev/null; then
   echo "==> Running git cleanup..."
   git reflog expire --expire=now --all
   git gc --prune=now --aggressive
@@ -189,11 +189,11 @@ fi
 
 # Install required tools
 for tool in cargo-shear cargo-machete cargo-cache; do
-  command -v "$tool" &>/dev/null>/dev/null>/dev/null || cargo install "$tool"
+  command -v "$tool" &>/dev/null || cargo install "$tool"
 done
 
 if [[ $MODE == "pgo" || $BOLT_ENABLED -eq 1 ]]; then
-  command -v cargo-pgo &>/dev/null>/dev/null>/dev/null || {
+  command -v cargo-pgo &>/dev/null || {
     rustup component add llvm-tools-preview
     cargo install cargo-pgo
   }
@@ -205,10 +205,10 @@ fi
 jobs=$(nproc 2>/dev/null || echo 4)
 
 # Compiler setup
-if command -v sccache &>/dev/null>/dev/null>/dev/null; then
+if command -v sccache &>/dev/null; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
   export SCCACHE_DIRECT=true SCCACHE_RECACHE=true SCCACHE_IDLE_TIMEOUT=10800
-  sccache --start-server &>/dev/null>/dev/null>/dev/null || :
+  sccache --start-server &>/dev/null || :
 else
   export CC=clang CXX=clang++
   unset RUSTC_WRAPPER
@@ -234,7 +234,7 @@ export OPT_LEVEL=3
 # Memory allocator configuration
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null>/dev/null>/dev/null || :
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null || :
 
 # Linker flags
 LFLAGS=()
@@ -242,7 +242,7 @@ CLDFLAGS=()
 if [[ $USE_MOLD -eq 1 ]]; then
   LFLAGS+=(-Clink-arg=-fuse-ld=mold)
   CLDFLAGS+=(-fuse-ld=mold)
-elif command -v ld.lld &>/dev/null>/dev/null>/dev/null; then
+elif command -v ld.lld &>/dev/null; then
   LFLAGS+=(-Clink-arg=-fuse-ld=lld)
   CLDFLAGS+=(-fuse-ld=lld)
 fi
@@ -349,16 +349,16 @@ build)
   echo "==> Building project..."
 
   # Project maintenance
-  if git rev-parse --is-inside-work-tree &>/dev/null>/dev/null>/dev/null; then
-    cargo update --recursive &>/dev/null>/dev/null>/dev/null || :
-    cargo fix --workspace --all-targets --allow-dirty -r &>/dev/null>/dev/null>/dev/null || :
-    cargo clippy --fix --workspace --allow-dirty &>/dev/null>/dev/null>/dev/null || :
-    cargo fmt &>/dev/null>/dev/null>/dev/null || :
-    command -v cargo-shear &>/dev/null>/dev/null>/dev/null && cargo-shear --fix &>/dev/null>/dev/null>/dev/null || :
-    command -v cargo-machete &>/dev/null>/dev/null>/dev/null && cargo-machete --fix &>/dev/null>/dev/null>/dev/null || :
+  if git rev-parse --is-inside-work-tree &>/dev/null; then
+    cargo update --recursive &>/dev/null || :
+    cargo fix --workspace --all-targets --allow-dirty -r &>/dev/null || :
+    cargo clippy --fix --workspace --allow-dirty &>/dev/null || :
+    cargo fmt &>/dev/null || :
+    command -v cargo-shear &>/dev/null && cargo-shear --fix &>/dev/null || :
+    command -v cargo-machete &>/dev/null && cargo-machete --fix &>/dev/null || :
   fi
 
-  cargo-cache -g -f -e clean-unref &>/dev/null>/dev/null>/dev/null || :
+  cargo-cache -g -f -e clean-unref &>/dev/null || :
   cargo +nightly build --release "${BUILD_ARGS[@]}"
   echo "✅ Build complete"
   ;;

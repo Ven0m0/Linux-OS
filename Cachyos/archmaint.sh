@@ -24,7 +24,7 @@ export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Core Helper Functions ============
 # Check if command exists
-has(){ command -v "$1" &>/dev/null>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
 # Echo with formatting support
 xecho(){ printf '%b\n' "$*"; }
@@ -106,7 +106,7 @@ print_named_banner(){
 #============ Build Environment Setup ============
 # Setup optimized build environment for Arch Linux
 setup_build_env(){
-  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null>/dev/null
+  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
   # Rust optimization flags
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
   # C/C++ optimization flags
@@ -150,10 +150,10 @@ run_system_maintenance(){
   local args=("$@")
   has "$cmd" || return 0
   case "$cmd" in
-  modprobed-db) "$cmd" store &>/dev/null>/dev/null || : ;;
-  hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null>/dev/null || : ;;
-  mandb) sudo "$cmd" -q &>/dev/null>/dev/null || mandb -q &>/dev/null>/dev/null || : ;;
-  *) sudo "$cmd" "${args[@]}" &>/dev/null>/dev/null || : ;;
+  modprobed-db) "$cmd" store &>/dev/null || : ;;
+  hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
+  mandb) sudo "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;;
+  *) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
   esac
 }
 
@@ -255,7 +255,7 @@ vacuum_sqlite(){
     return
   }
   # VACUUM already rebuilds indices, making REINDEX redundant
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null>/dev/null || {
+  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || {
     printf '0\n'
     return
   }
@@ -284,24 +284,24 @@ ensure_not_running_any(){
   pattern=${pattern%|}
 
   # Quick check if any processes are running
-  pgrep -x -u "$USER" -f "$pattern" &>/dev/null>/dev/null || return
+  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
 
   # Show waiting message for found processes
   for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &>/dev/null>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
+    pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
   done
 
   # Single wait loop checking all processes with one pgrep call
   local wait_time=$timeout
   while ((wait_time-- > 0)); do
-    pgrep -x -u "$USER" -f "$pattern" &>/dev/null>/dev/null || return
+    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
     sleep 1
   done
 
   # Kill any remaining processes (single pkill call)
-  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null>/dev/null; then
+  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null; then
     printf '  %s\n' "${RED}Killing remaining processes...${DEF}"
-    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null>/dev/null || :
+    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
     sleep 1
   fi
 }
@@ -397,7 +397,7 @@ clean_paths(){
     _expand_wildcards "$path" existing_paths
   done
   # Batch delete all existing paths at once
-  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 # Clean paths with privilege escalation
 clean_with_sudo(){
@@ -408,7 +408,7 @@ clean_with_sudo(){
     _expand_wildcards "$path" existing_paths
   done
   # Batch delete all existing paths at once with single sudo call
-  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
 #============ Download Tool Detection ============
@@ -456,7 +456,7 @@ download_file(){
 
 # Additional function for archmaint.sh
 cleanup_pacman_lock(){
-  sudo rm -f /var/lib/pacman/db.lck &>/dev/null>/dev/null || :
+  sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
 }
 # ============ End of inlined lib/common.sh ============
 
@@ -484,10 +484,10 @@ update_system_packages(){
   cleanup_pacman_lock
 
   # Update keyring and file databases
-  sudo "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &>/dev/null>/dev/null || :
+  sudo "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &>/dev/null || :
 
   # Update file database only if it doesn't exist
-  [[ -f /var/lib/pacman/sync/core.files ]] || sudo pacman -Fy --noconfirm &>/dev/null>/dev/null || :
+  [[ -f /var/lib/pacman/sync/core.files ]] || sudo pacman -Fy --noconfirm &>/dev/null || :
 
   # Run system updates
   if [[ $pkgmgr == paru ]]; then
@@ -495,11 +495,11 @@ update_system_packages(){
       --bottomup --skipreview --cleanafter --removemake
       --sudoloop --sudo sudo "${aur_opts[@]}")
     log "🔄${BLU}Updating AUR packages with ${pkgmgr}...${DEF}"
-    "$pkgmgr" -Suyy "${args[@]}" &>/dev/null>/dev/null || :
-    "$pkgmgr" -Sua --devel "${args[@]}" &>/dev/null>/dev/null || :
+    "$pkgmgr" -Suyy "${args[@]}" &>/dev/null || :
+    "$pkgmgr" -Sua --devel "${args[@]}" &>/dev/null || :
   else
     log "🔄${BLU}Updating system with pacman...${DEF}"
-    sudo pacman -Suyy --noconfirm --needed &>/dev/null>/dev/null || :
+    sudo pacman -Suyy --noconfirm --needed &>/dev/null || :
   fi
 }
 
@@ -508,16 +508,16 @@ update_with_topgrade(){
     log "🔄${BLU}Running Topgrade updates...${DEF}"
     local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
     local disable_root=(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})
-    LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${disable_user[@]}" &>/dev/null>/dev/null || :
-    LC_ALL=C sudo topgrade -cy --skip-notify --no-self-update --no-retry "${disable_root[@]}" &>/dev/null>/dev/null || :
+    LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${disable_user[@]}" &>/dev/null || :
+    LC_ALL=C sudo topgrade -cy --skip-notify --no-self-update --no-retry "${disable_root[@]}" &>/dev/null || :
   fi
 }
 
 update_flatpak(){
   if has flatpak; then
     log "🔄${BLU}Updating Flatpak...${DEF}"
-    sudo flatpak update -y --noninteractive --appstream &>/dev/null>/dev/null || :
-    sudo flatpak update -y --noninteractive --system --force-remove &>/dev/null>/dev/null || :
+    sudo flatpak update -y --noninteractive --appstream &>/dev/null || :
+    sudo flatpak update -y --noninteractive --system --force-remove &>/dev/null || :
   fi
 }
 
@@ -549,8 +549,8 @@ update_rust(){
 
 update_editors(){
   # Update editor plugins
-  has micro && micro -plugin update &>/dev/null>/dev/null || :
-  has yazi && ya pkg upgrade &>/dev/null>/dev/null || :
+  has micro && micro -plugin update &>/dev/null || :
+  has yazi && ya pkg upgrade &>/dev/null || :
 }
 
 update_shells(){
@@ -565,7 +565,7 @@ update_shells(){
   fi
 
   # Update basher if installed
-  if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null>/dev/null; then
+  if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null; then
     if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null; then
       log "✅${GRN}Updated Basher${DEF}"
     else
@@ -580,10 +580,10 @@ update_shells(){
 update_python(){
   if has uv; then
     log "🔄${BLU}Updating UV...${DEF}"
-    uv self update -q &>/dev/null>/dev/null || log "⚠️${YLW}Failed to update UV${DEF}"
+    uv self update -q &>/dev/null || log "⚠️${YLW}Failed to update UV${DEF}"
 
     log "🔄${BLU}Updating UV tools...${DEF}"
-    if uv tool list -q &>/dev/null>/dev/null; then
+    if uv tool list -q &>/dev/null; then
       uv tool upgrade --all -q || log "⚠️${YLW}Failed to update UV tools${DEF}"
     else
       log "✅${GRN}No UV tools installed${DEF}"
@@ -597,14 +597,14 @@ update_python(){
       if [[ ${#pkgs[@]} -gt 0 ]]; then
         # Use array expansion for better argument passing
         uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh "${pkgs[@]}" \
-          &>/dev/null>/dev/null || log "⚠️${YLW}Failed to update packages${DEF}"
+          &>/dev/null || log "⚠️${YLW}Failed to update packages${DEF}"
       else
         log "✅${GRN}All Python packages are up to date${DEF}"
       fi
     else
       log "⚠️${YLW}jq not found, using fallback method${DEF}"
       # Optimize by avoiding process substitution when possible
-      uv pip install --upgrade -r <(uv pip list --format freeze) &>/dev/null>/dev/null \
+      uv pip install --upgrade -r <(uv pip list --format freeze) &>/dev/null \
         || log "⚠️${YLW}Failed to update packages${DEF}"
     fi
 
@@ -631,14 +631,14 @@ update_system_utils(){
     cmd_args="${cmd#*:}"
     if has "$cmd_name"; then
       if [[ -n $cmd_args ]]; then
-        sudo "$cmd_name" "$cmd_args" &>/dev/null>/dev/null || :
+        sudo "$cmd_name" "$cmd_args" &>/dev/null || :
       else
-        sudo "$cmd_name" &>/dev/null>/dev/null || :
+        sudo "$cmd_name" &>/dev/null || :
       fi
     fi
   done
 
-  has update-leap && LC_ALL=C update-leap &>/dev/null>/dev/null || :
+  has update-leap && LC_ALL=C update-leap &>/dev/null || :
 
   # Update firmware
   if has fwupdmgr; then
@@ -651,10 +651,10 @@ update_system_utils(){
 update_boot(){
   log "🔍${BLU}Checking boot configuration...${DEF}"
   # Update systemd-boot if installed
-  if [[ -d /sys/firmware/efi ]] && has bootctl && sudo bootctl is-installed -q &>/dev/null>/dev/null; then
+  if [[ -d /sys/firmware/efi ]] && has bootctl && sudo bootctl is-installed -q &>/dev/null; then
     log "✅${GRN}systemd-boot detected, updating${DEF}"
-    sudo bootctl update -q &>/dev/null>/dev/null
-    sudo bootctl cleanup -q &>/dev/null>/dev/null
+    sudo bootctl update -q &>/dev/null
+    sudo bootctl cleanup -q &>/dev/null
   else
     log "❌${YLW}systemd-boot not present, skipping${DEF}"
   fi
@@ -662,8 +662,8 @@ update_boot(){
   # Update sdboot-manage if available
   if has sdboot-manage; then
     log "🔄${BLU}Updating sdboot-manage...${DEF}"
-    sudo sdboot-manage remove &>/dev/null>/dev/null || :
-    sudo sdboot-manage update &>/dev/null>/dev/null || :
+    sudo sdboot-manage remove &>/dev/null || :
+    sudo sdboot-manage update &>/dev/null || :
   fi
 
   # Update initramfs
@@ -697,7 +697,7 @@ run_update(){
   print_named_banner "update" "Meow (> ^ <)"
   setup_build_env
 
-  checkupdates -dc &>/dev/null>/dev/null || :
+  checkupdates -dc &>/dev/null || :
 
   # Run basic system maintenance
   run_system_maintenance modprobed-db
@@ -741,7 +741,7 @@ clean_paths(){
     fi
   done
   # Batch delete all existing paths at once
-  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
 clean_with_sudo(){
@@ -764,7 +764,7 @@ clean_with_sudo(){
     fi
   done
   # Batch delete all existing paths at once with single sudo call
-  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
 run_clean(){
@@ -783,7 +783,7 @@ run_clean(){
   # Drop caches
   sync
   log "🔄${BLU}Dropping cache...${DEF}"
-  sudo tee /proc/sys/vm/drop_caches &>/dev/null>/dev/null <<< 3
+  sudo tee /proc/sys/vm/drop_caches &>/dev/null <<< 3
 
   # Store and sort modprobed database
   if has modprobed-db; then
@@ -792,14 +792,14 @@ run_clean(){
 
     local db_files=("${HOME}/.config/modprobed.db" "${HOME}/.local/share/modprobed.db")
     for db in "${db_files[@]}"; do
-      [[ -f $db ]] && sort -u "$db" -o "$db" &>/dev/null>/dev/null || :
+      [[ -f $db ]] && sort -u "$db" -o "$db" &>/dev/null || :
     done
   fi
 
   # Network cleanup
   log "🔄${BLU}Flushing network caches...${DEF}"
-  has dhclient && dhclient -r &>/dev/null>/dev/null || :
-  sudo resolvectl flush-caches &>/dev/null>/dev/null || :
+  has dhclient && dhclient -r &>/dev/null || :
+  sudo resolvectl flush-caches &>/dev/null || :
 
   # Package management cleanup
   log "🔄${BLU}Removing orphaned packages...${DEF}"
@@ -808,12 +808,12 @@ run_clean(){
   orphans_list=$(pacman -Qdtq 2>/dev/null || :)
   if [[ -n $orphans_list ]]; then
     # Use xargs to pass arguments efficiently
-    printf '%s\n' "$orphans_list" | xargs -r sudo pacman -Rns --noconfirm &>/dev/null>/dev/null || :
+    printf '%s\n' "$orphans_list" | xargs -r sudo pacman -Rns --noconfirm &>/dev/null || :
   fi
 
   log "🔄${BLU}Cleaning package cache...${DEF}"
-  sudo pacman -Scc --noconfirm &>/dev/null>/dev/null || :
-  sudo paccache -rk0 -q &>/dev/null>/dev/null || :
+  sudo pacman -Scc --noconfirm &>/dev/null || :
+  sudo paccache -rk0 -q &>/dev/null || :
 
   # Python package manager cleanup
   if has uv; then
@@ -833,25 +833,25 @@ run_clean(){
   # Kill CPU-intensive processes
   log "🔄${BLU}Checking for CPU-intensive processes...${DEF}"
   # Optimized: Use xargs instead of while-read loop for better performance
-  ps aux --sort=-%cpu 2>/dev/null | awk 'NR>1 && $3>50.0 {print $2}' | xargs -r sudo kill -9 &>/dev/null>/dev/null || :
+  ps aux --sort=-%cpu 2>/dev/null | awk 'NR>1 && $3>50.0 {print $2}' | xargs -r sudo kill -9 &>/dev/null || :
 
   # Reset swap
   log "🔄${BLU}Resetting swap space...${DEF}"
-  sudo swapoff -a &>/dev/null>/dev/null || :
-  sudo swapon -a &>/dev/null>/dev/null || :
+  sudo swapoff -a &>/dev/null || :
+  sudo swapon -a &>/dev/null || :
 
   # Clean log files and crash dumps
   log "🔄${BLU}Cleaning logs and crash dumps...${DEF}"
   # Use fd if available, fallback to find - optimize with batch delete
   if has fd; then
-    sudo fd -H -t f -e log -d 4 --changed-before 7d . /var/log -X rm &>/dev/null>/dev/null || :
-    sudo fd -H -t f -p "core.*" -d 2 --changed-before 7d . /var/crash -X rm &>/dev/null>/dev/null || :
+    sudo fd -H -t f -e log -d 4 --changed-before 7d . /var/log -X rm &>/dev/null || :
+    sudo fd -H -t f -p "core.*" -d 2 --changed-before 7d . /var/crash -X rm &>/dev/null || :
   else
     # Use -delete for better performance than -exec rm
-    sudo find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null>/dev/null || :
-    sudo find /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null>/dev/null || :
+    sudo find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
+    sudo find /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
   fi
-  sudo find /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null>/dev/null || :
+  sudo find /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
 
   # Clean cache files
   log "🔄${BLU}Cleaning cache files...${DEF}"
@@ -868,15 +868,15 @@ run_clean(){
   # Clean user cache - optimize by using -delete directly with find
   if has fd; then
     # Use fd with batch delete for better performance
-    fd -H -t f -d 4 --changed-before 1d . "${HOME}/.cache" -X rm &>/dev/null>/dev/null || :
-    fd -H -t d -d 4 --changed-before 1d -E "**/.git" . "${HOME}/.cache" -X rmdir &>/dev/null>/dev/null || :
+    fd -H -t f -d 4 --changed-before 1d . "${HOME}/.cache" -X rm &>/dev/null || :
+    fd -H -t d -d 4 --changed-before 1d -E "**/.git" . "${HOME}/.cache" -X rmdir &>/dev/null || :
   else
     # find -delete is more efficient than -exec rm
-    find "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null>/dev/null || :
-    find "${HOME}/.cache" -type d -empty -delete &>/dev/null>/dev/null || :
+    find "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null || :
+    find "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
   fi
 
-  sudo systemd-tmpfiles --clean &>/dev/null>/dev/null || :
+  sudo systemd-tmpfiles --clean &>/dev/null || :
 
   # Clean system and user cache directories
   clean_with_sudo "${cache_dirs[@]/%/*}"
@@ -888,7 +888,7 @@ run_clean(){
   clean_paths "${HOME}/.config/Trolltech.conf" 2>/dev/null || :
 
   # Rebuild KDE cache if present
-  has kbuildsycoca6 && kbuildsycoca6 --noincremental &>/dev/null>/dev/null || :
+  has kbuildsycoca6 && kbuildsycoca6 --noincremental &>/dev/null || :
 
   # Empty trash directories
   log "🔄${BLU}Emptying trash...${DEF}"
@@ -901,7 +901,7 @@ run_clean(){
   # Flatpak cleanup
   if has flatpak; then
     log "🔄${BLU}Cleaning Flatpak...${DEF}"
-    flatpak uninstall --unused --delete-data -y --noninteractive &>/dev/null>/dev/null || :
+    flatpak uninstall --unused --delete-data -y --noninteractive &>/dev/null || :
 
     # Clean flatpak caches
     local flatpak_dirs=(
@@ -918,8 +918,8 @@ run_clean(){
 
   # Clean system logs
   log "🔄${BLU}Cleaning system logs...${DEF}"
-  sudo rm -f --preserve-root -- /var/log/pacman.log &>/dev/null>/dev/null || :
-  sudo journalctl --rotate --vacuum-size=1 --flush --sync -q &>/dev/null>/dev/null || :
+  sudo rm -f --preserve-root -- /var/log/pacman.log &>/dev/null || :
+  sudo journalctl --rotate --vacuum-size=1 --flush --sync -q &>/dev/null || :
   clean_with_sudo /run/log/journal/* /var/log/journal/* /root/.local/share/zeitgeist/* /home/*/.local/share/zeitgeist/* 2>/dev/null || :
 
   # Clean history files
@@ -973,13 +973,13 @@ run_clean(){
   log "🔄${BLU}Cleaning applications (parallel)...${DEF}"
 
   # NVIDIA cleanup (background)
-  { sudo rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null>/dev/null || :; } &
+  { sudo rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null || :; } &
 
   # Python history (background)
   {
     local python_history="${HOME}/.python_history"
     [[ ! -f $python_history ]] && { touch "$python_history" 2>/dev/null || :; }
-    sudo chattr +i "$(realpath "$python_history")" &>/dev/null>/dev/null || :
+    sudo chattr +i "$(realpath "$python_history")" &>/dev/null || :
   } &
 
   # Firefox cleanup (background)
@@ -1036,28 +1036,28 @@ run_clean(){
 
   # Trim disks
   log "🔄${BLU}Trimming disks...${DEF}"
-  sudo fstrim -a --quiet-unsupported &>/dev/null>/dev/null || :
-  sudo fstrim -A --quiet-unsupported &>/dev/null>/dev/null || :
+  sudo fstrim -a --quiet-unsupported &>/dev/null || :
+  sudo fstrim -A --quiet-unsupported &>/dev/null || :
 
   # Rebuild font cache
   log "🔄${BLU}Rebuilding font cache...${DEF}"
-  sudo fc-cache -f &>/dev/null>/dev/null || :
+  sudo fc-cache -f &>/dev/null || :
 
   # SDK cleanup
-  has sdk && sdk flush tmp &>/dev/null>/dev/null || :
+  has sdk && sdk flush tmp &>/dev/null || :
 
   # BleachBit if available
   if has bleachbit; then
     log "🔄${BLU}Running BleachBit...${DEF}"
-    LC_ALL=C LANG=C bleachbit -c --preset &>/dev/null>/dev/null || :
+    LC_ALL=C LANG=C bleachbit -c --preset &>/dev/null || :
 
     # Run with elevated privileges if possible
     if has xhost; then
-      xhost si:localuser:root &>/dev/null>/dev/null || :
-      xhost si:localuser:"$USER" &>/dev/null>/dev/null || :
-      LC_ALL=C LANG=C sudo bleachbit -c --preset &>/dev/null>/dev/null || :
+      xhost si:localuser:root &>/dev/null || :
+      xhost si:localuser:"$USER" &>/dev/null || :
+      LC_ALL=C LANG=C sudo bleachbit -c --preset &>/dev/null || :
     elif has pkexec; then
-      LC_ALL=C LANG=C pkexec bleachbit -c --preset &>/dev/null>/dev/null || :
+      LC_ALL=C LANG=C pkexec bleachbit -c --preset &>/dev/null || :
     else
       log "⚠️${YLW}Cannot run BleachBit with elevated privileges${DEF}"
     fi

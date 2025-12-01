@@ -78,7 +78,7 @@ poll_for_docker_readiness(){
 
 # Checks if a particular program is installed
 is_program_installed(){
-  command -v "$1" &>/dev/null>/dev/null
+  command -v "$1" &>/dev/null
 }
 
 # Restarts the Docker engine

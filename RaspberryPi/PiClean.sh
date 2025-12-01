@@ -14,7 +14,7 @@ cd "$WORKDIR" || {
   exit 1
 }
 # Check if a command exists
-has(){ command -v -- "$1" &>/dev/null>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 # Get the name of a command from PATH
 hasname(){
   local x
@@ -25,7 +25,7 @@ hasname(){
 }
 
 # Load DietPi globals if available
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null>/dev/null || :; }
+load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 
 # Run DietPi cleanup commands if available
 run_dietpi_cleanup(){
@@ -130,7 +130,7 @@ sudo find /var/crash/ -name "core.*" -type f -mtime +3 -delete
 sudo find /var/cache/apt/ -name "*.bin" -type f -mtime +3 -delete
 
 sync
-echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null>/dev/null
+echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 echo "System clean-up complete."
 echo "Clearing DietPi..."
 run_dietpi_cleanup

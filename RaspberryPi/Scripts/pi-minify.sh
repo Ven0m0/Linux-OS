@@ -14,7 +14,7 @@ LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
 # Helpers
-has(){ command -v -- "$1" &>/dev/null>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
 warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
 err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }

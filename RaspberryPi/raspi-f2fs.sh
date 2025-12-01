@@ -5,10 +5,12 @@
 # DESCRIPTION: Flash Raspberry Pi images with F2FS root filesystem
 #              Features bootiso's guardrails (USB-only check, Size validation)
 #              Production-hardened for DietPi/RaspiOS
-set -uo pipefail; shopt -s nullglob globstar
+set -uo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-sync; sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
+sync
+sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
 # Color codes
 declare -r RED=$'\033[0;31m' GRN=$'\033[0;32m' YEL=$'\033[0;33m' BLD=$'\033[1m' DEF=$'\033[0m'
 
@@ -31,12 +33,16 @@ declare -g LOCK_FD=-1 LOCK_FILE="" STOPPED_UDISKS2=0
 declare -ga MOUNTED_DIRS=()
 
 # --- Logging (Enhanced) ---
-log(){ printf '[%s] %s\n' "$(date +%T)" "$*"; }
-info(){ log "${GRN}INFO:${DEF} $*"; }
-warn(){ log "${YEL}WARN:${DEF} $*" >&2; }
-err(){ log "${RED}ERROR:${DEF} $*" >&2; }
-die(){ err "$*"; cleanup; exit 1; }
-dbg(){ ((cfg[debug])) && log "DEBUG: $*" || :; }
+log() { printf '[%s] %s\n' "$(date +%T)" "$*"; }
+info() { log "${GRN}INFO:${DEF} $*"; }
+warn() { log "${YEL}WARN:${DEF} $*" >&2; }
+err() { log "${RED}ERROR:${DEF} $*" >&2; }
+die() {
+  err "$*"
+  cleanup
+  exit 1
+}
+dbg() { ((cfg[debug])) && log "DEBUG: $*" || :; }
 
 # --- Bootiso Integration: Safety Modules ---
 
@@ -50,11 +56,11 @@ get_drive_trans() {
 assert_usb_dev() {
   local dev=${1:?}
   ((cfg[no_usb_check])) && return 0
-  
+
   # Skip check for loop/files
   [[ $dev != /dev/* ]] && return 0
   [[ $dev == /dev/loop* ]] && return 0
-  
+
   local trans
   trans=$(get_drive_trans "$dev")
   [[ $trans == "usb" ]] && return 0
@@ -72,8 +78,8 @@ assert_size() {
   img_bytes=$(stat -c%s "$img")
   dev_bytes=$(blockdev --getsize64 "$dev")
 
-  ((img_bytes > dev_bytes)) && \
-    die "Image size ($img_bytes) exceeds target device capacity ($dev_bytes)"
+  ((img_bytes > dev_bytes)) \
+    && die "Image size ($img_bytes) exceeds target device capacity ($dev_bytes)"
 }
 
 # Ported from bootiso: exec_listUSBDrives (adapted for fzf)
@@ -83,13 +89,14 @@ select_target_interactive() {
 
   # bootiso style rich columns
   local selection
-  selection=$(lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG \
-    | awk '$6=="disk"' \
-    | { ((!cfg[no_usb_check])) && awk '$5=="usb"' || cat; } \
-    | fzf --header="TARGET SELECTION (Safety: USB-Only)" \
-          --prompt="Select Drive > " \
-          --with-nth=1,2,3,4 \
-    )
+  selection=$(
+    lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG \
+      | awk '$6=="disk"' \
+      | { ((!cfg[no_usb_check])) && awk '$5=="usb"' || cat; } \
+      | fzf --header="TARGET SELECTION (Safety: USB-Only)" \
+        --prompt="Select Drive > " \
+        --with-nth=1,2,3,4
+  )
 
   [[ -z $selection ]] && die "No target selected"
   echo "$selection" | awk '{print $1}'
@@ -97,9 +104,9 @@ select_target_interactive() {
 
 # --- Core Utilities ---
 
-run(){ ((cfg[dry_run])) && info "[DRY] $*" || "$@"; }
+run() { ((cfg[dry_run])) && info "[DRY] $*" || "$@"; }
 
-run_with_retry(){
+run_with_retry() {
   local -i attempts="${1:-3}" delay="${2:-2}" i
   shift 2
   for ((i = 1; i <= attempts; i++)); do
@@ -109,16 +116,18 @@ run_with_retry(){
   die "Failed after $attempts attempts: $*"
 }
 
-derive_partition_paths(){
+derive_partition_paths() {
   local dev=${1:?}
   if [[ $dev == *@(nvme|mmcblk|loop)* ]]; then
-    BOOT_PART="${dev}p1"; ROOT_PART="${dev}p2"
+    BOOT_PART="${dev}p1"
+    ROOT_PART="${dev}p2"
   else
-    BOOT_PART="${dev}1"; ROOT_PART="${dev}2"
+    BOOT_PART="${dev}1"
+    ROOT_PART="${dev}2"
   fi
 }
 
-wait_for_partitions(){
+wait_for_partitions() {
   local boot=${1:?} root=${2:?} dev=${3:-}
   local -i i
   ((cfg[dry_run])) && return 0
@@ -131,11 +140,11 @@ wait_for_partitions(){
   die "Partitions missing: $boot / $root"
 }
 
-refresh_partitions(){
+refresh_partitions() {
   local dev=${1:?}
   ((cfg[dry_run])) && return 0
   sync
-  
+
   if [[ $dev == /dev/loop* ]]; then
     losetup -d "$dev" &>/dev/null || :
     TGT_LOOP=$(losetup --show -f -P "$tgt_path")
@@ -148,23 +157,26 @@ refresh_partitions(){
   wait_for_partitions "$BOOT_PART" "$ROOT_PART" "$TGT_DEV"
 }
 
-acquire_device_lock(){
+acquire_device_lock() {
   local path=${1:?}
   LOCK_FILE="/run/lock/raspi-f2fs-${path//[^[:alnum:]]/_}.lock"
   mkdir -p "${LOCK_FILE%/*}"
-  exec {LOCK_FD}> "$LOCK_FILE" || die "Lock failed: $LOCK_FILE"
+  exec {LOCK_FD}>"$LOCK_FILE" || die "Lock failed: $LOCK_FILE"
   flock -n "$LOCK_FD" || die "Device locked by another process: $path"
 }
 
-release_device_lock(){
-  ((LOCK_FD >= 0)) && { exec {LOCK_FD}>&- || :; LOCK_FD=-1; }
+release_device_lock() {
+  ((LOCK_FD >= 0)) && {
+    exec {LOCK_FD}>&- || :
+    LOCK_FD=-1
+  }
   [[ -f ${LOCK_FILE:-} ]] && rm -f "$LOCK_FILE" || :
 }
 
-cleanup(){
+cleanup() {
   local -i ret=$?
   set +e
-  
+
   # Unmount LIFO
   local i
   for ((i = ${#MOUNTED_DIRS[@]} - 1; i >= 0; i--)); do
@@ -174,29 +186,29 @@ cleanup(){
   [[ -b ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" &>/dev/null
   [[ -b ${TGT_LOOP:-} ]] && losetup -d "$TGT_LOOP" &>/dev/null
   ((STOPPED_UDISKS2)) && systemctl start udisks2.service &>/dev/null
-  
+
   release_device_lock
   [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR"
-  
+
   ((ret != 0)) && warn "Cleanup finished with errors"
   return "$ret"
 }
 
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 
-check_deps(){
+check_deps() {
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync tar xz blkid partprobe lsblk flock blockdev)
   local cmd missing=()
   for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
   ((${#missing[@]} > 0)) && die "Missing dependencies: ${missing[*]}"
 }
 
-force_umount_device(){
+force_umount_device() {
   local dev=${1:?}
   local part
   # bootiso style strict unmount
   grep -q "$dev" /proc/mounts || return 0
-  
+
   mapfile -t parts < <(lsblk -nlo MOUNTPOINT "$dev" | grep -v "^$")
   for part in "${parts[@]}"; do
     umount -lf "$part" &>/dev/null || :
@@ -206,12 +218,12 @@ force_umount_device(){
 
 # --- F2FS Logic ---
 
-process_source(){
+process_source() {
   info "Processing source: $src_path"
   [[ -f $src_path ]] || die "Source not found"
 
   if [[ $src_path == *.xz ]]; then
-    ((cfg[dry_run])) || xz -dc "$src_path" > "$SRC_IMG"
+    ((cfg[dry_run])) || xz -dc "$src_path" >"$SRC_IMG"
   elif ((cfg[keep_source])); then
     ((cfg[dry_run])) || cp --reflink=auto "$src_path" "$SRC_IMG"
   else
@@ -219,7 +231,7 @@ process_source(){
   fi
 }
 
-setup_target(){
+setup_target() {
   info "Target setup: $tgt_path"
   acquire_device_lock "$tgt_path"
 
@@ -232,7 +244,7 @@ setup_target(){
     ((cfg[dry_run])) || {
       warn "${RED}WARNING: All data on $tgt_path will be DESTROYED${DEF}"
       assert_usb_dev "$tgt_path" # Double check before wipe
-      
+
       force_umount_device "$tgt_path"
       wipefs -af "$tgt_path" &>/dev/null || :
     }
@@ -249,9 +261,9 @@ setup_target(){
   derive_partition_paths "$TGT_DEV"
 }
 
-partition_target(){
+partition_target() {
   info "Partitioning & Formatting: $TGT_DEV"
-  
+
   if [[ $TGT_DEV != /dev/loop* ]] && ((!cfg[dry_run])); then
     systemctl is-active udisks2 &>/dev/null && {
       systemctl stop udisks2 && STOPPED_UDISKS2=1
@@ -263,7 +275,7 @@ partition_target(){
   run parted -s "$TGT_DEV" mkpart primary fat32 0% "${cfg[boot_size]}"
   run parted -s "$TGT_DEV" mkpart primary "${cfg[boot_size]}" 100%
   run parted -s "$TGT_DEV" set 1 boot on
-  
+
   refresh_partitions "$TGT_DEV"
 
   info "Formatting filesystems..."
@@ -271,29 +283,36 @@ partition_target(){
   run_with_retry 3 1 mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum "$ROOT_PART"
 }
 
-mount_and_copy(){
+mount_and_copy() {
   info "Mounting & Cloning data"
   ((cfg[dry_run])) && return 0
 
   LOOP_DEV=$(losetup --show -f -P "$SRC_IMG")
   local src_boot="${LOOP_DEV}p1" src_root="${LOOP_DEV}p2"
-  [[ -b $src_boot ]] || { src_boot="${LOOP_DEV}1"; src_root="${LOOP_DEV}2"; }
-  
+  [[ -b $src_boot ]] || {
+    src_boot="${LOOP_DEV}1"
+    src_root="${LOOP_DEV}2"
+  }
+
   wait_for_partitions "$src_boot" "$src_root" "$LOOP_DEV"
 
   # Mount
   mkdir -p "$WORKDIR"/{src,tgt}/{boot,root}
-  mount "$src_boot" "$WORKDIR/src/boot"; MOUNTED_DIRS+=("$WORKDIR/src/boot")
-  mount "$src_root" "$WORKDIR/src/root"; MOUNTED_DIRS+=("$WORKDIR/src/root")
-  mount "$BOOT_PART" "$WORKDIR/tgt/boot"; MOUNTED_DIRS+=("$WORKDIR/tgt/boot")
-  mount "$ROOT_PART" "$WORKDIR/tgt/root"; MOUNTED_DIRS+=("$WORKDIR/tgt/root")
+  mount "$src_boot" "$WORKDIR/src/boot"
+  MOUNTED_DIRS+=("$WORKDIR/src/boot")
+  mount "$src_root" "$WORKDIR/src/root"
+  MOUNTED_DIRS+=("$WORKDIR/src/root")
+  mount "$BOOT_PART" "$WORKDIR/tgt/boot"
+  MOUNTED_DIRS+=("$WORKDIR/tgt/boot")
+  mount "$ROOT_PART" "$WORKDIR/tgt/root"
+  MOUNTED_DIRS+=("$WORKDIR/tgt/root")
 
   # Copy (RAM buffer if space permits)
   local dir size free
   for dir in boot root; do
     size=$(du -sm "$WORKDIR/src/$dir" | awk '{print $1}')
     free=$(awk '/MemAvailable/ {print int($2/1024)}' /proc/meminfo)
-    
+
     if ((free > size * 2 && size > 10)); then
       info "RAM-buffered copy: $dir"
       (cd "$WORKDIR/src/$dir" && tar -cf - .) | (cd "$WORKDIR/tgt/$dir" && tar -xf -)
@@ -304,7 +323,7 @@ mount_and_copy(){
   sync
 }
 
-configure_f2fs_boot(){
+configure_f2fs_boot() {
   info "Applying F2FS Configuration"
   ((cfg[dry_run])) && return 0
 
@@ -315,21 +334,21 @@ configure_f2fs_boot(){
   fstab="$WORKDIR/tgt/root/etc/fstab"
 
   sed -i -e "s|root=[^ ]*|root=PARTUUID=$root_uuid|" \
-         -e "s|rootfstype=[^ ]*|rootfstype=f2fs|" \
-         -e 's|rootwait|rootwait rootdelay=5|' \
-         "$cmdline"
+    -e "s|rootfstype=[^ ]*|rootfstype=f2fs|" \
+    -e 's|rootwait|rootwait rootdelay=5|' \
+    "$cmdline"
   grep -q rootwait "$cmdline" || sed -i 's/$/ rootwait rootdelay=5/' "$cmdline"
 
-  cat > "$fstab" <<-EOF
+  cat >"$fstab" <<-EOF
 	proc            /proc  proc    defaults          0  0
 	PARTUUID=$boot_uuid  /boot  vfat    defaults          0  2
 	PARTUUID=$root_uuid  /      f2fs    defaults,noatime  0  1
 	EOF
-  
+
   # Inject initramfs resize hook (condensed)
   local hook_dir="$WORKDIR/tgt/root/etc/initramfs-tools/hooks"
   mkdir -p "$hook_dir"
-  cat > "$hook_dir/f2fs" <<-'EOF'
+  cat >"$hook_dir/f2fs" <<-'EOF'
 	#!/bin/sh
 	PREREQ=""; prereqs(){ echo "$PREREQ"; }
 	case $1 in prereqs) prereqs; exit 0;; esac
@@ -343,7 +362,7 @@ configure_f2fs_boot(){
   ((cfg[ssh])) && touch "$WORKDIR/tgt/boot/ssh"
 }
 
-usage(){
+usage() {
   cat <<-'EOF'
 	Usage: raspi-f2fs.sh [OPTIONS] [SOURCE] [TARGET]
 	
@@ -363,9 +382,9 @@ usage(){
   exit 0
 }
 
-main(){
+main() {
   local opt
-  prepare(){
+  prepare() {
     WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" rf2fs.XXXXXX)
     SRC_IMG="$WORKDIR/source.img"
     trap cleanup EXIT INT TERM
@@ -381,13 +400,16 @@ main(){
     n) cfg[dry_run]=1 ;;
     U) cfg[no_usb_check]=1 ;;
     F) cfg[no_size_check]=1 ;;
-    x) cfg[debug]=1; set -x ;;
+    x)
+      cfg[debug]=1
+      set -x
+      ;;
     h) usage ;;
     *) usage ;;
     esac
   done
   shift $((OPTIND - 1))
-  
+
   [[ -z $src_path && $# -ge 1 ]] && src_path=$1 && shift
   [[ -z $tgt_path && $# -ge 1 ]] && tgt_path=$1 && shift
 
@@ -411,7 +433,7 @@ main(){
   partition_target
   mount_and_copy
   configure_f2fs_boot
-  
+
   info "${GRN}SUCCESS:${DEF} F2FS conversion complete on $tgt_path"
 }
 

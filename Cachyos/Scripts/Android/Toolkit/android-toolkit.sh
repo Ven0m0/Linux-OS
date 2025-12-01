@@ -11,7 +11,7 @@ ROOT_DIR="$(cd "$DIR/.." && pwd)"
 
 SCRIPT="$ROOT_DIR/android-optimize.sh"
 
-if [[ -f "$SCRIPT" ]]; then
+if [[ -f $SCRIPT ]]; then
   exec "$SCRIPT" "$@"
 else
   echo "Error: android-optimize.sh not found at $SCRIPT"

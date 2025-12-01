@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob
+set -euo pipefail
+shopt -s nullglob
 LC_ALL=C
 export RUSTFLAGS="-C opt-level=3 -C lto -C codegen-units=1 -C target-cpu=native -C linker=clang -C link-arg=-fuse-ld=mold -C panic=abort -Zno-embed-metadata"
 
@@ -51,5 +52,5 @@ cargo q build --release # if you installed cargo-q
 cargo pgo build --bin your_app
 
 # 11. Strip and report size
-strip target/release/"${"$PWD"##*/}"
-ls -lh target/release/"${"$PWD"##*/}"
+strip target/release/"${PWD##*/}"
+ls -lh target/release/"${PWD##*/}"

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
+export LC_ALL=C LANG=C
 [[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
 
 # Config
@@ -14,7 +16,7 @@ COUNTRY="${RATE_MIRRORS_ENTRY_COUNTRY:-$(curl -sf https://ipapi.co/country_code 
 ARCHLIST_URL_GLOBAL="https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
 ARCHLIST_URL_DE="https://archlinux.org/mirrorlist/?country=DE&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
 REPOS=(cachyos chaotic-aur endeavouros alhp)
-KEYSERVERS=(# We want to use keyservers only with secured (hkps or https) connections!
+KEYSERVERS=( # We want to use keyservers only with secured (hkps or https) connections!
   ############ These don't seem to work:
   ## "pgp.mit.edu"
   #  "keyring.debian.org"
@@ -41,20 +43,20 @@ KEYSERVERS=(# We want to use keyservers only with secured (hkps or https) connec
 # Colors
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m' Z='\033[0m'
 # Helpers
-log(){ printf "${G}[%s]${Z} %s\n" "${1:-INFO}" "${*:2}" | tee -a "$LOGFILE"; }
-warn(){ printf "${Y}[WARN]${Z} %s\n" "$*" >&2; }
-err(){ printf "${R}[ERR]${Z} %s\n" "$*" >&2; }
-backup(){
+log() { printf "${G}[%s]${Z} %s\n" "${1:-INFO}" "${*:2}" | tee -a "$LOGFILE"; }
+warn() { printf "${Y}[WARN]${Z} %s\n" "$*" >&2; }
+err() { printf "${R}[ERR]${Z} %s\n" "$*" >&2; }
+backup() {
   [[ -f $1 ]] || return 0
   mkdir -p "$BACKUPDIR"
   cp -a "$1" "$BACKUPDIR/${1##*/}-$(printf '%s' "$EPOCHSECONDS").bak"
   # Keep 5 recent backups
   find "$BACKUPDIR" -name "${1##*/}-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+6 | awk '{print $2}' | xargs -r rm -f
 }
-has(){ command -v "$1" &>/dev/null; }
+has() { command -v "$1" &>/dev/null; }
 
 # Actions
-rank_keys(){
+rank_keys() {
   [[ -f $GPGCONF ]] || return 0
   log KEY "Ranking keyservers..."
   backup "$GPGCONF"
@@ -63,11 +65,16 @@ rank_keys(){
     local test_url="${u/hkp/http}"
     test_url="${test_url/http:/http:}"
     # Perf: Native Bash timing
-    printf -v start_ts "%.3f" "${EPOCHREALTIME}"; t1="${start_ts/./}"
+    printf -v start_ts "%.3f" "${EPOCHREALTIME}"
+    t1="${start_ts/./}"
     if curl -sIo /dev/null -m2 "$test_url"; then
-      printf -v end_ts "%.3f" "${EPOCHREALTIME}"; t2="${end_ts/./}"
+      printf -v end_ts "%.3f" "${EPOCHREALTIME}"
+      t2="${end_ts/./}"
       local diff=$((t2 - t1))
-      if ((diff < min)); then min=$diff; best=$u; fi
+      if ((diff < min)); then
+        min=$diff
+        best=$u
+      fi
     fi
   done
   if [[ $best ]]; then
@@ -78,39 +85,43 @@ rank_keys(){
   fi
 }
 
-rank_repo(){
+rank_repo() {
   local name=$1 file="$MIRRORDIR/${1}-mirrorlist"
   [[ -f $file ]] || return 0
   log REPO "Ranking $name..."
   backup "$file"
-  local tmp; tmp=$(mktemp)
+  local tmp
+  tmp=$(mktemp)
   # Pipe URLs directly to rate-mirrors stdin
   if grep -oP 'https?://[^ ]+' "$file" | sort -u | rate-mirrors --save="$tmp" --entry-country="$COUNTRY" stdin \
-     --fetch-mirrors-timeout=5000 --path-to-return='$repo/os/$arch' &>/dev/null; then
-     install -m644 "$tmp" "$file"
+    --fetch-mirrors-timeout=5000 --path-to-return='$repo/os/$arch' &>/dev/null; then
+    install -m644 "$tmp" "$file"
   else
-     warn "Failed to rank $name"
+    warn "Failed to rank $name"
   fi
   rm -f "$tmp"
 }
 
-rank_arch(){
+rank_arch() {
   local file="$MIRRORDIR/mirrorlist" url="$ARCHLIST_URL_GLOBAL"
   [[ $COUNTRY == "DE" ]] && url="$ARCHLIST_URL_DE"
   log ARCH "Fetching latest Arch mirrors ($COUNTRY)..."
   backup "$file"
-  local tmp; tmp=$(mktemp)
+  local tmp
+  tmp=$(mktemp)
   if ! curl -sfL "$url" -o "$tmp.mlst"; then
     warn "Failed to download Arch mirrorlist"
-    rm -f "$tmp" "$tmp.mlst"; return 1
+    rm -f "$tmp" "$tmp.mlst"
+    return 1
   fi # Uncomment servers using sed
-  sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" > "$tmp.raw"
+  sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" >"$tmp.raw"
   # Rank
   if rate-mirrors --save="$tmp" --entry-country="$COUNTRY" --top-mirrors-number-to-retest=5 arch --file "$tmp.raw" &>/dev/null; then
     install -m644 "$tmp" "$file"
   else
     warn "rate-mirrors failed for Arch"
-  fi; rm -f "$tmp" "$tmp.mlst" "$tmp.raw"
+  fi
+  rm -f "$tmp" "$tmp.mlst" "$tmp.raw"
 }
 
 # Main Execution
@@ -121,8 +132,9 @@ if has cachyos-rate-mirrors; then
   cachyos-rate-mirrors
 else
   # Manual Fallback Logic
-  rank_repo "cachyos"; rank_arch
-  for r in "${REPOS[@]}"; do 
+  rank_repo "cachyos"
+  rank_arch
+  for r in "${REPOS[@]}"; do
     [[ $r == cachyos ]] || rank_repo "$r"
   done
 fi

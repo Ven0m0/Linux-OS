@@ -24,19 +24,19 @@ export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Core Helper Functions ============
 # Check if command exists
-has(){ command -v "$1" &>/dev/null; }
+has() { command -v "$1" &>/dev/null; }
 
 # Echo with formatting support
-xecho(){ printf '%b\n' "$*"; }
+xecho() { printf '%b\n' "$*"; }
 # Logging functions
-log(){ xecho "$*"; }
-die(){
+log() { xecho "$*"; }
+die() {
   xecho "${RED}Error:${DEF} $*" >&2
   exit 1
 }
 
 # Confirmation prompt
-confirm(){
+confirm() {
   local msg="$1"
   printf '%s [y/N]: ' "$msg" >&2
   read -r ans
@@ -46,7 +46,7 @@ confirm(){
 #============ Banner Printing Functions ============
 # Print banner with trans flag gradient
 # Usage: print_banner "banner_text" [title]
-print_banner(){
+print_banner() {
   local banner="$1" title="${2:-}"
   local flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
 
@@ -54,7 +54,7 @@ print_banner(){
   local -a lines=()
   while IFS= read -r line || [[ -n $line ]]; do
     lines+=("$line")
-  done <<< "$banner"
+  done <<<"$banner"
 
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
@@ -70,7 +70,7 @@ print_banner(){
 }
 
 # Pre-defined banners
-get_update_banner(){
+get_update_banner() {
   cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -80,7 +80,7 @@ get_update_banner(){
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 }
-get_clean_banner(){
+get_clean_banner() {
   cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
@@ -93,7 +93,7 @@ EOF
 
 # Print predefined banner
 # Usage: print_named_banner "update"|"clean" [title]
-print_named_banner(){
+print_named_banner() {
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in
   update) banner=$(get_update_banner) ;;
@@ -105,7 +105,7 @@ print_named_banner(){
 
 #============ Build Environment Setup ============
 # Setup optimized build environment for Arch Linux
-setup_build_env(){
+setup_build_env() {
   [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
   # Rust optimization flags
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
@@ -144,7 +144,7 @@ setup_build_env(){
 
 #============ System Maintenance Functions ============
 # Run system maintenance commands safely
-run_system_maintenance(){
+run_system_maintenance() {
   local cmd=$1
   shift
   local args=("$@")
@@ -159,7 +159,7 @@ run_system_maintenance(){
 
 #============ Disk Usage Helpers ============
 # Capture current disk usage
-capture_disk_usage(){
+capture_disk_usage() {
   local var_name=$1
   local -n ref="$var_name"
   ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
@@ -167,7 +167,7 @@ capture_disk_usage(){
 
 #============ File Finding Helpers ============
 # Use fd if available, fallback to find
-find_files(){
+find_files() {
   if has fd; then
     fd -H "$@"
   else
@@ -176,7 +176,7 @@ find_files(){
 }
 
 # NUL-safe finder using fd/fdf/find
-find0(){
+find0() {
   local root="$1"
   shift
   if has fdf; then
@@ -193,7 +193,7 @@ find0(){
 # Cache result to avoid repeated checks
 _PKG_MGR_CACHED=""
 _AUR_OPTS_CACHED=()
-detect_pkg_manager(){
+detect_pkg_manager() {
   # Return cached result if available
   if [[ -n $_PKG_MGR_CACHED ]]; then
     printf '%s\n' "$_PKG_MGR_CACHED"
@@ -217,7 +217,7 @@ detect_pkg_manager(){
 }
 
 # Get package manager name only (without options)
-get_pkg_manager(){
+get_pkg_manager() {
   if [[ -z $_PKG_MGR_CACHED ]]; then
     detect_pkg_manager >/dev/null
   fi
@@ -225,7 +225,7 @@ get_pkg_manager(){
 }
 
 # Get AUR options for the detected package manager
-get_aur_opts(){
+get_aur_opts() {
   if [[ -z $_PKG_MGR_CACHED ]]; then
     detect_pkg_manager >/dev/null
   fi
@@ -234,7 +234,7 @@ get_aur_opts(){
 
 #============ SQLite Maintenance ============
 # Vacuum a single SQLite database and return bytes saved
-vacuum_sqlite(){
+vacuum_sqlite() {
   local db=$1 s_old s_new
   [[ -f $db ]] || {
     printf '0\n'
@@ -263,7 +263,7 @@ vacuum_sqlite(){
   printf '%d\n' "$((s_old - s_new))"
 }
 # Clean SQLite databases in current working directory
-clean_sqlite_dbs(){
+clean_sqlite_dbs() {
   local total=0 db saved
   # Batch file type checks to reduce subprocess calls
   while IFS= read -r -d '' db; do
@@ -277,7 +277,7 @@ clean_sqlite_dbs(){
 
 #============ Process Management ============
 # Wait for processes to exit, kill if timeout
-ensure_not_running_any(){
+ensure_not_running_any() {
   local timeout=6 p
   # Optimized: Use single pgrep with pattern instead of multiple calls
   local pattern=$(printf '%s|' "$@")
@@ -308,7 +308,7 @@ ensure_not_running_any(){
 
 #============ Browser Profile Detection ============
 # Firefox-family profile discovery
-foxdir(){
+foxdir() {
   local base=$1 p
   [[ -d $base ]] || return 1
   if [[ -f $base/installs.ini ]]; then
@@ -329,7 +329,7 @@ foxdir(){
 }
 
 # List all Mozilla profiles in a base directory
-mozilla_profiles(){
+mozilla_profiles() {
   local base=$1 p
   declare -A seen
   [[ -d $base ]] || return 0
@@ -354,7 +354,7 @@ mozilla_profiles(){
 }
 
 # Chromium roots (native/flatpak/snap)
-chrome_roots_for(){
+chrome_roots_for() {
   case "$1" in
   chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
   chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
@@ -364,14 +364,14 @@ chrome_roots_for(){
   esac
 }
 # List Default + Profile * dirs under a Chromium root
-chrome_profiles(){
+chrome_profiles() {
   local root=$1 d
   for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
 }
 
 #============ Path Cleaning Helpers ============
 # Helper to expand wildcard paths safely
-_expand_wildcards(){
+_expand_wildcards() {
   local path=$1
   local -n result_ref="$2"
   if [[ $path == *\** ]]; then
@@ -389,7 +389,7 @@ _expand_wildcards(){
 }
 
 # Clean arrays of file/directory paths
-clean_paths(){
+clean_paths() {
   local paths=("$@") path
   # Batch check existence to reduce syscalls
   local existing_paths=()
@@ -400,7 +400,7 @@ clean_paths(){
   [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 # Clean paths with privilege escalation
-clean_with_sudo(){
+clean_with_sudo() {
   local paths=("$@") path
   # Batch check existence to reduce syscalls and sudo invocations
   local existing_paths=()
@@ -416,7 +416,7 @@ clean_with_sudo(){
 # Usage: get_download_tool [--no-aria2]
 # shellcheck disable=SC2120
 _DOWNLOAD_TOOL_CACHED=""
-get_download_tool(){
+get_download_tool() {
   local skip_aria2=0
   [[ ${1:-} == --no-aria2 ]] && skip_aria2=1
   # Return cached if available and aria2 not being skipped
@@ -441,7 +441,7 @@ get_download_tool(){
 }
 # Download a file using best available tool
 # Usage: download_file <url> <output_path>
-download_file(){
+download_file() {
   local url=$1 output=$2 tool
   # shellcheck disable=SC2119
   tool=$(get_download_tool) || return 1
@@ -455,7 +455,7 @@ download_file(){
 }
 
 # Additional function for archmaint.sh
-cleanup_pacman_lock(){
+cleanup_pacman_lock() {
   sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
 }
 # ============ End of inlined lib/common.sh ============
@@ -468,12 +468,12 @@ ASSUME_YES=0
 MODE=""
 
 # Override log function to respect QUIET
-log(){ ((QUIET)) || xecho "$*"; }
+log() { ((QUIET)) || xecho "$*"; }
 
 #=========== Update Functions ===========
 # Note: run_system_maintenance is now provided by common.sh
 
-update_system_packages(){
+update_system_packages() {
   local pkgmgr aur_opts
   log "🔄${BLU}System update${DEF}"
   # Use cached package manager detection
@@ -503,7 +503,7 @@ update_system_packages(){
   fi
 }
 
-update_with_topgrade(){
+update_with_topgrade() {
   if has topgrade; then
     log "🔄${BLU}Running Topgrade updates...${DEF}"
     local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
@@ -513,7 +513,7 @@ update_with_topgrade(){
   fi
 }
 
-update_flatpak(){
+update_flatpak() {
   if has flatpak; then
     log "🔄${BLU}Updating Flatpak...${DEF}"
     sudo flatpak update -y --noninteractive --appstream &>/dev/null || :
@@ -521,7 +521,7 @@ update_flatpak(){
   fi
 }
 
-update_rust(){
+update_rust() {
   if has rustup; then
     log "🔄${BLU}Updating Rust...${DEF}"
     rustup update
@@ -547,13 +547,13 @@ update_rust(){
   fi
 }
 
-update_editors(){
+update_editors() {
   # Update editor plugins
   has micro && micro -plugin update &>/dev/null || :
   has yazi && ya pkg upgrade &>/dev/null || :
 }
 
-update_shells(){
+update_shells() {
   if has fish; then
     log "🔄${BLU}Updating Fish...${DEF}"
     fish -c "fish_update_completions" || :
@@ -577,7 +577,7 @@ update_shells(){
   has tldr && sudo tldr -cuq || :
 }
 
-update_python(){
+update_python() {
   if has uv; then
     log "🔄${BLU}Updating UV...${DEF}"
     uv self update -q &>/dev/null || log "⚠️${YLW}Failed to update UV${DEF}"
@@ -614,7 +614,7 @@ update_python(){
   fi
 }
 
-update_system_utils(){
+update_system_utils() {
   log "🔄${BLU}Running miscellaneous updates...${DEF}"
   # Pre-filter commands that exist to reduce repeated has() calls
   local cmds=(
@@ -648,7 +648,7 @@ update_system_utils(){
   fi
 }
 
-update_boot(){
+update_boot() {
   log "🔍${BLU}Checking boot configuration...${DEF}"
   # Update systemd-boot if installed
   if [[ -d /sys/firmware/efi ]] && has bootctl && sudo bootctl is-installed -q &>/dev/null; then
@@ -693,7 +693,7 @@ update_boot(){
   fi
 }
 
-run_update(){
+run_update() {
   print_named_banner "update" "Meow (> ^ <)"
   setup_build_env
 
@@ -721,7 +721,7 @@ run_update(){
 
 #=========== Clean Functions ===========
 # Clean arrays of file/directory paths
-clean_paths(){
+clean_paths() {
   local paths=("$@") path
   # Batch check existence to reduce syscalls
   local existing_paths=()
@@ -744,7 +744,7 @@ clean_paths(){
   [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
-clean_with_sudo(){
+clean_with_sudo() {
   local paths=("$@") path
   # Batch check existence to reduce syscalls and sudo invocations
   local existing_paths=()
@@ -767,7 +767,7 @@ clean_with_sudo(){
   [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 
-run_clean(){
+run_clean() {
   print_named_banner "clean"
 
   # Ensure sudo access
@@ -783,7 +783,7 @@ run_clean(){
   # Drop caches
   sync
   log "🔄${BLU}Dropping cache...${DEF}"
-  sudo tee /proc/sys/vm/drop_caches &>/dev/null <<< 3
+  sudo tee /proc/sys/vm/drop_caches &>/dev/null <<<3
 
   # Store and sort modprobed database
   if has modprobed-db; then
@@ -1078,7 +1078,7 @@ run_clean(){
 
 #=========== Traps & Cleanup ===========
 # Enhanced cleanup for archmaint
-cleanup_archmaint(){
+cleanup_archmaint() {
   cleanup_pacman_lock
   # Reset environment variables
   unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
@@ -1089,7 +1089,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 #=========== CLI Interface =============
-show_usage(){
+show_usage() {
   cat <<EOF
 Usage: ${0##*/} [OPTIONS] COMMAND
 
@@ -1114,7 +1114,7 @@ Examples:
 EOF
 }
 
-parse_args(){
+parse_args() {
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -1139,7 +1139,7 @@ parse_args(){
 }
 
 #=========== Main Function =============
-main(){
+main() {
   parse_args "$@"
   if [[ $DRYRUN -eq 1 ]]; then
     log "${YLW}Running in dry-run mode. No changes will be made.${DEF}"

@@ -15,7 +15,7 @@ readonly YLW=$'\e[33m'
 readonly MGN=$'\e[35m'
 readonly DEF=$'\e[0m'
 #============ Configuration ============
-declare -r MAX_PARALLEL_JOBS=$(nproc 2>/dev/null || echo 4)
+declare -r MAX_PARALLEL_JOBS="$(nproc 2>/dev/null || echo 4)"
 declare -r SQLITE_TIMEOUT=30
 
 #============ Helper Functions ============

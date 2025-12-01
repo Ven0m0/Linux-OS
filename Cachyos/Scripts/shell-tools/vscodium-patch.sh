@@ -10,7 +10,7 @@ die(){
   printf '%b\n' "${R}✗${D} $*" >&2
   exit "${2:-1}"
 }
-has(){ command -v "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 ok(){ printf '%b\n' "${G}✓${D} $*"; }
 
 vscode_json_set(){
@@ -125,7 +125,7 @@ json_op(){
 
 update_json(){
   local v=$1 out=$2
-  local -n kref=$3
+  local -n kref="$3"
   [[ $v ]] || die "Version required"
   local work="/tmp/code-up.$$" u="https://update.code.visualstudio.com/${v}/linux-x64/stable"
   printf "⬇ VSCode %s...\n" "$v"

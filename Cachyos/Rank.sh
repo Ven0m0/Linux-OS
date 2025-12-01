@@ -53,7 +53,7 @@ backup(){
   # Keep 5 recent backups
   find "$BACKUPDIR" -name "${1##*/}-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+6 | awk '{print $2}' | xargs -r rm -f
 }
-has(){ command -v "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 
 # Actions
 rank_keys(){
@@ -65,10 +65,10 @@ rank_keys(){
     local test_url="${u/hkp/http}"
     test_url="${test_url/http:/http:}"
     # Perf: Native Bash timing
-    printf -v start_ts "%.3f" "${EPOCHREALTIME}"
+    printf -v start_ts "%.3f" "$EPOCHREALTIME"
     t1="${start_ts/./}"
     if curl -sIo /dev/null -m2 "$test_url"; then
-      printf -v end_ts "%.3f" "${EPOCHREALTIME}"
+      printf -v end_ts "%.3f" "$EPOCHREALTIME"
       t2="${end_ts/./}"
       local diff=$((t2 - t1))
       if ((diff < min)); then

@@ -67,7 +67,7 @@ poll_for_docker_readiness(){
 
   local i=0
   while ! docker system info &>/dev/null; do
-    printf '.%.0s' {1.."$i"}
+    printf '%*s\n' "$i" '' | tr ' ' '.'
     i=$((i + 1))
     sleep 1
     tput el

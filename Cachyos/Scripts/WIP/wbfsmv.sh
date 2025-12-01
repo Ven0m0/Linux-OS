@@ -57,7 +57,7 @@ log(){ ((verbose)) && printf '%s\n' "$*" >&2 || :; }
 run(){ ((dry)) && log "[dry] $*" || "$@"; }
 # WBFS: ID at 0x200 (512); ISO/CISO/WIA/WDF: ID at 0x0
 get_id(){
-  local f="$1" id= off=0
+  local f="$1" id='' off=0
   [[ ${f,,} == *.wbfs ]] && off=512
   if ((have_wit)); then
     id=$(wit ID6 -- "$f" 2>/dev/null | head -n1) || id=
@@ -170,7 +170,7 @@ process_file(){
 }
 
 process_dir(){
-  local d=$1 id= g= title name newdir
+  local d=$1 id='' g='' title name newdir
   local base=${d##*/}
   [[ $base =~ \[[A-Z0-9]{6}\] ]] && {
     log "skip (already tagged): $d"

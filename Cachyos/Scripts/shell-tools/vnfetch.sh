@@ -5,7 +5,7 @@
 # https://github.com/deathbybandaid/pimotd/blob/master/10logo
 # https://github.com/juminai/dotfiles/blob/main/.local/bin/fetch
 #──────────────────── Init ────────────────────
-l1="$LANG" PKG= PKG2= PKG3= GLOBALIP= WEATHER=
+l1="$LANG" PKG='' PKG2='' PKG3='' GLOBALIP='' WEATHER=''
 export LC_ALL=C LANG=C
 #──────────────────── Environment ────────────────────
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
@@ -19,7 +19,7 @@ hostname="${HOSTNAME:-$(</etc/hostname)}"
 userhost="$username@${hostname:-$(uname -n)}"
 . "/etc/os-release"
 OS="${NAME:-${PRETTY_NAME:-$(uname -o)}}"
-KERNEL="$(</proc/sys/kernel/osrelease || uname -r)"
+KERNEL="$(cat /proc/sys/kernel/osrelease 2>/dev/null || uname -r)"
 # Uptime
 read -r rawSeconds _ </proc/uptime
 seconds=${rawSeconds%.*} uptime=""
@@ -33,7 +33,7 @@ PROCS=(/proc/[0-9]*)
 PROCS=${#PROCS[@]}
 shopt -u nullglob
 # Packages
-PKG= PKG2= PKG3=
+PKG='' PKG2='' PKG3=''
 if command -v pacman &>/dev/null; then
   mapfile -t arr < <(pacman -Qq)
   PKG="${#arr[@]} (Pacman)"

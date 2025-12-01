@@ -20,10 +20,10 @@ BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
-[[ !  -t 1 ]] && BLK= RED= GRN= YLW= BLU= MGN= CYN= WHT= LBLU= PNK= BWHT= DEF= BLD=
+[[ !  -t 1 ]] && BLK='' RED='' GRN='' YLW='' BLU='' MGN='' CYN='' WHT='' LBLU='' PNK='' BWHT='' DEF='' BLD=''
 
 #──────────── Helpers ──────────────
-has(){ command -v "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf '%b\n' "${2:-$GRN}$1$DEF" "${@:3}"; }
 warn(){ msg "$*" "$YLW" >&2; }
 err(){ msg "$*" "$RED" >&2; }
@@ -121,7 +121,7 @@ get_current_mirror(){
   local dist_name=$(get_dist_name)
   case $dist_name in
     debian|kali|ubuntu|pop) ;;
-    *) err "Unsupported OS: $dist_name"; return $RC_MISC_ERROR ;;
+    *) err "Unsupported OS: $dist_name"; return "$RC_MISC_ERROR" ;;
   esac
   local cfgfile
   case $dist_name in
@@ -156,7 +156,7 @@ find_fast_mirror(){
   has curl || {
     msg "Installing curl..." "$YLW"
     run_priv apt-get -o Acquire::http::Timeout=10 update && \
-    run_priv apt-get -o Acquire::http::Timeout=10 install -y --no-install-recommends curl ca-certificates || return $RC_MISC_ERROR
+    run_priv apt-get -o Acquire::http::Timeout=10 install -y --no-install-recommends curl ca-certificates || return "$RC_MISC_ERROR"
   }
   local parallel=1 healthchecks=20 speedtests=5 sample_kb=200 sample_secs=3 country= apply= exclude_current= ignore_sync= verbosity=0
   while [[ $# -gt 0 ]]; do
@@ -235,7 +235,7 @@ EOF
   local healthcheck_results=$(echo "$mirrors" | \
     __xargs -i -P "$(echo "$mirrors" | wc -l)" bash -c \
       'set -o pipefail
-       headers=$(curl --max-time 3 -sSIL "{}'"${last_modified_path}"'" 2>/dev/null || echo "CURL_ERROR")
+       headers=$(curl --max-time 3 -sSIL "{}'"$last_modified_path"'" 2>/dev/null || echo "CURL_ERROR")
        http_status=$(printf "%s\n" "$headers" | awk '"'"'toupper($1) ~ /^HTTP\// { code=$2 } END { print code }'"'"')
        last_modified=0; status="error"
        if [[ "$headers" == "CURL_ERROR" || -z "$http_status" ]]; then status="error"
@@ -336,9 +336,9 @@ get_uris(){
   [[ !  -d $(dirname "$DLLIST") ]] && { mkdir -p "$(dirname "$DLLIST")" || die "Cannot create download dir. "; }
   [[ -f $DLLIST ]] && { rm -f "$DLLIST" 2>/dev/null || die "Cannot write to $DLLIST"; }
   echo "# apt-ultra download list: $(date)" > "$DLLIST"
-  local uri_mgr="${_APTMGR}"
-  case "$(basename "${_APTMGR}")" in
-    apt|apt-get) uri_mgr="${_APTMGR}" ;;
+  local uri_mgr="$_APTMGR"
+  case "$(basename "$_APTMGR")" in
+    apt|apt-get) uri_mgr="$_APTMGR" ;;
     *) uri_mgr='apt-get' ;;
   esac
   local uris_full=$("$uri_mgr" -y --print-uris "$@" 2>&1)
@@ -409,12 +409,12 @@ main(){
         if [[ -f $DLLIST && $(wc -l < "$DLLIST") -gt 1 ]]; then
           [[ !  -d $DLDIR ]] && mkdir -p "$DLDIR"
           cd "$DLDIR" || die "Cannot cd to $DLDIR"
-          eval "${_DOWNLOADER}"
+          eval "$_DOWNLOADER"
           find . -type f \( -name '*.deb' -o -name '*.ddeb' \) -execdir mv -ft "$APTCACHE" {} + 2>/dev/null || :
           for x in *.aria2; do rm -f "$x" "${x%.aria2}"; done
           cd - &>/dev/null || :
         fi
-        run_priv "${_APTMGR}" "$@"
+        run_priv "$_APTMGR" "$@"
       elif has apt-fast; then
         msg "Falling back to apt-fast..." "$YLW"
         run_priv apt-fast "$@"
@@ -426,9 +426,9 @@ main(){
         run_priv apt-get "$@"
       fi ;;
     clean|autoclean)
-      run_priv "${_APTMGR}" "$@"
+      run_priv "$_APTMGR" "$@"
       [[ -d $DLDIR ]] && { find "$DLDIR" -maxdepth 1 -type f -delete; rm -f "$DLLIST"* 2>/dev/null || :; } ;;
-    *) run_priv "${_APTMGR}" "$@" ;;
+    *) run_priv "$_APTMGR" "$@" ;;
   esac
 }
 

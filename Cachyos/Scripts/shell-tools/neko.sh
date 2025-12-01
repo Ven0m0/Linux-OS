@@ -21,7 +21,7 @@ nekofetch(){
   elif command -v chafa &>/dev/null; then
     IMGT=chafa
   else
-    IMGT=cat
+    IMGT='cat'
   fi
   # fetch endpoints
   endpoints="$(curl -s 'https://nekos.best/api/v2/endpoints')" || {

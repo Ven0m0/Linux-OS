@@ -21,6 +21,11 @@
 | `<link rel="prerender">` | Preparing for the next navigation | Deprecated; you are advised not to use this. Use Speculation Rules API prerender instead, where it is supported. |
 
 
+## Markdown
+
+- Use ```<br>``` to insert a line break.
+- Use ```<p></p>``` to create a new paragraph with extra spacing.
+- Use ```&nbsp;``` to add a single space between words or elements.
 
 
 

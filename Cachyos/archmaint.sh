@@ -246,7 +246,8 @@ vacuum_sqlite() {
     return
   }
   # Validate it's actually a SQLite database file
-  if ! head -c 16 "$db" 2>/dev/null | grep -q 'SQLite format 3'; then
+  # Use fixed-string grep (-F) for faster literal matching
+  if ! head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3'; then
     printf '0\n'
     return
   fi
@@ -414,8 +415,8 @@ clean_with_sudo() {
 #============ Download Tool Detection ============
 # Get best available download tool (with optional skip for piping)
 # Usage: get_download_tool [--no-aria2]
-# shellcheck disable=SC2120
 _DOWNLOAD_TOOL_CACHED=""
+# shellcheck disable=SC2120
 get_download_tool() {
   local skip_aria2=0
   [[ ${1:-} == --no-aria2 ]] && skip_aria2=1

@@ -7,12 +7,12 @@
 </details>
 <details>
 <summary><b>Resources</b></summary>
-  
-* [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
+
+- [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
 
 - [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
 
-- [Bash Guide](https://guide.bash.academy) &nbsp; [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
+- [Bash Guide](https://guide.bash.academy)   [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
 
 - [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
 
@@ -20,7 +20,7 @@
 
 - [Ascii flag color codes](https://www.flagcolorcodes.com)
 
-- [Bash prompt generator](https://bash-prompt-generator.org) &nbsp;&nbsp; [Ezprompt generator](https://ezprompt.net)
+- [Bash prompt generator](https://bash-prompt-generator.org)    [Ezprompt generator](https://ezprompt.net)
 
 </details>
 
@@ -453,14 +453,14 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 
 ### Expansion
 
-| Parameter               | What does it do?                                                                                                     |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------- |
-| `${VAR:OFFSET}`         | Remove first `N` chars from variable.                                                                                |
-| `${VAR:OFFSET:LENGTH}`  | Get substring from `N` character to `N` character. <br> (`${VAR:10:10}`: Get sub-string from char `10` to char `20`) |
-| `${VAR:: OFFSET}`       | Get first `N` chars from variable.                                                                                   |
-| `${VAR:: -OFFSET}`      | Remove last `N` chars from variable.                                                                                 |
-| `${VAR: -OFFSET}`       | Get last `N` chars from variable.                                                                                    |
-| `${VAR:OFFSET:-OFFSET}` | Cut first `N` chars and last `N` chars.                                                                              | `bash 4.2+` |
+| Parameter | What does it do? |
+| \----------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `${VAR:OFFSET}` | Remove first `N` chars from variable. |
+| `${VAR:OFFSET:LENGTH}` | Get substring from `N` character to `N` character. <br> (`${VAR:10:10}`: Get sub-string from char `10` to char `20`) |
+| `${VAR:: OFFSET}` | Get first `N` chars from variable. |
+| `${VAR:: -OFFSET}` | Remove last `N` chars from variable. |
+| `${VAR: -OFFSET}` | Get last `N` chars from variable. |
+| `${VAR:OFFSET:-OFFSET}` | Cut first `N` chars and last `N` chars. | `bash 4.2+` |
 
 ### Case Modification
 

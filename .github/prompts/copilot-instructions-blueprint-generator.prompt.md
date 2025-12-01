@@ -1,7 +1,6 @@
----
-description: "Technology-agnostic blueprint generator for creating comprehensive copilot-instructions.md files that guide GitHub Copilot to produce code consistent with project standards, architecture patterns, and exact technology versions by analyzing existing codebase patterns and avoiding assumptions."
-mode: "agent"
----
+______________________________________________________________________
+
+## description: "Technology-agnostic blueprint generator for creating comprehensive copilot-instructions.md files that guide GitHub Copilot to produce code consistent with project standards, architecture patterns, and exact technology versions by analyzing existing codebase patterns and avoiding assumptions." mode: "agent"
 
 # Copilot Instructions Blueprint Generator
 
@@ -278,22 +277,26 @@ ${VERSIONING == "Custom" ?
 To create the copilot-instructions.md file, first analyze the codebase to:
 
 1. **Identify Exact Technology Versions**:
+
    - ${PROJECT_TYPE == "Auto-detect" ? "Detect all programming languages, frameworks, and libraries by scanning file extensions and configuration files" : `Focus on ${PROJECT_TYPE} technologies`}
    - Extract precise version information from project files, package.json, .csproj, etc.
    - Document version constraints and compatibility requirements
 
-2. **Understand Architecture**:
+1. **Understand Architecture**:
+
    - Analyze folder structure and module organization
    - Identify clear layer boundaries and component relationships
    - Document communication patterns between components
 
-3. **Document Code Patterns**:
+1. **Document Code Patterns**:
+
    - Catalog naming conventions for different code elements
    - Note documentation styles and completeness
    - Document error handling patterns
    - Map testing approaches and coverage
 
-4. **Note Quality Standards**:
+1. **Note Quality Standards**:
+
    - Identify performance optimization techniques actually used
    - Document security practices implemented in the code
    - Note accessibility features present (if applicable)

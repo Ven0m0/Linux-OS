@@ -1,7 +1,6 @@
----
-description: "Python coding conventions and guidelines"
-applyTo: "**/*.py"
----
+______________________________________________________________________
+
+## description: "Python coding conventions and guidelines" applyTo: "\*\*/\*.py"
 
 # Python Coding Conventions
 

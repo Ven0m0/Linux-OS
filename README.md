@@ -85,15 +85,25 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 <summary><b>Packages:</b></summary>
 
 - <https://wiki.archlinux.org/title/Category:Lists_of_software>
+
 - [Arch PKG](https://archlinux.org/packages)
+
 - [AUR PKG](https://aur.archlinux.org)
+
 - [Crates.io](https://crates.io)
+
 - [FlatHub](https://flathub.org)
+
 - [AppImages](https://portable-linux-apps.github.io/apps)
+
 - [Lure.sh](https://lure.sh)
+
 - [Basher](https://www.basher.it/package)
+
 - [bpkg](https://bpkg.sh)
+
 - [Nix](https://github.com/NixOS/nix) **_/_** [Home-manager](https://github.com/nix-community/home-manager) **|** [Nixpkgs](https://github.com/NixOS/nixpkgs) **|** [NUR](https://github.com/nix-community/NUR) **|**
+
 - [x-cmd](https://www.x-cmd.com)
 
   <details>
@@ -139,7 +149,9 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 ### Linux Optimization Resources
 
 - Explore optimization techniques from: <https://github.com/sn99/Optimizing-linux>
+
 - Review Chris Titus Linux development setup:
+
   ```bash
   curl -fsSL https://christitus.com/linuxdev | bash
   ```

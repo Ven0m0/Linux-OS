@@ -2,9 +2,9 @@ name: Optimize Images
 on:
   workflow_dispatch:
   push:
-    paths: ['**/*.{jpg,jpeg,png,webp,avif,gif,svg}']
+    paths: ["**/*.{jpg,jpeg,png,webp,avif,gif,svg}"]
   pull_request:
-    paths: ['**/*.{jpg,jpeg,png,webp,avif,gif,svg}']
+    paths: ["**/*.{jpg,jpeg,png,webp,avif,gif,svg}"]
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true

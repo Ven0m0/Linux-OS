@@ -186,19 +186,19 @@ cargo pgo bolt optimize --with-pgo
    export RUSTC_WRAPPER=sccache
    ```
 
-2. **Parallel builds**:
+1. **Parallel builds**:
 
    ```bash
    export CARGO_BUILD_JOBS=$(nproc)
    ```
 
-3. **Use modern linker** (mold or lld):
+1. **Use modern linker** (mold or lld):
 
    ```bash
    ./cargo-build.sh --install --mold <crate>
    ```
 
-4. **Clean unused dependencies regularly**:
+1. **Clean unused dependencies regularly**:
 
    ```bash
    cargo install cargo-shear cargo-machete cargo-cache
@@ -238,6 +238,6 @@ cargo pgo bolt optimize --with-pgo
 When adding new scripts or optimizations:
 
 1. Document usage and purpose clearly
-2. Test on multiple Rust versions (stable and nightly)
-3. Include performance comparisons where relevant
-4. Update this README with any new additions
+1. Test on multiple Rust versions (stable and nightly)
+1. Include performance comparisons where relevant
+1. Update this README with any new additions

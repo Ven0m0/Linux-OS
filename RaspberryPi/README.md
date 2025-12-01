@@ -105,12 +105,13 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 </details>
 <details>
 <summary><b>Other selfhost tools/OS's</b></summary>
-  
+
 - [DietPi](https://dietpi.com)
 
 - [NextcloudPi](https://github.com/nextcloud/nextcloudpi)
 
 - [Runtipi](https://runtipi.io)
+
   <details>
     <summary><b>Install</b></summary>
 
@@ -121,6 +122,7 @@ curl -fsSL https://get.casaos.io/update | sudo bash
   </details>
 
 - [cosmos](https://cosmos-cloud.io)
+
   <details>
     <summary><b>Install</b></summary>
 
@@ -149,6 +151,7 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 - [yunohost](https://yunohost.org)
 
 - [Homepage docker](https://github.com/gethomepage/homepage)
+
   <details>
     <summary><b>Install</b></summary>
 

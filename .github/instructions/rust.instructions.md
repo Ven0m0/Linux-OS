@@ -1,7 +1,6 @@
----
-description: "Rust programming language coding conventions and best practices"
-applyTo: "**/*.rs"
----
+______________________________________________________________________
+
+## description: "Rust programming language coding conventions and best practices" applyTo: "\*\*/\*.rs"
 
 # Rust Coding Conventions and Best Practices
 

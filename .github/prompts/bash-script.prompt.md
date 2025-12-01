@@ -1,7 +1,6 @@
----
-name: Canonical Bash Script Template
-description: The baseline template for all new Bash scripts, incorporating best practices for strictness, safety, and utility.
----
+______________________________________________________________________
+
+## name: Canonical Bash Script Template description: The baseline template for all new Bash scripts, incorporating best practices for strictness, safety, and utility.
 
 ```bash
 #!/usr/bin/env bash

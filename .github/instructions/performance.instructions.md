@@ -1,7 +1,6 @@
----
-applyTo: "**"
-description: "The most comprehensive, practical, and engineer-authored performance optimization instructions for all languages, frameworks, and stacks. Covers frontend, backend, and database best practices with actionable guidance, scenario-based checklists, troubleshooting, and pro tips."
----
+______________________________________________________________________
+
+## applyTo: "\*\*" description: "The most comprehensive, practical, and engineer-authored performance optimization instructions for all languages, frameworks, and stacks. Covers frontend, backend, and database best practices with actionable guidance, scenario-based checklists, troubleshooting, and pro tips."
 
 # Performance Optimization Best Practices
 
@@ -9,7 +8,7 @@ description: "The most comprehensive, practical, and engineer-authored performan
 
 Performance isn't just a buzzword—it's the difference between a product people love and one they abandon. I've seen firsthand how a slow app can frustrate users, rack up cloud bills, and even lose customers. This guide is a living collection of the most effective, real-world performance practices I've used and reviewed, covering frontend, backend, and database layers, as well as advanced topics. Use it as a reference, a checklist, and a source of inspiration for building fast, efficient, and scalable software.
 
----
+______________________________________________________________________
 
 ## General Principles
 
@@ -24,7 +23,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 - **Automate Performance Testing:** Integrate performance tests and benchmarks into your CI/CD pipeline. Catch regressions early.
 - **Set Performance Budgets:** Define acceptable limits for load time, memory usage, API latency, etc. Enforce them with automated checks.
 
----
+______________________________________________________________________
 
 ## Frontend Performance
 
@@ -111,7 +110,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 - Use WebPageTest for real-world load testing.
 - Monitor Core Web Vitals (LCP, FID, CLS) for user-centric metrics.
 
----
+______________________________________________________________________
 
 ## Backend Performance
 
@@ -203,7 +202,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 - Use heap dumps and memory profilers to find leaks.
 - Log slow queries and API calls for analysis.
 
----
+______________________________________________________________________
 
 ## Database Performance
 
@@ -248,7 +247,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 ### Common Database Pitfalls
 
 - Missing or unused indexes.
-- SELECT \* in production queries.
+- SELECT * in production queries.
 - Not monitoring slow queries.
 - Ignoring replication lag.
 - Not archiving old data.
@@ -260,7 +259,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 - Monitor cache hit/miss ratios.
 - Use database-specific monitoring tools (pg_stat_statements, MySQL Performance Schema).
 
----
+______________________________________________________________________
 
 ## Code Review Checklist for Performance
 
@@ -280,7 +279,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 - [ ] Are there alerts for performance regressions?
 - [ ] Are there any anti-patterns (e.g., SELECT \*, blocking I/O, global variables)?
 
----
+______________________________________________________________________
 
 ## Advanced Topics
 
@@ -325,7 +324,7 @@ Performance isn't just a buzzword—it's the difference between a product people
 - **Managed Services:** Use managed caching, queues, and DBs for scalability.
 - **Cost Optimization:** Monitor and optimize for cloud cost as a performance metric.
 
----
+______________________________________________________________________
 
 ## Practical Examples
 
@@ -428,7 +427,7 @@ function getCachedData(key, fetchFunction) {
 }
 ```
 
----
+______________________________________________________________________
 
 ## References and Further Reading
 
@@ -453,12 +452,12 @@ function getCachedData(key, fetchFunction) {
 - [Jaeger](https://www.jaegertracing.io/)
 - [Zipkin](https://zipkin.io/)
 
----
+______________________________________________________________________
 
 ## Conclusion
 
 Performance optimization is an ongoing process. Always measure, profile, and iterate. Use these best practices, checklists, and troubleshooting tips to guide your development and code reviews for high-performance, scalable, and efficient software. If you have new tips or lessons learned, add them here—let's keep this guide growing!
 
----
+______________________________________________________________________
 
 <!-- End of Performance Optimization Instructions -->

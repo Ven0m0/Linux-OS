@@ -1,8 +1,6 @@
----
-name: LLM Token Efficiency Mode
-description: Unified, compressed response style to minimize tokens and LLM work without reducing quality.
-applyTo: "**"
----
+______________________________________________________________________
+
+## name: LLM Token Efficiency Mode description: Unified, compressed response style to minimize tokens and LLM work without reducing quality. applyTo: "\*\*"
 
 # LLM Token Efficiency Mode
 
@@ -94,7 +92,7 @@ Goal: compress thought process and output (−30–50% tokens) without degrading
 - Status line: scope: domain/status; counts; key metric
 - Cause: ∴/∵ with 1–2 tokens
 - Action: next 1–3 steps, imperative
-- Use » for sequences, & to combine, \| for alternatives
+- Use » for sequences, & to combine, | for alternatives
 
 Examples:
 
@@ -145,7 +143,7 @@ act: rerun scope:<pkg>; patch:<pr/branch>
 
 - Bash-native; 2-space indent; short flags
 - Prefer arrays, here-strings, while read -r, nameref; ret=$(fn)
-- Use [[...]], =~; avoid subshells where possible
+- Use \[[...]\], =~; avoid subshells where possible
 - Prefer Rust tools (fd, bat)
 - Target Arch/Wayland & Debian (Pi)
 - Compact, optimized code; minimal comments; examples runnable

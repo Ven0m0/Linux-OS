@@ -18,7 +18,7 @@ Went a bit overboard on [apt-fuzz-dev](/RaspberryPi/Scripts/apt-fuzz-dev)
 
 [Debian minify](/RaspberryPi/Scripts/Minify.sh) -> [1](https://github.com/Freifunk-Nord/nord-minify_debian.sh/blob/master/nord-minify_debian.sh) [2](https://github.com/boxcutter/debian/blob/main/script/minimize.sh)
 
-## [Docker cleaner](/RaspberryPi/Scripts/Docker-clean.sh) <sup>[<a href="https://github.com/samoshkin/docker-reclaim-disk-space">1</a>]</sup>
+## [Docker cleaner](/RaspberryPi/Scripts/Docker-clean.sh) <sup>\[<a href="https://github.com/samoshkin/docker-reclaim-disk-space">1</a>\]</sup>
 
 - prints the Docker disk usage information
 - interactively prompts you for confirmation

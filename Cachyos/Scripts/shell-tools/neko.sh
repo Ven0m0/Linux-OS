@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 export LC_ALL=C LANG=C
 
-nekofetch() {
+nekofetch(){
   local CAT="${1:-}" JT="${2:-}" IT="${3:-}"
   local JSONT IMGT endpoints formats img_url fmt tmpfile
   # pick json tool

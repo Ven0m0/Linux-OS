@@ -128,7 +128,7 @@ fstype=$(findmnt -rn -o FSTYPE /)
 DISKVAL="${disk_used:-} / ${disk_avail:-} (${disk_col}${disk_pct_num}%${DEF}) - ${fstype:-unknown}"
 #──────────── Print ─────────────
 labelw=14 OUT=''
-append() { [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="$_line"$'\n'; }
+append(){ [[ -n $2 && $2 != "N/A" ]] && printf -v _line '%-*s %s' "$labelw" "$1:" "$2" && OUT+="$_line"$'\n'; }
 
 append "User" "$userhost"
 OUT+="────────────────────────────────────────────"$'\n'

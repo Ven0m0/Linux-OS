@@ -33,27 +33,27 @@ declare -g LOCK_FD=-1 LOCK_FILE="" STOPPED_UDISKS2=0
 declare -ga MOUNTED_DIRS=()
 
 # --- Logging (Enhanced) ---
-log() { printf '[%s] %s\n' "$(date +%T)" "$*"; }
-info() { log "${GRN}INFO:${DEF} $*"; }
-warn() { log "${YEL}WARN:${DEF} $*" >&2; }
-err() { log "${RED}ERROR:${DEF} $*" >&2; }
-die() {
+log(){ printf '[%s] %s\n' "$(date +%T)" "$*"; }
+info(){ log "${GRN}INFO:${DEF} $*"; }
+warn(){ log "${YEL}WARN:${DEF} $*" >&2; }
+err(){ log "${RED}ERROR:${DEF} $*" >&2; }
+die(){
   err "$*"
   cleanup
   exit 1
 }
-dbg() { ((cfg[debug])) && log "DEBUG: $*" || :; }
+dbg(){ ((cfg[debug])) && log "DEBUG: $*" || :; }
 
 # --- Bootiso Integration: Safety Modules ---
 
 # Ported from bootiso: sys_getDeviceType
-get_drive_trans() {
+get_drive_trans(){
   local dev=${1:?}
   lsblk -dno TRAN "$dev" 2>/dev/null || echo "unknown"
 }
 
 # Ported from bootiso: asrt_checkDeviceIsUSB
-assert_usb_dev() {
+assert_usb_dev(){
   local dev=${1:?}
   ((cfg[no_usb_check])) && return 0
 
@@ -69,7 +69,7 @@ assert_usb_dev() {
 }
 
 # Ported from bootiso: asrt_checkImageSize
-assert_size() {
+assert_size(){
   local img=${1:?} dev=${2:?}
   ((cfg[no_size_check])) && return 0
   [[ ! -b $dev ]] && return 0 # Skip if target is file
@@ -83,7 +83,7 @@ assert_size() {
 }
 
 # Ported from bootiso: exec_listUSBDrives (adapted for fzf)
-select_target_interactive() {
+select_target_interactive(){
   has fzf || die "fzf required for interactive mode"
   info "Scanning for removable drives..."
 
@@ -104,9 +104,9 @@ select_target_interactive() {
 
 # --- Core Utilities ---
 
-run() { ((cfg[dry_run])) && info "[DRY] $*" || "$@"; }
+run(){ ((cfg[dry_run])) && info "[DRY] $*" || "$@"; }
 
-run_with_retry() {
+run_with_retry(){
   local -i attempts="${1:-3}" delay="${2:-2}" i
   shift 2
   for ((i = 1; i <= attempts; i++)); do
@@ -116,7 +116,7 @@ run_with_retry() {
   die "Failed after $attempts attempts: $*"
 }
 
-derive_partition_paths() {
+derive_partition_paths(){
   local dev=${1:?}
   if [[ $dev == *@(nvme|mmcblk|loop)* ]]; then
     BOOT_PART="${dev}p1"
@@ -127,7 +127,7 @@ derive_partition_paths() {
   fi
 }
 
-wait_for_partitions() {
+wait_for_partitions(){
   local boot=${1:?} root=${2:?} dev=${3:-}
   local -i i
   ((cfg[dry_run])) && return 0
@@ -140,7 +140,7 @@ wait_for_partitions() {
   die "Partitions missing: $boot / $root"
 }
 
-refresh_partitions() {
+refresh_partitions(){
   local dev=${1:?}
   ((cfg[dry_run])) && return 0
   sync
@@ -157,7 +157,7 @@ refresh_partitions() {
   wait_for_partitions "$BOOT_PART" "$ROOT_PART" "$TGT_DEV"
 }
 
-acquire_device_lock() {
+acquire_device_lock(){
   local path=${1:?}
   LOCK_FILE="/run/lock/raspi-f2fs-${path//[^[:alnum:]]/_}.lock"
   mkdir -p "${LOCK_FILE%/*}"
@@ -165,7 +165,7 @@ acquire_device_lock() {
   flock -n "$LOCK_FD" || die "Device locked by another process: $path"
 }
 
-release_device_lock() {
+release_device_lock(){
   ((LOCK_FD >= 0)) && {
     exec {LOCK_FD}>&- || :
     LOCK_FD=-1
@@ -173,7 +173,7 @@ release_device_lock() {
   [[ -f ${LOCK_FILE:-} ]] && rm -f "$LOCK_FILE" || :
 }
 
-cleanup() {
+cleanup(){
   local -i ret=$?
   set +e
 
@@ -194,16 +194,16 @@ cleanup() {
   return "$ret"
 }
 
-has() { command -v -- "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 
-check_deps() {
+check_deps(){
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync tar xz blkid partprobe lsblk flock blockdev)
   local cmd missing=()
   for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
   ((${#missing[@]} > 0)) && die "Missing dependencies: ${missing[*]}"
 }
 
-force_umount_device() {
+force_umount_device(){
   local dev=${1:?}
   local part
   # bootiso style strict unmount
@@ -218,7 +218,7 @@ force_umount_device() {
 
 # --- F2FS Logic ---
 
-process_source() {
+process_source(){
   info "Processing source: $src_path"
   [[ -f $src_path ]] || die "Source not found"
 
@@ -231,7 +231,7 @@ process_source() {
   fi
 }
 
-setup_target() {
+setup_target(){
   info "Target setup: $tgt_path"
   acquire_device_lock "$tgt_path"
 
@@ -261,7 +261,7 @@ setup_target() {
   derive_partition_paths "$TGT_DEV"
 }
 
-partition_target() {
+partition_target(){
   info "Partitioning & Formatting: $TGT_DEV"
 
   if [[ $TGT_DEV != /dev/loop* ]] && ((!cfg[dry_run])); then
@@ -283,7 +283,7 @@ partition_target() {
   run_with_retry 3 1 mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum "$ROOT_PART"
 }
 
-mount_and_copy() {
+mount_and_copy(){
   info "Mounting & Cloning data"
   ((cfg[dry_run])) && return 0
 
@@ -323,7 +323,7 @@ mount_and_copy() {
   sync
 }
 
-configure_f2fs_boot() {
+configure_f2fs_boot(){
   info "Applying F2FS Configuration"
   ((cfg[dry_run])) && return 0
 
@@ -362,7 +362,7 @@ configure_f2fs_boot() {
   ((cfg[ssh])) && touch "$WORKDIR/tgt/boot/ssh"
 }
 
-usage() {
+usage(){
   cat <<-'EOF'
 	Usage: raspi-f2fs.sh [OPTIONS] [SOURCE] [TARGET]
 	
@@ -382,9 +382,9 @@ usage() {
   exit 0
 }
 
-main() {
+main(){
   local opt
-  prepare() {
+  prepare(){
     WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" rf2fs.XXXXXX)
     SRC_IMG="$WORKDIR/source.img"
     trap cleanup EXIT INT TERM

@@ -13,14 +13,14 @@ DEF=$'\e[0m'
 
 export HOME="/home/${SUDO_USER:-$USER}"
 
-has() { command -v "$1" &>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
-log() { printf '%b\n' "$*"; }
+log(){ printf '%b\n' "$*"; }
 
 _PKG_MGR_CACHED=""
 _AUR_OPTS_CACHED=()
 
-get_pkg_manager() {
+get_pkg_manager(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
     local pkgmgr
     if has paru; then
@@ -38,16 +38,16 @@ get_pkg_manager() {
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
 
-get_aur_opts() {
+get_aur_opts(){
   [[ -z $_PKG_MGR_CACHED ]] && get_pkg_manager >/dev/null
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
 
-main() {
-  cleanup() { sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
+main(){
+  cleanup(){ sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
   trap cleanup EXIT INT TERM
   #============ Update Functions ============
-  update_system() {
+  update_system(){
     local pkgmgr aur_opts
     log "🔄${BLU} System Packages${DEF}"
     pkgmgr=$(get_pkg_manager)
@@ -64,7 +64,7 @@ main() {
     fi
   }
 
-  update_extras() {
+  update_extras(){
     log "🔄${BLU} Extra Tooling${DEF}"
     if has topgrade; then
       local user_flags=('--disable=system' '--disable=self-update' '--disable=brew')
@@ -101,7 +101,7 @@ main() {
     has zoi && zoi upgrade --yes --all || :
   }
 
-  update_python() {
+  update_python(){
     if ! has uv; then return 0; fi
     log "🔄${BLU} Python Environment (uv)${DEF}"
     uv self update || :
@@ -115,7 +115,7 @@ main() {
     fi
   }
 
-  update_maintenance() {
+  update_maintenance(){
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
     for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb fwupdmgr; do

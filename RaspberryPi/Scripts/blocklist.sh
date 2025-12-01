@@ -12,20 +12,20 @@ set -euo pipefail
 shopt -s nullglob globstar execfail
 IFS=$'
 	'
-has() { command -v -- "$1" &>/dev/null; }
-hasname() {
+has(){ command -v -- "$1" &>/dev/null; }
+hasname(){
   local x
   if ! x=$(type -P -- "$1"); then return 1; fi
   printf '%s
 ' "${x##*/}"
 }
-is_program_installed() { command -v "$1" &>/dev/null; }
-get_workdir() {
+is_program_installed(){ command -v "$1" &>/dev/null; }
+get_workdir(){
   local script="${BASH_SOURCE[1]:-$0}"
   builtin cd -- "${-- "$script"%/*}" && printf '%s
 ' "$PWD"
 }
-init_workdir() {
+init_workdir(){
   local workdir
   workdir="$(builtin cd -- "${-- "${BASH_SOURCE[1]:-}"%/*}" && printf '%s
 ' "$PWD")"
@@ -34,7 +34,7 @@ init_workdir() {
     exit 1
   }
 }
-require_root() { if [[ $EUID -ne 0 ]]; then
+require_root(){ if [[ $EUID -ne 0 ]]; then
   local script_path
   script_path=$([[ ${BASH_SOURCE[1]:-$0} == /* ]] && echo "${BASH_SOURCE[1]:-$0}" || echo "$PWD/${BASH_SOURCE[1]:-$0}")
   sudo "$script_path" "$@" || {
@@ -43,23 +43,23 @@ require_root() { if [[ $EUID -ne 0 ]]; then
   }
   exit 0
 fi; }
-check_root() { if [[ $EUID -ne 0 ]]; then
+check_root(){ if [[ $EUID -ne 0 ]]; then
   echo "This script must be run as root." >&2
   exit 1
 fi; }
-load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
-run_dietpi_cleanup() { if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
+load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
+run_dietpi_cleanup(){ if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
   if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then echo "Warning: dietpi-update failed (both standard and fallback commands)." >&2; fi
   sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null || G_SUDO dietpi-logclear 2 2>/dev/null || :
   sudo /boot/dietpi/func/dietpi-cleaner 2 2>/dev/null || G_SUDO dietpi-cleaner 2 2>/dev/null || :
 fi; }
-setup_environment() {
+setup_environment(){
   set -euo pipefail
   shopt -s nullglob globstar execfail
   IFS=$'
 	'
 }
-get_sudo_cmd() {
+get_sudo_cmd(){
   local sudo_cmd
   sudo_cmd="$(hasname sudo-rs || hasname sudo || hasname doas)" || {
     echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
@@ -68,12 +68,12 @@ get_sudo_cmd() {
   printf '%s
 ' "$sudo_cmd"
 }
-init_sudo() {
+init_sudo(){
   local sudo_cmd
   sudo_cmd="$(get_sudo_cmd)" || return 1
   if [[ $EUID -ne 0 && $sudo_cmd =~ ^(sudo-rs|sudo)$ ]]; then "$sudo_cmd" -v 2>/dev/null || :; fi
 }
-find_with_fallback() {
+find_with_fallback(){
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
   shift 4 2>/dev/null || shift $#
   if has fdf; then fdf -H -t "$ftype" "$pattern" "$search_path" "${action:+"$action"}" "$@"; elif has fd; then fd -H -t "$ftype" "$pattern" "$search_path" "${action:+"$action"}" "$@"; else
@@ -88,27 +88,27 @@ export BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 export BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 export LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 export DEF=$'\e[0m' BLD=$'\e[1m'
-remove_comments() { sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
-removeComments() { remove_comments; }
-remove_duplicate_lines() { if [[ -n ${1:-} && -f $1 ]]; then awk '!seen[$0]++' "$1"; else awk '!seen[$0]++'; fi; }
-remove_duplicate_lines_sorted() { if [[ -n ${1:-} && -f $1 ]]; then sort -u "$1"; else sort -u; fi; }
-remove_trailing_spaces() { awk '{gsub(/^ +| +$/,"")}1'; }
-remove_blank_lines() { sed '/^$/d'; }
-remove_multiple_blank_lines() { sed '/^$/N;/^
+remove_comments(){ sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
+removeComments(){ remove_comments; }
+remove_duplicate_lines(){ if [[ -n ${1:-} && -f $1 ]]; then awk '!seen[$0]++' "$1"; else awk '!seen[$0]++'; fi; }
+remove_duplicate_lines_sorted(){ if [[ -n ${1:-} && -f $1 ]]; then sort -u "$1"; else sort -u; fi; }
+remove_trailing_spaces(){ awk '{gsub(/^ +| +$/,"")}1'; }
+remove_blank_lines(){ sed '/^$/d'; }
+remove_multiple_blank_lines(){ sed '/^$/N;/^
 $/D'; }
-to_lowercase() { tr '[:upper:]' '[:lower:]'; }
-to_uppercase() { tr '[:lower:]' '[:upper:]'; }
-remove_colors() { sed 's/\[[0-9;]*m//g'; }
-extract_pattern() {
+to_lowercase(){ tr '[:upper:]' '[:lower:]'; }
+to_uppercase(){ tr '[:lower:]' '[:upper:]'; }
+remove_colors(){ sed 's/\[[0-9;]*m//g'; }
+extract_pattern(){
   local pattern="$1"
   shift
   grep -E "$pattern" "$@"
 }
-extract_urls() { grep -oE '(https?|ftp)://[^[:space:]]+' "$@"; }
-extract_ips() { grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' "$@"; }
-count_lines() { grep -c . "$@" 2>/dev/null || echo 0; }
-normalize_whitespace() { sed -e 's/	/ /g' -e 's/  */ /g'; }
-display_banner() {
+extract_urls(){ grep -oE '(https?|ftp)://[^[:space:]]+' "$@"; }
+extract_ips(){ grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' "$@"; }
+count_lines(){ grep -c . "$@" 2>/dev/null || echo 0; }
+normalize_whitespace(){ sed -e 's/	/ /g' -e 's/  */ /g'; }
+display_banner(){
   local banner_text="$1"
   shift
   local -a flag_colors=("$@")
@@ -141,7 +141,7 @@ fi
 # removeComments(){ sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
 
 # Remove reserved Top Level Domains
-removeReservedTLDs() {
+removeReservedTLDs(){
   sed -e '/\.corp$/d' \
     -e '/\.domain$/d' \
     -e '/\.example$/d' \
@@ -156,7 +156,7 @@ removeReservedTLDs() {
 }
 
 # Main blocklist functionality using hblock
-main() {
+main(){
   local hblock_url='https://raw.githubusercontent.com/hectorm/hblock/master/hblock'
   local hblock_temp
 

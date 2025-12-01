@@ -19,8 +19,8 @@ declare -r MAX_PARALLEL_JOBS=$(nproc 2>/dev/null || echo 4)
 declare -r SQLITE_TIMEOUT=30
 
 #============ Helper Functions ============
-has() { command -v -- "$1" &>/dev/null; }
-get_pkg_manager() {
+has(){ command -v -- "$1" &>/dev/null; }
+get_pkg_manager(){
   if has paru; then
     echo 'paru'
   elif has yay; then
@@ -30,10 +30,10 @@ get_pkg_manager() {
   fi
 }
 
-capture_disk_usage() { df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'; }
+capture_disk_usage(){ df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'; }
 
 # Enhanced SQLite vacuum with reporting
-vacuum_sqlite() {
+vacuum_sqlite(){
   local db=$1 s_old s_new saved
   [[ -f $db ]] || return 0
   [[ -f ${db}-wal || -f ${db}-journal ]] && return 0
@@ -48,7 +48,7 @@ vacuum_sqlite() {
 }
 
 # Process SQLite databases with parallel processing
-clean_sqlite_dbs() {
+clean_sqlite_dbs(){
   local total=0 saved db_list=() count=0
   while IFS= read -r -d '' db; do
     [[ -f $db ]] && db_list+=("$db")
@@ -80,7 +80,7 @@ clean_sqlite_dbs() {
   ((total > 0)) && printf '  %s %s (%d files)\n' "${GRN}Vacuumed:" "$((total / 1024)) KB${DEF}" "$count"
 }
 
-ensure_not_running() {
+ensure_not_running(){
   local timeout=6 pattern
   pattern=$(printf '%s|' "$@")
   pattern=${pattern%|}
@@ -97,7 +97,7 @@ ensure_not_running() {
 }
 
 # Mozilla profile discovery with IsRelative support
-mozilla_profiles() {
+mozilla_profiles(){
   local base=$1 p is_rel path_val
   [[ -d $base ]] || return 0
   if [[ -f $base/installs.ini ]]; then
@@ -127,12 +127,12 @@ mozilla_profiles() {
   fi
 }
 
-chrome_profiles() {
+chrome_profiles(){
   local root="$1"
   for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && echo "$d"; done
 }
 
-configure_firefox_privacy() {
+configure_firefox_privacy(){
   local prefs_changed=0
   local -a firefox_prefs=(
     'user_pref("browser.startup.homepage_override.mstone", "ignore");'
@@ -171,14 +171,14 @@ configure_firefox_privacy() {
   done
   ((prefs_changed > 0)) && printf '  %s %d prefs\n' "${GRN}Firefox privacy:" "$prefs_changed${DEF}"
 }
-configure_python_history() {
+configure_python_history(){
   local history_file="${HOME}/.python_history"
   [[ -f $history_file ]] || touch "$history_file"
   sudo chattr +i "$history_file" &>/dev/null && printf '  %s\n' "${GRN}Python history locked${DEF}" || :
 }
 
 #============ Banner ============
-banner() {
+banner(){
   printf '%s\n' "${LBLU} ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ ${DEF}"
   printf '%s\n' "${PNK}██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ ${DEF}"
   printf '%s\n' "${BWHT}██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗${DEF}"
@@ -188,7 +188,7 @@ banner() {
 }
 
 #============ Cleaning Functions ============
-clean_browsers() {
+clean_browsers(){
   printf '%s\n' "🔄${BLU}Cleaning browsers...${DEF}"
   local -a moz_bases=(
     "${HOME}/.mozilla/firefox"
@@ -243,7 +243,7 @@ clean_browsers() {
   done
 }
 
-clean_mail_clients() {
+clean_mail_clients(){
   printf '%s\n' "📧${BLU}Cleaning mail clients...${DEF}"
   local -a mail_bases=(
     "${HOME}/.thunderbird"
@@ -260,7 +260,7 @@ clean_mail_clients() {
   done
 }
 
-clean_electron() {
+clean_electron(){
   local -a apps=("Code" "VSCodium" "Microsoft/Microsoft Teams")
   for app in "${apps[@]}"; do
     local d="${HOME}/.config/$app"
@@ -269,7 +269,7 @@ clean_electron() {
   done
 }
 
-privacy_clean() {
+privacy_clean(){
   printf '%s\n' "🔒${MGN}Privacy cleanup...${DEF}"
   rm -f "${HOME}/.bash_history" "${HOME}/.zsh_history" "${HOME}/.python_history" "${HOME}/.history" \
     "${HOME}/.local/share/fish/fish_history" &>/dev/null || :
@@ -278,13 +278,13 @@ privacy_clean() {
   rm -f "${HOME}/.recently-used.xbel" "${HOME}/.local/share/recently-used.xbel"* &>/dev/null || :
 }
 
-privacy_config() {
+privacy_config(){
   printf '%s\n' "🔒${MGN}Privacy configuration...${DEF}"
   configure_firefox_privacy
   configure_python_history
 }
 
-pkg_cache_clean() {
+pkg_cache_clean(){
   if has pacman; then
     local pkgmgr=$(get_pkg_manager)
     sudo paccache -rk0 -q &>/dev/null || :
@@ -297,7 +297,7 @@ pkg_cache_clean() {
   }
 }
 
-snap_flatpak_trim() {
+snap_flatpak_trim(){
   has flatpak && flatpak uninstall --unused --delete-data -y &>/dev/null || :
   if has snap; then
     printf '%s\n' "🔄${BLU}Removing old Snap revisions...${DEF}"
@@ -309,7 +309,7 @@ snap_flatpak_trim() {
   sudo rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
 }
 
-system_clean() {
+system_clean(){
   printf '%s\n' "🔄${BLU}System cleanup...${DEF}"
   sudo resolvectl flush-caches &>/dev/null || :
   sudo systemd-resolve --flush-caches &>/dev/null || :
@@ -336,7 +336,7 @@ system_clean() {
 }
 
 #============ Main ============
-main() {
+main(){
   case ${1:-} in
   config)
     banner

@@ -5,15 +5,15 @@ shopt -s nullglob globstar
 IFS=$'\n\t'
 LC_ALL=C
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
-warn() { printf '%b\n' "${Y}⚠${D} $*" >&2; }
-die() {
+warn(){ printf '%b\n' "${Y}⚠${D} $*" >&2; }
+die(){
   printf '%b\n' "${R}✗${D} $*" >&2
   exit "${2:-1}"
 }
-has() { command -v "$1" &>/dev/null; }
-ok() { printf '%b\n' "${G}✓${D} $*"; }
+has(){ command -v "$1" &>/dev/null; }
+ok(){ printf '%b\n' "${G}✓${D} $*"; }
 
-vscode_json_set() {
+vscode_json_set(){
   local prop=$1 val=$2
   has python3 || {
     warn "No python3: $prop"
@@ -57,7 +57,7 @@ has "$JQ" || die "Need jq/jaq"
 
 KEYS_PROD=(nameShort nameLong applicationName dataFolderName serverDataFolderName darwinBundleIdentifier linuxIconName licenseUrl extensionAllowedProposedApi extensionEnabledApiProposals extensionKind extensionPointExtensionKind extensionSyncedKeys extensionVirtualWorkspacesSupport extensionsGallery extensionTips extensionImportantTips exeBasedExtensionTips configBasedExtensionTips keymapExtensionTips languageExtensionTips remoteExtensionTips webExtensionTips virtualWorkspaceExtensionTips trustedExtensionAuthAccess trustedExtensionUrlPublicKeys auth configurationSync "configurationSync.store" editSessions "editSessions.store" settingsSync aiConfig commandPaletteSuggestedCommandIds extensionRecommendations extensionKeywords extensionAllowedBadgeProviders extensionAllowedBadgeProvidersRegex linkProtectionTrustedDomains msftInternalDomains documentationUrl introductoryVideosUrl tipsAndTricksUrl newsletterSignupUrl releaseNotesUrl keyboardShortcutsUrlMac keyboardShortcutsUrlLinux keyboardShortcutsUrlWin quality settingsSearchUrl tasConfig tunnelApplicationName tunnelApplicationConfig serverApplicationName serverGreeting urlProtocol webUrl webEndpointUrl webEndpointUrlTemplate webviewContentExternalBaseUrlTemplate builtInExtensions extensionAllowedExtensionKinds crash aiRelatedInformationUrl defaultChatAgent)
 
-dl() {
+dl(){
   local u=$1 o=$2
   mkdir -p "${o%/*}"
   if has aria2c; then
@@ -69,7 +69,7 @@ dl() {
   else die "Need aria2c/curl/wget"; fi
 }
 
-xdg_patch() {
+xdg_patch(){
   local -a files=()
   mapfile -t files < <(find /usr/{lib/code*,share/applications} /opt/{visual-studio-code*,vscodium*} \
     -type f \( -name "package.json" -o -name "*.desktop" \) ! -name "*-url-handler.desktop" 2>/dev/null || :)
@@ -99,7 +99,7 @@ xdg_patch() {
   done
 }
 
-json_op() {
+json_op(){
   local op=$1 prod=$2 patch=$3 cache=$4
   local tmp="${prod}.tmp.$$"
   [[ -f $prod ]] || {
@@ -123,7 +123,7 @@ json_op() {
   esac
 }
 
-update_json() {
+update_json(){
   local v=$1 out=$2
   local -n kref=$3
   [[ $v ]] || die "Version required"
@@ -143,13 +143,13 @@ update_json() {
   [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD &>/dev/null || :
 }
 
-sign_fix() {
+sign_fix(){
   local f="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js"
   local old=${1:-@vscode/vsce-sign} new=${2:-node-ovsx-sign}
   [[ -f $f ]] && sed -i "s|import(\"${old}\")|import(\"${new}\")|g" "$f" && ok "Sign fix: $new"
 }
 
-repo_swap() {
+repo_swap(){
   local f=${1:-/usr/share/vscodium/resources/app/product.json} mode=${2:-0}
   [[ -f $f ]] || die "No product.json: $f"
   if ((mode)); then
@@ -167,7 +167,7 @@ repo_swap() {
   fi
 }
 
-vscodium_prod_full() {
+vscodium_prod_full(){
   local dst=${1:-/usr/share/vscodium/resources/app/product.json}
   [[ -f $dst ]] || die "Missing: $dst"
   local v work="/tmp/vp.$$" src bak
@@ -187,7 +187,7 @@ vscodium_prod_full() {
   ok "VSCodium Full Patch (backup: $bak)"
 }
 
-vscodium_restore() {
+vscodium_restore(){
   local d=${1:-/usr/share/vscodium/resources/app/product.json}
   local -a blist=()
   local b
@@ -197,7 +197,7 @@ vscodium_restore() {
   cp -f "$b" "$d" && ok "Restored ← $b"
 }
 
-configure_privacy() {
+configure_privacy(){
   printf '%bConfiguring VSCode/VSCodium privacy settings...%b\n' "$Y" "$D"
   local changed=0
   local settings=(
@@ -232,7 +232,7 @@ configure_privacy() {
   ok "Privacy: $changed settings changed"
 }
 
-main() {
+main(){
   local CP="/usr/lib/code/product.json" CD="/usr/share"
   case ${1:-} in
   xdg) xdg_patch ;;

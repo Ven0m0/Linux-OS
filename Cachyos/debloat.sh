@@ -15,20 +15,20 @@ readonly YLW=$'\e[33m'
 readonly DEF=$'\e[0m'
 
 # --- Helper Functions ---
-has() {
+has(){
   command -v -- "$1" &>/dev/null
 }
 
-msg() {
+msg(){
   printf '%b%s%b\n' "$GRN" "$*" "$DEF"
 }
 
-warn() {
+warn(){
   printf '%b%s%b\n' "$YLW" "$*" "$DEF"
 }
 
 # --- Platform Detection ---
-detect_platform() {
+detect_platform(){
   if command -v pacman &>/dev/null; then
     echo "arch"
   elif command -v apt-get &>/dev/null; then
@@ -39,7 +39,7 @@ detect_platform() {
 }
 
 # --- Arch-based Debloat ---
-debloat_arch() {
+debloat_arch(){
   msg "## Debloating Arch-based system..."
 
   # Remove mostly useless packages
@@ -73,7 +73,7 @@ debloat_arch() {
 }
 
 # --- Debian-based Debloat ---
-debloat_debian() {
+debloat_debian(){
   msg "## Debloating Debian-based system..."
 
   # Remove LibreOffice (if not needed)
@@ -107,7 +107,7 @@ debloat_debian() {
 }
 
 # --- Main Execution ---
-main() {
+main(){
   local platform
   platform=$(detect_platform)
   msg "Detected platform: $platform"

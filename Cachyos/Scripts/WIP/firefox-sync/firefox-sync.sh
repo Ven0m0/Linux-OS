@@ -6,11 +6,11 @@ STATIC=main
 LINK=
 VOLATILE="/dev/shm/${USER}/firefox"
 
-usage() {
+usage(){
   echo "Usage: firefox-sync [-dh] [-p profile-basename]"
 }
 
-longhelp() {
+longhelp(){
   usage
   cat <<EOF
 

@@ -1,6 +1,6 @@
 # Returns current CPU temp 'C
 # - print_full_info=1	Optional input to print full colour text output and temp warnings
-G_OBTAIN_CPU_TEMP() {
+G_OBTAIN_CPU_TEMP(){
   # Read CPU temp from file
   local temp
   # - Odroid N2/ASUS/Sparky: Requires special case as in other array this would break SBC temp readouts with 2 zones
@@ -65,7 +65,7 @@ G_OBTAIN_CPU_TEMP() {
 }
 
 # Returns current CPU usage in %
-G_OBTAIN_CPU_USAGE() {
+G_OBTAIN_CPU_USAGE(){
 
   local usage=0
 

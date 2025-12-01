@@ -37,7 +37,8 @@ vacuum_sqlite() {
   local db=$1 s_old s_new saved
   [[ -f $db ]] || return 0
   [[ -f ${db}-wal || -f ${db}-journal ]] && return 0
-  head -c 16 "$db" 2>/dev/null | grep -qF 'SQLite format 3' || return 0
+  # Use fixed-string grep (-F) for faster matching
+  head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3' || return 0
   s_old=$(stat -c%s "$db" 2>/dev/null) || return 0
   # VACUUM already rebuilds indices, REINDEX is redundant
   sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || return 0

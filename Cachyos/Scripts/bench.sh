@@ -151,7 +151,8 @@ vacuum_sqlite() {
 '
     return
   }
-  if ! head -c 16 "$db" 2>/dev/null | grep -q 'SQLite format 3'; then
+  # Use fixed-string grep (-F) for faster literal matching
+  if ! head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3'; then
     printf '0
 '
     return
@@ -268,6 +269,7 @@ clean_with_sudo() {
   [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 _DOWNLOAD_TOOL_CACHED=""
+# shellcheck disable=SC2120
 get_download_tool() {
   local skip_aria2=0
   [[ ${1:-} == --no-aria2 ]] && skip_aria2=1
@@ -428,7 +430,7 @@ benchmark_copy() {
 # Initialize JSON log if needed
 if [[ $EXPORT_JSON -eq 1 ]]; then
   LOG="bench-results-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
-  >"$LOG"
+  : >"$LOG"  # Truncate file using : as no-op command
   log "${GRN}Results will be exported to: $LOG${DEF}"
 fi
 

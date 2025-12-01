@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
-#
 # apt-ultra: Unified fast APT package manager
 # Combines fast-apt-mirror.sh + apt-fast functionality
-#
 # SPDX-License-Identifier: Apache-2.0
 # shellcheck disable=SC2155,SC1091,SC2120
-
-set -Eeuo pipefail
-shopt -s nullglob globstar extglob
+set -euo pipefail; shopt -s nullglob globstar extglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 
@@ -24,9 +20,7 @@ BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
-if [[ !  -t 1 ]]; then
-  BLK= RED= GRN= YLW= BLU= MGN= CYN= WHT= LBLU= PNK= BWHT= DEF= BLD=
-fi
+[[ !  -t 1 ]] && BLK= RED= GRN= YLW= BLU= MGN= CYN= WHT= LBLU= PNK= BWHT= DEF= BLD=
 
 #──────────── Helpers ──────────────
 has(){ command -v "$1" &>/dev/null; }
@@ -34,7 +28,6 @@ msg(){ printf '%b\n' "${2:-$GRN}$1$DEF" "${@:3}"; }
 warn(){ msg "$*" "$YLW" >&2; }
 err(){ msg "$*" "$RED" >&2; }
 die(){ err "$*"; exit "${2:-1}"; }
-
 get_priv_cmd(){
   local c
   for c in sudo-rs sudo doas; do
@@ -44,21 +37,16 @@ get_priv_cmd(){
 }
 PRIV_CMD=${PRIV_CMD:-$(get_priv_cmd || true)}
 run_priv(){ [[ $EUID -eq 0 || -z ${PRIV_CMD:-} ]] && "$@" || "$PRIV_CMD" -- "$@"; }
-
 unique(){ awk '! x[$0]++'; }
 max_lines(){ awk "NR<=$1"; }
 matches(){ [[ $1 =~ $2 ]]; }
-
-__xargs(){
-  env -i HOME="$HOME" LC_CTYPE="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" PATH="$PATH" TERM="${TERM:-}" USER="${USER:-}" xargs "$@"
-}
+__xargs(){ env -i HOME="$HOME" LC_CTYPE="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" PATH="$PATH" TERM="${TERM:-}" USER="${USER:-}" xargs "$@"; }
 
 #──────────── Config ────────────────
 CONF_FILE="/etc/apt-ultra.conf"
 DLDIR="/var/cache/apt/apt-ultra"
 DLLIST="/tmp/apt-ultra. list"
 APTCACHE="/var/cache/apt/archives"
-
 # Defaults
 _APTMGR='apt-get'
 _MAXNUM=8
@@ -89,12 +77,7 @@ _create_lock(){
   trap "cleanup_all; exit \$CLEANUP_STATE" EXIT
   trap "cleanup_all; exit 1" INT TERM
 }
-
-_remove_lock(){
-  flock -u "$LCK_FD" 2>/dev/null || :
-  rm -f "$LCK_FILE.lock"
-}
-
+_remove_lock(){ flock -u "$LCK_FD" 2>/dev/null || :; rm -f "$LCK_FILE.lock"; }
 cleanup_all(){
   local rc=$?
   [[ $CLEANUP_STATE -eq 0 ]] && CLEANUP_STATE=$rc
@@ -140,7 +123,6 @@ get_current_mirror(){
     debian|kali|ubuntu|pop) ;;
     *) err "Unsupported OS: $dist_name"; return $RC_MISC_ERROR ;;
   esac
-
   local cfgfile
   case $dist_name in
     debian) cfgfile='/etc/apt/sources.list. d/debian.sources' ;;
@@ -152,7 +134,6 @@ get_current_mirror(){
         cfgfile='/etc/apt/sources.list.d/system.sources'
       fi ;;
   esac
-
   local mirror=$(read_main_mirror_from_deb822_file "$cfgfile")
   if [[ -z $mirror && -f /etc/apt/sources.list ]]; then
     if grep -q -E "^deb\s+mirror\+file:/etc/apt/apt-mirrors. txt\s+.*\s+main" /etc/apt/sources. list; then
@@ -166,7 +147,6 @@ get_current_mirror(){
     cfgfile=${mirror/mirror+file:/}
     mirror=$(awk 'NR==1 { print $1 }' "${mirror/mirror+file:/}")
   fi
-
   [[ -z $mirror ]] && { warn "Current mirror: unknown"; return; }
   msg "Current mirror: $mirror ($cfgfile)"
   [[ !  -t 1 ]] && { echo "$mirror"; echo "$cfgfile"; }
@@ -178,9 +158,7 @@ find_fast_mirror(){
     run_priv apt-get -o Acquire::http::Timeout=10 update && \
     run_priv apt-get -o Acquire::http::Timeout=10 install -y --no-install-recommends curl ca-certificates || return $RC_MISC_ERROR
   }
-
   local parallel=1 healthchecks=20 speedtests=5 sample_kb=200 sample_secs=3 country= apply= exclude_current= ignore_sync= verbosity=0
-
   while [[ $# -gt 0 ]]; do
     case $1 in
       -p|--parallel) parallel=$2; shift ;;
@@ -210,7 +188,6 @@ EOF
     esac
     shift
   done
-
   local dist_name=$(get_dist_name)
   case $dist_name in
     debian|kali|ubuntu|pop)
@@ -219,10 +196,8 @@ EOF
     *)
       local dist_name=debian dist_version=stable dist_arch=amd64 ;;
   esac
-
   local current_mirror=$(get_current_mirror | max_lines 1 || true)
   msg "Selecting $healthchecks random mirrors..." "$BLU"
-
   local mirrors= reference_mirror= last_modified_path=
   case $dist_name in
     debian)
@@ -289,7 +264,6 @@ EOF
       *) msg " → outdated ($(date -d "@$lm" +'%Y-%m-%d %H:%M:%S %Z')) $url" "$RED" ;;
     esac
   done <<< "$sorted"
-
   local healthy
   if [[ $ignore_sync == "true" ]]; then
     healthy=$(echo "$sorted" | awk '$2 != "missing" && $2 != "error" { $1=""; $2=""; sub(/^  /, ""); if ($0 != "") print }')
@@ -298,13 +272,11 @@ EOF
     healthy=$(echo "$sorted" | awk -v d="$healthy_date" '$1 == d && $2 != "missing" && $2 != "error" { $1=""; $2=""; sub(/^  /, ""); if ($0 != "") print }')
     msg "✓ $(echo "$healthy" | wc -l) mirrors reachable & up-to-date" "$GRN"
   fi
-
   local speedtest_mirrors=''
   for pm in "${preferred[@]}"; do
     [[ $healthy = *"$pm"* ]] && speedtest_mirrors+=$pm$'\n'
   done
   speedtest_mirrors=$(echo "$speedtest_mirrors$healthy" | unique | max_lines "$speedtest_mirrors")
-
   msg "Speed testing $(echo "$speedtest_mirrors" | wc -l) mirrors (${sample_kb}KB sample)..." "$BLU"
   local mirrors_with_speed=$(
     echo "$speedtest_mirrors" \
@@ -315,21 +287,16 @@ EOF
     | sort -rg
   )
   msg " ✓ done" "$GRN"
-
   [[ -z $mirrors_with_speed ]] && die "Could not determine fast mirror."
   local first="${mirrors_with_speed%%$'\n'*}"
   local fastest=$(echo "$first" | awk -F'\t' '{ print $2 }')
   local speed=$(echo "$first" | awk -F'\t' '{ print $1 }' | numfmt --to=iec --suffix=B/s)
-
   [[ !  $fastest =~ ^https?:// ]] && die "Invalid fastest mirror: $fastest"
-
   [[ $verbosity -gt 0 ]] && echo "$mirrors_with_speed" | tail -n +2 | tac | while IFS= read -r m; do
     local sp=$(echo "${m%%$'\n'*}" | awk -F'\t' '{ print $1 }' | numfmt --to=iec --suffix=B/s)
     msg " → $(echo "$m" | awk -F'\t' '{ print $2 }') ($sp)" "$CYN"
   done
-
   msg "✓ Fastest: $fastest ($speed)" "$LBLU$BLD"
-
   [[ $apply == "true" ]] && set_mirror "$fastest" || :
   [[ !  -t 1 ]] && echo "$fastest"
 }
@@ -337,7 +304,6 @@ EOF
 set_mirror(){
   local new_mirror=${1:? }
   matches "${new_mirror,,}" '^(https?|ftp)://' || die "Malformed URL: $new_mirror"
-
   local dist_name=$(get_dist_name)
   case $dist_name in
     debian|kali|ubuntu|pop) ;;
@@ -347,7 +313,6 @@ set_mirror(){
   local current
   readarray -t current < <(get_current_mirror || true)
   [[ ${#current[@]} -lt 1 ]] && die "Cannot determine current mirror."
-
   if [[ ${current[0]} == "$new_mirror" ]]; then
     msg "Already using: $new_mirror" "$GRN"
   else
@@ -367,22 +332,18 @@ set_mirror(){
 
 #────────── APT Operations ──────────
 urldecode(){ printf '%b' "${1//%/\\x}"; }
-
 get_uris(){
   [[ !  -d $(dirname "$DLLIST") ]] && { mkdir -p "$(dirname "$DLLIST")" || die "Cannot create download dir. "; }
   [[ -f $DLLIST ]] && { rm -f "$DLLIST" 2>/dev/null || die "Cannot write to $DLLIST"; }
-
   echo "# apt-ultra download list: $(date)" > "$DLLIST"
   local uri_mgr="${_APTMGR}"
   case "$(basename "${_APTMGR}")" in
     apt|apt-get) uri_mgr="${_APTMGR}" ;;
     *) uri_mgr='apt-get' ;;
   esac
-
   local uris_full=$("$uri_mgr" -y --print-uris "$@" 2>&1)
   CLEANUP_STATE=$?
   [[ $CLEANUP_STATE -ne 0 ]] && { err "Package manager failed. "; return; }
-
   local DOWNLOAD_SIZE=0
   while IFS=' ' read -r uri filename filesize _; do
     [[ -z $uri ]] && continue
@@ -391,11 +352,9 @@ get_uris(){
     IFS='_' read -r pkg ver _ <<<"$fname_dec"
     DOWNLOAD_SIZE=$((DOWNLOAD_SIZE + filesize))
     {
-      echo "$uri"
-      echo " out=$filename"
+      echo "$uri"; echo " out=$filename"
     } >> "$DLLIST"
   done <<<"$(echo "$uris_full" | grep -E "^'(https?|ftp)://")"
-
   msg "Download size: $(echo "$DOWNLOAD_SIZE" | numfmt --to=iec-i --suffix=B)" "$LBLU"
 }
 
@@ -437,10 +396,8 @@ EOF
 
 main(){
   _create_lock
-
   local cmd=${1:-}
   [[ $cmd == "--help" || $cmd == "-h" || -z $cmd ]] && { usage; exit 0; }
-
   case $cmd in
     find-mirror) shift; find_fast_mirror "$@" ;;
     set-mirror) shift; set_mirror "$@" ;;

@@ -358,6 +358,7 @@ menu_upgradable(){
   [[ ${#pkgs[@]} -gt 0 ]] && run_mgr install "${pkgs[@]}"
 }
 
+# shellcheck disable=SC2120  # Function may be called without args (uses default)
 backup_installed(){
   local out="${1:-pkglist-$(date +%F).txt}"
   dpkg-query -W -f='${Package}\n' | sort -u >"$out"

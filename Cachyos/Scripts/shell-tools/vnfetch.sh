@@ -29,8 +29,8 @@ seconds=${rawSeconds%.*} uptime=""
 UPT=${uptime:-$(uptime -p)}
 # Processes
 shopt -s nullglob
-PROCS=(/proc/[0-9]*)
-PROCS=${#PROCS[@]}
+proc_dirs=(/proc/[0-9]*)
+PROCS=${#proc_dirs[@]}
 shopt -u nullglob
 # Packages
 PKG='' PKG2='' PKG3=''

@@ -250,6 +250,7 @@ fi
 # CFLAGS/LDFLAGS
 CFLAGS="-march=native -mtune=native -O3 -pipe -pthread -fdata-sections -ffunction-sections -fno-semantic-interposition"
 CXXFLAGS="$CFLAGS"
+# shellcheck disable=SC2054  # Commas in -Wl flags are not array separators
 LDFLAGS=(
   -Wl,-O3
   -Wl,--sort-common
@@ -290,6 +291,7 @@ RUSTFLAGS_BASE=(
 )
 
 # Additional link args
+# shellcheck disable=SC2054  # Commas in -Wl flags are not array separators
 EXTRA_LINK=(
   -Clink-arg=-Wl,-O3
   -Clink-arg=-Wl,-gc-sections
@@ -316,6 +318,7 @@ ZFLAGS=(
 export RUSTFLAGS="${RUSTFLAGS_BASE[*]} ${LFLAGS[*]} ${ZFLAGS[*]} ${EXTRA_LINK[*]}"
 export CFLAGS="$CFLAGS"
 export CXXFLAGS="$CXXFLAGS"
+# shellcheck disable=SC2178  # Intentionally converting array to string for export
 export LDFLAGS="${LDFLAGS[*]}"
 
 # Additional cargo install flags

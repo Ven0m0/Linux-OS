@@ -73,10 +73,12 @@ ash(){
         # Batch mode from stdin
         "$RISH" sh
       else
+        # shellcheck disable=SC2294  # eval needed for command passthrough
         "$RISH" "$@" 2>/dev/null || eval "$*"
       fi
     else
       # Local fallback
+      # shellcheck disable=SC2294  # eval needed for command passthrough
       if [[ $# -eq 0 ]]; then sh; else eval "$@"; fi
     fi
   else

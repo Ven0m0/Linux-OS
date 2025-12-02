@@ -389,29 +389,6 @@ _expand_wildcards(){
   fi
 }
 
-# Clean arrays of file/directory paths
-clean_paths(){
-  local paths=("$@") path
-  # Batch check existence to reduce syscalls
-  local existing_paths=()
-  for path in "${paths[@]}"; do
-    _expand_wildcards "$path" existing_paths
-  done
-  # Batch delete all existing paths at once
-  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
-}
-# Clean paths with privilege escalation
-clean_with_sudo(){
-  local paths=("$@") path
-  # Batch check existence to reduce syscalls and sudo invocations
-  local existing_paths=()
-  for path in "${paths[@]}"; do
-    _expand_wildcards "$path" existing_paths
-  done
-  # Batch delete all existing paths at once with single sudo call
-  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
-}
-
 #============ Download Tool Detection ============
 # Get best available download tool (with optional skip for piping)
 # Usage: get_download_tool [--no-aria2]

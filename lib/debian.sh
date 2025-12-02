@@ -174,11 +174,13 @@ require_root(){
 }
 
 #============ Find with Fallback ============
-# Find files/directories with fd/fdfind/find fallback
+# Find files/directories with fdf/fd/fdfind/find fallback
 find_with_fallback(){
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
   shift 4 2>/dev/null || shift $#
-  if has fd; then
+  if has fdf; then
+    fdf -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
+  elif has fd; then
     fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
   elif has fdfind; then
     fdfind -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"

@@ -112,9 +112,11 @@ print_named_banner(){
 }
 
 #============ File Finding Helpers ============
-# Use fd if available, fallback to find
+# Use fdf/fd/fdfind if available, fallback to find
 find_files(){
-  if has fd; then
+  if has fdf; then
+    fdf -H "$@"
+  elif has fd; then
     fd -H "$@"
   elif has fdfind; then
     fdfind -H "$@"
@@ -123,11 +125,13 @@ find_files(){
   fi
 }
 
-# NUL-safe finder using fd/fdfind/find
+# NUL-safe finder using fdf/fd/fdfind/find
 find0(){
   local root="$1"
   shift
-  if has fd; then
+  if has fdf; then
+    fdf -H -0 "$@" . "$root"
+  elif has fd; then
     fd -H -0 "$@" . "$root"
   elif has fdfind; then
     fdfind -H -0 "$@" . "$root"

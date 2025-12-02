@@ -115,7 +115,6 @@ setup_build_env(){
   # Linker optimization flags
   export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
   # Cargo configuration
-  export
   export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
   export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1
   # Parallel build settings
@@ -698,52 +697,7 @@ run_update(){
 }
 
 #=========== Clean Functions ===========
-# Clean arrays of file/directory paths
-clean_paths(){
-  local paths=("$@") path
-  # Batch check existence to reduce syscalls
-  local existing_paths=()
-  for path in "${paths[@]}"; do
-    # Handle wildcard paths
-    if [[ $path == *\** ]]; then
-      # Use globbing directly and collect existing items
-      shopt -s nullglob
-      # shellcheck disable=SC2206
-      local -a items=("$path")
-      for item in "${items[@]}"; do
-        [[ -e $item ]] && existing_paths+=("$item")
-      done
-      shopt -u nullglob
-    else
-      [[ -e $path ]] && existing_paths+=("$path")
-    fi
-  done
-  # Batch delete all existing paths at once
-  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
-}
-
-clean_with_sudo(){
-  local paths=("$@") path
-  # Batch check existence to reduce syscalls and sudo invocations
-  local existing_paths=()
-  for path in "${paths[@]}"; do
-    # Handle wildcard paths
-    if [[ $path == *\** ]]; then
-      # Use globbing directly and collect existing items
-      shopt -s nullglob
-      # shellcheck disable=SC2206
-      local -a items=("$path")
-      for item in "${items[@]}"; do
-        [[ -e $item ]] && existing_paths+=("$item")
-      done
-      shopt -u nullglob
-    else
-      [[ -e $path ]] && existing_paths+=("$path")
-    fi
-  done
-  # Batch delete all existing paths at once with single sudo call
-  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
-}
+# Note: clean_paths() and clean_with_sudo() are defined in the inlined lib/common.sh above
 
 run_clean(){
   print_named_banner "clean"

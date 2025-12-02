@@ -33,7 +33,7 @@ cargo install minhtml
 # Wget
 cargo install kelpsget
 # Update-alternatives for arch
-sudo pacman --needed --noconfirm -S zenity --noconfirm --needed
+sudo pacman --needed --noconfirm -S zenity
 cargo install --git "https://github.com/fthomys/update-alternatives"
 pbin="$(command -v update-alternatives || echo "$HOME"/.cargo/bin/update-alternatives)"
 sudo ln -sf "$pbin" "/usr/local/bin/${pbin##*/}"
@@ -65,9 +65,9 @@ sudo oxidizr-arch --commit use findutils"
 curl -sf "https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/etchdns.sh" | bash
 # JQ
 sudo pacman --needed --noconfirm -S jaq
-# Stow
-https://github.com/RaphGL/Tuckr
-https://github.com/levinion/stor
+# Stow alternatives:
+# - https://github.com/RaphGL/Tuckr
+# - https://github.com/levinion/stor
 # Nix
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 

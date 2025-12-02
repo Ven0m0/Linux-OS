@@ -71,7 +71,6 @@ setup_build_env(){
   export CFLAGS="-march=native -mtune=native -O3 -pipe"
   export CXXFLAGS="$CFLAGS"
   export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-  export
   export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
   export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1
   local nproc_count

@@ -68,7 +68,7 @@ sync
 #=============================================================
 # Clean APT lists before update
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
-run_apt(){ sudo apt-get -y --allow-releaseinfo-change -o Acquire::Languages none -o APT::Get::Fix-Missing true -o APT::Get::Fix-Broken true "$1" "$@"; }
+run_apt(){ sudo apt-get -y --allow-releaseinfo-change -o Acquire::Languages=none -o APT::Get::Fix-Missing=true -o APT::Get::Fix-Broken=true "$@"; }
 if has apt-fast; then
   sudo apt-fast update -y --allow-releaseinfo-change
   sudo apt-fast upgrade -y --no-install-recommends

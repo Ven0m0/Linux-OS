@@ -99,7 +99,7 @@ echo
 echo "Cleaning apt cache"
 sudo rm -rf /var/lib/apt/lists/*
 clean_apt_cache
-sudo apt-get purge ?config-files 2>/dev/null || :
+sudo apt-get purge '?config-files' 2>/dev/null || :
 echo "Cleaning leftover config files"
 if has dpkg; then
   dpkg -l | awk '/^rc/ { print $2 }' | xargs -r sudo apt-get purge -y 2>/dev/null || :
@@ -124,7 +124,7 @@ echo "Vacuuming journal logs"
 clean_journal_logs
 echo "Running fstrim"
 sudo fstrim -a --quiet-unsupported
-echo "Removind old log files"
+echo "Removing old log files"
 sudo find /var/log/ -name "*.log" -type f -mtime +3 -delete
 sudo find /var/crash/ -name "core.*" -type f -mtime +3 -delete
 sudo find /var/cache/apt/ -name "*.bin" -type f -mtime +3 -delete

@@ -12,7 +12,7 @@ BACKUPDIR="$MIRRORDIR/.bak"
 LOGFILE="/var/log/mirror-rank.log"
 # Country: Auto-detect with 'DE' fallback
 COUNTRY="${RATE_MIRRORS_ENTRY_COUNTRY:-$(curl -sf https://ipapi.co/country_code || echo DE)}"
-[[ $COUNTRY ]] || COUNTRY="DE"
+[[ -n $COUNTRY ]] || COUNTRY="DE"
 ARCHLIST_URL_GLOBAL="https://archlinux.org/mirrorlist/?country=all&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
 ARCHLIST_URL_DE="https://archlinux.org/mirrorlist/?country=DE&protocol=https&ip_version=4&ip_version=6&use_mirror_status=on"
 REPOS=(cachyos chaotic-aur endeavouros alhp)
@@ -77,7 +77,7 @@ rank_keys(){
       fi
     fi
   done
-  if [[ $best ]]; then
+  if [[ -n $best ]]; then
     log KEY "Best: $best ($min ms)"
     sed -i "s|^[[:space:]]*keyserver .*|keyserver $best|" "$GPGCONF"
   else

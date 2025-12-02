@@ -2,57 +2,22 @@
 # Optimized: 2025-11-30 - Add support for soar and zoi; review phase triggers; clean env vars
 # Standalone system update script for Arch-based systems.
 
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-
-# Color definitions
-GRN=$'\e[32m'
-BLU=$'\e[34m'
-DEF=$'\e[0m'
-
-export HOME="/home/${SUDO_USER:-$USER}"
-
-has(){ command -v -- "$1" &>/dev/null; }
-
-log(){ printf '%b\n' "$*"; }
-
-_PKG_MGR_CACHED=""
-_AUR_OPTS_CACHED=()
-
-get_pkg_manager(){
-  if [[ -z $_PKG_MGR_CACHED ]]; then
-    local pkgmgr
-    if has paru; then
-      pkgmgr=paru
-      _AUR_OPTS_CACHED=(--batchinstall --combinedupgrade --nokeepsrc)
-    elif has yay; then
-      pkgmgr=yay
-      _AUR_OPTS_CACHED=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
-    else
-      pkgmgr=pacman
-      _AUR_OPTS_CACHED=()
-    fi
-    _PKG_MGR_CACHED="$pkgmgr"
-  fi
-  printf '%s\n' "$_PKG_MGR_CACHED"
-}
-
-get_aur_opts(){
-  [[ -z $_PKG_MGR_CACHED ]] && get_pkg_manager >/dev/null
-  printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
-}
+# Source shared libraries
+SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+# shellcheck source=lib/core.sh
+source "$SCRIPT_DIR/../lib/core.sh"
+# shellcheck source=lib/arch.sh
+source "$SCRIPT_DIR/../lib/arch.sh"
 
 main(){
-  cleanup(){ sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
-  trap cleanup EXIT INT TERM
+  trap cleanup_pacman_lock EXIT INT TERM
   #============ Update Functions ============
   update_system(){
     local pkgmgr aur_opts
     log "🔄${BLU} System Packages${DEF}"
     pkgmgr=$(get_pkg_manager)
     mapfile -t aur_opts < <(get_aur_opts)
-    cleanup
+    cleanup_pacman_lock
     sudo "$pkgmgr" -Sy --needed archlinux-keyring --noconfirm || :
     [[ -f /var/lib/pacman/sync/core.files ]] || sudo pacman -Fy --noconfirm || :
     if [[ $pkgmgr == pacman ]]; then

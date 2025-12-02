@@ -2,22 +2,13 @@
 # Unified Debloat Script for Arch-based and Debian-based systems
 # Refactored version with improved structure and maintainability
 # Removes unnecessary packages and disables telemetry services
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+
+# Source shared libraries
+SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+# shellcheck source=lib/core.sh
+source "$SCRIPT_DIR/../lib/core.sh"
+
 sudo -v
-# --- Colors ---
-readonly RED=$'\e[31m'
-readonly GRN=$'\e[32m'
-readonly YLW=$'\e[33m'
-readonly DEF=$'\e[0m'
-# --- Helper Functions ---
-has(){ command -v -- "$1" &>/dev/null; }
-msg(){
-  printf '%b%s%b\n' "$GRN" "$*" "$DEF"
-}
-warn(){
-  printf '%b%s%b\n' "$YLW" "$*" "$DEF"
-}
 
 # --- Platform Detection ---
 detect_platform(){

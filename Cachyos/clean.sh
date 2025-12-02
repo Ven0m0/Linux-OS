@@ -1,136 +1,19 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar
 # Enhanced system cleaning with privacy configuration
 # Refactored version with improved structure and maintainability
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-#============ Colors ============
-readonly LBLU=$'\e[38;5;117m'
-readonly PNK=$'\e[38;5;218m'
-readonly BWHT=$'\e[97m'
-readonly BLU=$'\e[34m'
-readonly GRN=$'\e[32m'
-readonly YLW=$'\e[33m'
-readonly MGN=$'\e[35m'
-readonly DEF=$'\e[0m'
+
+# Source shared libraries
+SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+# shellcheck source=lib/core.sh
+source "$SCRIPT_DIR/../lib/core.sh"
+# shellcheck source=lib/arch.sh
+source "$SCRIPT_DIR/../lib/arch.sh"
+# shellcheck source=lib/browser.sh
+source "$SCRIPT_DIR/../lib/browser.sh"
+
 #============ Configuration ============
 declare -r MAX_PARALLEL_JOBS="$(nproc 2>/dev/null || echo 4)"
 declare -r SQLITE_TIMEOUT=30
-
-#============ Helper Functions ============
-has(){ command -v -- "$1" &>/dev/null; }
-get_pkg_manager(){
-  if has paru; then
-    echo 'paru'
-  elif has yay; then
-    echo 'yay'
-  else
-    echo 'pacman'
-  fi
-}
-
-capture_disk_usage(){ df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'; }
-
-# Enhanced SQLite vacuum with reporting
-vacuum_sqlite(){
-  local db=$1 s_old s_new saved
-  [[ -f $db ]] || return 0
-  [[ -f ${db}-wal || -f ${db}-journal ]] && return 0
-  # Use fixed-string grep (-F) for faster matching
-  head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3' || return 0
-  s_old=$(stat -c%s "$db" 2>/dev/null) || return 0
-  # VACUUM already rebuilds indices, REINDEX is redundant
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || return 0
-  s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
-  saved=$((s_old - s_new))
-  ((saved > 0)) && echo "$saved"
-}
-
-# Process SQLite databases with parallel processing
-clean_sqlite_dbs(){
-  local total=0 saved db_list=() count=0
-  while IFS= read -r -d '' db; do
-    [[ -f $db ]] && db_list+=("$db")
-  done < <(find . -maxdepth 2 -type f -name '*.sqlite*' -print0 2>/dev/null)
-  [[ ${#db_list[@]} -eq 0 ]] && return 0
-  if has parallel; then
-    while IFS= read -r line; do
-      [[ $line =~ ^[0-9]+$ ]] && {
-        total=$((total + line))
-        ((count++))
-      }
-    done < <(printf '%s\n' "${db_list[@]}" | parallel -j"$MAX_PARALLEL_JOBS" vacuum_sqlite)
-  elif has rust-parallel; then
-    while IFS= read -r line; do
-      [[ $line =~ ^[0-9]+$ ]] && {
-        total=$((total + line))
-        ((count++))
-      }
-    done < <(printf '%s\n' "${db_list[@]}" | rust-parallel vacuum_sqlite)
-  else
-    for db in "${db_list[@]}"; do
-      saved=$(vacuum_sqlite "$db" 2>/dev/null)
-      [[ $saved =~ ^[0-9]+$ ]] && {
-        total=$((total + saved))
-        ((count++))
-      }
-    done
-  fi
-  ((total > 0)) && printf '  %s %s (%d files)\n' "${GRN}Vacuumed:" "$((total / 1024)) KB${DEF}" "$count"
-}
-
-ensure_not_running(){
-  local timeout=6 pattern
-  pattern=$(printf '%s|' "$@")
-  pattern=${pattern%|}
-  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return 0
-  for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p}...${DEF}"
-  done
-  local wait_time=$timeout
-  while ((wait_time-- > 0)); do
-    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return 0
-    sleep 1
-  done
-  pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
-}
-
-# Mozilla profile discovery with IsRelative support
-mozilla_profiles(){
-  local base=$1 p is_rel path_val
-  [[ -d $base ]] || return 0
-  if [[ -f $base/installs.ini ]]; then
-    while IFS='=' read -r key val; do
-      [[ $key == Default ]] && {
-        path_val=$val
-        [[ -d $base/$path_val ]] && echo "$base/$path_val"
-      }
-    done < <(grep -E '^Default=' "$base/installs.ini" 2>/dev/null)
-  fi
-  if [[ -f $base/profiles.ini ]]; then
-    is_rel=1 path_val=''
-    while IFS='=' read -r key val; do
-      case $key in
-      IsRelative) is_rel=$val ;;
-      Path)
-        path_val="$val"
-        if [[ $is_rel -eq 0 ]]; then
-          [[ -d $path_val ]] && echo "$path_val"
-        else
-          [[ -d $base/$path_val ]] && echo "$base/$path_val"
-        fi
-        path_val='' is_rel=1
-        ;;
-      esac
-    done < <(grep -E '^(IsRelative|Path)=' "$base/profiles.ini" 2>/dev/null)
-  fi
-}
-
-chrome_profiles(){
-  local root="$1"
-  for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && echo "$d"; done
-}
 
 configure_firefox_privacy(){
   local prefs_changed=0

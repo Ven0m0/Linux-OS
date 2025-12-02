@@ -1,53 +1,40 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-19 - Applied bash optimization techniques
-# Setup environment
-set -euo pipefail
-shopt -s nullglob globstar execfail
-IFS=$'\n\t'
-export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive PRUNE_MODULES=1 SKIP_VCLIBS=1
+
+# Source shared libraries
+SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
+[[ $SCRIPT_DIR == "${BASH_SOURCE[0]}" ]] && SCRIPT_DIR="."
+# shellcheck source=lib/core.sh
+source "$SCRIPT_DIR/../lib/core.sh"
+# shellcheck source=lib/debian.sh
+source "$SCRIPT_DIR/../lib/debian.sh"
+
+export PRUNE_MODULES=1 SKIP_VCLIBS=1
+
 # Initialize working directory
-WORKDIR="${BASH_SOURCE[0]%/*}"
-[[ $WORKDIR == "${BASH_SOURCE[0]}" ]] && WORKDIR="."
-cd "$WORKDIR" || {
-  echo "Failed to change to working directory: $WORKDIR" >&2
-  exit 1
-}
-WORKDIR="$PWD"
-# Color constants for terminal output
-LBLU=$'\e[38;5;117m'
-PNK=$'\e[38;5;218m'
-BWHT=$'\e[97m'
-DEF=$'\e[0m'
-# Check if a command exists
-has(){ command -v -- "$1" &>/dev/null; }
+cd "$SCRIPT_DIR" || die "Failed to change to working directory: $SCRIPT_DIR"
+SCRIPT_DIR="$PWD"
+
 # Display colorized banner with gradient effect
 display_banner(){
   local banner_text="$1"
   shift
   local -a flag_colors=("$@")
   mapfile -t banner_lines <<<"$banner_text"
-  local lines=${#banner_lines[@]}
+  local line_count=${#banner_lines[@]}
   local segments=${#flag_colors[@]}
-  if ((lines <= 1)); then
-    for line in "${banner_lines[@]}"; do
-      printf "%s%s%s\n" "${flag_colors[0]}" "$line" "$DEF"
+  if ((line_count <= 1)); then
+    for bline in "${banner_lines[@]}"; do
+      printf "%s%s%s\n" "${flag_colors[0]}" "$bline" "$DEF"
     done
   else
     for i in "${!banner_lines[@]}"; do
-      local segment_index=$((i * (segments - 1) / (lines - 1)))
+      local segment_index=$((i * (segments - 1) / (line_count - 1)))
       ((segment_index >= segments)) && segment_index=$((segments - 1))
       printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
     done
   fi
 }
-# Clean APT package manager cache
-clean_apt_cache(){
-  sudo apt-get clean -y
-  sudo apt-get autoclean -y
-  sudo apt-get autoremove --purge -y
-}
-# Load DietPi globals if available
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 
 #============ Banner ====================
 banner=$(
@@ -68,7 +55,6 @@ sync
 #=============================================================
 # Clean APT lists before update
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
-run_apt(){ sudo apt-get -y --allow-releaseinfo-change -o Acquire::Languages=none -o APT::Get::Fix-Missing=true -o APT::Get::Fix-Broken=true "$@"; }
 if has apt-fast; then
   sudo apt-fast update -y --allow-releaseinfo-change
   sudo apt-fast upgrade -y --no-install-recommends

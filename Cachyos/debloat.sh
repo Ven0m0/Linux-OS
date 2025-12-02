@@ -13,11 +13,11 @@ sudo -v
 # --- Platform Detection ---
 detect_platform(){
   if command -v pacman &>/dev/null; then
-    echo "arch"
+    printf '%s\n' "arch"
   elif command -v apt-get &>/dev/null; then
-    echo "debian"
+    printf '%s\n' "debian"
   else
-    echo "unknown"
+    printf '%s\n' "unknown"
   fi
 }
 
@@ -29,7 +29,8 @@ debloat_arch(){
   sudo pacman -Rncs --noconfirm kcontacts kpeople cachy-browser cachyos-v4-mirrorlist || :
   # Remove telemetry
   msg "Removing pkgstats (telemetry)..."
-  if systemctl list-unit-files | grep -qx "pkgstats.timer"; then
+  # Use systemctl is-enabled instead of list-unit-files | grep (faster)
+  if systemctl is-enabled pkgstats.timer &>/dev/null; then
     sudo systemctl disable --now "pkgstats.timer" 2>/dev/null || :
   fi
   if pacman -Qq pkgstats &>/dev/null; then
@@ -42,7 +43,7 @@ debloat_arch(){
   # Configure fwupd
   if [[ -f /etc/fwupd/fwupd.conf ]]; then
     if ! grep -xqF -- 'P2pPolicy=nothing' '/etc/fwupd/fwupd.conf'; then
-      echo 'P2pPolicy=nothing' | sudo tee -a '/etc/fwupd/fwupd.conf' >/dev/null
+      printf '%s\n' 'P2pPolicy=nothing' | sudo tee -a '/etc/fwupd/fwupd.conf' >/dev/null
     fi
   fi
   # Disable UFW logging
@@ -64,7 +65,7 @@ debloat_debian(){
   msg "Disabling Popularity Contest..."
   if [[ -f /etc/popularity-contest.conf ]]; then
     if ! grep -q '^PARTICIPATE=' /etc/popularity-contest.conf; then
-      echo 'PARTICIPATE=no' | sudo tee -a /etc/popularity-contest.conf >/dev/null
+      printf '%s\n' 'PARTICIPATE=no' | sudo tee -a /etc/popularity-contest.conf >/dev/null
     else
       sudo sed -i 's/^PARTICIPATE=.*/PARTICIPATE=no/' /etc/popularity-contest.conf
     fi

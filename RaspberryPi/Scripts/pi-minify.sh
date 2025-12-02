@@ -229,9 +229,9 @@ clean_caches(){
   sudo rm -f /root/.{bash,python}_history 2>/dev/null || :
   history -c 2>/dev/null || :
 
-  # Log truncation
+  # Log truncation - use truncate or : > instead of echo | tee
   while IFS= read -r logfile; do
-    echo -ne '' | sudo tee "$logfile" >/dev/null
+    sudo truncate -s 0 "$logfile" 2>/dev/null || sudo sh -c ": > '$logfile'" 2>/dev/null || :
   done < <(find /var/log -type f)
 }
 

@@ -44,9 +44,12 @@ configure_firefox_privacy(){
     while IFS= read -r profile; do
       local prefs_file="$profile/user.js"
       touch "$prefs_file"
+      # Read existing prefs once instead of calling grep for each pref
+      local existing_prefs
+      existing_prefs=$(<"$prefs_file" 2>/dev/null) || existing_prefs=""
       for pref in "${firefox_prefs[@]}"; do
-        grep -qF "$pref" "$prefs_file" 2>/dev/null || {
-          echo "$pref" >>"$prefs_file"
+        [[ $existing_prefs == *"$pref"* ]] || {
+          printf '%s\n' "$pref" >>"$prefs_file"
           ((prefs_changed++))
         }
       done
@@ -229,9 +232,10 @@ main(){
     ;;
   esac
   banner
-  local disk_before=$(capture_disk_usage) disk_after
+  local disk_before disk_after
+  disk_before=$(capture_disk_usage)
   sync
-  echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null || :
+  printf '3' | sudo tee /proc/sys/vm/drop_caches &>/dev/null || :
   # Clean package managers
   has cargo-cache && {
     cargo cache -efg &>/dev/null || :

@@ -705,10 +705,9 @@ run_clean(){
   # Ensure sudo access
   [[ $EUID -ne 0 && -n $SUDO ]] && "$SUDO" -v
 
-  # Capture disk usage before cleanup
-  local disk_before disk_after space_before space_after
+  # Capture disk usage before cleanup (using df instead of slow du -sh /)
+  local disk_before disk_after
   capture_disk_usage disk_before
-  space_before=$(sudo du -sh / 2>/dev/null | awk '{print $1}')
 
   log "🔄${BLU}Starting system cleanup...${DEF}"
 
@@ -998,14 +997,9 @@ run_clean(){
   # Show disk usage results
   log "${GRN}System cleaned!${DEF}"
   capture_disk_usage disk_after
-  space_after=$(sudo du -sh / 2>/dev/null | awk '{print $1}')
 
   log "==> ${BLU}Disk usage before cleanup:${DEF} ${disk_before}"
   log "==> ${GRN}Disk usage after cleanup: ${DEF} ${disk_after}"
-  log
-  log "${BLU}Space before/after:${DEF}"
-  log "${YLW}Before:${DEF} ${space_before}"
-  log "${GRN}After: ${DEF} ${space_after}"
 }
 
 #=========== Traps & Cleanup ===========

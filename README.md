@@ -14,7 +14,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Update
 Clean:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Clean.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/clean.sh | bash
 ```
 
 </details>
@@ -33,17 +33,13 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rank.s
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/Install.sh | bash
 ```
 
-```bash
-curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/Chaotic-aur.sh | bash
-```
-
 </details>
 
 <details>
 <summary><b>Automated configuration</b></summary>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Scripts/AutoSetup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Setup.sh | bash
 ```
 
 </details>
@@ -61,7 +57,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Script
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/Strip-rust.sh | bash
 
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Debloat.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/debloat.sh | bash
 ```
 
 </details>

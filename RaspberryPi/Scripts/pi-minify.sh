@@ -231,7 +231,7 @@ clean_caches(){
 
   # Log truncation - use truncate or : > instead of echo | tee
   while IFS= read -r logfile; do
-    sudo truncate -s 0 "$logfile" 2>/dev/null || sudo sh -c ": > '$logfile'" 2>/dev/null || :
+    sudo truncate -s 0 "$logfile" 2>/dev/null || sudo sh -c ": > \"$logfile\"" 2>/dev/null || :
   done < <(find /var/log -type f)
 }
 

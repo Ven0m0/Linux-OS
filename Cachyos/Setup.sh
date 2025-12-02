@@ -324,11 +324,12 @@ setup_nvidia(){
   # Cache lspci output to avoid duplicate calls
   local lspci_output
   lspci_output=$(lspci 2>/dev/null) || return 0
-  [[ $lspci_output == *[Nn]vidia* ]] || return 0
+  # Case-insensitive check for NVIDIA using bash extglob
+  [[ ${lspci_output,,} == *nvidia* ]] || return 0
 
   # Select driver: open-source for RTX 20xx+ / GTX 16xx+
   local driver="nvidia-dkms"
-  [[ $lspci_output =~ (RTX\ [2-9][0-9]|GTX\ 16) ]] && driver="nvidia-open-dkms"
+  [[ $lspci_output =~ (RTX\ [2-9][0-9]|GTX\ 16[0-9]) ]] && driver="nvidia-open-dkms"
 
   # Detect kernel headers
   local headers="linux-headers"

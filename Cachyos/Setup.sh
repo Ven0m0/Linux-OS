@@ -321,11 +321,15 @@ configure_auth_limits(){
 
 setup_nvidia(){
   msg "Checking NVIDIA configuration"
-  lspci | grep -qi 'nvidia' || return 0
+  # Cache lspci output to avoid duplicate calls
+  local lspci_output
+  lspci_output=$(lspci 2>/dev/null) || return 0
+  # Case-insensitive check for NVIDIA using bash extglob
+  [[ ${lspci_output,,} == *nvidia* ]] || return 0
 
   # Select driver: open-source for RTX 20xx+ / GTX 16xx+
   local driver="nvidia-dkms"
-  lspci | grep -i 'nvidia' | grep -qE "RTX [2-9][0-9]|GTX 16" && driver="nvidia-open-dkms"
+  [[ $lspci_output =~ (RTX\ [2-9][0-9]|GTX\ 16[0-9]) ]] && driver="nvidia-open-dkms"
 
   # Detect kernel headers
   local headers="linux-headers"

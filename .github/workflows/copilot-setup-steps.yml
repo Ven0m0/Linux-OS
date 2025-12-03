@@ -1,0 +1,86 @@
+name: "Copilot Setup Steps"
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - . github/workflows/copilot-setup-steps.yml
+      - package*. json
+      - bun.lockb
+      - . tool-versions
+      - . nvmrc
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+      - package*.json
+      - bun.lockb
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    continue-on-error: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          lfs: false
+      # 2. Setup Bun
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # 3. Install JavaScript dependencies with Bun
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --no-progress
+        env:
+          NODE_ENV: development
+      # 4.  Install global tools with Bun
+      - name: Install global tooling
+        run: |
+          bun add -g \
+            prettier \
+            eslint \
+            typescript
+      # 5. Setup uv for Python
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/. megalinter.yml"
+      # 6. Install Python linters with uv
+      - name: Install linter dependencies
+        run: |
+          uv tool install yamllint
+          uv tool install shellcheck-py
+      # 7.  Validate environment
+      - name: Validate setup
+        run: |
+          bun --version
+          node --version
+          bun pm ls || true
+          uv --version
+          uv tool list
+      # 8.  Cache MegaLinter Docker image
+      - name: Cache MegaLinter
+        uses: actions/cache@v4.3.0
+        with:
+          path: ~/.cache/megalinter
+          key: megalinter-${{ runner.os }}-${{ hashFiles('. megalinter.yml') }}
+      # 9. Expose repo-specific context to Copilot
+      - name: Generate context summary
+        run: |
+          {
+            echo "## Repository Context"
+            echo "- Runtime: Bun (replaces Node.js/npm)"
+            echo "- Python tooling: uv (replaces pip/pipx)"
+            echo "- Linters: MegaLinter, Prettier, ShellCheck, yamllint"
+            echo "- Configs: .editorconfig, .prettierrc. yml, .shellcheckrc, .yamllint.yml"
+            echo "- Custom instructions: CLAUDE.MD, GEMINI. MD (apply similar conventions)"
+          } > . copilot-context.md
+      
+      # 10. Mark successful setup
+      - name: Setup complete
+        run: echo "✓ Copilot environment ready (Bun + uv)"

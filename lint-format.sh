@@ -11,16 +11,13 @@ LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
 # Core helpers
-has() { command -v "$1" &> /dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "$*"; }
-warn() { xecho "${YLW}WARN:${DEF} $*"; }
-err() { xecho "${RED}ERROR:${DEF} $*" >&2; }
-die() {
-  err "$*"
-  exit "${2:-1}"
-}
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
+has(){ command -v "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "$*"; }
+warn(){ xecho "${YLW}WARN:${DEF} $*"; }
+err(){ xecho "${RED}ERROR:${DEF} $*" >&2; }
+die(){ err "$*"; exit "${2:-1}"; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
 
 # Tool detection with fallbacks
 FD=${FD:-$(command -v fd || command -v fdfind || echo '')}
@@ -30,18 +27,15 @@ PARALLEL=${PARALLEL:-$(command -v rust-parallel || command -v parallel || comman
 
 # Safe workspace
 WORKDIR=$(mktemp -d)
-cleanup() {
-  set +e
-  [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
-}
-on_err() { err "failed at line ${1:-?}"; }
+cleanup(){ set +e; [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :; }
+on_err(){ err "failed at line ${1:-?}"; }
 trap 'cleanup' EXIT
 trap 'on_err $LINENO' ERR
 trap ':' INT TERM
 
 # Config
 declare -A cfg=([dry_run]=0 [debug]=0 [quiet]=0 [fix]=1 [check_only]=0)
-run() { if ((cfg[dry_run])); then log "[DRY] $*"; else "$@"; fi; }
+run(){ if (( cfg[dry_run] )); then log "[DRY] $*"; else "$@"; fi; }
 
 # Global state
 declare -A TOOL_MISSING=()
@@ -52,7 +46,7 @@ declare -i TOTAL_ERRORS=0
 declare -i TOTAL_MODIFIED=0
 
 # File discovery
-find_files() {
+find_files(){
   local pattern=$1
   local -n result=$2
   local exclude_args=()
@@ -111,7 +105,7 @@ find_files() {
 }
 
 # Check tool availability
-check_tool() {
+check_tool(){
   local tool=$1
   local required=${2:-0}
 
@@ -128,7 +122,7 @@ check_tool() {
 }
 
 # Format and lint YAML files
-process_yaml() {
+process_yaml(){
   log "${LBLU}→${DEF} Processing YAML files..."
   local -a files=()
   find_files "*.{yml,yaml}" files
@@ -200,7 +194,7 @@ process_yaml() {
 }
 
 # Format and lint JSON files
-process_json() {
+process_json(){
   log "${LBLU}→${DEF} Processing JSON files..."
   local -a files=()
   find_files "*.{json,json5,jsonc}" files
@@ -247,7 +241,7 @@ process_json() {
 }
 
 # Format and lint shell scripts
-process_shell() {
+process_shell(){
   log "${LBLU}→${DEF} Processing shell scripts..."
   local -a files=()
   find_files "*.{sh,bash}" files
@@ -308,7 +302,7 @@ process_shell() {
 }
 
 # Format fish scripts
-process_fish() {
+process_fish(){
   log "${LBLU}→${DEF} Processing fish scripts..."
   local -a files=()
   find_files "*.fish" files
@@ -336,7 +330,7 @@ process_fish() {
 }
 
 # Format and lint TOML files
-process_toml() {
+process_toml(){
   log "${LBLU}→${DEF} Processing TOML files..."
   local -a files=()
   find_files "*.toml" files
@@ -381,7 +375,7 @@ process_toml() {
 }
 
 # Format and lint Markdown files
-process_markdown() {
+process_markdown(){
   log "${LBLU}→${DEF} Processing Markdown files..."
   local -a files=()
   find_files "*.{md,markdown}" files
@@ -435,7 +429,7 @@ process_markdown() {
 }
 
 # Format and lint Python files
-process_python() {
+process_python(){
   log "${LBLU}→${DEF} Processing Python files..."
   local -a files=()
   find_files "*.{py,pyw,pyi}" files
@@ -482,7 +476,7 @@ process_python() {
 }
 
 # Format and lint Lua files
-process_lua() {
+process_lua(){
   log "${LBLU}→${DEF} Processing Lua files..."
   local -a files=()
   find_files "*.lua" files
@@ -530,7 +524,7 @@ process_lua() {
 }
 
 # Format CSS/HTML/JS files
-process_web() {
+process_web(){
   log "${LBLU}→${DEF} Processing web files (CSS/HTML/JS)..."
   local -a files=()
   find_files "*.{css,scss,sass,less,html,htm,js,mjs,cjs,jsx,ts,tsx}" files
@@ -594,7 +588,7 @@ process_web() {
 }
 
 # Format XML files
-process_xml() {
+process_xml(){
   log "${LBLU}→${DEF} Processing XML files..."
   local -a files=()
   find_files "*.{xml,svg}" files
@@ -622,7 +616,7 @@ process_xml() {
 }
 
 # Print summary
-print_summary() {
+print_summary(){
   log ""
   log "${BLD}${LBLU}═══════════════════════════════════════════════════════════════${DEF}"
   log "${BLD}${PNK}                    LINT & FORMAT SUMMARY${DEF}"
@@ -675,7 +669,7 @@ print_summary() {
 }
 
 # Parse args
-parse_args() {
+parse_args(){
   while (($#)); do
     case "$1" in
       -q | --quiet) cfg[quiet]=1 ;;
@@ -735,7 +729,7 @@ EOF
   done
 }
 
-main() {
+main(){
   parse_args "$@"
   ((cfg[quiet])) && exec > /dev/null
   ((cfg[debug])) && dbg "verbose on"

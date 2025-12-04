@@ -128,7 +128,7 @@ purge_packages(){
   local current_kernel
   current_kernel=$(uname -r)
   local old_kernels
-  mapfile -t old_kernels < <(dpkg --list | awk '{print $2}' | grep 'linux-image-.*-generic' | grep -v "$current_kernel")
+  mapfile -t old_kernels < <(dpkg --list | awk -v ck="$current_kernel" '$2 ~ /^linux-image-.*-generic$/ && $2 != ck {print $2}')
   ((${#old_kernels[@]} > 0)) && {
     log "Purging old kernels (keeping ${current_kernel})"
     sudo apt-get purge -y "${old_kernels[@]}"

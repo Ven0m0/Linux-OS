@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-LC_ALL=C LANG=C
-# https://github.com/YurinDoctrine/adbloat
+set -euo pipefail
+shopt -s nullglob
+IFS=$'\n\t'
+export LC_ALL=C LANG=C
 
+# https://github.com/YurinDoctrine/adbloat
 # WARNING: These tweaks are extremely aggressive and may cause instability.
 # For a safer, optimized subset, use: ./android-optimize.sh experimental
 

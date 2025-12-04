@@ -36,13 +36,13 @@ export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
 builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
 [[ $EUID -ne 0 ]] && sudo -v
 sync; sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches' &>/dev/null
-#──────────── Color & Effects ────────────
+#============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-#──────────── Helpers ────────────────────
+#============ Helpers ====================
 # Check for command
 has(){ command -v "$1" &>/dev/null; }
 # Get basename of command if on path
@@ -55,7 +55,14 @@ p(){ printf '%s\n' "$*" 2>/dev/null; }
 pe(){ printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
 # Bash sleep replacement
 sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
-#─────────────────────────────────────────────────────────────
+# Basename
+bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
+# Dirname
+dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
+# Faster date
+date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
+# Faster cat
+fcat(){ printf '%s\n' "$(<${1})"; }
 ```
 
 </details>
@@ -63,32 +70,32 @@ sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
 <summary><b>Ascii color table</b></summary>
 
 ```bash
-#──────────── Effects ────────────
+#============ Effects ============
 DEF=$'\e[0m'   BLD=$'\e[1m'   DIM=$'\e[2m'
 UND=$'\e[4m'   INV=$'\e[7m'   HID=$'\e[8m'
-#──────────── Standard Colors ────────────
+#============ Standard Colors ============
 BLK=$'\e[30m'  RED=$'\e[31m'  GRN=$'\e[32m'
 YLW=$'\e[33m'  BLU=$'\e[34m'  MGN=$'\e[35m'
 CYN=$'\e[36m'  WHT=$'\e[37m'  PNK=$'\e[38;5;205m'
-#──────────── Bright Colors ──────────────
+#============ Bright Colors ==============
 BBLK=$'\e[90m' BRED=$'\e[91m' BGRN=$'\e[92m'
 BYLW=$'\e[93m' BBLU=$'\e[94m' BMGN=$'\e[95m'
 BCYN=$'\e[96m' BWHT=$'\e[97m'
-#──────────── Backgrounds ────────────────
+#============ Backgrounds ================
 BG_BLK=$'\e[40m'  BG_RED=$'\e[41m'  BG_GRN=$'\e[42m'
 BG_YLW=$'\e[43m'  BG_BLU=$'\e[44m'  BG_MGN=$'\e[45m'
 BG_CYN=$'\e[46m'  BG_WHT=$'\e[47m'
-#──────────── Bright Backgrounds ─────────
+#============ Bright Backgrounds =========
 BG_BBLK=$'\e[100m' BG_BRED=$'\e[101m' BG_BGRN=$'\e[102m'
 BG_BYLW=$'\e[103m' BG_BBLU=$'\e[104m'
 BG_BMGN=$'\e[105m' BG_BCYN=$'\e[106m' BG_BWHT=$'\e[107m'
-#──────────── 256 Color (Functions) ──────
+#============ 256 Color (Functions) ======
 FG256(){ printf $'\e[38;5;%sm' "$1"; }
 BG256(){ printf $'\e[48;5;%sm' "$1"; }
-#──────────── Truecolor (24-bit RGB) ─────
+#============ Truecolor (24-bit RGB) =====
 FGRGB(){ printf $'\e[38;2;%s;%s;%sm' "$1" "$2" "$3"; }
 BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
-#─────────────────────────────────────────
+#=========================================
 ```
 
 </details>
@@ -96,7 +103,6 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 <summary><b>Basename</b></summary>
 
 Usage: basename "path" ["suffix"]
-
 ```bash
 bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
 ```
@@ -106,7 +112,6 @@ bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%
 <summary><b>Dirname</b></summary>
 
 Usage: dirname "path"
-
 ```bash
 dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
 ```
@@ -116,11 +121,8 @@ dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p
 <summary><b>Date</b></summary>
 
 Usage: date "format"
-
 Prints either current date 'day/month-hour-minute' or whatever you give it via 'date <arg>'
-
 See: 'man strftime' for format.
-
 ```bash
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 ```
@@ -130,7 +132,6 @@ date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 <summary><b>Faster cat</b></summary>
 
 Hyperfine Summary:
-
 ```bash
 $ hyperfine -w 5 -S bash -i "cat /etc/hostname" 'printf '%s\n' "$(</etc/hostname)"'
 
@@ -144,7 +145,6 @@ Summary
   printf '%s\n' CachyOS ran
    64.36 ± 74.11 times faster than cat /etc/hostname
 ```
-
 ```bash
 fcat(){ printf '%s\n' "$(<${1})"; }
 ```
@@ -177,13 +177,6 @@ multiple capture groups some modification is needed.
 
 **Example Function:**
 
-```bash
-regex(){
-    # Usage: regex "string" "regex"
-    [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
-}
-```
-
 </details>
 <details>
 <summary><b>Split a string on a delimiter</b></summary>
@@ -196,17 +189,14 @@ split(){ IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"; printf '%s\n' "${arr
 
 **Example Function:**
 
+Usage: split "string" "delimiter"
 ```bash
-split(){
-   # Usage: split "string" "delimiter"
-   IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"
-   printf '%s\n' "${arr[@]}"
-}
+split(){ IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"; printf '%s\n' "${arr[@]}"; }
 ```
 
 **Example Usage:**
 
-```shell
+```bash
 $ split "apples,oranges,pears,grapes" ","
 apples
 oranges
@@ -236,17 +226,14 @@ john
 
 **Example Function:**
 
+Usage: trim_quotes "string"
 ```bash
-trim_quotes(){
-    # Usage: trim_quotes "string"
-    : "${1//\'}"
-    printf '%s\n' "${_//\"}"
-}
+trim_quotes(){ : "${1//\'}"; printf '%s\n' "${_//\"}"; }
 ```
 
 **Example Usage:**
 
-```shell
+```bash
 $ var="'Hello', \"World\""
 $ trim_quotes "$var"
 Hello, World
@@ -258,16 +245,14 @@ Hello, World
 
 **Example Function:**
 
-```sh
-strip_all(){
-    # Usage: strip_all "string" "pattern"
-    printf '%s\n' "${1//$2}"
-}
+Usage: strip_all "string" "pattern"
+```bash
+strip_all(){ printf '%s\n' "${1//$2}"; }
 ```
 
 **Example Usage:**
 
-```shell
+```bash
 $ strip_all "The Quick Brown Fox" "[aeiou]"
 Th Qck Brwn Fx
 
@@ -284,16 +269,13 @@ The Brown Fox
 
 **Example Function:**
 
+Usage: strip "string" "pattern"
 ```bash
-strip(){
-    # Usage: strip "string" "pattern"
-    printf '%s\n' "${1/$2}"
-}
+strip(){ printf '%s\n' "${1/$2}"; }
 ```
 
 **Example Usage:**
-
-```shell
+```bash
 $ strip "The Quick Brown Fox" "[aeiou]"
 Th Quick Brown Fox
 
@@ -316,7 +298,6 @@ allows us to effectively remove array duplicates.
 **CAVEAT:** List order may not stay the same.
 
 **Example Function:**
-
 ```bash
 remove_array_dups(){
     # Usage: remove_array_dups "array"
@@ -331,8 +312,7 @@ remove_array_dups(){
 ```
 
 **Example Usage:**
-
-```shell
+```bash
 $ remove_array_dups 1 1 2 2 3 3 3 3 3 4 4 4 4 4 5 5 5 5 5 5
 1
 2
@@ -351,7 +331,7 @@ blue
 <details>
 <summary><b>Loop over the contents of a file</b></summary>
 
-```shell
+```bash
 while read -r line; do
     printf '%s\n' "$line"
 done < "file"
@@ -363,7 +343,7 @@ done < "file"
 
 Don’t use `ls`.
 
-```shell
+```bash
 # Greedy example.
 for file in *; do
     printf '%s\n' "$file"
@@ -397,7 +377,6 @@ shopt -u globstar
 <summary><b>Extract lines between two markers</b></summary>
 
 **Example Function:**
-
 ```bash
 extract(){
     # Usage: extract file "opening marker" "closing marker"
@@ -412,10 +391,9 @@ extract(){
 ```
 
 **Example Usage:**
-
-````shell
+````bash
 # Extract code blocks from MarkDown file.
-$ extract ~/projects/pure-bash/README.md '```sh' '```'
+$ extract ~/projects/pure-bash/README.md '```bash' '```'
 # Output here...
 ````
 
@@ -489,8 +467,7 @@ $ extract ~/projects/pure-bash/README.md '```sh' '```'
 ### BRACE EXPANSION
 
 **Ranges**
-
-```shell
+```bash
 # Syntax: {<START>..<END>}
 
 # Print numbers 1-100.
@@ -517,8 +494,7 @@ echo {1..10..2} # Increment by 2.
 ```
 
 **String Lists**
-
-```shell
+```bash
 echo {apples,oranges,pears,grapes}
 
 # Example Usage:
@@ -529,7 +505,6 @@ rm -rf ~/Downloads/{Movies,Music,ISOS}
 </details>
 
 **Misc**
-
 ```bash
 # Clear screen on script exit.
 trap 'printf \\e[2J\\e[H\\e[m' EXIT
@@ -546,20 +521,12 @@ file="${1/#\~\//${HOME}/}"
 **Run a command in the background**
 
 This will run the given command and keep it running, even after the terminal or SSH connection is terminated. All output is ignored.
-
 ```bash
-bkr(){
-    (nohup "$@" &>/dev/null &)
-}
-
-bkr ./some_script.sh # some_script.sh is now running in the background
+bkr(){ (setsid nohup "$@" &>/dev/null &); }
 ```
 
 ### alternative clear / fix scrollback buffer clear for kitty
-
 ```bash
 printf '\e[3J\e[H\e[2J\e[m'
-alias clear
-
 alias clear "printf '\e[3J\e[H\e[2J\e[m'"
 ```

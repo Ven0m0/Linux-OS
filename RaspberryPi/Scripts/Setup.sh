@@ -7,39 +7,32 @@ set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive HOME="/home/${SUDO_USER:-$USER}"
-
-# Colors (trans palette)
+# Colors
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-
 # Core helpers
-has() { command -v -- "$1" &> /dev/null; }
-log() { printf '%b\n' "${GRN}▶${DEF} $*"; }
-warn() { printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
-err() { printf '%b\n' "${RED}✗${DEF} $*" >&2; }
-die() {
-  err "$1"
-  exit "${2:-1}"
-}
-
-# Privilege
+has(){ command -v -- "$1" &> /dev/null; }
+log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
+warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
+err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
+die(){ err "$1"; exit "${2:-1}"; }
 
 # Config flags
 declare -A cfg=([dry_run]=0 [skip_external]=0 [minimal]=0 [quiet]=0)
-run() { ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
+run(){ ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
 
 # Safe cleanup workspace
 WORKDIR=$(mktemp -d)
-cleanup() {
+cleanup(){
   set +e
   [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
 }
 trap cleanup EXIT
 trap 'err "failed at line $LINENO"' ERR
 
-usage() {
+usage(){
   cat << 'EOF'
 pi-setup.sh - Raspberry Pi optimization & tooling automation
 
@@ -61,7 +54,7 @@ Performs:
 EOF
 }
 
-parse_args() {
+parse_args(){
   while (($#)); do
     case "$1" in
       -d | --dry-run) cfg[dry_run]=1 ;;
@@ -92,7 +85,7 @@ parse_args() {
 # ────────────────────────────────────────────────────────────
 # APT Configuration
 # ────────────────────────────────────────────────────────────
-configure_apt() {
+configure_apt(){
   log "Configuring APT for performance & reliability"
 
   sudo tee /etc/apt/apt.conf.d/99parallel > /dev/null << 'EOF'
@@ -131,10 +124,25 @@ force-unsafe-io
 EOF
 }
 
+# Enable IP forwarding for IPv4 and IPv6
+echo "Enabling IP forwarding..."
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo sysctl -w net.ipv6.conf.all.forwarding=1
+sudo sysctl -w net.ipv6.conf.default.forwarding=1
+
+# Make changes persistent
+sudo tee /etc/sysctl.d/99-ip-forward.conf > /dev/null << 'EOF'
+net.ipv4.ip_forward=1
+net.ipv6.conf.all.forwarding=1
+net.ipv6.conf.default.forwarding=1
+EOF
+
+echo "IP forwarding enabled and persisted to /etc/sysctl.d/99-ip-forward.conf"
+
 # ────────────────────────────────────────────────────────────
 # Documentation Cleanup
 # ────────────────────────────────────────────────────────────
-configure_dpkg_nodoc() {
+configure_dpkg_nodoc(){
   log "Configuring dpkg to exclude documentation"
 
   sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc > /dev/null << 'EOF'
@@ -149,27 +157,23 @@ path-include /usr/share/doc/*/copyright
 EOF
 }
 
-clean_docs() {
+clean_docs(){
   log "Removing existing documentation files"
-
   run find /usr/share/doc/ -depth -type f ! -name copyright -delete 2> /dev/null || :
   run find /usr/share/doc/ -name '*.gz' -o -name '*.pdf' -o -name '*.tex' -delete 2> /dev/null || :
   run find /usr/share/doc/ -type d -empty -delete 2> /dev/null || :
   sudo rm -rf /usr/share/{groff,info,lintian,linda,man}/* /var/cache/man/* 2> /dev/null || :
-
   # Keep only en_GB locale
   sudo bash -c 'cd /usr/share/locale && for d in *; do [[ $d != en_GB ]] && rm -rf "$d"; done' 2> /dev/null || :
   sudo bash -c 'cd /usr/share/X11/locale && for d in *; do [[ $d != en_GB ]] && rm -rf "$d"; done' 2> /dev/null || :
-
   sudo apt-get remove --purge -y '*texlive*' '*-doc' 2> /dev/null || :
 }
 
 # ────────────────────────────────────────────────────────────
 # System Optimization
 # ────────────────────────────────────────────────────────────
-optimize_system() {
+optimize_system(){
   log "Applying system-level optimizations"
-
   # Disable unnecessary services
   sudo systemctl mask NetworkManager-wait-online.service 2> /dev/null || :
   sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf > /dev/null << 'EOF'
@@ -265,7 +269,7 @@ EOF
 # ────────────────────────────────────────────────────────────
 # SSH Configuration
 # ────────────────────────────────────────────────────────────
-configure_ssh() {
+configure_ssh(){
   log "Configuring SSH/Dropbear"
 
   [[ -f /etc/default/dropbear ]] && {
@@ -281,7 +285,7 @@ configure_ssh() {
 # ────────────────────────────────────────────────────────────
 # Modern Tooling Installation
 # ────────────────────────────────────────────────────────────
-install_core_tools() {
+install_core_tools(){
   log "Installing core modern CLI tools"
 
   local tools=(
@@ -300,7 +304,7 @@ install_core_tools() {
   }
 }
 
-install_extended_tools() {
+install_extended_tools(){
   ((cfg[minimal])) && return 0
 
   log "Installing extended tooling suite"
@@ -326,7 +330,7 @@ install_extended_tools() {
 # ────────────────────────────────────────────────────────────
 # External Package Managers
 # ────────────────────────────────────────────────────────────
-install_package_managers() {
+install_package_managers(){
   ((cfg[minimal] || cfg[skip_external])) && return 0
   log "Installing alternative package managers"
   # apt-fast
@@ -362,7 +366,7 @@ install_package_managers() {
 # ────────────────────────────────────────────────────────────
 # External Installers (Pi-hole, PiKISS, PiApps)
 # ────────────────────────────────────────────────────────────
-install_external() {
+install_external(){
   ((cfg[skip_external])) && return 0
 
   log "Running external installers (interactive)"
@@ -387,7 +391,7 @@ install_external() {
 # ────────────────────────────────────────────────────────────
 # Main Execution
 # ────────────────────────────────────────────────────────────
-main() {
+main(){
   parse_args "$@"
   log "${BLD}Raspberry Pi Setup & Optimization${DEF}"
   log "Mode: $([[ ${cfg[dry_run]} -eq 1 ]] && echo 'DRY-RUN' || echo 'LIVE')"

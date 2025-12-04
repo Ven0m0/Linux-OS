@@ -1,0 +1,94 @@
+[tool.black]
+line-length = 88
+target-version = ['py310', 'py311', 'py312']
+include = '\. pyi?$'
+extend-exclude = '''
+/(
+  \.git
+  | \. cache
+  | \.var
+  | node_modules
+  | Linux-Settings
+)/
+'''
+
+[tool.ruff]
+line-length = 80
+target-version = "py310"
+extend-exclude = [
+  ".git",
+  ".cache",
+  ".var",
+  "node_modules",
+  "Linux-Settings",
+]
+
+[tool.ruff.lint]
+select = [
+  "E",     # pycodestyle errors
+  "W",     # pycodestyle warnings
+  "F",     # pyflakes
+  "I",     # isort
+  "N",     # pep8-naming
+  "UP",    # pyupgrade
+  "B",     # flake8-bugbear
+  "C4",    # flake8-comprehensions
+  "SIM",   # flake8-simplify
+  "ASYNC", # flake8-async
+  "TCH",   # flake8-type-checking
+]
+ignore = []
+
+[tool.ruff. format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["Cachyos/Scripts/WIP"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --strict-markers --tb=short"
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests requiring external APIs",
+]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+follow_imports = "normal"
+exclude = ["Linux-Settings", ". cache", ".var"]
+
+[tool.coverage.run]
+source = ["Cachyos/Scripts"]
+omit = ["*/test_*.py", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.beautysh]
+indent_size = 2
+tab = false
+backup = false
+check = false
+force_function_style = "paronly"
+variable_style = "braces"

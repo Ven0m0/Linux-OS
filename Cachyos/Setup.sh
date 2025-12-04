@@ -331,11 +331,14 @@ setup_nvidia() {
   local driver="nvidia-dkms"
   [[ $lspci_output =~ (RTX\ [2-9][0-9]|GTX\ 16[0-9]) ]] && driver="nvidia-open-dkms"
 
-  # Detect kernel headers
+  # Detect kernel headers with early exit
   local headers="linux-headers"
-  pacman -Q linux-zen &> /dev/null && headers="linux-zen-headers"
-  pacman -Q linux-lts &> /dev/null && headers="linux-lts-headers"
-  pacman -Q linux-hardened &> /dev/null && headers="linux-hardened-headers"
+  for kernel in linux-zen linux-lts linux-hardened; do
+    if pacman -Q "$kernel" &>/dev/null; then
+      headers="${kernel}-headers"
+      break
+    fi
+  done
 
   sudo pacman -Syu --noconfirm
   sudo pacman -S --needed --noconfirm "$headers" "$driver" nvidia-utils lib32-nvidia-utils egl-wayland libva-nvidia-driver qt5-wayland qt6-wayland

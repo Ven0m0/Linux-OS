@@ -1,267 +1,367 @@
 #!/usr/bin/env python3
+"""Reddit account content toxicity scanner using Perspective API. 
 
-# Dependencies:
-# pacman -S python-praw python-pandas python-google-api-python-client
-# Alternatively if not on archlinux:
-# pip install praw requests pandas
-#
-# Needed:
-# Fill in USERNAME, API_KEY, CLIENT_ID and CLIENT_SECRET
-# You need a reddit dev app and a Perspective API key (free)
-# https://support.perspectiveapi.com/s/docs-enable-the-api
-# https://developers.perspectiveapi.com/s/docs-get-started
-# https://www.reddit.com/prefs/apps
-# https://cloud.google.com/docs/authentication/api-keys
-#
-# Usage:
-# python reddit_flag_scanner.py USERNAME \
-#  --comments 100 \
-#  --posts 50 \
-#  --toxicity_threshold 0.7 \
-#  --perspective_api_key API_KEY \
-#  --client_id CLIENT_ID \
-#  --client_secret CLIENT_SECRET \
-#  --user_agent "script:myapp:v1.0 (by u/YourUsername)" \
-#  --output flagged.csv
+Scans Reddit user comments/posts for toxic content using Google's
+Perspective API. Supports async concurrent requests with rate limiting. 
 
+Arch deps: python-praw python-pandas python-httpx
+Debian: uv pip install praw pandas httpx orjson
+"""
+
+from __future__ import annotations
 import argparse
-import praw
-import pandas as pd
-import time
+import asyncio
+import json
 import sys
-import requests
-import random
-from typing import Dict
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, TypedDict
 
-PERSPECTIVE_API_URL = "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"
-REQUEST_TIMEOUT = 10  # seconds
+try:
+    import orjson as fast_json
+    JSON_LOADS = lambda x: fast_json.loads(x)
+    JSON_DUMPS = lambda x: fast_json.dumps(x). decode()
+except ImportError:
+    JSON_LOADS = json.loads
+    JSON_DUMPS = json.dumps
 
+import pandas as pd
+import praw
 
-def make_session() -> requests.Session:
-    s = requests.Session()
-    s.headers.update({"Content-Type": "application/json"})
-    return s
+try:
+    import httpx
+except ImportError:
+    print("httpx required: pacman -S python-httpx", file=sys.stderr)
+    sys.exit(1)
 
-
-def check_toxicity(
-    text: str,
-    api_key: str,
-    attributes,
-    session: requests.Session,
-    min_interval: float,
-    max_retries: int = 5,
-    backoff_base: float = 1.0,
-) -> Dict[str, float]:
-    """
-    Send a request to Perspective with retries and rate-limiting.
-    Returns a dict of scores or empty dict on persistent failure.
-    """
-    if not text or not text.strip():
-        return {}
-
-    params = {"key": api_key}
-    payload = {
-        "comment": {"text": text},
-        "languages": ["en"],
-        "requestedAttributes": {attr: {} for attr in attributes},
-    }
-
-    # Rate limiting: ensure at least min_interval seconds between calls.
-    # We'll store timestamp on the session object.
-    last_ts = getattr(session, "_last_call_ts", None)
-    if last_ts is not None:
-        elapsed = time.monotonic() - last_ts
-        if elapsed < min_interval:
-            time.sleep(min_interval - elapsed)
-
-    for attempt in range(1, max_retries + 1):
-        try:
-            resp = session.post(
-                PERSPECTIVE_API_URL,
-                params=params,
-                json=payload,
-                timeout=REQUEST_TIMEOUT,
-            )
-            # Store timestamp regardless of outcome to keep spacing consistent
-            session._last_call_ts = time.monotonic()
-
-            # Raise for HTTP errors (will be caught below)
-            resp.raise_for_status()
-            result = resp.json()
-            return {
-                k: v["summaryScore"]["value"]
-                for k, v in result.get("attributeScores", {}).items()
-            }
-
-        except requests.HTTPError as http_err:
-            code = getattr(http_err.response, "status_code", None)
-            # 429 -> Too Many Requests: backoff & retry
-            if code == 429:
-                backoff = backoff_base * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
-                print(
-                    f"Perspective API 429 — backoff {backoff:.2f}s (attempt {attempt}/{max_retries})",
-                    file=sys.stderr,
-                )
-                time.sleep(backoff)
-                continue
-            # For 5xx server errors, also retry
-            if code and 500 <= code < 600:
-                backoff = backoff_base * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
-                print(
-                    f"Perspective API server error {code} — retrying in {backoff:.2f}s (attempt {attempt}/{max_retries})",
-                    file=sys.stderr,
-                )
-                time.sleep(backoff)
-                continue
-            # For 4xx other than 429, don't retry
-            print(f"Perspective API HTTP error {code}: {http_err}", file=sys.stderr)
-            return {}
-        except (requests.ConnectionError, requests.Timeout) as err:
-            backoff = backoff_base * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
-            print(
-                f"Network error {err} — retrying in {backoff:.2f}s (attempt {attempt}/{max_retries})",
-                file=sys.stderr,
-            )
-            time.sleep(backoff)
-            continue
-        except Exception as e:
-            print("Perspective API unexpected error:", e, file=sys.stderr)
-            return {}
-
-    print("Perspective API: exceeded max retries, skipping item.", file=sys.stderr)
-    return {}
+# Constants
+PERSPECTIVE_URL = (
+    "https://commentanalyzer.googleapis.com/v1alpha1/"
+    "comments:analyze"
+)
+DEFAULT_TIMEOUT = 10
+DEFAULT_RATE_PER_MIN = 60. 0
+DEFAULT_MAX_RETRIES = 5
+DEFAULT_BACKOFF_BASE = 1.0
+ATTRIBUTES = ["TOXICITY", "INSULT", "PROFANITY", "SEXUALLY_EXPLICIT"]
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Scan a Reddit user's content for inappropriate material."
+class PerspectiveScore(TypedDict, total=False):
+    """Perspective API score response."""
+    TOXICITY: float
+    INSULT: float
+    PROFANITY: float
+    SEXUALLY_EXPLICIT: float
+
+
+class FlaggedItem(TypedDict):
+    """Flagged content record."""
+    timestamp: str
+    type: str
+    subreddit: str
+    content: str
+    TOXICITY: float
+    INSULT: float
+    PROFANITY: float
+    SEXUALLY_EXPLICIT: float
+
+
+@dataclass
+class RateLimiter:
+    """Simple token bucket rate limiter."""
+    min_interval: float
+    last_call: float = field(default_factory=time. monotonic)
+
+    async def acquire(self) -> None:
+        """Wait until next request is allowed."""
+        elapsed = time.monotonic() - self.last_call
+        if elapsed < self.min_interval:
+            await asyncio.sleep(self.min_interval - elapsed)
+        self.last_call = time.monotonic()
+
+
+@dataclass
+class Config:
+    """Scanner configuration."""
+    username: str
+    api_key: str
+    client_id: str
+    client_secret: str
+    user_agent: str
+    num_comments: int = 50
+    num_posts: int = 20
+    threshold: float = 0.7
+    output: Path = Path("flagged_content.csv")
+    rate_per_min: float = DEFAULT_RATE_PER_MIN
+    max_retries: int = DEFAULT_MAX_RETRIES
+    timeout: int = DEFAULT_TIMEOUT
+    verbose: bool = False
+
+    def validate(self) -> None:
+        """Validate configuration values."""
+        if not (0.0 <= self.threshold <= 1.0):
+            raise ValueError("threshold must be in [0.0, 1.0]")
+        if not self.api_key.strip():
+            raise ValueError("perspective_api_key cannot be empty")
+        if not self.client_id.strip():
+            raise ValueError("client_id cannot be empty")
+
+
+def parse_args() -> Config:
+    """Parse and validate CLI arguments."""
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("username", help="Reddit username (without u/)")
+    p.add_argument(
+        "--comments",
+        type=int,
+        default=50,
+        help="Num comments to fetch",
     )
-    parser.add_argument("username", help="Reddit username (without u/)")
-    parser.add_argument(
-        "--comments", type=int, default=50, help="Number of comments to fetch"
+    p.add_argument(
+        "--posts", type=int, default=20, help="Num posts to fetch"
     )
-    parser.add_argument(
-        "--posts", type=int, default=20, help="Number of submissions to fetch"
+    p.add_argument(
+        "--toxicity_threshold",
+        type=float,
+        default=0.7,
+        help="Flag threshold",
     )
-    parser.add_argument(
-        "--toxicity_threshold", type=float, default=0.7, help="Threshold for flagging"
+    p.add_argument(
+        "--perspective_api_key", required=True, help="Perspective key"
     )
-    parser.add_argument(
-        "--perspective_api_key", required=True, help="Perspective API key"
+    p. add_argument("--client_id", required=True, help="Reddit client_id")
+    p.add_argument(
+        "--client_secret", required=True, help="Reddit client_secret"
     )
-    parser.add_argument("--client_id", required=True, help="Reddit API client_id")
-    parser.add_argument(
-        "--client_secret", required=True, help="Reddit API client_secret"
+    p.add_argument(
+        "--user_agent", required=True, help="Reddit user_agent"
     )
-    parser.add_argument("--user_agent", required=True, help="Reddit user_agent string")
-    parser.add_argument(
-        "--output", default="flagged_content.csv", help="CSV output filename"
+    p.add_argument(
+        "--output", default="flagged_content.csv", help="CSV output"
     )
-    parser.add_argument(
+    p.add_argument(
         "--rate_per_min",
         type=float,
-        default=60.0,
-        help="Max Perspective requests per minute (default 60). Use lower if you hit quota.",
+        default=DEFAULT_RATE_PER_MIN,
+        help="Max Perspective req/min",
     )
-    parser.add_argument(
-        "--max_retries",
-        type=int,
-        default=5,
-        help="Max retries for Perspective API calls",
+    p.add_argument(
+        "--max_retries", type=int, default=5, help="Max API retries"
     )
-    args = parser.parse_args()
+    p.add_argument(
+        "--verbose", action="store_true", help="Verbose output"
+    )
+    args = p.parse_args()
 
-    # Derived
-    min_interval = 60.0 / float(max(1.0, args.rate_per_min))  # seconds between calls
-
-    # Init reddit
-    reddit = praw.Reddit(
+    cfg = Config(
+        username=args.username,
+        api_key=args.perspective_api_key,
         client_id=args.client_id,
         client_secret=args.client_secret,
         user_agent=args.user_agent,
+        num_comments=args.comments,
+        num_posts=args.posts,
+        threshold=args.toxicity_threshold,
+        output=Path(args.output),
+        rate_per_min=args.rate_per_min,
+        max_retries=args.max_retries,
+        verbose=args.verbose,
+    )
+    cfg.validate()
+    return cfg
+
+
+async def check_toxicity(
+    text: str,
+    client: httpx.AsyncClient,
+    cfg: Config,
+    limiter: RateLimiter,
+) -> PerspectiveScore:
+    """Analyze text toxicity via Perspective API. 
+    
+    Args:
+        text: Content to analyze
+        client: Async HTTP client
+        cfg: Scanner config
+        limiter: Rate limiter
+        
+    Returns:
+        Dict of attribute scores
+    """
+    if not text.strip():
+        return {}
+
+    await limiter.acquire()
+
+    payload = {
+        "comment": {"text": text},
+        "languages": ["en"],
+        "requestedAttributes": {a: {} for a in ATTRIBUTES},
+    }
+
+    for attempt in range(1, cfg.max_retries + 1):
+        try:
+            resp = await client.post(
+                PERSPECTIVE_URL,
+                params={"key": cfg.api_key},
+                json=payload,
+                timeout=cfg.timeout,
+            )
+            resp.raise_for_status()
+            result = JSON_LOADS(resp.content)
+            return {
+                k: v["summaryScore"]["value"]
+                for k, v in result. get("attributeScores", {}). items()
+            }
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                backoff = DEFAULT_BACKOFF_BASE * (2 ** (attempt - 1))
+                if cfg.verbose:
+                    print(
+                        f"429 backoff {backoff:.1f}s "
+                        f"({attempt}/{cfg.max_retries})",
+                        file=sys.stderr,
+                    )
+                await asyncio. sleep(backoff)
+                continue
+            if 500 <= e.response.status_code < 600:
+                await asyncio.sleep(2 ** (attempt - 1))
+                continue
+            print(f"HTTP {e.response.status_code}", file=sys.stderr)
+            return {}
+        except (httpx.TimeoutException, httpx.ConnectError) as e:
+            if cfg.verbose:
+                print(f"Network error: {e}", file=sys.stderr)
+            await asyncio.sleep(2 ** (attempt - 1))
+            continue
+        except Exception as e:
+            print(f"Unexpected: {e}", file=sys.stderr)
+            return {}
+
+    if cfg.verbose:
+        print("Max retries exceeded", file=sys.stderr)
+    return {}
+
+
+async def analyze_content(
+    items: list[tuple[str, str, str, float]],
+    cfg: Config,
+) -> list[FlaggedItem]:
+    """Analyze list of content items concurrently.
+    
+    Args:
+        items: List of (type, subreddit, text, timestamp) tuples
+        cfg: Scanner config
+        
+    Returns:
+        List of flagged items
+    """
+    limiter = RateLimiter(60.0 / cfg.rate_per_min)
+    flagged: list[FlaggedItem] = []
+
+    async with httpx.AsyncClient() as client:
+        tasks = [
+            check_toxicity(text, client, cfg, limiter)
+            for _, _, text, _ in items
+        ]
+        scores_list = await asyncio.gather(*tasks)
+
+    for (item_type, sub, text, ts), scores in zip(items, scores_list):
+        if any(s >= cfg.threshold for s in scores. values()):
+            flagged. append(
+                FlaggedItem(
+                    timestamp=time.strftime(
+                        "%Y-%m-%d %H:%M:%S", time.localtime(ts)
+                    ),
+                    type=item_type,
+                    subreddit=sub,
+                    content=text,
+                    **scores,  # type: ignore
+                )
+            )
+    return flagged
+
+
+def fetch_user_content(
+    username: str, cfg: Config, reddit: praw.Reddit
+) -> list[tuple[str, str, str, float]]:
+    """Fetch user comments and posts.
+    
+    Args:
+        username: Reddit username
+        cfg: Scanner config
+        reddit: PRAW client
+        
+    Returns:
+        List of (type, subreddit, text, timestamp) tuples
+    """
+    items: list[tuple[str, str, str, float]] = []
+    user = reddit.redditor(username)
+
+    print(f"Fetching {cfg.num_comments} comments...")
+    for comment in user.comments. new(limit=cfg.num_comments):
+        items.append(
+            (
+                "comment",
+                str(comment.subreddit),
+                comment.body or "",
+                comment.created_utc,
+            )
+        )
+
+    print(f"Fetching {cfg.num_posts} posts...")
+    for post in user.submissions.new(limit=cfg.num_posts):
+        text = f"{post.title}\n{post.selftext}".strip()
+        items.append(
+            ("post", str(post.subreddit), text, post.created_utc)
+        )
+
+    return items
+
+
+def save_results(flagged: list[FlaggedItem], path: Path) -> None:
+    """Save flagged items to CSV.
+    
+    Args:
+        flagged: List of flagged content
+        path: Output CSV path
+    """
+    if not flagged:
+        print("No flagged content.")
+        return
+
+    df = pd.DataFrame(flagged)
+    df.to_csv(path, index=False)
+    print(f"Flagged {len(flagged)} items → {path}")
+
+
+async def main_async() -> None:
+    """Main async entry point."""
+    cfg = parse_args()
+
+    reddit = praw.Reddit(
+        client_id=cfg.client_id,
+        client_secret=cfg.client_secret,
+        user_agent=cfg.user_agent,
     )
 
-    session = make_session()
-    flagged = []
-
-    print(f"Scanning u/{args.username}…")
     try:
-        user = reddit.redditor(args.username)
-
-        # Comments
-        for i, comment in enumerate(user.comments.new(limit=args.comments), start=1):
-            text = comment.body or ""
-            scores = check_toxicity(
-                text,
-                args.perspective_api_key,
-                ["TOXICITY", "INSULT", "PROFANITY", "SEXUALLY_EXPLICIT"],
-                session,
-                min_interval,
-                max_retries=args.max_retries,
-            )
-            if any(score >= args.toxicity_threshold for score in scores.values()):
-                flagged.append(
-                    {
-                        "timestamp": time.strftime(
-                            "%Y-%m-%d %H:%M:%S", time.localtime(comment.created_utc)
-                        ),
-                        "type": "comment",
-                        "subreddit": str(comment.subreddit),
-                        "content": text,
-                        **scores,
-                    }
-                )
-            print(
-                f"[comments {i}/{args.comments}] checked — flagged so far: {len(flagged)}",
-                end="\r",
-            )
-
-        print()  # newline after progress line
-
-        # Submissions
-        for i, submission in enumerate(user.submissions.new(limit=args.posts), start=1):
-            fulltext = (
-                f"{submission.title}\n{submission.selftext}"
-                if (submission.title or submission.selftext)
-                else ""
-            )
-            scores = check_toxicity(
-                fulltext,
-                args.perspective_api_key,
-                ["TOXICITY", "INSULT", "PROFANITY", "SEXUALLY_EXPLICIT"],
-                session,
-                min_interval,
-                max_retries=args.max_retries,
-            )
-            if any(score >= args.toxicity_threshold for score in scores.values()):
-                flagged.append(
-                    {
-                        "timestamp": time.strftime(
-                            "%Y-%m-%d %H:%M:%S", time.localtime(submission.created_utc)
-                        ),
-                        "type": "post",
-                        "subreddit": str(submission.subreddit),
-                        "content": fulltext,
-                        **scores,
-                    }
-                )
-            print(
-                f"[posts {i}/{args.posts}] checked — flagged so far: {len(flagged)}",
-                end="\r",
-            )
-
-        print()  # newline
-
+        items = fetch_user_content(cfg.username, cfg, reddit)
+        print(f"Analyzing {len(items)} items...")
+        flagged = await analyze_content(items, cfg)
+        save_results(flagged, cfg. output)
     except KeyboardInterrupt:
-        print("\nInterrupted by user. Saving results so far...", file=sys.stderr)
+        print("\nInterrupted.", file=sys.stderr)
+        sys.exit(130)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    # Save results
-    if flagged:
-        df = pd.DataFrame(flagged)
-        df.to_csv(args.output, index=False)
-        print(f"Flagged {len(flagged)} items. Saved to {args.output}")
-    else:
-        print("No inappropriate content detected (or none flagged).")
+
+def main() -> None:
+    """Synchronous entry point."""
+    asyncio.run(main_async())
 
 
 if __name__ == "__main__":

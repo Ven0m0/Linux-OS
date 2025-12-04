@@ -63,6 +63,8 @@ dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 # Faster cat
 fcat(){ printf '%s\n' "$(<${1})"; }
+# Background
+bkr(){ setsid nohup "$@" &>/dev/null </dev/null & disown >/dev/null 2>&1 || :; }
 ```
 
 </details>
@@ -521,7 +523,7 @@ file="${1/#\~\//${HOME}/}"
 
 This will run the given command and keep it running, even after the terminal or SSH connection is terminated. All output is ignored.
 ```bash
-bkr(){ (setsid nohup "$@" &>/dev/null &); }
+bkr(){ setsid nohup "$@" &>/dev/null </dev/null & disown >/dev/null 2>&1 || :; }
 ```
 
 ### alternative clear / fix scrollback buffer clear for kitty

@@ -1,10 +1,32 @@
 #!/usr/bin/env bash
-shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob globstar
 LC_ALL=C LANG=C
-# CGO_ENABLED=0 GOFLAGS="-ldflags=-s -w -trimpath -modcacherw -pgo auto"
-export GOGC=200 GOMAXPROCS="$(nproc)" GOFLAGS="-ldflags=-s -w -trimpath -modcacherw"
-go telemetry off
-go install github.com/dkorunic/betteralign/cmd/betteralign@latest
-go install github.com/johnsiilver/goptimizer@latest
+# 1. Centralize Flags
+# -s -w: Strip debug info (smaller binary)
+# -trimpath: Remove file system paths (reproducible builds)
+LINKER_FLAGS="-s -w -trimpath -modcacherw"
+export GOGC=200 GOMAXPROCS="$(nproc)" 
+export GOFLAGS="-ldflags=$LINKER_FLAGS"
+# 2. Helper function to check/install tools (Avoids re-installing if present)
+ensure_tool(){
+    local cmd="$1" pkg="$2"
+    if ! command -v "$cmd" &>/dev/null; then
+        printf "Installing %s...\n" "$cmd"
+        go install "$pkg@latest"
+    fi
+}
+
+# 3. Disable telemetry once
+go telemetry off 2>/dev/null || :
+
+# 4. Install tools only if missing
+ensure_tool "betteralign" "github.com/dkorunic/betteralign/cmd/betteralign"
+ensure_tool "goptimizer" "github.com/johnsiilver/goptimizer"
+
+# 5. Run Optimizations
+echo "Running struct alignment..."
 betteralign -apply -fix -generated_files ./...
-goptimizer --goflags="--ldflags=-s -w -trimpath -modcacherw"
+
+echo "Running binary optimizer..."
+# Pass the flags explicitly to goptimizer as it may not inherit GOFLAGS env perfectly
+goptimizer --goflags="--ldflags=$LINKER_FLAGS"

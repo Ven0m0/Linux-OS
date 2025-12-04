@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 # DESCRIPTION: Flash Raspberry Pi images (RaspiOS/DietPi) to SD card with F2FS root.
-#              - Automatically converts ext4 root to F2FS.
-#              - Expands filesystem to fill SD card immediately (no first-boot resize).
-#              - Includes bootiso's "USB-only" and "Size" safety guardrails.
-# USAGE: sudo ./raspi-f2fs.sh [-i image.img] [-d /dev/sdX] [-s] [-U]
-# DEPENDENCIES: fzf, f2fs-tools, rsync, util-linux, parted
-set -uo pipefail; shopt -s nullglob globstar
+#              - Native Bash optimizations for speed.
+#              - URL downloading & XZ streaming support.
+#              - Auto-expands filesystem to fill SD card.
+# USAGE: sudo ./raspi-f2fs.sh [-i image.xz | url | "dietpi"] [-d /dev/sdX]
+# DEPENDENCIES: fzf, f2fs-tools, rsync, util-linux, parted, gawk, curl, xz
+set -uo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}" PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin"
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}" PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"
+
+# --- Bash Native Tricks ---
+# Faster date using printf builtin (Bash 4.2+)
+fdate(){ local fmt="${1:-%T}"; printf "%($fmt)T" '-1'; }
+# Faster cat using bash read (Memory intensive: Use only for text/config files!)
+fcat(){ printf '%s\n' "$(<"${1}")"; }
 # --- Configuration & State ---
 declare -A cfg=(
   [boot_size]="512M" # Size of boot partition
@@ -17,6 +24,8 @@ declare -A cfg=(
   [no_usb_check]=0   # bootiso safety override
   [no_size_check]=0  # bootiso safety override
 )
+# DietPi Shortcut
+declare -r DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
 # Colors
 declare -r RED=$'\033[0;31m' GRN=$'\033[0;32m' YEL=$'\033[0;33m' BLD=$'\033[1m' DEF=$'\033[0m'
 # Globals
@@ -24,37 +33,32 @@ declare -g SRC_PATH="" TGT_PATH="" SRC_IMG="" WORKDIR=""
 declare -g LOOP_DEV="" TGT_DEV="" BOOT_PART="" ROOT_PART=""
 declare -g LOCK_FD=-1 LOCK_FILE=""
 declare -ga MOUNTED_DIRS=()
-
 # --- Logging ---
-log(){ printf '[%s] %s\n' "$(date +%T)" "$*"; }
+log(){ printf '[%s] %s\n' "$(fdate)" "$*"; }
 info(){ log "${GRN}INFO:${DEF} $*"; }
 warn(){ log "${YEL}WARN:${DEF} $*" >&2; }
 err(){ log "${RED}ERROR:${DEF} $*" >&2; }
 die(){ err "$*"; cleanup; exit 1; }
 
 # --- Bootiso-Derived Safety Modules ---
-get_drive_trans(){
-  local dev=${1:?}
-  lsblk -dno TRAN "$dev" 2> /dev/null || echo "unknown"
-}
-is_device_disk(){
-  local dev=${1:?}
-  lsblk -lno TYPE "$dev" 2>/dev/null | grep -q "disk"
-}
+get_drive_trans(){ local dev="${1:?}"; lsblk -dno TRAN "$dev" 2> /dev/null || echo "unknown"; }
 assert_usb_dev(){
-  local dev=${1:?}
+  local dev="${1:?}"
   ((cfg[no_usb_check])) && return 0
-  [[ $dev == /dev/loop* ]] && return 0 # Allow loops for testing
-  local trans=$(get_drive_trans "$dev")
-  # bootiso safety: Accept 'usb' or 'mmc' (for SD card readers acting as MMC)
-  [[ "$trans" != "usb" && "$trans" != "mmc" ]] && die "Device $dev is not connected via USB/MMC (Detected: $trans). Use -U to bypass."
+  [[ $dev == /dev/loop* ]] && return 0
+  local trans; trans=$(get_drive_trans "$dev")
+  if [[ "$trans" != "usb" && "$trans" != "mmc" ]]; then
+     die "Device $dev is not connected via USB/MMC (Detected: $trans). Use -U to bypass."
+  fi
 }
 
 assert_size(){
   local img="${1:?}" dev="${2:?}"
   ((cfg[no_size_check])) && return 0
   [[ ! -b $dev ]] && return 0
-  local img_bytes=$(stat -c%s "$img") dev_bytes=$(blockdev --getsize64 "$dev")
+  local img_bytes dev_bytes
+  img_bytes=$(stat -c%s "$img")
+  dev_bytes=$(blockdev --getsize64 "$dev")
   ((img_bytes > dev_bytes)) && \
     die "Image ($((img_bytes/1024/1024))MB) exceeds target ($((dev_bytes/1024/1024))MB)."
 }
@@ -62,54 +66,40 @@ assert_size(){
 select_target_interactive(){
   command -v fzf >/dev/null || die "fzf is required for interactive selection."
   info "Scanning for removable drives..."
-  # Mimic bootiso's rich columns
-  local selection=$(
+  local selection
+  selection=$(
     lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG |
-      grep "disk" |
-      { ((!cfg[no_usb_check])) && grep -E "usb|mmc" || cat; } |
-      fzf --header="TARGET SELECTION (Safety: USB/MMC Only)" --prompt="Select Drive > " --with-nth=1,2,3,4)
+    awk -v skip="${cfg[no_usb_check]}" '
+      tolower($0) ~ /disk/ && (skip == "1" || tolower($0) ~ /usb|mmc/) { print }
+    ' | fzf --header="TARGET SELECTION (Safety: USB/MMC Only)" \
+        --prompt="Select Drive > " --with-nth=1,2,3,4
+  )
   [[ -z $selection ]] && die "No target selected."
   echo "$selection" | awk '{print $1}'
 }
 
 # --- Utils ---
-run(){ ((cfg[dry_run])) && info "[DRY] $*" || "$@"; }
-# Retry mechanism for stubborn device busy errors
-run_with_retry(){
-  local -i attempts="${1:-3}" delay="${2:-2}" i; shift 2
-  for ((i = 1; i <= attempts; i++)); do
-    "$@" 2> /dev/null && return 0
-    read -rt "$delay" -- <> <(:) &>/dev/null || :
-  done; die "Command failed after $attempts attempts: $*"
-}
-
 check_deps(){
-  local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid partprobe lsblk flock)
+  local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid partprobe lsblk flock awk curl)
   local cmd missing=()
-  for cmd in "${deps[@]}"; do command -v -- "$cmd" >/dev/null || missing+=("$cmd"); done
+  for cmd in "${deps[@]}"; do command -v "$cmd" >/dev/null || missing+=("$cmd"); done
   ((${#missing[@]} > 0)) && die "Missing dependencies: ${missing[*]}"
 }
 
-# Cleanup function (trap)
 cleanup(){
-  local ret=$?; set +e
-  # Unmount everything in reverse order
+  local ret="$?"; set +e
   for ((i=${#MOUNTED_DIRS[@]}-1; i>=0; i--)); do
     umount -lf "${MOUNTED_DIRS[i]}" &>/dev/null
   done
-  # Detach loops
   [[ -b ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" &>/dev/null
-  # Release Lock
   ((LOCK_FD >= 0)) && { exec {LOCK_FD}>&-; LOCK_FD=-1; }
   [[ -f ${LOCK_FILE:-} ]] && rm -f "$LOCK_FILE"
-  # Remove temp dir
   [[ -n ${WORKDIR:-} && -d $WORKDIR ]] && rm -rf "$WORKDIR"
   return "$ret"
 }
 
 derive_partition_paths(){
-  local dev=${1:?}
-  # NVMe/MMC/Loop use p1, p2 suffix. SDA/USB use 1, 2.
+  local dev="${1:?}"
   if [[ $dev =~ (nvme|mmcblk|loop) ]]; then
     BOOT_PART="${dev}p1"; ROOT_PART="${dev}p2"
   else
@@ -118,22 +108,23 @@ derive_partition_paths(){
 }
 
 wait_for_partitions(){
-  local dev=${1:?} i
+  local dev=${1:?}
   ((cfg[dry_run])) && return 0
   partprobe "$dev" &>/dev/null
   udevadm settle &>/dev/null
-  read -rt 1 -- <> <(:) &>/dev/null || :
+  sleep 1
   derive_partition_paths "$dev"
+  local i
   for ((i=0; i<30; i++)); do
     [[ -b $BOOT_PART && -b $ROOT_PART ]] && return 0
-    read -rt 0.5 -- <> <(:) &>/dev/null || :
+    sleep 0.5
   done
   die "Partitions failed to appear on $dev"
 }
 
 # --- Main Logic ---
+
 prepare_environment(){
-  # Create temp workspace
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" rf2fs.XXXXXX)
   SRC_IMG="$WORKDIR/source.img"
   trap cleanup EXIT INT TERM
@@ -141,7 +132,24 @@ prepare_environment(){
 }
 
 process_source(){
-  info "Processing source image: $SRC_PATH"
+  # Handle Keywords
+  if [[ "$SRC_PATH" == "dietpi" ]]; then
+    info "Keyword 'dietpi' detected. Using URL: $DIETPI_URL"
+    SRC_PATH="$DIETPI_URL"
+  fi
+  # Handle URLs
+  if [[ "$SRC_PATH" =~ ^https?:// ]]; then
+    info "Downloading image from URL..."
+    if [[ "$SRC_PATH" == *.xz ]]; then
+      # Stream download -> decompress -> file
+      curl -Lfs --progress-bar "$SRC_PATH" | xz -dc > "$SRC_IMG" || die "Download failed."
+    else
+      curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG" || die "Download failed."
+    fi
+    return 0
+  fi
+  # Handle Local Files
+  info "Processing local source: $SRC_PATH"
   [[ -f $SRC_PATH ]] || die "Source file not found."
   if [[ $SRC_PATH == *.xz ]]; then
     info "Decompressing xz archive..."
@@ -149,14 +157,12 @@ process_source(){
   elif ((cfg[keep_source])); then
     cp --reflink=auto "$SRC_PATH" "$SRC_IMG"
   else
-    # Link usually works, but if cross-filesystem, we copy
-    ln -f "$SRC_PATH" "$SRC_IMG" 2>/dev/null || cp "$SRC_PATH" "$SRC_IMG"
+    ln "$SRC_PATH" "$SRC_IMG" 2>/dev/null || cp "$SRC_PATH" "$SRC_IMG"
   fi
 }
 
 setup_target_device(){
   info "Preparing target: $TGT_PATH"
-  # Locking
   LOCK_FILE="/run/lock/raspi-f2fs-${TGT_PATH//\//_}.lock"
   mkdir -p "${LOCK_FILE%/*}"
   exec {LOCK_FD}> "$LOCK_FILE" || die "Cannot create lock file"
@@ -165,12 +171,7 @@ setup_target_device(){
   assert_size "$SRC_IMG" "$TGT_PATH"
   ((cfg[dry_run])) && return 0
   warn "${RED}WARNING: ALL DATA ON $TGT_PATH WILL BE ERASED!${DEF}"
-  # Wipefs
   wipefs -af "$TGT_PATH" &>/dev/null
-  # Create Partition Table (MSDOS)
-  # Standard Pi Layout:
-  # 1. Boot (FAT32)
-  # 2. Root (F2FS) - Takes 100% of remaining space immediately
   info "Partitioning..."
   parted -s "$TGT_PATH" mklabel msdos
   parted -s "$TGT_PATH" mkpart primary fat32 0% "${cfg[boot_size]}"
@@ -183,40 +184,33 @@ setup_target_device(){
 format_target(){
   info "Formatting filesystems..."
   ((cfg[dry_run])) && return 0
-  # Boot: FAT32
   mkfs.vfat -F32 -n BOOT "$BOOT_PART" >/dev/null
-  # Root: F2FS
-  # -f: force
-  # -l ROOT: Label
-  # -O: Enable features supported by Pi kernel (compression, checksums)
   mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART" >/dev/null
 }
 
 clone_data(){
   info "Cloning data (rsync)..."
   ((cfg[dry_run])) && return 0
-  # Mount Source Image
+
   LOOP_DEV=$(losetup --show -f -P "$SRC_IMG")
   derive_partition_paths "$LOOP_DEV"
-  local src_boot_part=$BOOT_PART
-  local src_root_part=$ROOT_PART
+  
   mkdir -p "$WORKDIR"/{src,tgt}/{boot,root}
-  mount -o ro "$src_boot_part" "$WORKDIR/src/boot"
+  mount -o ro "$BOOT_PART" "$WORKDIR/src/boot"
   MOUNTED_DIRS+=("$WORKDIR/src/boot")
-  mount -o ro "$src_root_part" "$WORKDIR/src/root"
+  mount -o ro "$ROOT_PART" "$WORKDIR/src/root"
   MOUNTED_DIRS+=("$WORKDIR/src/root")
-  # Mount Target
+
   derive_partition_paths "$TGT_DEV"
-  mount "$BOOT_PART" "$WORKDIR/tgt/boot"
+  mount "${BOOT_PART}" "$WORKDIR/tgt/boot"
   MOUNTED_DIRS+=("$WORKDIR/tgt/boot")
-  mount "$ROOT_PART" "$WORKDIR/tgt/root"
+  mount "${ROOT_PART}" "$WORKDIR/tgt/root"
   MOUNTED_DIRS+=("$WORKDIR/tgt/root")
-  # Copy Boot
+
   info "Syncing /boot..."
   rsync -aHAX --info=progress2 "$WORKDIR/src/boot/" "$WORKDIR/tgt/boot/"
-  # Copy Root
+
   info "Syncing / (Rootfs)..."
-  # Exclude lost+found to avoid permission errors
   rsync -aHAX --info=progress2 --exclude 'lost+found' "$WORKDIR/src/root/" "$WORKDIR/tgt/root/"
   sync
 }
@@ -224,30 +218,36 @@ clone_data(){
 configure_pi_boot(){
   info "Configuring F2FS boot parameters..."
   ((cfg[dry_run])) && return 0
+
   local boot_uuid root_uuid cmdline fstab
-  # Get new UUIDs
   boot_uuid=$(blkid -s PARTUUID -o value "$BOOT_PART")
   root_uuid=$(blkid -s PARTUUID -o value "$ROOT_PART")
   cmdline="$WORKDIR/tgt/boot/cmdline.txt"
   fstab="$WORKDIR/tgt/root/etc/fstab"
-  # 1. Update cmdline.txt
-  # - Change root=PARTUUID=...
-  # - Set rootfstype=f2fs
-  # - Remove init_resize.sh (We already resized partition to 100%)
-  # - Add fsck.repair=yes for headless reliability
-  sed -i -e "s|root=[^ ]*|root=PARTUUID=$root_uuid|" \
-    -e "s|rootfstype=[^ ]*|rootfstype=f2fs|" -e "s|init=[^ ]*init_resize.sh||" "$cmdline"
-  # Append flags if missing
-  grep -q "rootwait" "$cmdline" || sed -i 's/$/ rootwait/' "$cmdline"
-  grep -q "fsck.repair" "$cmdline" || sed -i 's/$/ fsck.repair=yes/' "$cmdline"
-  # 2. Update /etc/fstab
-  # F2FS options: defaults,noatime (discard is optional/slow on some SDs)
+
+  # awk optimization for atomic cmdline editing
+  awk -v uuid="$root_uuid" '{
+    line=""
+    for(i=1;i<=NF;i++) {
+      if($i ~ /^root=/) $i="root=PARTUUID=" uuid
+      else if($i ~ /^rootfstype=/) $i="rootfstype=f2fs"
+      else if($i ~ /^init=.*init_resize\.sh/) continue
+      line = (line ? line " " : "") $i
+    }
+    if(line !~ /rootwait/) line = line " rootwait"
+    if(line !~ /fsck\.repair=yes/) line = line " fsck.repair=yes"
+    print line
+  }' "$cmdline" > "${cmdline}.tmp" && mv "${cmdline}.tmp" "$cmdline"
+
+  # Use fcat for verifying content (demonstration of trick)
+  # log "Verified cmdline: $(fcat "$cmdline")"
+
   cat > "$fstab" <<- EOF
 	proc            /proc           proc    defaults          0       0
 	PARTUUID=$boot_uuid  /boot           vfat    defaults          0       2
 	PARTUUID=$root_uuid  /               f2fs    defaults,noatime  0       1
 EOF
-  # 3. Enable SSH if requested
+
   ((cfg[ssh])) && touch "$WORKDIR/tgt/boot/ssh"
   info "Configuration complete."
 }
@@ -259,7 +259,7 @@ usage(){
 	Flash Raspberry Pi image to SD card using F2FS root filesystem.
 	
 	OPTIONS:
-	  -i FILE   Source image (.img or .img.xz)
+	  -i FILE   Source image (.img, .img.xz, URL, or 'dietpi')
 	  -d DEV    Target device (e.g., /dev/sdX)
 	  -b SIZE   Boot partition size (default: 256M)
 	  -s        Enable SSH
@@ -273,6 +273,7 @@ EOF
 }
 
 # --- Entry Point ---
+
 while getopts "b:i:d:sknxhUF" opt; do
   case $opt in
     b) cfg[boot_size]=$OPTARG ;;
@@ -287,17 +288,19 @@ while getopts "b:i:d:sknxhUF" opt; do
     *) usage ;;
   esac
 done
-# Root check
-[[ $EUID -ne 0 ]] && sudo -v
+
+[[ $EUID -ne 0 ]] && die "This script requires root privileges (sudo)."
 check_deps
-# Interactive Selection
+
 if [[ -z $SRC_PATH ]]; then
-  SRC_PATH=$(find . -maxdepth 2 -name "*.img*" -o -name "*.xz" | fzf --prompt="Select Source Image > ")
+  SRC_PATH=$(find . -maxdepth 2 -name "*.img*" -o -name "*.xz" | fzf --prompt="Select Source Image (or enter URL/dietpi) > ")
   [[ -z $SRC_PATH ]] && die "No source image selected."
 fi
+
 if [[ -z $TGT_PATH ]]; then
   TGT_PATH=$(select_target_interactive)
 fi
+
 prepare_environment
 process_source
 setup_target_device
@@ -305,5 +308,5 @@ format_target
 clone_data
 configure_pi_boot
 
-info "${GRN}SUCCESS:${DEF} Flashed $(basename "$SRC_PATH") to $TGT_PATH with F2FS."
+info "${GRN}SUCCESS:${DEF} Flashed to $TGT_PATH with F2FS."
 info "You can now safely remove the device."

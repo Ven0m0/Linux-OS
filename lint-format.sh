@@ -394,12 +394,11 @@ process_markdown() {
   if check_tool mdformat; then
     log "  ${PNK}Formatting${DEF} with mdformat..."
     if ((cfg[fix])); then
-      for file in "${files[@]}"; do
-        if mdformat "$file" 2> /dev/null; then
-          MODIFIED_FILES+=("$file")
-          ((TOTAL_MODIFIED++))
-        fi
-      done
+      if mdformat "${files[@]}" 2> /dev/null; then
+        # This assumes all files were potentially modified. For more accuracy, you could check git status.
+        MODIFIED_FILES+=("${files[@]}")
+        ((TOTAL_MODIFIED += ${#files[@]}))
+      fi
     else
       if ! mdformat --check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :

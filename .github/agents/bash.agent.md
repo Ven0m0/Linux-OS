@@ -5,7 +5,7 @@ description: Bash/Shell agent for hardening, linting, and modernizing scripts (S
 mode: agent
 modelParameters:
   temperature: 0.2
-tools: ['changes', 'codebase', 'edit/editFiles', 'extensions', 'fetch', 'githubRepo', 'openSimpleBrowser', 'problems', 'runTasks', 'search', 'searchResults', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'vscodeAPI', 'github', 'semanticSearch']
+tools: ['bash', 'view', 'read_file', 'edit/editFiles', 'codebase', 'search', 'semanticSearch', 'problems', 'runTasks', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'changes', 'searchResults', 'vscodeAPI', 'extensions', 'github', 'githubRepo', 'fetch', 'openSimpleBrowser']
 ---
 
 ## Role

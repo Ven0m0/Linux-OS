@@ -6,13 +6,13 @@ STATIC=main
 LINK=
 VOLATILE="/dev/shm/${USER}/firefox"
 
-usage(){
+usage() {
   echo "Usage: firefox-sync [-dh] [-p profile-basename]"
 }
 
-longhelp(){
+longhelp() {
   usage
-  cat <<EOF
+  cat << EOF
 
 This program syncs your firefox profile to a ramdisk (/dev/shm) and back.
 
@@ -26,29 +26,29 @@ EOF
 
 while getopts dhrp: options; do
   case $options in
-  d)
-    echo "default profile directory is ~/.mozilla/firefox/$LINK"
-    exit 0
-    ;;
-  h) longhelp ;;
-  p) LINK="$OPTARG" ;;
-  r)
-    if [[ -d $VOLATILE ]]; then
-      mv "$VOLATILE" ~/.mozilla/firefox/"$LINK"-copy
-      mv ~/.mozilla/firefox/"$LINK"{,-trash}
-      mv ~/.mozilla/firefox/"$STATIC"{,-trash}
-      mv ~/.mozilla/firefox/"$LINK"{-copy,}
-      rm -rf ~/.mozilla/firefox/{"$LINK","$STATIC"}-trash
-    else
-      echo "Error: Volatile directory not found at $VOLATILE" >&2
+    d)
+      echo "default profile directory is ~/.mozilla/firefox/$LINK"
+      exit 0
+      ;;
+    h) longhelp ;;
+    p) LINK="$OPTARG" ;;
+    r)
+      if [[ -d $VOLATILE ]]; then
+        mv "$VOLATILE" ~/.mozilla/firefox/"$LINK"-copy
+        mv ~/.mozilla/firefox/"$LINK"{,-trash}
+        mv ~/.mozilla/firefox/"$STATIC"{,-trash}
+        mv ~/.mozilla/firefox/"$LINK"{-copy,}
+        rm -rf ~/.mozilla/firefox/{"$LINK","$STATIC"}-trash
+      else
+        echo "Error: Volatile directory not found at $VOLATILE" >&2
+        exit 1
+      fi
+      exit 0
+      ;;
+    ?)
+      usage
       exit 1
-    fi
-    exit 0
-    ;;
-  ?)
-    usage
-    exit 1
-    ;;
+      ;;
   esac
 done
 

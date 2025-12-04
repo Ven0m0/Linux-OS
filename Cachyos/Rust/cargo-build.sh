@@ -10,13 +10,13 @@ export LC_ALL=C LANG=C
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup trap
 # ──────────────────────────────────────────────────────────────────────────────
-cleanup(){
+cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
-  command -v cargo-cache &>/dev/null && cargo-cache -efg &>/dev/null
-  cargo clean &>/dev/null || :
-  command -v cargo-pgo &>/dev/null && cargo pgo clean &>/dev/null || :
-  rm -rf "$HOME/.cache/sccache/"* &>/dev/null || :
+  command -v cargo-cache &> /dev/null && cargo-cache -efg &> /dev/null
+  cargo clean &> /dev/null || :
+  command -v cargo-pgo &> /dev/null && cargo pgo clean &> /dev/null || :
+  rm -rf "$HOME/.cache/sccache/"* &> /dev/null || :
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
@@ -37,8 +37,8 @@ BUILD_ARGS=()
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage
 # ──────────────────────────────────────────────────────────────────────────────
-usage(){
-  cat <<EOF
+usage() {
+  cat << EOF
 Usage: $0 [OPTIONS] [<crate>...]
 
 Unified Rust build script with advanced optimizations including PGO and BOLT.
@@ -88,60 +88,60 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-  -b | --build)
-    MODE="build"
-    shift
-    ;;
-  -i | --install)
-    MODE="install"
-    shift
-    ;;
-  --pgo)
-    shift
-    [[ $1 =~ ^[0-2]$ ]] || {
-      echo "Error: --pgo requires 0, 1, or 2" >&2
-      exit 1
-    }
-    PGO_LEVEL=$1
-    MODE="pgo"
-    shift
-    ;;
-  --bolt)
-    BOLT_ENABLED=1
-    shift
-    ;;
-  -m | --mold)
-    USE_MOLD=1
-    shift
-    ;;
-  -l | --locked)
-    LOCKED_FLAG="--locked"
-    shift
-    ;;
-  -g | --git)
-    GIT_CLEANUP=1
-    shift
-    ;;
-  -d | --debug)
-    DEBUG_MODE=1
-    set -x
-    export RUST_LOG=trace RUST_BACKTRACE=1
-    shift
-    ;;
-  -h | --help) usage 0 ;;
-  --)
-    shift
-    BUILD_ARGS=("$@")
-    break
-    ;;
-  -*)
-    echo "Error: unknown option '$1'" >&2
-    usage 1
-    ;;
-  *)
-    CRATES+=("$1")
-    shift
-    ;;
+    -b | --build)
+      MODE="build"
+      shift
+      ;;
+    -i | --install)
+      MODE="install"
+      shift
+      ;;
+    --pgo)
+      shift
+      [[ $1 =~ ^[0-2]$ ]] || {
+        echo "Error: --pgo requires 0, 1, or 2" >&2
+        exit 1
+      }
+      PGO_LEVEL=$1
+      MODE="pgo"
+      shift
+      ;;
+    --bolt)
+      BOLT_ENABLED=1
+      shift
+      ;;
+    -m | --mold)
+      USE_MOLD=1
+      shift
+      ;;
+    -l | --locked)
+      LOCKED_FLAG="--locked"
+      shift
+      ;;
+    -g | --git)
+      GIT_CLEANUP=1
+      shift
+      ;;
+    -d | --debug)
+      DEBUG_MODE=1
+      set -x
+      export RUST_LOG=trace RUST_BACKTRACE=1
+      shift
+      ;;
+    -h | --help) usage 0 ;;
+    --)
+      shift
+      BUILD_ARGS=("$@")
+      break
+      ;;
+    -*)
+      echo "Error: unknown option '$1'" >&2
+      usage 1
+      ;;
+    *)
+      CRATES+=("$1")
+      shift
+      ;;
   esac
 done
 
@@ -170,16 +170,16 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # CPU performance mode
-sudo cpupower frequency-set --governor performance &>/dev/null || :
+sudo cpupower frequency-set --governor performance &> /dev/null || :
 
 # Update Rust if requested
 if [[ $MODE == "install" ]]; then
   read -r -p "Update Rust toolchains? [y/N] " ans
-  [[ $ans =~ ^[Yy]$ ]] && rustup update &>/dev/null || :
+  [[ $ans =~ ^[Yy]$ ]] && rustup update &> /dev/null || :
 fi
 
 # Git cleanup
-if [[ $GIT_CLEANUP -eq 1 ]] && git rev-parse --is-inside-work-tree &>/dev/null; then
+if [[ $GIT_CLEANUP -eq 1 ]] && git rev-parse --is-inside-work-tree &> /dev/null; then
   echo "==> Running git cleanup..."
   git reflog expire --expire=now --all
   git gc --prune=now --aggressive
@@ -189,11 +189,11 @@ fi
 
 # Install required tools
 for tool in cargo-shear cargo-machete cargo-cache; do
-  command -v "$tool" &>/dev/null || cargo install "$tool"
+  command -v "$tool" &> /dev/null || cargo install "$tool"
 done
 
 if [[ $MODE == "pgo" || $BOLT_ENABLED -eq 1 ]]; then
-  command -v cargo-pgo &>/dev/null || {
+  command -v cargo-pgo &> /dev/null || {
     rustup component add llvm-tools-preview
     cargo install cargo-pgo
   }
@@ -202,13 +202,13 @@ fi
 # ──────────────────────────────────────────────────────────────────────────────
 # Environment setup
 # ──────────────────────────────────────────────────────────────────────────────
-jobs=$(nproc 2>/dev/null || echo 4)
+jobs=$(nproc 2> /dev/null || echo 4)
 
 # Compiler setup
-if command -v sccache &>/dev/null; then
+if command -v sccache &> /dev/null; then
   export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
   export SCCACHE_DIRECT=true SCCACHE_RECACHE=true SCCACHE_IDLE_TIMEOUT=10800
-  sccache --start-server &>/dev/null || :
+  sccache --start-server &> /dev/null || :
 else
   export CC=clang CXX=clang++
   unset RUSTC_WRAPPER
@@ -234,7 +234,7 @@ export OPT_LEVEL=3
 # Memory allocator configuration
 export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
 export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null || :
+echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &> /dev/null || :
 
 # Linker flags
 LFLAGS=()
@@ -242,7 +242,7 @@ CLDFLAGS=()
 if [[ $USE_MOLD -eq 1 ]]; then
   LFLAGS+=(-Clink-arg=-fuse-ld=mold)
   CLDFLAGS+=(-fuse-ld=mold)
-elif command -v ld.lld &>/dev/null; then
+elif command -v ld.lld &> /dev/null; then
   LFLAGS+=(-Clink-arg=-fuse-ld=lld)
   CLDFLAGS+=(-fuse-ld=lld)
 fi
@@ -328,7 +328,7 @@ MISC_OPT=(--ignore-rust-version -f --bins -j"$jobs")
 # ──────────────────────────────────────────────────────────────────────────────
 # Profile configuration helper functions
 # ──────────────────────────────────────────────────────────────────────────────
-profileon(){
+profileon() {
   echo "==> Enabling profiling mode..."
   sudo sh -c "echo 0 >/proc/sys/kernel/randomize_va_space" || :
   sudo sh -c "echo 0 >/proc/sys/kernel/nmi_watchdog" || :
@@ -337,7 +337,7 @@ profileon(){
   sudo sh -c "echo 0 >/proc/sys/kernel/perf_event_paranoid" || :
 }
 
-profileoff(){
+profileoff() {
   echo "==> Disabling profiling mode..."
   sudo sh -c "echo 1 >/proc/sys/kernel/randomize_va_space" || :
   sudo sh -c "echo 0 >/sys/devices/system/cpu/intel_pstate/no_turbo" || :
@@ -348,94 +348,94 @@ profileoff(){
 # ──────────────────────────────────────────────────────────────────────────────
 
 case $MODE in
-build)
-  echo "==> Building project..."
+  build)
+    echo "==> Building project..."
 
-  # Project maintenance
-  if git rev-parse --is-inside-work-tree &>/dev/null; then
-    cargo update --recursive &>/dev/null || :
-    cargo fix --workspace --all-targets --allow-dirty -r &>/dev/null || :
-    cargo clippy --fix --workspace --allow-dirty &>/dev/null || :
-    cargo fmt &>/dev/null || :
-    command -v cargo-shear &>/dev/null && cargo-shear --fix &>/dev/null || :
-    command -v cargo-machete &>/dev/null && cargo-machete --fix &>/dev/null || :
-  fi
-
-  cargo-cache -g -f -e clean-unref &>/dev/null || :
-  cargo +nightly build --release "${BUILD_ARGS[@]}"
-  echo "✅ Build complete"
-  ;;
-
-install)
-  echo "==> Installing crates: ${CRATES[*]}"
-
-  sync
-  for crate in "${CRATES[@]}"; do
-    echo "→ Installing $crate..."
-    cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate"
-    echo "✅ $crate installed in $HOME/.cargo/bin"
-  done
-  ;;
-
-pgo)
-  echo "==> Building with PGO (level: $PGO_LEVEL)..."
-
-  if [[ $PGO_LEVEL -eq 1 ]]; then
-    # Instrumentation phase
-    profileon
-    cargo pgo clean
-    cargo clean
-
-    export RUSTFLAGS="${RUSTFLAGS} -Cprofile-generate=./pgo_data -Cembed-bitcode=yes"
-    cargo +nightly pgo build --release "${BUILD_ARGS[@]}"
-
-    echo ""
-    echo "==> Instrumentation build complete"
-    echo "Run your workload to generate profiles:"
-    echo "  ./target/release/<binary> <args>"
-    echo ""
-    echo "Then merge profiles with:"
-    echo "  llvm-profdata merge -output=default.profdata ./pgo_data"
-    echo ""
-    echo "After that, run with --pgo 2 to build optimized binary"
-
-  elif [[ $PGO_LEVEL -eq 2 ]]; then
-    # Optimization phase
-    profileon
-
-    if [[ ! -f default.profdata ]]; then
-      echo "Error: default.profdata not found. Run --pgo 1 first and generate profiles." >&2
-      exit 1
+    # Project maintenance
+    if git rev-parse --is-inside-work-tree &> /dev/null; then
+      cargo update --recursive &> /dev/null || :
+      cargo fix --workspace --all-targets --allow-dirty -r &> /dev/null || :
+      cargo clippy --fix --workspace --allow-dirty &> /dev/null || :
+      cargo fmt &> /dev/null || :
+      command -v cargo-shear &> /dev/null && cargo-shear --fix &> /dev/null || :
+      command -v cargo-machete &> /dev/null && cargo-machete --fix &> /dev/null || :
     fi
 
-    if [[ $BOLT_ENABLED -eq 1 ]]; then
-      export RUSTFLAGS="${RUSTFLAGS} -Cembed-bitcode=yes -Clink-args=-Wl,--emit-relocs"
-    else
-      export RUSTFLAGS="${RUSTFLAGS} -Cembed-bitcode=yes"
-    fi
+    cargo-cache -g -f -e clean-unref &> /dev/null || :
+    cargo +nightly build --release "${BUILD_ARGS[@]}"
+    echo "✅ Build complete"
+    ;;
 
-    export RUSTFLAGS="${RUSTFLAGS} -Cprofile-use=./default.profdata -Cprofile-correction -Cllvm-args=-pgo-warn-missing-function"
+  install)
+    echo "==> Installing crates: ${CRATES[*]}"
 
-    cargo pgo clean
-    cargo clean
-    cargo +nightly pgo build --release "${BUILD_ARGS[@]}"
+    sync
+    for crate in "${CRATES[@]}"; do
+      echo "→ Installing $crate..."
+      cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate"
+      echo "✅ $crate installed in $HOME/.cargo/bin"
+    done
+    ;;
 
-    if [[ $BOLT_ENABLED -eq 1 ]]; then
-      echo "==> Running BOLT optimization..."
-      cargo pgo bolt build --with-pgo
+  pgo)
+    echo "==> Building with PGO (level: $PGO_LEVEL)..."
+
+    if [[ $PGO_LEVEL -eq 1 ]]; then
+      # Instrumentation phase
+      profileon
+      cargo pgo clean
+      cargo clean
+
+      export RUSTFLAGS="${RUSTFLAGS} -Cprofile-generate=./pgo_data -Cembed-bitcode=yes"
+      cargo +nightly pgo build --release "${BUILD_ARGS[@]}"
 
       echo ""
-      echo "==> Run your workload with the BOLT instrumented binary:"
-      echo "  ./target/release/<binary>-bolt-instrumented <args>"
+      echo "==> Instrumentation build complete"
+      echo "Run your workload to generate profiles:"
+      echo "  ./target/release/<binary> <args>"
       echo ""
-      echo "Then run to create final optimized binary:"
-      echo "  cargo pgo bolt optimize --with-pgo"
-    fi
+      echo "Then merge profiles with:"
+      echo "  llvm-profdata merge -output=default.profdata ./pgo_data"
+      echo ""
+      echo "After that, run with --pgo 2 to build optimized binary"
 
-    profileoff
-    echo "✅ PGO optimization complete"
-  fi
-  ;;
+    elif [[ $PGO_LEVEL -eq 2 ]]; then
+      # Optimization phase
+      profileon
+
+      if [[ ! -f default.profdata ]]; then
+        echo "Error: default.profdata not found. Run --pgo 1 first and generate profiles." >&2
+        exit 1
+      fi
+
+      if [[ $BOLT_ENABLED -eq 1 ]]; then
+        export RUSTFLAGS="${RUSTFLAGS} -Cembed-bitcode=yes -Clink-args=-Wl,--emit-relocs"
+      else
+        export RUSTFLAGS="${RUSTFLAGS} -Cembed-bitcode=yes"
+      fi
+
+      export RUSTFLAGS="${RUSTFLAGS} -Cprofile-use=./default.profdata -Cprofile-correction -Cllvm-args=-pgo-warn-missing-function"
+
+      cargo pgo clean
+      cargo clean
+      cargo +nightly pgo build --release "${BUILD_ARGS[@]}"
+
+      if [[ $BOLT_ENABLED -eq 1 ]]; then
+        echo "==> Running BOLT optimization..."
+        cargo pgo bolt build --with-pgo
+
+        echo ""
+        echo "==> Run your workload with the BOLT instrumented binary:"
+        echo "  ./target/release/<binary>-bolt-instrumented <args>"
+        echo ""
+        echo "Then run to create final optimized binary:"
+        echo "  cargo pgo bolt optimize --with-pgo"
+      fi
+
+      profileoff
+      echo "✅ PGO optimization complete"
+    fi
+    ;;
 esac
 
 echo ""

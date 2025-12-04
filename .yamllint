@@ -1,0 +1,42 @@
+---
+extends: default
+rules:
+  line-length:
+    max: 120
+    level: warning
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no']
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: {}
+  document-start: disable
+  empty-lines:
+    max: 2
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 0
+  colons:
+    max-spaces-before: 0
+    max-spaces-after: 1
+  commas:
+    max-spaces-before: 0
+    min-spaces-after: 1
+    max-spaces-after: 1
+  hyphens:
+    max-spaces-after: 1
+  key-duplicates: enable
+  new-line-at-end-of-file: enable
+  trailing-spaces: enable
+ignore: |
+  .git/
+  node_modules/
+  .cache/
+  .var/
+  Linux-Settings/

@@ -18,7 +18,7 @@ fi
 mkdir -p ~/.config/copyparty
 
 # Configure copyparty
-cat >~/.config/copyparty/config.py <<'EOF'
+cat > ~/.config/copyparty/config.py << 'EOF'
 #!/usr/bin/env python3
 """copyparty config"""
 
@@ -79,7 +79,7 @@ mkdir -p ~/Public/uploads ~/Public/share
 # Configure Samba
 echo "Configuring Samba..."
 CURRENT_USER="$(whoami)"
-sudo tee /etc/samba/smb.conf >/dev/null <<EOF
+sudo tee /etc/samba/smb.conf > /dev/null << EOF
 [global]
    workgroup = WORKGROUP
    server string = Copyparty Samba Server
@@ -103,7 +103,7 @@ EOF
 # Create systemd user service for copyparty
 mkdir -p ~/.config/systemd/user
 
-cat >~/.config/systemd/user/copyparty.service <<'EOF'
+cat > ~/.config/systemd/user/copyparty.service << 'EOF'
 [Unit]
 Description=Copyparty web server
 After=network-online.target

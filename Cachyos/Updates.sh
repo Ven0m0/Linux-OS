@@ -9,10 +9,10 @@ source "$SCRIPT_DIR/../lib/core.sh"
 # shellcheck source=lib/arch.sh
 source "$SCRIPT_DIR/../lib/arch.sh"
 
-main(){
+main() {
   trap cleanup_pacman_lock EXIT INT TERM
   #============ Update Functions ============
-  update_system(){
+  update_system() {
     local pkgmgr aur_opts
     log "🔄${BLU} System Packages${DEF}"
     pkgmgr=$(get_pkg_manager)
@@ -29,7 +29,7 @@ main(){
     fi
   }
 
-  update_extras(){
+  update_extras() {
     log "🔄${BLU} Extra Tooling${DEF}"
     if has topgrade; then
       local user_flags=('--disable=system' '--disable=self-update' '--disable=brew')
@@ -66,21 +66,21 @@ main(){
     has zoi && zoi upgrade --yes --all || :
   }
 
-  update_python(){
+  update_python() {
     if ! has uv; then return 0; fi
     log "🔄${BLU} Python Environment (uv)${DEF}"
     uv self update || :
-    mapfile -t pkgs < <(uv tool list --format=json 2>/dev/null | jq -r '.[].name')
+    mapfile -t pkgs < <(uv tool list --format=json 2> /dev/null | jq -r '.[].name')
     if [[ ${#pkgs[@]} -gt 0 ]]; then
       uv tool upgrade "${pkgs[@]}" || :
     fi
-    mapfile -t outdated < <(uv pip list --outdated --format=json 2>/dev/null | jq -r '.[].name')
+    mapfile -t outdated < <(uv pip list --outdated --format=json 2> /dev/null | jq -r '.[].name')
     if [[ ${#outdated[@]} -gt 0 ]]; then
       uv pip install -Uq --system --no-break-system-packages "${outdated[@]}" || :
     fi
   }
 
-  update_maintenance(){
+  update_maintenance() {
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
     for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb fwupdmgr; do

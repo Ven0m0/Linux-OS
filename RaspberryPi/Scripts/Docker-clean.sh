@@ -16,25 +16,25 @@ while [[ $# -gt 0 ]]; do
   key="$1"
 
   case $key in
-  --no-restart)
-    DONT_RESTART_DOCKER_ENGINE=1
-    shift
-    ;;
-  -y)
-    DONT_ASK_CONFIRMATION=1
-    shift
-    ;;
-  *)
-    echo "Unknown parameter passed: $1"
-    exit 1
-    ;;
+    --no-restart)
+      DONT_RESTART_DOCKER_ENGINE=1
+      shift
+      ;;
+    -y)
+      DONT_ASK_CONFIRMATION=1
+      shift
+      ;;
+    *)
+      echo "Unknown parameter passed: $1"
+      exit 1
+      ;;
   esac
 done
 
 # Asks user for confirmation interactively
-ask_user_for_confirmation(){
+ask_user_for_confirmation() {
 
-  cat <<EOF
+  cat << EOF
 
 ==============================================
 This script reclaims disk space by removing stale and unused Docker data:
@@ -62,11 +62,11 @@ EOF
 }
 
 # On MacOS, restarting Docker Desktop for Mac might take a long time
-poll_for_docker_readiness(){
+poll_for_docker_readiness() {
   printf 'Waiting for docker engine to start:\n'
 
   local i=0
-  while ! docker system info &>/dev/null; do
+  while ! docker system info &> /dev/null; do
     printf '%*s\n' "$i" '' | tr ' ' '.'
     i=$((i + 1))
     sleep 1
@@ -77,12 +77,12 @@ poll_for_docker_readiness(){
 }
 
 # Checks if a particular program is installed
-is_program_installed(){
-  command -v "$1" &>/dev/null
+is_program_installed() {
+  command -v "$1" &> /dev/null
 }
 
 # Restarts the Docker engine
-restart_docker_engine(){
+restart_docker_engine() {
   if [[ $DONT_RESTART_DOCKER_ENGINE -eq 1 ]]; then
     return
   fi
@@ -152,7 +152,7 @@ docker system df
 restart_docker_engine
 
 # https://github.com/docker-slim/docker-slim
-docker-slim(){
+docker-slim() {
   if [[ $# -eq 0 ]]; then
     sudo docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim help
   else

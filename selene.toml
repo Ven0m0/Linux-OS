@@ -1,0 +1,4 @@
+# Selene Lua linter configuration
+# https://kampfkarren.github.io/selene/
+
+std = "lua53"

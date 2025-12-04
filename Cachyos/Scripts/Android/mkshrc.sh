@@ -25,10 +25,10 @@ set -o noclobber
 set +o nohup # disable nohup mode
 set -o utf8-mode
 
-mkcd(){
+mkcd() {
   mkdir -p "$1" && cd "$1" || exit
 }
-cdl(){
+cdl() {
   cd "$1" && ls -a --color=auto
 }
 
@@ -64,12 +64,12 @@ alias ......="cd ../../../"
 alias ........="cd ../../../../"
 
 # Show current focused app and activity
-current_activity(){
+current_activity() {
   dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'
 }
 
 # a function to help users find the local ip (from gh:omz/sysadmin plugin)
-myip(){
+myip() {
   if [[ -x "$(command -v 'ip')" ]]; then
     ip addr | awk '/inet /{print $2}' | grep -v 127.0.0.1
   else
@@ -78,7 +78,7 @@ myip(){
 }
 
 # Basic replacement for "man" since Android usually lacks it
-function man(){
+function man() {
   local binary="$(_resolve "$1" | cut -d ' ' -f1)"
 
   # Handle empty or recursive call (man man)
@@ -99,12 +99,12 @@ function man(){
 export man
 
 # Function to simulate 'man' command
-man(){
+man() {
   [[ -z $1 ]] && {
     echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2
     return 1
   }
-  "$1" --help &>/dev/null && "$1" --help 2>&1 || {
+  "$1" --help &> /dev/null && "$1" --help 2>&1 || {
     echo "No manual entry for $1" >&2
     return 16
   }

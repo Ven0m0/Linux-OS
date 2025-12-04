@@ -1,68 +1,101 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+shopt -s nullglob
+IFS=$'\n\t'
 export LC_ALL=C LANG=C
+
 # optimize_apk.sh: Automate APK linting, stripping, bytecode optimization, and repackaging
 # Usage: ./optimize_apk.sh input.apk output.apk
 # Requirements: apktool, redex, dex2jar, proguard (or R8), zipalign, apksigner, pngcrush, jpegoptim, 7z
-# Configuration: adjust paths and keystore info via env vars or defaults
+
+# Configuration (adjust via env vars or use defaults)
 KEYSTORE_PATH="${KEYSTORE_PATH:-mykey.keystore}"
 KEY_ALIAS="${KEY_ALIAS:-myalias}"
 KEYSTORE_PASS="${KEYSTORE_PASS:-changeit}"
 KEY_PASS="${KEY_PASS:-changeit}"
-# Tools
-APKTOOL="apktool"
-REDEX="redex"
-DEX2JAR="d2j-dex2jar.sh"
-PROGUARD_JAR="proguard.jar"
-ZIPALIGN="zipalign"
-APKSIGNER="apksigner"
-PNGCRUSH="pngcrush"
-JPEGOPTIM="jpegoptim"
-SEVENZIP="7z"
-# Check tools
-for tool in "$APKTOOL" "$ZIPALIGN" "$APKSIGNER" "$SEVENZIP"; do
-  command -v "$tool" &>/dev/null || {
-    echo "Error: $tool not found"; exit 1
-  }
-done
 
-# Input/Output
+# Tools
+readonly APKTOOL="apktool"
+readonly REDEX="redex"
+readonly DEX2JAR="d2j-dex2jar.sh"
+readonly PROGUARD_JAR="${PROGUARD_JAR:-proguard.jar}"
+readonly ZIPALIGN="zipalign"
+readonly APKSIGNER="apksigner"
+readonly PNGCRUSH="pngcrush"
+readonly JPEGOPTIM="jpegoptim"
+readonly SEVENZIP="7z"
+
+# Logging
+log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
+err() { printf '[ERROR] %s\n' "$*" >&2; }
+die() { err "$1"; exit "${2:-1}"; }
+
+# Check required tools
+has() { command -v "$1" &>/dev/null; }
+
+check_tools() {
+  local missing=0
+  for tool in "$APKTOOL" "$ZIPALIGN" "$APKSIGNER" "$SEVENZIP"; do
+    if ! has "$tool"; then
+      err "Required tool not found: $tool"
+      missing=1
+    fi
+  done
+  [[ $missing -eq 1 ]] && die "Missing required tools"
+}
+
+# Input/Output validation
 INPUT_APK="${1:-}"
 OUTPUT_APK="${2:-}"
 
 if [[ -z $INPUT_APK || -z $OUTPUT_APK ]]; then
-  echo "Usage: $0 input.apk output.apk"; exit 1
+  die "Usage: $0 input.apk output.apk"
 fi
 
-# Working Directory
+[[ -f $INPUT_APK ]] || die "Input APK not found: $INPUT_APK"
+
+# Working Directory with cleanup
 WORKDIR="$(mktemp -d)"
-trap 'rm -rf "$WORKDIR"' EXIT
+cleanup() {
+  [[ -n ${WORKDIR:-} && -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
+}
+trap cleanup EXIT
+trap 'err "failed at line ${LINENO}"' ERR
 
-echo "[1/10] Decoding APK with apktool..."
-"$APKTOOL" d "$INPUT_APK" -o "$WORKDIR/src"
+# Validate tools
+check_tools
 
-echo "[2/10] Stripping unused resources..."
-# Example: remove extra densities
+log "[1/10] Decoding APK with apktool..."
+"$APKTOOL" d "$INPUT_APK" -o "$WORKDIR/src" || die "Failed to decode APK"
+
+log "[2/10] Stripping unused resources..."
+# Remove extra densities (keep only mdpi)
 find "$WORKDIR/src/res" -maxdepth 1 -type d -name "drawable-*" ! -name "drawable-mdpi" -exec rm -rf {} + 2>/dev/null || :
-# Remove other unused
+# Remove raw resources and assets if present
 rm -rf "$WORKDIR/src/res/raw/" "$WORKDIR/src/assets/" 2>/dev/null || :
 
-echo "[3/10] Rebuilding stripped APK..."
-"$APKTOOL" b "$WORKDIR/src" -o "$WORKDIR/stripped.apk"
+log "[3/10] Rebuilding stripped APK..."
+"$APKTOOL" b "$WORKDIR/src" -o "$WORKDIR/stripped.apk" || die "Failed to rebuild APK"
 
-echo "[4/10] Running Redex optimization..."
-if command -v "$REDEX" &>/dev/null; then
-  "$REDEX" -i "$WORKDIR/stripped.apk" -o "$WORKDIR/redexed.apk"
+log "[4/10] Running Redex optimization..."
+if has "$REDEX"; then
+  "$REDEX" -i "$WORKDIR/stripped.apk" -o "$WORKDIR/redexed.apk" || {
+    log "Redex optimization failed, using stripped APK"
+    cp "$WORKDIR/stripped.apk" "$WORKDIR/redexed.apk"
+  }
 else
-  echo "Redex not found, skipping..."
+  log "Redex not found, skipping bytecode optimization"
   cp "$WORKDIR/stripped.apk" "$WORKDIR/redexed.apk"
 fi
 
-echo "[5/10] Converting DEX to JAR for ProGuard/R8..."
-if command -v "$DEX2JAR" &>/dev/null && [[ -f $PROGUARD_JAR ]]; then
-  "$DEX2JAR" "$WORKDIR/redexed.apk" -o "$WORKDIR/app.jar"
+log "[5/10] Converting DEX to JAR for ProGuard/R8..."
+if has "$DEX2JAR" && [[ -f $PROGUARD_JAR ]]; then
+  "$DEX2JAR" "$WORKDIR/redexed.apk" -o "$WORKDIR/app.jar" || {
+    log "DEX to JAR conversion failed, skipping ProGuard"
+    cp "$WORKDIR/redexed.apk" "$WORKDIR/repackaged.apk"
+  }
 
-  echo "[6/10] Running ProGuard shrink..."
+  log "[6/10] Running ProGuard shrink..."
   cat > "$WORKDIR/proguard-rules.pro" << EOL
 -keep public class * {
     public *;
@@ -78,53 +111,53 @@ EOL
     -libraryjars "${JAVA_HOME}/lib/rt.jar" \
     -include "$WORKDIR/proguard-rules.pro"
 
-  echo "[7/10] Rebuilding DEX from optimized JAR..."
-  if command -v dx &>/dev/null; then
+  log "[7/10] Rebuilding DEX from optimized JAR..."
+  if has dx; then
     dx --dex --output="$WORKDIR/classes.dex" "$WORKDIR/app_proguard.jar"
     # Repackage
     unzip -q "$WORKDIR/redexed.apk" -d "$WORKDIR/apk_unpack"
     cp "$WORKDIR/classes.dex" "$WORKDIR/apk_unpack/"
     cd "$WORKDIR/apk_unpack" || exit
     zip -q -r ../repackaged.apk .
-    cd - >/dev/null || exit
+    cd - >/dev/null || die "Failed to return from working directory"
   else
-    echo "dx not found, skipping ProGuard integration..."
+    log "dx not found, skipping ProGuard integration"
     cp "$WORKDIR/redexed.apk" "$WORKDIR/repackaged.apk"
   fi
 else
-  echo "dex2jar or proguard.jar not found, skipping ProGuard..."
+  log "dex2jar or proguard.jar not found, skipping ProGuard"
   cp "$WORKDIR/redexed.apk" "$WORKDIR/repackaged.apk"
 fi
 
-echo "[8/10] Aligning APK..."
-"$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk" >/dev/null
+log "[8/10] Aligning APK..."
+"$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk" >/dev/null || die "Failed to align APK"
 
-echo "[9/10] Signing APK..."
+log "[9/10] Signing APK..."
 if [[ -f $KEYSTORE_PATH ]]; then
   "$APKSIGNER" sign \
     --ks "$KEYSTORE_PATH" --ks-key-alias "$KEY_ALIAS" \
     --ks-pass pass:"$KEYSTORE_PASS" --key-pass pass:"$KEY_PASS" \
     --out "$WORKDIR/signed.apk" \
-    "$WORKDIR/aligned.apk"
+    "$WORKDIR/aligned.apk" || die "Failed to sign APK"
 else
-  echo "Keystore not found at $KEYSTORE_PATH. Skipping signing (APK will be unsigned)."
+  log "Keystore not found at $KEYSTORE_PATH. Skipping signing (APK will be unsigned)"
   cp "$WORKDIR/aligned.apk" "$WORKDIR/signed.apk"
 fi
 
-echo "[10/10] Optimizing PNGs and JPEGs..."
+log "[10/10] Optimizing PNGs and JPEGs..."
 # Unzip to optimize resources
-unzip -q "$WORKDIR/signed.apk" -d "$WORKDIR/final_unpack"
-if command -v "$PNGCRUSH" &>/dev/null; then
-  find "$WORKDIR/final_unpack/res" -iname "*.png" -exec "$PNGCRUSH" -q -rem alla -brute {} {}.opt \; -exec mv {}.opt {} +
+unzip -q "$WORKDIR/signed.apk" -d "$WORKDIR/final_unpack" || die "Failed to unzip signed APK"
+if has "$PNGCRUSH"; then
+  find "$WORKDIR/final_unpack/res" -iname "*.png" -exec "$PNGCRUSH" -q -rem alla -brute {} {}.opt \; -exec mv {}.opt {} + 2>/dev/null || :
 fi
-if command -v "$JPEGOPTIM" &>/dev/null; then
-  find "$WORKDIR/final_unpack/res" -iname "*.jpg" -exec "$JPEGOPTIM" --strip-all {} +
+if has "$JPEGOPTIM"; then
+  find "$WORKDIR/final_unpack/res" -iname "*.jpg" -exec "$JPEGOPTIM" --strip-all {} + 2>/dev/null || :
 fi
 
 # Rezip final APK
-cd "$WORKDIR/final_unpack" || exit
-"$SEVENZIP" a -tzip -mx=9 "../output.apk" . >/dev/null
-cd - >/dev/null || exit
+cd "$WORKDIR/final_unpack" || die "Failed to enter final unpack directory"
+"$SEVENZIP" a -tzip -mx=9 "../output.apk" . >/dev/null || die "Failed to create final APK"
+cd - >/dev/null || die "Failed to return from working directory"
 
-mv "$WORKDIR/output.apk" "$OUTPUT_APK"
-echo "✅ Optimized APK created at: $OUTPUT_APK"
+mv "$WORKDIR/output.apk" "$OUTPUT_APK" || die "Failed to move output APK"
+log "✅ Optimized APK created at: $OUTPUT_APK"

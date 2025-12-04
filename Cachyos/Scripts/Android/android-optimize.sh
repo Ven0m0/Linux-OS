@@ -4,27 +4,25 @@ shopt -s nullglob globstar extglob dotglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C
 
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib-android.sh
+source "${SCRIPT_DIR}/lib-android.sh" || {
+  echo "ERROR: Cannot load lib-android.sh" >&2
+  exit 1
+}
+
 # Unified Android optimizer: desktop+ADB or Termux+Shizuku
 # Features: Device optimization, ART compilation, cache cleanup, filesystem maintenance,
 #           WhatsApp cleaning/optimization, TOML configuration support.
 
 readonly VERSION="3.0.0"
-readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && echo 1 || echo 0)"
-readonly NPROC="$(nproc 2> /dev/null || echo 4)"
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/android-toolkit"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.toml"
 
-# Tool resolution with caching
-ADB="${ADB:-adb}"
-FD="${FD:-$(command -v fd || command -v fdfind || :)}"
-RG="${RG:-$(command -v rga || command -v rg || :)}"
-SD="${SD:-$(command -v sd || :)}"
-
-# Shizuku/rish detection for Termux
-if ((IS_TERMUX)); then
-  RISH="$(command -v rish || :)"
-  [[ -n $RISH ]] && ADB="$RISH" || warn "rish not found; device tasks unavailable"
-fi
+# Detect and cache ADB command
+ADB_CMD="$(detect_adb || :)"
+export ADB_CMD
 
 readonly SPEED_APPS=(
   com.whatsapp com.snapchat.android com.instagram.android com.zhiliaoapp.musically
@@ -40,76 +38,9 @@ readonly SYSTEM_APPS=(
   com.mediatek.location.lppe.main com.google.android.permissioncontroller com.android.bluetooth
 )
 
-# Color setup
-C_RST="$(tput sgr0 2> /dev/null || :)"
-C_BLD="$(tput bold 2> /dev/null || :)"
-C_RED="$(tput setaf 1 2> /dev/null || :)"
-C_GRN="$(tput setaf 2 2> /dev/null || :)"
-C_YLW="$(tput setaf 3 2> /dev/null || :)"
-C_BLU="$(tput setaf 4 2> /dev/null || :)"
-C_MAG="$(tput setaf 5 2> /dev/null || :)"
-
-log() { printf '%s%s[%s]%s %s\n' "${2:-}" "$C_BLD" "$1" "$C_RST" "$3"; }
-info() { log '*' "$C_BLU" "$1"; }
-ok() { log '+' "$C_GRN" "$1"; }
-warn() { log '!' "$C_YLW" "$1" >&2; }
-err() { log '-' "$C_RED" "$1" >&2; }
-sec() { printf '\n%s%s=== %s ===%s\n' "$C_MAG" "$C_BLD" "$*" "$C_RST"; }
-
-confirm() {
-  local p="${1:-Continue?}"
-  while :; do
-    read -rp "$p [y/N] " r
-    case "${r,,}" in y | yes) return 0 ;; n | no | "") return 1 ;; *) warn "y/n only" ;; esac
-  done
-}
-
-# Shell executor: local or ADB/rish
-# Supports executing single commands or batching via stdin
-ash() {
-  if ((IS_TERMUX)); then
-    if [[ -n $RISH ]]; then
-      if [[ $# -eq 0 ]]; then
-        # Batch mode from stdin
-        "$RISH" sh
-      else
-        # shellcheck disable=SC2294  # eval needed for command passthrough
-        "$RISH" "$@" 2> /dev/null || eval "$*"
-      fi
-    else
-      # Local fallback
-      # shellcheck disable=SC2294  # eval needed for command passthrough
-      if [[ $# -eq 0 ]]; then sh; else eval "$@"; fi
-    fi
-  else
-    if [[ $# -eq 0 ]]; then
-      # Batch mode from stdin
-      "$ADB" shell
-    else
-      "$ADB" shell "$@" 2> /dev/null || :
-    fi
-  fi
-}
-
-# Validate device access
-device_ok() {
-  if ((IS_TERMUX)); then
-    [[ -n $RISH ]] || {
-      err "rish not available; install Shizuku"
-      return 1
-    }
-    return 0
-  fi
-  command -v "$ADB" &> /dev/null || {
-    err "adb not found"
-    return 1
-  }
-  "$ADB" start-server &> /dev/null || :
-  "$ADB" get-state &> /dev/null || {
-    err "No device; enable USB debugging"
-    return 1
-  }
-}
+# Aliases for library functions (for compatibility)
+info() { log "$1"; }
+ok() { msg "$1"; }
 
 # AAPT2 android.jar locator
 aapt2_jar() {

@@ -41,3 +41,11 @@ ignore = []
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"
+
+[tool.beautysh]
+indent_size = 2
+tab = false
+backup = false
+check = false
+force_function_style = "paronly"
+variable_style = "braces"

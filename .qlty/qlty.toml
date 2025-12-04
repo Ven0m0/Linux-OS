@@ -50,6 +50,15 @@ default = true
 name = "actionlint"
 
 [[plugin]]
+name = "ast-grep"
+
+[[plugin]]
+name = "biome"
+
+[[plugin]]
+name = "eslint"
+
+[[plugin]]
 name = "bandit"
 
 [[plugin]]

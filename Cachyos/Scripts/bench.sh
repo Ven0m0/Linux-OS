@@ -1,13 +1,35 @@
 #!/usr/bin/env bash
 # Unified benchmark script for parallel commands, sorting, and file copy operations
-# Refactored: 2025-12-04 - Extracted common helpers to lib/core.sh and lib/browser.sh
+# Refactored: 2025-12-04 - Inlined common helpers for portability
 
-# Source common libraries
-SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
-# shellcheck source=lib/core.sh
-source "${SCRIPT_DIR}/../../lib/core.sh" || exit 1
-# shellcheck source=lib/browser.sh
-source "${SCRIPT_DIR}/../../lib/browser.sh" || exit 1
+set -euo pipefail
+IFS=$'\n\t'
+shopt -s nullglob globstar extglob dotglob
+
+# Export common locale settings
+export LC_ALL=C LANG=C LANGUAGE=C
+
+#============ Color & Effects ============
+# Trans flag color palette (LBLU → PNK → BWHT → PNK → LBLU)
+BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
+MGN=$'\e[35m' PNK=$'\e[38;5;218m'
+DEF=$'\e[0m' BLD=$'\e[1m'
+
+# Export color variables
+export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
+
+#============ Core Helper Functions ============
+has() { command -v -- "$1" &>/dev/null; }
+xecho() { printf '%b\n' "$*"; }
+log() { xecho "$*"; }
+warn() { xecho "${YLW}WARN:${DEF} $*" >&2; }
+err() { xecho "${RED}ERROR:${DEF} $*" >&2; }
+die() {
+  err "$*"
+  exit "${2:-1}"
+}
 
 # Override HOME for SUDO_USER context
 export HOME="/home/${SUDO_USER:-$USER}"

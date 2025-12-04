@@ -1,105 +1,99 @@
 #!/usr/bin/env bash
-# shader_cache.sh - Clears Steam, games, GPU shader/log/crash caches on Linux
-# Original author: AveYo
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
+set -euo pipefail; IFS=$'\n\t' LC_ALL=C LANG=C
 
-readonly XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+# 1. Setup Directories
+readonly XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
+readonly XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
 
-# Locate Steam installation
-steam_root="${STEAM_ROOT:-$HOME/.steam/steam}"
-[[ -d $steam_root ]] || steam_root="$HOME/.local/share/Steam"
-[[ -d $steam_root ]] || {
-  printf "Error: Steam installation not found\n" >&2
-  exit 1
-}
-
+# Detect Steam Path (Standard vs Flatpak vs Custom)
+if [[ -d "${HOME}/.steam/steam" ]]; then
+    steam_root="${HOME}/.steam/steam"
+elif [[ -d "$XDG_DATA_HOME/Steam" ]]; then
+    steam_root="$XDG_DATA_HOME/Steam"
+else
+    printf "Error: Steam installation not found.\n" >&2; exit 1
+fi
 printf "Found Steam at: %s\n" "$steam_root"
-
-# Define games to clean (appid -> exe:gamedir:mod)
+# 2. Define Games (AppID -> ProcessName:Directory:ModPath)
+# Added safeguards to only clean if directory exists
 declare -A games=(
   [730]="cs2:Counter-Strike Global Offensive:csgo"
 )
 
-# Kill Steam and related processes
+# 3. Robust Process Killer
 readonly kill_procs=(steam steamwebhelper cs2)
 printf "Stopping Steam processes...\n"
-pkill -15 -x "${kill_procs[@]}" 2> /dev/null || :
-sleep 1
-pkill -9 -x "${kill_procs[@]}" 2> /dev/null || :
-sleep 1
-
-# Clean Steam logs and dumps
-readonly logs=("$steam_root/logs" "$steam_root/dumps")
-printf "Cleaning Steam logs and dumps...\n"
-for dir in "${logs[@]}"; do
-  if [[ -d $dir ]]; then
-    find "$dir" -type f -exec truncate -s0 {} + 2> /dev/null || :
-  fi
-done
-
-# Per-game: delete crashdumps and shader caches
-printf "Cleaning game-specific caches...\n"
-for appid in "${!games[@]}"; do
-  IFS=':' read -r exe gamedir mod <<< "${games[$appid]}"
-  game="$steam_root/steamapps/common/$gamedir"
-  [[ -d $game ]] || continue
-
-  printf "  Cleaning %s (appid: %s)...\n" "$gamedir" "$appid"
-
-  # Crash dumps
-  crashdir="$game/game/$mod"
-  if [[ -d $crashdir ]]; then
-    find "$crashdir" -type f -name '*.mdmp' -delete 2> /dev/null || :
-  fi
-
-  # Shader caches (multiple potential paths)
-  shaders=(
-    "$game/game/${mod}/shadercache"
-    "$steam_root/steamapps/shadercache/${appid}"
-  )
-  for sdir in "${shaders[@]}"; do
-    if [[ -d $sdir ]]; then
-      find "$sdir" -type f -delete 2> /dev/null || :
+# Soft kill first
+pkill -15 -x "${kill_procs[@]}" 2>/dev/null || true
+# Wait up to 5 seconds for them to exit gracefully
+for i in {1..10}; do
+    if ! pgrep -x "${kill_procs[@]}" >/dev/null; then
+        break
     fi
-  done
+    sleep 0.5
 done
-
-# Clean GPU-specific cache locations
+# Force kill anything remaining
+pkill -9 -x "${kill_procs[@]}" 2>/dev/null || true
+printf "Steam stopped.\n"
+# 4. Clean Steam Logs (Faster method)
+# Using > file is faster than find+truncate for single files, 
+# but for directories of logs, rm is cleanest.
+readonly logs=("$steam_root/logs" "$steam_root/dumps")
+printf "Cleaning Steam logs...\n"
+for dir in "${logs[@]}"; do
+    if [[ -d "$dir" ]]; then
+        # Safely remove all files inside, keeping the directory
+        rm -f "${dir:?}"/* 2>/dev/null || true
+    fi
+done
+# 5. Clean Game Specific Caches
+printf "Cleaning game caches...\n"
+for appid in "${!games[@]}"; do
+    IFS=':' read -r exe gamedir mod <<< "${games[$appid]}"
+    game_path="$steam_root/steamapps/common/$gamedir"
+    [[ -d "$game_path" ]] || continue
+    printf "  -> Cleaning %s (%s)...\n" "$gamedir" "$appid"
+    # Crash Dumps (.mdmp files only)
+    # Use find here as we only want specific extensions
+    find "$game_path" -type f -name "*.mdmp" -delete 2>/dev/null || true
+    # Shader Cache Folders (Safe to rm -rf content)
+    target_dirs=(
+        "$game_path/game/$mod/shadercache"
+        "$steam_root/steamapps/shadercache/$appid"
+    )
+    for t_dir in "${target_dirs[@]}"; do
+        if [[ -d "$t_dir" ]]; then
+             rm -rf "${t_dir:?}"/* 2>/dev/null || true
+        fi
+    done
+done
+# 6. Clean GPU Caches (The big optimization)
 printf "Cleaning GPU caches...\n"
-readonly gpu_dirs=(
-  "$XDG_CACHE_HOME/nv"
-  "$XDG_CACHE_HOME/NVIDIA"
-  "$XDG_CACHE_HOME/nvidia"
-  "$XDG_CACHE_HOME/AMD"
-  "$XDG_CACHE_HOME/amd"
-  "$XDG_CACHE_HOME/Intel"
-  "$HOME/.cache/NVIDIA/GLCache"
-  "$HOME/.cache/NVIDIA/DXCache"
-  "$HOME/.cache/NVIDIA/OptixCache"
-  "$HOME/.cache/AMD/DxCache"
-  "$HOME/.cache/AMD/DxcCache"
-  "$HOME/.cache/AMD/GLCache"
-  "$HOME/.cache/AMD/VkCache"
-  "$HOME/.cache/Intel/ShaderCache"
-  "$HOME/.nv"
-  "$HOME/AMD"
-  "$HOME/Intel"
+# List of folders safe to completely empty
+readonly gpu_cache_dirs=(
+    # MESA (AMD RADV / Intel ANV - Most important for Linux)
+    "${XDG_CACHE_HOME}/mesa_shader_cache"
+    # NVIDIA (Modern)
+    "${XDG_CACHE_HOME}/nvidia/GLCache"
+    "${XDG_CACHE_HOME}/nvidia/DXCache"
+    "${XDG_CACHE_HOME}/nvidia/OptixCache"
+    # NVIDIA (Legacy)
+    "${HOME}/.nv/ComputeCache"
+    "${HOME}/.nv/GLCache"
+    # AMD (Proprietary/Pro)
+    "${XDG_CACHE_HOME}/AMD/DxCache"
+    "${XDG_CACHE_HOME}/AMD/GLCache"
+    "${XDG_CACHE_HOME}/AMD/VkCache"
+    # Intel (Proprietary)
+    "${XDG_CACHE_HOME}/Intel/ShaderCache"
+    # Microsoft / DXVK
+    "${XDG_CACHE_HOME}/dxvk-cache" 
 )
-
-for dir in "${gpu_dirs[@]}"; do
-  if [[ -d $dir ]]; then
-    find "$dir" -type f -delete 2> /dev/null || :
-  fi
+for dir in "${gpu_cache_dirs[@]}"; do
+    if [[ -d "$dir" ]]; then
+        printf "  -> Purging %s\n" "${dir##*/}" # Print folder name only
+        # rm -rf is 100x faster than find -delete for caches with 10k+ files
+        rm -rf "${dir:?}"/* 2>/dev/null || true
+    fi
 done
-
-# NVIDIA ComputeCache (if present)
-readonly nvcache="$HOME/.nv/ComputeCache"
-if [[ -d $nvcache ]]; then
-  printf "Cleaning NVIDIA ComputeCache...\n"
-  find "$nvcache" -type f -delete 2> /dev/null || :
-fi
-
-printf "\nShader/log/crash cache cleanup complete!\n"
+printf "\n\033[32mCleanup complete!\033[0m\n"

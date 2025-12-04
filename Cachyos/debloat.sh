@@ -3,18 +3,27 @@
 # Refactored version with improved structure and maintainability
 # Removes unnecessary packages and disables telemetry services
 
-# Source shared libraries
-SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
-# shellcheck source=lib/core.sh
-source "$SCRIPT_DIR/../lib/core.sh"
+set -euo pipefail
+shopt -s nullglob globstar extglob
+IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
+
+# Colors (trans flag palette)
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
+export RED GRN YLW DEF
+
+# Core helper functions
+has(){ command -v -- "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 
 sudo -v
 
 # --- Platform Detection ---
-detect_platform() {
-  if command -v pacman &> /dev/null; then
+detect_platform(){
+  if command -v pacman &>/dev/null; then
     printf '%s\n' "arch"
-  elif command -v apt-get &> /dev/null; then
+  elif command -v apt-get &>/dev/null; then
     printf '%s\n' "debian"
   else
     printf '%s\n' "unknown"
@@ -22,7 +31,7 @@ detect_platform() {
 }
 
 # --- Arch-based Debloat ---
-debloat_arch() {
+debloat_arch(){
   msg "## Debloating Arch-based system..."
   # Remove mostly useless packages
   msg "Removing unnecessary packages..."
@@ -30,11 +39,11 @@ debloat_arch() {
   # Remove telemetry
   msg "Removing pkgstats (telemetry)..."
   # Use systemctl is-enabled instead of list-unit-files | grep (faster)
-  if systemctl is-enabled pkgstats.timer &> /dev/null; then
-    sudo systemctl disable --now "pkgstats.timer" 2> /dev/null || :
+  if systemctl is-enabled pkgstats.timer &>/dev/null; then
+    sudo systemctl disable --now "pkgstats.timer" 2>/dev/null || :
   fi
-  if pacman -Qq pkgstats &> /dev/null; then
-    sudo pacman -Rcns --noconfirm pkgstats &> /dev/null || :
+  if pacman -Qq pkgstats &>/dev/null; then
+    sudo pacman -Rcns --noconfirm pkgstats &>/dev/null || :
   fi
   # Disable unnecessary services
   msg "Disabling unnecessary services..."
@@ -43,29 +52,30 @@ debloat_arch() {
   # Configure fwupd
   if [[ -f /etc/fwupd/fwupd.conf ]]; then
     if ! grep -xqF -- 'P2pPolicy=nothing' '/etc/fwupd/fwupd.conf'; then
-      printf '%s\n' 'P2pPolicy=nothing' | sudo tee -a '/etc/fwupd/fwupd.conf' > /dev/null
+      printf '%s\n' 'P2pPolicy=nothing' | sudo tee -a '/etc/fwupd/fwupd.conf' >/dev/null
     fi
   fi
   # Disable UFW logging
   if has ufw; then
-    sudo ufw logging off 2> /dev/null || :
+    sudo ufw logging off 2>/dev/null || :
   fi
 }
+
 # --- Debian-based Debloat ---
-debloat_debian() {
+debloat_debian(){
   msg "## Debloating Debian-based system..."
   # Remove LibreOffice (if not needed)
   msg "Removing LibreOffice..."
-  sudo apt-get purge -y libreoffice* 2> /dev/null || :
+  sudo apt-get purge -y libreoffice* 2>/dev/null || :
   # Remove telemetry and reporting tools
   msg "Removing telemetry packages..."
   sudo apt-get purge -y reportbug python3-reportbug reportbug-gtk \
-    apport whoopsie popularity-contest 2> /dev/null || :
+    apport whoopsie popularity-contest 2>/dev/null || :
   # Disable Popularity Contest
   msg "Disabling Popularity Contest..."
   if [[ -f /etc/popularity-contest.conf ]]; then
     if ! grep -q '^PARTICIPATE=' /etc/popularity-contest.conf; then
-      printf '%s\n' 'PARTICIPATE=no' | sudo tee -a /etc/popularity-contest.conf > /dev/null
+      printf '%s\n' 'PARTICIPATE=no' | sudo tee -a /etc/popularity-contest.conf >/dev/null
     else
       sudo sed -i 's/^PARTICIPATE=.*/PARTICIPATE=no/' /etc/popularity-contest.conf
     fi
@@ -79,12 +89,13 @@ debloat_debian() {
   sudo apt-get autoclean -y
   sudo apt-get autoremove -y --purge
 }
-debloat_linux() {
+
+debloat_linux(){
   umask 077
 }
 
 # --- Main Execution ---
-main() {
+main(){
   local platform
   platform=$(detect_platform)
   msg "Detected platform: $platform"

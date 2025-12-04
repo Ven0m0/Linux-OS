@@ -366,7 +366,7 @@ process_python(){
   log "${LBLU}→${DEF} Processing Python files..."
   local -a files=()
   find_files "*.{py,pyw,pyi}" files
-  ((${#files[@]} == 0)) && { log "  No Python files found"; return 0; {
+  ((${#files[@]} == 0)) && { log "  No Python files found"; return 0; }
   log "  Found ${#files[@]} Python files"
   # Fix with ruff
   if check_tool ruff; then
@@ -407,7 +407,7 @@ process_lua(){
   log "${LBLU}→${DEF} Processing Lua files..."
   local -a files=()
   find_files "*.lua" files
-  ((${#files[@]} == 0)) && { log "  No Lua files found"; return 0; {
+  ((${#files[@]} == 0)) && { log "  No Lua files found"; return 0; }
   log "  Found ${#files[@]} Lua files"
   # Format with stylua
   if check_tool stylua; then
@@ -447,7 +447,7 @@ process_web(){
   log "${LBLU}→${DEF} Processing web files (CSS/HTML/JS)..."
   local -a files=()
   find_files "*.{css,scss,sass,less,html,htm,js,mjs,cjs,jsx,ts,tsx}" files
-  ((${#files[@]} == 0)) && { log "  No web files found"; return 0; {
+  ((${#files[@]} == 0)) && { log "  No web files found"; return 0; }
   log "  Found ${#files[@]} web files"
   # Try biome first, fallback to prettier
   if check_tool biome; then
@@ -501,7 +501,7 @@ process_xml(){
   log "${LBLU}→${DEF} Processing XML files..."
   local -a files=()
   find_files "*.{xml,svg}" files
-  ((${#files[@]} == 0)) && { log "  No XML files found"; return 0; {
+  ((${#files[@]} == 0)) && { log "  No XML files found"; return 0; }
   log "  Found ${#files[@]} XML files"
   if check_tool xmllint; then
     log "  ${PNK}Formatting${DEF} with xmllint..."

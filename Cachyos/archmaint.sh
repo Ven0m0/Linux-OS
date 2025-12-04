@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-19 - Applied bash optimization techniques
-# Source common library
-SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+# Refactored: 2025-12-04 - Inlined common helpers for portability
 
-# ============ Inlined from lib/common.sh ============
 set -euo pipefail
 IFS=$'\n\t'
-shopt -s nullglob globstar
+shopt -s nullglob globstar extglob dotglob
 
 # Export common locale settings
 export LC_ALL=C LANG=C LANGUAGE=C
@@ -19,23 +17,20 @@ BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
-# Export color variables so they're available to sourcing scripts
+# Export color variables
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Core Helper Functions ============
-# Check if command exists
-has() { command -v -- "$1" &> /dev/null; }
-
-# Echo with formatting support
+has() { command -v -- "$1" &>/dev/null; }
 xecho() { printf '%b\n' "$*"; }
-# Logging functions
-log() { xecho "$*"; }
+msg() { xecho "$*"; }
+warn() { xecho "${YLW}WARN:${DEF} $*" >&2; }
+err() { xecho "${RED}ERROR:${DEF} $*" >&2; }
 die() {
-  xecho "${RED}Error:${DEF} $*" >&2
-  exit 1
+  err "$*"
+  exit "${2:-1}"
 }
-
-# Confirmation prompt
+dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
 confirm() {
   local msg="$1"
   printf '%s [y/N]: ' "$msg" >&2
@@ -44,18 +39,13 @@ confirm() {
 }
 
 #============ Banner Printing Functions ============
-# Print banner with trans flag gradient
-# Usage: print_banner "banner_text" [title]
 print_banner() {
   local banner="$1" title="${2:-}"
   local flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
-
-  # Optimized: Use read loop instead of mapfile to avoid subprocess
   local -a lines=()
   while IFS= read -r line || [[ -n $line ]]; do
     lines+=("$line")
   done <<< "$banner"
-
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
     printf '%s%s%s\n' "${flag_colors[0]}" "${lines[0]}" "$DEF"
@@ -69,7 +59,6 @@ print_banner() {
   [[ -n $title ]] && xecho "$title"
 }
 
-# Pre-defined banners
 get_update_banner() {
   cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
@@ -80,6 +69,7 @@ get_update_banner() {
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 }
+
 get_clean_banner() {
   cat << 'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
@@ -91,8 +81,6 @@ get_clean_banner() {
 EOF
 }
 
-# Print predefined banner
-# Usage: print_named_banner "update"|"clean" [title]
 print_named_banner() {
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in
@@ -104,77 +92,47 @@ print_named_banner() {
 }
 
 #============ Build Environment Setup ============
-# Setup optimized build environment for Arch Linux
 setup_build_env() {
-  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &> /dev/null
-  # Rust optimization flags
+  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-  # C/C++ optimization flags
   export CFLAGS="-march=native -mtune=native -O3 -pipe"
   export CXXFLAGS="$CFLAGS"
-  # Linker optimization flags
   export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-  # Cargo configuration
   export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
   export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1
-  # Parallel build settings
   local nproc_count
-  nproc_count=$(nproc 2> /dev/null || echo 4)
+  nproc_count=$(nproc 2>/dev/null || echo 4)
   export MAKEFLAGS="-j${nproc_count}"
   export NINJAFLAGS="-j${nproc_count}"
-
-  # Compiler selection (prefer LLVM toolchain)
   if has clang && has clang++; then
-    export CC=clang
-    export CXX=clang++
-    export AR=llvm-ar
-    export NM=llvm-nm
-    export RANLIB=llvm-ranlib
-
-    # Use lld linker if available
-    if has ld.lld; then
-      export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"
-    fi
+    export CC=clang CXX=clang++ AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib
+    has ld.lld && export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"
   fi
-
-  # Initialize dbus if available
-  has dbus-launch && eval "$(dbus-launch 2> /dev/null || :)"
+  has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
 }
 
 #============ System Maintenance Functions ============
-# Run system maintenance commands safely
 run_system_maintenance() {
   local cmd=$1
   shift
   local args=("$@")
   has "$cmd" || return 0
   case "$cmd" in
-    modprobed-db) "$cmd" store &> /dev/null || : ;;
-    hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &> /dev/null || : ;;
-    mandb) sudo "$cmd" -q &> /dev/null || mandb -q &> /dev/null || : ;;
-    *) sudo "$cmd" "${args[@]}" &> /dev/null || : ;;
+    modprobed-db) "$cmd" store &>/dev/null || : ;;
+    hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
+    mandb) sudo "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;;
+    *) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
   esac
 }
 
 #============ Disk Usage Helpers ============
-# Capture current disk usage
 capture_disk_usage() {
   local var_name=$1
   local -n ref="$var_name"
-  ref=$(df -h --output=used,pcent / 2> /dev/null | awk 'NR==2{print $1, $2}')
+  ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
 }
 
 #============ File Finding Helpers ============
-# Use fd if available, fallback to find
-find_files() {
-  if has fd; then
-    fd -H "$@"
-  else
-    find "$@"
-  fi
-}
-
-# NUL-safe finder using fd/fdf/find
 find0() {
   local root="$1"
   shift
@@ -188,12 +146,10 @@ find0() {
 }
 
 #============ Package Manager Detection ============
-# Detect and return best available AUR helper or pacman
-# Cache result to avoid repeated checks
 _PKG_MGR_CACHED=""
 _AUR_OPTS_CACHED=()
+
 detect_pkg_manager() {
-  # Return cached result if available
   if [[ -n $_PKG_MGR_CACHED ]]; then
     printf '%s\n' "$_PKG_MGR_CACHED"
     printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
@@ -215,59 +171,38 @@ detect_pkg_manager() {
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
 
-# Get package manager name only (without options)
 get_pkg_manager() {
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager > /dev/null
+    detect_pkg_manager >/dev/null
   fi
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
 
-# Get AUR options for the detected package manager
 get_aur_opts() {
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager > /dev/null
+    detect_pkg_manager >/dev/null
   fi
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
 
 #============ SQLite Maintenance ============
-# Vacuum a single SQLite database and return bytes saved
 vacuum_sqlite() {
   local db=$1 s_old s_new
-  [[ -f $db ]] || {
-    printf '0\n'
-    return
-  }
-  # Skip if probably open
-  [[ -f ${db}-wal || -f ${db}-journal ]] && {
-    printf '0\n'
-    return
-  }
-  # Validate it's actually a SQLite database file
-  # Use fixed-string grep (-F) for faster literal matching
-  if ! head -c 16 "$db" 2> /dev/null | grep -qF -- 'SQLite format 3'; then
+  [[ -f $db ]] || { printf '0\n'; return; }
+  [[ -f ${db}-wal || -f ${db}-journal ]] && { printf '0\n'; return; }
+  if ! head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3'; then
     printf '0\n'
     return
   fi
-  s_old=$(stat -c%s "$db" 2> /dev/null) || {
-    printf '0\n'
-    return
-  }
-  # VACUUM already rebuilds indices, making REINDEX redundant
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &> /dev/null || {
-    printf '0\n'
-    return
-  }
-  s_new=$(stat -c%s "$db" 2> /dev/null) || s_new=$s_old
+  s_old=$(stat -c%s "$db" 2>/dev/null) || { printf '0\n'; return; }
+  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || { printf '0\n'; return; }
+  s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
   printf '%d\n' "$((s_old - s_new))"
 }
-# Clean SQLite databases in current working directory
+
 clean_sqlite_dbs() {
   local total=0 db saved
-  # Batch file type checks to reduce subprocess calls
   while IFS= read -r -d '' db; do
-    # Skip non-regular files early
     [[ -f $db ]] || continue
     saved=$(vacuum_sqlite "$db" || printf '0')
     ((saved > 0)) && total=$((total + saved))
@@ -276,84 +211,57 @@ clean_sqlite_dbs() {
 }
 
 #============ Process Management ============
-# Wait for processes to exit, kill if timeout
 ensure_not_running_any() {
   local timeout=6 p
-  # Optimized: Use single pgrep with pattern instead of multiple calls
   local pattern=$(printf '%s|' "$@")
   pattern=${pattern%|}
-
-  # Quick check if any processes are running
-  pgrep -x -u "$USER" -f "$pattern" &> /dev/null || return
-
-  # Show waiting message for found processes
+  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
   for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &> /dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
+    pgrep -x -u "$USER" "$p" &>/dev/null && warn "Waiting for ${p} to exit..."
   done
-
-  # Single wait loop checking all processes with one pgrep call
   local wait_time=$timeout
   while ((wait_time-- > 0)); do
-    pgrep -x -u "$USER" -f "$pattern" &> /dev/null || return
+    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
     sleep 1
   done
-
-  # Kill any remaining processes (single pkill call)
-  if pgrep -x -u "$USER" -f "$pattern" &> /dev/null; then
-    printf '  %s\n' "${RED}Killing remaining processes...${DEF}"
-    pkill -KILL -x -u "$USER" -f "$pattern" &> /dev/null || :
+  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null; then
+    warn "Killing remaining processes..."
+    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
     sleep 1
   fi
 }
 
 #============ Browser Profile Detection ============
-# Firefox-family profile discovery
 foxdir() {
   local base=$1 p
   [[ -d $base ]] || return 1
   if [[ -f $base/installs.ini ]]; then
     p=$(awk -F= '/^\[.*\]/{f=0} /^\[Install/{f=1;next} f&&/^Default=/{print $2;exit}' "$base/installs.ini")
-    [[ -n $p && -d $base/$p ]] && {
-      printf '%s\n' "$base/$p"
-      return 0
-    }
+    [[ -n $p && -d $base/$p ]] && { printf '%s\n' "$base/$p"; return 0; }
   fi
   if [[ -f $base/profiles.ini ]]; then
     p=$(awk -F= '/^\[.*\]/{s=0} /^\[Profile[0-9]+\]/{s=1} s&&/^Default=1/{d=1} s&&/^Path=/{if(d){print $2;exit}}' "$base/profiles.ini")
-    [[ -n $p && -d $base/$p ]] && {
-      printf '%s\n' "$base/$p"
-      return 0
-    }
+    [[ -n $p && -d $base/$p ]] && { printf '%s\n' "$base/$p"; return 0; }
   fi
   return 1
 }
 
-# List all Mozilla profiles in a base directory
 mozilla_profiles() {
   local base=$1 p
   declare -A seen
   [[ -d $base ]] || return 0
-  # Process installs.ini using awk for efficiency
   if [[ -f $base/installs.ini ]]; then
     while IFS= read -r p; do
-      [[ -d $base/$p && -z ${seen[$p]:-} ]] && {
-        printf '%s\n' "$base/$p"
-        seen[$p]=1
-      }
+      [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
     done < <(awk -F= '/^Default=/ {print $2}' "$base/installs.ini")
   fi
-  # Process profiles.ini using awk for efficiency
   if [[ -f $base/profiles.ini ]]; then
     while IFS= read -r p; do
-      [[ -d $base/$p && -z ${seen[$p]:-} ]] && {
-        printf '%s\n' "$base/$p"
-        seen[$p]=1
-      }
+      [[ -d $base/$p && -z ${seen[$p]:-} ]] && { printf '%s\n' "$base/$p"; seen[$p]=1; }
     done < <(awk -F= '/^Path=/ {print $2}' "$base/profiles.ini")
   fi
 }
 
-# Chromium roots (native/flatpak/snap)
 chrome_roots_for() {
   case "$1" in
     chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
@@ -363,21 +271,20 @@ chrome_roots_for() {
     *) : ;;
   esac
 }
-# List Default + Profile * dirs under a Chromium root
+
 chrome_profiles() {
   local root=$1 d
-  for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
+  for d in "$root"/Default "$root"/"Profile "*; do
+    [[ -d $d ]] && printf '%s\n' "$d"
+  done
 }
 
-#============ Path Cleaning Helpers ============
-# Helper to expand wildcard paths safely
 _expand_wildcards() {
   local path=$1
   local -n result_ref="$2"
   if [[ $path == *\** ]]; then
-    # Use globbing directly and collect existing items
     shopt -s nullglob
-    # shellcheck disable=SC2206  # Intentional globbing for wildcard expansion
+    # shellcheck disable=SC2206
     local -a items=("$path")
     for item in "${items[@]}"; do
       [[ -e $item ]] && result_ref+=("$item")
@@ -388,54 +295,10 @@ _expand_wildcards() {
   fi
 }
 
-#============ Download Tool Detection ============
-# Get best available download tool (with optional skip for piping)
-# Usage: get_download_tool [--no-aria2]
-_DOWNLOAD_TOOL_CACHED=""
-# shellcheck disable=SC2120
-get_download_tool() {
-  local skip_aria2=0
-  [[ ${1:-} == --no-aria2 ]] && skip_aria2=1
-  # Return cached if available and aria2 not being skipped
-  if [[ -n $_DOWNLOAD_TOOL_CACHED && $skip_aria2 -eq 0 ]]; then
-    printf '%s' "$_DOWNLOAD_TOOL_CACHED"
-    return 0
-  fi
-  local tool
-  if [[ $skip_aria2 -eq 0 ]] && has aria2c; then
-    tool=aria2c
-  elif has curl; then
-    tool=curl
-  elif has wget2; then
-    tool=wget2
-  elif has wget; then
-    tool=wget
-  else
-    return 1
-  fi
-  [[ $skip_aria2 -eq 0 ]] && _DOWNLOAD_TOOL_CACHED=$tool
-  printf '%s' "$tool"
-}
-# Download a file using best available tool
-# Usage: download_file <url> <output_path>
-download_file() {
-  local url=$1 output=$2 tool
-  # shellcheck disable=SC2119
-  tool=$(get_download_tool) || return 1
-  case $tool in
-    aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "${output%/*}" -o "${output##*/}" "$url" ;;
-    curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;;
-    wget2) wget2 -q -O "$output" "$url" ;;
-    wget) wget -qO "$output" "$url" ;;
-    *) return 1 ;;
-  esac
-}
-
-# Additional function for archmaint.sh
+#============ Script-specific Functions ============
 cleanup_pacman_lock() {
-  sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :
+  sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
 }
-# ============ End of inlined lib/common.sh ============
 
 #=========== Configuration ============
 QUIET=0

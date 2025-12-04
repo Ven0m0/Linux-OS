@@ -1,8 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/bash
+set -euo pipefail
+shopt -s nullglob
+IFS=$'\n\t'
+export LC_ALL=C LANG=C
 
 adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS
 
-LC_ALL=C LANG=C
 BASEDIR="${0%/*}"
 BIN=/data/data/com.termux/files/usr/bin
 HOME=/data/data/com.termux/files/home

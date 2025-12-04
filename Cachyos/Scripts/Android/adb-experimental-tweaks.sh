@@ -1126,23 +1126,35 @@ cmd activity kill-all
 pm bg-dexopt-job
 TWEAKS_EOF
 
-  # Handle metadata indexing optimization separately
-  while IFS= read -r d; do
-    adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore" 2> /dev/null || :
-  done < <(adb shell ls -a sdcard 2> /dev/null)
+# Replaces the slow while-read loop at the end of the function
+echo -e "Applying metadata guards (Optimized)..."
+# Execute loop entirely on device (1 ADB call vs N calls)
+adb shell '
+  cd /sdcard 2>/dev/null || exit
+  # Loop through all files/dirs including hidden ones
+  for d in .*; do
+    # Skip . and ..
+    [[ "$d" == "." || "$d" == ".." ]] && continue
+    # Only process directories
+    if [ -d "$d" ]; then
+      touch "$d/.metadata_never_index" "$d/.noindex" "$d/.trackerignore" 2>/dev/null || :
+    fi
+  done
+  # Also do standard glob
+  for d in *; do
+    [[ "$d" == "*" ]] && break 
+    if [ -d "$d" ]; then
+      touch "$d/.metadata_never_index" "$d/.noindex" "$d/.trackerignore" 2>/dev/null || :
+    fi
+  done
+'
 
-  echo -e "ALL DONE!"
-  echo -e ""
-  adb kill-server
-  echo -e ""
-
-  rm -rf "$HOME"/.android
-  rm -rf "$HOME"/.dbus-keyrings
+  echo "ALL DONE!"
+  adb kill-server; rm -rf "${HOME}/.android" "${HOME}/.dbus-keyrings"
   read
 }
 clear
-adb wait-for-device
-adb devices
+adb wait-for-device; adb devices
 echo "Uninstall bloat apps? (NOT RECOMMENDED)"
 echo "yes/no"
 read -rp '>_:' ans

@@ -142,23 +142,23 @@ process_yaml() {
   # Format with yamlfmt
   if check_tool yamlfmt; then
     log "  ${PNK}Formatting${DEF} with yamlfmt..."
-    local cmd="yamlfmt"
-    ((cfg[fix])) && cmd+=" -formatter retain_line_breaks=true"
-
-    local -i errors=0
-    for file in "${files[@]}"; do
-      if ((cfg[fix])); then
-        if $cmd "$file" 2> /dev/null; then
-          MODIFIED_FILES+=("$file")
-          ((TOTAL_MODIFIED++))
-        else
-          ((errors++))
-          ERROR_FILES+=("$file")
-        fi
+    if ((cfg[fix])); then
+      if ! yamlfmt -i "${files[@]}"; then
+        warn "  yamlfmt command failed on one or more files."
+        ((TOTAL_ERRORS++))
+      else
+        # Note: This assumes all files were potentially modified.
+        MODIFIED_FILES+=("${files[@]}")
+        ((TOTAL_MODIFIED += ${#files[@]}))
       fi
-    done
-    COMMANDS_RUN+=("yamlfmt <file>")
-    ((TOTAL_ERRORS += errors))
+    else
+      # In check-only mode, use the diff flag -d
+      if ! yamlfmt -d "${files[@]}" | (! grep . >/dev/null); then
+          warn "  yamlfmt found files that need formatting"
+          ((TOTAL_ERRORS++))
+      fi
+    fi
+    COMMANDS_RUN+=("yamlfmt -i <files...>")
   else
     warn "  yamlfmt not found, skipping format"
   fi

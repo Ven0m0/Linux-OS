@@ -25,7 +25,7 @@ https://github.com/deadc0de6/dotdrop
 ```
 
 ```bash
-git clone --depth 1--shallow-submodules --filter='blob:none'
+git clone --depth 1 --shallow-submodules --filter='blob:none'
 ```
 
 ## PGO

@@ -77,34 +77,13 @@ myip() {
   fi
 }
 
-# Basic replacement for "man" since Android usually lacks it
-function man() {
-  local binary="$(_resolve "$1" | cut -d ' ' -f1)"
-
-  # Handle empty or recursive call (man man)
-  if [[ -z $binary ]] || [[ $binary == 'man' ]]; then
-    echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2
-    return 1
-  fi
-
-  # Use --help output as a poor-man’s manual
-  local manual="$("$binary" --help 2>&1)"
-  if [[ $? -eq 127 ]] || [[ -z $manual ]]; then
-    echo "No manual entry for $binary" >&2
-    return 16
-  fi
-
-  "$binary" --help
-}
-export man
-
-# Function to simulate 'man' command
+# Simulate 'man' command using --help output
 man() {
   [[ -z $1 ]] && {
     echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2
     return 1
   }
-  "$1" --help &> /dev/null && "$1" --help 2>&1 || {
+  "$1" --help &>/dev/null && "$1" --help 2>&1 || {
     echo "No manual entry for $1" >&2
     return 16
   }

@@ -4,27 +4,43 @@ shopt -s nullglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C
 
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib-android.sh
+source "${SCRIPT_DIR}/lib-android.sh" || {
+  echo "ERROR: Cannot load lib-android.sh" >&2
+  exit 1
+}
+
 # https://github.com/YurinDoctrine/adbloat
 # WARNING: These tweaks are extremely aggressive and may cause instability.
 # For a safer, optimized subset, use: ./android-optimize.sh experimental
 
 start() {
-  echo "Starting aggressive cleanup (on-device)..."
+  sec "Aggressive Cleanup (on-device)"
+  warn "This will uninstall 3rd-party apps and clear system app data"
+  confirm "Proceed with aggressive cleanup?" || return 0
+
+  log "Running cleanup (this combines 1000+ commands into 1 ADB call)..."
   # Run loops directly on device to avoid ADB latency overhead (1 call vs 1000+)
   adb shell '
-    for pkg in $(pm list packages -3 | cut -d: -f2); do pm uninstall -k --user 0 "$pkg"; done
-    for pkg in $(pm list packages -s | cut -d: -f2); do pm clear --user 0 "$pkg"; done
-    for pkg in $(pm list packages | cut -d: -f2); do pm reset-permissions -p "$pkg"; done
-    pm uninstall --user 0 com.google.android.googlequicksearchbox
-  '
+    for pkg in $(pm list packages -3 | cut -d: -f2); do pm uninstall -k --user 0 "$pkg" 2>/dev/null || true; done
+    for pkg in $(pm list packages -s | cut -d: -f2); do pm clear --user 0 "$pkg" 2>/dev/null || true; done
+    for pkg in $(pm list packages | cut -d: -f2); do pm reset-permissions -p "$pkg" 2>/dev/null || true; done
+    pm uninstall --user 0 com.google.android.googlequicksearchbox 2>/dev/null || true
+  ' && msg "Cleanup complete" || err "Cleanup failed"
 }
 
 tweaks() {
-  echo -e "Applying Tweaks ..."
+  sec "Applying Experimental Tweaks"
+  log "Batching 1100+ commands into 1 ADB call for massive performance improvement..."
 
   # Batch all adb shell commands for massive performance improvement
   # This reduces 1100+ separate ADB connections to just 1
-  adb shell << 'TWEAKS_EOF'
+  adb shell << 'TWEAKS_EOF' && msg "Tweaks applied successfully" || {
+    err "Some tweaks may have failed (this is normal on some devices)"
+    return 1
+  }
 device_config put runtime_native_boot pin_camera false
 device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
 device_config put launcher enable_quick_launch_v2 true
@@ -1130,10 +1146,11 @@ pm bg-dexopt-job
 TWEAKS_EOF
 
 # Replaces the slow while-read loop at the end of the function
-echo -e "Applying metadata guards (Optimized)..."
+sec "Applying Metadata Guards"
+log "Creating index guard files (optimized - 1 ADB call instead of 1000+)..."
 # Execute loop entirely on device (1 ADB call vs N calls)
 adb shell '
-  cd /sdcard 2>/dev/null || exit
+  cd /sdcard 2>/dev/null || exit 0
   # Loop through all files/dirs including hidden ones
   for d in .*; do
     # Skip . and ..
@@ -1145,21 +1162,38 @@ adb shell '
   done
   # Also do standard glob
   for d in *; do
-    [[ "$d" == "*" ]] && break 
+    [[ "$d" == "*" ]] && break
     if [ -d "$d" ]; then
       touch "$d/.metadata_never_index" "$d/.noindex" "$d/.trackerignore" 2>/dev/null || :
     fi
   done
-'
+' && msg "Metadata guards applied" || warn "Some metadata guards may have failed"
 
-  echo "ALL DONE!"
-  adb kill-server; rm -rf "${HOME}/.android" "${HOME}/.dbus-keyrings"
-  read
+  msg "ALL DONE!"
+  log "Cleaning up ADB artifacts..."
+  adb kill-server 2>/dev/null || :
+  rm -rf "${HOME}/.android" "${HOME}/.dbus-keyrings" 2>/dev/null || :
+  read -rp "Press Enter to exit..."
 }
-clear
-adb wait-for-device; adb devices
-echo "Uninstall bloat apps? (NOT RECOMMENDED)"
-echo "yes/no"
-read -rp '>_:' ans
-[[ $ans == "yes" ]] && start
-tweaks
+
+# Main execution
+main() {
+  device_ok || die "No device connected"
+
+  sec "ADB Experimental Tweaks (AGGRESSIVE)"
+  warn "These tweaks are EXTREMELY aggressive and may cause instability"
+  warn "For safer alternatives, use: ./android-optimize.sh experimental"
+
+  clear
+  adb wait-for-device
+  adb devices
+
+  echo ""
+  warn "Uninstall bloat apps? (NOT RECOMMENDED - will remove 3rd party apps)"
+  read -rp 'Type "yes" to proceed: ' ans
+  [[ $ans == "yes" ]] && start
+
+  tweaks
+}
+
+main "$@"

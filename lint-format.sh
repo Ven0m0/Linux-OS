@@ -279,12 +279,11 @@ process_shell() {
   if check_tool shellcheck; then
     log "  ${BWHT}Linting${DEF} with shellcheck..."
     local -i errors=0
-    for file in "${files[@]}"; do
-      if ! shellcheck --format=gcc "$file" &> /dev/null; then
-        ((errors++))
-        ERROR_FILES+=("$file")
-      fi
-    done
+    if ! shellcheck --format=gcc "${files[@]}" &> /dev/null; then
+      # This will not populate ERROR_FILES with specific files, but will register that an error occurred.
+      warn "  shellcheck found issues in one or more files."
+      ((errors++))
+    fi
     COMMANDS_RUN+=("shellcheck --format=gcc <file>")
     ((TOTAL_ERRORS += errors))
     ((errors > 0)) && warn "  Found $errors files with shellcheck errors"

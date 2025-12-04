@@ -333,7 +333,7 @@ setup_nvidia() {
 
   # Detect kernel headers with early exit
   local headers="linux-headers"
-  for kernel in linux-zen linux-lts linux-hardened; do
+  for kernel in linux-hardened linux-lts linux-zen; do
     if pacman -Q "$kernel" &>/dev/null; then
       headers="${kernel}-headers"
       break

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-21 - Applied bash optimization techniques
-set -euo pipefail
-shopt -s nullglob globstar execfail
-IFS=$'\n\t'
-export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
+set -euo pipefail; shopt -s nullglob globstar execfail
+IFS=$'\n\t' LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
 
 sudo apt-get update -y
 

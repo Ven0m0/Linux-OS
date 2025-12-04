@@ -153,9 +153,9 @@ process_yaml() {
       fi
     else
       # In check-only mode, use the diff flag -d
-      if ! yamlfmt -d "${files[@]}" | (! grep . >/dev/null); then
-          warn "  yamlfmt found files that need formatting"
-          ((TOTAL_ERRORS++))
+      if ! yamlfmt -d "${files[@]}" | (! grep . > /dev/null); then
+        warn "  yamlfmt found files that need formatting"
+        ((TOTAL_ERRORS++))
       fi
     fi
     COMMANDS_RUN+=("yamlfmt -i <files...>")

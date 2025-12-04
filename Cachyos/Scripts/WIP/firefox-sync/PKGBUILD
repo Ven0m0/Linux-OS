@@ -2,41 +2,38 @@
 
 pkgname=firefox-sync
 pkgver=20251127
-pkgrel=1
-pkgdesc="Speed up Firefox using tmpfs."
+pkgrel=2
+pkgdesc="Speed up Firefox using tmpfs"
 arch=('any')
 url='https://wiki.archlinux.org/title/Firefox/Profile_on_RAM'
 license=('GPL')
 depends=('rsync' 'firefox')
-source=("${pkgname}".sh
+source=("${pkgname}.sh"
         "${pkgname}.service"
         "${pkgname}-cron.service"
         "${pkgname}-cron.timer")
-sha256sums=('SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP')
 
-prepare() {
-    _linkname="$(grep "LINK=" "/usr/bin/${pkgname}" 2>/dev/null | head -n1 | cut -d= -f2)"
-    if [[ -f "/usr/bin/${pkgname}" && -n "$_linkname" ]]; then
-        sed -i "s|^LINK=.*|LINK=$_linkname|" "${pkgname}".sh
-    else
-        if [[ ! -d "$HOME/.mozilla/firefox" ]]; then
-            echo "Firefox profile not found. Set LINK variable in /usr/bin/firefox-sync after installation." >&2
-            return
-        fi
-        _linkname="$(find -H "$HOME/.mozilla/firefox" -maxdepth 1 -mindepth 1 -type d -name "*.default*" -printf "%f\n" | head -n1)"
-        if [[ -n "$_linkname" ]]; then
-            sed -i "s|^LINK=.*|LINK=$_linkname|" "${pkgname}".sh
-        fi
-    fi
+prepare(){
+  local profile_dir="$HOME/.mozilla/firefox" current_link existing_profile
+  
+  if [[ -f /usr/bin/${pkgname} ]]; then
+    current_link=$(grep -m1 '^LINK=' "/usr/bin/${pkgname}" | cut -d= -f2)
+    [[ -n $current_link ]] && sed -i "s|^LINK=.*|LINK=$current_link|" "${pkgname}.sh" && return
+  fi
+  
+  [[ ! -d $profile_dir ]] && {
+    printf 'Warning: Set LINK in /usr/bin/firefox-sync after install\n' >&2
+    return 0
+  }
+  
+  existing_profile=$(find -H "$profile_dir" -maxdepth 1 -type d -name "*.default*" -printf "%f\n" | head -n1)
+  [[ -n $existing_profile ]] && sed -i "s|^LINK=.*|LINK=$existing_profile|" "${pkgname}.sh"
 }
 
-package() {
-    install -Dm755 "${pkgname}".sh "${pkgdir}/usr/bin/${pkgname}"
-    install -Dm644 "${pkgname}".service "${pkgdir}/usr/lib/systemd/user/${pkgname}.service"
-    install -Dm644 "${pkgname}-cron.service" "${pkgdir}/usr/lib/systemd/user/${pkgname}-cron.service"
-    install -Dm644 "${pkgname}-cron.timer" "${pkgdir}/usr/lib/systemd/user/${pkgname}-cron.timer"
+package(){
+  install -Dm755 "${pkgname}.sh" "${pkgdir}/usr/bin/${pkgname}"
+  install -Dm644 "${pkgname}.service" "${pkgdir}/usr/lib/systemd/user/${pkgname}.service"
+  install -Dm644 "${pkgname}-cron.service" "${pkgdir}/usr/lib/systemd/user/${pkgname}-cron.service"
+  install -Dm644 "${pkgname}-cron.timer" "${pkgdir}/usr/lib/systemd/user/${pkgname}-cron.timer"
 }
-

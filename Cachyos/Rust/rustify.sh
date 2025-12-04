@@ -4,6 +4,15 @@ export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
 cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 sudo -v
 
+# Optimization wrapper
+cargo_install(){
+  if command -v cargo-binstall &>/dev/null; then
+    cargo binstall -y --locked "$@" || cargo install --locked "$@"
+  else
+    cargo install --locked "$@"
+  fi
+}
+
 # Gnu utils
 sudo pacman --needed --noconfirm -S uutils-coreutils
 paru -S uutils-diffutils uutils-findutils uutils-procps-git
@@ -34,7 +43,7 @@ cargo install minhtml
 cargo install kelpsget
 # Update-alternatives for arch
 sudo pacman --needed --noconfirm -S zenity
-cargo install --git "https://github.com/fthomys/update-alternatives"
+command -v update-alternatives &>/dev/null || cargo_install --git "https://github.com/fthomys/update-alternatives"
 pbin="$(command -v update-alternatives || echo "$HOME"/.cargo/bin/update-alternatives)"
 sudo ln -sf "$pbin" "/usr/local/bin/${pbin##*/}"
 sudo tee "/etc/pacman.d/hooks/update-alternatives.hook" > /dev/null << 'EOF'
@@ -43,7 +52,6 @@ Operation = Install
 Operation = Upgrade
 Operation = Remove
 Type = Path
-# Re-run when these areas may change
 Target = usr/bin/*
 Target = usr/local/bin/*
 Target = etc/alternatives/*
@@ -54,15 +62,8 @@ When = PostTransaction
 Exec = /usr/local/bin/update-alternatives sync
 EOF
 
-# oxidizr-arch (switch to uutils, sudo-rs)
-paru --skipreview --needed --noconfirm -S oxidizr-arch
-echo -e "run: 
-paru --skipreview --needed --noconfirm -S uutils-coreutils uutils-findutils-bin sudo-rs
-sudo oxidizr-arch --commit use coreutils
-sudo oxidizr-arch --commit use sudo
-sudo oxidizr-arch --commit use findutils"
 # dnsmasq / systemdresolved
-curl -sf "https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/etchdns.sh" | bash
+# curl -sfL "https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/etchdns.sh" | bash
 # JQ
 sudo pacman --needed --noconfirm -S jaq
 # Stow alternatives:
@@ -70,7 +71,3 @@ sudo pacman --needed --noconfirm -S jaq
 # - https://github.com/levinion/stor
 # Nix
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-
-### Image optimizer
-# Flaca
-paru --skipreview --needed --noconfirm -S flaca-bin || cargo install --git https://github.com/Blobfolio/flaca.git --bin flaca

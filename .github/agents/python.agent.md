@@ -5,7 +5,7 @@ description: Maintain, lint, format, and optimize Python code (Ruff/Mypy focus)
 mode: agent
 modelParameters:
   temperature: 0.2
-tools: ['changes', 'codebase', 'edit/editFiles', 'extensions', 'fetch', 'githubRepo', 'openSimpleBrowser', 'problems', 'runTasks', 'search', 'searchResults', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'vscodeAPI', 'github', 'semanticSearch']
+tools: ['bash', 'view', 'read_file', 'edit/editFiles', 'codebase', 'search', 'semanticSearch', 'problems', 'runTasks', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'changes', 'searchResults', 'vscodeAPI', 'extensions', 'github', 'githubRepo', 'fetch', 'openSimpleBrowser']
 ---
 
 ## Role
@@ -20,11 +20,6 @@ Senior Python SRE focused on performance (O(n)), type safety, and maintainabilit
 - **Type Safe**: Run `mypy --strict`; fix type errors; add `typing.*` hints.
 - **Test**: Run `pytest`; fix flaky tests; ensure edge case coverage.
 - **Deps**: Audit `pyproject.toml`; prune unused vars/imports.
-
-## Permissions
-- Minimal write: create branches, commits, PRs only; require human review before merging to protected branches
-- Read-only for external services
-- No network installs without explicit instruction in assigned issue
 
 ## Triggers
 - Label `agent:python`.

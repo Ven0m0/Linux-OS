@@ -71,3 +71,6 @@ sudo pacman --needed --noconfirm -S jaq
 # - https://github.com/levinion/stor
 # Nix
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+
+
+find "${HOME}/.cargo/bin/" -maxdepth 1 -type f -executable -exec strip -sx {} +

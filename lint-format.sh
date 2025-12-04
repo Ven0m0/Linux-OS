@@ -511,12 +511,10 @@ process_lua() {
   if check_tool selene; then
     log "  ${BWHT}Linting${DEF} with selene..."
     local -i errors=0
-    for file in "${files[@]}"; do
-      if ! selene "$file" &> /dev/null; then
-        ((errors++))
-        ERROR_FILES+=("$file")
-      fi
-    done
+    if ! selene "${files[@]}" &> /dev/null; then
+      warn "  selene found issues in one or more files."
+      ((errors++))
+    fi
     COMMANDS_RUN+=("selene <file>")
     ((TOTAL_ERRORS += errors))
     ((errors > 0)) && warn "  Found $errors files with selene errors"

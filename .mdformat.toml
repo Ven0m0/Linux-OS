@@ -1,0 +1,9 @@
+# mdformat configuration | https://mdformat.readthedocs.io
+[mdformat]
+wrap = 120
+number = false
+end_of_line = "lf"
+
+[mdformat.options]
+gfm = true
+preserve_trailing_spaces = false

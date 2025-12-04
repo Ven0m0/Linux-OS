@@ -229,12 +229,11 @@ process_json() {
   elif check_tool prettier; then
     log "  ${PNK}Formatting${DEF} with prettier..."
     if ((cfg[fix])); then
-      for file in "${files[@]}"; do
-        if prettier --write "$file" &> /dev/null; then
-          MODIFIED_FILES+=("$file")
-          ((TOTAL_MODIFIED++))
-        fi
-      done
+      if prettier --write "${files[@]}" &> /dev/null; then
+        # This assumes all files were potentially modified. For more accuracy, you could check git status.
+        MODIFIED_FILES+=("${files[@]}")
+        ((TOTAL_MODIFIED += ${#files[@]}))
+      fi
     else
       if ! prettier --check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :

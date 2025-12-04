@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
-set -Eeuo pipefail
+set -euo pipefail
 export LC_ALL=C LANG=C
-
 # optimize_apk.sh: Automate APK linting, stripping, bytecode optimization, and repackaging
 # Usage: ./optimize_apk.sh input.apk output.apk
 # Requirements: apktool, redex, dex2jar, proguard (or R8), zipalign, apksigner, pngcrush, jpegoptim, 7z
-
 # Configuration: adjust paths and keystore info via env vars or defaults
 KEYSTORE_PATH="${KEYSTORE_PATH:-mykey.keystore}"
 KEY_ALIAS="${KEY_ALIAS:-myalias}"
 KEYSTORE_PASS="${KEYSTORE_PASS:-changeit}"
 KEY_PASS="${KEY_PASS:-changeit}"
-
 # Tools
 APKTOOL="apktool"
 REDEX="redex"
@@ -22,12 +19,10 @@ APKSIGNER="apksigner"
 PNGCRUSH="pngcrush"
 JPEGOPTIM="jpegoptim"
 SEVENZIP="7z"
-
 # Check tools
 for tool in "$APKTOOL" "$ZIPALIGN" "$APKSIGNER" "$SEVENZIP"; do
   command -v "$tool" &>/dev/null || {
-    echo "Error: $tool not found"
-    exit 1
+    echo "Error: $tool not found"; exit 1
   }
 done
 

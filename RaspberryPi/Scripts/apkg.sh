@@ -16,20 +16,20 @@ set -euo pipefail
 shopt -s nullglob globstar execfail
 IFS=$'
 	'
-has(){ command -v -- "$1" &>/dev/null; }
-hasname(){
+has() { command -v -- "$1" &> /dev/null; }
+hasname() {
   local x
   if ! x=$(type -P -- "$1"); then return 1; fi
   printf '%s
 ' "${x##*/}"
 }
-is_program_installed(){ command -v "$1" &>/dev/null; }
-get_workdir(){
+is_program_installed() { command -v "$1" &> /dev/null; }
+get_workdir() {
   local script="${BASH_SOURCE[1]:-$0}"
   builtin cd -- "${-- "$script"%/*}" && printf '%s
 ' "$PWD"
 }
-init_workdir(){
+init_workdir() {
   local workdir
   workdir="$(builtin cd -- "${-- "${BASH_SOURCE[1]:-}"%/*}" && printf '%s
 ' "$PWD")"
@@ -38,7 +38,7 @@ init_workdir(){
     exit 1
   }
 }
-require_root(){ if [[ $EUID -ne 0 ]]; then
+require_root() { if [[ $EUID -ne 0 ]]; then
   local script_path
   script_path=$([[ ${BASH_SOURCE[1]:-$0} == /* ]] && echo "${BASH_SOURCE[1]:-$0}" || echo "$PWD/${BASH_SOURCE[1]:-$0}")
   sudo "$script_path" "$@" || {
@@ -47,23 +47,23 @@ require_root(){ if [[ $EUID -ne 0 ]]; then
   }
   exit 0
 fi; }
-check_root(){ if [[ $EUID -ne 0 ]]; then
+check_root() { if [[ $EUID -ne 0 ]]; then
   echo "This script must be run as root." >&2
   exit 1
 fi; }
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
-run_dietpi_cleanup(){ if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
+load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :; }
+run_dietpi_cleanup() { if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
   if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then echo "Warning: dietpi-update failed (both standard and fallback commands)." >&2; fi
-  sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null || G_SUDO dietpi-logclear 2 2>/dev/null || :
-  sudo /boot/dietpi/func/dietpi-cleaner 2 2>/dev/null || G_SUDO dietpi-cleaner 2 2>/dev/null || :
+  sudo /boot/dietpi/func/dietpi-logclear 2 2> /dev/null || G_SUDO dietpi-logclear 2 2> /dev/null || :
+  sudo /boot/dietpi/func/dietpi-cleaner 2 2> /dev/null || G_SUDO dietpi-cleaner 2 2> /dev/null || :
 fi; }
-setup_environment(){
+setup_environment() {
   set -euo pipefail
   shopt -s nullglob globstar execfail
   IFS=$'
 	'
 }
-get_sudo_cmd(){
+get_sudo_cmd() {
   local sudo_cmd
   sudo_cmd="$(hasname sudo-rs || hasname sudo || hasname doas)" || {
     echo "❌ No valid privilege escalation tool found (sudo-rs, sudo, doas)." >&2
@@ -72,14 +72,14 @@ get_sudo_cmd(){
   printf '%s
 ' "$sudo_cmd"
 }
-init_sudo(){
+init_sudo() {
   local sudo_cmd
   sudo_cmd="$(get_sudo_cmd)" || return 1
-  if [[ $EUID -ne 0 && $sudo_cmd =~ ^(sudo-rs|sudo)$ ]]; then "$sudo_cmd" -v 2>/dev/null || :; fi
+  if [[ $EUID -ne 0 && $sudo_cmd =~ ^(sudo-rs|sudo)$ ]]; then "$sudo_cmd" -v 2> /dev/null || :; fi
 }
-find_with_fallback(){
+find_with_fallback() {
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
-  shift 4 2>/dev/null || shift $#
+  shift 4 2> /dev/null || shift $#
   if has fdf; then fdf -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"; elif has fd; then fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"; else
     local find_type_arg
     case "$ftype" in f) find_type_arg="-type f" ;; d) find_type_arg="-type d" ;; l) find_type_arg="-type l" ;; *) find_type_arg="-type f" ;; esac
@@ -91,7 +91,7 @@ find_with_fallback(){
 # Setup environment
 setup_environment
 shopt -s extglob # Add extra glob option not in setup_environment
-: "${HOME:=$(awk -F: -v u="$USER" '$1==u{print $6}' /etc/passwd 2>/dev/null)}"
+: "${HOME:=$(awk -F: -v u="$USER" '$1==u{print $6}' /etc/passwd 2> /dev/null)}"
 : "${XDG_CACHE_HOME:=${HOME}/.cache}"
 CACHE_DIR="${XDG_CACHE_HOME%/}/apt-fuzz"
 CACHE_INDEX="${CACHE_DIR}/.index"
@@ -99,46 +99,46 @@ CACHE_INDEX="${CACHE_DIR}/.index"
 : "${APT_FUZZ_CACHE_MAX_BYTES:=52428800}"
 : "${APT_FUZZ_ANSI:=1}"
 : "${APT_FUZZ_PREFETCH_JOBS:=4}"
-mkdir -p -- "$CACHE_DIR" &>/dev/null
+mkdir -p -- "$CACHE_DIR" &> /dev/null
 
 trap 'ps -o pid= --ppid=$$ 2>/dev/null | xargs -r kill 2>/dev/null; exit' EXIT SIGINT SIGTERM
 
 # Tool detection
-if command -v sk &>/dev/null; then
+if command -v sk &> /dev/null; then
   FINDER=sk
-elif command -v fzf &>/dev/null; then
+elif command -v fzf &> /dev/null; then
   FINDER=fzf
 else
   echo "Install skim (sk) or fzf" >&2
   exit 1
 fi
 
-find_cache_files(){ :; }
-if command -v fd &>/dev/null; then
+find_cache_files() { :; }
+if command -v fd &> /dev/null; then
   FIND_TOOL="fd"
-  find_cache_files(){ fd -0 -d 1 -tf . "$CACHE_DIR" 2>/dev/null; }
-elif command -v fdfind &>/dev/null; then
+  find_cache_files() { fd -0 -d 1 -tf . "$CACHE_DIR" 2> /dev/null; }
+elif command -v fdfind &> /dev/null; then
   FIND_TOOL="fdfind"
-  find_cache_files(){ fdfind -0 -d 1 -tf . "$CACHE_DIR" 2>/dev/null; }
+  find_cache_files() { fdfind -0 -d 1 -tf . "$CACHE_DIR" 2> /dev/null; }
 else
   FIND_TOOL="find"
-  find_cache_files(){ find -O3 "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null; }
+  find_cache_files() { find -O3 "$CACHE_DIR" -maxdepth 1 -type f -print0 2> /dev/null; }
 fi
 
 FINDER_OPTS=(--layout=reverse-list --tiebreak=index --no-sort --no-hscroll)
 [[ $APT_FUZZ_ANSI -eq 1 ]] && FINDER_OPTS+=(--ansi)
-[[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && read -r -a FINDER_OPTS <<<"$APT_FUZZ_FINDER_OPTS"
+[[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && read -r -a FINDER_OPTS <<< "$APT_FUZZ_FINDER_OPTS"
 
 # Manager detection
 declare -A MANAGERS=([apt]=1)
-command -v nala &>/dev/null && MANAGERS[nala]=1
-command -v apt-fast &>/dev/null && MANAGERS[apt - fast]=1
+command -v nala &> /dev/null && MANAGERS[nala]=1
+command -v apt-fast &> /dev/null && MANAGERS[apt - fast]=1
 PRIMARY_MANAGER="${APT_FUZZ_MANAGER:-apt}"
 [[ -z ${MANAGERS[$PRIMARY_MANAGER]:-} ]] && PRIMARY_MANAGER=apt
 [[ -n ${MANAGERS[nala]:-} ]] && PRIMARY_MANAGER=nala
 [[ -z ${MANAGERS[nala]:-} && -n ${MANAGERS[apt - fast]:-} ]] && PRIMARY_MANAGER=apt-fast
 
-byte_to_human(){
+byte_to_human() {
   local bytes="${1:-0}" i=0 pow=1
   local -a units=(B K M G T)
   while [[ $bytes -ge $((pow * 1024)) && $i -lt 4 ]]; do
@@ -151,18 +151,18 @@ byte_to_human(){
 }
 
 # Index-based cache management
-_update_cache_index(){
+_update_cache_index() {
   local tmp
   tmp=$(mktemp "${CACHE_INDEX}.XXXXXX")
-  find_cache_files | xargs -0 -r stat -c '%n|%s|%Y' >"$tmp" 2>/dev/null
+  find_cache_files | xargs -0 -r stat -c '%n|%s|%Y' > "$tmp" 2> /dev/null
   mv -f "$tmp" "$CACHE_INDEX"
 }
 
-_cache_info_from_index(){
-  awk -F'|' 'BEGIN{t=f=o=0}{f++;t+=$2;if(!o||$3<o)o=$3}END{print t,f,o}' "$CACHE_INDEX" 2>/dev/null || echo "0 0 0"
+_cache_info_from_index() {
+  awk -F'|' 'BEGIN{t=f=o=0}{f++;t+=$2;if(!o||$3<o)o=$3}END{print t,f,o}' "$CACHE_INDEX" 2> /dev/null || echo "0 0 0"
 }
 
-evict_old_cache(){
+evict_old_cache() {
   [[ ! -s $CACHE_INDEX ]] && _update_cache_index
   [[ ! -s $CACHE_INDEX ]] && return
   local cutoff=$(($(date +%s) - APT_FUZZ_CACHE_TTL)) limit=$APT_FUZZ_CACHE_MAX_BYTES
@@ -171,14 +171,14 @@ evict_old_cache(){
   local valid
   valid=$(mktemp)
   trap 'rm -f "$del" "$valid"' RETURN
-  awk -F'|' -v c="$cutoff" '$3<c{print $1}' "$CACHE_INDEX" >"$del"
-  awk -F'|' -v c="$cutoff" '$3>=c' "$CACHE_INDEX" >"$valid"
+  awk -F'|' -v c="$cutoff" '$3<c{print $1}' "$CACHE_INDEX" > "$del"
+  awk -F'|' -v c="$cutoff" '$3>=c' "$CACHE_INDEX" > "$valid"
   if ((limit > 0)) && [[ -s $valid ]]; then
     local total
     total=$(awk -F'|' '{s+=$2}END{print s+0}' "$valid")
     if ((total > limit)); then
       local excess=$((total - limit))
-      sort -t'|' -k3,3n "$valid" | awk -F'|' -v e="$excess" 'BEGIN{d=0}d<e{print $1;d+=$2}' >>"$del"
+      sort -t'|' -k3,3n "$valid" | awk -F'|' -v e="$excess" 'BEGIN{d=0}d<e{print $1;d+=$2}' >> "$del"
     fi
   fi
   xargs -r -a "$del" rm -f --
@@ -186,58 +186,58 @@ evict_old_cache(){
 }
 
 # Cache & preview
-_cache_file_for(){ printf '%s/%s.cache' "$CACHE_DIR" "${1//[^a-zA-Z0-9._+-]/_}"; }
+_cache_file_for() { printf '%s/%s.cache' "$CACHE_DIR" "${1//[^a-zA-Z0-9._+-]/_}"; }
 
-_generate_preview(){
+_generate_preview() {
   local pkg="$1" out
   out="$(_cache_file_for "$pkg")"
   local tmp="${out}.tmp.$$"
   {
-    apt-cache show "$pkg" 2>/dev/null || :
+    apt-cache show "$pkg" 2> /dev/null || :
     printf '\n--- changelog (first 200 lines) ---\n'
-    apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :
-  } >"$tmp" 2>/dev/null
-  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2>/dev/null || :
+    apt-get changelog "$pkg" 2> /dev/null | sed -n '1,200p' || :
+  } > "$tmp" 2> /dev/null
+  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2> /dev/null || :
   mv -f "$tmp" "$out"
-  chmod 644 "$out" 2>/dev/null || :
+  chmod 644 "$out" 2> /dev/null || :
 }
 
-_cached_preview_print(){
+_cached_preview_print() {
   local pkg="$1" f
   f="$(_cache_file_for "$pkg")"
   local now
   now=$(date +%s)
   local mtime
-  mtime=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
+  mtime=$(stat -c %Y -- "$f" 2> /dev/null || echo 0)
   if ((now - mtime < APT_FUZZ_CACHE_TTL)); then
-    cat "$f" 2>/dev/null || echo "(no preview)"
+    cat "$f" 2> /dev/null || echo "(no preview)"
   else
     _generate_preview "$pkg"
-    cat "$f" 2>/dev/null || echo "(no preview)"
+    cat "$f" 2> /dev/null || echo "(no preview)"
   fi
 }
 export -f _cached_preview_print _cache_file_for _generate_preview
 
 # Background prefetch
-_prefetch_lists(){
-  (apt-cache pkgnames >"$CACHE_DIR/pkgnames.list" 2>/dev/null) &
-  (dpkg-query -W -f='${Package}\n' >"$CACHE_DIR/installed.list" 2>/dev/null) &
-  (apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}' >"$CACHE_DIR/upgradable.list") &
+_prefetch_lists() {
+  (apt-cache pkgnames > "$CACHE_DIR/pkgnames.list" 2> /dev/null) &
+  (dpkg-query -W -f='${Package}\n' > "$CACHE_DIR/installed.list" 2> /dev/null) &
+  (apt list --upgradable 2> /dev/null | awk -F/ 'NR>1{print $1}' > "$CACHE_DIR/upgradable.list") &
 }
 
-_prefetch_previews(){
+_prefetch_previews() {
   wait
   local i=0 pkg
   while IFS= read -r pkg; do
     ((i = i % APT_FUZZ_PREFETCH_JOBS, i++ == 0)) && wait
     _generate_preview "$pkg" &
-  done < <(head -n 200 "$CACHE_DIR/installed.list" 2>/dev/null)
+  done < <(head -n 200 "$CACHE_DIR/installed.list" 2> /dev/null)
   wait
   _update_cache_index
 }
 
 # Package lists
-list_all_packages(){
+list_all_packages() {
   if [[ -f $CACHE_DIR/pkgnames.list ]]; then
     cat "$CACHE_DIR/pkgnames.list"
   else
@@ -245,7 +245,7 @@ list_all_packages(){
   fi
 }
 
-list_installed(){
+list_installed() {
   if [[ -f $CACHE_DIR/installed.list ]]; then
     cat "$CACHE_DIR/installed.list"
   else
@@ -253,52 +253,52 @@ list_installed(){
   fi
 }
 
-list_upgradable(){
+list_upgradable() {
   if [[ -f $CACHE_DIR/upgradable.list ]]; then
     cat "$CACHE_DIR/upgradable.list"
   else
-    apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}'
+    apt list --upgradable 2> /dev/null | awk -F/ 'NR>1{print $1}'
   fi
 }
 
 # Manager runner
-run_mgr(){
+run_mgr() {
   local action="$1"
   shift || :
   local -a pkgs=("$@") cmd=()
   case "$PRIMARY_MANAGER" in
-  nala)
-    case "$action" in
-    update | upgrade | autoremove | clean) cmd=(nala "$action" -y) ;;
-    *) cmd=(nala "$action" -y "${pkgs[@]}") ;;
-    esac
-    ;;
-  apt-fast)
-    case "$action" in
-    update | upgrade | autoremove | clean) cmd=(apt-fast "$action" -y) ;;
-    *) cmd=(apt-fast "$action" -y "${pkgs[@]}") ;;
-    esac
-    ;;
-  *)
-    case "$action" in
-    update | upgrade | autoremove | clean) cmd=(apt-get "$action" -y) ;;
-    install | remove | purge) cmd=(apt-get "$action" -y "${pkgs[@]}") ;;
-    *) cmd=(apt "$action" "${pkgs[@]}") ;;
-    esac
-    ;;
+    nala)
+      case "$action" in
+        update | upgrade | autoremove | clean) cmd=(nala "$action" -y) ;;
+        *) cmd=(nala "$action" -y "${pkgs[@]}") ;;
+      esac
+      ;;
+    apt-fast)
+      case "$action" in
+        update | upgrade | autoremove | clean) cmd=(apt-fast "$action" -y) ;;
+        *) cmd=(apt-fast "$action" -y "${pkgs[@]}") ;;
+      esac
+      ;;
+    *)
+      case "$action" in
+        update | upgrade | autoremove | clean) cmd=(apt-get "$action" -y) ;;
+        install | remove | purge) cmd=(apt-get "$action" -y "${pkgs[@]}") ;;
+        *) cmd=(apt "$action" "${pkgs[@]}") ;;
+      esac
+      ;;
   esac
   printf 'Running: sudo %s\n' "${cmd[*]}"
   sudo "${cmd[@]}"
 }
 
-choose_manager(){
+choose_manager() {
   local choice
   choice=$(printf '%s\n' "${!MANAGERS[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Manager> ")
   [[ -n $choice ]] && PRIMARY_MANAGER="$choice"
 }
 
 # UI helpers
-_status_header(){
+_status_header() {
   local total files oldest
   read -r total files oldest < <(_cache_info_from_index)
   local age
@@ -308,21 +308,21 @@ _status_header(){
   printf 'manager: %s | cache: %s files, %s, oldest: %s' "$PRIMARY_MANAGER" "$files" "$size" "$age"
 }
 
-action_menu_for_pkgs(){
+action_menu_for_pkgs() {
   local -a pkgs=("$@") actions=(Install Remove Purge Changelog Cancel) choice
   [[ ${#pkgs[@]} -eq 0 ]] && return
   choice=$(printf '%s\n' "${actions[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Action for ${#pkgs[@]} pkgs> ")
   [[ -z $choice ]] && return
   case "$choice" in
-  Install) run_mgr install "${pkgs[@]}" ;;
-  Remove) run_mgr remove "${pkgs[@]}" ;;
-  Purge) run_mgr purge "${pkgs[@]}" ;;
-  Changelog) for p in "${pkgs[@]}"; do apt-get changelog "$p" 2>/dev/null | less; done ;;
-  Cancel) return ;;
+    Install) run_mgr install "${pkgs[@]}" ;;
+    Remove) run_mgr remove "${pkgs[@]}" ;;
+    Purge) run_mgr purge "${pkgs[@]}" ;;
+    Changelog) for p in "${pkgs[@]}"; do apt-get changelog "$p" 2> /dev/null | less; done ;;
+    Cancel) return ;;
   esac
 }
 
-menu_search(){
+menu_search() {
   local sel
   sel=$(list_all_packages | "$FINDER" "${FINDER_OPTS[@]}" \
     --multi --height=60% --prompt="Search> " --header="$(_status_header)" \
@@ -330,11 +330,11 @@ menu_search(){
     --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
   local -a pkgs
-  mapfile -t pkgs <<<"$sel"
+  mapfile -t pkgs <<< "$sel"
   action_menu_for_pkgs "${pkgs[@]}"
 }
 
-menu_installed(){
+menu_installed() {
   local sel
   sel=$(list_installed | "$FINDER" "${FINDER_OPTS[@]}" \
     --multi --height=60% --prompt="Installed> " --header="$(_status_header)" \
@@ -342,11 +342,11 @@ menu_installed(){
     --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
   local -a pkgs
-  mapfile -t pkgs <<<"$sel"
+  mapfile -t pkgs <<< "$sel"
   action_menu_for_pkgs "${pkgs[@]}"
 }
 
-menu_upgradable(){
+menu_upgradable() {
   local sel
   sel=$(list_upgradable | "$FINDER" "${FINDER_OPTS[@]}" \
     --multi --height=40% --prompt="Upgradable> " --header="$(_status_header)" \
@@ -354,18 +354,18 @@ menu_upgradable(){
     --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
   local -a pkgs
-  mapfile -t pkgs <<<"$sel"
+  mapfile -t pkgs <<< "$sel"
   [[ ${#pkgs[@]} -gt 0 ]] && run_mgr install "${pkgs[@]}"
 }
 
 # shellcheck disable=SC2120  # Function may be called without args (uses default)
-backup_installed(){
+backup_installed() {
   local out="${1:-pkglist-$(date +%F).txt}"
-  dpkg-query -W -f='${Package}\n' | sort -u >"$out"
+  dpkg-query -W -f='${Package}\n' | sort -u > "$out"
   printf 'Saved: %s\n' "$out"
 }
 
-restore_from_file(){
+restore_from_file() {
   local file="$1"
   [[ ! -f $file ]] && {
     echo "File not found: $file" >&2
@@ -383,58 +383,58 @@ restore_from_file(){
   run_mgr install "${sel[@]}"
 }
 
-menu_backup_restore(){
+menu_backup_restore() {
   local -a opts=("Backup installed packages" "Restore from file" "Cancel") choice
   choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Backup/Restore> " --header="$(_status_header)")
   [[ -z $choice ]] && return
   case "$choice" in
-  "Backup installed packages") backup_installed ;;
-  "Restore from file")
-    read -r -p "Path: " f
-    [[ -n $f ]] && restore_from_file "$f"
-    ;;
+    "Backup installed packages") backup_installed ;;
+    "Restore from file")
+      read -r -p "Path: " f
+      [[ -n $f ]] && restore_from_file "$f"
+      ;;
   esac
 }
 
-menu_maintenance(){
+menu_maintenance() {
   local -a opts=(Update Upgrade Autoremove Clean "Choose manager" Cancel) choice
   choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=18% --prompt="Maintenance> " --header="$(_status_header)")
   [[ -z $choice ]] && return
   case "$choice" in
-  Update) run_mgr update ;;
-  Upgrade) run_mgr upgrade ;;
-  Autoremove) run_mgr autoremove ;;
-  Clean) run_mgr clean ;;
-  "Choose manager") choose_manager ;;
+    Update) run_mgr update ;;
+    Upgrade) run_mgr upgrade ;;
+    Autoremove) run_mgr autoremove ;;
+    Clean) run_mgr clean ;;
+    "Choose manager") choose_manager ;;
   esac
 }
 
-main_menu(){
+main_menu() {
   evict_old_cache
   local -a menu=("Search packages" "Installed" "Upgradable" "Backup/Restore" "Maintenance" "Choose manager" "Quit") choice
   while true; do
     choice=$(printf '%s\n' "${menu[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=20% --prompt="apt-fuzz> " --header="$(_status_header)")
     [[ -z $choice ]] && break
     case "$choice" in
-    "Search packages") menu_search ;;
-    Installed) menu_installed ;;
-    Upgradable) menu_upgradable ;;
-    "Backup/Restore") menu_backup_restore ;;
-    Maintenance) menu_maintenance ;;
-    "Choose manager") choose_manager ;;
-    Quit) break ;;
+      "Search packages") menu_search ;;
+      Installed) menu_installed ;;
+      Upgradable) menu_upgradable ;;
+      "Backup/Restore") menu_backup_restore ;;
+      Maintenance) menu_maintenance ;;
+      "Choose manager") choose_manager ;;
+      Quit) break ;;
     esac
   done
 }
 
-_install_self(){
+_install_self() {
   local dest="${HOME}/.local/bin/apt-fuzz" compdir="${HOME}/.local/share/bash-completion/completions"
   mkdir -p -- "${HOME}/.local/bin"
   cp -f -- "$0" "$dest"
   chmod +x -- "$dest"
   printf 'Installed: %s\n' "$dest"
   mkdir -p -- "$compdir"
-  cat >"$compdir/apt-fuzz" <<'COMP'
+  cat > "$compdir/apt-fuzz" << 'COMP'
 _complete_apt_fuzz(){
   local cur="${COMP_WORDS[COMP_CWORD]}" opts="search installed upgradable install remove purge backup restore maintenance choose-manager quit"
   COMPREPLY=()
@@ -449,7 +449,7 @@ COMP
   printf 'Completion: %s/apt-fuzz\n' "$compdir"
 }
 
-_uninstall_self(){
+_uninstall_self() {
   local dest="${HOME}/.local/bin/apt-fuzz" comp="${HOME}/.local/share/bash-completion/completions/apt-fuzz"
   printf 'Uninstalling...\n'
   rm -f -- "$dest" "$comp"
@@ -460,40 +460,40 @@ _uninstall_self(){
 # Entry point
 if (($# > 0)); then
   case "$1" in
-  --install)
-    _install_self
-    exit 0
-    ;;
-  --uninstall)
-    _uninstall_self
-    exit 0
-    ;;
-  --preview)
-    [[ -z ${2:-} ]] && {
-      echo "usage: $0 --preview <pkg>" >&2
-      exit 2
-    }
-    _cached_preview_print "$2"
-    exit 0
-    ;;
-  install | remove | purge)
-    [[ $# -lt 2 ]] && {
-      echo "Usage: $0 $1 <pkgs...>" >&2
-      exit 2
-    }
-    action="$1"
-    shift
-    run_mgr "$action" "$@"
-    exit 0
-    ;;
-  help | -h | --help)
-    printf 'Usage: %s [--install|--uninstall] | [install|remove|purge <pkgs...>]\nRun without args for TUI.\n' "$0"
-    exit 0
-    ;;
+    --install)
+      _install_self
+      exit 0
+      ;;
+    --uninstall)
+      _uninstall_self
+      exit 0
+      ;;
+    --preview)
+      [[ -z ${2:-} ]] && {
+        echo "usage: $0 --preview <pkg>" >&2
+        exit 2
+      }
+      _cached_preview_print "$2"
+      exit 0
+      ;;
+    install | remove | purge)
+      [[ $# -lt 2 ]] && {
+        echo "Usage: $0 $1 <pkgs...>" >&2
+        exit 2
+      }
+      action="$1"
+      shift
+      run_mgr "$action" "$@"
+      exit 0
+      ;;
+    help | -h | --help)
+      printf 'Usage: %s [--install|--uninstall] | [install|remove|purge <pkgs...>]\nRun without args for TUI.\n' "$0"
+      exit 0
+      ;;
   esac
 fi
 
-cat <<'EOF'
+cat << 'EOF'
 apt-fuzz: sk/fzf frontend for apt/nala/apt-fast
 Controls: fuzzy-search, multi-select (TAB), Enter to confirm
 EOF

@@ -16,11 +16,11 @@ cd "$SCRIPT_DIR" || die "Failed to change to working directory: $SCRIPT_DIR"
 SCRIPT_DIR="$PWD"
 
 # Display colorized banner with gradient effect
-display_banner(){
+display_banner() {
   local banner_text="$1"
   shift
   local -a flag_colors=("$@")
-  mapfile -t banner_lines <<<"$banner_text"
+  mapfile -t banner_lines <<< "$banner_text"
   local line_count=${#banner_lines[@]}
   local segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
@@ -38,7 +38,7 @@ display_banner(){
 
 #============ Banner ====================
 banner=$(
-  cat <<'EOF'
+  cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -60,7 +60,7 @@ if has apt-fast; then
   sudo apt-fast upgrade -y --no-install-recommends
   sudo apt-fast dist-upgrade -y --no-install-recommends
   clean_apt_cache
-  sudo apt-fast autopurge -yq 2>/dev/null || :
+  sudo apt-fast autopurge -yq 2> /dev/null || :
 elif has nala; then
   sudo nala upgrade --no-install-recommends
   sudo nala clean
@@ -74,12 +74,12 @@ else
   clean_apt_cache
 fi
 # Check's the broken packages and fix them
-sudo dpkg --configure -a >/dev/null
+sudo dpkg --configure -a > /dev/null
 
 sudo dietpi-update 1 || sudo /boot/dietpi/dietpi-update 1
 has pihole && sudo pihole -up
 has rpi-eeprom-update && sudo rpi-eeprom-update -a
-has rpi-update && sudo SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0 PRUNE_MODULES=1 SKIP_VCLIBS=1 rpi-update 2>/dev/null || :
+has rpi-update && sudo SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0 PRUNE_MODULES=1 SKIP_VCLIBS=1 rpi-update 2> /dev/null || :
 #sudo JUST_CHECK=1 rpi-update
 # https://github.com/raspberrypi/rpi-update/blob/master/rpi-update
 # Test:

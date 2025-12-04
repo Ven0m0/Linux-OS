@@ -20,10 +20,10 @@ if [[ $EUID -ne 0 ]]; then
   }
 fi
 
-chk_aurh(){
-  if command -v paru &>/dev/null; then
+chk_aurh() {
+  if command -v paru &> /dev/null; then
     aurhlpr="paru"
-  elif command -v yay &>/dev/null; then
+  elif command -v yay &> /dev/null; then
     aurhlpr="yay"
   else
     echo "No AUR helper found (paru/yay)."
@@ -31,7 +31,7 @@ chk_aurh(){
   fi
 }
 
-service_ctl(){
+service_ctl() {
   local ServChk=$1
 
   if [[ $(systemctl list-units --all -t service --full --no-legend "${ServChk}.service" | sed 's/^\s*//g' | cut -f1 -d' ') == "${ServChk}.service" ]]; then
@@ -43,10 +43,10 @@ service_ctl(){
     echo "$ServChk service enabled, and running..."
   fi
 }
-pkg_installed(){
+pkg_installed() {
   local PkgIn=$1
 
-  if pacman -Qi "$PkgIn" &>/dev/null; then
+  if pacman -Qi "$PkgIn" &> /dev/null; then
     #echo "${PkgIn} is already installed..."
     return 0
   else
@@ -55,10 +55,10 @@ pkg_installed(){
   fi
 }
 
-pkg_available(){
+pkg_available() {
   local PkgIn=$1
 
-  if pacman -Si "$PkgIn" &>/dev/null; then
+  if pacman -Si "$PkgIn" &> /dev/null; then
     #echo "${PkgIn} available in arch repo..."
     return 0
   else
@@ -66,11 +66,11 @@ pkg_available(){
     return 1
   fi
 }
-aur_available(){
+aur_available() {
   local PkgIn=$1
   chk_aurh
 
-  if "$aurhlpr" -Si "$PkgIn" &>/dev/null; then
+  if "$aurhlpr" -Si "$PkgIn" &> /dev/null; then
     #echo "${PkgIn} available in aur repo..."
     return 0
   else
@@ -78,7 +78,7 @@ aur_available(){
     return 1
   fi
 }
-nvidia_detect(){
+nvidia_detect() {
   if [[ $(lspci -k | grep -A 2 -E "(VGA|3D)" | grep -i nvidia | wc -l) -gt 0 ]]; then
     #echo "nvidia card detected..."
     return 0

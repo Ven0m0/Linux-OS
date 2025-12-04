@@ -5,7 +5,7 @@ config_dirs="$HOME/.bash/configs"   # normal config scripts
 autoload_cache="$HOME/.cache/bash_autoload.list"
 config_cache="$HOME/.cache/bash_config.loaded"
 
-lazyfile(){
+lazyfile() {
   local src=$1
   shift
   for f; do
@@ -13,15 +13,15 @@ lazyfile(){
   done
 }
 
-autoload_parse(){
+autoload_parse() {
   local src=$1 funcs
-  if command -v rg &>/dev/null; then
+  if command -v rg &> /dev/null; then
     funcs=$(rg -n --no-heading '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*\s*\(\)' "$src")
   else
     funcs=$(grep -Eo '^[[:space:]]*[a-zA-Z_][a-zA-Z0-9_]*\s*\(\)' "$src")
   fi
 
-  if command -v sd &>/dev/null; then
+  if command -v sd &> /dev/null; then
     funcs=$(printf '%s\n' "$funcs" | sd '^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\).*' '$1')
   else
     funcs=$(printf '%s\n' "$funcs" | sed -E 's/^[[:space:]]*([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\).*/\1/')
@@ -29,7 +29,7 @@ autoload_parse(){
   printf '%s\n' "$funcs"
 }
 
-autoload_init(){
+autoload_init() {
   local cache_valid=1 config_valid=1
 
   # check function cache
@@ -91,8 +91,8 @@ autoload_init(){
 }
 
 # --- helpers ---
-autoload_list(){ awk '{print $1}' "$autoload_cache" 2>/dev/null | sort -u; }
-autoload_show(){ awk -v f="$1" '$1==f {print $2}' "$autoload_cache" 2>/dev/null; }
+autoload_list() { awk '{print $1}' "$autoload_cache" 2> /dev/null | sort -u; }
+autoload_show() { awk -v f="$1" '$1==f {print $2}' "$autoload_cache" 2> /dev/null; }
 
 autoload_init
 unset -f autoload_init autoload_parse lazyfile

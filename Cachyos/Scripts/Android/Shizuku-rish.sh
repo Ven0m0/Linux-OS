@@ -15,7 +15,7 @@ if [[ ! -f $DEX ]]; then
 fi
 
 # Create a Shizuku script file
-tee "${BIN}/shizuku" >/dev/null <<EOF
+tee "${BIN}/shizuku" > /dev/null << EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Make a list of open ports
@@ -53,7 +53,7 @@ EOF
 dex="${HOME}/rish_shizuku.dex"
 
 # Create a Rish script file
-tee "${BIN}/rish" >/dev/null <<EOF
+tee "${BIN}/rish" > /dev/null << EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
 [[ -z "\$RISH_APPLICATION_ID" ]] && export RISH_APPLICATION_ID="com.termux"

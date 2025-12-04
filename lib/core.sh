@@ -20,33 +20,33 @@ export BLK RED GRN YLW BLU MGN CYN WHT LBLU PNK BWHT DEF BLD
 
 #============ Core Helper Functions ============
 # Check if command exists
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &> /dev/null; }
 
 # Get command path name
-hasname(){
+hasname() {
   local x
-  x=$(type -P -- "$1" 2>/dev/null) || return 1
+  x=$(type -P -- "$1" 2> /dev/null) || return 1
   printf '%s\n' "${x##*/}"
 }
 
 # Echo with formatting support
-xecho(){ printf '%b\n' "$*"; }
+xecho() { printf '%b\n' "$*"; }
 
 # Logging functions
-log(){ xecho "$*"; }
-msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
-warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF" >&2; }
-err(){ printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; }
-die(){
+log() { xecho "$*"; }
+msg() { printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
+warn() { printf '%b%s%b\n' "$YLW" "$*" "$DEF" >&2; }
+err() { printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; }
+die() {
   err "${1:-Error}"
   exit "${2:-1}"
 }
 
 # Debug logging (enabled by DEBUG=1)
-dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
+dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
 
 # Confirmation prompt
-confirm(){
+confirm() {
   local msg="$1"
   printf '%s [y/N]: ' "$msg" >&2
   read -r ans
@@ -56,13 +56,13 @@ confirm(){
 #============ Banner Printing Functions ============
 # Print banner with trans flag gradient
 # Usage: print_banner "banner_text" [title]
-print_banner(){
+print_banner() {
   local banner="$1" title="${2:-}"
   local -a flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
   local -a lines=()
   while IFS= read -r line || [[ -n $line ]]; do
     lines+=("$line")
-  done <<<"$banner"
+  done <<< "$banner"
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
     printf '%s%s%s\n' "${flag_colors[0]}" "${lines[0]}" "$DEF"
@@ -77,8 +77,8 @@ print_banner(){
 }
 
 # Pre-defined banners
-get_update_banner(){
-  cat <<'EOF'
+get_update_banner() {
+  cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -88,8 +88,8 @@ get_update_banner(){
 EOF
 }
 
-get_clean_banner(){
-  cat <<'EOF'
+get_clean_banner() {
+  cat << 'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
@@ -101,19 +101,19 @@ EOF
 
 # Print predefined banner
 # Usage: print_named_banner "update"|"clean" [title]
-print_named_banner(){
+print_named_banner() {
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in
-  update) banner=$(get_update_banner) ;;
-  clean) banner=$(get_clean_banner) ;;
-  *) die "Unknown banner name: $name" ;;
+    update) banner=$(get_update_banner) ;;
+    clean) banner=$(get_clean_banner) ;;
+    *) die "Unknown banner name: $name" ;;
   esac
   print_banner "$banner" "$title"
 }
 
 #============ File Finding Helpers ============
 # Use fdf/fd/fdfind if available, fallback to find
-find_files(){
+find_files() {
   if has fdf; then
     fdf -H "$@"
   elif has fd; then
@@ -126,7 +126,7 @@ find_files(){
 }
 
 # NUL-safe finder using fdf/fd/fdfind/find
-find0(){
+find0() {
   local root="$1"
   shift
   if has fdf; then
@@ -142,7 +142,7 @@ find0(){
 
 #============ Path Cleaning Helpers ============
 # Helper to expand wildcard paths safely
-_expand_wildcards(){
+_expand_wildcards() {
   local path=$1
   local -n result_ref="$2"
   if [[ $path == *\** ]]; then
@@ -158,25 +158,25 @@ _expand_wildcards(){
 }
 
 # Clean paths (user files)
-clean_paths(){
+clean_paths() {
   local paths=("$@") path
   local -a existing_paths=()
   for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done
-  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &> /dev/null || :
 }
 
 # Clean paths with sudo (system files)
-clean_with_sudo(){
+clean_with_sudo() {
   local paths=("$@") path
   local -a existing_paths=()
   for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done
-  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &> /dev/null || :
 }
 
 #============ Download Tool Detection ============
 _DOWNLOAD_TOOL_CACHED=""
 # shellcheck disable=SC2120
-get_download_tool(){
+get_download_tool() {
   local skip_aria2=0
   [[ ${1:-} == --no-aria2 ]] && skip_aria2=1
   if [[ -n $_DOWNLOAD_TOOL_CACHED && $skip_aria2 -eq 0 ]]; then
@@ -201,21 +201,21 @@ get_download_tool(){
 
 # Download a file using best available tool
 # Usage: download_file <url> <output_path>
-download_file(){
+download_file() {
   local url=$1 output=$2 tool
   # shellcheck disable=SC2119
   tool=$(get_download_tool) || return 1
   case $tool in
-  aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "${output%/*}" -o "${output##*/}" "$url" ;;
-  curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;;
-  wget2) wget2 -q -O "$output" "$url" ;;
-  wget) wget -qO "$output" "$url" ;;
-  *) return 1 ;;
+    aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "${output%/*}" -o "${output##*/}" "$url" ;;
+    curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;;
+    wget2) wget2 -q -O "$output" "$url" ;;
+    wget) wget -qO "$output" "$url" ;;
+    *) return 1 ;;
   esac
 }
 
 #============ Disk Usage Helpers ============
 # Capture current disk usage
-capture_disk_usage(){
-  df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'
+capture_disk_usage() {
+  df -h --output=used,pcent / 2> /dev/null | awk 'NR==2{print $1, $2}'
 }

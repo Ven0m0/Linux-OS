@@ -26,9 +26,9 @@ declare -A games=(
 # Kill Steam and related processes
 readonly kill_procs=(steam steamwebhelper cs2)
 printf "Stopping Steam processes...\n"
-pkill -15 -x "${kill_procs[@]}" 2>/dev/null || :
+pkill -15 -x "${kill_procs[@]}" 2> /dev/null || :
 sleep 1
-pkill -9 -x "${kill_procs[@]}" 2>/dev/null || :
+pkill -9 -x "${kill_procs[@]}" 2> /dev/null || :
 sleep 1
 
 # Clean Steam logs and dumps
@@ -36,14 +36,14 @@ readonly logs=("$steam_root/logs" "$steam_root/dumps")
 printf "Cleaning Steam logs and dumps...\n"
 for dir in "${logs[@]}"; do
   if [[ -d $dir ]]; then
-    find "$dir" -type f -exec truncate -s0 {} + 2>/dev/null || :
+    find "$dir" -type f -exec truncate -s0 {} + 2> /dev/null || :
   fi
 done
 
 # Per-game: delete crashdumps and shader caches
 printf "Cleaning game-specific caches...\n"
 for appid in "${!games[@]}"; do
-  IFS=':' read -r exe gamedir mod <<<"${games[$appid]}"
+  IFS=':' read -r exe gamedir mod <<< "${games[$appid]}"
   game="$steam_root/steamapps/common/$gamedir"
   [[ -d $game ]] || continue
 
@@ -52,7 +52,7 @@ for appid in "${!games[@]}"; do
   # Crash dumps
   crashdir="$game/game/$mod"
   if [[ -d $crashdir ]]; then
-    find "$crashdir" -type f -name '*.mdmp' -delete 2>/dev/null || :
+    find "$crashdir" -type f -name '*.mdmp' -delete 2> /dev/null || :
   fi
 
   # Shader caches (multiple potential paths)
@@ -62,7 +62,7 @@ for appid in "${!games[@]}"; do
   )
   for sdir in "${shaders[@]}"; do
     if [[ -d $sdir ]]; then
-      find "$sdir" -type f -delete 2>/dev/null || :
+      find "$sdir" -type f -delete 2> /dev/null || :
     fi
   done
 done
@@ -91,7 +91,7 @@ readonly gpu_dirs=(
 
 for dir in "${gpu_dirs[@]}"; do
   if [[ -d $dir ]]; then
-    find "$dir" -type f -delete 2>/dev/null || :
+    find "$dir" -type f -delete 2> /dev/null || :
   fi
 done
 
@@ -99,7 +99,7 @@ done
 readonly nvcache="$HOME/.nv/ComputeCache"
 if [[ -d $nvcache ]]; then
   printf "Cleaning NVIDIA ComputeCache...\n"
-  find "$nvcache" -type f -delete 2>/dev/null || :
+  find "$nvcache" -type f -delete 2> /dev/null || :
 fi
 
 printf "\nShader/log/crash cache cleanup complete!\n"

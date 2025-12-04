@@ -43,20 +43,20 @@ KEYSERVERS=( # We want to use keyservers only with secured (hkps or https) conne
 # Colors
 R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m' Z='\033[0m'
 # Helpers
-log(){ printf "${G}[%s]${Z} %s\n" "${1:-INFO}" "${*:2}" | tee -a "$LOGFILE"; }
-warn(){ printf "${Y}[WARN]${Z} %s\n" "$*" >&2; }
-err(){ printf "${R}[ERR]${Z} %s\n" "$*" >&2; }
-backup(){
+log() { printf "${G}[%s]${Z} %s\n" "${1:-INFO}" "${*:2}" | tee -a "$LOGFILE"; }
+warn() { printf "${Y}[WARN]${Z} %s\n" "$*" >&2; }
+err() { printf "${R}[ERR]${Z} %s\n" "$*" >&2; }
+backup() {
   [[ -f $1 ]] || return 0
   mkdir -p "$BACKUPDIR"
   cp -a "$1" "$BACKUPDIR/${1##*/}-$(printf '%s' "$EPOCHSECONDS").bak"
   # Keep 5 recent backups
   find "$BACKUPDIR" -name "${1##*/}-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+6 | awk '{print $2}' | xargs -r rm -f
 }
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &> /dev/null; }
 
 # Actions
-rank_keys(){
+rank_keys() {
   [[ -f $GPGCONF ]] || return 0
   log KEY "Ranking keyservers..."
   backup "$GPGCONF"
@@ -85,7 +85,7 @@ rank_keys(){
   fi
 }
 
-rank_repo(){
+rank_repo() {
   local name=$1 file="$MIRRORDIR/${1}-mirrorlist"
   [[ -f $file ]] || return 0
   log REPO "Ranking $name..."
@@ -94,7 +94,7 @@ rank_repo(){
   tmp=$(mktemp)
   # Pipe URLs directly to rate-mirrors stdin
   if grep -oP 'https?://[^ ]+' "$file" | sort -u | rate-mirrors --save="$tmp" --entry-country="$COUNTRY" stdin \
-    --fetch-mirrors-timeout=5000 --path-to-return='$repo/os/$arch' &>/dev/null; then
+    --fetch-mirrors-timeout=5000 --path-to-return='$repo/os/$arch' &> /dev/null; then
     install -m644 "$tmp" "$file"
   else
     warn "Failed to rank $name"
@@ -102,7 +102,7 @@ rank_repo(){
   rm -f "$tmp"
 }
 
-rank_arch(){
+rank_arch() {
   local file="$MIRRORDIR/mirrorlist" url="$ARCHLIST_URL_GLOBAL"
   [[ $COUNTRY == "DE" ]] && url="$ARCHLIST_URL_DE"
   log ARCH "Fetching latest Arch mirrors ($COUNTRY)..."
@@ -114,9 +114,9 @@ rank_arch(){
     rm -f "$tmp" "$tmp.mlst"
     return 1
   fi # Uncomment servers using sed
-  sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" >"$tmp.raw"
+  sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" > "$tmp.raw"
   # Rank
-  if rate-mirrors --save="$tmp" --entry-country="$COUNTRY" --top-mirrors-number-to-retest=5 arch --file "$tmp.raw" &>/dev/null; then
+  if rate-mirrors --save="$tmp" --entry-country="$COUNTRY" --top-mirrors-number-to-retest=5 arch --file "$tmp.raw" &> /dev/null; then
     install -m644 "$tmp" "$file"
   else
     warn "rate-mirrors failed for Arch"
@@ -139,5 +139,5 @@ else
   done
 fi
 log INFO "Syncing DB..."
-sudo pacman -Syyq --noconfirm &>/dev/null
+sudo pacman -Syyq --noconfirm &> /dev/null
 log DONE "Mirrors updated."

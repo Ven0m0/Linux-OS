@@ -24,19 +24,19 @@ export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Core Helper Functions ============
 # Check if command exists
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &> /dev/null; }
 
 # Echo with formatting support
-xecho(){ printf '%b\n' "$*"; }
+xecho() { printf '%b\n' "$*"; }
 # Logging functions
-log(){ xecho "$*"; }
-die(){
+log() { xecho "$*"; }
+die() {
   xecho "${RED}Error:${DEF} $*" >&2
   exit 1
 }
 
 # Confirmation prompt
-confirm(){
+confirm() {
   local msg="$1"
   printf '%s [y/N]: ' "$msg" >&2
   read -r ans
@@ -46,7 +46,7 @@ confirm(){
 #============ Banner Printing Functions ============
 # Print banner with trans flag gradient
 # Usage: print_banner "banner_text" [title]
-print_banner(){
+print_banner() {
   local banner="$1" title="${2:-}"
   local flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
 
@@ -54,7 +54,7 @@ print_banner(){
   local -a lines=()
   while IFS= read -r line || [[ -n $line ]]; do
     lines+=("$line")
-  done <<<"$banner"
+  done <<< "$banner"
 
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
@@ -70,8 +70,8 @@ print_banner(){
 }
 
 # Pre-defined banners
-get_update_banner(){
-  cat <<'EOF'
+get_update_banner() {
+  cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -80,8 +80,8 @@ get_update_banner(){
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 }
-get_clean_banner(){
-  cat <<'EOF'
+get_clean_banner() {
+  cat << 'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
@@ -93,20 +93,20 @@ EOF
 
 # Print predefined banner
 # Usage: print_named_banner "update"|"clean" [title]
-print_named_banner(){
+print_named_banner() {
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in
-  update) banner=$(get_update_banner) ;;
-  clean) banner=$(get_clean_banner) ;;
-  *) die "Unknown banner name: $name" ;;
+    update) banner=$(get_update_banner) ;;
+    clean) banner=$(get_clean_banner) ;;
+    *) die "Unknown banner name: $name" ;;
   esac
   print_banner "$banner" "$title"
 }
 
 #============ Build Environment Setup ============
 # Setup optimized build environment for Arch Linux
-setup_build_env(){
-  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
+setup_build_env() {
+  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &> /dev/null
   # Rust optimization flags
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
   # C/C++ optimization flags
@@ -119,7 +119,7 @@ setup_build_env(){
   export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1
   # Parallel build settings
   local nproc_count
-  nproc_count=$(nproc 2>/dev/null || echo 4)
+  nproc_count=$(nproc 2> /dev/null || echo 4)
   export MAKEFLAGS="-j${nproc_count}"
   export NINJAFLAGS="-j${nproc_count}"
 
@@ -138,35 +138,35 @@ setup_build_env(){
   fi
 
   # Initialize dbus if available
-  has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
+  has dbus-launch && eval "$(dbus-launch 2> /dev/null || :)"
 }
 
 #============ System Maintenance Functions ============
 # Run system maintenance commands safely
-run_system_maintenance(){
+run_system_maintenance() {
   local cmd=$1
   shift
   local args=("$@")
   has "$cmd" || return 0
   case "$cmd" in
-  modprobed-db) "$cmd" store &>/dev/null || : ;;
-  hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
-  mandb) sudo "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;;
-  *) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
+    modprobed-db) "$cmd" store &> /dev/null || : ;;
+    hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &> /dev/null || : ;;
+    mandb) sudo "$cmd" -q &> /dev/null || mandb -q &> /dev/null || : ;;
+    *) sudo "$cmd" "${args[@]}" &> /dev/null || : ;;
   esac
 }
 
 #============ Disk Usage Helpers ============
 # Capture current disk usage
-capture_disk_usage(){
+capture_disk_usage() {
   local var_name=$1
   local -n ref="$var_name"
-  ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
+  ref=$(df -h --output=used,pcent / 2> /dev/null | awk 'NR==2{print $1, $2}')
 }
 
 #============ File Finding Helpers ============
 # Use fd if available, fallback to find
-find_files(){
+find_files() {
   if has fd; then
     fd -H "$@"
   else
@@ -175,7 +175,7 @@ find_files(){
 }
 
 # NUL-safe finder using fd/fdf/find
-find0(){
+find0() {
   local root="$1"
   shift
   if has fdf; then
@@ -192,7 +192,7 @@ find0(){
 # Cache result to avoid repeated checks
 _PKG_MGR_CACHED=""
 _AUR_OPTS_CACHED=()
-detect_pkg_manager(){
+detect_pkg_manager() {
   # Return cached result if available
   if [[ -n $_PKG_MGR_CACHED ]]; then
     printf '%s\n' "$_PKG_MGR_CACHED"
@@ -216,24 +216,24 @@ detect_pkg_manager(){
 }
 
 # Get package manager name only (without options)
-get_pkg_manager(){
+get_pkg_manager() {
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
+    detect_pkg_manager > /dev/null
   fi
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
 
 # Get AUR options for the detected package manager
-get_aur_opts(){
+get_aur_opts() {
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
+    detect_pkg_manager > /dev/null
   fi
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
 
 #============ SQLite Maintenance ============
 # Vacuum a single SQLite database and return bytes saved
-vacuum_sqlite(){
+vacuum_sqlite() {
   local db=$1 s_old s_new
   [[ -f $db ]] || {
     printf '0\n'
@@ -246,24 +246,24 @@ vacuum_sqlite(){
   }
   # Validate it's actually a SQLite database file
   # Use fixed-string grep (-F) for faster literal matching
-  if ! head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3'; then
+  if ! head -c 16 "$db" 2> /dev/null | grep -qF -- 'SQLite format 3'; then
     printf '0\n'
     return
   fi
-  s_old=$(stat -c%s "$db" 2>/dev/null) || {
+  s_old=$(stat -c%s "$db" 2> /dev/null) || {
     printf '0\n'
     return
   }
   # VACUUM already rebuilds indices, making REINDEX redundant
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || {
+  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &> /dev/null || {
     printf '0\n'
     return
   }
-  s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
+  s_new=$(stat -c%s "$db" 2> /dev/null) || s_new=$s_old
   printf '%d\n' "$((s_old - s_new))"
 }
 # Clean SQLite databases in current working directory
-clean_sqlite_dbs(){
+clean_sqlite_dbs() {
   local total=0 db saved
   # Batch file type checks to reduce subprocess calls
   while IFS= read -r -d '' db; do
@@ -277,38 +277,38 @@ clean_sqlite_dbs(){
 
 #============ Process Management ============
 # Wait for processes to exit, kill if timeout
-ensure_not_running_any(){
+ensure_not_running_any() {
   local timeout=6 p
   # Optimized: Use single pgrep with pattern instead of multiple calls
   local pattern=$(printf '%s|' "$@")
   pattern=${pattern%|}
 
   # Quick check if any processes are running
-  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
+  pgrep -x -u "$USER" -f "$pattern" &> /dev/null || return
 
   # Show waiting message for found processes
   for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
+    pgrep -x -u "$USER" "$p" &> /dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
   done
 
   # Single wait loop checking all processes with one pgrep call
   local wait_time=$timeout
   while ((wait_time-- > 0)); do
-    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
+    pgrep -x -u "$USER" -f "$pattern" &> /dev/null || return
     sleep 1
   done
 
   # Kill any remaining processes (single pkill call)
-  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null; then
+  if pgrep -x -u "$USER" -f "$pattern" &> /dev/null; then
     printf '  %s\n' "${RED}Killing remaining processes...${DEF}"
-    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
+    pkill -KILL -x -u "$USER" -f "$pattern" &> /dev/null || :
     sleep 1
   fi
 }
 
 #============ Browser Profile Detection ============
 # Firefox-family profile discovery
-foxdir(){
+foxdir() {
   local base=$1 p
   [[ -d $base ]] || return 1
   if [[ -f $base/installs.ini ]]; then
@@ -329,7 +329,7 @@ foxdir(){
 }
 
 # List all Mozilla profiles in a base directory
-mozilla_profiles(){
+mozilla_profiles() {
   local base=$1 p
   declare -A seen
   [[ -d $base ]] || return 0
@@ -354,24 +354,24 @@ mozilla_profiles(){
 }
 
 # Chromium roots (native/flatpak/snap)
-chrome_roots_for(){
+chrome_roots_for() {
   case "$1" in
-  chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
-  chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
-  brave) printf '%s\n' "$HOME/.config/BraveSoftware/Brave-Browser" "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser" "$HOME/snap/brave/current/.config/BraveSoftware/Brave-Browser" ;;
-  opera) printf '%s\n' "$HOME/.config/opera" "$HOME/.config/opera-beta" "$HOME/.config/opera-developer" ;;
-  *) : ;;
+    chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
+    chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
+    brave) printf '%s\n' "$HOME/.config/BraveSoftware/Brave-Browser" "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser" "$HOME/snap/brave/current/.config/BraveSoftware/Brave-Browser" ;;
+    opera) printf '%s\n' "$HOME/.config/opera" "$HOME/.config/opera-beta" "$HOME/.config/opera-developer" ;;
+    *) : ;;
   esac
 }
 # List Default + Profile * dirs under a Chromium root
-chrome_profiles(){
+chrome_profiles() {
   local root=$1 d
   for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
 }
 
 #============ Path Cleaning Helpers ============
 # Helper to expand wildcard paths safely
-_expand_wildcards(){
+_expand_wildcards() {
   local path=$1
   local -n result_ref="$2"
   if [[ $path == *\** ]]; then
@@ -393,7 +393,7 @@ _expand_wildcards(){
 # Usage: get_download_tool [--no-aria2]
 _DOWNLOAD_TOOL_CACHED=""
 # shellcheck disable=SC2120
-get_download_tool(){
+get_download_tool() {
   local skip_aria2=0
   [[ ${1:-} == --no-aria2 ]] && skip_aria2=1
   # Return cached if available and aria2 not being skipped
@@ -418,22 +418,22 @@ get_download_tool(){
 }
 # Download a file using best available tool
 # Usage: download_file <url> <output_path>
-download_file(){
+download_file() {
   local url=$1 output=$2 tool
   # shellcheck disable=SC2119
   tool=$(get_download_tool) || return 1
   case $tool in
-  aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "${output%/*}" -o "${output##*/}" "$url" ;;
-  curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;;
-  wget2) wget2 -q -O "$output" "$url" ;;
-  wget) wget -qO "$output" "$url" ;;
-  *) return 1 ;;
+    aria2c) aria2c -q --max-tries=3 --retry-wait=1 -d "${output%/*}" -o "${output##*/}" "$url" ;;
+    curl) curl -fsSL --retry 3 --retry-delay 1 "$url" -o "$output" ;;
+    wget2) wget2 -q -O "$output" "$url" ;;
+    wget) wget -qO "$output" "$url" ;;
+    *) return 1 ;;
   esac
 }
 
 # Additional function for archmaint.sh
-cleanup_pacman_lock(){
-  sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
+cleanup_pacman_lock() {
+  sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :
 }
 # ============ End of inlined lib/common.sh ============
 
@@ -445,12 +445,12 @@ ASSUME_YES=0
 MODE=""
 
 # Override log function to respect QUIET
-log(){ ((QUIET)) || xecho "$*"; }
+log() { ((QUIET)) || xecho "$*"; }
 
 #=========== Update Functions ===========
 # Note: run_system_maintenance is now provided by common.sh
 
-update_system_packages(){
+update_system_packages() {
   local pkgmgr aur_opts
   log "🔄${BLU}System update${DEF}"
   # Use cached package manager detection
@@ -461,10 +461,10 @@ update_system_packages(){
   cleanup_pacman_lock
 
   # Update keyring and file databases
-  sudo "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &>/dev/null || :
+  sudo "$pkgmgr" -Sy archlinux-keyring --noconfirm -q &> /dev/null || :
 
   # Update file database only if it doesn't exist
-  [[ -f /var/lib/pacman/sync/core.files ]] || sudo pacman -Fy --noconfirm &>/dev/null || :
+  [[ -f /var/lib/pacman/sync/core.files ]] || sudo pacman -Fy --noconfirm &> /dev/null || :
 
   # Run system updates
   if [[ $pkgmgr == paru ]]; then
@@ -472,33 +472,33 @@ update_system_packages(){
       --bottomup --skipreview --cleanafter --removemake
       --sudoloop --sudo sudo "${aur_opts[@]}")
     log "🔄${BLU}Updating AUR packages with ${pkgmgr}...${DEF}"
-    "$pkgmgr" -Suyy "${args[@]}" &>/dev/null || :
-    "$pkgmgr" -Sua --devel "${args[@]}" &>/dev/null || :
+    "$pkgmgr" -Suyy "${args[@]}" &> /dev/null || :
+    "$pkgmgr" -Sua --devel "${args[@]}" &> /dev/null || :
   else
     log "🔄${BLU}Updating system with pacman...${DEF}"
-    sudo pacman -Suyy --noconfirm --needed &>/dev/null || :
+    sudo pacman -Suyy --noconfirm --needed &> /dev/null || :
   fi
 }
 
-update_with_topgrade(){
+update_with_topgrade() {
   if has topgrade; then
     log "🔄${BLU}Running Topgrade updates...${DEF}"
     local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
     local disable_root=(--disable={config_update,uv,pipx,yazi,micro,system,rustup,cargo,lure,shell})
-    LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${disable_user[@]}" &>/dev/null || :
-    LC_ALL=C sudo topgrade -cy --skip-notify --no-self-update --no-retry "${disable_root[@]}" &>/dev/null || :
+    LC_ALL=C topgrade -cy --skip-notify --no-self-update --no-retry "${disable_user[@]}" &> /dev/null || :
+    LC_ALL=C sudo topgrade -cy --skip-notify --no-self-update --no-retry "${disable_root[@]}" &> /dev/null || :
   fi
 }
 
-update_flatpak(){
+update_flatpak() {
   if has flatpak; then
     log "🔄${BLU}Updating Flatpak...${DEF}"
-    sudo flatpak update -y --noninteractive --appstream &>/dev/null || :
-    sudo flatpak update -y --noninteractive --system --force-remove &>/dev/null || :
+    sudo flatpak update -y --noninteractive --appstream &> /dev/null || :
+    sudo flatpak update -y --noninteractive --system --force-remove &> /dev/null || :
   fi
 }
 
-update_rust(){
+update_rust() {
   if has rustup; then
     log "🔄${BLU}Updating Rust...${DEF}"
     rustup update
@@ -516,7 +516,7 @@ update_rust(){
       done
 
       # Update cargo packages
-      if "${cargo_cmd[@]}" install-update -Vq 2>/dev/null; then
+      if "${cargo_cmd[@]}" install-update -Vq 2> /dev/null; then
         "${cargo_cmd[@]}" install-update -agfq
       fi
       has cargo-syu && "${cargo_cmd[@]}" syu -g
@@ -524,13 +524,13 @@ update_rust(){
   fi
 }
 
-update_editors(){
+update_editors() {
   # Update editor plugins
-  has micro && micro -plugin update &>/dev/null || :
-  has yazi && ya pkg upgrade &>/dev/null || :
+  has micro && micro -plugin update &> /dev/null || :
+  has yazi && ya pkg upgrade &> /dev/null || :
 }
 
-update_shells(){
+update_shells() {
   if has fish; then
     log "🔄${BLU}Updating Fish...${DEF}"
     fish -c "fish_update_completions" || :
@@ -542,8 +542,8 @@ update_shells(){
   fi
 
   # Update basher if installed
-  if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null; then
-    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null; then
+  if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &> /dev/null; then
+    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD > /dev/null; then
       log "✅${GRN}Updated Basher${DEF}"
     else
       log "⚠️${YLW}Basher pull failed${DEF}"
@@ -554,13 +554,13 @@ update_shells(){
   has tldr && sudo tldr -cuq || :
 }
 
-update_python(){
+update_python() {
   if has uv; then
     log "🔄${BLU}Updating UV...${DEF}"
-    uv self update -q &>/dev/null || log "⚠️${YLW}Failed to update UV${DEF}"
+    uv self update -q &> /dev/null || log "⚠️${YLW}Failed to update UV${DEF}"
 
     log "🔄${BLU}Updating UV tools...${DEF}"
-    if uv tool list -q &>/dev/null; then
+    if uv tool list -q &> /dev/null; then
       uv tool upgrade --all -q || log "⚠️${YLW}Failed to update UV tools${DEF}"
     else
       log "✅${GRN}No UV tools installed${DEF}"
@@ -570,19 +570,19 @@ update_python(){
     if has jq; then
       local pkgs
       # Optimize by only calling uv pip list once and parsing efficiently
-      mapfile -t pkgs < <(uv pip list --outdated --format json 2>/dev/null | jq -r '.[].name' 2>/dev/null || :)
+      mapfile -t pkgs < <(uv pip list --outdated --format json 2> /dev/null | jq -r '.[].name' 2> /dev/null || :)
       if [[ ${#pkgs[@]} -gt 0 ]]; then
         # Use array expansion for better argument passing
         uv pip install -Uq --system --no-break-system-packages --compile-bytecode --refresh "${pkgs[@]}" \
-          &>/dev/null || log "⚠️${YLW}Failed to update packages${DEF}"
+          &> /dev/null || log "⚠️${YLW}Failed to update packages${DEF}"
       else
         log "✅${GRN}All Python packages are up to date${DEF}"
       fi
     else
       log "⚠️${YLW}jq not found, using fallback method${DEF}"
       # Optimize by avoiding process substitution when possible
-      uv pip install --upgrade -r <(uv pip list --format freeze) &>/dev/null \
-        || log "⚠️${YLW}Failed to update packages${DEF}"
+      uv pip install --upgrade -r <(uv pip list --format freeze) &> /dev/null ||
+        log "⚠️${YLW}Failed to update packages${DEF}"
     fi
 
     log "🔄${BLU}Updating Python interpreters...${DEF}"
@@ -591,7 +591,7 @@ update_python(){
   fi
 }
 
-update_system_utils(){
+update_system_utils() {
   log "🔄${BLU}Running miscellaneous updates...${DEF}"
   # Pre-filter commands that exist to reduce repeated has() calls
   local cmds=(
@@ -608,14 +608,14 @@ update_system_utils(){
     cmd_args="${cmd#*:}"
     if has "$cmd_name"; then
       if [[ -n $cmd_args ]]; then
-        sudo "$cmd_name" "$cmd_args" &>/dev/null || :
+        sudo "$cmd_name" "$cmd_args" &> /dev/null || :
       else
-        sudo "$cmd_name" &>/dev/null || :
+        sudo "$cmd_name" &> /dev/null || :
       fi
     fi
   done
 
-  has update-leap && LC_ALL=C update-leap &>/dev/null || :
+  has update-leap && LC_ALL=C update-leap &> /dev/null || :
 
   # Update firmware
   if has fwupdmgr; then
@@ -625,13 +625,13 @@ update_system_utils(){
   fi
 }
 
-update_boot(){
+update_boot() {
   log "🔍${BLU}Checking boot configuration...${DEF}"
   # Update systemd-boot if installed
-  if [[ -d /sys/firmware/efi ]] && has bootctl && sudo bootctl is-installed -q &>/dev/null; then
+  if [[ -d /sys/firmware/efi ]] && has bootctl && sudo bootctl is-installed -q &> /dev/null; then
     log "✅${GRN}systemd-boot detected, updating${DEF}"
-    sudo bootctl update -q &>/dev/null
-    sudo bootctl cleanup -q &>/dev/null
+    sudo bootctl update -q &> /dev/null
+    sudo bootctl cleanup -q &> /dev/null
   else
     log "❌${YLW}systemd-boot not present, skipping${DEF}"
   fi
@@ -639,8 +639,8 @@ update_boot(){
   # Update sdboot-manage if available
   if has sdboot-manage; then
     log "🔄${BLU}Updating sdboot-manage...${DEF}"
-    sudo sdboot-manage remove &>/dev/null || :
-    sudo sdboot-manage update &>/dev/null || :
+    sudo sdboot-manage remove &> /dev/null || :
+    sudo sdboot-manage update &> /dev/null || :
   fi
 
   # Update initramfs
@@ -670,11 +670,11 @@ update_boot(){
   fi
 }
 
-run_update(){
+run_update() {
   print_named_banner "update" "Meow (> ^ <)"
   setup_build_env
 
-  checkupdates -dc &>/dev/null || :
+  checkupdates -dc &> /dev/null || :
 
   # Run basic system maintenance
   run_system_maintenance modprobed-db
@@ -699,7 +699,7 @@ run_update(){
 #=========== Clean Functions ===========
 # Note: clean_paths() and clean_with_sudo() are defined in the inlined lib/common.sh above
 
-run_clean(){
+run_clean() {
   print_named_banner "clean"
 
   # Ensure sudo access
@@ -714,7 +714,7 @@ run_clean(){
   # Drop caches
   sync
   log "🔄${BLU}Dropping cache...${DEF}"
-  sudo tee /proc/sys/vm/drop_caches &>/dev/null <<<3
+  sudo tee /proc/sys/vm/drop_caches &> /dev/null <<< 3
 
   # Store and sort modprobed database
   if has modprobed-db; then
@@ -723,66 +723,66 @@ run_clean(){
 
     local db_files=("${HOME}/.config/modprobed.db" "${HOME}/.local/share/modprobed.db")
     for db in "${db_files[@]}"; do
-      [[ -f $db ]] && sort -u "$db" -o "$db" &>/dev/null || :
+      [[ -f $db ]] && sort -u "$db" -o "$db" &> /dev/null || :
     done
   fi
 
   # Network cleanup
   log "🔄${BLU}Flushing network caches...${DEF}"
-  has dhclient && dhclient -r &>/dev/null || :
-  sudo resolvectl flush-caches &>/dev/null || :
+  has dhclient && dhclient -r &> /dev/null || :
+  sudo resolvectl flush-caches &> /dev/null || :
 
   # Package management cleanup
   log "🔄${BLU}Removing orphaned packages...${DEF}"
   # Optimized: Use pacman directly instead of array
   local orphans_list
-  orphans_list=$(pacman -Qdtq 2>/dev/null || :)
+  orphans_list=$(pacman -Qdtq 2> /dev/null || :)
   if [[ -n $orphans_list ]]; then
     # Use xargs to pass arguments efficiently
-    printf '%s\n' "$orphans_list" | xargs -r sudo pacman -Rns --noconfirm &>/dev/null || :
+    printf '%s\n' "$orphans_list" | xargs -r sudo pacman -Rns --noconfirm &> /dev/null || :
   fi
 
   log "🔄${BLU}Cleaning package cache...${DEF}"
-  sudo pacman -Scc --noconfirm &>/dev/null || :
-  sudo paccache -rk0 -q &>/dev/null || :
+  sudo pacman -Scc --noconfirm &> /dev/null || :
+  sudo paccache -rk0 -q &> /dev/null || :
 
   # Python package manager cleanup
   if has uv; then
     log "🔄${BLU}Cleaning UV cache...${DEF}"
-    uv cache prune -q 2>/dev/null || :
-    uv cache clean -q 2>/dev/null || :
+    uv cache prune -q 2> /dev/null || :
+    uv cache clean -q 2> /dev/null || :
   fi
 
   # Cargo/Rust cleanup
   if has cargo-cache; then
     log "🔄${BLU}Cleaning Cargo cache...${DEF}"
-    cargo cache -efg 2>/dev/null || :
-    cargo cache -efg trim --limit 1B 2>/dev/null || :
-    cargo cache -efg clean-unref 2>/dev/null || :
+    cargo cache -efg 2> /dev/null || :
+    cargo cache -efg trim --limit 1B 2> /dev/null || :
+    cargo cache -efg clean-unref 2> /dev/null || :
   fi
 
   # Kill CPU-intensive processes
   log "🔄${BLU}Checking for CPU-intensive processes...${DEF}"
   # Optimized: Use xargs instead of while-read loop for better performance
-  ps aux --sort=-%cpu 2>/dev/null | awk 'NR>1 && $3>50.0 {print $2}' | xargs -r sudo kill -9 &>/dev/null || :
+  ps aux --sort=-%cpu 2> /dev/null | awk 'NR>1 && $3>50.0 {print $2}' | xargs -r sudo kill -9 &> /dev/null || :
 
   # Reset swap
   log "🔄${BLU}Resetting swap space...${DEF}"
-  sudo swapoff -a &>/dev/null || :
-  sudo swapon -a &>/dev/null || :
+  sudo swapoff -a &> /dev/null || :
+  sudo swapon -a &> /dev/null || :
 
   # Clean log files and crash dumps
   log "🔄${BLU}Cleaning logs and crash dumps...${DEF}"
   # Use fd if available, fallback to find - optimize with batch delete
   if has fd; then
-    sudo fd -H -t f -e log -d 4 --changed-before 7d . /var/log -X rm &>/dev/null || :
-    sudo fd -H -t f -p "core.*" -d 2 --changed-before 7d . /var/crash -X rm &>/dev/null || :
+    sudo fd -H -t f -e log -d 4 --changed-before 7d . /var/log -X rm &> /dev/null || :
+    sudo fd -H -t f -p "core.*" -d 2 --changed-before 7d . /var/crash -X rm &> /dev/null || :
   else
     # Use -delete for better performance than -exec rm
-    sudo find /var/log/ -name "*.log" -type f -mtime +7 -delete &>/dev/null || :
-    sudo find /var/crash/ -name "core.*" -type f -mtime +7 -delete &>/dev/null || :
+    sudo find /var/log/ -name "*.log" -type f -mtime +7 -delete &> /dev/null || :
+    sudo find /var/crash/ -name "core.*" -type f -mtime +7 -delete &> /dev/null || :
   fi
-  sudo find /var/cache/apt/ -name "*.bin" -mtime +7 -delete &>/dev/null || :
+  sudo find /var/cache/apt/ -name "*.bin" -mtime +7 -delete &> /dev/null || :
 
   # Clean cache files
   log "🔄${BLU}Cleaning cache files...${DEF}"
@@ -799,27 +799,27 @@ run_clean(){
   # Clean user cache - optimize by using -delete directly with find
   if has fd; then
     # Use fd with batch delete for better performance
-    fd -H -t f -d 4 --changed-before 1d . "${HOME}/.cache" -X rm &>/dev/null || :
-    fd -H -t d -d 4 --changed-before 1d -E "**/.git" . "${HOME}/.cache" -X rmdir &>/dev/null || :
+    fd -H -t f -d 4 --changed-before 1d . "${HOME}/.cache" -X rm &> /dev/null || :
+    fd -H -t d -d 4 --changed-before 1d -E "**/.git" . "${HOME}/.cache" -X rmdir &> /dev/null || :
   else
     # find -delete is more efficient than -exec rm
-    find "${HOME}/.cache" -type f -mtime +1 -delete &>/dev/null || :
-    find "${HOME}/.cache" -type d -empty -delete &>/dev/null || :
+    find "${HOME}/.cache" -type f -mtime +1 -delete &> /dev/null || :
+    find "${HOME}/.cache" -type d -empty -delete &> /dev/null || :
   fi
 
-  sudo systemd-tmpfiles --clean &>/dev/null || :
+  sudo systemd-tmpfiles --clean &> /dev/null || :
 
   # Clean system and user cache directories
   clean_with_sudo "${cache_dirs[@]/%/*}"
 
   # Clean Flatpak application caches
-  clean_paths "${HOME}/.var/app/"*/cache/* 2>/dev/null || :
+  clean_paths "${HOME}/.var/app/"*/cache/* 2> /dev/null || :
 
   # Clean Qt cache files
-  clean_paths "${HOME}/.config/Trolltech.conf" 2>/dev/null || :
+  clean_paths "${HOME}/.config/Trolltech.conf" 2> /dev/null || :
 
   # Rebuild KDE cache if present
-  has kbuildsycoca6 && kbuildsycoca6 --noincremental &>/dev/null || :
+  has kbuildsycoca6 && kbuildsycoca6 --noincremental &> /dev/null || :
 
   # Empty trash directories
   log "🔄${BLU}Emptying trash...${DEF}"
@@ -827,12 +827,12 @@ run_clean(){
     "${HOME}/.local/share/Trash/"
     "/root/.local/share/Trash/"
   )
-  clean_paths "${trash_dirs[@]/%/*}" 2>/dev/null || :
+  clean_paths "${trash_dirs[@]/%/*}" 2> /dev/null || :
 
   # Flatpak cleanup
   if has flatpak; then
     log "🔄${BLU}Cleaning Flatpak...${DEF}"
-    flatpak uninstall --unused --delete-data -y --noninteractive &>/dev/null || :
+    flatpak uninstall --unused --delete-data -y --noninteractive &> /dev/null || :
 
     # Clean flatpak caches
     local flatpak_dirs=(
@@ -841,17 +841,17 @@ run_clean(){
       "${HOME}/.local/share/flatpak/system-cache/"
       "${HOME}/.var/app/*/data/Trash/"
     )
-    clean_paths "${flatpak_dirs[@]}" 2>/dev/null || :
+    clean_paths "${flatpak_dirs[@]}" 2> /dev/null || :
   fi
 
   # Clear thumbnails
-  clean_paths "${HOME}/.thumbnails/" 2>/dev/null || :
+  clean_paths "${HOME}/.thumbnails/" 2> /dev/null || :
 
   # Clean system logs
   log "🔄${BLU}Cleaning system logs...${DEF}"
-  sudo rm -f --preserve-root -- /var/log/pacman.log &>/dev/null || :
-  sudo journalctl --rotate --vacuum-size=1 --flush --sync -q &>/dev/null || :
-  clean_with_sudo /run/log/journal/* /var/log/journal/* /root/.local/share/zeitgeist/* /home/*/.local/share/zeitgeist/* 2>/dev/null || :
+  sudo rm -f --preserve-root -- /var/log/pacman.log &> /dev/null || :
+  sudo journalctl --rotate --vacuum-size=1 --flush --sync -q &> /dev/null || :
+  clean_with_sudo /run/log/journal/* /var/log/journal/* /root/.local/share/zeitgeist/* /home/*/.local/share/zeitgeist/* 2> /dev/null || :
 
   # Clean history files
   log "🔄${BLU}Cleaning history files...${DEF}"
@@ -876,8 +876,8 @@ run_clean(){
     "/root/.history"
   )
 
-  clean_paths "${history_files[@]}" 2>/dev/null || :
-  clean_with_sudo "${root_history_files[@]}" 2>/dev/null || :
+  clean_paths "${history_files[@]}" 2> /dev/null || :
+  clean_with_sudo "${root_history_files[@]}" 2> /dev/null || :
 
   # Application-specific cleanups
   log "🔄${BLU}Cleaning application caches...${DEF}"
@@ -888,7 +888,7 @@ run_clean(){
     "${HOME}/.var/app/org.libreoffice.LibreOffice/config/libreoffice/4/user/registrymodifications.xcu"
     "${HOME}/snap/libreoffice/*/.config/libreoffice/4/user/registrymodifications.xcu"
   )
-  clean_paths "${libreoffice_paths[@]}" 2>/dev/null || :
+  clean_paths "${libreoffice_paths[@]}" 2> /dev/null || :
 
   # Steam
   local steam_paths=(
@@ -898,19 +898,19 @@ run_clean(){
     "${HOME}/.var/app/com.valvesoftware.Steam/cache/"
     "${HOME}/.var/app/com.valvesoftware.Steam/data/Steam/appcache/"
   )
-  clean_paths "${steam_paths[@]/%/*}" 2>/dev/null || :
+  clean_paths "${steam_paths[@]/%/*}" 2> /dev/null || :
 
   # Optimized: Run independent cleanup tasks in parallel for better performance
   log "🔄${BLU}Cleaning applications (parallel)...${DEF}"
 
   # NVIDIA cleanup (background)
-  { sudo rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &>/dev/null || :; } &
+  { sudo rm -rf --preserve-root -- "${HOME}/.nv/ComputeCache/"* &> /dev/null || :; } &
 
   # Python history (background)
   {
     local python_history="${HOME}/.python_history"
-    [[ ! -f $python_history ]] && { touch "$python_history" 2>/dev/null || :; }
-    sudo chattr +i "$(realpath "$python_history")" &>/dev/null || :
+    [[ ! -f $python_history ]] && { touch "$python_history" 2> /dev/null || :; }
+    sudo chattr +i "$(realpath "$python_history")" &> /dev/null || :
   } &
 
   # Firefox cleanup (background)
@@ -924,10 +924,10 @@ run_clean(){
       "${HOME}/.var/app/org.mozilla.firefox/cache/"
       "${HOME}/snap/firefox/common/.cache/"
     )
-    clean_paths "${firefox_paths[@]}" 2>/dev/null || :
+    clean_paths "${firefox_paths[@]}" 2> /dev/null || :
     # Firefox crashes cleanup using find (no Python overhead)
-    [[ -d "${HOME}/.mozilla/firefox" ]] \
-      && find "${HOME}/.mozilla/firefox" -type d -name 'crashes' -exec find {} -type f -delete \; 2>/dev/null || :
+    [[ -d "${HOME}/.mozilla/firefox" ]] &&
+      find "${HOME}/.mozilla/firefox" -type d -name 'crashes' -exec find {} -type f -delete \; 2> /dev/null || :
   } &
 
   # Wine cleanup (background)
@@ -937,7 +937,7 @@ run_clean(){
       "${HOME}/.cache/wine/"
       "${HOME}/.cache/winetricks/"
     )
-    clean_paths "${wine_paths[@]/%/*}" 2>/dev/null || :
+    clean_paths "${wine_paths[@]/%/*}" 2> /dev/null || :
   } &
 
   # GTK recent files (background)
@@ -948,7 +948,7 @@ run_clean(){
       "${HOME}/snap/*/*/.local/share/recently-used.xbel"
       "${HOME}/.var/app/*/data/recently-used.xbel"
     )
-    clean_paths "${gtk_paths[@]}" 2>/dev/null || :
+    clean_paths "${gtk_paths[@]}" 2> /dev/null || :
   } &
 
   # KDE recent files (background)
@@ -959,7 +959,7 @@ run_clean(){
       "${HOME}/.kde4/share/apps/RecentDocuments/*.desktop"
       "${HOME}/.var/app/*/data/*.desktop"
     )
-    clean_paths "${kde_paths[@]}" 2>/dev/null || :
+    clean_paths "${kde_paths[@]}" 2> /dev/null || :
   } &
 
   # Wait for all parallel cleanup tasks to complete
@@ -967,28 +967,28 @@ run_clean(){
 
   # Trim disks
   log "🔄${BLU}Trimming disks...${DEF}"
-  sudo fstrim -a --quiet-unsupported &>/dev/null || :
-  sudo fstrim -A --quiet-unsupported &>/dev/null || :
+  sudo fstrim -a --quiet-unsupported &> /dev/null || :
+  sudo fstrim -A --quiet-unsupported &> /dev/null || :
 
   # Rebuild font cache
   log "🔄${BLU}Rebuilding font cache...${DEF}"
-  sudo fc-cache -f &>/dev/null || :
+  sudo fc-cache -f &> /dev/null || :
 
   # SDK cleanup
-  has sdk && sdk flush tmp &>/dev/null || :
+  has sdk && sdk flush tmp &> /dev/null || :
 
   # BleachBit if available
   if has bleachbit; then
     log "🔄${BLU}Running BleachBit...${DEF}"
-    LC_ALL=C LANG=C bleachbit -c --preset &>/dev/null || :
+    LC_ALL=C LANG=C bleachbit -c --preset &> /dev/null || :
 
     # Run with elevated privileges if possible
     if has xhost; then
-      xhost si:localuser:root &>/dev/null || :
-      xhost si:localuser:"$USER" &>/dev/null || :
-      LC_ALL=C LANG=C sudo bleachbit -c --preset &>/dev/null || :
+      xhost si:localuser:root &> /dev/null || :
+      xhost si:localuser:"$USER" &> /dev/null || :
+      LC_ALL=C LANG=C sudo bleachbit -c --preset &> /dev/null || :
     elif has pkexec; then
-      LC_ALL=C LANG=C pkexec bleachbit -c --preset &>/dev/null || :
+      LC_ALL=C LANG=C pkexec bleachbit -c --preset &> /dev/null || :
     else
       log "⚠️${YLW}Cannot run BleachBit with elevated privileges${DEF}"
     fi
@@ -1004,7 +1004,7 @@ run_clean(){
 
 #=========== Traps & Cleanup ===========
 # Enhanced cleanup for archmaint
-cleanup_archmaint(){
+cleanup_archmaint() {
   cleanup_pacman_lock
   # Reset environment variables
   unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
@@ -1015,8 +1015,8 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 #=========== CLI Interface =============
-show_usage(){
-  cat <<EOF
+show_usage() {
+  cat << EOF
 Usage: ${0##*/} [OPTIONS] COMMAND
 
 Arch Linux system maintenance script for updating and cleaning.
@@ -1040,22 +1040,22 @@ Examples:
 EOF
 }
 
-parse_args(){
+parse_args() {
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
-    -h | --help)
-      show_usage exit 0
-      ;;
-    -q | --quiet) QUIET=1 shift ;;
-    -v | --verbose) VERBOSE=1 shift ;;
-    -y | --yes) ASSUME_YES=1 shift ;;
-    -n | --dry-run) DRYRUN=1 shift ;;
-    update | clean)
-      [[ -n $MODE ]] && die "Cannot specify multiple commands: $MODE and $1"
-      MODE=$1 shift
-      ;;
-    *) die "Unknown option: $1\nUse --help for usage information." ;;
+      -h | --help)
+        show_usage exit 0
+        ;;
+      -q | --quiet) QUIET=1 shift ;;
+      -v | --verbose) VERBOSE=1 shift ;;
+      -y | --yes) ASSUME_YES=1 shift ;;
+      -n | --dry-run) DRYRUN=1 shift ;;
+      update | clean)
+        [[ -n $MODE ]] && die "Cannot specify multiple commands: $MODE and $1"
+        MODE=$1 shift
+        ;;
+      *) die "Unknown option: $1\nUse --help for usage information." ;;
     esac
   done
   # Validate command
@@ -1065,15 +1065,15 @@ parse_args(){
 }
 
 #=========== Main Function =============
-main(){
+main() {
   parse_args "$@"
   if [[ $DRYRUN -eq 1 ]]; then
     log "${YLW}Running in dry-run mode. No changes will be made.${DEF}"
   fi
   case "$MODE" in
-  update) run_update ;;
-  clean) run_clean ;;
-  *) die "Unknown command: $MODE" ;;
+    update) run_update ;;
+    clean) run_clean ;;
+    *) die "Unknown command: $MODE" ;;
   esac
 }
 main "$@"

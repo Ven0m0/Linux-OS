@@ -5,7 +5,7 @@ LC_ALL=C LANG=C
 # WARNING: These tweaks are extremely aggressive and may cause instability.
 # For a safer, optimized subset, use: ./android-optimize.sh experimental
 
-start(){
+start() {
   echo "Starting aggressive cleanup (on-device)..."
   # Run loops directly on device to avoid ADB latency overhead (1 call vs 1000+)
   adb shell '
@@ -16,12 +16,12 @@ start(){
   '
 }
 
-tweaks(){
+tweaks() {
   echo -e "Applying Tweaks ..."
 
   # Batch all adb shell commands for massive performance improvement
   # This reduces 1100+ separate ADB connections to just 1
-  adb shell <<'TWEAKS_EOF'
+  adb shell << 'TWEAKS_EOF'
 device_config put runtime_native_boot pin_camera false
 device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
 device_config put launcher enable_quick_launch_v2 true
@@ -1128,8 +1128,8 @@ TWEAKS_EOF
 
   # Handle metadata indexing optimization separately
   while IFS= read -r d; do
-    adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore" 2>/dev/null || :
-  done < <(adb shell ls -a sdcard 2>/dev/null)
+    adb shell touch "sdcard/$d/.metadata_never_index" "sdcard/$d/.noindex" "sdcard/$d/.trackerignore" 2> /dev/null || :
+  done < <(adb shell ls -a sdcard 2> /dev/null)
 
   echo -e "ALL DONE!"
   echo -e ""

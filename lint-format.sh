@@ -575,12 +575,10 @@ process_web() {
     fi
 
     local -i errors=0
-    for file in "${js_files[@]}"; do
-      if ! eslint "$file" &> /dev/null; then
-        ((errors++))
-        ERROR_FILES+=("$file")
-      fi
-    done
+    if ! eslint "${js_files[@]}" &> /dev/null; then
+      warn "  eslint found issues in one or more files."
+      ((errors++))
+    fi
     COMMANDS_RUN+=("eslint --fix <file>")
     ((TOTAL_ERRORS += errors))
   fi

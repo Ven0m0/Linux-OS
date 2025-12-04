@@ -418,12 +418,10 @@ process_markdown() {
     fi
 
     local -i errors=0
-    for file in "${files[@]}"; do
-      if ! markdownlint "$file" &> /dev/null; then
-        ((errors++))
-        ERROR_FILES+=("$file")
-      fi
-    done
+    if ! markdownlint "${files[@]}" &> /dev/null; then
+      warn "  markdownlint found issues in one or more files."
+      ((errors++))
+    fi
     COMMANDS_RUN+=("markdownlint --fix <file>")
     ((TOTAL_ERRORS += errors))
     ((errors > 0)) && warn "  Found $errors files with markdownlint errors"

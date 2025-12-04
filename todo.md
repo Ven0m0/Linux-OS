@@ -1,9 +1,9 @@
 Todo: check out these links
 
-- <https://github.com/sharkdp/config-files>
-- <https://github.com/Naheel-Azawy/fmz>
-- <https://www.commandlinefu.com/commands/browse>
-- [Shell-ng](https://github.com/joknarf/shell-ng)
+- https://github.com/sharkdp/config-files
+- https://github.com/Naheel-Azawy/fmz
+- https://www.commandlinefu.com/commands/browse
+- https://github.com/joknarf/shell-ng
 - https://dotfiles.github.io/tips
 - https://hub.docker.com/search?q
 - https://apps.kde.org

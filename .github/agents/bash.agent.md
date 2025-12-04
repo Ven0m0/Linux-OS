@@ -2,6 +2,9 @@
 applyTo: "**/*.{sh,bash}"
 name: bash-optimizer
 description: Repository agent to maintain, lint, format all code files in the repository
+mode: agent
+modelParameters:
+  temperature: 0.8
 tools: ['changes', 'codebase', 'edit/editFiles', 'extensions', 'fetch', 'githubRepo', 'openSimpleBrowser', 'problems', 'runTasks', 'search', 'searchResults', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'vscodeAPI', 'github', 'microsoft.docs.mcp']
 ---
 

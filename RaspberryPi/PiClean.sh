@@ -1,13 +1,78 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-21 - Applied bash optimization techniques
-#──────────── Setup ────────────────────
 
-# Source shared libraries
-SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
-# shellcheck source=lib/core.sh
-source "$SCRIPT_DIR/../lib/core.sh"
-# shellcheck source=lib/debian.sh
-source "$SCRIPT_DIR/../lib/debian.sh"
+set -euo pipefail
+shopt -s nullglob globstar extglob
+IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
+export DEBIAN_FRONTEND=noninteractive
+
+# Core helper functions
+has() { command -v -- "$1" &> /dev/null; }
+
+# DietPi functions
+load_dietpi_globals() {
+  [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :
+}
+
+run_dietpi_cleanup() {
+  if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
+    if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then
+      printf '%s\n' "dietpi-update failed (both standard and fallback commands)." >&2
+    fi
+    sudo /boot/dietpi/func/dietpi-logclear 2 2> /dev/null || G_SUDO dietpi-logclear 2 2> /dev/null || :
+    sudo /boot/dietpi/func/dietpi-cleaner 2 2> /dev/null || G_SUDO dietpi-cleaner 2 2> /dev/null || :
+  fi
+}
+
+# APT functions
+clean_apt_cache() {
+  sudo apt-get clean -y 2> /dev/null || :
+  sudo apt-get autoclean -y 2> /dev/null || :
+  sudo apt-get autoremove --purge -y 2> /dev/null || :
+}
+
+# System cleanup functions
+clean_cache_dirs() {
+  sudo rm -rf /tmp/* 2> /dev/null || :
+  sudo rm -rf /var/tmp/* 2> /dev/null || :
+  sudo rm -rf /var/cache/apt/archives/* 2> /dev/null || :
+  rm -rf ~/.cache/* 2> /dev/null || :
+  sudo rm -rf /root/.cache/* 2> /dev/null || :
+  rm -rf ~/.thumbnails/* 2> /dev/null || :
+  rm -rf ~/.cache/thumbnails/* 2> /dev/null || :
+}
+
+clean_trash() {
+  rm -rf ~/.local/share/Trash/* 2> /dev/null || :
+  sudo rm -rf /root/.local/share/Trash/* 2> /dev/null || :
+  rm -rf ~/snap/*/*/.local/share/Trash/* 2> /dev/null || :
+  rm -rf ~/.var/app/*/data/Trash/* 2> /dev/null || :
+}
+
+clean_crash_dumps() {
+  if has coredumpctl; then
+    sudo coredumpctl --quiet --no-legend clean 2> /dev/null || :
+  fi
+  sudo rm -rf /var/crash/* 2> /dev/null || :
+  sudo rm -rf /var/lib/systemd/coredump/* 2> /dev/null || :
+}
+
+clean_history_files() {
+  rm -f ~/.python_history 2> /dev/null || :
+  sudo rm -f /root/.python_history 2> /dev/null || :
+  rm -f ~/.bash_history 2> /dev/null || :
+  sudo rm -f /root/.bash_history 2> /dev/null || :
+  history -c 2> /dev/null || :
+}
+
+clean_journal_logs() {
+  sudo journalctl --rotate --vacuum-size=1 --flush --sync -q 2> /dev/null || :
+  sudo rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2> /dev/null || :
+  sudo systemd-tmpfiles --clean 2> /dev/null || :
+}
+
+#──────────── Setup ────────────────────
 load_dietpi_globals
 sync
 #─────────────────────────────────────────────────────────────
@@ -15,10 +80,10 @@ sync
 printf '%s\n' '
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗     ███████╗ ██████╗██████╗ ██╗██████╗ ████████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝     ██╔════╝██╔════╝██╔══██╗██║██╔══██╗╚══██╔══╝
-██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗    ███████╗██║     ██████╔╝██║██████╔╝   ██║   
-██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║    ╚════██║██║     ██╔══██╗██║██╔═══╝    ██║   
-╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝    ███████║╚██████╗██║  ██║██║██║        ██║   
- ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝   
+██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗    ███████╗██║     ██████╔╝██║██████╔╝   ██║
+██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║    ╚════██║██║     ██╔══██╗██║██╔═══╝    ██║
+╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝    ███████║╚██████╗██║  ██║██║██║        ██║
+ ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝╚═╝        ╚═╝
 '
 
 printf '%s\n' "Cleaning apt cache"

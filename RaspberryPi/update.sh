@@ -1,19 +1,38 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-19 - Applied bash optimization techniques
 
-# Source shared libraries
-SCRIPT_DIR="${BASH_SOURCE[0]%/*}"
-[[ $SCRIPT_DIR == "${BASH_SOURCE[0]}" ]] && SCRIPT_DIR="."
-# shellcheck source=lib/core.sh
-source "$SCRIPT_DIR/../lib/core.sh"
-# shellcheck source=lib/debian.sh
-source "$SCRIPT_DIR/../lib/debian.sh"
+set -euo pipefail
+shopt -s nullglob globstar extglob
+IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
+export DEBIAN_FRONTEND=noninteractive
 
-export PRUNE_MODULES=1 SKIP_VCLIBS=1
+# Colors (trans flag palette)
+LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m'
+export LBLU PNK BWHT DEF
 
-# Initialize working directory
-cd "$SCRIPT_DIR" || die "Failed to change to working directory: $SCRIPT_DIR"
-SCRIPT_DIR="$PWD"
+# Core helper functions
+has() { command -v -- "$1" &> /dev/null; }
+
+# DietPi functions
+load_dietpi_globals() {
+  [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :
+}
+
+# APT functions
+clean_apt_cache() {
+  sudo apt-get clean -y 2> /dev/null || :
+  sudo apt-get autoclean -y 2> /dev/null || :
+  sudo apt-get autoremove --purge -y 2> /dev/null || :
+}
+
+run_apt() {
+  sudo apt-get -y --allow-releaseinfo-change \
+    -o Acquire::Languages=none \
+    -o APT::Get::Fix-Missing=true \
+    -o APT::Get::Fix-Broken=true \
+    "$@"
+}
 
 # Display colorized banner with gradient effect
 display_banner() {
@@ -35,6 +54,8 @@ display_banner() {
     done
   fi
 }
+
+export PRUNE_MODULES=1 SKIP_VCLIBS=1
 
 #============ Banner ====================
 banner=$(

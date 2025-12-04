@@ -3,10 +3,19 @@
 # Refactored version with improved structure and maintainability
 # Removes unnecessary packages and disables telemetry services
 
-# Source shared libraries
-SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
-# shellcheck source=lib/core.sh
-source "$SCRIPT_DIR/../lib/core.sh"
+set -euo pipefail
+shopt -s nullglob globstar extglob
+IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
+
+# Colors (trans flag palette)
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
+export RED GRN YLW DEF
+
+# Core helper functions
+has() { command -v -- "$1" &> /dev/null; }
+xecho() { printf '%b\n' "$*"; }
+msg() { printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 
 sudo -v
 
@@ -51,6 +60,7 @@ debloat_arch() {
     sudo ufw logging off 2> /dev/null || :
   fi
 }
+
 # --- Debian-based Debloat ---
 debloat_debian() {
   msg "## Debloating Debian-based system..."
@@ -79,6 +89,7 @@ debloat_debian() {
   sudo apt-get autoclean -y
   sudo apt-get autoremove -y --purge
 }
+
 debloat_linux() {
   umask 077
 }

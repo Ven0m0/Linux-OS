@@ -15,11 +15,6 @@
 
 ```
 /
-├── lib/                    # Core shared libraries
-│   ├── core.sh            # Shell settings, colors, logging, helpers
-│   ├── arch.sh            # Arch-specific utilities
-│   ├── debian.sh          # Debian-specific utilities
-│   └── browser.sh         # Browser configuration helpers
 ├── Cachyos/               # Arch/CachyOS-focused scripts
 │   ├── Scripts/           # AIO installers (curlable entrypoints)
 │   │   ├── Install.sh     # Automated package installation
@@ -28,8 +23,7 @@
 │   │   └── fstab-tune.sh  # Filesystem optimization
 │   ├── Rust/              # Rust toolchain management
 │   │   ├── rustbuild.sh   # Rust compilation helpers
-│   │   ├── rustify.sh     # Rust optimization scripts
-│   │   └── Strip-rust.sh  # Rust binary stripping
+│   │   └── rustify.sh     # Rust optimization & binary stripping
 │   ├── Firefox/           # Firefox patch sets
 │   ├── LLM/               # LLM-related configurations
 │   ├── Updates.sh         # System update orchestrator
@@ -41,17 +35,13 @@
 ├── RaspberryPi/           # Raspberry Pi specific scripts
 │   ├── Scripts/           # Pi automation
 │   │   ├── Setup.sh       # Initial Pi setup
-│   │   ├── Housekeep.sh   # Maintenance tasks
 │   │   ├── Kbuild.sh      # Kernel building
-│   │   ├── docker.sh      # Docker setup
-│   │   ├── podman.sh      # Podman setup
+│   │   ├── podman-docker.sh  # Podman/Docker setup
 │   │   └── Nextcloud/     # Nextcloud deployment
 │   ├── raspi-f2fs.sh      # F2FS imaging orchestrator
 │   ├── update.sh          # Pi update script
-│   ├── forward.sh         # Port forwarding
 │   ├── PiClean.sh         # Pi cleanup
 │   └── dots/              # Dotfiles and configs
-├── Linux-Settings/        # Reference configs (compiler, kernel, shell)
 ├── .github/               # GitHub configuration
 │   ├── workflows/         # CI/CD workflows
 │   ├── instructions/      # AI assistant instructions
@@ -119,21 +109,17 @@ Always quote variables unless intentional glob/split.
 | JSON | `jaq` | `jq` |
 | Parallel | `rust-parallel` | `parallel`→`xargs -r -P$(nproc)` |
 
-## Core Library (`lib/core.sh`)
+## Script Architecture
 
-### Key Functions
+Scripts are **standalone** with inlined helper functions (no shared lib/). Common patterns include:
+
+### Core Helper Functions
 - **has()** - Check if command exists
-- **hasname()** - Get command path name
 - **xecho()** - Echo with formatting
 - **log()/msg()/warn()/err()/die()** - Logging hierarchy
 - **dbg()** - Debug logging (enabled by `DEBUG=1`)
 - **confirm()** - User confirmation prompt
-- **print_banner()** - Trans flag gradient banner
-- **find_files()/find0()** - File finding with fallbacks
-- **clean_paths()/clean_with_sudo()** - Safe path removal
-- **get_download_tool()** - Detect best download tool
-- **download_file()** - Download with retry logic
-- **capture_disk_usage()** - Disk usage tracking
+- **pm_detect()** - Package manager detection
 
 ### Color Palette (Trans Flag)
 ```bash
@@ -374,13 +360,6 @@ Located in `.shellcheckrc`:
 
 ## Common Patterns
 
-### Source lib/core.sh
-```bash
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-# shellcheck source=lib/core.sh
-source "${SCRIPT_DIR}/../lib/core.sh" || exit 1
-```
-
 ### Locking
 ```bash
 lock(){
@@ -432,7 +411,7 @@ Kernel building automation for Raspberry Pi with optimized flags.
 2. **Loose Coupling:** Minimize dependencies between components
 3. **Early Returns:** Exit fast on errors or edge cases
 4. **Avoid Over-Abstraction:** Don't generalize prematurely
-5. **Eliminate Duplication:** Reuse helpers from `lib/core.sh` and `Shell-book.md`
+5. **Eliminate Duplication:** Reuse patterns from script template and `Shell-book.md`
 6. **Clear Intent:** Code should be self-documenting; comment only for "why" not "what"
 
 ## References

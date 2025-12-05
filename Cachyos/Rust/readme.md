@@ -49,15 +49,7 @@ Installs Rust replacements for GNU utilities and system tools, including:
 
 **Warning:** This script makes system-wide changes. Review before running.
 
-### Strip-rust.sh
-
-**Simple utility to strip Rust binaries**
-
-Strips symbols from all Rust binaries in `~/.cargo/bin/` to reduce file size.
-
-```bash
-./Strip-rust.sh
-```
+**Note:** rustify.sh includes binary stripping functionality with `strip -sx` to reduce file sizes.
 
 ## Documentation
 

@@ -53,7 +53,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Script
 <summary><b>Miscellaneous scripts</b></summary>
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/Strip-rust.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rust/rustify.sh | bash
 
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/debloat.sh | bash
 ```

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Optimized: 2025-11-21 - Applied bash optimization techniques
-set -euo pipefail; shopt -s nullglob globstar execfail
-IFS=$'\n\t' LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
+set -euo pipefail; shopt -s nullglob globstar extglob; IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
+cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd -P)" || exit 1
 
-sudo apt-get update -y
+yes | sudo apt-get update -y --fix-missing
+yes | sudo apt-get upgrade -y
 
 setup-podman(){
   sudo apt-get install -y podman podman-docker
@@ -49,7 +50,7 @@ EOF
     printf 'warning: docker CLI not found; podman-docker package likely failed to install\n' >&2
   fi
   export DOCKER_HOST=unix:///run/podman/podman.sock
-  # final: friendly status lines (concise)
+  # final: friendly status lines
   printf 'podman.socket: %s\n' "$(systemctl is-active podman.socket 2> /dev/null || echo inactive)"
   printf 'docker.service: %s\n' "$(systemctl is-active docker.service 2> /dev/null || echo inactive)"
   printf '/var/run/docker.sock -> %s\n' "$(readlink -f /var/run/docker.sock 2> /dev/null || echo missing)"
@@ -58,7 +59,6 @@ EOF
   # Run docker-compose up if docker-compose.yml exists in current directory
   [[ -f docker-compose.yml ]] && docker-compose up || echo "No docker-compose.yml found in current directory"
 }
-
 setup-docker(){
   echo "Configuring Docker daemon..."
   sudo mkdir -p /etc/docker
@@ -88,6 +88,4 @@ EOF
   echo "Docker configuration complete!"
   echo "Note: You may need to log out and back in for group changes to take effect."
 }
-
 setup-podman || setup-docker
-

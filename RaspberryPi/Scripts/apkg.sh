@@ -165,7 +165,8 @@ _cache_info_from_index() {
 evict_old_cache() {
   [[ ! -s $CACHE_INDEX ]] && _update_cache_index
   [[ ! -s $CACHE_INDEX ]] && return
-  local cutoff=$(($(date +%s) - APT_FUZZ_CACHE_TTL)) limit=$APT_FUZZ_CACHE_MAX_BYTES
+  local now=$(date +%s)
+  local cutoff=$((now - APT_FUZZ_CACHE_TTL)) limit=$APT_FUZZ_CACHE_MAX_BYTES
   local del
   del=$(mktemp)
   local valid
@@ -301,8 +302,8 @@ choose_manager() {
 _status_header() {
   local total files oldest
   read -r total files oldest < <(_cache_info_from_index)
-  local age
-  ((oldest == 0)) && age="0m" || age=$((($(date +%s) - oldest) / 60))m
+  local age now=$(date +%s)
+  ((oldest == 0)) && age="0m" || age=$(((now - oldest) / 60))m
   local size
   size=$(byte_to_human "$total")
   printf 'manager: %s | cache: %s files, %s, oldest: %s' "$PRIMARY_MANAGER" "$files" "$size" "$age"
@@ -385,7 +386,8 @@ restore_from_file() {
 
 menu_backup_restore() {
   local -a opts=("Backup installed packages" "Restore from file" "Cancel") choice
-  choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Backup/Restore> " --header="$(_status_header)")
+  local header=$(_status_header)
+  choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=12% --prompt="Backup/Restore> " --header="$header")
   [[ -z $choice ]] && return
   case "$choice" in
     "Backup installed packages") backup_installed ;;
@@ -398,7 +400,8 @@ menu_backup_restore() {
 
 menu_maintenance() {
   local -a opts=(Update Upgrade Autoremove Clean "Choose manager" Cancel) choice
-  choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=18% --prompt="Maintenance> " --header="$(_status_header)")
+  local header=$(_status_header)
+  choice=$(printf '%s\n' "${opts[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=18% --prompt="Maintenance> " --header="$header")
   [[ -z $choice ]] && return
   case "$choice" in
     Update) run_mgr update ;;
@@ -412,8 +415,10 @@ menu_maintenance() {
 main_menu() {
   evict_old_cache
   local -a menu=("Search packages" "Installed" "Upgradable" "Backup/Restore" "Maintenance" "Choose manager" "Quit") choice
+  local header
   while true; do
-    choice=$(printf '%s\n' "${menu[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=20% --prompt="apt-fuzz> " --header="$(_status_header)")
+    header=$(_status_header)
+    choice=$(printf '%s\n' "${menu[@]}" | "$FINDER" "${FINDER_OPTS[@]}" --height=20% --prompt="apt-fuzz> " --header="$header")
     [[ -z $choice ]] && break
     case "$choice" in
       "Search packages") menu_search ;;
@@ -440,7 +445,9 @@ _complete_apt_fuzz(){
   COMPREPLY=()
   (( COMP_CWORD==1 )) && { COMPREPLY=( $(compgen -W "$opts" -- "$cur") ); return; }
   case "${COMP_WORDS[1]}" in
-    install|remove|purge) COMPREPLY=( $(compgen -W "$(apt-cache pkgnames)" -- "$cur") ) ;;
+    install|remove|purge)
+      local pkgnames=$(apt-cache pkgnames)
+      COMPREPLY=( $(compgen -W "$pkgnames" -- "$cur") ) ;;
     restore) COMPREPLY=( $(compgen -f -- "$cur") ) ;;
   esac
 }

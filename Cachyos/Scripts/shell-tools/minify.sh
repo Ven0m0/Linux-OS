@@ -170,15 +170,15 @@ process(){
     mapfile -t ini < <(fd -eini -tf "$ex" . "$out" 2>/dev/null)
     mapfile -t conf < <(fd -econf -ecfg -tf "$ex" . "$out" 2>/dev/null)
   else
-    local fp='! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/.cache/*" ! -path "*/build/*" ! -path "*/target/*" ! -path "*/__pycache__/*" ! -path "*/.venv/*" ! -path "*/.npm/*" ! -path "*/vendor/*"'
-    mapfile -t css < <(eval "find '$out' -type f -name '*.css' ! -name '*.min.css' $fp 2>/dev/null")
-    mapfile -t html < <(eval "find '$out' -type f \\( -name '*.html' -o -name '*.htm' \\) $fp 2>/dev/null")
-    mapfile -t json < <(eval "find '$out' -type f -name '*.json' ! -name '*.min.json' ! -name 'package*.json' $fp 2>/dev/null")
-    mapfile -t xml < <(eval "find '$out' -type f -name '*.xml' ! -name '*.min.xml' $fp 2>/dev/null")
-    mapfile -t pdf < <(eval "find '$out' -type f -name '*.pdf' ! -name '*.min.pdf' $fp 2>/dev/null")
-    mapfile -t yaml < <(eval "find '$out' -type f \\( -name '*.yml' -o -name '*.yaml' \\) $fp 2>/dev/null")
-    mapfile -t ini < <(eval "find '$out' -type f -name '*.ini' $fp 2>/dev/null")
-    mapfile -t conf < <(eval "find '$out' -type f \\( -name '*.conf' -o -name '*.cfg' \\) $fp 2>/dev/null")
+    local -a fp=(! -path "*/.git/*" ! -path "*/node_modules/*" ! -path "*/dist/*" ! -path "*/.cache/*" ! -path "*/build/*" ! -path "*/target/*" ! -path "*/__pycache__/*" ! -path "*/.venv/*" ! -path "*/.npm/*" ! -path "*/vendor/*")
+    mapfile -t css < <(find "$out" -type f -name '*.css' ! -name '*.min.css' "${fp[@]}" 2>/dev/null)
+    mapfile -t html < <(find "$out" -type f \( -name '*.html' -o -name '*.htm' \) "${fp[@]}" 2>/dev/null)
+    mapfile -t json < <(find "$out" -type f -name '*.json' ! -name '*.min.json' ! -name 'package*.json' "${fp[@]}" 2>/dev/null)
+    mapfile -t xml < <(find "$out" -type f -name '*.xml' ! -name '*.min.xml' "${fp[@]}" 2>/dev/null)
+    mapfile -t pdf < <(find "$out" -type f -name '*.pdf' ! -name '*.min.pdf' "${fp[@]}" 2>/dev/null)
+    mapfile -t yaml < <(find "$out" -type f \( -name '*.yml' -o -name '*.yaml' \) "${fp[@]}" 2>/dev/null)
+    mapfile -t ini < <(find "$out" -type f -name '*.ini' "${fp[@]}" 2>/dev/null)
+    mapfile -t conf < <(find "$out" -type f \( -name '*.conf' -o -name '*.cfg' \) "${fp[@]}" 2>/dev/null)
   fi
   local -i total=$((${#css[@]} + ${#html[@]} + ${#json[@]} + ${#xml[@]} + ${#pdf[@]} + ${#yaml[@]} + ${#ini[@]} + ${#conf[@]}))
   ((total == 0)) && { printf "%s⊘%s No files found\n" "$ylw" "$rst"; return 0; }

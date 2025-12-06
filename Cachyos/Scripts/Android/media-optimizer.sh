@@ -354,7 +354,8 @@ process_image() {
       mv "$tmp_webp" "$webp_output"
       rm -f "$tmpfile"
 
-      log "${GRN}Converted to WebP: $file${RST} ($(human_size "$original_size") → $(human_size "$webp_size"), saved $(human_size "$((original_size - webp_size))"))"
+      local saved_bytes=$((original_size - webp_size))
+      log "${GRN}Converted to WebP: $file${RST} ($(human_size "$original_size") → $(human_size "$webp_size"), saved $(human_size "$saved_bytes"))"
 
       # If user wants to replace original
       if [[ ${MEDIA_OPT_REPLACE:-0} -eq 1 ]]; then
@@ -365,7 +366,8 @@ process_image() {
       mv "$tmpfile" "$file"
       rm -f "$tmp_webp"
 
-      log "${GRN}Optimized: $file${RST} ($(human_size "$original_size") → $(human_size "$optimized_size"), saved $(human_size "$((original_size - optimized_size))"))"
+      local saved_bytes=$((original_size - optimized_size))
+      log "${GRN}Optimized: $file${RST} ($(human_size "$original_size") → $(human_size "$optimized_size"), saved $(human_size "$saved_bytes"))"
     fi
   else
     # WebP conversion failed, use optimized original
@@ -375,7 +377,8 @@ process_image() {
     local optimized_size
     optimized_size=$(file_size "$file")
 
-    log "${YLW}Optimized (WebP conversion failed): $file${RST} ($(human_size "$original_size") → $(human_size "$optimized_size"), saved $(human_size "$((original_size - optimized_size))"))"
+    local saved_bytes=$((original_size - optimized_size))
+    log "${YLW}Optimized (WebP conversion failed): $file${RST} ($(human_size "$original_size") → $(human_size "$optimized_size"), saved $(human_size "$saved_bytes"))"
   fi
 
   return 0
@@ -415,7 +418,8 @@ process_video() {
     local new_size
     new_size=$(file_size "$output")
 
-    log "${GRN}Converted to AV1: $file${RST} ($(human_size "$original_size") → $(human_size "$new_size"), saved $(human_size "$((original_size - new_size))"))"
+    local saved_bytes=$((original_size - new_size))
+    log "${GRN}Converted to AV1: $file${RST} ($(human_size "$original_size") → $(human_size "$new_size"), saved $(human_size "$saved_bytes"))"
 
     # If user wants to replace original
     if [[ ${MEDIA_OPT_REPLACE:-0} -eq 1 ]]; then

@@ -314,7 +314,8 @@ ZRAM_SIZE_MB=${ZRAM_SIZE_MB:-2048}
 modprobe zram num_devices="${CORES}"
 swapoff -a 2>/dev/null || :
 
-SIZE=$(( ($(awk '/^MemTotal:/ {print $2}' /proc/meminfo) / CORES) * 1024 ))
+MEMTOTAL=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
+SIZE=$(( (MEMTOTAL / CORES) * 1024 ))
 [[ ${ZRAM_SIZE_MB} -gt 0 ]] && SIZE=$(( ZRAM_SIZE_MB * 1024 * 1024 / CORES ))
 
 for ((CORE=0; CORE<CORES; CORE++)); do

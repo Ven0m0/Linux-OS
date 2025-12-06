@@ -19,7 +19,7 @@ hostname="${HOSTNAME:-$(</etc/hostname)}"
 userhost="$username@${hostname:-$(uname -n)}"
 . "/etc/os-release"
 OS="${NAME:-${PRETTY_NAME:-$(uname -o)}}"
-KERNEL="$(cat /proc/sys/kernel/osrelease 2>/dev/null || uname -r)"
+KERNEL="$(</proc/sys/kernel/osrelease 2>/dev/null || uname -r)"
 # Uptime
 read -r rawSeconds _ </proc/uptime
 seconds=${rawSeconds%.*} uptime=""
@@ -55,7 +55,8 @@ command -v flatpak &>/dev/null && {
 PACKAGE="${PKG:-} ${PKG2:-} ${PKG3:-}"
 # Power plan
 if [[ -r /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]]; then
-  PWPLAN="$(sort -u --parallel="$(nproc)" /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)"
+  nproc_val=$(nproc)
+  PWPLAN="$(sort -u --parallel="$nproc_val" /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)"
 elif command -v powerprofilesctl &>/dev/null; then
   PWPLAN="$(powerprofilesctl get 2>/dev/null)"
 fi

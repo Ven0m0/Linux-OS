@@ -65,8 +65,13 @@ VERBOSE_OUTPUT=
 eval "$(apt-config shell APTCACHE Dir::Cache::archives/d 2>/dev/null)" || true
 [[ -z ${APTCACHE:-} ]] && APTCACHE="/var/cache/apt/archives"
 
-# Aria2c command
-_DOWNLOADER="aria2c --no-conf -c -j \${_MAXNUM} -x \${_MAXCONPERSRV} -s \${_SPLITCON} -i \${DLLIST} --min-split-size=\${_MINSPLITSZ} --stream-piece-selector=\${_PIECEALGO} --connect-timeout=600 --timeout=600 --max-connection-per-server=\${_MAXCONPERSRV} --uri-selector=adaptive --console-log-level=error --summary-interval=0"
+# Aria2c downloader function
+run_downloader() {
+  aria2c --no-conf -c -j "$_MAXNUM" -x "$_MAXCONPERSRV" -s "$_SPLITCON" -i "$DLLIST" \
+    --min-split-size="$_MINSPLITSZ" --stream-piece-selector="$_PIECEALGO" \
+    --connect-timeout=600 --timeout=600 --max-connection-per-server="$_MAXCONPERSRV" \
+    --uri-selector=adaptive --console-log-level=error --summary-interval=0
+}
 
 #──────────── Lock ──────────────────
 CLEANUP_STATE=0
@@ -278,11 +283,12 @@ EOF
   done
   speedtest_mirrors=$(echo "$speedtest_mirrors$healthy" | unique | max_lines "$speedtest_mirrors")
   msg "Speed testing $(echo "$speedtest_mirrors" | wc -l) mirrors (${sample_kb}KB sample)..." "$BLU"
+  local sample_bytes=$((sample_kb*1024))
   local mirrors_with_speed=$(
     echo "$speedtest_mirrors" \
     | grep -v '^[[:space:]]*$' \
     | __xargs -P "$parallel" -I{} bash -c \
-      "printf '%s\t%s\n' \"\$(curl -r 0-$((sample_kb*1024)) --max-time $sample_secs -sS -w '%{speed_download}' -o /dev/null \"\${1}ls-lR. gz\" 2>/dev/null || echo 0)\" \"\$1\"; >&2 printf '. '" _ {} \
+      "printf '%s\t%s\n' \"\$(curl -r 0-$sample_bytes --max-time $sample_secs -sS -w '%{speed_download}' -o /dev/null \"\${1}ls-lR. gz\" 2>/dev/null || echo 0)\" \"\$1\"; >&2 printf '. '" _ {} \
     | awk -F'\t' '$1 ~ /^[0-9. ]+$/ && $2 ~ /^https?:\/\// { print }' \
     | sort -rg
   )
@@ -409,7 +415,7 @@ main(){
         if [[ -f $DLLIST && $(wc -l < "$DLLIST") -gt 1 ]]; then
           [[ !  -d $DLDIR ]] && mkdir -p "$DLDIR"
           cd "$DLDIR" || die "Cannot cd to $DLDIR"
-          eval "$_DOWNLOADER"
+          run_downloader
           find . -type f \( -name '*.deb' -o -name '*.ddeb' \) -execdir mv -ft "$APTCACHE" {} + 2>/dev/null || :
           for x in *.aria2; do rm -f "$x" "${x%.aria2}"; done
           cd - &>/dev/null || :

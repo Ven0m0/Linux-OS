@@ -549,9 +549,9 @@ print_summary(){
   # Commands to reproduce
   if ((${#COMMANDS_RUN[@]} > 0)); then
     log "${BWHT}Commands to reproduce:${DEF}"
-    printf '%s\n' "${COMMANDS_RUN[@]}" | sort -u | while IFS= read -r cmd; do
+    while IFS= read -r cmd; do
       log "  ${CYN}$cmd${DEF}"
-    done
+    done < <(printf '%s\n' "${COMMANDS_RUN[@]}" | sort -u)
     log ""
   fi
   # Exit with error if issues found

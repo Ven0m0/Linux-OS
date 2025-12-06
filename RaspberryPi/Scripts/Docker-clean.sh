@@ -4,8 +4,9 @@
 #   -e, exit immediately if a command exits with a non-zero status
 #   -o pipefail, means that if any element of the pipeline fails, then the pipeline as a whole will fail.
 #   -u, treat unset variables as an error when substituting.
-set -euo pipefail; shopt -s nullglob globstar execfail
-IFS=$'\n\t'; export LC_ALL=C LANG=C
+set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
+cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd -P)" || exit 1
 DONT_RESTART_DOCKER_ENGINE=0 DONT_ASK_CONFIRMATION=0
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -15,11 +16,9 @@ while [[ $# -gt 0 ]]; do
     *) echo "Unknown parameter passed: $1"; exit 1 ;;
   esac
 done
-
 # Asks user for confirmation interactively
 ask_user_for_confirmation(){
   cat << EOF
-
 ==============================================
 This script reclaims disk space by removing stale and unused Docker data:
   > removes stopped containers
@@ -30,14 +29,12 @@ This script reclaims disk space by removing stale and unused Docker data:
   > restarts the Docker engine
   > prints Docker disk usage
 ==============================================
-
 EOF
   [[ $DONT_ASK_CONFIRMATION -eq 1 ]] && return
   read -p "Would you like to proceed (y/n)? " confirmation
   # Stop if answer is anything but "Y" or "y"
   [[ $confirmation == "${confirmation#[Yy]}" ]] && exit 1
 }
-
 # On MacOS, restarting Docker Desktop for Mac might take a long time
 poll_for_docker_readiness(){
   printf 'Waiting for docker engine to start:\n'
@@ -89,5 +86,4 @@ docker-slim(){
     sudo docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim "$@"
   fi
 }
-
 echo "🤘 Done"

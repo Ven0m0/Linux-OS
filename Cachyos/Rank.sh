@@ -41,19 +41,19 @@ KEYSERVERS=( # We want to use keyservers only with secured (hkps or https) conne
   # hkp://hkps.pool.sks-keyservers.net
 )
 # Colors
-R='\033[0;31m' G='\033[0;32m' Y='\033[1;33m' C='\033[0;36m' Z='\033[0m'
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[1;33m' CYN=$'\e[36m' DEF=$'\e[0m' BLD=$'\e[1m'
 # Helpers
-log() { printf "${G}[%s]${Z} %s\n" "${1:-INFO}" "${*:2}" | tee -a "$LOGFILE"; }
-warn() { printf "${Y}[WARN]${Z} %s\n" "$*" >&2; }
-err() { printf "${R}[ERR]${Z} %s\n" "$*" >&2; }
-backup() {
-  [[ -f $1 ]] || return 0
-  mkdir -p "$BACKUPDIR"
+has(){ command -v "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "${GRN}${BLD}[${1:-INFO}]${DEF} ${*:2}" | tee -a "$LOGFILE"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){ err "$1"; exit "${2:-1}"; }
+backup(){
+  [[ -f $1 ]] || return 0; mkdir -p "$BACKUPDIR"
   cp -a "$1" "$BACKUPDIR/${1##*/}-$(printf '%s' "$EPOCHSECONDS").bak"
-  # Keep 5 recent backups
   find "$BACKUPDIR" -name "${1##*/}-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+6 | awk '{print $2}' | xargs -r rm -f
 }
-has() { command -v -- "$1" &> /dev/null; }
 
 # Actions
 rank_keys() {

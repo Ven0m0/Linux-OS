@@ -26,19 +26,26 @@ declare -A cfg=(
 )
 # DietPi Shortcut
 declare -r DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
-# Colors
-declare -r RED=$'\033[0;31m' GRN=$'\033[0;32m' YEL=$'\033[0;33m' BLD=$'\033[1m' DEF=$'\033[0m'
+# Colors (trans palette)
+BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
+LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
+DEF=$'\e[0m' BLD=$'\e[1m'
+declare -r RED GRN YLW BLU DEF BLD
 # Globals
 declare -g SRC_PATH="" TGT_PATH="" SRC_IMG="" WORKDIR=""
 declare -g LOOP_DEV="" TGT_DEV="" BOOT_PART="" ROOT_PART=""
 declare -g LOCK_FD=-1 LOCK_FILE=""
 declare -ga MOUNTED_DIRS=()
-# --- Logging ---
-log(){ printf '[%s] %s\n' "$(fdate)" "$*"; }
-info(){ log "${GRN}INFO:${DEF} $*"; }
-warn(){ log "${YEL}WARN:${DEF} $*" >&2; }
-err(){ log "${RED}ERROR:${DEF} $*" >&2; }
-die(){ err "$*"; cleanup; exit 1; }
+# Helper functions
+has(){ command -v "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){ err "$1"; cleanup; exit "${2:-1}"; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*" || :; }
 
 # --- Bootiso-Derived Safety Modules ---
 get_drive_trans(){ local dev="${1:?}"; lsblk -dno TRAN "$dev" 2> /dev/null || echo "unknown"; }

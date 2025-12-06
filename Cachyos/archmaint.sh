@@ -20,23 +20,16 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 # Export color variables
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
-#============ Core Helper Functions ============
-has() { command -v -- "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
-msg() { xecho "$*"; }
-warn() { xecho "${YLW}WARN:${DEF} $*" >&2; }
-err() { xecho "${RED}ERROR:${DEF} $*" >&2; }
-die() {
-  err "$*"
-  exit "${2:-1}"
-}
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
-confirm() {
-  local msg="$1"
-  printf '%s [y/N]: ' "$msg" >&2
-  read -r ans
-  [[ $ans == [Yy]* ]]
-}
+#============ Helper Functions ============
+has(){ command -v "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){ err "$1"; exit "${2:-1}"; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
+confirm(){ local r; while :; do read -rp "${1:-Continue?} [y/N] " r; case "${r,,}" in y|yes) return 0;; n|no|"") return 1;; *) warn "Please answer y or n";; esac; done; }
 
 #============ Banner Printing Functions ============
 print_banner() {

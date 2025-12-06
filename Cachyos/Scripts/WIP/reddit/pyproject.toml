@@ -1,11 +1,11 @@
 [tool.black]
 line-length = 88
 target-version = ['py310', 'py311', 'py312']
-include = '\. pyi?$'
+include = '\.pyi?$'
 extend-exclude = '''
 /(
   \.git
-  | \. cache
+  | \.cache
   | \.var
   | node_modules
   | Linux-Settings
@@ -33,7 +33,7 @@ select = [
 ]
 ignore = []
 
-[tool.ruff. format]
+[tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"
@@ -63,7 +63,7 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 follow_imports = "normal"
-exclude = ["Linux-Settings", ". cache", ".var"]
+exclude = ["Linux-Settings", ".cache", ".var"]
 
 [tool.coverage.run]
 source = ["."]

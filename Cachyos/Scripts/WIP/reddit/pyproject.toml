@@ -13,15 +13,9 @@ extend-exclude = '''
 '''
 
 [tool.ruff]
-line-length = 80
+line-length = 88
 target-version = "py310"
-extend-exclude = [
-  ".git",
-  ".cache",
-  ".var",
-  "node_modules",
-  "Linux-Settings",
-]
+extend-exclude = [".git", ".cache", ".var", "node_modules", "Linux-Settings"]
 
 [tool.ruff.lint]
 select = [
@@ -46,7 +40,7 @@ line-ending = "lf"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-testpaths = ["Cachyos/Scripts/WIP"]
+testpaths = ["."]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
@@ -72,7 +66,7 @@ follow_imports = "normal"
 exclude = ["Linux-Settings", ". cache", ".var"]
 
 [tool.coverage.run]
-source = ["Cachyos/Scripts"]
+source = ["."]
 omit = ["*/test_*.py", "*/__pycache__/*"]
 
 [tool.coverage.report]
@@ -85,10 +79,13 @@ exclude_lines = [
   "if TYPE_CHECKING:",
 ]
 
-[tool.beautysh]
-indent_size = 2
-tab = false
-backup = false
-check = false
-force_function_style = "paronly"
-variable_style = "braces"
+[project]
+name = "account-scanner"
+version = "1.0.0"
+description = "Multi-source account scanner: Reddit toxicity + Sherlock OSINT"
+requires-python = ">=3.10"
+dependencies = ["praw", "pandas", "httpx", "sherlock-project"]
+
+[project.optional-dependencies]
+dev = ["ruff", "mypy", "pytest", "black"]
+fast = ["orjson"]

@@ -15,12 +15,10 @@ find_with_fallback(){
     if [[ -n $action ]]; then find "$search_path" "$find_type_arg" -name "$pattern" "$action" "$@"; else find "$search_path" "$find_type_arg" -name "$pattern"; fi
   fi
 }
-# ============ End of inlined lib/common.sh ============
-# ============ Inlined from lib/text.sh ============
-export BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-export BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
-export LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
-export DEF=$'\e[0m' BLD=$'\e[1m'
+BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
+LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
+DEF=$'\e[0m' BLD=$'\e[1m'
 remove_comments(){ sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
 removeComments(){ remove_comments; }
 remove_duplicate_lines(){ if [[ -n ${1:-} && -f $1 ]]; then awk '!seen[$0]++' "$1"; else awk '!seen[$0]++'; fi; }

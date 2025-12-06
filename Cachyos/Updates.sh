@@ -5,13 +5,21 @@ set -euo pipefail
 shopt -s nullglob globstar extglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
-# Colors
-export BLU=$'\e[34m' GRN=$'\e[32m' DEF=$'\e[0m'
-# Core helper functions
-has(){ command -v -- "$1" &>/dev/null; }
+# Colors (trans palette)
+BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
+LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
+DEF=$'\e[0m' BLD=$'\e[1m'
+# Helper functions
+has(){ command -v "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
-log(){ xecho "$*"; }
-
+log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){ err "$1"; exit "${2:-1}"; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
+cleanup_pacman_lock(){ sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
 main(){
   trap cleanup_pacman_lock EXIT INT TERM
   #============ Update Functions ============

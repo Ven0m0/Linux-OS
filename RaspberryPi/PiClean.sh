@@ -1,20 +1,13 @@
 #!/usr/bin/env bash
-# Optimized: 2025-11-21 - Applied bash optimization techniques
-
-set -euo pipefail
-shopt -s nullglob globstar extglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
-export DEBIAN_FRONTEND=noninteractive
-
+set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
+cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd -P)" || exit 1
 # Core helper functions
 has() { command -v -- "$1" &> /dev/null; }
-
 # DietPi functions
 load_dietpi_globals() {
   [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :
 }
-
 run_dietpi_cleanup() {
   if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
     if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then
@@ -24,14 +17,12 @@ run_dietpi_cleanup() {
     sudo /boot/dietpi/func/dietpi-cleaner 2 2> /dev/null || G_SUDO dietpi-cleaner 2 2> /dev/null || :
   fi
 }
-
 # APT functions
 clean_apt_cache() {
   sudo apt-get clean -y 2> /dev/null || :
   sudo apt-get autoclean -y 2> /dev/null || :
   sudo apt-get autoremove --purge -y 2> /dev/null || :
 }
-
 # System cleanup functions
 clean_cache_dirs() {
   sudo rm -rf /tmp/* 2> /dev/null || :
@@ -42,14 +33,12 @@ clean_cache_dirs() {
   rm -rf ~/.thumbnails/* 2> /dev/null || :
   rm -rf ~/.cache/thumbnails/* 2> /dev/null || :
 }
-
 clean_trash() {
   rm -rf ~/.local/share/Trash/* 2> /dev/null || :
   sudo rm -rf /root/.local/share/Trash/* 2> /dev/null || :
   rm -rf ~/snap/*/*/.local/share/Trash/* 2> /dev/null || :
   rm -rf ~/.var/app/*/data/Trash/* 2> /dev/null || :
 }
-
 clean_crash_dumps() {
   if has coredumpctl; then
     sudo coredumpctl --quiet --no-legend clean 2> /dev/null || :
@@ -57,7 +46,6 @@ clean_crash_dumps() {
   sudo rm -rf /var/crash/* 2> /dev/null || :
   sudo rm -rf /var/lib/systemd/coredump/* 2> /dev/null || :
 }
-
 clean_history_files() {
   rm -f ~/.python_history 2> /dev/null || :
   sudo rm -f /root/.python_history 2> /dev/null || :
@@ -65,16 +53,11 @@ clean_history_files() {
   sudo rm -f /root/.bash_history 2> /dev/null || :
   history -c 2> /dev/null || :
 }
-
 clean_journal_logs() {
   sudo journalctl --rotate --vacuum-size=1 --flush --sync -q 2> /dev/null || :
   sudo rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2> /dev/null || :
   sudo systemd-tmpfiles --clean 2> /dev/null || :
 }
-
-#──────────── Setup ────────────────────
-load_dietpi_globals
-sync
 #─────────────────────────────────────────────────────────────
 # Use single printf with heredoc instead of multiple echo calls (faster)
 printf '%s\n' '
@@ -118,9 +101,8 @@ printf '%s\n' "Removing old log files"
 sudo find /var/log/ -name "*.log" -type f -mtime +3 -delete
 sudo find /var/crash/ -name "core.*" -type f -mtime +3 -delete
 sudo find /var/cache/apt/ -name "*.bin" -type f -mtime +3 -delete
-
 sync
-printf '3' | sudo tee /proc/sys/vm/drop_caches &> /dev/null
+printf '3' | sudo tee /proc/sys/vm/drop_caches &>/dev/null
 printf '%s\n' "System clean-up complete."
 printf '%s\n' "Clearing DietPi..."
 run_dietpi_cleanup

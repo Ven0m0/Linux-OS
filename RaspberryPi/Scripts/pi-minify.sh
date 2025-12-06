@@ -1,26 +1,23 @@
 #!/usr/bin/env bash
-# DESCRIPTION: Raspberry Pi system minimization & optimization suite
-#              Aggressive cleanup, ZRAM setup, SWAP mgmt, package purge, privacy hardening
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
+set -euo pipefail; shopt -s nullglob globstar extglob; IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
+cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd -P)" || exit 1
+# DESCRIPTION: Raspberry Pi system optimization suite
 sync
 # Colors
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-
 # Helpers
 has(){ command -v -- "$1" &>/dev/null; }
 log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
 warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
 err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
 die(){ err "$1"; exit "${2:-1}"; }
-
 # Config
 declare -A cfg=([dry_run]=0 [interactive]=1 [aggressive]=0 [disk_before]=0 [disk_after]=0)
 run(){ ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
-
 # Disk usage tracking
 track_disk(){
   local label="$1" usage
@@ -28,7 +25,6 @@ track_disk(){
   log "${BLD}${label}:${DEF} ${usage}"
   [[ $label == "Before" ]] && cfg[disk_before]=$usage || cfg[disk_after]=$usage
 }
-
 # Interactive prompt
 ask(){
   ((cfg[interactive] == 0)) && return 0
@@ -37,7 +33,6 @@ ask(){
   reply=${reply:-$default}
   [[ $reply =~ ^[Yy] ]]
 }
-
 usage(){
   cat << 'EOF'
 pi-minify.sh - Raspberry Pi system minimization, cleanup & privacy hardening
@@ -81,9 +76,9 @@ parse_args(){
   done
 }
 
-# ────────────────────────────────────────────────────────────
+# ============================================================
 # dpkg & Documentation
-# ────────────────────────────────────────────────────────────
+# ============================================================
 configure_dpkg_nodoc(){
   log "Configuring dpkg to exclude docs/man/locales"
   sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null << 'EOF'
@@ -97,7 +92,6 @@ path-exclude /usr/share/linda/*
 path-include /usr/share/doc/*/copyright
 EOF
 }
-
 purge_docs(){
   log "Purging documentation, man pages, locales (keep en_GB)"
   run find /usr/share/doc/ -depth -type f ! -name copyright -delete 2>/dev/null || :
@@ -109,10 +103,9 @@ purge_docs(){
   sudo bash -c "cd /usr/share/locale && ls | grep -v ${keep_locale} | xargs rm -rf" 2>/dev/null || :
   sudo bash -c "cd /usr/share/X11/locale && ls | grep -v ${keep_locale} | xargs rm -rf" 2>/dev/null || :
 }
-
-# ────────────────────────────────────────────────────────────
+# ============================================================
 # Package Cleanup
-# ────────────────────────────────────────────────────────────
+# ============================================================
 purge_packages(){
   log "Removing doc packages, localepurge install"
   # localepurge for future locale cleaning
@@ -138,7 +131,6 @@ purge_packages(){
   mapfile -t orphaned < <(dpkg -l | awk '/^rc/ {print $2}')
   ((${#orphaned[@]} > 0)) && sudo apt-get purge -y "${orphaned[@]}" || :
 }
-
 purge_aggressive(){
   ((cfg[aggressive] == 0)) && return 0
   warn "Aggressive mode: removing X11, dev packages, extras"
@@ -152,7 +144,6 @@ purge_aggressive(){
   sudo apt-get purge -y popularity-contest installation-report \
     wireless-tools wpasupplicant libraspberrypi-doc snapd 'cups*' 2>/dev/null || :
 }
-
 cleanup_apt(){
   log "APT cleanup: cache, orphans, deborphan"
   has deborphan || sudo apt-get install -y deborphan
@@ -168,10 +159,9 @@ debloat(){
   systemctl disable --now systemd-binfmt proc-sys-fs-binfmt_misc.automount sys-fs-fuse-connections.mount sys-kernel-config.mount
   systemctl mask systemd-binfmt proc-sys-fs-binfmt_misc.automount sys-fs-fuse-connections.mount sys-kernel-config.mount
 }
-
-# ────────────────────────────────────────────────────────────
+# ============================================================
 # Cache & Temp Cleanup
-# ────────────────────────────────────────────────────────────
+# ============================================================
 clean_caches(){
   log "Cleaning caches, temp files, history"
   # System caches
@@ -195,9 +185,9 @@ clean_caches(){
   done < <(find /var/log -type f)
 }
 
-# ────────────────────────────────────────────────────────────
+# ============================================================
 # Privacy & Security Hardening
-# ────────────────────────────────────────────────────────────
+# ============================================================
 clean_crash_dumps(){
   log "Cleaning crash dumps and core dumps"
   has coredumpctl && sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
@@ -207,24 +197,18 @@ clean_crash_dumps(){
 
 clean_system_logs(){
   log "Clearing system logs (journald)"
-
-  if has journalctl; then
-    sudo journalctl --vacuum-time=1s
-  fi
+  sudo journalctl --vacuum-time=1s
   sudo rm -rf /run/log/journal/* 2>/dev/null || :
   sudo rm -rf /var/log/journal/* 2>/dev/null || :
 }
-
 disable_python_history(){
   log "Disabling Python history permanently"
-
   local history_file="$HOME/.python_history"
   if [[ ! -f $history_file ]]; then
     touch "$history_file"
   fi
   sudo chattr +i "$(realpath "$history_file")" 2>/dev/null || :
 }
-
 remove_popcon(){
   log "Removing Popularity Contest (popcon)"
   # Disable participation
@@ -246,7 +230,6 @@ remove_popcon(){
     fi
   fi
 }
-
 remove_reportbug(){
   log "Removing reportbug packages"
   has apt-get || return 0
@@ -258,13 +241,10 @@ remove_reportbug(){
     fi
   done
 }
-
 clean_privacy_data(){
   log "Cleaning privacy-sensitive data"
-
   # Zeitgeist activity logs
   sudo rm -rf {/root,/home/*}/.local/share/zeitgeist 2>/dev/null || :
-
   # Screenshots
   run rm -rf ~/Pictures/Screenshots/* 2>/dev/null || :
   if [[ -d ~/Pictures ]]; then
@@ -275,24 +255,20 @@ clean_privacy_data(){
   fi
   # ksnip screenshots
   find ~ -name 'ksnip_*' -delete 2>/dev/null || :
-
   # GTK recently used files
   run rm -f /.recently-used.xbel 2>/dev/null || :
   run rm -f ~/.local/share/recently-used.xbel* 2>/dev/null || :
   run rm -f ~/snap/*/*/.local/share/recently-used.xbel 2>/dev/null || :
   run rm -f ~/.var/app/*/data/recently-used.xbel 2>/dev/null || :
-
   # privacy.sexy logs and history
   run rm -rf "$HOME/.config/privacy.sexy/runs"/* 2>/dev/null || :
   run rm -rf "$HOME/.config/privacy.sexy/logs"/* 2>/dev/null || :
 }
-
-# ────────────────────────────────────────────────────────────
+# ============================================================
 # ZRAM Setup
-# ────────────────────────────────────────────────────────────
+# ============================================================
 disable_swap(){
   log "Disabling SWAP partition"
-
   has dphys-swapfile && {
     sudo dphys-swapfile swapoff
     sudo dphys-swapfile uninstall
@@ -300,36 +276,27 @@ disable_swap(){
   }
   sudo swapoff -a
 }
-
 enable_zram(){
   log "Enabling ZRAM (compressed swap in RAM)"
-
   sudo tee /usr/local/bin/zram-init >/dev/null << 'ZRAMSCRIPT'
-#!/usr/bin/env bash
+#!/bin/bash
 set -euo pipefail
-
-CORES=$(nproc --all)
+CORES=$(nproc)
 ZRAM_SIZE_MB=${ZRAM_SIZE_MB:-2048}
-
 modprobe zram num_devices="${CORES}"
 swapoff -a 2>/dev/null || :
-
 MEMTOTAL=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
 SIZE=$(( (MEMTOTAL / CORES) * 1024 ))
 [[ ${ZRAM_SIZE_MB} -gt 0 ]] && SIZE=$(( ZRAM_SIZE_MB * 1024 * 1024 / CORES ))
-
 for ((CORE=0; CORE<CORES; CORE++)); do
   echo "${SIZE}" > /sys/block/zram${CORE}/disksize
   mkswap /dev/zram${CORE} &>/dev/null
   swapon -p 5 /dev/zram${CORE}
 done
-
 echo 1 > /sys/kernel/mm/ksm/run
 ZRAMSCRIPT
-
   sudo chmod +x /usr/local/bin/zram-init
   sudo /usr/local/bin/zram-init
-
   # Persist via systemd service
   sudo tee /etc/systemd/system/zram-init.service >/dev/null << 'EOF'
 [Unit]
@@ -344,46 +311,35 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 EOF
-
   sudo systemctl daemon-reload
   sudo systemctl enable zram-init.service
 }
-
-# ────────────────────────────────────────────────────────────
+# ============================================================
 # System Tweaks
-# ────────────────────────────────────────────────────────────
+# ============================================================
 optimize_fstab(){
   log "Optimizing fstab: noatime, nodiratime"
-
   sudo sed -i 's/\(defaults\)/\1,noatime,nodiratime/' /etc/fstab
 }
-
 optimize_systemd(){
   log "Reducing systemd stop timeout: 90s→5s"
-
   sudo sed -i 's/#DefaultTimeoutStopSec=90s/DefaultTimeoutStopSec=5s/' /etc/systemd/system.conf
 }
-
 disable_extra_ttys(){
   [[ ! -f /etc/inittab ]] && return 0
-
   log "Disabling extra TTYs (2-6) for RAM savings"
   sudo sed -i '/[2-6]:23:respawn:\/sbin\/getty 38400 tty[2-6]/s/^/#/' /etc/inittab
 }
-
-# ────────────────────────────────────────────────────────────
+# ============================================================
 # Main Orchestration
-# ────────────────────────────────────────────────────────────
+# ============================================================
 main(){
   parse_args "$@"
-
   log "${BLD}Raspberry Pi System Minification & Privacy Hardening${DEF}"
   log "Mode: $([[ ${cfg[dry_run]} -eq 1 ]] && echo 'DRY-RUN' || echo 'LIVE')"
   log "Interactive: $([[ ${cfg[interactive]} -eq 1 ]] && echo 'YES' || echo 'NO')"
   log "Aggressive: $([[ ${cfg[aggressive]} -eq 1 ]] && echo 'YES' || echo 'NO')"
-
   track_disk "Before"
-
   # Core cleanup (always)
   configure_dpkg_nodoc
   purge_docs
@@ -398,27 +354,20 @@ main(){
   remove_popcon
   remove_reportbug
   clean_privacy_data
-
   # Aggressive cleanup (conditional)
   [[ ${cfg[aggressive]} -eq 1 ]] && purge_aggressive
-
   # ZRAM setup (interactive or forced)
   if ask "Disable SWAP and enable ZRAM?" y; then
-    disable_swap
-    enable_zram
+    disable_swap; enable_zram
   fi
-
   # System tweaks (interactive)
   ask "Optimize fstab (noatime, nodiratime)?" y && optimize_fstab
   ask "Reduce systemd stop timeout to 5s?" y && optimize_systemd
   ask "Disable extra TTYs (2-6) for RAM savings?" n && disable_extra_ttys
-
   track_disk "After"
-
   log "${GRN}✓${DEF} Minification & privacy hardening complete"
   log "Disk before: ${cfg[disk_before]}"
   log "Disk after:  ${cfg[disk_after]}"
   warn "Reboot recommended to fully apply changes"
 }
-
 main "$@"

@@ -36,9 +36,8 @@ display_banner(){
     done
   fi
 }
-#============ Banner ====================
-banner=$(
-  cat << 'EOF'
+# Banner
+banner=$(cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -48,11 +47,9 @@ banner=$(
 EOF
 )
 display_banner "$banner" "$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU"
-echo "Meow (> ^ <)"
-#============ Safety ====================
-load_dietpi_globals
-sync
-#=============================================================
+printf '%s\n' "Meow (> ^ <)"
+# Safety
+load_dietpi_globals; sync
 # Clean APT lists before update
 sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
 if has apt-fast; then
@@ -81,8 +78,4 @@ fi
 has pihole && yes | sudo pihole -up
 has rpi-eeprom-update && sudo rpi-eeprom-update -a
 export PRUNE_MODULES=1 SKIP_VCLIBS=1 SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0
-has rpi-update && PRUNE_MODULES=1 SKIP_VCLIBS=1 SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0 sudo rpi-update 2>/dev/null || :
-#sudo JUST_CHECK=1 rpi-update
-# https://github.com/raspberrypi/rpi-update/blob/master/rpi-update
-# Test:
-# PRUNE_MODULES=1 SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0
+has rpi-update && sudo rpi-update 2>/dev/null || :

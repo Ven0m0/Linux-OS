@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Optimized: 2025-11-19 - Applied bash optimization techniques
-#
 # DESCRIPTION: Automated Raspberry Pi system optimization and tooling setup
 #              Targets: Debian/Raspbian, DietPi
-set -euo pipefail; shopt -s nullglob globstar extglob; IFS=$'\n\t'
+set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
 cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd -P)" || exit 1
 # Colors
@@ -17,11 +15,9 @@ log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
 warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
 err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
 die(){ err "$1"; exit "${2:-1}"; }
-
 # Config flags
 declare -A cfg=([dry_run]=0 [skip_external]=0 [minimal]=0 [quiet]=0)
 run(){ ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
-
 # Safe cleanup workspace
 WORKDIR=$(mktemp -d)
 cleanup(){
@@ -30,7 +26,6 @@ cleanup(){
 }
 trap cleanup EXIT
 trap 'err "failed at line $LINENO"' ERR
-
 usage(){
   cat << 'EOF'
 pi-setup.sh - Raspberry Pi optimization & tooling automation

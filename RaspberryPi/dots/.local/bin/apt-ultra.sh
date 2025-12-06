@@ -8,21 +8,14 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 
 #──────────── Constants ────────────
-readonly VERSION="1.0.0"
-readonly RC_INVALID_ARGS=3
-readonly RC_MISC_ERROR=222
-readonly LCK_FILE="/tmp/apt-ultra"
-readonly LCK_FD=99
-
-#──────────── Colors ────────────────
+readonly VERSION="1.0.0" RC_INVALID_ARGS=3 RC_MISC_ERROR=222 LCK_FILE="/tmp/apt-ultra" LCK_FD=99
+# Colors
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-
-[[ !  -t 1 ]] && BLK='' RED='' GRN='' YLW='' BLU='' MGN='' CYN='' WHT='' LBLU='' PNK='' BWHT='' DEF='' BLD=''
-
-#──────────── Helpers ──────────────
+[[ ! -t 1 ]] && BLK='' RED='' GRN='' YLW='' BLU='' MGN='' CYN='' WHT='' LBLU='' PNK='' BWHT='' DEF='' BLD=''
+# Helpers
 has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf '%b\n' "${2:-$GRN}$1$DEF" "${@:3}"; }
 warn(){ msg "$*" "$YLW" >&2; }
@@ -42,10 +35,10 @@ max_lines(){ awk "NR<=$1"; }
 matches(){ [[ $1 =~ $2 ]]; }
 __xargs(){ env -i HOME="$HOME" LC_CTYPE="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" PATH="$PATH" TERM="${TERM:-}" USER="${USER:-}" xargs "$@"; }
 
-#──────────── Config ────────────────
+# Config
 CONF_FILE="/etc/apt-ultra.conf"
 DLDIR="/var/cache/apt/apt-ultra"
-DLLIST="/tmp/apt-ultra. list"
+DLLIST="/tmp/apt-ultra.list"
 APTCACHE="/var/cache/apt/archives"
 # Defaults
 _APTMGR='apt-get'
@@ -73,20 +66,17 @@ run_downloader() {
     --uri-selector=adaptive --console-log-level=error --summary-interval=0
 }
 
-#──────────── Lock ──────────────────
+# Lock
 CLEANUP_STATE=0
-
 _create_lock(){
-  eval "exec $LCK_FD>\"$LCK_FILE. lock\""
-  flock -n "$LCK_FD" || die "apt-ultra already running!  Remove $LCK_FILE.lock if stuck."
-  trap "cleanup_all; exit \$CLEANUP_STATE" EXIT
-  trap "cleanup_all; exit 1" INT TERM
+  eval "exec $LCK_FD>\"$LCK_FILE.lock\""
+  flock -n "$LCK_FD" || die "apt-ultra already running! Remove $LCK_FILE.lock if stuck."
+  trap "cleanup_all; exit \$CLEANUP_STATE" EXIT; trap "cleanup_all; exit 1" INT TERM
 }
 _remove_lock(){ flock -u "$LCK_FD" 2>/dev/null || :; rm -f "$LCK_FILE.lock"; }
 cleanup_all(){
-  local rc=$?
-  [[ $CLEANUP_STATE -eq 0 ]] && CLEANUP_STATE=$rc
-  [[ -f $DLLIST ]] && { mv "$DLLIST"{,.old} 2>/dev/null || rm -f "$DLLIST" 2>/dev/null || warn "Could not clean download list. "; }
+  local rc=$?; [[ $CLEANUP_STATE -eq 0 ]] && CLEANUP_STATE=$rc
+  [[ -f $DLLIST ]] && { mv "$DLLIST"{,.old} 2>/dev/null || rm -f "$DLLIST" 2>/dev/null || warn "Could not clean download list."; }
   _remove_lock
 }
 
@@ -130,31 +120,24 @@ get_current_mirror(){
   esac
   local cfgfile
   case $dist_name in
-    debian) cfgfile='/etc/apt/sources.list. d/debian.sources' ;;
-    kali)   cfgfile='/etc/apt/sources.list' ;;
+    debian) cfgfile='/etc/apt/sources.list.d/debian.sources';;
+    kali) cfgfile='/etc/apt/sources.list';;
     ubuntu|pop)
-      if [[ -f /etc/apt/sources.list. d/ubuntu. sources ]]; then
-        cfgfile='/etc/apt/sources. list.d/ubuntu.sources'
-      else
-        cfgfile='/etc/apt/sources.list.d/system.sources'
-      fi ;;
+      if [[ -f /etc/apt/sources.list.d/ubuntu.sources ]]; then cfgfile='/etc/apt/sources.list.d/ubuntu.sources'
+      else cfgfile='/etc/apt/sources.list.d/system.sources'; fi;;
   esac
   local mirror=$(read_main_mirror_from_deb822_file "$cfgfile")
   if [[ -z $mirror && -f /etc/apt/sources.list ]]; then
-    if grep -q -E "^deb\s+mirror\+file:/etc/apt/apt-mirrors. txt\s+.*\s+main" /etc/apt/sources. list; then
-      cfgfile=/etc/apt/apt-mirrors.txt
-      mirror=$(awk 'NR==1 { print $1 }' "$cfgfile")
+    if grep -q -E "^deb\s+mirror\+file:/etc/apt/apt-mirrors.txt\s+.*\s+main" /etc/apt/sources.list; then
+      cfgfile=/etc/apt/apt-mirrors.txt; mirror=$(awk 'NR==1 { print $1 }' "$cfgfile")
     else
-      cfgfile=/etc/apt/sources.list
-      mirror=$(grep -E "^deb\s+(https?|ftp)://.*\s+main" "$cfgfile" | awk 'NR==1 { print $2 }')
+      cfgfile=/etc/apt/sources.list; mirror=$(grep -E "^deb\s+(https?|ftp)://.*\s+main" "$cfgfile" | awk 'NR==1 { print $2 }')
     fi
   elif [[ $mirror == "mirror+file:"* ]]; then
-    cfgfile=${mirror/mirror+file:/}
-    mirror=$(awk 'NR==1 { print $1 }' "${mirror/mirror+file:/}")
+    cfgfile=${mirror/mirror+file:/}; mirror=$(awk 'NR==1 { print $1 }' "${mirror/mirror+file:/}")
   fi
   [[ -z $mirror ]] && { warn "Current mirror: unknown"; return; }
-  msg "Current mirror: $mirror ($cfgfile)"
-  [[ !  -t 1 ]] && { echo "$mirror"; echo "$cfgfile"; }
+  msg "Current mirror: $mirror ($cfgfile)"; [[ ! -t 1 ]] && { echo "$mirror"; echo "$cfgfile"; }
 }
 
 find_fast_mirror(){
@@ -212,7 +195,7 @@ EOF
       last_modified_path="/dists/${dist_version}-updates/main/Contents-${dist_arch}.gz" ;;
     kali)
       reference_mirror=https://http.kali.org/
-      mirrors=$(curl -sSfL https://http.kali. org/README? mirrorlist | grep -oP '(?<=README">)(https. *)(? =</a)')
+      mirrors=$(curl -sSfL https://http.kali.org/README?mirrorlist | grep -oP '(?<=README">)(https.*?)(?=</a>)')
       last_modified_path="/dists/${dist_version}/main/Contents-${dist_arch}.gz" ;;
     ubuntu|pop)
       if [[ $dist_arch == "arm64" || $dist_arch == "armhf" ]]; then
@@ -220,7 +203,7 @@ EOF
       else
         reference_mirror=http://archive.ubuntu.com/ubuntu/
       fi
-      mirrors=$(curl --max-time 5 -sSfL "http://mirrors.ubuntu.com/${country:-mirrors}. txt")
+      mirrors=$(curl --max-time 5 -sSfL "http://mirrors.ubuntu.com/${country:-mirrors}.txt")
       [[ $dist_arch == "arm64" || $dist_arch == "armhf" ]] && mirrors+=$'\n'"http://ports.ubuntu.com/ubuntu-ports/"
       last_modified_path="/dists/${dist_version}-security/Contents-${dist_arch}.gz" ;;
   esac
@@ -288,8 +271,8 @@ EOF
     echo "$speedtest_mirrors" \
     | grep -v '^[[:space:]]*$' \
     | __xargs -P "$parallel" -I{} bash -c \
-      "printf '%s\t%s\n' \"\$(curl -r 0-$sample_bytes --max-time $sample_secs -sS -w '%{speed_download}' -o /dev/null \"\${1}ls-lR. gz\" 2>/dev/null || echo 0)\" \"\$1\"; >&2 printf '. '" _ {} \
-    | awk -F'\t' '$1 ~ /^[0-9. ]+$/ && $2 ~ /^https?:\/\// { print }' \
+      "printf '%s\t%s\n' \"\$(curl -r 0-$sample_bytes --max-time $sample_secs -sS -w '%{speed_download}' -o /dev/null \"\${1}ls-lR.gz\" 2>/dev/null || echo 0)\" \"\$1\"; >&2 printf '.'" _ {} \
+    | awk -F'\t' '$1 ~ /^[0-9.]+$/ && $2 ~ /^https?:\/\// { print }' \
     | sort -rg
   )
   msg " ✓ done" "$GRN"
@@ -297,7 +280,7 @@ EOF
   local first="${mirrors_with_speed%%$'\n'*}"
   local fastest=$(echo "$first" | awk -F'\t' '{ print $2 }')
   local speed=$(echo "$first" | awk -F'\t' '{ print $1 }' | numfmt --to=iec --suffix=B/s)
-  [[ !  $fastest =~ ^https?:// ]] && die "Invalid fastest mirror: $fastest"
+  [[ ! $fastest =~ ^https?:// ]] && die "Invalid fastest mirror: $fastest"
   [[ $verbosity -gt 0 ]] && echo "$mirrors_with_speed" | tail -n +2 | tac | while IFS= read -r m; do
     local sp=$(echo "${m%%$'\n'*}" | awk -F'\t' '{ print $1 }' | numfmt --to=iec --suffix=B/s)
     msg " → $(echo "$m" | awk -F'\t' '{ print $2 }') ($sp)" "$CYN"
@@ -322,7 +305,7 @@ set_mirror(){
   if [[ ${current[0]} == "$new_mirror" ]]; then
     msg "Already using: $new_mirror" "$GRN"
   else
-    local backup="${current[1]}. $(date +'%Y%m%d_%H%M%S'). save"
+    local backup="${current[1]}.$(date +'%Y%m%d_%H%M%S').save"
     msg "Creating backup: $backup" "$YLW"
     run_priv cp "${current[1]}" "$backup"
     msg "Changing mirror from [${current[0]}] to [$new_mirror]..." "$BLU"
@@ -336,20 +319,16 @@ set_mirror(){
   fi
 }
 
-#────────── APT Operations ──────────
+# APT Operations
 urldecode(){ printf '%b' "${1//%/\\x}"; }
 get_uris(){
-  [[ !  -d $(dirname "$DLLIST") ]] && { mkdir -p "$(dirname "$DLLIST")" || die "Cannot create download dir. "; }
+  [[ ! -d $(dirname "$DLLIST") ]] && { mkdir -p "$(dirname "$DLLIST")" || die "Cannot create download dir."; }
   [[ -f $DLLIST ]] && { rm -f "$DLLIST" 2>/dev/null || die "Cannot write to $DLLIST"; }
-  echo "# apt-ultra download list: $(date)" > "$DLLIST"
+  echo "# apt-ultra download list: $(date)" >"$DLLIST"
   local uri_mgr="$_APTMGR"
-  case "$(basename "$_APTMGR")" in
-    apt|apt-get) uri_mgr="$_APTMGR" ;;
-    *) uri_mgr='apt-get' ;;
-  esac
-  local uris_full=$("$uri_mgr" -y --print-uris "$@" 2>&1)
-  CLEANUP_STATE=$?
-  [[ $CLEANUP_STATE -ne 0 ]] && { err "Package manager failed. "; return; }
+  case "$(basename "$_APTMGR")" in apt|apt-get) uri_mgr="$_APTMGR";; *) uri_mgr='apt-get';; esac
+  local uris_full=$("$uri_mgr" -y --print-uris "$@" 2>&1); CLEANUP_STATE=$?
+  [[ $CLEANUP_STATE -ne 0 ]] && { err "Package manager failed."; return; }
   local DOWNLOAD_SIZE=0
   while IFS=' ' read -r uri filename filesize _; do
     [[ -z $uri ]] && continue
@@ -364,50 +343,29 @@ get_uris(){
   msg "Download size: $(echo "$DOWNLOAD_SIZE" | numfmt --to=iec-i --suffix=B)" "$LBLU"
 }
 
-#────────── Main ────────────────────
+# Main
 usage(){
   cat <<EOF
 ${LBLU}apt-ultra${DEF} v${VERSION} - Fast APT package manager
-
-${BLD}Usage:${DEF}
-  apt-ultra <command> [options] [packages...]
-
+${BLD}Usage:${DEF}  apt-ultra <command> [options] [packages...]
 ${BLD}Commands:${DEF}
-  install, upgrade, full-upgrade, dist-upgrade, build-dep
-    Install/upgrade packages with parallel downloads
-
-  find-mirror [--apply] [--verbose]
-    Find fastest mirror (optionally apply)
-
-  set-mirror <URL>
-    Set APT mirror to URL
-
-  current-mirror
-    Show current mirror
-
-  clean, autoclean
-    Clean package cache
-
-${BLD}Environment:${DEF}
-  Config: ${CONF_FILE}
-  Cache: ${DLDIR}
-  Backends: aria2c → apt-fast → nala → apt-get
-
-${BLD}Examples:${DEF}
-  apt-ultra install nginx
-  apt-ultra find-mirror --apply
-  apt-ultra upgrade -y
+  install, upgrade, full-upgrade, dist-upgrade, build-dep - Install/upgrade packages with parallel downloads
+  find-mirror [--apply] [--verbose] - Find fastest mirror (optionally apply)
+  set-mirror <URL> - Set APT mirror to URL
+  current-mirror - Show current mirror
+  clean, autoclean - Clean package cache
+${BLD}Environment:${DEF}  Config: ${CONF_FILE}  Cache: ${DLDIR}  Backends: aria2c → apt-fast → nala → apt-get
+${BLD}Examples:${DEF}  apt-ultra install nginx  apt-ultra find-mirror --apply  apt-ultra upgrade -y
 EOF
 }
 
 main(){
-  _create_lock
-  local cmd=${1:-}
+  _create_lock; local cmd=${1:-}
   [[ $cmd == "--help" || $cmd == "-h" || -z $cmd ]] && { usage; exit 0; }
   case $cmd in
-    find-mirror) shift; find_fast_mirror "$@" ;;
-    set-mirror) shift; set_mirror "$@" ;;
-    current-mirror) get_current_mirror | max_lines 1 ;;
+    find-mirror) shift; find_fast_mirror "$@";;
+    set-mirror) shift; set_mirror "$@";;
+    current-mirror) get_current_mirror | max_lines 1;;
     install|upgrade|full-upgrade|dist-upgrade|build-dep)
       if has aria2c; then
         msg "Fetching package URIs..." "$BLU"

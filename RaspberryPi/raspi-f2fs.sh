@@ -5,7 +5,7 @@
 #              - Auto-expands filesystem to fill SD card.
 # USAGE: sudo ./raspi-f2fs.sh [-i image.xz | url | "dietpi"] [-d /dev/sdX]
 # DEPENDENCIES: fzf, f2fs-tools, rsync, util-linux, parted, gawk, curl, xz
-set -Eeuo pipefail
+set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}" PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"

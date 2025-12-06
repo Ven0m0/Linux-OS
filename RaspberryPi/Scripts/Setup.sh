@@ -3,10 +3,9 @@
 #
 # DESCRIPTION: Automated Raspberry Pi system optimization and tooling setup
 #              Targets: Debian/Raspbian, DietPi
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive HOME="/home/${SUDO_USER:-$USER}"
+set -euo pipefail; shopt -s nullglob globstar extglob; IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
+cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd -P)" || exit 1
 # Colors
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Optimized: 2025-11-29 - Merged AutoSetup.sh and setup2.sh into Setup.sh
 set -euo pipefail
 shopt -s nullglob globstar extglob
 IFS=$'\n\t'
@@ -399,7 +398,17 @@ set_wireless_regdom() {
   echo "WIRELESS_REGDOM=\"$country\"" | sudo tee -a /etc/conf.d/wireless-regdom > /dev/null
   command -v iw &> /dev/null && sudo iw reg set "$country" || :
 }
-
+firewall() {
+  if command -v ufw &>/dev/null; then
+    sudo ufw disable
+    sudo ufw limit 22/tcp
+    sudo ufw allow 80/tcp
+    sudo ufw ufw allow 443/tcp
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+    sudo ufw enable
+  fi
+}
 #══════════════════════════════════════════════════════════════
 #  SYSTEM MAINTENANCE
 #══════════════════════════════════════════════════════════════

@@ -8,9 +8,7 @@ has() { command -v -- "$1" &> /dev/null; }
 find_with_fallback() {
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
   shift 4 2> /dev/null || shift $#
-  if has fdf; then
-    fdf -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
-  elif has fd; then
+  if has fd; then
     fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
   elif has fdfind; then
     fdfind -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"

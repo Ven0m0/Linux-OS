@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Setup Copyparty with network access and Samba support (Debian/Raspbian)
-set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
@@ -9,9 +11,12 @@ readonly COPYPARTY_DIR="$HOME/Public"
 printf '%s\n' "Setting up Copyparty with network access and Samba support..."
 # Install necessary packages (apt for Debian/Raspbian)
 printf '%s\n' "Installing packages..."
-sudo apt-get update && sudo apt-get install -y python3-pip samba avahi-daemon libnss-mdns || { printf '%s\n' "Error: Failed to install required packages" >&2; exit 1; }
+sudo apt-get update && sudo apt-get install -y python3-pip samba avahi-daemon libnss-mdns || {
+  printf '%s\n' "Error: Failed to install required packages" >&2
+  exit 1
+}
 # Install copyparty via pip if not available
-if ! command -v copyparty &>/dev/null; then
+if ! command -v copyparty &> /dev/null; then
   printf '%s\n' "Installing copyparty via pip..."
   pip3 install --user copyparty
 fi
@@ -53,7 +58,7 @@ mkdir -p ~/Public/uploads ~/Public/share
 # Configure Samba
 printf '%s\n' "Configuring Samba..."
 CURRENT_USER="$(whoami)"
-sudo tee /etc/samba/smb.conf >/dev/null << EOF
+sudo tee /etc/samba/smb.conf > /dev/null << EOF
 [global]
   workgroup = WORKGROUP
   server string = Copyparty Samba Server
@@ -95,11 +100,19 @@ printf '%s\n' "Enabling and starting services..."
 sudo systemctl enable --now smbd nmbd avahi-daemon || printf '%s\n' "Warning: Failed to enable some system services" >&2
 systemctl --user daemon-reload
 systemctl --user enable copyparty.service
-systemctl --user start copyparty.service || { printf '%s\n' "Error: Failed to start copyparty service" >&2; printf '%s\n' "Check logs with: systemctl --user status copyparty.service" >&2; exit 1; }
+systemctl --user start copyparty.service || {
+  printf '%s\n' "Error: Failed to start copyparty service" >&2
+  printf '%s\n' "Check logs with: systemctl --user status copyparty.service" >&2
+  exit 1
+}
 # Enable linger
 sudo loginctl enable-linger "$(whoami)"
 # Configure firewall if active
-systemctl is-active --quiet ufw && { printf '%s\n' "Configuring ufw..."; sudo ufw allow "$COPYPARTY_PORT"/tcp; sudo ufw allow Samba; }
+systemctl is-active --quiet ufw && {
+  printf '%s\n' "Configuring ufw..."
+  sudo ufw allow "$COPYPARTY_PORT"/tcp
+  sudo ufw allow Samba
+}
 # Get local IP
 IP=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -n 1)
 printf '\n%.0s' {1..2}

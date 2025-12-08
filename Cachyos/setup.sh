@@ -333,7 +333,7 @@ setup_nvidia() {
   # Detect kernel headers with early exit
   local headers="linux-headers"
   for kernel in linux-hardened linux-lts linux-zen; do
-    if pacman -Q "$kernel" &>/dev/null; then
+    if pacman -Q "$kernel" &> /dev/null; then
       headers="${kernel}-headers"
       break
     fi
@@ -399,7 +399,7 @@ set_wireless_regdom() {
   command -v iw &> /dev/null && sudo iw reg set "$country" || :
 }
 firewall() {
-  if command -v ufw &>/dev/null; then
+  if command -v ufw &> /dev/null; then
     sudo ufw disable
     sudo ufw limit 22/tcp
     sudo ufw allow 80/tcp

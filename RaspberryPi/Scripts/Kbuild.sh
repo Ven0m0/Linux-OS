@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 # WARNING: This script will reboot the system after kernel installation
-has(){ command -v -- "$1" &>/dev/null; }
-find_with_fallback(){
+has() { command -v -- "$1" &> /dev/null; }
+find_with_fallback() {
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
-  shift 4 2>/dev/null || shift $#
+  shift 4 2> /dev/null || shift $#
   if has fd; then
     fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
   elif has fdfind; then
@@ -42,5 +44,6 @@ cp arch/arm64/boot/Image.gz /boot/kernel8.img
 # Update the bootloader
 echo "dtoverlay=vc4-kms-v3d" >> /boot/config.txt
 # Reboot
-printf '%s\n' "Rebooting in 10 seconds..."; sleep 10
+printf '%s\n' "Rebooting in 10 seconds..."
+sleep 10
 sudo systemctl reboot -q || sudo reboot

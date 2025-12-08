@@ -28,10 +28,7 @@ readonly SEVENZIP="7z"
 # Logging
 log(){ printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 err(){ printf '[ERROR] %s\n' "$*" >&2; }
-die(){
-  err "$1"
-  exit "${2:-1}"
-}
+die(){ err "$1"; exit "${2:-1}"; }
 
 # Check required tools
 has(){ command -v "$1" &> /dev/null; }

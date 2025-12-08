@@ -17,10 +17,7 @@ has(){ command -v -- "$1" &> /dev/null; }
 log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
 warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
 err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
-die(){
-  err "$1"
-  exit "${2:-1}"
-}
+die(){ err "$1"; exit "${2:-1}"; }
 # Config
 declare -A cfg=([dry_run]=0 [interactive]=1 [aggressive]=0 [disk_before]=0 [disk_after]=0)
 run(){ ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }

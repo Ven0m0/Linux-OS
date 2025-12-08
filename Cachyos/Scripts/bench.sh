@@ -26,10 +26,7 @@ xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "$*"; }
 warn(){ xecho "${YLW}WARN:${DEF} $*" >&2; }
 err(){ xecho "${RED}ERROR:${DEF} $*" >&2; }
-die(){
-  err "$*"
-  exit "${2:-1}"
-}
+die(){ err "$*"; exit "${2:-1}"; }
 
 # Override HOME for SUDO_USER context
 export HOME="/home/${SUDO_USER:-$USER}"

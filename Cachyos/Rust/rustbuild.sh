@@ -13,10 +13,7 @@ has(){ command -v "$1" &> /dev/null; }
 log(){ printf '%s\n' "${BLU}→${DEF} $*"; }
 warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
 err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
-die(){
-  err "$*"
-  exit "${2:-1}"
-}
+die(){ err "$*"; exit "${2:-1}"; }
 
 # Require cargo
 has cargo || die "cargo not found"

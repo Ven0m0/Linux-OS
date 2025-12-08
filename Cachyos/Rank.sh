@@ -48,10 +48,7 @@ xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${GRN}${BLD}[${1:-INFO}]${DEF} ${*:2}" | tee -a "$LOGFILE"; }
 warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
 err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die(){
-  err "$1"
-  exit "${2:-1}"
-}
+die(){ err "$1"; exit "${2:-1}"; }
 backup(){
   [[ -f $1 ]] || return 0
   mkdir -p "$BACKUPDIR"

@@ -5,8 +5,8 @@ cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 sudo -v
 
 # Optimization wrapper
-cargo_install(){
-  if command -v cargo-binstall &>/dev/null; then
+cargo_install() {
+  if command -v cargo-binstall &> /dev/null; then
     cargo binstall -y --locked "$@" || cargo install --locked "$@"
   else
     cargo install --locked "$@"
@@ -43,7 +43,7 @@ cargo install minhtml
 cargo install kelpsget
 # Update-alternatives for arch
 sudo pacman --needed --noconfirm -S zenity
-command -v update-alternatives &>/dev/null || cargo_install --git "https://github.com/fthomys/update-alternatives"
+command -v update-alternatives &> /dev/null || cargo_install --git "https://github.com/fthomys/update-alternatives"
 pbin="$(command -v update-alternatives || echo "$HOME"/.cargo/bin/update-alternatives)"
 sudo ln -sf "$pbin" "/usr/local/bin/${pbin##*/}"
 sudo tee "/etc/pacman.d/hooks/update-alternatives.hook" > /dev/null << 'EOF'
@@ -71,6 +71,5 @@ sudo pacman --needed --noconfirm -S jaq
 # - https://github.com/levinion/stor
 # Nix
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-
 
 find "${HOME}/.cargo/bin/" -maxdepth 1 -type f -executable -exec strip -sx {} +

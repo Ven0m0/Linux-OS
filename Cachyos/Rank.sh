@@ -43,14 +43,18 @@ KEYSERVERS=( # We want to use keyservers only with secured (hkps or https) conne
 # Colors
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[1;33m' CYN=$'\e[36m' DEF=$'\e[0m' BLD=$'\e[1m'
 # Helpers
-has(){ command -v "$1" &>/dev/null; }
-xecho(){ printf '%b\n' "$*"; }
-log(){ xecho "${GRN}${BLD}[${1:-INFO}]${DEF} ${*:2}" | tee -a "$LOGFILE"; }
-warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die(){ err "$1"; exit "${2:-1}"; }
-backup(){
-  [[ -f $1 ]] || return 0; mkdir -p "$BACKUPDIR"
+has() { command -v "$1" &> /dev/null; }
+xecho() { printf '%b\n' "$*"; }
+log() { xecho "${GRN}${BLD}[${1:-INFO}]${DEF} ${*:2}" | tee -a "$LOGFILE"; }
+warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die() {
+  err "$1"
+  exit "${2:-1}"
+}
+backup() {
+  [[ -f $1 ]] || return 0
+  mkdir -p "$BACKUPDIR"
   cp -a "$1" "$BACKUPDIR/${1##*/}-$(printf '%s' "$EPOCHSECONDS").bak"
   find "$BACKUPDIR" -name "${1##*/}-*.bak" -printf '%T@ %p\n' | sort -rn | tail -n+6 | awk '{print $2}' | xargs -r rm -f
 }

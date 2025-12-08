@@ -5,7 +5,7 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'owner/my_repo'
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'Ven0m0/Linux-OS'
     steps:
       - name: Dependabot metadata
         id: metadata

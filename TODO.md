@@ -11,6 +11,7 @@
 - https://github.com/SixArm/unix-shell-script-tactics
 - https://github.com/ayumu436/arch-linux-scripts
 - https://github.com/klaver/sysctl
+- https://github.com/adrianlarion/useful-sed
 
 ### Package manager
 - https://github.com/excalibur1234/pacui

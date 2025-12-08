@@ -34,3 +34,16 @@
 **Discord related**
 - https://autocompressor.net/av1
 - https://autocompressor.net
+
+
+## Bash
+
+- https://github.com/adrianlarion/useful-sed
+- <https://dotfiles.github.io/>
+- <https://terminal.sexy/>
+- <https://wiki.archlinux.org/title/Git>
+- [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
+- [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
+- [Bash Guide](https://guide.bash.academy) **|** [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
+- [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
+- [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)

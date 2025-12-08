@@ -9,14 +9,11 @@ export LC_ALL=C LANG=C
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
 
 # Helpers
-has() { command -v "$1" &> /dev/null; }
-log() { printf '%s\n' "${BLU}→${DEF} $*"; }
-warn() { printf '%s\n' "${YLW}WARN:${DEF} $*"; }
-err() { printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
-die() {
-  err "$*"
-  exit "${2:-1}"
-}
+has(){ command -v "$1" &> /dev/null; }
+log(){ printf '%s\n' "${BLU}→${DEF} $*"; }
+warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
+err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
+die(){ err "$*"; exit "${2:-1}"; }
 
 # Require cargo
 has cargo || die "cargo not found"
@@ -30,7 +27,7 @@ has mold && RUSTFLAGS+=" -C link-arg=-fuse-ld=mold"
 FD=$(command -v fd || command -v fdfind || echo "")
 
 # Safe find function using fd or find
-find_files() {
+find_files(){
   local pattern=$1 path=${2:-.}
   if [[ -n $FD ]]; then
     "$FD" -H -t f "$pattern" "$path" 2> /dev/null || :
@@ -39,7 +36,7 @@ find_files() {
   fi
 }
 
-usage() {
+usage(){
   cat << 'EOF'
 Usage: rustbuild.sh [OPTIONS]
 
@@ -73,9 +70,9 @@ while (($#)); do
   shift
 done
 
-run() { ((DRY_RUN)) && log "[DRY] $*" || "$@"; }
+run(){ ((DRY_RUN)) && log "[DRY] $*" || "$@"; }
 
-main() {
+main(){
   log "Starting Rust optimization workflow..."
 
   # 1. Update & audit deps

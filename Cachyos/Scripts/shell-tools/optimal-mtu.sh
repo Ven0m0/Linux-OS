@@ -3,23 +3,23 @@ set -euo pipefail
 shopt -s nullglob
 IFS=$'\n\t' LC_ALL=C LANG=C
 export HOME="/home/${SUDO_USER:-$USER}"
-has() { command -v -- "$1" &> /dev/null; }
-die() {
+has(){ command -v -- "$1" &> /dev/null; }
+die(){
   echo "ERROR: $*" >&2
   exit 1
 }
-check_requirements() {
+check_requirements(){
   local -a missing=() reqs=(ping ip)
   for req in "${reqs[@]}"; do
     has "$req" || missing+=("$req")
   done
   ((${#missing[@]})) && die "Missing tools: ${missing[*]}"
 }
-detect_ip_version() {
+detect_ip_version(){
   local addr="$1"
   [[ $addr =~ : ]] && echo "6" || echo "4"
 }
-select_interface() {
+select_interface(){
   local -a ifaces
   mapfile -t ifaces < <(ip -br link | awk '$1! ~/(lo|veth|docker|br-)/{print $1}')
   ((${#ifaces[@]})) || die "No valid interfaces found"
@@ -36,7 +36,7 @@ select_interface() {
   [[ $n =~ ^[0-9]+$ && $n -ge 1 && $n -le ${#ifaces[@]} ]] || die "Invalid selection"
   echo "${ifaces[$((n - 1))]}"
 }
-persist_mtu() {
+persist_mtu(){
   local iface=$1 mtu=$2
   if has nmcli && [[ -n $(nmcli -t dev | grep "^$iface:") ]]; then
     local conn
@@ -90,7 +90,7 @@ EOF
   echo "Manual persistence needed - no supported network manager found"
 }
 
-find_mtu_binary() {
+find_mtu_binary(){
   local srv="$1" iface="$2" lo=1200 hi=1500 mid opt ipver overhead ping_cmd
   ipver=$(detect_ip_version "$srv")
   if [[ $ipver == "6" ]]; then
@@ -119,7 +119,7 @@ find_mtu_binary() {
   echo "$opt"
 }
 
-find_mtu_incremental() {
+find_mtu_incremental(){
   local srv="$1" iface="$2" step="$3" current last_ok min_mtu=1000 max_mtu=1500 ipver overhead ping_cmd
   ipver=$(detect_ip_version "$srv")
   if [[ $ipver == "6" ]]; then
@@ -158,7 +158,7 @@ find_mtu_incremental() {
   echo "$last_ok"
 }
 
-main() {
+main(){
   local srv step_mode=0 step_size=5 iface opt choice persist_choice
   check_requirements
   while getopts "s:h" opt; do

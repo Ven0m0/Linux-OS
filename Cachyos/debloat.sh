@@ -10,13 +10,13 @@ export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 export RED GRN YLW DEF
 # Core helper functions
-has() { command -v -- "$1" &> /dev/null; }
-xecho() { printf '%b\n' "$*"; }
-msg() { printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
+has(){ command -v -- "$1" &> /dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 sudo -v
 
 # --- Platform Detection ---
-detect_platform() {
+detect_platform(){
   if command -v pacman &> /dev/null; then
     echo "arch"
   elif command -v apt-get &> /dev/null; then
@@ -27,7 +27,7 @@ detect_platform() {
 }
 
 # --- Arch-based Debloat ---
-debloat_arch() {
+debloat_arch(){
   msg "## Debloating Arch-based system..."
   # Remove mostly useless packages
   msg "Removing unnecessary packages..."
@@ -54,7 +54,7 @@ debloat_arch() {
   has ufw && sudo ufw logging off 2> /dev/null || :
 }
 # --- Debian-based Debloat ---
-debloat_debian() {
+debloat_debian(){
   msg "## Debloating Debian-based system..."
   # Remove LibreOffice (if not needed)
   msg "Removing LibreOffice..."
@@ -81,12 +81,12 @@ debloat_debian() {
   sudo apt-get autoclean -y
   sudo apt-get autoremove -y --purge
 }
-debloat_linux() {
+debloat_linux(){
   umask 077
 }
 
 # --- Main Execution ---
-main() {
+main(){
   local platform
   platform=$(detect_platform)
   msg "Detected platform: $platform"

@@ -23,18 +23,18 @@ declare -g IMG_FILE="" LOOP_DEV="" ROOT_PART="" BOOT_PART=""
 declare -ga MOUNTED_POINTS=()
 
 # Helpers
-has() { command -v "$1" &> /dev/null; }
-log() { printf '[%s] %b%s%b\n' "$(date +%T)" "${BLU}${BLD}[*]${DEF} " "$*"; }
-msg() { printf '[%s] %b%s%b\n' "$(date +%T)" "${GRN}${BLD}[+]${DEF} " "$*"; }
-warn() { printf '[%s] %b%s%b\n' "$(date +%T)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
-err() { printf '[%s] %b%s%b\n' "$(date +%T)" "${RED}${BLD}[-]${DEF} " "$*" >&2; }
-die() {
+has(){ command -v "$1" &> /dev/null; }
+log(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${BLU}${BLD}[*]${DEF} " "$*"; }
+msg(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${GRN}${BLD}[+]${DEF} " "$*"; }
+warn(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
+err(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${RED}${BLD}[-]${DEF} " "$*" >&2; }
+die(){
   err "$1"
   cleanup
   exit "${2:-1}"
 }
 
-check_deps() {
+check_deps(){
   local -a deps=(losetup parted mount umount qemu-aarch64-static)
   local missing=()
   for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
@@ -55,7 +55,7 @@ check_deps() {
   fi
 }
 
-cleanup() {
+cleanup(){
   set +e
   log "Cleaning up..."
 
@@ -86,7 +86,7 @@ cleanup() {
   msg "Cleanup complete. Image saved."
 }
 
-setup_image() {
+setup_image(){
   local img="$1"
   [[ -f "$img" ]] || die "Image file not found: $img"
 
@@ -111,7 +111,7 @@ setup_image() {
   mount "$BOOT_PART" "$MOUNT_DIR/boot" || die "Failed to mount boot"
 }
 
-setup_chroot() {
+setup_chroot(){
   log "Setting up QEMU and bind mounts..."
 
   # Copy static QEMU binary
@@ -127,7 +127,7 @@ setup_chroot() {
   done
 }
 
-run_optimization() {
+run_optimization(){
   msg "Entering CHROOT environment (ARM64)..."
   echo "-----------------------------------------------------"
   echo "  You are now inside the image."

@@ -16,22 +16,19 @@ else
 fi
 
 # === Logging Functions ===
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "${BLU}${BLD}[*]${DEF} $*"; }
-msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die() {
-  err "$1"
-  exit "${2:-1}"
-}
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
-sec() { printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){ err "$1"; exit "${2:-1}"; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
+sec(){ printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
 
 # === Tool Detection ===
-has() { command -v "$1" &> /dev/null; }
+has(){ command -v "$1" &> /dev/null; }
 
-hasname() {
+hasname(){
   local cmd
   for cmd in "$@"; do
     if has "$cmd"; then
@@ -47,7 +44,7 @@ readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && echo 1 || echo 0)"
 readonly NPROC="$(nproc 2> /dev/null || echo 4)"
 
 # === ADB/Device Utilities ===
-detect_adb() {
+detect_adb(){
   local adb_cmd
   if ((IS_TERMUX)); then
     adb_cmd="$(hasname rish)" || {
@@ -63,7 +60,7 @@ detect_adb() {
   printf '%s' "$adb_cmd"
 }
 
-ash() {
+ash(){
   local adb_cmd
   adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
 
@@ -82,7 +79,7 @@ ash() {
   fi
 }
 
-device_ok() {
+device_ok(){
   local adb_cmd
   adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
 
@@ -102,7 +99,7 @@ device_ok() {
   return 0
 }
 
-wait_for_device() {
+wait_for_device(){
   local timeout="${1:-30}"
   local adb_cmd
   adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
@@ -120,7 +117,7 @@ wait_for_device() {
 }
 
 # === Package Manager Detection ===
-pm_detect() {
+pm_detect(){
   if has paru; then
     printf 'paru'
     return
@@ -145,7 +142,7 @@ pm_detect() {
 }
 
 # === Confirmation Prompt ===
-confirm() {
+confirm(){
   local prompt="${1:-Continue? }"
   local reply
 
@@ -160,11 +157,11 @@ confirm() {
 }
 
 # === File Operations ===
-file_size() {
+file_size(){
   stat -c "%s" "$1" 2> /dev/null || stat -f "%z" "$1" 2> /dev/null || echo 0
 }
 
-human_size() {
+human_size(){
   local bytes="$1" scale=0
   local -a units=("B" "KB" "MB" "GB" "TB")
 
@@ -177,19 +174,19 @@ human_size() {
 }
 
 # === Cleanup Trap Helpers ===
-cleanup_workdir() {
+cleanup_workdir(){
   [[ -n ${WORKDIR:-} && -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
 }
 
-cleanup_mount() {
+cleanup_mount(){
   [[ -n ${MNT_PT:-} ]] && mountpoint -q -- "${MNT_PT}" && umount -R "${MNT_PT}" || :
 }
 
-cleanup_loop() {
+cleanup_loop(){
   [[ -n ${LOOP_DEV:-} && -b ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" || :
 }
 
-setup_cleanup() {
+setup_cleanup(){
   trap 'cleanup_workdir; cleanup_mount; cleanup_loop' EXIT
   trap 'err "failed at line ${LINENO}"' ERR
 }
@@ -224,11 +221,11 @@ readonly SYSTEM_APPS=(
 )
 
 # Aliases for compatibility
-info() { log "$1"; }
-ok() { msg "$1"; }
+info(){ log "$1"; }
+ok(){ msg "$1"; }
 
 # AAPT2 android.jar locator
-aapt2_jar() {
+aapt2_jar(){
   local roots=("${ANDROID_HOME:-}" "${ANDROID_SDK_ROOT:-}" "$HOME/Android/Sdk" "$HOME/Library/Android/sdk" /opt/android-sdk)
   for r in "${roots[@]}"; do
     [[ -d "$r/platforms" ]] || continue
@@ -244,7 +241,7 @@ aapt2_jar() {
 }
 
 # === Android device tasks ===
-task_maint() {
+task_maint(){
   sec "Maintenance"
   ash << 'EOF'
 sync
@@ -263,12 +260,12 @@ cmd otadexopt cleanup
 EOF
 }
 
-task_cleanup_fs() {
+task_cleanup_fs(){
   sec "Filesystem cleanup"
   ash 'find /sdcard /storage/emulated/0 -type f -iregex ".*\.\(log\|bak\|old\|tmp\)$" -delete 2>/dev/null || :'
 }
 
-task_art() {
+task_art(){
   sec "ART optimize"
   local jid
   jid="$(ash 'cmd jobscheduler list-jobs android 2>/dev/null' | grep -F background-dexopt | awk '{print $2}' || :)"
@@ -283,7 +280,7 @@ pm bg-dexopt-job
 EOF
 }
 
-task_block() {
+task_block(){
   sec "Firewall"
   [[ $1 == enable ]] && ash 'cmd connectivity set-chain3-enabled true'
   [[ $1 == disable ]] && ash 'cmd connectivity set-chain3-enabled false'
@@ -291,7 +288,7 @@ task_block() {
   [[ $1 == unblock ]] && ash "cmd connectivity set-package-networking-enabled true \"$2\""
 }
 
-task_perf() {
+task_perf(){
   sec "Performance tweaks"
   ash << 'EOF'
 setprop debug.performance. tuning 1
@@ -307,7 +304,7 @@ device_config put privacy location_accuracy_enabled false
 EOF
 }
 
-task_render() {
+task_render(){
   sec "Rendering tweaks"
   ash << 'EOF'
 setprop debug. composition.type dyn
@@ -329,7 +326,7 @@ settings put global gpu_rasterization_forced 1
 EOF
 }
 
-task_audio() {
+task_audio(){
   sec "Audio tweaks"
   ash << 'EOF'
 settings put global audio. offload. video true
@@ -340,7 +337,7 @@ settings put global media.stagefright.thumbnail.prefer_hw_codecs true
 EOF
 }
 
-task_battery() {
+task_battery(){
   sec "Battery tweaks"
   ash << 'EOF'
 settings put global dynamic_power_savings_enabled 1
@@ -353,7 +350,7 @@ cmd power set-adaptive-power-saver-enabled true
 EOF
 }
 
-task_input() {
+task_input(){
   sec "Input/animations"
   ash << 'EOF'
 settings put global animator_duration_scale 0.0
@@ -363,7 +360,7 @@ wm disable-blur true
 EOF
 }
 
-task_net() {
+task_net(){
   sec "Network tweaks"
   ash << 'EOF'
 cmd netpolicy set restrict-background true
@@ -375,7 +372,7 @@ settings put global network_avoid_bad_wifi 1
 EOF
 }
 
-task_webview() {
+task_webview(){
   sec "WebView/ANGLE"
   ash << 'EOF'
 cmd webviewupdate set-webview-implementation com.android.webview.beta
@@ -386,7 +383,7 @@ settings put global angle_gl_driver_selection_pkgs com.android.webview,com.andro
 EOF
 }
 
-task_misc() {
+task_misc(){
   sec "Misc tweaks"
   ash << 'EOF'
 setprop debug.debuggerd.disable 1
@@ -397,7 +394,7 @@ device_config put systemui window_blur 0
 EOF
 }
 
-task_experimental() {
+task_experimental(){
   sec "Experimental Tweaks (Aggressive)"
   confirm "These are aggressive experimental tweaks.  Proceed?" || return 0
 
@@ -425,7 +422,7 @@ EOF
   ok "Experimental tweaks applied"
 }
 
-task_compile_speed() {
+task_compile_speed(){
   sec "High-perf apps → speed"
   local batch=""
   for p in "${SPEED_APPS[@]}"; do
@@ -434,7 +431,7 @@ task_compile_speed() {
   ash <<< "$batch"
 }
 
-task_compile_system() {
+task_compile_system(){
   sec "System apps → everything"
   local batch=""
   for p in "${SYSTEM_APPS[@]}"; do
@@ -443,7 +440,7 @@ task_compile_system() {
   ash <<< "$batch"
 }
 
-task_finalize() {
+task_finalize(){
   sec "Finalize"
   ash << 'EOF'
 am broadcast -a android.intent.action.ACTION_OPTIMIZE_DEVICE
@@ -454,7 +451,7 @@ dumpsys batterystats --reset
 EOF
 }
 
-task_permissions_toml() {
+task_permissions_toml(){
   sec "Applying permissions from TOML"
   [[ -f $CONFIG_FILE ]] || {
     warn "Config not found: $CONFIG_FILE"
@@ -489,7 +486,7 @@ task_permissions_toml() {
   ok "Permissions applied"
 }
 
-cmd_device_all() {
+cmd_device_all(){
   device_ok || return 1
   task_maint
   task_cleanup_fs
@@ -509,7 +506,7 @@ cmd_device_all() {
   ok "Device optimization complete"
 }
 
-cmd_monolith() {
+cmd_monolith(){
   device_ok || return 1
   local mode="${1:-everything-profile}"
   sec "Monolith compile ($mode)"
@@ -517,7 +514,7 @@ cmd_monolith() {
   ok "Compilation complete"
 }
 
-cmd_cache_clean() {
+cmd_cache_clean(){
   device_ok || return 1
   sec "Clear app caches"
   if ((IS_TERMUX)); then
@@ -536,7 +533,7 @@ cmd_cache_clean() {
   ok "Cache cleared"
 }
 
-cmd_index_nomedia() {
+cmd_index_nomedia(){
   local base="${1:-/storage/emulated/0}"
   sec "Index guard (. nomedia)"
   while IFS= read -r -d '' d; do
@@ -548,7 +545,7 @@ cmd_index_nomedia() {
   ok "Index guards created"
 }
 
-cmd_wa_clean() {
+cmd_wa_clean(){
   local wa_base="${1:-/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media}"
   sec "WhatsApp cleanup"
   [[ -d $wa_base ]] || {
@@ -577,7 +574,7 @@ cmd_wa_clean() {
   fi
 }
 
-cmd_aapt2_opt() {
+cmd_aapt2_opt(){
   local in="${1:-target/release/app-unsigned. apk}"
   local out="${2:-target/release/app-optimized.apk}"
   sec "AAPT2 optimize"
@@ -599,7 +596,7 @@ cmd_aapt2_opt() {
 }
 
 # === Termux-specific tasks ===
-task_pkg_maint() {
+task_pkg_maint(){
   sec "Package maintenance"
   info "Updating packages..."
   pkg update -y || err "Update failed"
@@ -611,7 +608,7 @@ task_pkg_maint() {
   ok "Packages updated"
 }
 
-task_cache_termux() {
+task_cache_termux(){
   sec "Cache cleanup"
   local cleaned=()
   command -v uv &> /dev/null && {
@@ -638,7 +635,7 @@ task_cache_termux() {
   ok "Cleaned: ${cleaned[*]:-none}"
 }
 
-task_fs_hygiene() {
+task_fs_hygiene(){
   sec "Filesystem hygiene"
   local ed ef cnt=0
   ed="$(find "$HOME" -type d -empty 2> /dev/null || :)"
@@ -648,7 +645,7 @@ task_fs_hygiene() {
   ((cnt > 0)) && ok "Removed empty dirs/files" || info "No empty dirs/files"
 }
 
-task_large_files() {
+task_large_files(){
   local mb="${1:-100}"
   local path="${2:-$HOME}"
   sec "Large files (>${mb}MB)"
@@ -665,7 +662,7 @@ task_large_files() {
   } || info "None found"
 }
 
-task_updatedb() {
+task_updatedb(){
   sec "Update locate DB"
   command -v updatedb &> /dev/null || {
     warn "Install: pkg install findutils"
@@ -676,7 +673,7 @@ task_updatedb() {
   ok "DB updated"
 }
 
-cmd_termux_full() {
+cmd_termux_full(){
   task_pkg_maint
   task_cache_termux
   task_fs_hygiene
@@ -685,7 +682,7 @@ cmd_termux_full() {
 }
 
 # === Interactive menu ===
-menu() {
+menu(){
   printf '\n%s%s=== Android Optimizer v%s ===%s\n' "$MGN" "$BLD" "$VERSION" "$DEF"
   if ((IS_TERMUX)); then
     cat << 'EOF'
@@ -727,7 +724,7 @@ EOF
   fi
 }
 
-interactive() {
+interactive(){
   while :; do
     menu
     read -rp "Select: " c args
@@ -752,7 +749,7 @@ interactive() {
   info "Done"
 }
 
-usage() {
+usage(){
   cat << EOF
 android-optimize. sh v$VERSION - Unified Android optimizer (ADB or Termux+Shizuku)
 
@@ -781,7 +778,7 @@ Termux device access: $([[ $IS_TERMUX -eq 1 && -n ${RISH:-} ]] && printf "rish (
 EOF
 }
 
-main() {
+main(){
   local cmd="${1:-menu}"
   shift || :
   case "$cmd" in

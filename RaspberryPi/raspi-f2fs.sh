@@ -10,11 +10,11 @@ shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}" PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"
 # Bash Native Tricks
-fdate() {
+fdate(){
   local fmt="${1:-%T}"
   printf "%($fmt)T" '-1'
 }
-fcat() { printf '%s\n' "$(< "${1}")"; }
+fcat(){ printf '%s\n' "$(< "${1}")"; }
 # Configuration & State
 declare -A cfg=([boot_size]="512M" [ssh]=1 [dry_run]=0 [keep_source]=0 [no_usb_check]=0 [no_size_check]=0)
 declare -r DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
@@ -30,25 +30,25 @@ declare -g LOOP_DEV="" TGT_DEV="" BOOT_PART="" ROOT_PART=""
 declare -g LOCK_FD=-1 LOCK_FILE=""
 declare -ga MOUNTED_DIRS=()
 # Helper functions
-has() { command -v "$1" &> /dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
-msg() { xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
-warn() { xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
-err() { xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
-die() {
+has(){ command -v "$1" &> /dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){
   err "$1"
   cleanup
   exit "${2:-1}"
 }
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*" || :; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*" || :; }
 
 # Bootiso-Derived Safety Modules
-get_drive_trans() {
+get_drive_trans(){
   local dev="${1:?}"
   lsblk -dno TRAN "$dev" 2> /dev/null || echo "unknown"
 }
-assert_usb_dev() {
+assert_usb_dev(){
   local dev="${1:?}"
   ((cfg[no_usb_check])) && return 0
   [[ $dev == /dev/loop* ]] && return 0
@@ -56,7 +56,7 @@ assert_usb_dev() {
   trans=$(get_drive_trans "$dev")
   [[ $trans != usb && $trans != mmc ]] && die "Device $dev is not USB/MMC (Detected: $trans). Use -U to bypass."
 }
-assert_size() {
+assert_size(){
   local img="${1:?}" dev="${2:?}"
   ((cfg[no_size_check])) && return 0
   [[ ! -b $dev ]] && return 0
@@ -65,7 +65,7 @@ assert_size() {
   dev_bytes=$(blockdev --getsize64 "$dev")
   ((img_bytes > dev_bytes)) && die "Image ($((img_bytes / 1024 / 1024))MB) exceeds target ($((dev_bytes / 1024 / 1024))MB)."
 }
-select_target_interactive() {
+select_target_interactive(){
   has fzf || die "fzf required for interactive selection."
   log "Scanning for removable drives..."
   local selection
@@ -76,14 +76,14 @@ select_target_interactive() {
   echo "$selection" | awk '{print $1}'
 }
 # Utils
-check_deps() {
+check_deps(){
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid partprobe lsblk flock awk curl) missing=()
   local cmd
   for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
   ((${#missing[@]} > 0)) && die "Missing dependencies: ${missing[*]}"
 }
 
-cleanup() {
+cleanup(){
   local ret=$?
   set +e
   for ((i = ${#MOUNTED_DIRS[@]} - 1; i >= 0; i--)); do umount -lf "${MOUNTED_DIRS[i]}" &> /dev/null; done
@@ -96,7 +96,7 @@ cleanup() {
   [[ -n ${WORKDIR:-} && -d $WORKDIR ]] && rm -rf "$WORKDIR"
   return "$ret"
 }
-derive_partition_paths() {
+derive_partition_paths(){
   local dev="${1:?}"
   [[ $dev =~ (nvme|mmcblk|loop) ]] && {
     BOOT_PART="${dev}p1"
@@ -106,7 +106,7 @@ derive_partition_paths() {
     ROOT_PART="${dev}2"
   }
 }
-wait_for_partitions() {
+wait_for_partitions(){
   local dev=${1:?}
   ((cfg[dry_run])) && return 0
   partprobe "$dev" &> /dev/null
@@ -121,7 +121,7 @@ wait_for_partitions() {
   die "Partitions failed to appear on $dev"
 }
 # Main Logic
-prepare_environment() {
+prepare_environment(){
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" rf2fs.XXXXXX)
   SRC_IMG="$WORKDIR/source.img"
   trap cleanup EXIT INT TERM
@@ -129,7 +129,7 @@ prepare_environment() {
   sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
 }
 
-process_source() {
+process_source(){
   [[ $SRC_PATH == dietpi ]] && {
     log "Keyword 'dietpi' detected. Using URL: $DIETPI_URL"
     SRC_PATH="$DIETPI_URL"
@@ -149,7 +149,7 @@ process_source() {
   else ln "$SRC_PATH" "$SRC_IMG" 2> /dev/null || cp "$SRC_PATH" "$SRC_IMG"; fi
 }
 
-setup_target_device() {
+setup_target_device(){
   log "Preparing target: $TGT_PATH"
   LOCK_FILE="/run/lock/raspi-f2fs-${TGT_PATH//\//_}.lock"
   mkdir -p "${LOCK_FILE%/*}"
@@ -168,13 +168,13 @@ setup_target_device() {
   wait_for_partitions "$TGT_PATH"
   TGT_DEV="$TGT_PATH"
 }
-format_target() {
+format_target(){
   log "Formatting filesystems..."
   ((cfg[dry_run])) && return 0
   mkfs.vfat -F32 -n BOOT "$BOOT_PART" > /dev/null
   mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART" > /dev/null
 }
-clone_data() {
+clone_data(){
   log "Cloning data (rsync)..."
   ((cfg[dry_run])) && return 0
   LOOP_DEV=$(losetup --show -f -P "$SRC_IMG")
@@ -196,7 +196,7 @@ clone_data() {
   sync
 }
 
-configure_pi_boot() {
+configure_pi_boot(){
   log "Configuring F2FS boot parameters..."
   ((cfg[dry_run])) && return 0
   local boot_uuid root_uuid cmdline fstab
@@ -225,7 +225,7 @@ EOF
   log "Configuration complete."
 }
 
-usage() {
+usage(){
   cat <<- EOF
 	Usage: $(basename "$0") [OPTIONS]
 	Flash Raspberry Pi image to SD card using F2FS root filesystem.

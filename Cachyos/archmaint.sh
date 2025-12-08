@@ -21,18 +21,15 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Helper Functions ============
-has() { command -v "$1" &> /dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "${BLU}${BLD}[*]${DEF} $*"; }
-msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die() {
-  err "$1"
-  exit "${2:-1}"
-}
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
-confirm() {
+has(){ command -v "$1" &> /dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){ err "$1"; exit "${2:-1}"; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
+confirm(){
   local r
   while :; do
     read -rp "${1:-Continue?} [y/N] " r
@@ -41,7 +38,7 @@ confirm() {
 }
 
 #============ Banner Printing Functions ============
-print_banner() {
+print_banner(){
   local banner="$1" title="${2:-}"
   local flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
   local -a lines=()
@@ -61,7 +58,7 @@ print_banner() {
   [[ -n $title ]] && xecho "$title"
 }
 
-get_update_banner() {
+get_update_banner(){
   cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -72,7 +69,7 @@ get_update_banner() {
 EOF
 }
 
-get_clean_banner() {
+get_clean_banner(){
   cat << 'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
@@ -83,7 +80,7 @@ get_clean_banner() {
 EOF
 }
 
-print_named_banner() {
+print_named_banner(){
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in
     update) banner=$(get_update_banner) ;;
@@ -94,7 +91,7 @@ print_named_banner() {
 }
 
 #============ Build Environment Setup ============
-setup_build_env() {
+setup_build_env(){
   [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &> /dev/null
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
   export CFLAGS="-march=native -mtune=native -O3 -pipe"
@@ -114,7 +111,7 @@ setup_build_env() {
 }
 
 #============ System Maintenance Functions ============
-run_system_maintenance() {
+run_system_maintenance(){
   local cmd=$1
   shift
   local args=("$@")
@@ -128,14 +125,14 @@ run_system_maintenance() {
 }
 
 #============ Disk Usage Helpers ============
-capture_disk_usage() {
+capture_disk_usage(){
   local var_name=$1
   local -n ref="$var_name"
   ref=$(df -h --output=used,pcent / 2> /dev/null | awk 'NR==2{print $1, $2}')
 }
 
 #============ File Finding Helpers ============
-find0() {
+find0(){
   local root="$1"
   shift
   if has fdf; then
@@ -151,7 +148,7 @@ find0() {
 _PKG_MGR_CACHED=""
 _AUR_OPTS_CACHED=()
 
-detect_pkg_manager() {
+detect_pkg_manager(){
   if [[ -n $_PKG_MGR_CACHED ]]; then
     printf '%s\n' "$_PKG_MGR_CACHED"
     printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
@@ -173,14 +170,14 @@ detect_pkg_manager() {
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
 
-get_pkg_manager() {
+get_pkg_manager(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
     detect_pkg_manager > /dev/null
   fi
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
 
-get_aur_opts() {
+get_aur_opts(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
     detect_pkg_manager > /dev/null
   fi
@@ -188,7 +185,7 @@ get_aur_opts() {
 }
 
 #============ SQLite Maintenance ============
-vacuum_sqlite() {
+vacuum_sqlite(){
   local db=$1 s_old s_new
   [[ -f $db ]] || {
     printf '0\n'
@@ -214,7 +211,7 @@ vacuum_sqlite() {
   printf '%d\n' "$((s_old - s_new))"
 }
 
-clean_sqlite_dbs() {
+clean_sqlite_dbs(){
   local total=0 db saved
   while IFS= read -r -d '' db; do
     [[ -f $db ]] || continue
@@ -225,7 +222,7 @@ clean_sqlite_dbs() {
 }
 
 #============ Process Management ============
-ensure_not_running_any() {
+ensure_not_running_any(){
   local timeout=6 p
   local pattern=$(printf '%s|' "$@")
   pattern=${pattern%|}
@@ -246,7 +243,7 @@ ensure_not_running_any() {
 }
 
 #============ Browser Profile Detection ============
-foxdir() {
+foxdir(){
   local base=$1 p
   [[ -d $base ]] || return 1
   if [[ -f $base/installs.ini ]]; then
@@ -266,7 +263,7 @@ foxdir() {
   return 1
 }
 
-mozilla_profiles() {
+mozilla_profiles(){
   local base=$1 p
   declare -A seen
   [[ -d $base ]] || return 0
@@ -288,7 +285,7 @@ mozilla_profiles() {
   fi
 }
 
-chrome_roots_for() {
+chrome_roots_for(){
   case "$1" in
     chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
     chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
@@ -298,14 +295,14 @@ chrome_roots_for() {
   esac
 }
 
-chrome_profiles() {
+chrome_profiles(){
   local root=$1 d
   for d in "$root"/Default "$root"/"Profile "*; do
     [[ -d $d ]] && printf '%s\n' "$d"
   done
 }
 
-_expand_wildcards() {
+_expand_wildcards(){
   local path=$1
   local -n result_ref="$2"
   if [[ $path == *\** ]]; then
@@ -322,7 +319,7 @@ _expand_wildcards() {
 }
 
 #============ Script-specific Functions ============
-cleanup_pacman_lock() {
+cleanup_pacman_lock(){
   sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :
 }
 
@@ -334,12 +331,12 @@ ASSUME_YES=0
 MODE=""
 
 # Override log function to respect QUIET
-log() { ((QUIET)) || xecho "$*"; }
+log(){ ((QUIET)) || xecho "$*"; }
 
 #=========== Update Functions ===========
 # Note: run_system_maintenance is now provided by common.sh
 
-update_system_packages() {
+update_system_packages(){
   local pkgmgr aur_opts
   log "🔄${BLU}System update${DEF}"
   # Use cached package manager detection
@@ -369,7 +366,7 @@ update_system_packages() {
   fi
 }
 
-update_with_topgrade() {
+update_with_topgrade(){
   if has topgrade; then
     log "🔄${BLU}Running Topgrade updates...${DEF}"
     local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
@@ -379,7 +376,7 @@ update_with_topgrade() {
   fi
 }
 
-update_flatpak() {
+update_flatpak(){
   if has flatpak; then
     log "🔄${BLU}Updating Flatpak...${DEF}"
     sudo flatpak update -y --noninteractive --appstream &> /dev/null || :
@@ -387,7 +384,7 @@ update_flatpak() {
   fi
 }
 
-update_rust() {
+update_rust(){
   if has rustup; then
     log "🔄${BLU}Updating Rust...${DEF}"
     rustup update
@@ -413,13 +410,13 @@ update_rust() {
   fi
 }
 
-update_editors() {
+update_editors(){
   # Update editor plugins
   has micro && micro -plugin update &> /dev/null || :
   has yazi && ya pkg upgrade &> /dev/null || :
 }
 
-update_shells() {
+update_shells(){
   if has fish; then
     log "🔄${BLU}Updating Fish...${DEF}"
     fish -c "fish_update_completions" || :
@@ -443,7 +440,7 @@ update_shells() {
   has tldr && sudo tldr -cuq || :
 }
 
-update_python() {
+update_python(){
   if has uv; then
     log "🔄${BLU}Updating UV...${DEF}"
     uv self update -q &> /dev/null || log "⚠️${YLW}Failed to update UV${DEF}"
@@ -480,7 +477,7 @@ update_python() {
   fi
 }
 
-update_system_utils() {
+update_system_utils(){
   log "🔄${BLU}Running miscellaneous updates...${DEF}"
   # Pre-filter commands that exist to reduce repeated has() calls
   local cmds=(
@@ -514,7 +511,7 @@ update_system_utils() {
   fi
 }
 
-update_boot() {
+update_boot(){
   log "🔍${BLU}Checking boot configuration...${DEF}"
   # Update systemd-boot if installed
   if [[ -d /sys/firmware/efi ]] && has bootctl && sudo bootctl is-installed -q &> /dev/null; then
@@ -559,7 +556,7 @@ update_boot() {
   fi
 }
 
-run_update() {
+run_update(){
   print_named_banner "update" "Meow (> ^ <)"
   setup_build_env
 
@@ -588,7 +585,7 @@ run_update() {
 #=========== Clean Functions ===========
 # Note: clean_paths() and clean_with_sudo() are defined in the inlined lib/common.sh above
 
-run_clean() {
+run_clean(){
   print_named_banner "clean"
 
   # Ensure sudo access
@@ -893,7 +890,7 @@ run_clean() {
 
 #=========== Traps & Cleanup ===========
 # Enhanced cleanup for archmaint
-cleanup_archmaint() {
+cleanup_archmaint(){
   cleanup_pacman_lock
   # Reset environment variables
   unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
@@ -904,7 +901,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 #=========== CLI Interface =============
-show_usage() {
+show_usage(){
   cat << EOF
 Usage: ${0##*/} [OPTIONS] COMMAND
 
@@ -929,7 +926,7 @@ Examples:
 EOF
 }
 
-parse_args() {
+parse_args(){
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -954,7 +951,7 @@ parse_args() {
 }
 
 #=========== Main Function =============
-main() {
+main(){
   parse_args "$@"
   if [[ $DRYRUN -eq 1 ]]; then
     log "${YLW}Running in dry-run mode. No changes will be made.${DEF}"

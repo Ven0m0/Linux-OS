@@ -59,7 +59,7 @@ eval "$(apt-config shell APTCACHE Dir::Cache::archives/d 2>/dev/null)" || true
 [[ -z ${APTCACHE:-} ]] && APTCACHE="/var/cache/apt/archives"
 
 # Aria2c downloader function
-run_downloader() {
+run_downloader(){
   aria2c --no-conf -c -j "$_MAXNUM" -x "$_MAXCONPERSRV" -s "$_SPLITCON" -i "$DLLIST" \
     --min-split-size="$_MINSPLITSZ" --stream-piece-selector="$_PIECEALGO" \
     --connect-timeout=600 --timeout=600 --max-connection-per-server="$_MAXCONPERSRV" \

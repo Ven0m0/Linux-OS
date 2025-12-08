@@ -13,26 +13,23 @@ BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 # Core helpers
-has() { command -v -- "$1" &> /dev/null; }
-log() { printf '%b\n' "${GRN}▶${DEF} $*"; }
-warn() { printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
-err() { printf '%b\n' "${RED}✗${DEF} $*" >&2; }
-die() {
-  err "$1"
-  exit "${2:-1}"
-}
+has(){ command -v -- "$1" &> /dev/null; }
+log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
+warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
+err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
+die(){ err "$1"; exit "${2:-1}"; }
 # Config flags
 declare -A cfg=([dry_run]=0 [skip_external]=0 [minimal]=0 [quiet]=0)
-run() { ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
+run(){ ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
 # Safe cleanup workspace
 WORKDIR=$(mktemp -d)
-cleanup() {
+cleanup(){
   set +e
   [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
 }
 trap cleanup EXIT
 trap 'err "failed at line $LINENO"' ERR
-usage() {
+usage(){
   cat << 'EOF'
 pi-setup.sh - Raspberry Pi optimization & tooling automation
 Usage: pi-setup.sh [OPTIONS]
@@ -50,7 +47,7 @@ Performs:
   • Optional: Pi-hole, PiKISS, PiApps, apt-fast, deb-get, pacstall
 EOF
 }
-parse_args() {
+parse_args(){
   while (($#)); do
     case "$1" in
       -d | --dry-run) cfg[dry_run]=1 ;;
@@ -78,7 +75,7 @@ parse_args() {
   done
 }
 # APT Configuration
-configure_apt() {
+configure_apt(){
   log "Configuring APT for performance & reliability"
   sudo tee /etc/apt/apt.conf.d/99parallel > /dev/null << 'EOF'
 APT::Acquire::Retries "5";
@@ -111,7 +108,7 @@ EOF
 force-unsafe-io
 EOF
 }
-enable_ip_forwarding() {
+enable_ip_forwarding(){
   log "Enabling IP forwarding..."
   sudo sysctl -w net.ipv4.ip_forward=1
   sudo sysctl -w net.ipv6.conf.all.forwarding=1
@@ -123,7 +120,7 @@ net.ipv6.conf.default.forwarding=1
 EOF
 }
 # Documentation Cleanup
-configure_dpkg_nodoc() {
+configure_dpkg_nodoc(){
   log "Configuring dpkg to exclude documentation"
   sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc > /dev/null << 'EOF'
 path-exclude /usr/share/doc/*
@@ -136,7 +133,7 @@ path-exclude /usr/share/linda/*
 path-include /usr/share/doc/*/copyright
 EOF
 }
-clean_docs() {
+clean_docs(){
   log "Removing existing documentation files"
   run find /usr/share/doc/ -depth -type f ! -name copyright -delete 2> /dev/null || :
   run find /usr/share/doc/ -name '*.gz' -o -name '*.pdf' -o -name '*.tex' -delete 2> /dev/null || :
@@ -147,7 +144,7 @@ clean_docs() {
   sudo apt-get remove --purge -y '*texlive*' '*-doc' 2> /dev/null || :
 }
 # System Optimization
-optimize_system() {
+optimize_system(){
   log "Applying system-level optimizations"
   sudo systemctl mask NetworkManager-wait-online.service 2> /dev/null || :
   sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf > /dev/null << 'EOF'
@@ -217,7 +214,7 @@ EOF
   has update-initramfs && sudo update-initramfs -u -k all || :
 }
 # SSH Configuration
-configure_ssh() {
+configure_ssh(){
   log "Configuring SSH/Dropbear"
   [[ -f /etc/default/dropbear ]] && sudo sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
   [[ -f /etc/ssh/sshd_config ]] && {
@@ -226,7 +223,7 @@ configure_ssh() {
   }
 }
 # Modern Tooling Installation
-install_core_tools() {
+install_core_tools(){
   log "Installing core modern CLI tools"
   local tools=(fd-find ripgrep bat fzf zstd curl wget gpg btrfs-progs)
   sudo apt-get update
@@ -236,7 +233,7 @@ install_core_tools() {
     ln -sf /usr/bin/fdfind "$HOME/.local/bin/fd"
   }
 }
-install_extended_tools() {
+install_extended_tools(){
   ((cfg[minimal])) && return 0
   log "Installing extended tooling suite"
   if ! has eza; then
@@ -252,7 +249,7 @@ install_extended_tools() {
   ! has zoxide && curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | run bash
 }
 # External Package Managers
-install_package_managers() {
+install_package_managers(){
   ((cfg[minimal] || cfg[skip_external])) && return 0
   log "Installing alternative package managers"
   if ! has apt-fast; then
@@ -278,7 +275,7 @@ install_package_managers() {
   ! has pacstall && sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install)"
 }
 # External Installers (Pi-hole, PiKISS, PiApps)
-install_external() {
+install_external(){
   ((cfg[skip_external])) && return 0
   log "Running external installers (interactive)"
   if ! has pihole; then
@@ -293,7 +290,7 @@ install_external() {
   log "Manual install: git clone https://github.com/jmcerrejon/PiKISS.git && cd PiKISS && ./piKiss.sh"
 }
 # Main Execution
-main() {
+main(){
   parse_args "$@"
   log "${BLD}Raspberry Pi Setup & Optimization${DEF}"
   log "Mode: $([[ ${cfg[dry_run]} -eq 1 ]] && echo 'DRY-RUN' || echo 'LIVE')"

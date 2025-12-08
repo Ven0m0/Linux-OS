@@ -25,7 +25,7 @@ tee "${BIN}/shizuku" > /dev/null << 'EOF'
 COMMON_PORTS=(37373 40181 42135 44559)
 
 # Fast port checking function using /dev/tcp (no external tools needed)
-check_port() {
+check_port(){
   local port="$1"
   timeout 0.5 bash -c "echo >/dev/tcp/127.0.0.1/$port" 2>/dev/null && return 0 || return 1
 }

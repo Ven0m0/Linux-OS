@@ -11,13 +11,16 @@ export HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}"
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
 
 # Helpers
-has(){ command -v "$1" &>/dev/null; }
-log(){ printf '%s\n' "${BLU}→${DEF} $*"; }
-warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
-err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
-die(){ err "$*"; exit "${2:-1}"; }
+has() { command -v "$1" &> /dev/null; }
+log() { printf '%s\n' "${BLU}→${DEF} $*"; }
+warn() { printf '%s\n' "${YLW}WARN:${DEF} $*"; }
+err() { printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
+die() {
+  err "$*"
+  exit "${2:-1}"
+}
 
-confirm(){
+confirm() {
   local prompt=${1:-"Continue?"} default=${2:-n}
   local yn
   read -rp "$prompt [y/N] " yn
@@ -28,8 +31,8 @@ confirm(){
 KERNEL_BRANCH=${KERNEL_BRANCH:-rpi-6.16.y}
 KERNEL_SRC=${KERNEL_SRC:-/usr/src/linux}
 
-usage(){
-  cat <<EOF
+usage() {
+  cat << EOF
 Usage: Kbuild.sh [OPTIONS]
 
 Build and install Raspberry Pi kernel from source.
@@ -52,24 +55,30 @@ EOF
 ASSUME_YES=0
 while (($#)); do
   case "$1" in
-    -b|--branch) KERNEL_BRANCH=${2:?}; shift;;
-    -y|--yes) ASSUME_YES=1;;
-    -h|--help) usage;;
-    *) die "Unknown option: $1";;
+    -b | --branch)
+      KERNEL_BRANCH=${2:?}
+      shift
+      ;;
+    -y | --yes) ASSUME_YES=1 ;;
+    -h | --help) usage ;;
+    *) die "Unknown option: $1" ;;
   esac
   shift
 done
 
-main(){
+main() {
   log "Raspberry Pi Kernel Build - branch: $KERNEL_BRANCH"
 
   # Require root
   ((EUID == 0)) || die "Must run as root"
 
   # Confirm destructive operation
-  if ((! ASSUME_YES)); then
+  if ((!ASSUME_YES)); then
     warn "This will build and install a new kernel, then REBOOT!"
-    confirm "Proceed with kernel build?" || { log "Aborted"; exit 0; }
+    confirm "Proceed with kernel build?" || {
+      log "Aborted"
+      exit 0
+    }
   fi
 
   # Install build dependencies
@@ -112,7 +121,7 @@ main(){
   cp arch/arm64/boot/Image.gz /boot/kernel8.img
 
   # Update bootloader config (avoid duplicate entry)
-  if ! grep -q '^dtoverlay=vc4-kms-v3d' /boot/config.txt 2>/dev/null; then
+  if ! grep -q '^dtoverlay=vc4-kms-v3d' /boot/config.txt 2> /dev/null; then
     log "Adding dtoverlay to config.txt..."
     echo "dtoverlay=vc4-kms-v3d" >> /boot/config.txt
   fi

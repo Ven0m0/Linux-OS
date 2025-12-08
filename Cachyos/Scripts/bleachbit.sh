@@ -9,14 +9,17 @@ export LC_ALL=C LANG=C
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 
 # Helpers
-has(){ command -v "$1" &>/dev/null; }
-log(){ printf '%s\n' "$*"; }
-warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
-err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
-die(){ err "$*"; exit "${2:-1}"; }
+has() { command -v "$1" &> /dev/null; }
+log() { printf '%s\n' "$*"; }
+warn() { printf '%s\n' "${YLW}WARN:${DEF} $*"; }
+err() { printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
+die() {
+  err "$*"
+  exit "${2:-1}"
+}
 
 # Package manager detection
-pm_install(){
+pm_install() {
   if has paru; then
     paru --noconfirm --skipreview --needed -S "$@"
   elif has yay; then
@@ -28,7 +31,7 @@ pm_install(){
   fi
 }
 
-main(){
+main() {
   local src="${HOME}/.config/bleachbit/cleaners"
   local -a dsts=(/usr/share/bleachbit/cleaners /root/.config/bleachbit/cleaners)
 

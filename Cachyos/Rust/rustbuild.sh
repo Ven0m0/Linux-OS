@@ -9,11 +9,14 @@ export LC_ALL=C LANG=C
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
 
 # Helpers
-has(){ command -v "$1" &>/dev/null; }
-log(){ printf '%s\n' "${BLU}→${DEF} $*"; }
-warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
-err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
-die(){ err "$*"; exit "${2:-1}"; }
+has() { command -v "$1" &> /dev/null; }
+log() { printf '%s\n' "${BLU}→${DEF} $*"; }
+warn() { printf '%s\n' "${YLW}WARN:${DEF} $*"; }
+err() { printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
+die() {
+  err "$*"
+  exit "${2:-1}"
+}
 
 # Require cargo
 has cargo || die "cargo not found"
@@ -27,17 +30,17 @@ has mold && RUSTFLAGS+=" -C link-arg=-fuse-ld=mold"
 FD=$(command -v fd || command -v fdfind || echo "")
 
 # Safe find function using fd or find
-find_files(){
+find_files() {
   local pattern=$1 path=${2:-.}
   if [[ -n $FD ]]; then
-    "$FD" -H -t f "$pattern" "$path" 2>/dev/null || :
+    "$FD" -H -t f "$pattern" "$path" 2> /dev/null || :
   else
-    find "$path" -type f -name "$pattern" 2>/dev/null || :
+    find "$path" -type f -name "$pattern" 2> /dev/null || :
   fi
 }
 
-usage(){
-  cat <<'EOF'
+usage() {
+  cat << 'EOF'
 Usage: rustbuild.sh [OPTIONS]
 
 Rust project optimization workflow:
@@ -62,17 +65,17 @@ EOF
 SKIP_ASSETS=0 DRY_RUN=0
 while (($#)); do
   case "$1" in
-    -h|--help) usage;;
-    --skip-assets) SKIP_ASSETS=1;;
-    --dry-run) DRY_RUN=1;;
-    *) warn "Unknown option: $1";;
+    -h | --help) usage ;;
+    --skip-assets) SKIP_ASSETS=1 ;;
+    --dry-run) DRY_RUN=1 ;;
+    *) warn "Unknown option: $1" ;;
   esac
   shift
 done
 
-run(){ ((DRY_RUN)) && log "[DRY] $*" || "$@"; }
+run() { ((DRY_RUN)) && log "[DRY] $*" || "$@"; }
 
-main(){
+main() {
   log "Starting Rust optimization workflow..."
 
   # 1. Update & audit deps
@@ -88,15 +91,18 @@ main(){
   # 3. Remove unused dependencies (requires nightly)
   if has cargo-udeps; then
     log "Checking for unused dependencies..."
-    run cargo +nightly udeps --all-targets 2>/dev/null || :
+    run cargo +nightly udeps --all-targets 2> /dev/null || :
   fi
   has cargo-shear && run cargo shear || :
 
   # 4. Find dead code
-  has cargo-machete && { log "Finding dead code..."; run cargo machete || :; }
+  has cargo-machete && {
+    log "Finding dead code..."
+    run cargo machete || :
+  }
 
   # 5. Asset optimization (if not skipped)
-  if ((! SKIP_ASSETS)); then
+  if ((!SKIP_ASSETS)); then
     # Minify HTML
     if has minhtml; then
       log "Minifying HTML..."
@@ -113,7 +119,10 @@ main(){
     fi
 
     # Compress static assets
-    has flaca && [[ -d static ]] && { log "Compressing static assets..."; run flaca compress ./static || :; }
+    has flaca && [[ -d static ]] && {
+      log "Compressing static assets..."
+      run flaca compress ./static || :
+    }
   fi
 
   # 6. Clean workspace cruft

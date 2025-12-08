@@ -21,7 +21,7 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Core Helper Functions ============
-has() { command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &> /dev/null; }
 xecho() { printf '%b\n' "$*"; }
 log() { xecho "$*"; }
 warn() { xecho "${YLW}WARN:${DEF} $*" >&2; }

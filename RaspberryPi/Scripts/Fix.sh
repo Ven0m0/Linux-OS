@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # DESCRIPTION: System fixes for Raspberry Pi - time sync, SSH permissions, Nextcloud
 #              Targets: Debian/Raspbian, DietPi
-set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
@@ -13,17 +15,20 @@ LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 
 # Core helpers
-has() { command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &> /dev/null; }
 xecho() { printf '%b\n' "$*"; }
 log() { xecho "${GRN}▶${DEF} $*"; }
 warn() { xecho "${YLW}⚠${DEF} $*" >&2; }
 err() { xecho "${RED}✗${DEF} $*" >&2; }
-die() { err "$1"; exit "${2:-1}"; }
+die() {
+  err "$1"
+  exit "${2:-1}"
+}
 
 # Find files/directories with fd/fdfind/find fallback
 find_with_fallback() {
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
-  shift 4 2>/dev/null || shift $#
+  shift 4 2> /dev/null || shift $#
   if has fd; then
     fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
   elif has fdfind; then
@@ -63,9 +68,18 @@ EOF
 parse_args() {
   while (($#)); do
     case "$1" in
-      -h | --help) usage; exit 0 ;;
-      --) shift; break ;;
-      -*) usage; die "invalid option: $1" ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        usage
+        die "invalid option: $1"
+        ;;
       *) break ;;
     esac
     shift
@@ -134,7 +148,7 @@ fix_nextcloud() {
   fi
 
   log "Fixing Nextcloud /tmp permissions"
-  if sudo docker exec nextcloud ls -ld /tmp &>/dev/null; then
+  if sudo docker exec nextcloud ls -ld /tmp &> /dev/null; then
     sudo docker exec nextcloud chown -R www-data:www-data /tmp || warn "Failed to chown /tmp in nextcloud"
     sudo docker exec nextcloud chmod -R 755 /tmp || warn "Failed to chmod /tmp in nextcloud"
     log "Nextcloud permissions fixed"

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C
 # Colors
@@ -8,13 +9,16 @@ BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 # Core helpers
-has() { command -v -- "$1" &>/dev/null; }
-xecho(){ printf '%b\n' "$*"; }
-log(){ xecho "$*"; }
-warn(){ xecho "${YLW}WARN:${DEF} $*"; }
-err(){ xecho "${RED}ERROR:${DEF} $*" >&2; }
-die(){ err "$*"; exit "${2:-1}"; }
-dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
+has() { command -v -- "$1" &> /dev/null; }
+xecho() { printf '%b\n' "$*"; }
+log() { xecho "$*"; }
+warn() { xecho "${YLW}WARN:${DEF} $*"; }
+err() { xecho "${RED}ERROR:${DEF} $*" >&2; }
+die() {
+  err "$*"
+  exit "${2:-1}"
+}
+dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
 
 # Tool detection with fallbacks
 FD=${FD:-$(command -v fd || command -v fdfind || echo '')}
@@ -24,15 +28,18 @@ PARALLEL=${PARALLEL:-$(command -v rust-parallel || command -v parallel || comman
 
 # Safe workspace
 WORKDIR=$(mktemp -d)
-cleanup(){ set +e; [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :; }
-on_err(){ err "failed at line ${1:-?}"; }
+cleanup() {
+  set +e
+  [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
+}
+on_err() { err "failed at line ${1:-?}"; }
 trap 'cleanup' EXIT
 trap 'on_err $LINENO' ERR
 trap ':' INT TERM
 
 # Config
 declare -A cfg=([dry_run]=0 [debug]=0 [quiet]=0 [fix]=1 [check_only]=0)
-run(){ if ((cfg[dry_run])); then log "[DRY] $*"; else "$@"; fi; }
+run() { if ((cfg[dry_run])); then log "[DRY] $*"; else "$@"; fi; }
 
 # Global state
 declare -A TOOL_MISSING=()
@@ -43,7 +50,7 @@ declare -i TOTAL_ERRORS=0
 declare -i TOTAL_MODIFIED=0
 
 # File discovery
-find_files(){
+find_files() {
   local pattern="$1" exclude_args=()
   local -n result="$2"
   # Common exclusions
@@ -99,25 +106,28 @@ find_files(){
 }
 
 # Check tool availability
-check_tool(){
+check_tool() {
   local tool="$1" required="${2:-0}"
   if ! has "$tool"; then
     TOOL_MISSING["$tool"]=1
     if ((required)); then
-      warn "Required tool missing: $tool"; return 1
+      warn "Required tool missing: $tool"
+      return 1
     fi
-    dbg "Optional tool missing: $tool"; return 1
+    dbg "Optional tool missing: $tool"
+    return 1
   fi
   return 0
 }
 
 # Format and lint YAML files
-process_yaml(){
+process_yaml() {
   log "${LBLU}→${DEF} Processing YAML files..."
   local -a files=()
   find_files "*.{yml,yaml}" files
   ((${#files[@]} == 0)) && {
-    log "  No YAML files found"; return 0
+    log "  No YAML files found"
+    return 0
   }
   log "  Found ${#files[@]} YAML files"
   # Format with yamlfmt
@@ -134,7 +144,7 @@ process_yaml(){
       fi
     else
       # In check-only mode, use the diff flag -d
-      if ! yamlfmt -d "${files[@]}" | (! grep . >/dev/null); then
+      if ! yamlfmt -d "${files[@]}" | (! grep . > /dev/null); then
         warn "  yamlfmt found files that need formatting"
         ((TOTAL_ERRORS++))
       fi
@@ -148,7 +158,7 @@ process_yaml(){
     log "  ${BWHT}Linting${DEF} with yamllint..."
     local -i errors=0
     for file in "${files[@]}"; do
-      if ! yamllint -f parsable "$file" &>/dev/null; then
+      if ! yamllint -f parsable "$file" &> /dev/null; then
         ((errors++))
         ERROR_FILES+=("$file")
       fi
@@ -166,7 +176,7 @@ process_yaml(){
     log "  ${BWHT}Linting${DEF} GitHub Actions with actionlint..."
     local -i errors=0
     for file in "${action_files[@]}"; do
-      if ! actionlint "$file" &>/dev/null; then
+      if ! actionlint "$file" &> /dev/null; then
         ((errors++))
         ERROR_FILES+=("$file")
       fi
@@ -178,25 +188,26 @@ process_yaml(){
 }
 
 # Format and lint JSON files
-process_json(){
+process_json() {
   log "${LBLU}→${DEF} Processing JSON files..."
   local -a files=()
   find_files "*.{json,json5,jsonc}" files
   ((${#files[@]} == 0)) && {
-    log "  No JSON files found"; return 0
+    log "  No JSON files found"
+    return 0
   }
   log "  Found ${#files[@]} JSON files"
   # Try biome first, fallback to prettier
   if check_tool biome; then
     log "  ${PNK}Formatting${DEF} with biome..."
     if ((cfg[fix])); then
-      if biome format --write "${files[@]}" 2>/dev/null; then
+      if biome format --write "${files[@]}" 2> /dev/null; then
         MODIFIED_FILES+=("${files[@]}")
         ((TOTAL_MODIFIED += ${#files[@]}))
       fi
-      biome check --apply "${files[@]}" 2>/dev/null || :
+      biome check --apply "${files[@]}" 2> /dev/null || :
     else
-      if ! biome check "${files[@]}" 2>/dev/null; then
+      if ! biome check "${files[@]}" 2> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -204,13 +215,13 @@ process_json(){
   elif check_tool prettier; then
     log "  ${PNK}Formatting${DEF} with prettier..."
     if ((cfg[fix])); then
-      if prettier --write "${files[@]}" &>/dev/null; then
+      if prettier --write "${files[@]}" &> /dev/null; then
         # This assumes all files were potentially modified. For more accuracy, you could check git status.
         MODIFIED_FILES+=("${files[@]}")
         ((TOTAL_MODIFIED += ${#files[@]}))
       fi
     else
-      if ! prettier --check "${files[@]}" &>/dev/null; then
+      if ! prettier --check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -220,22 +231,25 @@ process_json(){
   fi
 }
 # Format and lint shell scripts
-process_shell(){
+process_shell() {
   log "${LBLU}→${DEF} Processing shell scripts..."
   local -a files=()
   find_files "*.{sh,bash}" files
-  ((${#files[@]} == 0)) && { log "  No shell scripts found"; return 0; }
+  ((${#files[@]} == 0)) && {
+    log "  No shell scripts found"
+    return 0
+  }
   log "  Found ${#files[@]} shell scripts"
   # Format with shfmt
   if check_tool shfmt; then
     log "  ${PNK}Formatting${DEF} with shfmt..."
     if ((cfg[fix])); then
-      if shfmt -i 2 -ci -sr -w "${files[@]}" 2>/dev/null; then
+      if shfmt -i 2 -ci -sr -w "${files[@]}" 2> /dev/null; then
         MODIFIED_FILES+=("${files[@]}")
         ((TOTAL_MODIFIED += ${#files[@]}))
       fi
     else
-      if ! shfmt -i 2 -ci -sr -d "${files[@]}" 2>/dev/null | (! grep . >/dev/null); then
+      if ! shfmt -i 2 -ci -sr -d "${files[@]}" 2> /dev/null | (! grep . > /dev/null); then
         warn "  shfmt found files that need formatting"
         ((TOTAL_ERRORS++))
       fi
@@ -248,7 +262,7 @@ process_shell(){
   if check_tool shellcheck; then
     log "  ${BWHT}Linting${DEF} with shellcheck..."
     local -i errors=0
-    if ! shellcheck --format=gcc "${files[@]}" &>/dev/null; then
+    if ! shellcheck --format=gcc "${files[@]}" &> /dev/null; then
       # This will not populate ERROR_FILES with specific files, but will register that an error occurred.
       warn "  shellcheck found issues in one or more files."
       ((errors++))
@@ -264,9 +278,9 @@ process_shell(){
     log "  ${BWHT}Auditing${DEF} with shellharden..."
     for file in "${files[@]}"; do
       if ((cfg[fix])); then
-        shellharden --replace "$file" &>/dev/null || :
+        shellharden --replace "$file" &> /dev/null || :
       else
-        shellharden --check "$file" &>/dev/null || :
+        shellharden --check "$file" &> /dev/null || :
       fi
     done
     COMMANDS_RUN+=("shellharden --check <file>")
@@ -274,17 +288,20 @@ process_shell(){
 }
 
 # Format fish scripts
-process_fish(){
+process_fish() {
   log "${LBLU}→${DEF} Processing fish scripts..."
   local -a files=()
   find_files "*.fish" files
-  ((${#files[@]} == 0)) && { log "  No fish scripts found"; return 0; }
+  ((${#files[@]} == 0)) && {
+    log "  No fish scripts found"
+    return 0
+  }
   log "  Found ${#files[@]} fish scripts"
   if check_tool fish_indent; then
     log "  ${PNK}Formatting${DEF} with fish_indent..."
     if ((cfg[fix])); then
       for file in "${files[@]}"; do
-        if fish_indent -w "$file" 2>/dev/null; then
+        if fish_indent -w "$file" 2> /dev/null; then
           MODIFIED_FILES+=("$file")
           ((TOTAL_MODIFIED++))
         fi
@@ -297,22 +314,25 @@ process_fish(){
 }
 
 # Format and lint TOML files
-process_toml(){
+process_toml() {
   log "${LBLU}→${DEF} Processing TOML files..."
   local -a files=()
   find_files "*.toml" files
-  ((${#files[@]} == 0)) && { log "  No TOML files found"; return 0; }
+  ((${#files[@]} == 0)) && {
+    log "  No TOML files found"
+    return 0
+  }
   log "  Found ${#files[@]} TOML files"
   # Format with taplo
   if check_tool taplo; then
     log "  ${PNK}Formatting${DEF} with taplo..."
     if ((cfg[fix])); then
-      if taplo format "${files[@]}" 2>/dev/null; then
+      if taplo format "${files[@]}" 2> /dev/null; then
         MODIFIED_FILES+=("${files[@]}")
         ((TOTAL_MODIFIED += ${#files[@]}))
       fi
     else
-      if ! taplo format --check "${files[@]}" &>/dev/null; then
+      if ! taplo format --check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -325,7 +345,7 @@ process_toml(){
     log "  ${BWHT}Linting${DEF} with tombi..."
     local -i errors=0
     for file in "${files[@]}"; do
-      if ! tombi lint "$file" &>/dev/null; then
+      if ! tombi lint "$file" &> /dev/null; then
         ((errors++))
         ERROR_FILES+=("$file")
       fi
@@ -336,23 +356,26 @@ process_toml(){
 }
 
 # Format and lint Markdown files
-process_markdown(){
+process_markdown() {
   log "${LBLU}→${DEF} Processing Markdown files..."
   local -a files=()
   find_files "*.{md,markdown}" files
-  ((${#files[@]} == 0)) && { log "  No Markdown files found"; return 0; }
+  ((${#files[@]} == 0)) && {
+    log "  No Markdown files found"
+    return 0
+  }
   log "  Found ${#files[@]} Markdown files"
   # Format with mdformat
   if check_tool mdformat; then
     log "  ${PNK}Formatting${DEF} with mdformat..."
     if ((cfg[fix])); then
-      if mdformat "${files[@]}" 2>/dev/null; then
+      if mdformat "${files[@]}" 2> /dev/null; then
         # This assumes all files were potentially modified. For more accuracy, you could check git status.
         MODIFIED_FILES+=("${files[@]}")
         ((TOTAL_MODIFIED += ${#files[@]}))
       fi
     else
-      if ! mdformat --check "${files[@]}" &>/dev/null; then
+      if ! mdformat --check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -364,10 +387,10 @@ process_markdown(){
   if check_tool markdownlint; then
     log "  ${BWHT}Linting${DEF} with markdownlint..."
     if ((cfg[fix])); then
-      markdownlint --fix "${files[@]}" 2>/dev/null || :
+      markdownlint --fix "${files[@]}" 2> /dev/null || :
     fi
     local -i errors=0
-    if ! markdownlint "${files[@]}" &>/dev/null; then
+    if ! markdownlint "${files[@]}" &> /dev/null; then
       warn "  markdownlint found issues in one or more files."
       ((errors++))
     fi
@@ -380,20 +403,23 @@ process_markdown(){
 }
 
 # Format and lint Python files
-process_python(){
+process_python() {
   log "${LBLU}→${DEF} Processing Python files..."
   local -a files=()
   find_files "*.{py,pyw,pyi}" files
-  ((${#files[@]} == 0)) && { log "  No Python files found"; return 0; }
+  ((${#files[@]} == 0)) && {
+    log "  No Python files found"
+    return 0
+  }
   log "  Found ${#files[@]} Python files"
   # Fix with ruff
   if check_tool ruff; then
     log "  ${PNK}Fixing${DEF} with ruff..."
     if ((cfg[fix])); then
-      ruff check --fix "${files[@]}" 2>/dev/null || :
+      ruff check --fix "${files[@]}" 2> /dev/null || :
       MODIFIED_FILES+=("${files[@]}")
     else
-      if ! ruff check "${files[@]}" &>/dev/null; then
+      if ! ruff check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -405,12 +431,12 @@ process_python(){
   if check_tool black; then
     log "  ${PNK}Formatting${DEF} with black..."
     if ((cfg[fix])); then
-      if black --fast "${files[@]}" 2>/dev/null; then
+      if black --fast "${files[@]}" 2> /dev/null; then
         MODIFIED_FILES+=("${files[@]}")
         ((TOTAL_MODIFIED += ${#files[@]}))
       fi
     else
-      if ! black --check "${files[@]}" &>/dev/null; then
+      if ! black --check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -421,22 +447,25 @@ process_python(){
 }
 
 # Format and lint Lua files
-process_lua(){
+process_lua() {
   log "${LBLU}→${DEF} Processing Lua files..."
   local -a files=()
   find_files "*.lua" files
-  ((${#files[@]} == 0)) && { log "  No Lua files found"; return 0; }
+  ((${#files[@]} == 0)) && {
+    log "  No Lua files found"
+    return 0
+  }
   log "  Found ${#files[@]} Lua files"
   # Format with stylua
   if check_tool stylua; then
     log "  ${PNK}Formatting${DEF} with stylua..."
     if ((cfg[fix])); then
-      if stylua "${files[@]}" 2>/dev/null; then
+      if stylua "${files[@]}" 2> /dev/null; then
         MODIFIED_FILES+=("${files[@]}")
         ((TOTAL_MODIFIED += ${#files[@]}))
       fi
     else
-      if ! stylua --check "${files[@]}" &>/dev/null; then
+      if ! stylua --check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -448,7 +477,7 @@ process_lua(){
   if check_tool selene; then
     log "  ${BWHT}Linting${DEF} with selene..."
     local -i errors=0
-    if ! selene "${files[@]}" &>/dev/null; then
+    if ! selene "${files[@]}" &> /dev/null; then
       warn "  selene found issues in one or more files."
       ((errors++))
     fi
@@ -461,22 +490,25 @@ process_lua(){
 }
 
 # Format CSS/HTML/JS files
-process_web(){
+process_web() {
   log "${LBLU}→${DEF} Processing web files (CSS/HTML/JS)..."
   local -a files=()
   find_files "*.{css,scss,sass,less,html,htm,js,mjs,cjs,jsx,ts,tsx}" files
-  ((${#files[@]} == 0)) && { log "  No web files found"; return 0; }
+  ((${#files[@]} == 0)) && {
+    log "  No web files found"
+    return 0
+  }
   log "  Found ${#files[@]} web files"
   # Try biome first, fallback to prettier
   if check_tool biome; then
     log "  ${PNK}Formatting${DEF} with biome..."
     if ((cfg[fix])); then
-      biome format --write "${files[@]}" 2>/dev/null || :
-      biome check --apply "${files[@]}" 2>/dev/null || :
+      biome format --write "${files[@]}" 2> /dev/null || :
+      biome check --apply "${files[@]}" 2> /dev/null || :
       MODIFIED_FILES+=("${files[@]}")
       ((TOTAL_MODIFIED += ${#files[@]}))
     else
-      if ! biome check "${files[@]}" &>/dev/null; then
+      if ! biome check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -484,11 +516,11 @@ process_web(){
   elif check_tool prettier; then
     log "  ${PNK}Formatting${DEF} with prettier..."
     if ((cfg[fix])); then
-      prettier --write "${files[@]}" 2>/dev/null || :
+      prettier --write "${files[@]}" 2> /dev/null || :
       MODIFIED_FILES+=("${files[@]}")
       ((TOTAL_MODIFIED += ${#files[@]}))
     else
-      if ! prettier --check "${files[@]}" &>/dev/null; then
+      if ! prettier --check "${files[@]}" &> /dev/null; then
         ((TOTAL_ERRORS++)) || :
       fi
     fi
@@ -502,10 +534,10 @@ process_web(){
   if ((${#js_files[@]} > 0)) && check_tool eslint; then
     log "  ${BWHT}Linting${DEF} with eslint..."
     if ((cfg[fix])); then
-      eslint --fix "${js_files[@]}" 2>/dev/null || :
+      eslint --fix "${js_files[@]}" 2> /dev/null || :
     fi
     local -i errors=0
-    if ! eslint "${js_files[@]}" &>/dev/null; then
+    if ! eslint "${js_files[@]}" &> /dev/null; then
       warn "  eslint found issues in one or more files."
       ((errors++))
     fi
@@ -515,17 +547,20 @@ process_web(){
 }
 
 # Format XML files
-process_xml(){
+process_xml() {
   log "${LBLU}→${DEF} Processing XML files..."
   local -a files=()
   find_files "*.{xml,svg}" files
-  ((${#files[@]} == 0)) && { log "  No XML files found"; return 0; }
+  ((${#files[@]} == 0)) && {
+    log "  No XML files found"
+    return 0
+  }
   log "  Found ${#files[@]} XML files"
   if check_tool xmllint; then
     log "  ${PNK}Formatting${DEF} with xmllint..."
     if ((cfg[fix])); then
       for file in "${files[@]}"; do
-        if xmllint --format "$file" -o "$file" 2>/dev/null; then
+        if xmllint --format "$file" -o "$file" 2> /dev/null; then
           MODIFIED_FILES+=("$file")
           ((TOTAL_MODIFIED++))
         fi
@@ -538,7 +573,7 @@ process_xml(){
 }
 
 # Print summary
-print_summary(){
+print_summary() {
   log ""
   log "${BLD}${LBLU}═══════════════════════════════════════════════════════════════${DEF}"
   log "${BLD}${PNK}                    LINT & FORMAT SUMMARY${DEF}"
@@ -577,18 +612,25 @@ print_summary(){
     log "${RED}${BLD}FAIL:${DEF} Linting/formatting found ${TOTAL_ERRORS} errors in ${unique_errors} files"
     return 1
   else
-    log "${GRN}${BLD}PASS:${DEF} All checks passed!"; return 0
+    log "${GRN}${BLD}PASS:${DEF} All checks passed!"
+    return 0
   fi
 }
 
 # Parse args
-parse_args(){
+parse_args() {
   while (($#)); do
     case "$1" in
       -q | --quiet) cfg[quiet]=1 ;;
-      -v | --verbose) cfg[debug]=1; DEBUG=1 ;;
+      -v | --verbose)
+        cfg[debug]=1
+        DEBUG=1
+        ;;
       -n | --dry-run) cfg[dry_run]=1 ;;
-      -c | --check) cfg[fix]=0; cfg[check_only]=1 ;;
+      -c | --check)
+        cfg[fix]=0
+        cfg[check_only]=1
+        ;;
       --help | -h)
         cat << EOF
 Usage: $(basename "$0") [OPTIONS]
@@ -619,18 +661,26 @@ Exit codes:
   1 - Errors found
 
 EOF
-        exit 0 ;;
-      --version) printf '%s\n' "1.0.0"; exit 0 ;;
-      --) shift; break ;;
+        exit 0
+        ;;
+      --version)
+        printf '%s\n' "1.0.0"
+        exit 0
+        ;;
+      --)
+        shift
+        break
+        ;;
       -*) die "invalid option: $1" ;;
       *) break ;;
-    esac; shift
+    esac
+    shift
   done
 }
 
-main(){
+main() {
   parse_args "$@"
-  ((cfg[quiet])) && exec >/dev/null
+  ((cfg[quiet])) && exec > /dev/null
   ((cfg[debug])) && dbg "verbose on"
   log "${BLD}${PNK}Starting comprehensive lint & format...${DEF}"
   log ""
@@ -646,7 +696,9 @@ main(){
   process_web
   process_xml
   # Print summary and exit with proper code
-  trap - ERR; set +e  
-  print_summary; exit $?
+  trap - ERR
+  set +e
+  print_summary
+  exit $?
 }
 main "$@"

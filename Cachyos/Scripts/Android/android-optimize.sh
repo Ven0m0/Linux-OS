@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
+export LC_ALL=C LANG=C
 
 # === Color Palette (Trans Flag) ===
 if [[ -t 1 ]]; then
@@ -19,12 +21,15 @@ log() { xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
 warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
 err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die() { err "$1"; exit "${2:-1}"; }
+die() {
+  err "$1"
+  exit "${2:-1}"
+}
 dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 sec() { printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
 
 # === Tool Detection ===
-has() { command -v "$1" &>/dev/null; }
+has() { command -v "$1" &> /dev/null; }
 
 hasname() {
   local cmd
@@ -39,7 +44,7 @@ hasname() {
 
 # === Environment Detection ===
 readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && echo 1 || echo 0)"
-readonly NPROC="$(nproc 2>/dev/null || echo 4)"
+readonly NPROC="$(nproc 2> /dev/null || echo 4)"
 
 # === ADB/Device Utilities ===
 detect_adb() {
@@ -66,13 +71,13 @@ ash() {
     if [[ $# -eq 0 ]]; then
       "$adb_cmd" sh
     else
-      "$adb_cmd" "$@" 2>/dev/null || return 1
+      "$adb_cmd" "$@" 2> /dev/null || return 1
     fi
   else
     if [[ $# -eq 0 ]]; then
       "$adb_cmd" shell
     else
-      "$adb_cmd" shell "$@" 2>/dev/null || return 1
+      "$adb_cmd" shell "$@" 2> /dev/null || return 1
     fi
   fi
 }
@@ -89,8 +94,8 @@ device_ok() {
     return 0
   fi
 
-  "$adb_cmd" start-server &>/dev/null || :
-  "$adb_cmd" get-state &>/dev/null || {
+  "$adb_cmd" start-server &> /dev/null || :
+  "$adb_cmd" get-state &> /dev/null || {
     err "No device connected; enable USB debugging"
     return 1
   }
@@ -116,11 +121,26 @@ wait_for_device() {
 
 # === Package Manager Detection ===
 pm_detect() {
-  if has paru; then printf 'paru'; return; fi
-  if has yay; then printf 'yay'; return; fi
-  if has pacman; then printf 'pacman'; return; fi
-  if has apt; then printf 'apt'; return; fi
-  if has pkg && ((IS_TERMUX)); then printf 'pkg'; return; fi
+  if has paru; then
+    printf 'paru'
+    return
+  fi
+  if has yay; then
+    printf 'yay'
+    return
+  fi
+  if has pacman; then
+    printf 'pacman'
+    return
+  fi
+  if has apt; then
+    printf 'apt'
+    return
+  fi
+  if has pkg && ((IS_TERMUX)); then
+    printf 'pkg'
+    return
+  fi
   printf ''
 }
 
@@ -132,8 +152,8 @@ confirm() {
   while :; do
     read -rp "$prompt [y/N] " reply
     case "${reply,,}" in
-      y|yes) return 0 ;;
-      n|no|"") return 1 ;;
+      y | yes) return 0 ;;
+      n | no | "") return 1 ;;
       *) warn "Please answer y or n" ;;
     esac
   done
@@ -141,7 +161,7 @@ confirm() {
 
 # === File Operations ===
 file_size() {
-  stat -c "%s" "$1" 2>/dev/null || stat -f "%z" "$1" 2>/dev/null || echo 0
+  stat -c "%s" "$1" 2> /dev/null || stat -f "%z" "$1" 2> /dev/null || echo 0
 }
 
 human_size() {
@@ -215,7 +235,7 @@ aapt2_jar() {
     local jar=""
     while IFS= read -r -d '' c; do
       [[ -f "$c/android.jar" ]] && jar="$c/android.jar"
-    done < <(find "$r/platforms" -maxdepth 1 -type d -name "android-*" -print0 2>/dev/null || :)
+    done < <(find "$r/platforms" -maxdepth 1 -type d -name "android-*" -print0 2> /dev/null || :)
     [[ -n $jar ]] && {
       printf '%s' "$jar"
       return
@@ -501,15 +521,15 @@ cmd_cache_clean() {
   device_ok || return 1
   sec "Clear app caches"
   if ((IS_TERMUX)); then
-    ash 'pm list packages -3' | cut -d: -f2 | xargs -r -n1 -P"$NPROC" -I{} ash "pm clear --cache-only {}" &>/dev/null || :
-    ash 'pm list packages -s' | cut -d: -f2 | xargs -r -n1 -P"$NPROC" -I{} ash "pm clear --cache-only {}" &>/dev/null || :
+    ash 'pm list packages -3' | cut -d: -f2 | xargs -r -n1 -P"$NPROC" -I{} ash "pm clear --cache-only {}" &> /dev/null || :
+    ash 'pm list packages -s' | cut -d: -f2 | xargs -r -n1 -P"$NPROC" -I{} ash "pm clear --cache-only {}" &> /dev/null || :
   else
     local adb_cmd
     adb_cmd="${ADB_CMD:-$(detect_adb)}"
-    "$adb_cmd" shell 'pm list packages -3' 2>/dev/null | cut -d: -f2 |
-      xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &>/dev/null || :
-    "$adb_cmd" shell 'pm list packages -s' 2>/dev/null | cut -d: -f2 |
-      xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &>/dev/null || :
+    "$adb_cmd" shell 'pm list packages -3' 2> /dev/null | cut -d: -f2 |
+      xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &> /dev/null || :
+    "$adb_cmd" shell 'pm list packages -s' 2> /dev/null | cut -d: -f2 |
+      xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &> /dev/null || :
   fi
   ash 'pm trim-caches 128G'
   ash 'logcat -b all -c'
@@ -520,11 +540,11 @@ cmd_index_nomedia() {
   local base="${1:-/storage/emulated/0}"
   sec "Index guard (. nomedia)"
   while IFS= read -r -d '' d; do
-    : > "$d/.nomedia" 2>/dev/null || :
-    : > "$d/.noindex" 2>/dev/null || :
-    : > "$d/.metadata_never_index" 2>/dev/null || :
-    : > "$d/.trackerignore" 2>/dev/null || :
-  done < <(find "$base" -type d -readable -print0 2>/dev/null || :)
+    : > "$d/.nomedia" 2> /dev/null || :
+    : > "$d/.noindex" 2> /dev/null || :
+    : > "$d/.metadata_never_index" 2> /dev/null || :
+    : > "$d/.trackerignore" 2> /dev/null || :
+  done < <(find "$base" -type d -readable -print0 2> /dev/null || :)
   ok "Index guards created"
 }
 
@@ -537,21 +557,21 @@ cmd_wa_clean() {
   }
 
   local b a
-  b="$(du -sm "$wa_base" 2>/dev/null | cut -f1 || printf 0)"
-  find "$wa_base" -type f -iregex '.*\.\(jpg\|jpeg\|png\|gif\|mp4\|mov\|wmv\|flv\|webm\|mxf\|avi\|avchd\|mkv\|opus\)$' -mtime +45 -delete 2>/dev/null || :
+  b="$(du -sm "$wa_base" 2> /dev/null | cut -f1 || printf 0)"
+  find "$wa_base" -type f -iregex '.*\.\(jpg\|jpeg\|png\|gif\|mp4\|mov\|wmv\|flv\|webm\|mxf\|avi\|avchd\|mkv\|opus\)$' -mtime +45 -delete 2> /dev/null || :
 
   rm -rf "$wa_base/WhatsApp AI Media"/* \
     "$wa_base/WhatsApp Bug Report Attachments"/* \
-    "$wa_base/WhatsApp Stickers"/* 2>/dev/null || :
+    "$wa_base/WhatsApp Stickers"/* 2> /dev/null || :
 
-  a="$(du -sm "$wa_base" 2>/dev/null | cut -f1 || printf 0)"
+  a="$(du -sm "$wa_base" 2> /dev/null | cut -f1 || printf 0)"
   ok "Freed $((b - a)) MB"
 
   if ((IS_TERMUX)); then
-    if command -v oxipng &>/dev/null || command -v jpegoptim &>/dev/null; then
+    if command -v oxipng &> /dev/null || command -v jpegoptim &> /dev/null; then
       sec "Optimizing Images (WhatsApp)"
-      find "$wa_base" -type f -name "*.jpg" -exec jpegoptim --strip-all {} + 2>/dev/null || :
-      find "$wa_base" -type f -name "*.png" -exec oxipng -o 2 -i 0 --strip safe {} + 2>/dev/null || :
+      find "$wa_base" -type f -name "*.jpg" -exec jpegoptim --strip-all {} + 2> /dev/null || :
+      find "$wa_base" -type f -name "*.png" -exec oxipng -o 2 -i 0 --strip safe {} + 2> /dev/null || :
       ok "Images optimized"
     fi
   fi
@@ -561,7 +581,7 @@ cmd_aapt2_opt() {
   local in="${1:-target/release/app-unsigned. apk}"
   local out="${2:-target/release/app-optimized.apk}"
   sec "AAPT2 optimize"
-  command -v aapt2 &>/dev/null || {
+  command -v aapt2 &> /dev/null || {
     err "aapt2 not found"
     return 1
   }
@@ -572,8 +592,8 @@ cmd_aapt2_opt() {
     return 1
   }
   mkdir -p "${out%/*}"
-  aapt2 compile --dir res -o compiled-res.zip &>/dev/null || :
-  aapt2 link -o linked-res.apk -I "$jar" --manifest AndroidManifest.xml --java gen compiled-res.zip &>/dev/null || :
+  aapt2 compile --dir res -o compiled-res.zip &> /dev/null || :
+  aapt2 link -o linked-res.apk -I "$jar" --manifest AndroidManifest.xml --java gen compiled-res.zip &> /dev/null || :
   aapt2 optimize --collapse-resource-names --shorten-resource-paths --enable-sparse-encoding -o "$out" "$in"
   ok "Saved → $out"
 }
@@ -587,32 +607,32 @@ task_pkg_maint() {
   info "Cleaning..."
   pkg clean -y
   pkg autoclean -y
-  apt-get autoremove -y &>/dev/null || :
+  apt-get autoremove -y &> /dev/null || :
   ok "Packages updated"
 }
 
 task_cache_termux() {
   sec "Cache cleanup"
   local cleaned=()
-  command -v uv &>/dev/null && {
-    uv cache clean --force &>/dev/null
-    uv cache prune &>/dev/null
+  command -v uv &> /dev/null && {
+    uv cache clean --force &> /dev/null
+    uv cache prune &> /dev/null
     cleaned+=(uv)
   }
-  command -v pip &>/dev/null && {
-    pip cache purge &>/dev/null
+  command -v pip &> /dev/null && {
+    pip cache purge &> /dev/null
     cleaned+=(pip)
   }
   [[ -d "$HOME/.npm" ]] && {
-    npm cache clean --force &>/dev/null
+    npm cache clean --force &> /dev/null
     cleaned+=(npm)
   }
   [[ -d "$HOME/.cache" ]] && {
-    find "$HOME/.cache" -mindepth 1 -delete 2>/dev/null || :
+    find "$HOME/.cache" -mindepth 1 -delete 2> /dev/null || :
     cleaned+=(user-cache)
   }
   [[ -d /data/data/com.termux/files/usr/tmp ]] && {
-    find /data/data/com.termux/files/usr/tmp -mindepth 1 -delete 2>/dev/null || :
+    find /data/data/com.termux/files/usr/tmp -mindepth 1 -delete 2> /dev/null || :
     cleaned+=(termux-tmp)
   }
   ok "Cleaned: ${cleaned[*]:-none}"
@@ -621,9 +641,9 @@ task_cache_termux() {
 task_fs_hygiene() {
   sec "Filesystem hygiene"
   local ed ef cnt=0
-  ed="$(find "$HOME" -type d -empty 2>/dev/null || :)"
+  ed="$(find "$HOME" -type d -empty 2> /dev/null || :)"
   [[ -n $ed ]] && { printf '%s\n' "$ed" | xargs -r rm -r && ((cnt++)); }
-  ef="$(find "$HOME" -type f -empty 2>/dev/null || :)"
+  ef="$(find "$HOME" -type f -empty 2> /dev/null || :)"
   [[ -n $ef ]] && { printf '%s\n' "$ef" | xargs -r rm && ((cnt++)); }
   ((cnt > 0)) && ok "Removed empty dirs/files" || info "No empty dirs/files"
 }
@@ -635,9 +655,9 @@ task_large_files() {
   info "Searching $path..."
   local lf
   if [[ -n $FD ]]; then
-    lf="$("$FD" .  "$path" -t f -S "+${mb}M" -x du -h {} + 2>/dev/null | sort -rh || :)"
+    lf="$("$FD" . "$path" -t f -S "+${mb}M" -x du -h {} + 2> /dev/null | sort -rh || :)"
   else
-    lf="$(find "$path" -type f -size "+${mb}M" -exec du -h {} + 2>/dev/null | sort -rh || :)"
+    lf="$(find "$path" -type f -size "+${mb}M" -exec du -h {} + 2> /dev/null | sort -rh || :)"
   fi
   [[ -n $lf ]] && {
     ok "Found:"
@@ -647,7 +667,7 @@ task_large_files() {
 
 task_updatedb() {
   sec "Update locate DB"
-  command -v updatedb &>/dev/null || {
+  command -v updatedb &> /dev/null || {
     warn "Install: pkg install findutils"
     return
   }

@@ -1,46 +1,33 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
+set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t' LC_ALL=C LANG=C
 # Colors
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 # Core helpers
-has() { command -v -- "$1" &> /dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "$*"; }
-warn() { xecho "${YLW}WARN:${DEF} $*"; }
-err() { xecho "${RED}ERROR:${DEF} $*" >&2; }
-die() {
-  err "$*"
-  exit "${2:-1}"
-}
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
-
+has(){ command -v -- "$1" &> /dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "$*"; }
+warn(){ xecho "${YLW}WARN:${DEF} $*"; }
+err(){ xecho "${RED}ERROR:${DEF} $*" >&2; }
+die(){ err "$*";  exit "${2:-1}"; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
 # Tool detection with fallbacks
 FD=${FD:-$(command -v fd || command -v fdfind || echo '')}
 RG=${RG:-$(command -v rg || command -v grep || echo '')}
 SD=${SD:-$(command -v sd || command -v sed || echo '')}
 PARALLEL=${PARALLEL:-$(command -v rust-parallel || command -v parallel || command -v xargs || echo '')}
-
 # Safe workspace
 WORKDIR=$(mktemp -d)
-cleanup() {
-  set +e
-  [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
-}
-on_err() { err "failed at line ${1:-?}"; }
+cleanup(){ set +e; [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :; }
+on_err(){ err "failed at line ${1:-?}"; }
 trap 'cleanup' EXIT
 trap 'on_err $LINENO' ERR
 trap ':' INT TERM
-
 # Config
 declare -A cfg=([dry_run]=0 [debug]=0 [quiet]=0 [fix]=1 [check_only]=0)
-run() { if ((cfg[dry_run])); then log "[DRY] $*"; else "$@"; fi; }
-
+run(){ if ((cfg[dry_run])); then log "[DRY] $*"; else "$@"; fi; }
 # Global state
 declare -A TOOL_MISSING=()
 declare -a MODIFIED_FILES=()
@@ -48,9 +35,8 @@ declare -a ERROR_FILES=()
 declare -a COMMANDS_RUN=()
 declare -i TOTAL_ERRORS=0
 declare -i TOTAL_MODIFIED=0
-
 # File discovery
-find_files() {
+find_files(){
   local pattern="$1" exclude_args=()
   local -n result="$2"
   # Common exclusions
@@ -104,9 +90,8 @@ find_files() {
     fi
   fi
 }
-
 # Check tool availability
-check_tool() {
+check_tool(){
   local tool="$1" required="${2:-0}"
   if ! has "$tool"; then
     TOOL_MISSING["$tool"]=1
@@ -119,9 +104,8 @@ check_tool() {
   fi
   return 0
 }
-
 # Format and lint YAML files
-process_yaml() {
+process_yaml(){
   log "${LBLU}→${DEF} Processing YAML files..."
   local -a files=()
   find_files "*.{yml,yaml}" files
@@ -186,9 +170,8 @@ process_yaml() {
     ((errors > 0)) && warn "  Found $errors files with actionlint errors"
   fi
 }
-
 # Format and lint JSON files
-process_json() {
+process_json(){
   log "${LBLU}→${DEF} Processing JSON files..."
   local -a files=()
   find_files "*.{json,json5,jsonc}" files
@@ -231,7 +214,7 @@ process_json() {
   fi
 }
 # Format and lint shell scripts
-process_shell() {
+process_shell(){
   log "${LBLU}→${DEF} Processing shell scripts..."
   local -a files=()
   find_files "*.{sh,bash}" files
@@ -286,9 +269,8 @@ process_shell() {
     COMMANDS_RUN+=("shellharden --check <file>")
   fi
 }
-
 # Format fish scripts
-process_fish() {
+process_fish(){
   log "${LBLU}→${DEF} Processing fish scripts..."
   local -a files=()
   find_files "*.fish" files
@@ -312,9 +294,8 @@ process_fish() {
     warn "  fish_indent not found, skipping"
   fi
 }
-
 # Format and lint TOML files
-process_toml() {
+process_toml(){
   log "${LBLU}→${DEF} Processing TOML files..."
   local -a files=()
   find_files "*.toml" files
@@ -354,9 +335,8 @@ process_toml() {
     ((TOTAL_ERRORS += errors))
   fi
 }
-
 # Format and lint Markdown files
-process_markdown() {
+process_markdown(){
   log "${LBLU}→${DEF} Processing Markdown files..."
   local -a files=()
   find_files "*.{md,markdown}" files
@@ -401,9 +381,8 @@ process_markdown() {
     warn "  markdownlint not found, skipping lint"
   fi
 }
-
 # Format and lint Python files
-process_python() {
+process_python(){
   log "${LBLU}→${DEF} Processing Python files..."
   local -a files=()
   find_files "*.{py,pyw,pyi}" files
@@ -445,9 +424,8 @@ process_python() {
     warn "  black not found, skipping format"
   fi
 }
-
 # Format and lint Lua files
-process_lua() {
+process_lua(){
   log "${LBLU}→${DEF} Processing Lua files..."
   local -a files=()
   find_files "*.lua" files
@@ -488,9 +466,8 @@ process_lua() {
     warn "  selene not found, skipping lint"
   fi
 }
-
 # Format CSS/HTML/JS files
-process_web() {
+process_web(){
   log "${LBLU}→${DEF} Processing web files (CSS/HTML/JS)..."
   local -a files=()
   find_files "*.{css,scss,sass,less,html,htm,js,mjs,cjs,jsx,ts,tsx}" files
@@ -545,9 +522,8 @@ process_web() {
     ((TOTAL_ERRORS += errors))
   fi
 }
-
 # Format XML files
-process_xml() {
+process_xml(){
   log "${LBLU}→${DEF} Processing XML files..."
   local -a files=()
   find_files "*.{xml,svg}" files
@@ -571,9 +547,8 @@ process_xml() {
     warn "  xmllint not found, skipping"
   fi
 }
-
 # Print summary
-print_summary() {
+print_summary(){
   log ""
   log "${BLD}${LBLU}═══════════════════════════════════════════════════════════════${DEF}"
   log "${BLD}${PNK}                    LINT & FORMAT SUMMARY${DEF}"
@@ -616,9 +591,8 @@ print_summary() {
     return 0
   fi
 }
-
 # Parse args
-parse_args() {
+parse_args(){
   while (($#)); do
     case "$1" in
       -q | --quiet) cfg[quiet]=1 ;;
@@ -661,24 +635,15 @@ Exit codes:
   1 - Errors found
 
 EOF
-        exit 0
-        ;;
-      --version)
-        printf '%s\n' "1.0.0"
-        exit 0
-        ;;
-      --)
-        shift
-        break
-        ;;
+        exit 0 ;;
+      --version) printf '%s\n' "1.0.0"; exit 0 ;;
+      --) shift; break ;;
       -*) die "invalid option: $1" ;;
       *) break ;;
-    esac
-    shift
+    esac; shift    
   done
 }
-
-main() {
+main(){
   parse_args "$@"
   ((cfg[quiet])) && exec > /dev/null
   ((cfg[debug])) && dbg "verbose on"

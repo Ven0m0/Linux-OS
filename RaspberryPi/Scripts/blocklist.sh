@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail; shopt -s nullglob globstar extglob; IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
-cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd -P)" || exit 1
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 has(){ command -v -- "$1" &> /dev/null; }
 [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :
 

@@ -69,7 +69,7 @@ run_downloader() {
 # Lock
 CLEANUP_STATE=0
 _create_lock(){
-  eval "exec $LCK_FD>\"$LCK_FILE.lock\""
+  exec {LCK_FD}>"$LCK_FILE.lock"
   flock -n "$LCK_FD" || die "apt-ultra already running! Remove $LCK_FILE.lock if stuck."
   trap "cleanup_all; exit \$CLEANUP_STATE" EXIT; trap "cleanup_all; exit 1" INT TERM
 }
@@ -281,10 +281,10 @@ EOF
   local fastest=$(echo "$first" | awk -F'\t' '{ print $2 }')
   local speed=$(echo "$first" | awk -F'\t' '{ print $1 }' | numfmt --to=iec --suffix=B/s)
   [[ ! $fastest =~ ^https?:// ]] && die "Invalid fastest mirror: $fastest"
-  [[ $verbosity -gt 0 ]] && echo "$mirrors_with_speed" | tail -n +2 | tac | while IFS= read -r m; do
+  [[ $verbosity -gt 0 ]] && while IFS= read -r m; do
     local sp=$(echo "${m%%$'\n'*}" | awk -F'\t' '{ print $1 }' | numfmt --to=iec --suffix=B/s)
     msg " → $(echo "$m" | awk -F'\t' '{ print $2 }') ($sp)" "$CYN"
-  done
+  done < <(echo "$mirrors_with_speed" | tail -n +2 | tac)
   msg "✓ Fastest: $fastest ($speed)" "$LBLU$BLD"
   [[ $apply == "true" ]] && set_mirror "$fastest" || :
   [[ !  -t 1 ]] && echo "$fastest"

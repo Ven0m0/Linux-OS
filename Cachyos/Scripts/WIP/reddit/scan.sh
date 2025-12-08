@@ -2,7 +2,9 @@
 set -euo pipefail; shopt -s nullglob; IFS=$'\n\t'
 # Convenience wrapper for account_scanner.py with env var support
 # Usage: ./scan.sh username [--mode MODE] [options...]
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+cd "$SCRIPT_DIR" || exit 1; SCRIPT_DIR="$(pwd -P)"
+readonly SCRIPT_DIR
 readonly SCANNER="${SCRIPT_DIR}/account_scanner.py"
 # Load credentials from env or config file
 readonly CREDS_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/account_scanner/credentials"

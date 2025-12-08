@@ -16,7 +16,7 @@ echo 4 > /sys/block/sda/queue/nr_requests
 echo 4096 > /sys/block/sda/queue/read_ahead_kb
 
 sudo nano /boot/firmware/cmdline.txt
-rootflags=atgc rw dwc_otg.fiq_enable=1 dwc_otg.fiq_fsm_enable=1 dwc_otg.nak_holdoff=0 threadirqs audit=0 page_poison=off smsc95xx.turbo_mode=y quiet mitigations=off nowatchdog init_on_alloc=0 init_on_free=0 f2fs.flush_merge_segments=1 usbcore.autosuspend=5 dma_debug=off page_poison=off 
+rootflags=atgc rw dwc_otg.fiq_enable=1 dwc_otg.fiq_fsm_enable=1 dwc_otg.nak_holdoff=0 threadirqs audit=0 page_poison=off smsc95xx.turbo_mode=y quiet mitigations=off nowatchdog init_on_alloc=0 init_on_free=0 f2fs.flush_merge_segments=1 usbcore.autosuspend=5 dma_debug=off page_poison=off
 
 
 sudo nano /etc/udev/rules.d/60-ioschedulers.rules

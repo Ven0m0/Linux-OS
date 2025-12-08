@@ -171,7 +171,7 @@ main(){
         cat << EOF
 Usage: ${0##*/} [-s STEP] [SERVER]
 Find optimal MTU to SERVER (default: 8.8.8.8)
-Supports IPv4 and IPv6. 
+Supports IPv4 and IPv6.
 
 Options:
   -s STEP   Use incremental mode with step size 1-10 (default: binary search)

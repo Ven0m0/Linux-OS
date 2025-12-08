@@ -11,6 +11,7 @@ Multi-source account intelligence: Reddit toxicity analysis + Sherlock OSINT pla
 ## Installation
 
 ### Arch Linux / CachyOS
+
 ```bash
 # Core dependencies
 pacman -S python-praw python-pandas python-httpx
@@ -23,6 +24,7 @@ pacman -S python-orjson
 ```
 
 ### Debian / Termux
+
 ```bash
 # Using uv (recommended)
 uv pip install praw pandas httpx sherlock-project orjson
@@ -34,14 +36,18 @@ pip3 install praw pandas httpx sherlock-project orjson
 ## Usage
 
 ### Mode 1: Sherlock Only
+
 Discover platform presence without Reddit credentials:
+
 ```bash
 ./account_scanner.py username --mode sherlock
 ./account_scanner.py username --mode sherlock --sherlock-timeout 30 --verbose
 ```
 
 ### Mode 2: Reddit Only
+
 Analyze toxicity without Sherlock:
+
 ```bash
 ./account_scanner.py username \
   --mode reddit \
@@ -52,7 +58,9 @@ Analyze toxicity without Sherlock:
 ```
 
 ### Mode 3: Both (Default)
+
 Full analysis with concurrent execution:
+
 ```bash
 ./account_scanner.py username \
   --mode both \
@@ -68,6 +76,7 @@ Full analysis with concurrent execution:
 ## Configuration Options
 
 ### Reddit Scanner
+
 ```
 --comments N              Number of comments to fetch (default: 50)
 --posts N                 Number of posts to fetch (default: 20)
@@ -82,12 +91,14 @@ Full analysis with concurrent execution:
 ```
 
 ### Sherlock Scanner
+
 ```
 --output-sherlock FILE    Output JSON path (default: sherlock_results.json)
 --sherlock-timeout N      Timeout per site in seconds (default: 60)
 ```
 
 ### Global
+
 ```
 --mode {sherlock,reddit,both}  Scanner mode (default: both)
 --verbose                      Verbose output
@@ -96,11 +107,13 @@ Full analysis with concurrent execution:
 ## API Keys
 
 ### Reddit API
+
 1. Visit https://www.reddit.com/prefs/apps
 2. Create app → script type
 3. Note client_id and client_secret
 
 ### Perspective API
+
 1. Visit https://developers.perspectiveapi.com/s/docs-get-started
 2. Enable API in Google Cloud Console
 3. Create credentials → API key
@@ -108,6 +121,7 @@ Full analysis with concurrent execution:
 ## Output Format
 
 ### Sherlock Results (JSON)
+
 ```json
 [
   {
@@ -120,6 +134,7 @@ Full analysis with concurrent execution:
 ```
 
 ### Reddit Results (CSV)
+
 ```csv
 timestamp,type,subreddit,content,TOXICITY,INSULT,PROFANITY,SEXUALLY_EXPLICIT
 2024-12-01 14:30:22,comment,AskReddit,Some text...,0.85,0.42,0.31,0.12
@@ -135,12 +150,14 @@ timestamp,type,subreddit,content,TOXICITY,INSULT,PROFANITY,SEXUALLY_EXPLICIT
 ## Examples
 
 ### Quick username check
+
 ```bash
 # Just check platform presence
 ./account_scanner.py suspicious_user --mode sherlock --verbose
 ```
 
 ### Comprehensive audit
+
 ```bash
 # Full scan with custom thresholds
 ./account_scanner.py target_user \
@@ -157,6 +174,7 @@ timestamp,type,subreddit,content,TOXICITY,INSULT,PROFANITY,SEXUALLY_EXPLICIT
 ```
 
 ### Monitor specific user
+
 ```bash
 # Low threshold, high coverage
 ./account_scanner.py monitored_user \
@@ -190,6 +208,7 @@ ruff format account_scanner.py
 ## Troubleshooting
 
 ### Sherlock not found
+
 ```bash
 # Arch
 yay -S sherlock-git
@@ -199,11 +218,13 @@ pip install sherlock-project
 ```
 
 ### Rate limit errors (429)
+
 - Reduce `--rate-per-min` value
 - Increase `--max-retries`
 - Script auto-implements exponential backoff
 
 ### PRAW authentication
+
 - Verify credentials in Reddit app settings
 - Check user_agent format: "AppName/Version"
 - Ensure script type app (not web/installed)

@@ -1,4 +1,5 @@
 # Todo
+
 - https://wiki.archlinux.org/title/List_of_applications
 - https://www.commandlinefu.com/commands/browse
 - https://wiki.archlinux.org/title/Domain_name_resolution
@@ -35,6 +36,7 @@ cargo install webcomp
 ```
 
 ## Java:
+
 - https://www.graalvm.org/22.2/reference-manual/native-image/guides/optimize-native-executable-with-pgo
 - https://www.graalvm.org/22.2/reference-manual/native-image/optimizations-and-performance/MemoryManagement
 - https://github.com/XDream8/kiss-repo/blob/main/bin/openjdk17-jdk/build

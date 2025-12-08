@@ -1,32 +1,30 @@
 <details>
+
 <summary><b>Bash Package Managers</b></summary>
 
 - [Basher](https://www.basher.it/package)
 - [bpkg](https://bpkg.sh)
 
 </details>
+
 <details>
+
 <summary><b>Resources</b></summary>
 
 - [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
-
 - [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
-
-- [Bash Guide](https://guide.bash.academy)   [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
-
+- [Bash Guide](https://guide.bash.academy) [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
 - [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
-
 - [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)
-
 - [Ascii flag color codes](https://www.flagcolorcodes.com)
-
-- [Bash prompt generator](https://bash-prompt-generator.org)    [Ezprompt generator](https://ezprompt.net)
+- [Bash prompt generator](https://bash-prompt-generator.org) [Ezprompt generator](https://ezprompt.net)
 
 </details>
 
 ## Bash snippets
 
 <details>
+
 <summary><b>Script start template</b></summary>
 
 ```bash
@@ -68,7 +66,9 @@ bkr(){ setsid nohup "$@" &>/dev/null </dev/null & disown >/dev/null 2>&1 || :; }
 ```
 
 </details>
+
 <details>
+
 <summary><b>Ascii color table</b></summary>
 
 ```bash
@@ -100,39 +100,54 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 ```
 
 </details>
+
 <details>
+
 <summary><b>Basename</b></summary>
 
 Usage: basename "path" ["suffix"]
+
 ```bash
 bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
 ```
 
 </details>
+
 <details>
+
 <summary><b>Dirname</b></summary>
 
 Usage: dirname "path"
+
 ```bash
 dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
 ```
 
 </details>
+
 <details>
+
 <summary><b>Date</b></summary>
 
 Usage: date "format"
-Prints either current date 'day/month-hour-minute' or whatever you give it via 'date <arg>'
+Prints either current date 'day/month-hour-minute' or whatever you give it via 'date
+
+<arg>
+'
 See: 'man strftime' for format.
+
 ```bash
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 ```
 
 </details>
+
 <details>
+
 <summary><b>Faster cat</b></summary>
 
 Hyperfine Summary:
+
 ```bash
 $ hyperfine -w 5 -S bash -i "cat /etc/hostname" 'printf '%s\n' "$(</etc/hostname)"'
 
@@ -146,12 +161,15 @@ Summary
   printf '%s\n' CachyOS ran
    64.36 ± 74.11 times faster than cat /etc/hostname
 ```
+
 ```bash
 fcat(){ printf '%s\n' "$(<${1})"; }
 ```
 
 </details>
+
 <details>
+
 <summary><b>Sleep replacement in bash</b></summary>
 
 ```bash
@@ -159,7 +177,9 @@ fcat(){ printf '%s\n' "$(<${1})"; }
 ```
 
 </details>
+
 <details>
+
 <summary><b>Use regex on a string</b></summary>
 
 ```bash
@@ -179,7 +199,9 @@ multiple capture groups some modification is needed.
 **Example Function:**
 
 </details>
+
 <details>
+
 <summary><b>Split a string on a delimiter</b></summary>
 
 This is an alternative to `cut`, `awk` and other tools. **CAVEAT:** Requires `bash` 4+
@@ -191,6 +213,7 @@ split(){ IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"; printf '%s\n' "${arr
 **Example Function:**
 
 Usage: split "string" "delimiter"
+
 ```bash
 split(){ IFS=$'\n' read -d "" -ra arr <<< "${1//$2/$'\n'}"; printf '%s\n' "${arr[@]}"; }
 ```
@@ -222,12 +245,15 @@ john
 ```
 
 </details>
+
 <details>
+
 <summary><b>Trim quotes from a string</b></summary>
 
 **Example Function:**
 
 Usage: trim_quotes "string"
+
 ```bash
 trim_quotes(){ : "${1//\'}"; printf '%s\n' "${_//\"}"; }
 ```
@@ -241,12 +267,15 @@ Hello, World
 ```
 
 </details>
+
 <details>
+
 <summary><b>Strip all instances of pattern from string</b></summary>
 
 **Example Function:**
 
 Usage: strip_all "string" "pattern"
+
 ```bash
 strip_all(){ printf '%s\n' "${1//$2}"; }
 ```
@@ -265,17 +294,21 @@ The Brown Fox
 ```
 
 </details>
+
 <details>
+
 <summary><b>Strip first occurrence of pattern from string</b></summary>
 
 **Example Function:**
 
 Usage: strip "string" "pattern"
+
 ```bash
 strip(){ printf '%s\n' "${1/$2}"; }
 ```
 
 **Example Usage:**
+
 ```bash
 $ strip "The Quick Brown Fox" "[aeiou]"
 Th Quick Brown Fox
@@ -285,7 +318,9 @@ TheQuick Brown Fox
 ```
 
 </details>
+
 <details>
+
 <summary><b>Remove duplicate array elements</b></summary>&nbsp;
 
 [Source](https://github.com/dylanaraps/pure-bash-bible?tab=readme-ov-file#remove-duplicate-array-elements)
@@ -299,6 +334,7 @@ allows us to effectively remove array duplicates.
 **CAVEAT:** List order may not stay the same.
 
 **Example Function:**
+
 ```bash
 remove_array_dups(){
     # Usage: remove_array_dups "array"
@@ -313,6 +349,7 @@ remove_array_dups(){
 ```
 
 **Example Usage:**
+
 ```bash
 $ remove_array_dups 1 1 2 2 3 3 3 3 3 4 4 4 4 4 5 5 5 5 5 5
 1
@@ -329,7 +366,9 @@ blue
 ```
 
 </details>
+
 <details>
+
 <summary><b>Loop over the contents of a file</b></summary>
 
 ```bash
@@ -339,7 +378,9 @@ done < "file"
 ```
 
 </details>
+
 <details>
+
 <summary><b>Loop over files and directories</b></summary>
 
 Don’t use `ls`.
@@ -374,10 +415,13 @@ shopt -u globstar
 ```
 
 </details>
+
 <details>
+
 <summary><b>Extract lines between two markers</b></summary>
 
 **Example Function:**
+
 ```bash
 extract(){
     # Usage: extract file "opening marker" "closing marker"
@@ -392,50 +436,56 @@ extract(){
 ```
 
 **Example Usage:**
-````bash
+
+```bash
 # Extract code blocks from MarkDown file.
 $ extract ~/projects/pure-bash/README.md '```bash' '```'
 # Output here...
-````
+```
 
 </details>
+
 <details>
+
 <summary><b>Variables</b></summary>
 
 ### Indirection
 
-| Parameter  | What does it do?                                                                                                                       |
+| Parameter | What does it do? |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `${!VAR}`  | Access a variable based on the value of `VAR`.                                                                                         |
-| `${!VAR*}` | Expand to `IFS` separated list of variable names starting with `VAR`.                                                                  |
+| `${!VAR}` | Access a variable based on the value of `VAR`. |
+| `${!VAR*}` | Expand to `IFS` separated list of variable names starting with `VAR`. |
 | `${!VAR@}` | Expand to `IFS` separated list of variable names starting with `VAR`. If double-quoted, each variable name expands to a separate word. |
 
 ### Replacement
 
-| Parameter                 | What does it do?                                       |
+| Parameter | What does it do? |
 | ------------------------- | ------------------------------------------------------ |
-| `${VAR#PATTERN}`          | Remove shortest match of pattern from start of string. |
-| `${VAR##PATTERN}`         | Remove longest match of pattern from start of string.  |
-| `${VAR%PATTERN}`          | Remove shortest match of pattern from end of string.   |
-| `${VAR%%PATTERN}`         | Remove longest match of pattern from end of string.    |
-| `${VAR/PATTERN/REPLACE}`  | Replace first match with string.                       |
-| `${VAR//PATTERN/REPLACE}` | Replace all matches with string.                       |
-| `${VAR/PATTERN}`          | Remove first match.                                    |
-| `${VAR//PATTERN}`         | Remove all matches.                                    |
+| `${VAR#PATTERN}` | Remove shortest match of pattern from start of string. |
+| `${VAR##PATTERN}` | Remove longest match of pattern from start of string. |
+| `${VAR%PATTERN}` | Remove shortest match of pattern from end of string. |
+| `${VAR%%PATTERN}` | Remove longest match of pattern from end of string. |
+| `${VAR/PATTERN/REPLACE}` | Replace first match with string. |
+| `${VAR//PATTERN/REPLACE}` | Replace all matches with string. |
+| `${VAR/PATTERN}` | Remove first match. |
+| `${VAR//PATTERN}` | Remove all matches. |
 
 ### Length
 
-| Parameter    | What does it do?             |
+| Parameter | What does it do? |
 | ------------ | ---------------------------- |
-| `${#VAR}`    | Length of var in characters. |
+| `${#VAR}` | Length of var in characters. |
 | `${#ARR[@]}` | Length of array in elements. |
 
 ### Expansion
 
 | Parameter | What does it do? |
-| \----------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------- |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------- |
 | `${VAR:OFFSET}` | Remove first `N` chars from variable. |
-| `${VAR:OFFSET:LENGTH}` | Get substring from `N` character to `N` character. <br> (`${VAR:10:10}`: Get sub-string from char `10` to char `20`) |
+| `${VAR:OFFSET:LENGTH}` | Get substring from `N` character to `N` character.
+
+<br>
+(`${VAR:10:10}`: Get sub-string from char `10` to char `20`) |
 | `${VAR:: OFFSET}` | Get first `N` chars from variable. |
 | `${VAR:: -OFFSET}` | Remove last `N` chars from variable. |
 | `${VAR: -OFFSET}` | Get last `N` chars from variable. |
@@ -443,31 +493,32 @@ $ extract ~/projects/pure-bash/README.md '```bash' '```'
 
 ### Case Modification
 
-| Parameter  | What does it do?                 | CAVEAT    |
+| Parameter | What does it do? | CAVEAT |
 | ---------- | -------------------------------- | --------- |
-| `${VAR^}`  | Uppercase first character.       | `bash 4+` |
-| `${VAR^^}` | Uppercase all characters.        | `bash 4+` |
-| `${VAR,}`  | Lowercase first character.       | `bash 4+` |
-| `${VAR,,}` | Lowercase all characters.        | `bash 4+` |
-| `${VAR~}`  | Reverse case of first character. | `bash 4+` |
-| `${VAR~~}` | Reverse case of all characters.  | `bash 4+` |
+| `${VAR^}` | Uppercase first character. | `bash 4+` |
+| `${VAR^^}` | Uppercase all characters. | `bash 4+` |
+| `${VAR,}` | Lowercase first character. | `bash 4+` |
+| `${VAR,,}` | Lowercase all characters. | `bash 4+` |
+| `${VAR~}` | Reverse case of first character. | `bash 4+` |
+| `${VAR~~}` | Reverse case of all characters. | `bash 4+` |
 
 ### Default Value
 
-| Parameter        | What does it do?                                                |
+| Parameter | What does it do? |
 | ---------------- | --------------------------------------------------------------- |
-| `${VAR:-STRING}` | If `VAR` is empty or unset, use `STRING` as its value.          |
-| `${VAR-STRING}`  | If `VAR` is unset, use `STRING` as its value.                   |
+| `${VAR:-STRING}` | If `VAR` is empty or unset, use `STRING` as its value. |
+| `${VAR-STRING}` | If `VAR` is unset, use `STRING` as its value. |
 | `${VAR:=STRING}` | If `VAR` is empty or unset, set the value of `VAR` to `STRING`. |
-| `${VAR=STRING}`  | If `VAR` is unset, set the value of `VAR` to `STRING`.          |
-| `${VAR:+STRING}` | If `VAR` is not empty, use `STRING` as its value.               |
-| `${VAR+STRING}`  | If `VAR` is set, use `STRING` as its value.                     |
-| `${VAR:?STRING}` | Display an error if empty or unset.                             |
-| `${VAR?STRING}`  | Display an error if unset.                                      |
+| `${VAR=STRING}` | If `VAR` is unset, set the value of `VAR` to `STRING`. |
+| `${VAR:+STRING}` | If `VAR` is not empty, use `STRING` as its value. |
+| `${VAR+STRING}` | If `VAR` is set, use `STRING` as its value. |
+| `${VAR:?STRING}` | Display an error if empty or unset. |
+| `${VAR?STRING}` | Display an error if unset. |
 
 ### BRACE EXPANSION
 
 **Ranges**
+
 ```bash
 # Syntax: {<START>..<END>}
 
@@ -495,6 +546,7 @@ echo {1..10..2} # Increment by 2.
 ```
 
 **String Lists**
+
 ```bash
 echo {apples,oranges,pears,grapes}
 
@@ -506,6 +558,7 @@ rm -rf ~/Downloads/{Movies,Music,ISOS}
 </details>
 
 **Misc**
+
 ```bash
 # Clear screen on script exit.
 trap 'printf \\e[2J\\e[H\\e[m' EXIT
@@ -522,11 +575,13 @@ file="${1/#\~\//${HOME}/}"
 **Run a command in the background**
 
 This will run the given command and keep it running, even after the terminal or SSH connection is terminated. All output is ignored.
+
 ```bash
 bkr(){ setsid nohup "$@" &>/dev/null </dev/null & disown >/dev/null 2>&1 || :; }
 ```
 
 ### alternative clear / fix scrollback buffer clear for kitty
+
 ```bash
 printf '\e[3J\e[H\e[2J\e[m'
 alias clear "printf '\e[3J\e[H\e[2J\e[m'"

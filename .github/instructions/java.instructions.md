@@ -8,7 +8,7 @@ applyTo: '**/*.java'
 ## General Instructions
 
 - First, prompt the user if they want to integrate static analysis tools (SonarQube, PMD, Checkstyle) into their project setup.
-  - If yes, document a recommended static-analysis setup. 
+  - If yes, document a recommended static-analysis setup.
     - Prefer SonarQube/SonarCloud (SonarLint in IDE + `sonar-scanner` in CI).
     - Create a Sonar project key.
     - Store the scanner token in CI secrets.

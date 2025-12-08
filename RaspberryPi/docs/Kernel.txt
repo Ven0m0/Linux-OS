@@ -10,7 +10,7 @@ make localmodconfig
 
 git clone --depth=1 https://github.com/raspberrypi/linux && cd linux
 
-nano .config 
+nano .config
 CONFIG_LOCALVERSION="-v7l-MY_CUSTOM_KERNEL"
 make bcm2711_defconfig
 make localmodconfig
@@ -24,7 +24,7 @@ make nconfig
 
 Cross compile on arch:
 sudo pacman -S --needed git base-devel bc bison flex ncurses libelf openssl
-sudo pacman -S aarch64-linux-gnu-gcc  
+sudo pacman -S aarch64-linux-gnu-gcc
 git clone --depth 1 --single-branch --branch rpi-6.15.y https://github.com/raspberrypi/linux.git && cd linux
 patch -p1 <
 

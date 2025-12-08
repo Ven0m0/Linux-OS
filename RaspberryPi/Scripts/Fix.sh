@@ -27,9 +27,9 @@ find_with_fallback(){
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
   shift 4 2> /dev/null || shift $#
   if has fd; then
-    fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
+    fd -H -t "$ftype" "$pattern" "$search_path" "${action:+"$action"}" "$@"
   elif has fdfind; then
-    fdfind -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
+    fdfind -H -t "$ftype" "$pattern" "$search_path" "${action:+"$action"}" "$@"
   else
     local find_type_arg
     case "$ftype" in
@@ -39,9 +39,9 @@ find_with_fallback(){
       *) find_type_arg="-type f" ;;
     esac
     if [[ -n $action ]]; then
-      find "$search_path" $find_type_arg -name "$pattern" "$action" "$@"
+      find "$search_path" "$find_type_arg" -name "$pattern" "$action" "$@"
     else
-      find "$search_path" $find_type_arg -name "$pattern"
+      find "$search_path" "$find_type_arg" -name "$pattern"
     fi
   fi
 }

@@ -239,9 +239,9 @@ CONFIG_NTP_MIRROR=gateway
 #------------------------------------------------------------------------------------------------------
 # SSH Server
 # - Disable SSH password logins, e.g. when using pubkey authentication
-#	0=Allow password logins for all users, including root
-#	root=Disable password login for root user only
-#	1=Disable password logins for all users, assure that you have a valid SSH key applied!
+# 0=Allow password logins for all users, including root
+# root=Disable password login for root user only
+# 1=Disable password logins for all users, assure that you have a valid SSH key applied!
 SOFTWARE_DISABLE_SSH_PASSWORD_LOGINS=0
 
 # VNC Server
@@ -286,9 +286,9 @@ SOFTWARE_CHROMIUM_AUTOSTART_URL=https://dietpi.com/
 
 # Home Assistant
 # - Optional Python build dependencies and modules, possibly required for certain HA components
-#	Space separated list (no quotation!), will be installed together with Home Assistant automatically, if present
+# Space separated list (no quotation!), will be installed together with Home Assistant automatically, if present
 SOFTWARE_HOMEASSISTANT_APT_DEPS=
-#	Add Python modules with version string at best, e.g.: firstModule==1.2.3 secondModule==4.5.6
+# Add Python modules with version string at best, e.g.: firstModule==1.2.3 secondModule==4.5.6
 SOFTWARE_HOMEASSISTANT_PIP_DEPS=
 
 # K3s

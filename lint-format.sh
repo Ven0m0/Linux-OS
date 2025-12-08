@@ -20,7 +20,7 @@ SD=${SD:-$(command -v sd || command -v sed || echo '')}
 PARALLEL=${PARALLEL:-$(command -v rust-parallel || command -v parallel || command -v xargs || echo '')}
 # Safe workspace
 WORKDIR=$(mktemp -d)
-cleanup(){ set +e; [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :; }
+cleanup(){ set +e; [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :; }
 on_err(){ err "failed at line ${1:-?}"; }
 trap 'cleanup' EXIT
 trap 'on_err $LINENO' ERR

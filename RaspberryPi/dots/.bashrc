@@ -13,7 +13,7 @@ _prependpath(){ [[ -d "$1" ]] && [[ ":$PATH:" != *":$1:"* ]] && PATH="$1${PATH:+
 _ifsource "/etc/bashrc"
 _ifsource "/usr/share/bash-completion/bash_completion" || _ifsource "/etc/bash_completion"
 #──────────── Conf ────────────
-HISTSIZE=10000 
+HISTSIZE=10000
 HISTFILESIZE="$HISTSIZE"
 HISTCONTROL="erasedups:ignoreboth"
 HISTIGNORE="&:ls:[bf]g:help:clear:printf:exit:history:bash:fish:?:??"

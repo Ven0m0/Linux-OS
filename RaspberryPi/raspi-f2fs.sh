@@ -185,9 +185,9 @@ clone_data(){
   mount -o ro "$ROOT_PART" "$WORKDIR/src/root"
   MOUNTED_DIRS+=("$WORKDIR/src/root")
   derive_partition_paths "$TGT_DEV"
-  mount "${BOOT_PART}" "$WORKDIR/tgt/boot"
+  mount "$BOOT_PART" "$WORKDIR/tgt/boot"
   MOUNTED_DIRS+=("$WORKDIR/tgt/boot")
-  mount "${ROOT_PART}" "$WORKDIR/tgt/root"
+  mount "$ROOT_PART" "$WORKDIR/tgt/root"
   MOUNTED_DIRS+=("$WORKDIR/tgt/root")
   log "Syncing /boot..."
   rsync -aHAX --info=progress2 "$WORKDIR/src/boot/" "$WORKDIR/tgt/boot/"
@@ -217,9 +217,9 @@ configure_pi_boot(){
     print line
   }' "$cmdline" > "${cmdline}.tmp" && mv "${cmdline}.tmp" "$cmdline"
   cat > "$fstab" <<- EOF
-	proc            /proc           proc    defaults          0       0
-	PARTUUID=$boot_uuid  /boot           vfat    defaults          0       2
-	PARTUUID=$root_uuid  /               f2fs    defaults,noatime  0       1
+ proc            /proc           proc    defaults          0       0
+ PARTUUID=$boot_uuid  /boot           vfat    defaults          0       2
+ PARTUUID=$root_uuid  /               f2fs    defaults,noatime  0       1
 EOF
   ((cfg[ssh])) && touch "$WORKDIR/tgt/boot/ssh"
   log "Configuration complete."
@@ -227,18 +227,18 @@ EOF
 
 usage(){
   cat <<- EOF
-	Usage: $(basename "$0") [OPTIONS]
-	Flash Raspberry Pi image to SD card using F2FS root filesystem.
-	OPTIONS:
-	  -i FILE   Source image (.img, .img.xz, URL, or 'dietpi')
-	  -d DEV    Target device (e.g., /dev/sdX)
-	  -b SIZE   Boot partition size (default: 512M)
-	  -s        Enable SSH
-	  -k        Keep source file (don't delete if extracted)
-	  -U        Disable USB/MMC safety check (Dangerous)
-	  -F        Disable Size safety check
-	  -n        Dry-run
-	  -h        Help
+ Usage: $(basename "$0") [OPTIONS]
+ Flash Raspberry Pi image to SD card using F2FS root filesystem.
+ OPTIONS:
+   -i FILE   Source image (.img, .img.xz, URL, or 'dietpi')
+   -d DEV    Target device (e.g., /dev/sdX)
+   -b SIZE   Boot partition size (default: 512M)
+   -s        Enable SSH
+   -k        Keep source file (don't delete if extracted)
+   -U        Disable USB/MMC safety check (Dangerous)
+   -F        Disable Size safety check
+   -n        Dry-run
+   -h        Help
 EOF
   exit 0
 }

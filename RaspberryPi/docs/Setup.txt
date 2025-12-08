@@ -4,7 +4,7 @@ ip a ls |grep fded
 ip address | grep "inet6 fd"
 
 Editor:
-sudo nano 
+sudo nano
 
 sudo nano /boot/firmware/config.txt
 

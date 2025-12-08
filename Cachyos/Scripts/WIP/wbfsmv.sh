@@ -75,7 +75,7 @@ get_title(){
 }
 clean(){
   local s=${1//_/ }
-  s=${s//	/ }
+  s=${s// / }
   s=$(sed -E 's/[[:space:]]*\(([A-Z][a-z](,[A-Z][a-z])+)\)//g; s/[[:space:]]*\[([A-Z][a-z](,[A-Z][a-z])+)\]//g' <<< "$s")
   s=$(sed -E 's/[[:space:]]*[\(\[][^]\)]*(\bPAL\b|\bNTSC\b|\bEurope\b|\bUSA?\b|\bJapan\b|\bAsia\b|\bWorld\b|\bRev[[:space:]]*[0-9]*\b)[^]\)]*[\)\]]//gI' <<< "$s")
   s=$(sed -E 's/[[:space:]]*\((Europe|USA?|Japan|Asia|World|PAL|NTSC)\)//gI; s/[[:space:]]*\[(Europe|USA?|Japan|Asia|World|PAL|NTSC)\]//gI' <<< "$s")

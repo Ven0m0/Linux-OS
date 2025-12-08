@@ -35,7 +35,6 @@ Follow these guidelines for formatting and structuring your markdown content:
 Ensure compliance with the following validation requirements:
 
 - **Front Matter**: Include the following fields in the YAML front matter:
-
   - `post_title`: The title of the post.
   - `author1`: The primary author of the post.
   - `post_slug`: The URL slug for the post.
@@ -46,7 +45,6 @@ Ensure compliance with the following validation requirements:
   - `ai_note`: Indicate if AI was used in the creation of the post.
   - `summary`: A brief summary of the post. Recommend a summary based on the content when possible.
   - `post_date`: The publication date of the post.
-
 - **Content Rules**: Ensure that the content follows the markdown content rules specified above.
 - **Formatting**: Ensure that the content is properly formatted and structured according to the guidelines.
 - **Validation**: Run the validation tools to check for compliance with the rules and guidelines.

@@ -30,7 +30,7 @@ extract_pattern(){
 extract_urls(){ grep -oE '(https?|ftp)://[^[:space:]]+' "$@"; }
 extract_ips(){ grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' "$@"; }
 count_lines(){ grep -c . "$@" 2> /dev/null || echo 0; }
-normalize_whitespace(){ sed -e 's/	/ /g' -e 's/  */ /g'; }
+normalize_whitespace(){ sed -e 's/ / /g' -e 's/  */ /g'; }
 # https://github.com/hectorm/hblock/blob/master/hblock
 # Remove comments from string (function already defined in lib/text.sh above)
 # removeComments(){ sed -e 's/[[:blank:]]*#.*//;/^$/d'; }

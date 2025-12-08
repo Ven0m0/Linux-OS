@@ -1,6 +1,7 @@
 # Useful shell stuff
 
 <details>
+
 <summary><b>Bash script template</b></summary>
 
 ```bash
@@ -27,6 +28,7 @@ sleepy(){ read -rt 0.1 <> <(:) || :; }
 </details>
 
 <details>
+
 <summary><b>Colors</b></summary>
 
 ```bash
@@ -55,6 +57,7 @@ BRIGHT_WHT='\033[97m'
 </details>
 
 <details>
+
 <summary><b>Config file in bash</b></summary>
 
 In the script:
@@ -77,6 +80,7 @@ DEBUG=true
 </details>
 
 <details>
+
 <summary><b>IP Stuff</b></summary>
 
 ```bash
@@ -100,6 +104,7 @@ awk -v s="$up" 'BEGIN {printf "Upload: %.2f Mbps\n", (s*8)/(1024*1024)}'
 </details>
 
 <details>
+
 <summary><b>Misc</b></summary>
 
 ```bash

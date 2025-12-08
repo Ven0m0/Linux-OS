@@ -3,20 +3,25 @@
 A collection of scripts and resources for managing and customizing Linux distributions.
 
 <details>
+
 <summary><b>Arch scripts</b></summary>
 
 Update:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Updates.sh | bash
 ```
 
 Clean:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/clean.sh | bash
 ```
 
 </details>
+
 <details>
+
 <summary><b>Rank mirrors & keyrings</b></summary>
 
 ```bash
@@ -24,7 +29,9 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rank.s
 ```
 
 </details>
+
 <details>
+
 <summary><b>Automated install</b></summary>
 
 ```bash
@@ -34,6 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Script
 </details>
 
 <details>
+
 <summary><b>Automated configuration</b></summary>
 
 ```bash
@@ -41,7 +49,9 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Setup.
 ```
 
 </details>
+
 <details>
+
 <summary><b>Bleachbit extra cleaner install</b></summary>
 
 ```bash
@@ -49,7 +59,9 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Script
 ```
 
 </details>
+
 <details>
+
 <summary><b>Miscellaneous scripts</b></summary>
 
 ```bash
@@ -59,10 +71,12 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/debloa
 ```
 
 </details>
+
 <details>
+
 <summary><b>Install sytax highlighting for the nano editor</b></summary>
 
-<https://github.com/scopatz/nanorc>
+[https://github.com/scopatz/nanorc](https://github.com/scopatz/nanorc)
 
 ```bash
 curl https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | sh
@@ -75,10 +89,12 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 ```
 
 </details>
+
 <details>
+
 <summary><b>Packages:</b></summary>
 
-- <https://wiki.archlinux.org/title/Category:Lists_of_software>
+- [https://wiki.archlinux.org/title/Category:Lists_of_software](https://wiki.archlinux.org/title/Category:Lists_of_software)
 - [Arch PKG](https://archlinux.org/packages)
 - [AUR PKG](https://aur.archlinux.org)
 - [Crates.io](https://crates.io)
@@ -87,26 +103,30 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 - [Lure.sh](https://lure.sh)
 - [Basher](https://www.basher.it/package)
 - [bpkg](https://bpkg.sh)
-- [Nix](https://github.com/NixOS/nix) **_|_** [Home-manager](https://github.com/nix-community/home-manager) **|** [Nixpkgs](https://github.com/NixOS/nixpkgs) **|** [NUR](https://github.com/nix-community/NUR)
+- [Nix](https://github.com/NixOS/nix) ***|*** [Home-manager](https://github.com/nix-community/home-manager) **|** [Nixpkgs](https://github.com/NixOS/nixpkgs) **|** [NUR](https://github.com/nix-community/NUR)
 - [x-cmd](https://www.x-cmd.com)
 
-  <details>
-  <summary><b>Install x-cmd</b></summary>
+<details>
 
-  bash:
-  ```bash
-  eval "$(curl https://get.x-cmd.com)"
-  ```
+<summary><b>Install x-cmd</b></summary>
+bash:
 
-  fish:
-  ```sh
-  curl https://get.x-cmd.com | sh
-  chmod +x $HOME/.x-cmd.root/bin/x-cmd && ./$HOME/.x-cmd.root/bin/x-cmd fish --setup
-  ```
-  </details>
+```bash
+eval "$(curl https://get.x-cmd.com)"
+```
+fish:
+
+```sh
+curl https://get.x-cmd.com | sh
+chmod +x $HOME/.x-cmd.root/bin/x-cmd && ./$HOME/.x-cmd.root/bin/x-cmd fish --setup
+```
+
+</details>
+
 </details>
 
 ## Supported Linux Distributions
+
 - [CachyOS](https://cachyos.org)
 - [EndeavourOS](https://endeavouros.com)
 - [Nobara](https://nobaraproject.org)
@@ -124,8 +144,10 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 - [FFMPEG flag generator](https://alfg.github.io/ffmpeg-commander)
 
 ### Linux Optimization Resources
-- Explore optimization techniques from: <https://github.com/sn99/Optimizing-linux>
+
+- Explore optimization techniques from: [https://github.com/sn99/Optimizing-linux](https://github.com/sn99/Optimizing-linux)
 - Review Chris Titus Linux development setup:
-  ```bash
-  curl -fsSL https://christitus.com/linuxdev | bash
-  ```
+
+```bash
+curl -fsSL https://christitus.com/linuxdev | bash
+```

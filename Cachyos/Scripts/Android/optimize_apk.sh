@@ -57,7 +57,7 @@ fi
 # Working Directory with cleanup
 WORKDIR="$(mktemp -d)"
 cleanup(){
-  [[ -n ${WORKDIR:-} && -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
+  [[ -n ${WORKDIR:-} && -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
 }
 trap cleanup EXIT
 trap 'err "failed at line ${LINENO}"' ERR

@@ -21,7 +21,7 @@ export HOME="/home/${SUDO_USER:-$USER}"
 set -euo pipefail
 shopt -s nullglob globstar execfail
 IFS=$'
-	'
+ '
 has(){ command -v -- "$1" &> /dev/null; }
 hasname(){
   local x
@@ -67,7 +67,7 @@ setup_environment(){
   set -euo pipefail
   shopt -s nullglob globstar execfail
   IFS=$'
-	'
+ '
 }
 get_sudo_cmd(){
   local sudo_cmd

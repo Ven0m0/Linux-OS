@@ -175,11 +175,11 @@ human_size(){
 
 # === Cleanup Trap Helpers ===
 cleanup_workdir(){
-  [[ -n ${WORKDIR:-} && -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
+  [[ -n ${WORKDIR:-} && -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
 }
 
 cleanup_mount(){
-  [[ -n ${MNT_PT:-} ]] && mountpoint -q -- "${MNT_PT}" && umount -R "${MNT_PT}" || :
+  [[ -n ${MNT_PT:-} ]] && mountpoint -q -- "$MNT_PT" && umount -R "$MNT_PT" || :
 }
 
 cleanup_loop(){

@@ -18,17 +18,20 @@
 ## Priority Loading
 
 ### Always Load (< 5k tokens)
+
 1. `copilot-instructions.md` - Core repo standards
 2. `token-efficient.md` - Communication protocol
 3. `bash.instructions.md` - Primary language (74.5%)
 
 ### Load by File Type
+
 - **Shell scripts**: `bash.instructions.md` + `performance.instructions.md`
 - **Workflows**: `actions.instructions.md`
 - **Rust/Python**: Respective language files
 - **Documentation**: `markdown.instructions.md`
 
 ### Load by Task
+
 - **Performance work**: `performance.instructions.md`
 - **Security audit**: Relevant sections from language files
 - **Code review**: `token-efficient.md` + language file
@@ -37,7 +40,9 @@
 ## File Summaries
 
 ### copilot-instructions.md
+
 **Essential repo patterns**:
+
 - Repository structure (Home/, etc/, usr/)
 - Bash standards (strict mode, idioms, tools)
 - Tool preferences (fd→find, rg→grep, etc.)
@@ -47,7 +52,9 @@
 **When**: Always load for any task
 
 ### bash.instructions.md
+
 **Comprehensive Bash guide**:
+
 - Canonical template with all helpers
 - Security patterns (privilege, locking, cleanup)
 - Performance optimizations
@@ -57,7 +64,9 @@
 **When**: Any shell script work
 
 ### token-efficient.md
+
 **LLM communication protocol**:
+
 - Symbols: →⇒∴∵✅❌⚠️⚡🔍🛡️
 - Abbreviations: cfg, impl, perf, deps, val
 - Output patterns: result-first, compressed
@@ -66,7 +75,9 @@
 **When**: All LLM interactions
 
 ### performance.instructions.md
+
 **Full-stack optimization**:
+
 - Frontend: rendering, assets, network
 - Backend: algorithms, concurrency, caching
 - Database: queries, schema, transactions
@@ -75,7 +86,9 @@
 **When**: Performance-focused work
 
 ### actions.instructions.md
+
 **GitHub Actions best practices**:
+
 - Workflow structure and triggers
 - Security (OIDC, secrets, permissions)
 - Optimization (caching, matrix, artifacts)
@@ -94,11 +107,13 @@
 ## Agent Integration
 
 ### Bash Agent
+
 - **Files**: `.github/agents/bash.{agent,instructions,prompt}.md`
 - **Loads**: `copilot-instructions.md` + `bash.instructions.md`
 - **Tasks**: Lint, format, optimize shell scripts
 
 ### Future Agents
+
 - Performance optimizer: Loads `performance.instructions.md`
 - Code janitor: Loads all for cleanup context
 - Security auditor: Loads security sections
@@ -106,6 +121,7 @@
 ## Token Budget Strategy
 
 ### Minimal Context (~5k tokens)
+
 ```
 copilot-instructions.md (1.2k)
 + token-efficient.md (1k)
@@ -114,6 +130,7 @@ copilot-instructions.md (1.2k)
 ```
 
 ### Standard Context (~10k tokens)
+
 ```
 Minimal context (5.2k)
 + performance.instructions.md (5k)
@@ -121,6 +138,7 @@ Minimal context (5.2k)
 ```
 
 ### Full Context (~25k tokens)
+
 ```
 All instructions
 + Relevant agent files
@@ -130,24 +148,28 @@ All instructions
 ## Usage Patterns
 
 ### Code Review
+
 1. Load `token-efficient.md` for output format
 2. Load language-specific instructions
 3. Load `performance.instructions.md` if relevant
 4. Use compressed response format
 
 ### Refactoring
+
 1. Load `copilot-instructions.md` for repo patterns
 2. Load language instructions
 3. Load `performance.instructions.md`
 4. Follow "Edit > Create" principle
 
 ### New Feature
+
 1. Load `copilot-instructions.md` for structure
 2. Load language instructions
 3. Check `actions.instructions.md` if CI/CD needed
 4. Follow existing patterns
 
 ### Bug Fix
+
 1. Load `token-efficient.md` for debugging format
 2. Load minimal context
 3. Apply "Subtraction > Addition"
@@ -156,18 +178,21 @@ All instructions
 ## Maintenance
 
 ### When to Update
+
 - New patterns emerge from repeated work
 - Performance lessons learned
 - Security vulnerabilities discovered
 - Tool updates (new versions, deprecations)
 
 ### How to Update
+
 1. Edit specific instruction file
 2. Update this index if scope changes
 3. Update token estimates
 4. Notify in commit message
 
 ### Deprecation
+
 - Mark sections as deprecated before removal
 - Archive historical patterns if valuable
 - Update agent configurations

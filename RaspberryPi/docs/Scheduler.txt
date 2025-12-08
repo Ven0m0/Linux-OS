@@ -1,4 +1,3 @@
-
 cat /sys/block/mmcblk0/queue/scheduler
 
 Temporary:

@@ -4,16 +4,27 @@
 
 - Apt fzf/skim tui package manager
 
-  ```bash
-  mkdir -p ~/.local/bin
-  curl -fsSL 'https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/RaspberryPi/Scripts/apkg.sh' -o ~/.local/bin/apkg && chmod +x ~/.local/bin/apkg
-  ~/.local/bin/apkg --install
-  source "${HOME%/}/.local/share/bash-completion/completions/apkg" &>/dev/null
-  ```
+```bash
+mkdir -p ~/.local/bin
+curl -fsSL 'https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/RaspberryPi/Scripts/apkg.sh' -o ~/.local/bin/apkg && chmod +x ~/.local/bin/apkg
+~/.local/bin/apkg --install
+source "${HOME%/}/.local/share/bash-completion/completions/apkg" &>/dev/null
+```
 
 [Debian minify](/RaspberryPi/Scripts/pi-minify.sh) -> [1](https://github.com/Freifunk-Nord/nord-minify_debian.sh/blob/master/nord-minify_debian.sh) [2](https://github.com/boxcutter/debian/blob/main/script/minimize.sh)
 
-## [Docker cleaner](/RaspberryPi/Scripts/Docker-clean.sh) <sup>\[<a href="https://github.com/samoshkin/docker-reclaim-disk-space">1</a>\]</sup>
+## [Docker cleaner](/RaspberryPi/Scripts/Docker-clean.sh)
+
+<sup>
+[
+
+<a href="https://github.com/samoshkin/docker-reclaim-disk-space">
+1
+
+</a>
+]
+
+</sup>
 
 - prints the Docker disk usage information
 - interactively prompts you for confirmation
@@ -48,5 +59,5 @@ git clone https://github.com/samoshkin/docker-reclaim-disk-space && chmod +x ./d
 
 ## Build OS
 
-- <https://github.com/OctoPrint/CustoPiZer>
+- [https://github.com/OctoPrint/CustoPiZer](https://github.com/OctoPrint/CustoPiZer)
 -

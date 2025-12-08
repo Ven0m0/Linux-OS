@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Reddit account content toxicity scanner using Perspective API. 
+"""Reddit account content toxicity scanner using Perspective API.
 
 Scans Reddit user comments/posts for toxic content using Google's
-Perspective API. Supports async concurrent requests with rate limiting. 
+Perspective API. Supports async concurrent requests with rate limiting.
 
 Arch deps: python-praw python-pandas python-httpx
 Debian: uv pip install praw pandas httpx orjson
@@ -178,14 +178,14 @@ async def check_toxicity(
     cfg: Config,
     limiter: RateLimiter,
 ) -> PerspectiveScore:
-    """Analyze text toxicity via Perspective API. 
-    
+    """Analyze text toxicity via Perspective API.
+
     Args:
         text: Content to analyze
         client: Async HTTP client
         cfg: Scanner config
         limiter: Rate limiter
-        
+
     Returns:
         Dict of attribute scores
     """
@@ -249,11 +249,11 @@ async def analyze_content(
     cfg: Config,
 ) -> list[FlaggedItem]:
     """Analyze list of content items concurrently.
-    
+
     Args:
         items: List of (type, subreddit, text, timestamp) tuples
         cfg: Scanner config
-        
+
     Returns:
         List of flagged items
     """
@@ -287,12 +287,12 @@ def fetch_user_content(
     username: str, cfg: Config, reddit: praw.Reddit
 ) -> list[tuple[str, str, str, float]]:
     """Fetch user comments and posts.
-    
+
     Args:
         username: Reddit username
         cfg: Scanner config
         reddit: PRAW client
-        
+
     Returns:
         List of (type, subreddit, text, timestamp) tuples
     """
@@ -322,7 +322,7 @@ def fetch_user_content(
 
 def save_results(flagged: list[FlaggedItem], path: Path) -> None:
     """Save flagged items to CSV.
-    
+
     Args:
         flagged: List of flagged content
         path: Output CSV path

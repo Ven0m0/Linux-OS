@@ -22,7 +22,7 @@ https://crates.io/crates/cargo-features-manager cargo install cargo-features-man
 cargo install cargo-q
 cargo install cargo-sort-fix
 cargo install cargo-maintained
-# cargo shear --fix && cargo shear --expand --fix 
+# cargo shear --fix && cargo shear --expand --fix
 cargo install cargo-shear
 cargo install cargo-udeps
 cargo install cargo-clean-recursive
@@ -188,7 +188,7 @@ Image viewer:
 https://crates.io/crates/oculante
 https://crates.io/crates/ferrite
 
-# Masking tape to help commands "do one thing well" 
+# Masking tape to help commands "do one thing well"
 https://github.com/greymd/teip
 
 cargo install kmon
@@ -197,7 +197,7 @@ Android:
 cargo install downapk
 
 Sudo:
-https://github.com/trifectatechfoundation/sudo-rs 
+https://github.com/trifectatechfoundation/sudo-rs
 
 https://github.com/Toqozz/wired-notify
 https://github.com/kamiyaa/joshuto

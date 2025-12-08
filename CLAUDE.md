@@ -1,6 +1,7 @@
 # Claude Operating Manual
 
 ## Prime Directives
+
 1. **User Primacy:** User commands override all rules.
 2. **Factual Verification:** Use tools for versions/APIs. Never guess.
 3. **Surgical Modification:** Edit > Create. Minimal line changes. Preserve existing style/logic.
@@ -66,11 +67,13 @@
 - **Abbrev:** cfg, impl, deps, val, auth, opt, Δ.
 
 ### Symbols
+
 → leads to | ⇒ converts | « / » precedes/follows | ∴ / ∵ therefore/because | ✅ / ❌ success/fail | ⚡ performance | 🛡️ security | 🧪 testing | 📦 deployment | 🔍 analysis
 
 ## Bash Standards
 
 ### Shebang & Settings
+
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
@@ -81,6 +84,7 @@ has(){ command -v "$1" &>/dev/null; }
 ```
 
 ### Idioms (Strict)
+
 - **Tests:** `[[ ... ]]`. Regex: `[[ $var =~ ^regex$ ]]`
 - **Loops:** `while IFS= read -r line; do ...; done < <(cmd)`. **NO** `for x in $(ls)`
 - **Output:** `printf` over `echo`. Capture: `ret=$(fn)`
@@ -89,9 +93,11 @@ has(){ command -v "$1" &>/dev/null; }
 - **Forbidden:** Parsing `ls`, `eval`, backticks, unnecessary subshells
 
 ### Quoting
+
 Always quote variables unless intentional glob/split.
 
 ### Privilege & Packages
+
 - **Escalation:** `sudo-rs`→`sudo`→`doas` (store in `PRIV_CMD`)
 - **Install:** `paru`→`yay`→`pacman` (Arch); `apt` (Debian)
 - **Check first:** `pacman -Q`, `flatpak list`, `cargo install --list`
@@ -114,6 +120,7 @@ Always quote variables unless intentional glob/split.
 Scripts are **standalone** with inlined helper functions (no shared lib/). Common patterns include:
 
 ### Core Helper Functions
+
 - **has()** - Check if command exists
 - **xecho()** - Echo with formatting
 - **log()/msg()/warn()/err()/die()** - Logging hierarchy
@@ -122,6 +129,7 @@ Scripts are **standalone** with inlined helper functions (no shared lib/). Commo
 - **pm_detect()** - Package manager detection
 
 ### Color Palette (Trans Flag)
+
 ```bash
 LBLU=$'\e[38;5;117m'  # Light blue
 PNK=$'\e[38;5;218m'   # Pink
@@ -142,6 +150,7 @@ BLD=$'\e[1m'          # Bold
 ## Protected Files
 
 **Do NOT modify unless explicitly requested:**
+
 - `pacman.conf`, `makepkg.conf`, `/etc/sysctl.d/`, `.zshrc`, `.gitconfig`
 
 **Safe zones:** Shell scripts, `.config/`, docs, workflows.
@@ -149,18 +158,21 @@ BLD=$'\e[1m'          # Bold
 ## Development Workflow
 
 ### TDD & Atomic Commits
+
 1. **Red:** Write/verify failing test.
 2. **Green:** Minimal logic to pass.
 3. **Refactor:** Optimize (subtractive design).
 4. **Commit:** Single logical unit. Tests pass. No lint errors.
-   - Never mix structural (format) and behavioral changes.
+  - Never mix structural (format) and behavioral changes.
 
 ### Commit Types
+
 - **Structural:** Format/org changes, no behavior delta
 - **Behavioral:** Function add/mod/del
 - **NEVER** mix both in one commit
 
 ### Quality Gates
+
 - **Linting:** `shellcheck --severity=style` (zero warnings)
 - **Formatting:** `shfmt -i 2 -ci -sr`
 - **Hardening:** `shellharden --replace` (optional, selective)
@@ -299,11 +311,13 @@ AUR_FLAGS=(--needed --noconfirm --removemake --cleanafter --sudoloop --skiprevie
 ## Detection Helpers
 
 ### Wayland
+
 ```bash
 is_wayland(){ [[ ${XDG_SESSION_TYPE:-} == wayland || -n ${WAYLAND_DISPLAY:-} ]]; }
 ```
 
 ### Distribution
+
 ```bash
 is_arch(){ has pacman; }
 is_debian(){ has apt; }
@@ -313,11 +327,13 @@ is_pi(){ [[ $(uname -m) =~ ^(arm|aarch64) ]]; }
 ## Data Processing Patterns
 
 ### Load filtered config/package lists
+
 ```bash
 mapfile -t arr < <(grep -v '^\s*#' file.txt | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$')
 ```
 
 ### Install from list
+
 ```bash
 printf '%s\n' "${arr[@]}" | paru -Sq --noconfirm
 ```
@@ -343,6 +359,7 @@ printf '%s\n' "${arr[@]}" | paru -Sq --noconfirm
 ## ShellCheck Configuration
 
 Located in `.shellcheckrc`:
+
 - Shell: bash
 - External sources enabled
 - Source path: SCRIPTDIR
@@ -361,6 +378,7 @@ Located in `.shellcheckrc`:
 ## Common Patterns
 
 ### Locking
+
 ```bash
 lock(){
   local key=${1:?}
@@ -370,6 +388,7 @@ lock(){
 ```
 
 ### Interactive selection with fzf
+
 ```bash
 select_file(){
   local -n result=$1
@@ -385,24 +404,31 @@ select_file(){
 ## Repository-Specific Scripts
 
 ### Cachyos/Updates.sh
+
 System update orchestrator for Arch/CachyOS systems. Updates packages, cleans cache, optimizes databases.
 
 ### Cachyos/clean.sh
+
 Comprehensive system cleanup: package cache, orphans, logs, trash, build artifacts.
 
 ### Cachyos/Rank.sh
+
 Mirror ranking and keyring updates for optimal package download speeds.
 
 ### Cachyos/Setup.sh
+
 Automated system configuration: sysctl tuning, service setup, optimization.
 
 ### RaspberryPi/raspi-f2fs.sh
+
 F2FS imaging orchestrator for Raspberry Pi. Handles loop devices, partitioning, formatting.
 
 ### RaspberryPi/Scripts/Setup.sh
+
 Initial Raspberry Pi setup: package installation, configuration, service setup.
 
 ### RaspberryPi/Scripts/Kbuild.sh
+
 Kernel building automation for Raspberry Pi with optimized flags.
 
 ## Design Principles
@@ -434,6 +460,7 @@ Kernel building automation for Raspberry Pi with optimized flags.
 ## Review Checklist
 
 Before committing, verify:
+
 - [ ] Starts with `#!/usr/bin/env bash`
 - [ ] Has `set -Eeuo pipefail` and shopt flags
 - [ ] Uses arrays/mapfile/`[[...]]` and parameter expansion

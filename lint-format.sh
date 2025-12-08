@@ -226,6 +226,24 @@ process_shell(){
   find_files "*.{sh,bash}" files
   ((${#files[@]} == 0)) && { log "  No shell scripts found"; return 0; }
   log "  Found ${#files[@]} shell scripts"
+  # Format with shfmt
+  if check_tool shfmt; then
+    log "  ${PNK}Formatting${DEF} with shfmt..."
+    if ((cfg[fix])); then
+      if shfmt -i 2 -ci -sr -w "${files[@]}" 2>/dev/null; then
+        MODIFIED_FILES+=("${files[@]}")
+        ((TOTAL_MODIFIED += ${#files[@]}))
+      fi
+    else
+      if ! shfmt -i 2 -ci -sr -d "${files[@]}" 2>/dev/null | (! grep . >/dev/null); then
+        warn "  shfmt found files that need formatting"
+        ((TOTAL_ERRORS++))
+      fi
+    fi
+    COMMANDS_RUN+=("shfmt -i 2 -ci -sr -w <file>")
+  else
+    warn "  shfmt not found, skipping format"
+  fi
   # Lint with shellcheck
   if check_tool shellcheck; then
     log "  ${BWHT}Linting${DEF} with shellcheck..."

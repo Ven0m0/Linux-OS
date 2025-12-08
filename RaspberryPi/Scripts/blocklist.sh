@@ -5,37 +5,37 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
-has() { command -v -- "$1" &> /dev/null; }
+has(){ command -v -- "$1" &> /dev/null; }
 [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :
 
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-remove_comments() { sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
-removeComments() { remove_comments; }
-remove_duplicate_lines() { if [[ -n ${1:-} && -f $1 ]]; then awk '!seen[$0]++' "$1"; else awk '!seen[$0]++'; fi; }
-remove_duplicate_lines_sorted() { if [[ -n ${1:-} && -f $1 ]]; then sort -u "$1"; else sort -u; fi; }
-remove_trailing_spaces() { awk '{gsub(/^ +| +$/,"")}1'; }
-remove_blank_lines() { sed '/^$/d'; }
-remove_multiple_blank_lines() { sed '/^$/N;/^$/D'; }
-to_lowercase() { tr '[:upper:]' '[:lower:]'; }
-to_uppercase() { tr '[:lower:]' '[:upper:]'; }
-remove_colors() { sed 's/\[[0-9;]*m//g'; }
-extract_pattern() {
+remove_comments(){ sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
+removeComments(){ remove_comments; }
+remove_duplicate_lines(){ if [[ -n ${1:-} && -f $1 ]]; then awk '!seen[$0]++' "$1"; else awk '!seen[$0]++'; fi; }
+remove_duplicate_lines_sorted(){ if [[ -n ${1:-} && -f $1 ]]; then sort -u "$1"; else sort -u; fi; }
+remove_trailing_spaces(){ awk '{gsub(/^ +| +$/,"")}1'; }
+remove_blank_lines(){ sed '/^$/d'; }
+remove_multiple_blank_lines(){ sed '/^$/N;/^$/D'; }
+to_lowercase(){ tr '[:upper:]' '[:lower:]'; }
+to_uppercase(){ tr '[:lower:]' '[:upper:]'; }
+remove_colors(){ sed 's/\[[0-9;]*m//g'; }
+extract_pattern(){
   local pattern="$1"
   shift
   grep -E "$pattern" "$@"
 }
-extract_urls() { grep -oE '(https?|ftp)://[^[:space:]]+' "$@"; }
-extract_ips() { grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' "$@"; }
-count_lines() { grep -c . "$@" 2> /dev/null || echo 0; }
-normalize_whitespace() { sed -e 's/	/ /g' -e 's/  */ /g'; }
+extract_urls(){ grep -oE '(https?|ftp)://[^[:space:]]+' "$@"; }
+extract_ips(){ grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' "$@"; }
+count_lines(){ grep -c . "$@" 2> /dev/null || echo 0; }
+normalize_whitespace(){ sed -e 's/	/ /g' -e 's/  */ /g'; }
 # https://github.com/hectorm/hblock/blob/master/hblock
 # Remove comments from string (function already defined in lib/text.sh above)
 # removeComments(){ sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
 # Remove reserved Top Level Domains
-removeReservedTLDs() {
+removeReservedTLDs(){
   sed -e '/\.corp$/d' \
     -e '/\.domain$/d' \
     -e '/\.example$/d' \
@@ -49,7 +49,7 @@ removeReservedTLDs() {
     -e '/\.test$/d'
 }
 # Main blocklist functionality using hblock
-main() {
+main(){
   local hblock_url='https://raw.githubusercontent.com/hectorm/hblock/master/hblock'
   local hblock_temp
   echo "${BLD}${CYN}Blocklist Manager${DEF}"

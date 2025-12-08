@@ -11,22 +11,22 @@ BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 # Helper functions
-has() { command -v "$1" &> /dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "${BLU}${BLD}[*]${DEF} $*"; }
-msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die() {
+has(){ command -v "$1" &> /dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){
   err "$1"
   exit "${2:-1}"
 }
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
-cleanup_pacman_lock() { sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :; }
-main() {
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
+cleanup_pacman_lock(){ sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :; }
+main(){
   trap cleanup_pacman_lock EXIT INT TERM
   #============ Update Functions ============
-  update_system() {
+  update_system(){
     log "🔄${BLU} System Packages${DEF}"
     sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :
     if has paru; then
@@ -35,7 +35,7 @@ main() {
       sudo pacman -Syu --noconfirm --needed
     fi
   }
-  update_extras() {
+  update_extras(){
     log "🔄${BLU} Extra Tooling${DEF}"
     if has topgrade; then
       local user_flags=('--disable=system' '--disable=self-update' '--disable=brew')
@@ -72,7 +72,7 @@ main() {
     has zoi && zoi upgrade --yes --all || :
   }
 
-  update_python() {
+  update_python(){
     has uv || return 0
     log "🔄${BLU} Python Environment (uv)${DEF}"
     mapfile -t pkgs < <(uv tool list --format=json 2> /dev/null | jq -r '.[].name')
@@ -84,7 +84,7 @@ main() {
       uv pip install -Uq --system --no-break-system-packages "${outdated[@]}" || :
     fi
   }
-  update_maintenance() {
+  update_maintenance(){
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
     for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb fwupdmgr; do

@@ -10,7 +10,7 @@ export LC_ALL=C LANG=C
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup trap
 # ──────────────────────────────────────────────────────────────────────────────
-cleanup() {
+cleanup(){
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
   command -v cargo-cache &> /dev/null && cargo-cache -efg &> /dev/null
@@ -37,7 +37,7 @@ BUILD_ARGS=()
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage
 # ──────────────────────────────────────────────────────────────────────────────
-usage() {
+usage(){
   cat << EOF
 Usage: $0 [OPTIONS] [<crate>...]
 
@@ -328,7 +328,7 @@ MISC_OPT=(--ignore-rust-version -f --bins -j"$jobs")
 # ──────────────────────────────────────────────────────────────────────────────
 # Profile configuration helper functions
 # ──────────────────────────────────────────────────────────────────────────────
-profileon() {
+profileon(){
   echo "==> Enabling profiling mode..."
   sudo sh -c "echo 0 >/proc/sys/kernel/randomize_va_space" || :
   sudo sh -c "echo 0 >/proc/sys/kernel/nmi_watchdog" || :
@@ -337,7 +337,7 @@ profileon() {
   sudo sh -c "echo 0 >/proc/sys/kernel/perf_event_paranoid" || :
 }
 
-profileoff() {
+profileoff(){
   echo "==> Disabling profiling mode..."
   sudo sh -c "echo 1 >/proc/sys/kernel/randomize_va_space" || :
   sudo sh -c "echo 0 >/sys/devices/system/cpu/intel_pstate/no_turbo" || :

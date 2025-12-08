@@ -5,7 +5,7 @@ cd -P -- "$(cd -P -- "${BASH_SOURCE[0]%/*}" && echo "$PWD")" || exit 1
 sudo -v
 
 # Optimization wrapper
-cargo_install() {
+cargo_install(){
   if command -v cargo-binstall &> /dev/null; then
     cargo binstall -y --locked "$@" || cargo install --locked "$@"
   else

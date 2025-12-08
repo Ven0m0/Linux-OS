@@ -250,7 +250,7 @@ jobs:
           head -50 copilot-context.md
 
       - name: Upload full context
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: copilot-enhanced-context
           path: |

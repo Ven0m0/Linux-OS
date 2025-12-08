@@ -3,7 +3,9 @@ set -euo pipefail; shopt -s nullglob; IFS=$'\n\t'
 # Demo script showing all scanner modes
 # Run: ./demo.sh [username]
 readonly TEST_USER="${1:-spez}"
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+cd "$SCRIPT_DIR" || exit 1; SCRIPT_DIR="$(pwd -P)"
+readonly SCRIPT_DIR
 readonly SCANNER="${SCRIPT_DIR}/account_scanner.py"
 printf '\n=== Account Scanner Demo ===\n\n'
 # Check dependencies

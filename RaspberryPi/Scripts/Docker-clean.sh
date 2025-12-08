@@ -6,7 +6,8 @@
 #   -u, treat unset variables as an error when substituting.
 set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
-cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd -P)" || exit 1
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 DONT_RESTART_DOCKER_ENGINE=0 DONT_ASK_CONFIRMATION=0
 while [[ $# -gt 0 ]]; do
   key="$1"

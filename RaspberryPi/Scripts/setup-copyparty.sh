@@ -2,7 +2,8 @@
 # Setup Copyparty with network access and Samba support (Debian/Raspbian)
 set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
-cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)" || exit 1
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 readonly COPYPARTY_PORT=3923
 readonly COPYPARTY_DIR="$HOME/Public"
 printf '%s\n' "Setting up Copyparty with network access and Samba support..."

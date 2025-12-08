@@ -1,56 +1,155 @@
 #!/usr/bin/env bash
+# Rust project optimization workflow: update deps, lint, minify assets, build
 set -euo pipefail
-shopt -s nullglob
-LC_ALL=C
-export RUSTFLAGS="-C opt-level=3 -C lto -C codegen-units=1 -C target-cpu=native -C linker=clang -C link-arg=-fuse-ld=mold -C panic=abort -Zno-embed-metadata"
+shopt -s nullglob globstar
+IFS=$'\n\t'
+export LC_ALL=C LANG=C
 
-# Update & audit deps
-cargo update
-cargo outdated
+# Colors
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
 
-# Format & lint
-cargo fmt
-cargo clippy -- -D warnings
+# Helpers
+has() { command -v "$1" &> /dev/null; }
+log() { printf '%s\n' "${BLU}→${DEF} $*"; }
+warn() { printf '%s\n' "${YLW}WARN:${DEF} $*"; }
+err() { printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
+die() {
+  err "$*"
+  exit "${2:-1}"
+}
 
-# 1. Detect & remove unused dependencies
-cargo +nightly install cargo-udeps cargo-shear
-cargo udeps --all-targets
-cargo shear
+# Require cargo
+has cargo || die "cargo not found"
 
-# 2. Find dead code / unused items
-cargo machete
+# Rust optimization flags
+export RUSTFLAGS="-C opt-level=3 -C lto -C codegen-units=1 -C target-cpu=native -C panic=abort"
+has clang && RUSTFLAGS+=" -C linker=clang"
+has mold && RUSTFLAGS+=" -C link-arg=-fuse-ld=mold"
 
-# 3. Minify HTML
-find . -name "*.html" -exec minhtml -i {} -o {} \;
+# Tool detection with fallbacks
+FD=$(command -v fd || command -v fdfind || echo "")
 
-# 4. Optimize images
-find assets -type f \( -iname '*.png' -o -iname '*.jpg' \) -exec rimage {} --optimize \;
-find assets -type f -name '*.png' -exec oxipng -o 4 {} \;
-find assets -type f -name '*.jpg' -exec jpegoptim --strip-all {} \;
+# Safe find function using fd or find
+find_files() {
+  local pattern=$1 path=${2:-.}
+  if [[ -n $FD ]]; then
+    "$FD" -H -t f "$pattern" "$path" 2> /dev/null || :
+  else
+    find "$path" -type f -name "$pattern" 2> /dev/null || :
+  fi
+}
 
-# 5. Compress arbitrary assets (fonts, maps, wasm, json, etc.)
-flaca compress ./static
+usage() {
+  cat << 'EOF'
+Usage: rustbuild.sh [OPTIONS]
 
-# 6. Remove unneeded workspace cruft
-cargo diet
+Rust project optimization workflow:
+  1. Update & audit dependencies
+  2. Format & lint code
+  3. Remove unused deps/dead code
+  4. Minify HTML/optimize images
+  5. Build optimized release
 
-# 7. Lint features and dep versions
-cargo unused-features
-cargo duplicated-deps
+Options:
+  -h, --help     Show this help
+  --skip-assets  Skip asset optimization
+  --dry-run      Show what would be done
 
-# 8. Sort & normalize
-cargo sort-fix
+Requirements: cargo, rustc
+Optional: cargo-udeps, cargo-shear, cargo-machete, minhtml, oxipng, jpegoptim
+EOF
+  exit 0
+}
 
-# Format & lint
-cargo fmt
-cargo clippy -- -D warnings
+# Parse args
+SKIP_ASSETS=0 DRY_RUN=0
+while (($#)); do
+  case "$1" in
+    -h | --help) usage ;;
+    --skip-assets) SKIP_ASSETS=1 ;;
+    --dry-run) DRY_RUN=1 ;;
+    *) warn "Unknown option: $1" ;;
+  esac
+  shift
+done
 
-# 9. Parallel compile (faster dev cycle)
-cargo q build --release # if you installed cargo-q
+run() { ((DRY_RUN)) && log "[DRY] $*" || "$@"; }
 
-# 10. PGO compile
-cargo pgo build --bin your_app
+main() {
+  log "Starting Rust optimization workflow..."
 
-# 11. Strip and report size
-strip target/release/"${PWD##*/}"
-ls -lh target/release/"${PWD##*/}"
+  # 1. Update & audit deps
+  log "Updating dependencies..."
+  run cargo update
+  has cargo-outdated && run cargo outdated || :
+
+  # 2. Format & lint
+  log "Formatting and linting..."
+  run cargo fmt
+  run cargo clippy -- -D warnings
+
+  # 3. Remove unused dependencies (requires nightly)
+  if has cargo-udeps; then
+    log "Checking for unused dependencies..."
+    run cargo +nightly udeps --all-targets 2> /dev/null || :
+  fi
+  has cargo-shear && run cargo shear || :
+
+  # 4. Find dead code
+  has cargo-machete && {
+    log "Finding dead code..."
+    run cargo machete || :
+  }
+
+  # 5. Asset optimization (if not skipped)
+  if ((!SKIP_ASSETS)); then
+    # Minify HTML
+    if has minhtml; then
+      log "Minifying HTML..."
+      while IFS= read -r f; do
+        run minhtml -i "$f" -o "$f"
+      done < <(find_files "*.html")
+    fi
+
+    # Optimize images
+    if [[ -d assets ]]; then
+      log "Optimizing images..."
+      has oxipng && while IFS= read -r f; do run oxipng -o 4 -q "$f"; done < <(find_files "*.png" assets)
+      has jpegoptim && while IFS= read -r f; do run jpegoptim --strip-all -q "$f"; done < <(find_files "*.jpg" assets)
+    fi
+
+    # Compress static assets
+    has flaca && [[ -d static ]] && {
+      log "Compressing static assets..."
+      run flaca compress ./static || :
+    }
+  fi
+
+  # 6. Clean workspace cruft
+  has cargo-diet && run cargo diet || :
+
+  # 7. Lint features/deps
+  has cargo-unused-features && run cargo unused-features || :
+  has cargo-duplicated-deps && run cargo duplicated-deps || :
+
+  # 8. Final format & lint
+  log "Final format pass..."
+  run cargo fmt
+  run cargo clippy -- -D warnings
+
+  # 9. Build release
+  log "Building release..."
+  run cargo build --release
+
+  # 10. Strip binary
+  local bin="target/release/${PWD##*/}"
+  if [[ -f $bin ]]; then
+    log "Stripping binary..."
+    run strip "$bin"
+    ls -lh "$bin"
+  fi
+
+  log "${GRN}Done${DEF}"
+}
+
+main "$@"

@@ -26,24 +26,10 @@
 ```bash
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
-SHELL="$(command -v bash 2>/dev/null)"
-export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
-builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
-[[ $EUID -ne 0 ]] && sudo -v; sync
-#============ Color & Effects ============
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m'
-DEF=$'\e[0m' BLD=$'\e[1m'
-#============ Helpers ====================
-# Check for command
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
+s=${BASH_SOURCE[0]}; [[ $s != /* ]] && s=$PWD/$s; cd -P -- "${s%/*}"
 has(){ command -v -- "$1" &>/dev/null; }
-# Printf-echo
-p(){ printf '%s\n' "$*" 2>/dev/null; }
-# Printf-echo for color with auto reset
-pe(){ printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
 # Bash sleep replacement
 sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
 # Faster date
@@ -84,44 +70,28 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 ```
 
 </details>
-
 <details>
-
 <summary><b>Basename</b></summary>
 
 Usage: basename "path" ["suffix"]
-
 ```bash
 bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
 ```
-
 </details>
-
 <details>
-
 <summary><b>Dirname</b></summary>
-
+  
 Usage: dirname "path"
-
 ```bash
 dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
 ```
-
 </details>
-
 <details>
-
 <summary><b>Date</b></summary>
 
 Usage: date "format"
 Prints either current date 'day/month-hour-minute' or whatever you give it via 'date
-
-<arg>
-
-'
-
 See: 'man strftime' for format.
-
 ```bash
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 ```

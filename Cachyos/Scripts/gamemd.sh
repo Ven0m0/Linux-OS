@@ -41,3 +41,4 @@ export USE_CCACHE=1
 if has gamemoderun; then
   gamemoderun
 fi
+sync; echo 3 | sudo tee /proc/sys/vm/drop_caches

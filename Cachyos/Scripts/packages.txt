@@ -10,7 +10,7 @@
 
 # Appimages
 # am -e 
-liriliri/rem rem
+# soar
 
 
 # Cargo

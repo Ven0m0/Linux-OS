@@ -55,8 +55,5 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
   -f mkv -hide_banner -y -nostdin -loglevel error -stats \
   output.mkv
 ```
-or depending on speed
-```bash
--preset 5
--preset 6
-```
+
+or depending on speed `-preset 5` or `-preset 6`

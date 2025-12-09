@@ -8,10 +8,7 @@ export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 has(){ command -v -- "$1" &> /dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "$*"; }
-die(){
-  xecho "${RED}Error:${DEF} $*" >&2
-  exit 1
-}
+die(){ xecho "${RED}Error:${DEF} $*" >&2; exit 1; }
 confirm(){
   local msg="$1"
   printf '%s [y/N]: ' "$msg" >&2

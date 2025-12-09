@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Common helper functions and utilities for Linux-OS scripts
 # Source this file in your scripts: source "${BASH_SOURCE%/*}/../lib/common.sh"
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Enhanced system cleaning with privacy configuration
 # Refactored version with improved structure and maintainability
 

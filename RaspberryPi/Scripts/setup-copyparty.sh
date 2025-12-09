@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Setup Copyparty with network access and Samba support (Debian/Raspbian)
 set -euo pipefail
 shopt -s nullglob globstar

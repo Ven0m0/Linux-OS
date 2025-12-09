@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Build and install Raspberry Pi kernel from source
 # WARNING: This script will reboot the system after kernel installation
 set -euo pipefail

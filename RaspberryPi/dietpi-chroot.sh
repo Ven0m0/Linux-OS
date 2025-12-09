@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # DESCRIPTION: Chroot into ARM64 DietPi/PiOS images from x86_64 Arch Linux
 #              - Uses qemu-user-static for cross-architecture execution
 #              - Safely handles mounting/unmounting to prevent corruption

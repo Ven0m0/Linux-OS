@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Unified benchmark script for parallel commands, sorting, and file copy operations
 # Refactored: 2025-12-04 - Inlined common helpers for portability
 

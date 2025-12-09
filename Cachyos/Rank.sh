@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
+s=${BASH_SOURCE[0]}; [[ $s != /* ]] && s=$PWD/$s; cd -P -- "${s%/*}"
 [[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
 
 # Config
@@ -48,10 +48,7 @@ xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${GRN}${BLD}[${1:-INFO}]${DEF} ${*:2}" | tee -a "$LOGFILE"; }
 warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
 err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die(){
-  err "$1"
-  exit "${2:-1}"
-}
+die(){ err "$1"; exit "${2:-1}"; }
 backup(){
   [[ -f $1 ]] || return 0
   mkdir -p "$BACKUPDIR"
@@ -71,7 +68,7 @@ rank_keys(){
     # Perf: Native Bash timing
     printf -v start_ts "%.3f" "$EPOCHREALTIME"
     t1="${start_ts/./}"
-    if curl -sIo /dev/null -m2 "$test_url"; then
+    if curl -sI -m2 "$test_url" &>/dev/null; then
       printf -v end_ts "%.3f" "$EPOCHREALTIME"
       t2="${end_ts/./}"
       local diff=$((t2 - t1))

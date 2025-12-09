@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Unified Rust build & optimization system: build, install, PGO/BOLT, workflow automation
 set -euo pipefail
 shopt -s nullglob globstar
@@ -269,7 +270,7 @@ optimize_assets(){
   if has minhtml; then
     echo "==> Minifying HTML..."
     if [[ -n $fd_cmd ]]; then
-      while IFS= read -r f; do run minhtml -i "$f" -o "$f"; done < <($fd_cmd -H -t f '\.html$')
+      while IFS= read -r f; do run minhtml -i "$f" -o "$f"; done < <("$fd_cmd" -H -t f '\.html$')
     else
       while IFS= read -r f; do run minhtml -i "$f" -o "$f"; done < <(find . -type f -name '*.html')
     fi
@@ -279,14 +280,14 @@ optimize_assets(){
     echo "==> Optimizing images..."
     if has oxipng; then
       if [[ -n $fd_cmd ]]; then
-        while IFS= read -r f; do run oxipng -o 4 -q "$f"; done < <($fd_cmd -t f '\.png$' assets)
+        while IFS= read -r f; do run oxipng -o 4 -q "$f"; done < <("$fd_cmd" -t f '\.png$' assets)
       else
         while IFS= read -r f; do run oxipng -o 4 -q "$f"; done < <(find assets -type f -name '*.png')
       fi
     fi
     if has jpegoptim; then
       if [[ -n $fd_cmd ]]; then
-        while IFS= read -r f; do run jpegoptim --strip-all -q "$f"; done < <($fd_cmd -t f '\.(jpg|jpeg)$' assets)
+        while IFS= read -r f; do run jpegoptim --strip-all -q "$f"; done < <("$fd_cmd" -t f '\.(jpg|jpeg)$' assets)
       else
         while IFS= read -r f; do run jpegoptim --strip-all -q "$f"; done < <(find assets -type f -name '*.jpg' -o -name '*.jpeg')
       fi

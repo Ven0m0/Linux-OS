@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # DESCRIPTION: System fixes for Raspberry Pi - time sync, SSH permissions, Nextcloud
 #              Targets: Debian/Raspbian, DietPi
 set -euo pipefail

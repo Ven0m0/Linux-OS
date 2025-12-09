@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Package manager detection and utilities for Linux-OS scripts
 # Source this file: source "${BASH_SOURCE%/*}/../lib/pkg-utils.sh"
 

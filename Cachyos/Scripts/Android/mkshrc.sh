@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # If not running interactively, don't do anything
 [[ $- != *i* ]] && return
 

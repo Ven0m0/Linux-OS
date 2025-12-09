@@ -1,91 +1,15 @@
-[tool.black]
-line-length = 88
-target-version = ['py310', 'py311', 'py312']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  \.git
-  | \.cache
-  | \.var
-  | node_modules
-  | Linux-Settings
-)/
-'''
-
-[tool.ruff]
-line-length = 88
-target-version = "py310"
-extend-exclude = [".git", ".cache", ".var", "node_modules", "Linux-Settings"]
-
-[tool.ruff.lint]
-select = [
-  "E",     # pycodestyle errors
-  "W",     # pycodestyle warnings
-  "F",     # pyflakes
-  "I",     # isort
-  "N",     # pep8-naming
-  "UP",    # pyupgrade
-  "B",     # flake8-bugbear
-  "C4",    # flake8-comprehensions
-  "SIM",   # flake8-simplify
-  "ASYNC", # flake8-async
-  "TCH",   # flake8-type-checking
-]
-ignore = []
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-line-ending = "lf"
-
-[tool.pytest.ini_options]
-minversion = "7.0"
-testpaths = ["."]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-addopts = "-v --strict-markers --tb=short"
-markers = [
-  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-  "integration: marks tests requiring external APIs",
-]
-
-[tool.mypy]
-python_version = "3.10"
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_any_generics = true
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-follow_imports = "normal"
-exclude = ["Linux-Settings", ".cache", ".var"]
-
-[tool.coverage.run]
-source = ["."]
-omit = ["*/test_*.py", "*/__pycache__/*"]
-
-[tool.coverage.report]
-exclude_lines = [
-  "pragma: no cover",
-  "def __repr__",
-  "raise AssertionError",
-  "raise NotImplementedError",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-]
-
 [project]
 name = "account-scanner"
-version = "1.0.0"
+version = "1.0.1"
 description = "Multi-source account scanner: Reddit toxicity + Sherlock OSINT"
 requires-python = ">=3.10"
-dependencies = ["praw", "pandas", "httpx", "sherlock-project"]
+dependencies = ["praw", "httpx", "sherlock-project"]
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "pytest", "black"]
-fast = ["orjson"]
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120

@@ -6,11 +6,9 @@
 - [bpkg](https://bpkg.sh)
 
 </details>
-
 <details>
-
 <summary><b>Resources</b></summary>
-
+  
 - [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
 - [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
 - [Bash Guide](https://guide.bash.academy) [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
@@ -18,57 +16,29 @@
 - [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)
 - [Ascii flag color codes](https://www.flagcolorcodes.com)
 - [Bash prompt generator](https://bash-prompt-generator.org) [Ezprompt generator](https://ezprompt.net)
-
 </details>
 
 ## Bash snippets
 
 <details>
-
 <summary><b>Script start template</b></summary>
 
 ```bash
-#!/usr/bin/env bash -euo pipefail
-shopt -s nullglob globstar; IFS=$'\n\t' SHELL="$(command -v bash 2>/dev/null)"
-export LC_ALL=C LANG=C LANGUAGE=C HOME="/home/${SUDO_USER:-$USER}"
-builtin cd -P -- "$(dirname -- "${BASH_SOURCE[0]:-}")" && printf '%s\n' "$PWD" || exit 1
-[[ $EUID -ne 0 ]] && sudo -v
-sync; sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches' &>/dev/null
-#============ Color & Effects ============
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m'
-DEF=$'\e[0m' BLD=$'\e[1m'
-#============ Helpers ====================
-# Check for command
-has(){ command -v "$1" &>/dev/null; }
-# Get basename of command if on path
-hasname(){ local x; x=$(type -Pf -- "$1") && printf '%s\n' "${x##*/}"; }
-# Export array of newline/space seperated quotes variables
-export_array(){ local -n a=$1; for v in "${a[@]}"; do eval "export $v"; done; unset v; }
-# Printf-echo
-p(){ printf '%s\n' "$*" 2>/dev/null; }
-# Printf-echo for color with auto reset
-pe(){ printf '%b\n' "$*"$'\e[0m' 2>/dev/null; }
+#!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
+s=${BASH_SOURCE[0]}; [[ $s != /* ]] && s=$PWD/$s; cd -P -- "${s%/*}"
+has(){ command -v -- "$1" &>/dev/null; }
 # Bash sleep replacement
 sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
-# Basename
-bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
-# Dirname
-dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
 # Faster date
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 # Faster cat
 fcat(){ printf '%s\n' "$(<${1})"; }
-# Background
-bkr(){ setsid nohup "$@" &>/dev/null </dev/null & disown >/dev/null 2>&1 || :; }
 ```
-
 </details>
-
 <details>
-
 <summary><b>Ascii color table</b></summary>
 
 ```bash
@@ -100,44 +70,28 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 ```
 
 </details>
-
 <details>
-
 <summary><b>Basename</b></summary>
 
 Usage: basename "path" ["suffix"]
-
 ```bash
 bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
 ```
-
 </details>
-
 <details>
-
 <summary><b>Dirname</b></summary>
-
+  
 Usage: dirname "path"
-
 ```bash
 dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
 ```
-
 </details>
-
 <details>
-
 <summary><b>Date</b></summary>
 
 Usage: date "format"
 Prints either current date 'day/month-hour-minute' or whatever you give it via 'date
-
-<arg>
-
-'
-
 See: 'man strftime' for format.
-
 ```bash
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 ```

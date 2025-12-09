@@ -1,15 +1,5 @@
 # Todo
 
-- https://wiki.archlinux.org/title/List_of_applications
-- https://www.commandlinefu.com/commands/browse
-- https://wiki.archlinux.org/title/Domain_name_resolution
-- https://github.com/macp3o/linux-tweaks
-- https://github.com/644/compressimages
-
-```bash
-git clone --depth 1 --shallow-submodules --filter='blob:none'
-```
-
 ```bash
 sudo sysctl -q kernel.perf_event_paranoid="$orig_perf"
 echo "$orig_kptr" | sudo tee /proc/sys/kernel/kptr_restrict >/dev/null
@@ -36,11 +26,6 @@ cargo install webcomp
 ```
 
 ## Java:
-
-- https://www.graalvm.org/22.2/reference-manual/native-image/guides/optimize-native-executable-with-pgo
-- https://www.graalvm.org/22.2/reference-manual/native-image/optimizations-and-performance/MemoryManagement
-- https://github.com/XDream8/kiss-repo/blob/main/bin/openjdk17-jdk/build
 - https://gitlab.com/arkboi/dotfiles
 - https://lancache.net
 - https://github.com/DanielFGray/fzf-scripts
-- https://crates.io/crates/autokernel

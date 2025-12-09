@@ -34,7 +34,7 @@ display_banner(){
   else
     for i in "${!banner_lines[@]}"; do
       local segment_index=$((i * (segments - 1) / (line_count - 1)))
-      ((segment_index >= segments)) && segment_index=$((segments - 1))
+      ((segment_index>= segments)) && segment_index=$((segments - 1))
       printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
     done
   fi

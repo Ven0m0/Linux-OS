@@ -26,8 +26,8 @@ declare -ga MOUNTED_POINTS=()
 has(){ command -v "$1" &>/dev/null; }
 log(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${BLU}${BLD}[*]${DEF} " "$*"; }
 msg(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${GRN}${BLD}[+]${DEF} " "$*"; }
-warn(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
-err(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${RED}${BLD}[-]${DEF} " "$*" >&2; }
+warn(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${YLW}${BLD}[!]${DEF} " "$*">&2; }
+err(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${RED}${BLD}[-]${DEF} " "$*">&2; }
 die(){
   err "$1"
   cleanup
@@ -39,7 +39,7 @@ check_deps(){
   local missing=()
   for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
 
-  if ((${#missing[@]} > 0)); then
+  if ((${#missing[@]}> 0)); then
     err "Missing dependencies: ${missing[*]}"
     err "On Arch: sudo pacman -S qemu-user-static qemu-user-static-binfmt parted"
     exit 1

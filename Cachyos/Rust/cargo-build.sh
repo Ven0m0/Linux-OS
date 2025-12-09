@@ -99,7 +99,7 @@ while [[ $# -gt 0 ]]; do
     --pgo)
       shift
       [[ $1 =~ ^[0-2]$ ]] || {
-        echo "Error: --pgo requires 0, 1, or 2" >&2
+        echo "Error: --pgo requires 0, 1, or 2">&2
         exit 1
       }
       PGO_LEVEL=$1
@@ -135,7 +135,7 @@ while [[ $# -gt 0 ]]; do
       break
       ;;
     -*)
-      echo "Error: unknown option '$1'" >&2
+      echo "Error: unknown option '$1'">&2
       usage 1
       ;;
     *)
@@ -147,12 +147,12 @@ done
 
 # Validate options
 if [[ $MODE == "install" && ${#CRATES[@]} -eq 0 ]]; then
-  echo "Error: install mode requires at least one crate" >&2
+  echo "Error: install mode requires at least one crate">&2
   usage 1
 fi
 
 if [[ $BOLT_ENABLED -eq 1 && $PGO_LEVEL -ne 2 ]]; then
-  echo "Error: BOLT requires --pgo 2" >&2
+  echo "Error: BOLT requires --pgo 2">&2
   exit 1
 fi
 
@@ -164,7 +164,7 @@ echo "==> Setting up build environment..."
 # Validate privileges if needed
 if [[ $EUID -ne 0 ]]; then
   sudo -v || {
-    echo "Error: sudo failed" >&2
+    echo "Error: sudo failed">&2
     exit 1
   }
 fi
@@ -330,17 +330,17 @@ MISC_OPT=(--ignore-rust-version -f --bins -j"$jobs")
 # ──────────────────────────────────────────────────────────────────────────────
 profileon(){
   echo "==> Enabling profiling mode..."
-  sudo sh -c "echo 0 >/proc/sys/kernel/randomize_va_space" || :
-  sudo sh -c "echo 0 >/proc/sys/kernel/nmi_watchdog" || :
-  sudo sh -c "echo 1 >/sys/devices/system/cpu/intel_pstate/no_turbo" || :
-  sudo sh -c "echo 0 >/proc/sys/kernel/kptr_restrict" || :
-  sudo sh -c "echo 0 >/proc/sys/kernel/perf_event_paranoid" || :
+  sudo sh -c "echo 0>/proc/sys/kernel/randomize_va_space" || :
+  sudo sh -c "echo 0>/proc/sys/kernel/nmi_watchdog" || :
+  sudo sh -c "echo 1>/sys/devices/system/cpu/intel_pstate/no_turbo" || :
+  sudo sh -c "echo 0>/proc/sys/kernel/kptr_restrict" || :
+  sudo sh -c "echo 0>/proc/sys/kernel/perf_event_paranoid" || :
 }
 
 profileoff(){
   echo "==> Disabling profiling mode..."
-  sudo sh -c "echo 1 >/proc/sys/kernel/randomize_va_space" || :
-  sudo sh -c "echo 0 >/sys/devices/system/cpu/intel_pstate/no_turbo" || :
+  sudo sh -c "echo 1>/proc/sys/kernel/randomize_va_space" || :
+  sudo sh -c "echo 0>/sys/devices/system/cpu/intel_pstate/no_turbo" || :
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -404,7 +404,7 @@ case $MODE in
       profileon
 
       if [[ ! -f default.profdata ]]; then
-        echo "Error: default.profdata not found. Run --pgo 1 first and generate profiles." >&2
+        echo "Error: default.profdata not found. Run --pgo 1 first and generate profiles.">&2
         exit 1
       fi
 

@@ -5,7 +5,7 @@ export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 has(){ command -v -- "$1" &>/dev/null;}
 xecho(){ printf '%b\n' "$*";}
 log(){ xecho "$*";}
-confirm(){ local msg="$1";printf '%s [y/N]: ' "$msg" >&2;read -r ans;[[ $ans == [Yy]* ]];}
+confirm(){ local msg="$1";printf '%s [y/N]: ' "$msg">&2;read -r ans;[[ $ans == [Yy]* ]];}
 print_banner(){
   local banner="$1" title="${2:-}" flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU") -a lines=()
   while IFS= read -r line||[[ -n $line ]];do lines+=("$line");done <<<"$banner"
@@ -37,7 +37,7 @@ EOF
 }
 print_named_banner(){
   local name="$1" title="${2:-Meow (> ^ <)}" banner
-  case "$name" in update) banner=$(get_update_banner);;clean) banner=$(get_clean_banner);;*) xecho "${RED}Error:${DEF} Unknown banner name: $name" >&2;exit 1;;esac
+  case "$name" in update) banner=$(get_update_banner);;clean) banner=$(get_clean_banner);;*) xecho "${RED}Error:${DEF} Unknown banner name: $name">&2;exit 1;;esac
   print_banner "$banner" "$title"
 }
 setup_build_env(){
@@ -80,8 +80,8 @@ detect_pkg_manager(){
   _PKG_MGR_CACHED=$pkgmgr
   printf '%s\n' "$pkgmgr" "${_AUR_OPTS_CACHED[@]}"
 }
-get_pkg_manager(){ [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager >/dev/null;printf '%s\n' "$_PKG_MGR_CACHED";}
-get_aur_opts(){ [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager >/dev/null;printf '%s\n' "${_AUR_OPTS_CACHED[@]}";}
+get_pkg_manager(){ [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager>/dev/null;printf '%s\n' "$_PKG_MGR_CACHED";}
+get_aur_opts(){ [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager>/dev/null;printf '%s\n' "${_AUR_OPTS_CACHED[@]}";}
 vacuum_sqlite(){
   local db=$1 s_old s_new
   [[ -f $db ]]||{ printf '0\n';return;}

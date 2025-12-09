@@ -19,8 +19,8 @@ fi
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*">&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*">&2; }
 die(){ err "$1"; exit "${2:-1}"; }
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 sec(){ printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
@@ -165,7 +165,7 @@ human_size(){
   local bytes="$1" scale=0
   local -a units=("B" "KB" "MB" "GB" "TB")
 
-  while ((bytes > 1024 && scale < 4)); do
+  while ((bytes> 1024 && scale < 4)); do
     bytes=$((bytes / 1024))
     ((scale++))
   done
@@ -529,10 +529,10 @@ cmd_index_nomedia(){
   local base="${1:-/storage/emulated/0}"
   sec "Index guard (. nomedia)"
   while IFS= read -r -d '' d; do
-    : > "$d/.nomedia" 2>/dev/null || :
-    : > "$d/.noindex" 2>/dev/null || :
-    : > "$d/.metadata_never_index" 2>/dev/null || :
-    : > "$d/.trackerignore" 2>/dev/null || :
+    :> "$d/.nomedia" 2>/dev/null || :
+    :> "$d/.noindex" 2>/dev/null || :
+    :> "$d/.metadata_never_index" 2>/dev/null || :
+    :> "$d/.trackerignore" 2>/dev/null || :
   done < <(find "$base" -type d -readable -print0 2>/dev/null || :)
   ok "Index guards created"
 }
@@ -634,7 +634,7 @@ task_fs_hygiene(){
   [[ -n $ed ]] && { printf '%s\n' "$ed" | xargs -r rm -r && ((cnt++)); }
   ef="$(find "$HOME" -type f -empty 2>/dev/null || :)"
   [[ -n $ef ]] && { printf '%s\n' "$ef" | xargs -r rm && ((cnt++)); }
-  ((cnt > 0)) && ok "Removed empty dirs/files" || info "No empty dirs/files"
+  ((cnt> 0)) && ok "Removed empty dirs/files" || info "No empty dirs/files"
 }
 
 task_large_files(){
@@ -751,7 +751,7 @@ Device commands:
   monolith [mode]         Compile all apps (default: everything-profile)
   cache-clean             Clear app caches
   index-nomedia [path]    Create . nomedia guards (default: /storage/emulated/0)
-  wa-clean [path]         WhatsApp media cleanup >45d
+  wa-clean [path]         WhatsApp media cleanup>45d
   aapt2-opt [in] [out]    Optimize APK with AAPT2
 
 Termux commands:

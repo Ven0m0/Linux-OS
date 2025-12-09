@@ -14,8 +14,8 @@ has(){ command -v "$1" &>/dev/null;}
 xecho(){ printf '%b\n' "$*";}
 log(){ xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*";}
 msg(){ xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*";}
-warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2;}
-err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2;}
+warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*">&2;}
+err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*">&2;}
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*"||:;}
 get_drive_trans(){ local dev="${1:?}";lsblk -dno TRAN "$dev" 2>/dev/null||echo "unknown";}
 assert_usb_dev(){
@@ -35,7 +35,7 @@ select_target_interactive(){
   has fzf||{ err "fzf required for interactive selection.";cleanup;exit 1;}
   log "Scanning for removable drives..."
   local selection
-  selection=$(lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG|awk -v skip="${cfg[no_usb_check]}" 'tolower($0) ~ /disk/ && (skip == "1" || tolower($0) ~ /usb|mmc/)'|fzf --header="TARGET SELECTION (Safety: USB/MMC Only)" --prompt="Select Drive > " --with-nth=1,2,3,4)
+  selection=$(lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG|awk -v skip="${cfg[no_usb_check]}" 'tolower($0) ~ /disk/ && (skip == "1" || tolower($0) ~ /usb|mmc/)'|fzf --header="TARGET SELECTION (Safety: USB/MMC Only)" --prompt="Select Drive> " --with-nth=1,2,3,4)
   [[ -z $selection ]]&&{ err "No target selected.";cleanup;exit 1;}
   echo "$selection"|awk '{print $1}'
 }
@@ -65,17 +65,17 @@ wait_for_partitions(){
 }
 prepare_environment(){
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" rf2fs.XXXXXX);SRC_IMG="$WORKDIR/source.img"
-  trap cleanup EXIT INT TERM;sync;sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
+  trap cleanup EXIT INT TERM;sync;sudo sh -c 'echo 3> /proc/sys/vm/drop_caches'
 }
 process_source(){
   [[ $SRC_PATH == dietpi ]]&&{ log "Keyword 'dietpi' detected. Using URL: $DIETPI_URL";SRC_PATH="$DIETPI_URL";}
   if [[ $SRC_PATH =~ ^https?:// ]];then
     log "Downloading image from URL..."
-    [[ $SRC_PATH == *.xz ]] && curl -Lfs --progress-bar "$SRC_PATH"|xz -dc >"$SRC_IMG"||curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG"||{ err "Download failed.";cleanup;exit 1;}
+    [[ $SRC_PATH == *.xz ]] && curl -Lfs --progress-bar "$SRC_PATH"|xz -dc>"$SRC_IMG"||curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG"||{ err "Download failed.";cleanup;exit 1;}
     return 0
   fi
   log "Processing local source: $SRC_PATH";[[ -f $SRC_PATH ]]||{ err "Source file not found.";cleanup;exit 1;}
-  if [[ $SRC_PATH == *.xz ]];then log "Decompressing xz archive...";xz -dc "$SRC_PATH" >"$SRC_IMG"
+  if [[ $SRC_PATH == *.xz ]];then log "Decompressing xz archive...";xz -dc "$SRC_PATH">"$SRC_IMG"
   elif ((cfg[keep_source]));then cp --reflink=auto "$SRC_PATH" "$SRC_IMG"
   else ln "$SRC_PATH" "$SRC_IMG" 2>/dev/null||cp "$SRC_PATH" "$SRC_IMG";fi
 }
@@ -91,8 +91,8 @@ setup_target_device(){
 }
 format_target(){
   log "Formatting filesystems...";((cfg[dry_run])) && return 0
-  mkfs.vfat -F32 -n BOOT "$BOOT_PART" >/dev/null
-  mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART" >/dev/null
+  mkfs.vfat -F32 -n BOOT "$BOOT_PART">/dev/null
+  mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART">/dev/null
 }
 clone_data(){
   log "Cloning data (rsync)...";((cfg[dry_run])) && return 0
@@ -112,8 +112,8 @@ configure_pi_boot(){
   local boot_uuid root_uuid cmdline fstab
   boot_uuid=$(blkid -s PARTUUID -o value "$BOOT_PART");root_uuid=$(blkid -s PARTUUID -o value "$ROOT_PART")
   cmdline="$WORKDIR/tgt/boot/cmdline.txt";fstab="$WORKDIR/tgt/root/etc/fstab"
-  awk -v uuid="$root_uuid" '{line="";for(i=1;i<=NF;i++){if($i~/^root=/)$i="root=PARTUUID="uuid;else if($i~/^rootfstype=/)$i="rootfstype=f2fs";else if($i~/^init=.*init_resize\.sh/)continue;line=(line?line" ":"")$i}if(line!~/rootwait/)line=line" rootwait";if(line!~/fsck\.repair=yes/)line=line" fsck.repair=yes";print line}' "$cmdline" >"${cmdline}.tmp" && mv "${cmdline}.tmp" "$cmdline"
-  cat >"$fstab" <<-EOF
+  awk -v uuid="$root_uuid" '{line="";for(i=1;i<=NF;i++){if($i~/^root=/)$i="root=PARTUUID="uuid;else if($i~/^rootfstype=/)$i="rootfstype=f2fs";else if($i~/^init=.*init_resize\.sh/)continue;line=(line?line" ":"")$i}if(line!~/rootwait/)line=line" rootwait";if(line!~/fsck\.repair=yes/)line=line" fsck.repair=yes";print line}' "$cmdline">"${cmdline}.tmp" && mv "${cmdline}.tmp" "$cmdline"
+  cat>"$fstab" <<-EOF
 	proc            /proc           proc    defaults          0       0
 	PARTUUID=$boot_uuid  /boot           vfat    defaults          0       2
 	PARTUUID=$root_uuid  /               f2fs    defaults,noatime  0       1
@@ -145,7 +145,7 @@ while getopts "b:i:d:sknxhUF" opt;do
 done
 [[ $EUID -ne 0 ]]&&{ err "This script requires root privileges (sudo).";cleanup;exit 1;}
 check_deps
-[[ -z $SRC_PATH ]] && SRC_PATH=$(find . -maxdepth 2 -name "*.img*" -o -name "*.xz"|fzf --prompt="Select Source Image (or enter URL/dietpi) > ") && [[ -z $SRC_PATH ]]&&{ err "No source image selected.";cleanup;exit 1;}
+[[ -z $SRC_PATH ]] && SRC_PATH=$(find . -maxdepth 2 -name "*.img*" -o -name "*.xz"|fzf --prompt="Select Source Image (or enter URL/dietpi)> ") && [[ -z $SRC_PATH ]]&&{ err "No source image selected.";cleanup;exit 1;}
 [[ -z $TGT_PATH ]] && TGT_PATH=$(select_target_interactive)
 prepare_environment;process_source;setup_target_device;format_target;clone_data;configure_pi_boot
 msg "${GRN}SUCCESS:${DEF} Flashed to $TGT_PATH with F2FS."

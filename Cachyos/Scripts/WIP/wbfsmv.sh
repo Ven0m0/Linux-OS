@@ -28,7 +28,7 @@ EOF
       exit 0
       ;;
     *)
-      printf 'Unknown arg: %s\n' "$1" >&2
+      printf 'Unknown arg: %s\n' "$1">&2
       exit 2
       ;;
   esac
@@ -37,23 +37,23 @@ done
 
 TARGET=${1:-.}
 [[ -d $TARGET ]] || {
-  printf 'Not a directory: %s\n' "$TARGET" >&2
+  printf 'Not a directory: %s\n' "$TARGET">&2
   exit 2
 }
 command -v dd &>/dev/null || {
-  printf 'dd required\n' >&2
+  printf 'dd required\n'>&2
   exit 1
 }
 have_wit=0
 command -v wit &>/dev/null && have_wit=1
 ((trim || convert)) && ((!have_wit)) && {
-  printf 'wit required for --convert/--trim\n' >&2
+  printf 'wit required for --convert/--trim\n'>&2
   exit 1
 }
 # map region names to wit values
 declare -A region_map=([PAL]=EUROPE [NTSC]=USA [JAP]=JAPAN [KOR]=KOREA [FREE]=FREE)
 wit_region=${region_map[${REGION^^}]:-EUROPE}
-log(){ ((verbose)) && printf '%s\n' "$*" >&2 || :; }
+log(){ ((verbose)) && printf '%s\n' "$*">&2 || :; }
 run(){ ((dry)) && log "[dry] $*" || "$@"; }
 # WBFS: ID at 0x200 (512); ISO/CISO/WIA/WDF: ID at 0x0
 get_id(){

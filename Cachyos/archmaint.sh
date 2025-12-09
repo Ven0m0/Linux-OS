@@ -1,41 +1,20 @@
 #!/usr/bin/env bash
 # Optimized: 2025-11-19 - Applied bash optimization techniques
 # Refactored: 2025-12-04 - Inlined common helpers for portability
+# Refactored: 2025-12-09 - Migrated to shared libraries
 
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar extglob dotglob
+# Source shared libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/common.sh"
+source "$SCRIPT_DIR/../lib/browser-utils.sh"
+source "$SCRIPT_DIR/../lib/pkg-utils.sh"
 
-# Export common locale settings
-export LC_ALL=C LANG=C LANGUAGE=C
+# Initialize shell with strict settings
+init_shell
 
-#============ Color & Effects ============
-# Trans flag color palette (LBLU → PNK → BWHT → PNK → LBLU)
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
-RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
-MGN=$'\e[35m' PNK=$'\e[38;5;218m'
-DEF=$'\e[0m' BLD=$'\e[1m'
-
-# Export color variables
-export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
-
-#============ Helper Functions ============
-has(){ command -v "$1" &>/dev/null; }
-xecho(){ printf '%b\n' "$*"; }
+# Override log() and msg() with custom formatting for this script
 log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die(){ err "$1"; exit "${2:-1}"; }
-dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
-confirm(){
-  local r
-  while :; do
-    read -rp "${1:-Continue?} [y/N] " r
-    case "${r,,}" in y | yes) return 0 ;; n | no | "") return 1 ;; *) warn "Please answer y or n" ;; esac
-  done
-}
 
 #============ Banner Printing Functions ============
 print_banner(){
@@ -90,23 +69,17 @@ print_named_banner(){
   print_banner "$banner" "$title"
 }
 
-#============ Build Environment Setup ============
+#============ Build Environment Setup (Extended) ============
+# Override setup_build_env with extended version for archmaint
 setup_build_env(){
+  # Call base implementation from pkg-utils.sh
+  source "$SCRIPT_DIR/../lib/pkg-utils.sh"
+
+  # Extended settings specific to archmaint
   [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
-  export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-  export CFLAGS="-march=native -mtune=native -O3 -pipe"
-  export CXXFLAGS="$CFLAGS"
   export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
   export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
   export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1
-  local nproc_count
-  nproc_count=$(nproc 2>/dev/null || echo 4)
-  export MAKEFLAGS="-j${nproc_count}"
-  export NINJAFLAGS="-j${nproc_count}"
-  if has clang && has clang++; then
-    export CC=clang CXX=clang++ AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib
-    has ld.lld && export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"
-  fi
   has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
 }
 
@@ -131,177 +104,11 @@ capture_disk_usage(){
   ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
 }
 
-#============ File Finding Helpers ============
-find0(){
-  local root="$1"
-  shift
-  if has fdf; then
-    fdf -H -0 "$@" . "$root"
-  elif has fd; then
-    fd -H -0 "$@" . "$root"
-  else
-    find "$root" "$@" -print0
-  fi
-}
+#============ Function Aliases for Backward Compatibility ============
+# archmaint uses ensure_not_running_any instead of ensure_not_running
+ensure_not_running_any(){ ensure_not_running "$@"; }
 
-#============ Package Manager Detection ============
-_PKG_MGR_CACHED=""
-_AUR_OPTS_CACHED=()
-
-detect_pkg_manager(){
-  if [[ -n $_PKG_MGR_CACHED ]]; then
-    printf '%s\n' "$_PKG_MGR_CACHED"
-    printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
-    return 0
-  fi
-  local pkgmgr
-  if has paru; then
-    pkgmgr=paru
-    _AUR_OPTS_CACHED=(--batchinstall --combinedupgrade --nokeepsrc)
-  elif has yay; then
-    pkgmgr=yay
-    _AUR_OPTS_CACHED=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
-  else
-    pkgmgr=pacman
-    _AUR_OPTS_CACHED=()
-  fi
-  _PKG_MGR_CACHED=$pkgmgr
-  printf '%s\n' "$pkgmgr"
-  printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
-}
-
-get_pkg_manager(){
-  if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
-  fi
-  printf '%s\n' "$_PKG_MGR_CACHED"
-}
-
-get_aur_opts(){
-  if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
-  fi
-  printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
-}
-
-#============ SQLite Maintenance ============
-vacuum_sqlite(){
-  local db=$1 s_old s_new
-  [[ -f $db ]] || {
-    printf '0\n'
-    return
-  }
-  [[ -f ${db}-wal || -f ${db}-journal ]] && {
-    printf '0\n'
-    return
-  }
-  if ! head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3'; then
-    printf '0\n'
-    return
-  fi
-  s_old=$(stat -c%s "$db" 2>/dev/null) || {
-    printf '0\n'
-    return
-  }
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || {
-    printf '0\n'
-    return
-  }
-  s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
-  printf '%d\n' "$((s_old - s_new))"
-}
-
-clean_sqlite_dbs(){
-  local total=0 db saved
-  while IFS= read -r -d '' db; do
-    [[ -f $db ]] || continue
-    saved=$(vacuum_sqlite "$db" || printf '0')
-    ((saved > 0)) && total=$((total + saved))
-  done < <(find0 . -maxdepth 1 -type f)
-  ((total > 0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF}"
-}
-
-#============ Process Management ============
-ensure_not_running_any(){
-  local timeout=6 p
-  local pattern=$(printf '%s|' "$@")
-  pattern=${pattern%|}
-  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
-  for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &>/dev/null && warn "Waiting for ${p} to exit..."
-  done
-  local wait_time=$timeout
-  while ((wait_time-- > 0)); do
-    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
-    sleep 1
-  done
-  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null; then
-    warn "Killing remaining processes..."
-    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
-    sleep 1
-  fi
-}
-
-#============ Browser Profile Detection ============
-foxdir(){
-  local base=$1 p
-  [[ -d $base ]] || return 1
-  if [[ -f $base/installs.ini ]]; then
-    p=$(awk -F= '/^\[.*\]/{f=0} /^\[Install/{f=1;next} f&&/^Default=/{print $2;exit}' "$base/installs.ini")
-    [[ -n $p && -d $base/$p ]] && {
-      printf '%s\n' "$base/$p"
-      return 0
-    }
-  fi
-  if [[ -f $base/profiles.ini ]]; then
-    p=$(awk -F= '/^\[.*\]/{s=0} /^\[Profile[0-9]+\]/{s=1} s&&/^Default=1/{d=1} s&&/^Path=/{if(d){print $2;exit}}' "$base/profiles.ini")
-    [[ -n $p && -d $base/$p ]] && {
-      printf '%s\n' "$base/$p"
-      return 0
-    }
-  fi
-  return 1
-}
-
-mozilla_profiles(){
-  local base=$1 p
-  declare -A seen
-  [[ -d $base ]] || return 0
-  if [[ -f $base/installs.ini ]]; then
-    while IFS= read -r p; do
-      [[ -d $base/$p && -z ${seen[$p]:-} ]] && {
-        printf '%s\n' "$base/$p"
-        seen[$p]=1
-      }
-    done < <(awk -F= '/^Default=/ {print $2}' "$base/installs.ini")
-  fi
-  if [[ -f $base/profiles.ini ]]; then
-    while IFS= read -r p; do
-      [[ -d $base/$p && -z ${seen[$p]:-} ]] && {
-        printf '%s\n' "$base/$p"
-        seen[$p]=1
-      }
-    done < <(awk -F= '/^Path=/ {print $2}' "$base/profiles.ini")
-  fi
-}
-
-chrome_roots_for(){
-  case "$1" in
-    chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
-    chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
-    brave) printf '%s\n' "$HOME/.config/BraveSoftware/Brave-Browser" "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser" "$HOME/snap/brave/current/.config/BraveSoftware/Brave-Browser" ;;
-    opera) printf '%s\n' "$HOME/.config/opera" "$HOME/.config/opera-beta" "$HOME/.config/opera-developer" ;;
-    *) : ;;
-  esac
-}
-
-chrome_profiles(){
-  local root=$1 d
-  for d in "$root"/Default "$root"/"Profile "*; do
-    [[ -d $d ]] && printf '%s\n' "$d"
-  done
-}
-
+# Utility function for expanding wildcards in paths
 _expand_wildcards(){
   local path=$1
   local -n result_ref="$2"

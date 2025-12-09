@@ -117,7 +117,7 @@ on_err(){
 # Usage: cleanup(){ your_cleanup_code; }; trap cleanup EXIT
 cleanup(){
   set +e
-  [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
+  [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
 }
 
 # Setup standard traps for error handling
@@ -162,7 +162,7 @@ run_priv(){
   if [[ -z $PRIV_CMD ]]; then
     "$@"
   else
-    $PRIV_CMD "$@"
+    "$PRIV_CMD" "$@"
   fi
 }
 
@@ -265,7 +265,7 @@ find0(){
   detect_fd
 
   if [[ $FD_CMD == "fd" ]] || [[ $FD_CMD == "fdfind" ]]; then
-    $FD_CMD -H -0 "$pattern" "$path"
+    "$FD_CMD" -H -0 "$pattern" "$path"
   else
     find "$path" -name "$pattern" -print0
   fi
@@ -296,9 +296,9 @@ download_file(){
       ;;
     wget*|wget2)
       if [[ -n $output ]]; then
-        $DL_CMD "${DL_ARGS[@]}" -O "$output" "$url"
+        "$DL_CMD" "${DL_ARGS[@]}" -O "$output" "$url"
       else
-        $DL_CMD "${DL_ARGS[@]}" "$url"
+        "$DL_CMD" "${DL_ARGS[@]}" "$url"
       fi
       ;;
   esac
@@ -347,7 +347,7 @@ detect_distro(){
 # Load array from file, filtering comments and blank lines
 # Usage: load_array_from_file arrayname filename
 load_array_from_file(){
-  local -n arr=$1
+  local -n arr="$1"
   local file=${2:?}
 
   [[ -f $file ]] || die "File not found: $file"

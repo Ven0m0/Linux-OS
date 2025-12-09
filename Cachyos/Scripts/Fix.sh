@@ -102,7 +102,7 @@ clean_sqlite_dbs(){
   ((total>0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total/1024)) KB${DEF}"
 }
 ensure_not_running_any(){
-  local timeout=6 p pattern=$(printf '%s|' "$@");pattern=${pattern%|}
+  local timeout=6 p pattern="$(printf '%s|' "$@")";pattern=${pattern%|}
   pgrep -x -u "$USER" -f "$pattern" &>/dev/null||return
   for p in "$@";do pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}";done
   local wait_time=$timeout

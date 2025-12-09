@@ -177,17 +177,20 @@ cargo pgo bolt optimize --with-pgo
 cargo install sccache
 export RUSTC_WRAPPER=sccache
 ```
-2. **Parallel builds**:
+
+1. **Parallel builds**:
 
 ```bash
 export CARGO_BUILD_JOBS=$(nproc)
 ```
-3. **Use modern linker** (mold or lld):
+
+1. **Use modern linker** (mold or lld):
 
 ```bash
 ./cargo-build.sh --install --mold <crate>
 ```
-4. **Clean unused dependencies regularly**:
+
+1. **Clean unused dependencies regularly**:
 
 ```bash
 cargo install cargo-shear cargo-machete cargo-cache

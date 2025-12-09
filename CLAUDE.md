@@ -163,7 +163,8 @@ BLD=$'\e[1m'          # Bold
 2. **Green:** Minimal logic to pass.
 3. **Refactor:** Optimize (subtractive design).
 4. **Commit:** Single logical unit. Tests pass. No lint errors.
-  - Never mix structural (format) and behavioral changes.
+
+- Never mix structural (format) and behavioral changes.
 
 ### Commit Types
 

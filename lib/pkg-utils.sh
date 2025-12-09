@@ -250,7 +250,7 @@ pkg_autoremove(){
     paru|yay|pacman)
       local orphans
       orphans=$(pacman -Qdtq 2>/dev/null || :)
-      [[ -n $orphans ]] && run_priv pacman -Rns --noconfirm $orphans || :
+      [[ -n $orphans ]] && run_priv pacman -Rns --noconfirm "$orphans" || :
       ;;
     apt|apt-get)
       run_priv "$pkgmgr" autoremove --purge -y

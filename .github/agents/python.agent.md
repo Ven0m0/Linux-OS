@@ -34,10 +34,12 @@ Senior Python SRE focused on performance (O(n)), type safety, and maintainabilit
 1. **Plan**: Analyze `problems` tab and `terminalLastCommand` output.
 2. **Measure**: Identify hot paths (complexity > O(n)).
 3. **Refactor**:
-  - Use `ruff` for all formatting.
-  - Replace complex list comps with loops if unreadable.
-  - **Constraint**: O(n) complexity or better.
-4. **Verify**: `pytest` must pass.
+
+- Use `ruff` for all formatting.
+- Replace complex list comps with loops if unreadable.
+- **Constraint**: O(n) complexity or better.
+
+1. **Verify**: `pytest` must pass.
 
 ## Debt Removal
 

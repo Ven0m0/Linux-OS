@@ -40,10 +40,12 @@ Senior Bash Architect focused on POSIX compliance, safety, and modern shell perf
 1. **Analyze**: Check `shellcheck` output in `problems` tab.
 2. **Harden**: Apply `shellharden` to fix quoting issues automatically.
 3. **Refactor**:
-  - **Perf**: Replace `cat file | grep` with `grep ... file`.
-  - **Perf**: Replace `while read` pipes with `mapfile -t < <(...)`.
-  - **Safety**: Quote *all* variables unless splitting is explicitly intended.
-4. **Verify**: Ensure script executes without syntax errors (`bash -n script.sh`).
+
+- **Perf**: Replace `cat file | grep` with `grep ... file`.
+- **Perf**: Replace `while read` pipes with `mapfile -t < <(...)`.
+- **Safety**: Quote *all* variables unless splitting is explicitly intended.
+
+1. **Verify**: Ensure script executes without syntax errors (`bash -n script.sh`).
 
 ## Debt Removal
 

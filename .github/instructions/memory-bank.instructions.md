@@ -29,40 +29,53 @@ flowchart TD
 ### Core Files (Required)
 
 1. `projectbrief.md`
-  - Foundation document that shapes all other files
-  - Created at project start if it doesn't exist
-  - Defines core requirements and goals
-  - Source of truth for project scope
-2. `productContext.md`
-  - Why this project exists
-  - Problems it solves
-  - How it should work
-  - User experience goals
-3. `activeContext.md`
-  - Current work focus
-  - Recent changes
-  - Next steps
-  - Active decisions and considerations
-4. `systemPatterns.md`
-  - System architecture
-  - Key technical decisions
-  - Design patterns in use
-  - Component relationships
-5. `techContext.md`
-  - Technologies used
-  - Development setup
-  - Technical constraints
-  - Dependencies
-6. `progress.md`
-  - What works
-  - What's left to build
-  - Current status
-  - Known issues
-7. `tasks/` folder
-  - Contains individual markdown files for each task
-  - Each task has its own dedicated file with format `TASKID-taskname.md`
-  - Includes task index file (`_index.md`) listing all tasks with their statuses
-  - Preserves complete thought process and history for each task
+
+- Foundation document that shapes all other files
+- Created at project start if it doesn't exist
+- Defines core requirements and goals
+- Source of truth for project scope
+
+1. `productContext.md`
+
+- Why this project exists
+- Problems it solves
+- How it should work
+- User experience goals
+
+1. `activeContext.md`
+
+- Current work focus
+- Recent changes
+- Next steps
+- Active decisions and considerations
+
+1. `systemPatterns.md`
+
+- System architecture
+- Key technical decisions
+- Design patterns in use
+- Component relationships
+
+1. `techContext.md`
+
+- Technologies used
+- Development setup
+- Technical constraints
+- Dependencies
+
+1. `progress.md`
+
+- What works
+- What's left to build
+- Current status
+- Known issues
+
+1. `tasks/` folder
+
+- Contains individual markdown files for each task
+- Each task has its own dedicated file with format `TASKID-taskname.md`
+- Includes task index file (`_index.md`) listing all tasks with their statuses
+- Preserves complete thought process and history for each task
 
 ### Additional Context
 
@@ -287,19 +300,23 @@ To view tasks, the command **show tasks [filter]** will:
 
 1. Display a filtered list of tasks based on the specified criteria
 2. Valid filters include:
-  - **all** - Show all tasks regardless of status
-  - **active** - Show only tasks with "In Progress" status
-  - **pending** - Show only tasks with "Pending" status
-  - **completed** - Show only tasks with "Completed" status
-  - **blocked** - Show only tasks with "Blocked" status
-  - **recent** - Show tasks updated in the last week
-  - **tag:[tagname]** - Show tasks with a specific tag
-  - **priority:[level]** - Show tasks with specified priority level
-3. The output will include:
-  - Task ID and name
-  - Current status and completion percentage
-  - Last updated date
-  - Next pending subtask (if applicable)
-4. Example usage: **show tasks active** or **show tasks tag:frontend**
+
+- **all** - Show all tasks regardless of status
+- **active** - Show only tasks with "In Progress" status
+- **pending** - Show only tasks with "Pending" status
+- **completed** - Show only tasks with "Completed" status
+- **blocked** - Show only tasks with "Blocked" status
+- **recent** - Show tasks updated in the last week
+- **tag:[tagname]** - Show tasks with a specific tag
+- **priority:[level]** - Show tasks with specified priority level
+
+1. The output will include:
+
+- Task ID and name
+- Current status and completion percentage
+- Last updated date
+- Next pending subtask (if applicable)
+
+1. Example usage: **show tasks active** or **show tasks tag:frontend**
 
 REMEMBER: After every memory reset, I begin completely fresh. The Memory Bank is my only link to previous work. It must be maintained with precision and clarity, as my effectiveness depends entirely on its accuracy.

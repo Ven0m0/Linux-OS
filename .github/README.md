@@ -109,11 +109,13 @@ curl -fsSL https://raw.githubusercontent.com/scopatz/nanorc/master/install.sh | 
 <details>
 
 <summary><b>Install x-cmd</b></summary>
+
 bash:
 
 ```bash
 eval "$(curl https://get.x-cmd.com)"
 ```
+
 fish:
 
 ```sh

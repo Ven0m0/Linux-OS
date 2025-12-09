@@ -31,9 +31,7 @@ except ImportError:
 import pandas as pd
 
 # Perspective API constants
-PERSPECTIVE_URL = (
-    "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"
-)
+PERSPECTIVE_URL = "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"
 DEFAULT_TIMEOUT = 10
 DEFAULT_RATE_PER_MIN = 60.0
 DEFAULT_MAX_RETRIES = 5
@@ -127,16 +125,13 @@ class Config:
         if self.mode in ("sherlock", "both"):
             if not shutil.which("sherlock"):
                 raise FileNotFoundError(
-                    "sherlock not found. Install: pacman -S sherlock-git "
-                    "or pip install sherlock-project"
+                    "sherlock not found. Install: pacman -S sherlock-git or pip install sherlock-project"
                 )
 
 
 def parse_args() -> Config:
     """Parse and validate CLI arguments."""
-    p = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("username", help="Target username (without u/ or @)")
     p.add_argument(
         "--mode",
@@ -147,25 +142,17 @@ def parse_args() -> Config:
 
     # Reddit options
     reddit_g = p.add_argument_group("Reddit scanner options")
-    reddit_g.add_argument(
-        "--comments", type=int, default=50, help="Num comments to fetch"
-    )
-    reddit_g.add_argument(
-        "--posts", type=int, default=20, help="Num posts to fetch"
-    )
+    reddit_g.add_argument("--comments", type=int, default=50, help="Num comments to fetch")
+    reddit_g.add_argument("--posts", type=int, default=20, help="Num posts to fetch")
     reddit_g.add_argument(
         "--toxicity-threshold",
         type=float,
         default=0.7,
         help="Toxicity flag threshold (0.0-1.0)",
     )
-    reddit_g.add_argument(
-        "--perspective-api-key", default="", help="Perspective API key"
-    )
+    reddit_g.add_argument("--perspective-api-key", default="", help="Perspective API key")
     reddit_g.add_argument("--client-id", default="", help="Reddit client_id")
-    reddit_g.add_argument(
-        "--client-secret", default="", help="Reddit client_secret"
-    )
+    reddit_g.add_argument("--client-secret", default="", help="Reddit client_secret")
     reddit_g.add_argument("--user-agent", default="", help="Reddit user_agent")
     reddit_g.add_argument(
         "--output-reddit",
@@ -178,9 +165,7 @@ def parse_args() -> Config:
         default=DEFAULT_RATE_PER_MIN,
         help="Max Perspective req/min",
     )
-    reddit_g.add_argument(
-        "--max-retries", type=int, default=5, help="Max API retries"
-    )
+    reddit_g.add_argument("--max-retries", type=int, default=5, help="Max API retries")
 
     # Sherlock options
     sherlock_g = p.add_argument_group("Sherlock scanner options")
@@ -287,9 +272,7 @@ async def run_sherlock(username: str, cfg: Config) -> list[SherlockResult]:
         return []
 
 
-async def check_toxicity(
-    text: str, client, cfg: Config, limiter: RateLimiter
-) -> PerspectiveScore:
+async def check_toxicity(text: str, client, cfg: Config, limiter: RateLimiter) -> PerspectiveScore:
     """Analyze text toxicity via Perspective API.
 
     Args:
@@ -322,10 +305,7 @@ async def check_toxicity(
             )
             resp.raise_for_status()
             result = JSON_LOADS(resp.content)
-            return {
-                k: v["summaryScore"]["value"]
-                for k, v in result.get("attributeScores", {}).items()
-            }
+            return {k: v["summaryScore"]["value"] for k, v in result.get("attributeScores", {}).items()}
         except Exception as e:
             # Handle httpx errors
             error_type = type(e).__name__
@@ -347,9 +327,7 @@ async def check_toxicity(
     return {}
 
 
-async def analyze_reddit_content(
-    items: list[tuple[str, str, str, float]], cfg: Config
-) -> list[FlaggedItem]:
+async def analyze_reddit_content(items: list[tuple[str, str, str, float]], cfg: Config) -> list[FlaggedItem]:
     """Analyze list of Reddit content items concurrently.
 
     Args:
@@ -369,19 +347,14 @@ async def analyze_reddit_content(
     flagged: list[FlaggedItem] = []
 
     async with httpx.AsyncClient() as client:
-        tasks = [
-            check_toxicity(text, client, cfg, limiter)
-            for _, _, text, _ in items
-        ]
+        tasks = [check_toxicity(text, client, cfg, limiter) for _, _, text, _ in items]
         scores_list = await asyncio.gather(*tasks)
 
     for (item_type, sub, text, ts), scores in zip(items, scores_list):
         if any(s >= cfg.threshold for s in scores.values()):
             flagged.append(
                 FlaggedItem(
-                    timestamp=time.strftime(
-                        "%Y-%m-%d %H:%M:%S", time.localtime(ts)
-                    ),
+                    timestamp=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts)),
                     type=item_type,
                     subreddit=sub,
                     content=text,
@@ -498,9 +471,7 @@ async def main_async() -> None:
         elif cfg.mode == "reddit":
             await run_reddit_scanner(cfg)
         else:  # both
-            await asyncio.gather(
-                run_sherlock_scanner(cfg), run_reddit_scanner(cfg)
-            )
+            await asyncio.gather(run_sherlock_scanner(cfg), run_reddit_scanner(cfg))
 
         print("\nScan complete.")
 

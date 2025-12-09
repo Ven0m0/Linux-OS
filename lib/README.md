@@ -5,9 +5,11 @@ This directory contains shared utility functions and common code extracted from 
 ## Libraries
 
 ### common.sh
+
 Core helper functions used across all scripts.
 
 **Functions:**
+
 - `init_shell()` - Initialize shell with strict error handling and sane defaults
 - `has()` - Check if command exists in PATH
 - `xecho()` - Printf wrapper for consistent output formatting
@@ -27,6 +29,7 @@ Core helper functions used across all scripts.
 Exports standard ANSI colors and trans flag palette (LBLU, PNK, BWHT, etc.)
 
 **Usage:**
+
 ```bash
 source "${BASH_SOURCE%/*}/../lib/common.sh"
 init_shell
@@ -34,9 +37,11 @@ log "Starting operation..."
 ```
 
 ### browser-utils.sh
+
 Browser profile discovery and SQLite database optimization functions.
 
 **Functions:**
+
 - `vacuum_sqlite()` - Vacuum single SQLite database and return bytes saved
 - `clean_sqlite_dbs()` - Clean all SQLite databases in current directory
 - `ensure_not_running()` - Wait for processes to exit, kill if timeout
@@ -48,6 +53,7 @@ Browser profile discovery and SQLite database optimization functions.
 - `mail_bases_for()` - List Thunderbird/mail client base directories
 
 **Usage:**
+
 ```bash
 source "${BASH_SOURCE%/*}/../lib/browser-utils.sh"
 
@@ -60,9 +66,11 @@ done < <(mozilla_bases_for "$USER")
 ```
 
 ### pkg-utils.sh
+
 Package manager detection and operations with caching.
 
 **Functions:**
+
 - `detect_pkg_manager()` - Detect and cache package manager (paru/yay/pacman/apt)
 - `get_pkg_manager()` - Get cached package manager name
 - `get_aur_opts()` - Get cached AUR helper options
@@ -77,6 +85,7 @@ Package manager detection and operations with caching.
 - `setup_build_env()` - Setup optimized build environment for native compilation
 
 **Usage:**
+
 ```bash
 source "${BASH_SOURCE%/*}/../lib/pkg-utils.sh"
 
@@ -126,6 +135,7 @@ The following scripts have been refactored to use these shared libraries:
 ## Future Work
 
 Candidates for additional refactoring:
+
 - `Cachyos/Scripts/Fix.sh` - Contains duplicated browser and package manager functions
 - `RaspberryPi/Scripts/Fix.sh` - Similar duplication patterns
 - `Cachyos/Updates.sh` - Could use pkg-utils functions

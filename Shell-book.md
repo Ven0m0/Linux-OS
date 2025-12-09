@@ -133,7 +133,9 @@ Usage: date "format"
 Prints either current date 'day/month-hour-minute' or whatever you give it via 'date
 
 <arg>
+
 '
+
 See: 'man strftime' for format.
 
 ```bash
@@ -485,10 +487,15 @@ $ extract ~/projects/pure-bash/README.md '```bash' '```'
 | `${VAR:OFFSET:LENGTH}` | Get substring from `N` character to `N` character.
 
 <br>
+
 (`${VAR:10:10}`: Get sub-string from char `10` to char `20`) |
+
 | `${VAR:: OFFSET}` | Get first `N` chars from variable. |
+
 | `${VAR:: -OFFSET}` | Remove last `N` chars from variable. |
+
 | `${VAR: -OFFSET}` | Get last `N` chars from variable. |
+
 | `${VAR:OFFSET:-OFFSET}` | Cut first `N` chars and last `N` chars. | `bash 4.2+` |
 
 ### Case Modification

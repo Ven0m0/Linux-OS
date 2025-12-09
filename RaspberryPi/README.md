@@ -1,6 +1,7 @@
 # 
 
 <img height="30" src="https://cdn.freebiesupply.com/logos/large/2x/raspberry-pi-logo-png-transparent.png" alt="Pi">
+
 Raspberry Pi Related Stuff
 
 ## Folder Structure
@@ -124,18 +125,20 @@ curl -fsSL https://get.casaos.io/update | sudo bash
 
 <details>
 
-  <summary><b>Install</b></summary>
+<summary><b>Install</b></summary>
 
 ```bash
 curl -L https://setup.runtipi.io | bash
 ```
 
 </details>
+
 - [cosmos](https://cosmos-cloud.io)
 
 <details>
 
-  <summary><b>Install</b></summary>
+<summary><b>Install</b></summary>
+
 [https://cosmos-cloud.io/doc/1%20index/#automatic-installation](https://cosmos-cloud.io/doc/1%20index/#automatic-installation)
 
 ```bash
@@ -149,6 +152,7 @@ curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s -- --dry-run
 # If you are happy with the result, you can run the command
 curl -fsSL https://cosmos-cloud.io/get.sh | sudo -E bash -s
 ```
+
 One liner:
 
 ```bash
@@ -156,12 +160,14 @@ env COSMOS_HTTP_PORT=80 COSMOS_HTTPS_PORT=443 curl -fsSL https://cosmos-cloud.io
 ```
 
 </details>
+
 - [yunohost](https://yunohost.org)
+
 - [Homepage docker](https://github.com/gethomepage/homepage)
 
 <details>
 
-  <summary><b>Install</b></summary>
+<summary><b>Install</b></summary>
 
 ```bash
 docker run --name homepage \
@@ -176,7 +182,9 @@ docker run --name homepage \
 ```
 
 </details>
+
 - [ShellHub](https://www.shellhub.io)
+
 - [cloudflare tunnel](https://github.com/phipcode/phiptechblog/tree/main/cloudflaretunnel)
 
 </details>

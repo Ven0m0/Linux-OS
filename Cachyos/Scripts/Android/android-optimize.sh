@@ -453,21 +453,15 @@ EOF
 
 task_permissions_toml(){
   sec "Applying permissions from TOML"
-  [[ -f $CONFIG_FILE ]] || {
-    warn "Config not found: $CONFIG_FILE"
-    return
-  }
-
+  [[ -f $CONFIG_FILE ]] || { warn "Config not found: $CONFIG_FILE"; return; }
   local in=0 line key vals batch=""
   while IFS= read -r line; do
     [[ -z $line || $line =~ ^[[:space:]]*# ]] && continue
     if [[ $line =~ ^\[([^]]+)\]$ ]]; then
-      in=$([[ ${BASH_REMATCH[1]} == permission ]] && echo 1 || echo 0)
-      continue
+      in=$([[ ${BASH_REMATCH[1]} == permission ]] && echo 1 || echo 0); continue
     fi
     [[ $in -eq 0 ]] && continue
-
-    if [[ $line =~ ^([^=[:space:]]+)[[:space:]]*=[[:space:]]*(. +)$ ]]; then
+    if [[ $line =~ ^([^=[:space:]]+)[[:space:]]*=[[:space:]]*(.+)$ ]]; then
       key="${BASH_REMATCH[1]}"
       vals="${BASH_REMATCH[2]}"
       vals="${vals// /}"
@@ -481,11 +475,9 @@ task_permissions_toml(){
       done
     fi
   done < "$CONFIG_FILE"
-
   [[ -n $batch ]] && ash <<< "$batch"
   ok "Permissions applied"
 }
-
 cmd_device_all(){
   device_ok || return 1
   task_maint

@@ -1,0 +1,23 @@
+# Pacman
+
+
+# Aur
+
+
+# Flatpak
+
+
+
+# Appimages
+# am -e 
+liriliri/rem rem
+
+
+# Cargo
+
+
+# NPM
+
+
+# PIP
+

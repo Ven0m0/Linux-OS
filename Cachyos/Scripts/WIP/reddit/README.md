@@ -20,3 +20,9 @@ sudo pacman -S python-praw python-httpx python-orjson python-uvloop
 
 # Sherlock
 paru -S sherlock-git
+
+# Using uv (recommended)
+uv pip install praw httpx sherlock-project orjson uvloop
+# Or pip
+pip3 install praw httpx sherlock-project orjson uvloop
+```

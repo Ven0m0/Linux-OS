@@ -12,7 +12,7 @@ RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
 has(){ command -v "$1" &>/dev/null; }
 log(){ printf '%s\n' "${BLU}→${DEF} $*"; }
 warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
-err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
+err(){ printf '%s\n' "${RED}ERROR:${DEF} $*">&2; }
 die(){ err "$*"; exit "${2:-1}"; }
 
 # Require cargo

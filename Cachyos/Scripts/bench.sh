@@ -24,8 +24,8 @@ export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 has(){ command -v -- "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "$*"; }
-warn(){ xecho "${YLW}WARN:${DEF} $*" >&2; }
-err(){ xecho "${RED}ERROR:${DEF} $*" >&2; }
+warn(){ xecho "${YLW}WARN:${DEF} $*">&2; }
+err(){ xecho "${RED}ERROR:${DEF} $*">&2; }
 die(){ err "$*"; exit "${2:-1}"; }
 
 # Override HOME for SUDO_USER context
@@ -154,7 +154,7 @@ benchmark_copy(){
 
     if [[ -f /tmp/hf-"$name".json ]]; then
       jq -c '{cmd: .command, mean: .results[0].mean, stddev: .results[0].stddev}' \
-        /tmp/hf-"$name".json >> "$LOG"
+        /tmp/hf-"$name".json>> "$LOG"
       rm -f /tmp/hf-"$name".json
     fi
   else
@@ -168,7 +168,7 @@ benchmark_copy(){
 # Initialize JSON log if needed
 if [[ $EXPORT_JSON -eq 1 ]]; then
   LOG="bench-results-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
-  : > "$LOG" # Truncate file using : as no-op command
+  :> "$LOG" # Truncate file using : as no-op command
   log "${GRN}Results will be exported to: $LOG${DEF}"
 fi
 

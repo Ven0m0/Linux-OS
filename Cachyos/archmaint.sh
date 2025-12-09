@@ -30,7 +30,7 @@ print_banner(){
   else
     for i in "${!lines[@]}"; do
       local segment_index=$((i * (segments - 1) / (line_count - 1)))
-      ((segment_index >= segments)) && segment_index=$((segments - 1))
+      ((segment_index>= segments)) && segment_index=$((segments - 1))
       printf '%s%s%s\n' "${flag_colors[segment_index]}" "${lines[i]}" "$DEF"
     done
   fi
@@ -236,7 +236,7 @@ update_shells(){
 
   # Update basher if installed
   if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null; then
-    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null; then
+    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD>/dev/null; then
       log "✅${GRN}Updated Basher${DEF}"
     else
       log "⚠️${YLW}Basher pull failed${DEF}"

@@ -66,7 +66,7 @@ detect_pkg_manager(){
 # Usage: pkgmgr=$(get_pkg_manager)
 get_pkg_manager(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
+    detect_pkg_manager>/dev/null
   fi
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
@@ -75,7 +75,7 @@ get_pkg_manager(){
 # Usage: mapfile -t aur_opts < <(get_aur_opts)
 get_aur_opts(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
+    detect_pkg_manager>/dev/null
   fi
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }

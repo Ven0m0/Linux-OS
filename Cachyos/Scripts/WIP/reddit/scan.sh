@@ -21,8 +21,8 @@ args=()
 [[ ${REDDIT_USER_AGENT:-} ]] && args+=(--user-agent "$REDDIT_USER_AGENT")
 
 # Check deps
-command -v python3 &>/dev/null || { printf 'python3 not found\n' >&2; exit 1; }
-[[ -f $SCANNER ]] || { printf 'Scanner not found: %s\n' "$SCANNER" >&2; exit 1; }
+command -v python3 &>/dev/null || { printf 'python3 not found\n'>&2; exit 1; }
+[[ -f $SCANNER ]] || { printf 'Scanner not found: %s\n' "$SCANNER">&2; exit 1; }
 
 # Run
 exec python3 "$SCANNER" "${args[@]}" "$@"

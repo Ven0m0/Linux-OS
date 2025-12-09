@@ -15,8 +15,8 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 # Helpers
 has(){ command -v -- "$1" &>/dev/null; }
 log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
-warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
-err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
+warn(){ printf '%b\n' "${YLW}⚠${DEF} $*">&2; }
+err(){ printf '%b\n' "${RED}✗${DEF} $*">&2; }
 die(){ err "$1"; exit "${2:-1}"; }
 # Config
 declare -A cfg=([dry_run]=0 [interactive]=1 [aggressive]=0 [disk_before]=0 [disk_after]=0)
@@ -86,7 +86,7 @@ parse_args(){
 # dpkg & Documentation
 configure_dpkg_nodoc(){
   log "Configuring dpkg to exclude docs/man/locales"
-  sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null << 'EOF'
+  sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc>/dev/null << 'EOF'
 path-exclude /usr/share/doc/*
 path-exclude /usr/share/help/*
 path-exclude /usr/share/man/*
@@ -114,19 +114,19 @@ purge_packages(){
   run localepurge
   local doc_pkgs
   mapfile -t doc_pkgs < <(dpkg --list | awk '/-doc$/ {print $2}')
-  ((${#doc_pkgs[@]} > 0)) && sudo apt-get purge -y "${doc_pkgs[@]}" || :
+  ((${#doc_pkgs[@]}> 0)) && sudo apt-get purge -y "${doc_pkgs[@]}" || :
   sudo apt-get purge -y '*texlive*' 2>/dev/null || :
   local current_kernel
   current_kernel=$(uname -r)
   local old_kernels
   mapfile -t old_kernels < <(dpkg --list | awk -v ck="$current_kernel" '$2 ~ /^linux-image-.*-generic$/ && $2 != ck {print $2}')
-  ((${#old_kernels[@]} > 0)) && {
+  ((${#old_kernels[@]}> 0)) && {
     log "Purging old kernels (keeping ${current_kernel})"
     sudo apt-get purge -y "${old_kernels[@]}"
   }
   local orphaned
   mapfile -t orphaned < <(dpkg -l | awk '/^rc/ {print $2}')
-  ((${#orphaned[@]} > 0)) && sudo apt-get purge -y "${orphaned[@]}" || :
+  ((${#orphaned[@]}> 0)) && sudo apt-get purge -y "${orphaned[@]}" || :
 }
 purge_aggressive(){
   ((cfg[aggressive] == 0)) && return 0
@@ -141,7 +141,7 @@ cleanup_apt(){
   sudo apt-get autoclean -y
   sudo apt-get clean -y
   local orphans
-  while mapfile -t orphans < <(deborphan) && ((${#orphans[@]} > 0)); do sudo apt-get purge -y "${orphans[@]}"; done
+  while mapfile -t orphans < <(deborphan) && ((${#orphans[@]}> 0)); do sudo apt-get purge -y "${orphans[@]}"; done
 }
 debloat(){
   systemctl disable --now systemd-binfmt proc-sys-fs-binfmt_misc.automount sys-fs-fuse-connections.mount sys-kernel-config.mount
@@ -161,7 +161,7 @@ clean_caches(){
   run rm -f ~/.{bash,python}_history 2>/dev/null || :
   sudo rm -f /root/.{bash,python}_history 2>/dev/null || :
   history -c 2>/dev/null || :
-  while IFS= read -r logfile; do sudo truncate -s 0 "$logfile" 2>/dev/null || sudo sh -c ": > \"$logfile\"" 2>/dev/null || :; done < <(find /var/log -type f)
+  while IFS= read -r logfile; do sudo truncate -s 0 "$logfile" 2>/dev/null || sudo sh -c ":> \"$logfile\"" 2>/dev/null || :; done < <(find /var/log -type f)
 }
 # Privacy & Security Hardening
 clean_crash_dumps(){
@@ -230,7 +230,7 @@ disable_swap(){
 }
 enable_zram(){
   log "Enabling ZRAM (compressed swap in RAM)"
-  sudo tee /usr/local/bin/zram-init >/dev/null << 'ZRAMSCRIPT'
+  sudo tee /usr/local/bin/zram-init>/dev/null << 'ZRAMSCRIPT'
 #!/bin/bash
 set -euo pipefail
 CORES=$(nproc); ZRAM_SIZE_MB=${ZRAM_SIZE_MB:-2048}
@@ -238,13 +238,13 @@ modprobe zram num_devices="${CORES}"; swapoff -a 2>/dev/null || :
 MEMTOTAL=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo); SIZE=$(( (MEMTOTAL / CORES) * 1024 ))
 [[ ${ZRAM_SIZE_MB} -gt 0 ]] && SIZE=$(( ZRAM_SIZE_MB * 1024 * 1024 / CORES ))
 for ((CORE=0; CORE<CORES; CORE++)); do
-  echo "${SIZE}" > /sys/block/zram${CORE}/disksize; mkswap /dev/zram${CORE} &>/dev/null; swapon -p 5 /dev/zram${CORE}
+  echo "${SIZE}"> /sys/block/zram${CORE}/disksize; mkswap /dev/zram${CORE} &>/dev/null; swapon -p 5 /dev/zram${CORE}
 done
-echo 1 > /sys/kernel/mm/ksm/run
+echo 1> /sys/kernel/mm/ksm/run
 ZRAMSCRIPT
   sudo chmod +x /usr/local/bin/zram-init
   sudo /usr/local/bin/zram-init
-  sudo tee /etc/systemd/system/zram-init.service >/dev/null << 'EOF'
+  sudo tee /etc/systemd/system/zram-init.service>/dev/null << 'EOF'
 [Unit]
 Description=ZRAM compressed swap initialization
 After=local-fs.target

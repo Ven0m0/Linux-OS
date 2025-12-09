@@ -18,8 +18,8 @@ export HISTCONTROL="ignoredups:ignorespace"
 set -o notify
 # Run background jobs at a lower priority (also disables the bell)
 set -o bgnice
-# Prevent accidental overwrites when redirecting output with >
-# Use >| to force an overwrite.
+# Prevent accidental overwrites when redirecting output with>
+# Use>| to force an overwrite.
 set -o noclobber
 # Function to create a directory and move into it
 set +o nohup # disable nohup mode
@@ -80,11 +80,11 @@ myip(){
 # Simulate 'man' command using --help output
 man(){
   [[ -z $1 ]] && {
-    echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2
+    echo -e "What manual page do you want?\nFor example, try 'man ls'.">&2
     return 1
   }
   "$1" --help &>/dev/null && "$1" --help 2>&1 || {
-    echo "No manual entry for $1" >&2
+    echo "No manual entry for $1">&2
     return 16
   }
 }

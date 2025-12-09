@@ -12,7 +12,7 @@ if [[ -d "${HOME}/.steam/steam" ]]; then
 elif [[ -d "$XDG_DATA_HOME/Steam" ]]; then
   steam_root="$XDG_DATA_HOME/Steam"
 else
-  printf "Error: Steam installation not found.\n" >&2
+  printf "Error: Steam installation not found.\n">&2
   exit 1
 fi
 printf "Found Steam at: %s\n" "$steam_root"
@@ -29,7 +29,7 @@ printf "Stopping Steam processes...\n"
 pkill -15 -x "${kill_procs[@]}" 2>/dev/null || true
 # Wait up to 5 seconds for them to exit gracefully
 for i in {1..10}; do
-  if ! pgrep -x "${kill_procs[@]}" >/dev/null; then
+  if ! pgrep -x "${kill_procs[@]}">/dev/null; then
     break
   fi
   sleep 0.5
@@ -38,7 +38,7 @@ done
 pkill -9 -x "${kill_procs[@]}" 2>/dev/null || true
 printf "Steam stopped.\n"
 # 4. Clean Steam Logs (Faster method)
-# Using > file is faster than find+truncate for single files,
+# Using> file is faster than find+truncate for single files,
 # but for directories of logs, rm is cleanest.
 readonly logs=("$steam_root/logs" "$steam_root/dumps")
 printf "Cleaning Steam logs...\n"

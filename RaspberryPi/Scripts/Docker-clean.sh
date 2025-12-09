@@ -33,13 +33,13 @@ ask_user_for_confirmation(){
   cat << EOF
 ==============================================
 This script reclaims disk space by removing stale and unused Docker data:
-  > removes stopped containers
-  > removes orphan (dangling) images layers
-  > removes unused volumes
-  > removes Docker build cache
-  > shrinks the "Docker.raw" file on MacOS
-  > restarts the Docker engine
-  > prints Docker disk usage
+ > removes stopped containers
+ > removes orphan (dangling) images layers
+ > removes unused volumes
+ > removes Docker build cache
+ > shrinks the "Docker.raw" file on MacOS
+ > restarts the Docker engine
+ > prints Docker disk usage
 ==============================================
 EOF
   [[ $DONT_ASK_CONFIRMATION -eq 1 ]] && return

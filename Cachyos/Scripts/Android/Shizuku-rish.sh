@@ -18,7 +18,7 @@ if [[ ! -f $DEX ]]; then
 fi
 
 # Create a Shizuku script file with optimized port detection
-tee "${BIN}/shizuku" >/dev/null << 'EOF'
+tee "${BIN}/shizuku">/dev/null << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Common wireless debugging ports (try these first for speed)
@@ -27,7 +27,7 @@ COMMON_PORTS=(37373 40181 42135 44559)
 # Fast port checking function using /dev/tcp (no external tools needed)
 check_port(){
   local port="$1"
-  timeout 0.5 bash -c "echo >/dev/tcp/127.0.0.1/$port" 2>/dev/null && return 0 || return 1
+  timeout 0.5 bash -c "echo>/dev/tcp/127.0.0.1/$port" 2>/dev/null && return 0 || return 1
 }
 
 # Try common ports first (much faster than scanning)
@@ -77,7 +77,7 @@ EOF
 dex="${HOME}/rish_shizuku.dex"
 
 # Create a Rish script file
-tee "${BIN}/rish" >/dev/null << EOF
+tee "${BIN}/rish">/dev/null << EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
 [[ -z "\$RISH_APPLICATION_ID" ]] && export RISH_APPLICATION_ID="com.termux"

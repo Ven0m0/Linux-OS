@@ -18,14 +18,16 @@ check_deps(){
   command -v sherlock &>/dev/null || missing+=(sherlock)
   python3 -c "import praw" 2>/dev/null || missing+=(python-praw)
   python3 -c "import httpx" 2>/dev/null || missing+=(python-httpx)
+  python3 -c "import orjson" 2>/dev/null || missing+=(python-orjson)
+  python3 -c "import uvloop" 2>/dev/null || missing+=(python-uvloop)
   if ((${#missing[@]} > 0)); then
     printf 'Missing dependencies: %s\n' "${missing[*]}" >&2
     printf '\nInstall on Arch:\n' >&2
-    printf '  pacman -S python-praw python-httpx\n' >&2
+    printf '  pacman -S python-praw python-httpx python-orjson python-uvloop\n' >&2
     printf '  yay -S sherlock-git\n' >&2
     return 1
   fi
 }
 printf 'Checking dependencies...\n'
 check_deps || exit 1
-# ... (rest of the script remains identical as args are compatible)
+# ... rest of script is compatible ...

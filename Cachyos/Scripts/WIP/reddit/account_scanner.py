@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""Multi-source account scanner: Reddit toxicity + Sherlock OSINT.
-
-"""
+"""Multi-source account scanner: Reddit toxicity + Sherlock OSINT."""
 import argparse, asyncio, csv, shutil, sys, time, orjson, uvloop, httpx, praw
 from pathlib import Path
 

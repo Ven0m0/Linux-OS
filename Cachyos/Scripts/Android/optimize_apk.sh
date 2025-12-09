@@ -31,7 +31,7 @@ err(){ printf '[ERROR] %s\n' "$*" >&2; }
 die(){ err "$1"; exit "${2:-1}"; }
 
 # Check required tools
-has(){ command -v "$1" &> /dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
 check_tools(){
   local missing=0
@@ -70,9 +70,9 @@ log "[1/10] Decoding APK with apktool..."
 
 log "[2/10] Stripping unused resources..."
 # Remove extra densities (keep only mdpi)
-find "$WORKDIR/src/res" -maxdepth 1 -type d -name "drawable-*" ! -name "drawable-mdpi" -exec rm -rf {} + 2> /dev/null || :
+find "$WORKDIR/src/res" -maxdepth 1 -type d -name "drawable-*" ! -name "drawable-mdpi" -exec rm -rf {} + 2>/dev/null || :
 # Remove raw resources and assets if present
-rm -rf "$WORKDIR/src/res/raw/" "$WORKDIR/src/assets/" 2> /dev/null || :
+rm -rf "$WORKDIR/src/res/raw/" "$WORKDIR/src/assets/" 2>/dev/null || :
 
 log "[3/10] Rebuilding stripped APK..."
 "$APKTOOL" b "$WORKDIR/src" -o "$WORKDIR/stripped.apk" || die "Failed to rebuild APK"
@@ -119,7 +119,7 @@ EOL
     cp "$WORKDIR/classes.dex" "$WORKDIR/apk_unpack/"
     cd "$WORKDIR/apk_unpack" || exit
     zip -q -r ../repackaged.apk .
-    cd - > /dev/null || die "Failed to return from working directory"
+    cd - >/dev/null || die "Failed to return from working directory"
   else
     log "dx not found, skipping ProGuard integration"
     cp "$WORKDIR/redexed.apk" "$WORKDIR/repackaged.apk"
@@ -130,7 +130,7 @@ else
 fi
 
 log "[8/10] Aligning APK..."
-"$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk" > /dev/null || die "Failed to align APK"
+"$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk" >/dev/null || die "Failed to align APK"
 
 log "[9/10] Signing APK..."
 if [[ -f $KEYSTORE_PATH ]]; then
@@ -148,16 +148,16 @@ log "[10/10] Optimizing PNGs and JPEGs..."
 # Unzip to optimize resources
 unzip -q "$WORKDIR/signed.apk" -d "$WORKDIR/final_unpack" || die "Failed to unzip signed APK"
 if has "$PNGCRUSH"; then
-  find "$WORKDIR/final_unpack/res" -iname "*.png" -exec "$PNGCRUSH" -q -rem alla -brute {} {}.opt \; -exec mv {}.opt {} + 2> /dev/null || :
+  find "$WORKDIR/final_unpack/res" -iname "*.png" -exec "$PNGCRUSH" -q -rem alla -brute {} {}.opt \; -exec mv {}.opt {} + 2>/dev/null || :
 fi
 if has "$JPEGOPTIM"; then
-  find "$WORKDIR/final_unpack/res" -iname "*.jpg" -exec "$JPEGOPTIM" --strip-all {} + 2> /dev/null || :
+  find "$WORKDIR/final_unpack/res" -iname "*.jpg" -exec "$JPEGOPTIM" --strip-all {} + 2>/dev/null || :
 fi
 
 # Rezip final APK
 cd "$WORKDIR/final_unpack" || die "Failed to enter final unpack directory"
-"$SEVENZIP" a -tzip -mx=9 "../output.apk" . > /dev/null || die "Failed to create final APK"
-cd - > /dev/null || die "Failed to return from working directory"
+"$SEVENZIP" a -tzip -mx=9 "../output.apk" . >/dev/null || die "Failed to create final APK"
+cd - >/dev/null || die "Failed to return from working directory"
 
 mv "$WORKDIR/output.apk" "$OUTPUT_APK" || die "Failed to move output APK"
 log "✅ Optimized APK created at: $OUTPUT_APK"

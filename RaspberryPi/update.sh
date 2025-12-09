@@ -6,14 +6,14 @@ export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRON
 # Colors
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m'
 # Core helper functions
-has(){ command -v -- "$1" &> /dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 # DietPi functions
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :; }
+load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 # APT functions
 clean_apt_cache(){
-  sudo apt-get clean -y 2> /dev/null || :
-  sudo apt-get autoclean -y 2> /dev/null || :
-  sudo apt-get autoremove --purge -y 2> /dev/null || :
+  sudo apt-get clean -y 2>/dev/null || :
+  sudo apt-get autoclean -y 2>/dev/null || :
+  sudo apt-get autoremove --purge -y 2>/dev/null || :
 }
 run_apt(){
   yes | sudo apt-get -y --allow-releaseinfo-change \
@@ -62,7 +62,7 @@ if has apt-fast; then
   yes | sudo apt-fast upgrade -y --no-install-recommends || :
   yes | sudo apt-fast dist-upgrade -y --no-install-recommends || :
   clean_apt_cache
-  sudo apt-fast autopurge -yq &> /dev/null || :
+  sudo apt-fast autopurge -yq &>/dev/null || :
 elif has nala; then
   yes | sudo nala upgrade --no-install-recommends
   sudo nala clean
@@ -75,7 +75,7 @@ else
   clean_apt_cache || :
 fi
 # Check's the broken packages and fix them
-sudo dpkg --configure -a &> /dev/null
+sudo dpkg --configure -a &>/dev/null
 # Other
 if has dietpi-update || [[ -x /boot/dietpi/dietpi-update ]]; then
   sudo dietpi-update 1 || sudo /boot/dietpi/dietpi-update 1
@@ -83,4 +83,4 @@ fi
 has pihole && yes | sudo pihole -up
 has rpi-eeprom-update && sudo rpi-eeprom-update -a
 export PRUNE_MODULES=1 SKIP_VCLIBS=1 SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0
-has rpi-update && sudo rpi-update 2> /dev/null || :
+has rpi-update && sudo rpi-update 2>/dev/null || :

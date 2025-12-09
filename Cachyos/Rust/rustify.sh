@@ -6,7 +6,7 @@ sudo -v
 
 # Optimization wrapper
 cargo_install(){
-  if command -v cargo-binstall &> /dev/null; then
+  if command -v cargo-binstall &>/dev/null; then
     cargo binstall -y --locked "$@" || cargo install --locked "$@"
   else
     cargo install --locked "$@"
@@ -43,10 +43,10 @@ cargo install minhtml
 cargo install kelpsget
 # Update-alternatives for arch
 sudo pacman --needed --noconfirm -S zenity
-command -v update-alternatives &> /dev/null || cargo_install --git "https://github.com/fthomys/update-alternatives"
+command -v update-alternatives &>/dev/null || cargo_install --git "https://github.com/fthomys/update-alternatives"
 pbin="$(command -v update-alternatives || echo "$HOME"/.cargo/bin/update-alternatives)"
 sudo ln -sf "$pbin" "/usr/local/bin/${pbin##*/}"
-sudo tee "/etc/pacman.d/hooks/update-alternatives.hook" > /dev/null << 'EOF'
+sudo tee "/etc/pacman.d/hooks/update-alternatives.hook" >/dev/null << 'EOF'
 [Trigger]
 Operation = Install
 Operation = Upgrade

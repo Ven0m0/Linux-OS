@@ -8,11 +8,11 @@ cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 # apt-fuzz — optimized sk/fzf TUI for apt/nala/apt-fast on Raspberry Pi/DietPi
 # Features: fuzzy search, cached previews, multi-select, backup/restore, prefetching
 # Inlined common functions
-has(){ command -v -- "$1" &> /dev/null; }
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :; }
+has(){ command -v -- "$1" &>/dev/null; }
+load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 find_with_fallback(){
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
-  shift 4 2> /dev/null || shift $#
+  shift 4 2>/dev/null || shift $#
   if has fdf; then
     fdf -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
   elif has fd; then
@@ -27,20 +27,20 @@ find_with_fallback(){
 CACHE_DIR="${XDG_CACHE_HOME%/}/apkg"
 CACHE_INDEX="${CACHE_DIR}/.index"
 : "${APT_FUZZ_CACHE_TTL:=86400}" "${APT_FUZZ_CACHE_MAX_BYTES:=52428800}" "${APT_FUZZ_PREFETCH_JOBS:=4}"
-mkdir -p -- "$CACHE_DIR" &> /dev/null
+mkdir -p -- "$CACHE_DIR" &>/dev/null
 trap 'ps -o pid= --ppid=$$ 2>/dev/null | xargs -r kill 2>/dev/null; exit' EXIT SIGINT SIGTERM
 # Tool detection
 has fzf || exit 1
 find_cache_files(){ :; }
 if has fd; then
   FIND_TOOL="fd"
-  find_cache_files(){ fd -0 -d 1 -tf . "$CACHE_DIR" 2> /dev/null; }
+  find_cache_files(){ fd -0 -d 1 -tf . "$CACHE_DIR" 2>/dev/null; }
 elif has fdfind; then
   FIND_TOOL="fdfind"
-  find_cache_files(){ fdfind -0 -d 1 -tf . "$CACHE_DIR" 2> /dev/null; }
+  find_cache_files(){ fdfind -0 -d 1 -tf . "$CACHE_DIR" 2>/dev/null; }
 else
   FIND_TOOL="find"
-  find_cache_files(){ find "$CACHE_DIR" -maxdepth 1 -type f -print0 2> /dev/null; }
+  find_cache_files(){ find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null; }
 fi
 FINDER_OPTS=(--layout=reverse-list --no-hscroll)
 [[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && read -r -a FINDER_OPTS <<< "$APT_FUZZ_FINDER_OPTS"
@@ -65,10 +65,10 @@ byte_to_human(){
 # Index-based cache management
 _update_cache_index(){
   local tmp=$(mktemp "${CACHE_INDEX}.XXXXXX")
-  find_cache_files | xargs -0 -r stat -c '%n|%s|%Y' > "$tmp" 2> /dev/null || :
+  find_cache_files | xargs -0 -r stat -c '%n|%s|%Y' > "$tmp" 2>/dev/null || :
   mv -f "$tmp" "$CACHE_INDEX"
 }
-_cache_info_from_index(){ awk -F'|' 'BEGIN{t=f=o=0}{f++;t+=$2;if(!o||$3<o)o=$3}END{print t,f,o}' "$CACHE_INDEX" 2> /dev/null || echo "0 0 0"; }
+_cache_info_from_index(){ awk -F'|' 'BEGIN{t=f=o=0}{f++;t+=$2;if(!o||$3<o)o=$3}END{print t,f,o}' "$CACHE_INDEX" 2>/dev/null || echo "0 0 0"; }
 evict_old_cache(){
   [[ ! -s $CACHE_INDEX ]] && _update_cache_index
   [[ ! -s $CACHE_INDEX ]] && return
@@ -96,32 +96,32 @@ _generate_preview(){
   out="$(_cache_file_for "$pkg")"
   tmp="${out}.tmp.$$"
   {
-    apt-cache show "$pkg" 2> /dev/null || :
+    apt-cache show "$pkg" 2>/dev/null || :
     printf '\n--- changelog (first 200 lines) ---\n'
-    apt-get changelog "$pkg" 2> /dev/null | sed -n '1,200p' || :
-  } > "$tmp" 2> /dev/null
-  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2> /dev/null || :
+    apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :
+  } > "$tmp" 2>/dev/null
+  sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2>/dev/null || :
   mv -f "$tmp" "$out"
-  chmod 644 "$out" 2> /dev/null || :
+  chmod 644 "$out" 2>/dev/null || :
 }
 _cached_preview_print(){
   local pkg="$1" f now mtime
   f="$(_cache_file_for "$pkg")"
   now=$(date +%s)
-  mtime=$(stat -c %Y -- "$f" 2> /dev/null || echo 0)
+  mtime=$(stat -c %Y -- "$f" 2>/dev/null || echo 0)
   if ((now - mtime < APT_FUZZ_CACHE_TTL)); then
-    cat "$f" 2> /dev/null || echo "(no preview)"
+    cat "$f" 2>/dev/null || echo "(no preview)"
   else
     _generate_preview "$pkg"
-    cat "$f" 2> /dev/null || echo "(no preview)"
+    cat "$f" 2>/dev/null || echo "(no preview)"
   fi
 }
 export -f _cached_preview_print _cache_file_for _generate_preview
 # Background prefetch
 _prefetch_lists(){
-  (apt-cache pkgnames > "$CACHE_DIR/pkgnames.list" 2> /dev/null) &
-  (dpkg-query -W -f='${Package}\n' > "$CACHE_DIR/installed.list" 2> /dev/null) &
-  (apt list --upgradable 2> /dev/null | awk -F/ 'NR>1{print $1}' > "$CACHE_DIR/upgradable.list") &
+  (apt-cache pkgnames > "$CACHE_DIR/pkgnames.list" 2>/dev/null) &
+  (dpkg-query -W -f='${Package}\n' > "$CACHE_DIR/installed.list" 2>/dev/null) &
+  (apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}' > "$CACHE_DIR/upgradable.list") &
 }
 _prefetch_previews(){
   wait
@@ -129,14 +129,14 @@ _prefetch_previews(){
   while IFS= read -r pkg; do
     ((i = i % APT_FUZZ_PREFETCH_JOBS, i++ == 0)) && wait
     _generate_preview "$pkg" &
-  done < <(head -n 200 "$CACHE_DIR/installed.list" 2> /dev/null)
+  done < <(head -n 200 "$CACHE_DIR/installed.list" 2>/dev/null)
   wait
   _update_cache_index
 }
 # Package lists
 list_all_packages(){ [[ -f $CACHE_DIR/pkgnames.list ]] && cat "$CACHE_DIR/pkgnames.list" || apt-cache pkgnames; }
 list_installed(){ [[ -f $CACHE_DIR/installed.list ]] && cat "$CACHE_DIR/installed.list" || dpkg-query -W -f='${Package}\n'; }
-list_upgradable(){ [[ -f $CACHE_DIR/upgradable.list ]] && cat "$CACHE_DIR/upgradable.list" || apt list --upgradable 2> /dev/null | awk -F/ 'NR>1{print $1}'; }
+list_upgradable(){ [[ -f $CACHE_DIR/upgradable.list ]] && cat "$CACHE_DIR/upgradable.list" || apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}'; }
 # Manager runner
 run_mgr(){
   local action="$1"
@@ -181,7 +181,7 @@ action_menu_for_pkgs(){
     Install) run_mgr install "${pkgs[@]}" ;;
     Remove) run_mgr remove "${pkgs[@]}" ;;
     Purge) run_mgr purge "${pkgs[@]}" ;;
-    Changelog) for p in "${pkgs[@]}"; do apt-get changelog "$p" 2> /dev/null | less; done ;;
+    Changelog) for p in "${pkgs[@]}"; do apt-get changelog "$p" 2>/dev/null | less; done ;;
     Cancel) return ;;
   esac
 }

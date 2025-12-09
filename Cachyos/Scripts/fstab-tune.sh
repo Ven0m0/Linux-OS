@@ -5,7 +5,7 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 
 # Check deps early
-has(){ command -v -- "$1" &> /dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 for dep in yad findmnt blkid sed cp; do has "$dep" || {
   printf 'Missing: %s\n' "$dep"
   exit 1

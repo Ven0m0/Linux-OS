@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail;shopt -s nullglob globstar extglob;IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar extglob
+IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
 has(){ command -v "$1" &>/dev/null;}

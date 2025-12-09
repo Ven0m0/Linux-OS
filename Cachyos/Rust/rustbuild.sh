@@ -9,7 +9,7 @@ export LC_ALL=C LANG=C
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
 
 # Helpers
-has(){ command -v "$1" &> /dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 log(){ printf '%s\n' "${BLU}→${DEF} $*"; }
 warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
 err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
@@ -30,9 +30,9 @@ FD=$(command -v fd || command -v fdfind || echo "")
 find_files(){
   local pattern=$1 path=${2:-.}
   if [[ -n $FD ]]; then
-    "$FD" -H -t f "$pattern" "$path" 2> /dev/null || :
+    "$FD" -H -t f "$pattern" "$path" 2>/dev/null || :
   else
-    find "$path" -type f -name "$pattern" 2> /dev/null || :
+    find "$path" -type f -name "$pattern" 2>/dev/null || :
   fi
 }
 
@@ -88,7 +88,7 @@ main(){
   # 3. Remove unused dependencies (requires nightly)
   if has cargo-udeps; then
     log "Checking for unused dependencies..."
-    run cargo +nightly udeps --all-targets 2> /dev/null || :
+    run cargo +nightly udeps --all-targets 2>/dev/null || :
   fi
   has cargo-shear && run cargo shear || :
 

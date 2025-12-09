@@ -22,7 +22,7 @@ args=()
 [[ ${REDDIT_CLIENT_SECRET:-} ]] && args+=(--client-secret "$REDDIT_CLIENT_SECRET")
 [[ ${REDDIT_USER_AGENT:-} ]] && args+=(--user-agent "$REDDIT_USER_AGENT")
 # Check Python
-command -v python3 &> /dev/null || {
+command -v python3 &>/dev/null || {
   printf 'python3 not found\n' >&2
   exit 1
 }

@@ -30,7 +30,7 @@ while [[ $# -gt 0 ]]; do
 done
 # Asks user for confirmation interactively
 ask_user_for_confirmation(){
-  cat << EOF
+  cat <<EOF
 ==============================================
 This script reclaims disk space by removing stale and unused Docker data:
  > removes stopped containers

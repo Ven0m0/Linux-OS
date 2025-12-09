@@ -19,9 +19,12 @@ fi
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "${YLW}${BLD}[!]${DEF} $*">&2; }
-err(){ xecho "${RED}${BLD}[-]${DEF} $*">&2; }
-die(){ err "$1"; exit "${2:-1}"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){
+  err "$1"
+  exit "${2:-1}"
+}
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 sec(){ printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
 
@@ -165,7 +168,7 @@ human_size(){
   local bytes="$1" scale=0
   local -a units=("B" "KB" "MB" "GB" "TB")
 
-  while ((bytes> 1024 && scale < 4)); do
+  while ((bytes > 1024 && scale < 4)); do
     bytes=$((bytes / 1024))
     ((scale++))
   done
@@ -243,7 +246,7 @@ aapt2_jar(){
 # === Android device tasks ===
 task_maint(){
   sec "Maintenance"
-  ash << 'EOF'
+  ash <<'EOF'
 sync
 cmd stats write-to-disk
 settings put global fstrim_mandatory_interval 1
@@ -270,7 +273,7 @@ task_art(){
   local jid
   jid="$(ash 'cmd jobscheduler list-jobs android 2>/dev/null' | grep -F background-dexopt | awk '{print $2}' || :)"
 
-  ash << EOF
+  ash <<EOF
 $([[ -n $jid ]] && echo "cmd jobscheduler run -f android $jid")
 cmd package compile -af --full -r cmdline -m speed
 cmd package compile -a --full -r cmdline -m speed-profile
@@ -290,7 +293,7 @@ task_block(){
 
 task_perf(){
   sec "Performance tweaks"
-  ash << 'EOF'
+  ash <<'EOF'
 setprop debug.performance. tuning 1
 setprop debug.mdpcomp.enable 1
 device_config put graphics enable_cpu_boost true
@@ -306,7 +309,7 @@ EOF
 
 task_render(){
   sec "Rendering tweaks"
-  ash << 'EOF'
+  ash <<'EOF'
 setprop debug. composition.type dyn
 setprop debug.fb.rgb565 0
 setprop debug.sf.predict_hwc_composition_strategy 1
@@ -328,7 +331,7 @@ EOF
 
 task_audio(){
   sec "Audio tweaks"
-  ash << 'EOF'
+  ash <<'EOF'
 settings put global audio. offload. video true
 settings put global audio.offload.track. enable true
 settings put global audio.offload.gapless. enabled true
@@ -339,7 +342,7 @@ EOF
 
 task_battery(){
   sec "Battery tweaks"
-  ash << 'EOF'
+  ash <<'EOF'
 settings put global dynamic_power_savings_enabled 1
 settings put global adaptive_battery_management_enabled 0
 settings put global app_auto_restriction_enabled 1
@@ -352,7 +355,7 @@ EOF
 
 task_input(){
   sec "Input/animations"
-  ash << 'EOF'
+  ash <<'EOF'
 settings put global animator_duration_scale 0.0
 settings put global transition_animation_scale 0.0
 settings put global window_animation_scale 0.0
@@ -362,7 +365,7 @@ EOF
 
 task_net(){
   sec "Network tweaks"
-  ash << 'EOF'
+  ash <<'EOF'
 cmd netpolicy set restrict-background true
 settings put global data_saver_mode 1
 settings put global mobile_data_always_on 0
@@ -374,7 +377,7 @@ EOF
 
 task_webview(){
   sec "WebView/ANGLE"
-  ash << 'EOF'
+  ash <<'EOF'
 cmd webviewupdate set-webview-implementation com.android.webview.beta
 settings put global angle_gl_driver_all_angle 1
 settings put global angle_debug_package com.android.angle
@@ -385,7 +388,7 @@ EOF
 
 task_misc(){
   sec "Misc tweaks"
-  ash << 'EOF'
+  ash <<'EOF'
 setprop debug.debuggerd.disable 1
 settings put secure USAGE_METRICS_UPLOAD_ENABLED 0
 settings put system send_security_reports 0
@@ -398,7 +401,7 @@ task_experimental(){
   sec "Experimental Tweaks (Aggressive)"
   confirm "These are aggressive experimental tweaks.  Proceed?" || return 0
 
-  ash << 'EOF'
+  ash <<'EOF'
 device_config put runtime_native_boot pin_camera false
 device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
 device_config put activity_manager set_sync_disabled_for_tests persistent
@@ -428,7 +431,7 @@ task_compile_speed(){
   for p in "${SPEED_APPS[@]}"; do
     batch+="cmd package compile -f --full -r cmdline -m speed $p"$'\n'
   done
-  ash <<< "$batch"
+  ash <<<"$batch"
 }
 
 task_compile_system(){
@@ -437,12 +440,12 @@ task_compile_system(){
   for p in "${SYSTEM_APPS[@]}"; do
     batch+="cmd package compile -f --full -r cmdline -m everything $p"$'\n'
   done
-  ash <<< "$batch"
+  ash <<<"$batch"
 }
 
 task_finalize(){
   sec "Finalize"
-  ash << 'EOF'
+  ash <<'EOF'
 am broadcast -a android.intent.action.ACTION_OPTIMIZE_DEVICE
 am broadcast -a com.android.systemui.action. CLEAR_MEMORY
 am kill-all
@@ -453,19 +456,23 @@ EOF
 
 task_permissions_toml(){
   sec "Applying permissions from TOML"
-  [[ -f $CONFIG_FILE ]] || { warn "Config not found: $CONFIG_FILE"; return; }
+  [[ -f $CONFIG_FILE ]] || {
+    warn "Config not found: $CONFIG_FILE"
+    return
+  }
   local in=0 line key vals batch=""
   while IFS= read -r line; do
     [[ -z $line || $line =~ ^[[:space:]]*# ]] && continue
     if [[ $line =~ ^\[([^]]+)\]$ ]]; then
-      in=$([[ ${BASH_REMATCH[1]} == permission ]] && echo 1 || echo 0); continue
+      in=$([[ ${BASH_REMATCH[1]} == permission ]] && echo 1 || echo 0)
+      continue
     fi
     [[ $in -eq 0 ]] && continue
     if [[ $line =~ ^([^=[:space:]]+)[[:space:]]*=[[:space:]]*(.+)$ ]]; then
       key="${BASH_REMATCH[1]}"
       vals="${BASH_REMATCH[2]}"
       vals="${vals// /}"
-      IFS=',' read -r -a arr <<< "$vals"
+      IFS=',' read -r -a arr <<<"$vals"
       for m in "${arr[@]}"; do
         case "$m" in
           dump) batch+="pm grant \"$key\" android.permission.DUMP"$'\n' ;;
@@ -474,8 +481,8 @@ task_permissions_toml(){
         esac
       done
     fi
-  done < "$CONFIG_FILE"
-  [[ -n $batch ]] && ash <<< "$batch"
+  done <"$CONFIG_FILE"
+  [[ -n $batch ]] && ash <<<"$batch"
   ok "Permissions applied"
 }
 cmd_device_all(){
@@ -515,10 +522,10 @@ cmd_cache_clean(){
   else
     local adb_cmd
     adb_cmd="${ADB_CMD:-$(detect_adb)}"
-    "$adb_cmd" shell 'pm list packages -3' 2>/dev/null | cut -d: -f2 |
-      xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &>/dev/null || :
-    "$adb_cmd" shell 'pm list packages -s' 2>/dev/null | cut -d: -f2 |
-      xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &>/dev/null || :
+    "$adb_cmd" shell 'pm list packages -3' 2>/dev/null | cut -d: -f2 \
+      | xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &>/dev/null || :
+    "$adb_cmd" shell 'pm list packages -s' 2>/dev/null | cut -d: -f2 \
+      | xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &>/dev/null || :
   fi
   ash 'pm trim-caches 128G'
   ash 'logcat -b all -c'
@@ -529,10 +536,10 @@ cmd_index_nomedia(){
   local base="${1:-/storage/emulated/0}"
   sec "Index guard (. nomedia)"
   while IFS= read -r -d '' d; do
-    :> "$d/.nomedia" 2>/dev/null || :
-    :> "$d/.noindex" 2>/dev/null || :
-    :> "$d/.metadata_never_index" 2>/dev/null || :
-    :> "$d/.trackerignore" 2>/dev/null || :
+    : >"$d/.nomedia" 2>/dev/null || :
+    : >"$d/.noindex" 2>/dev/null || :
+    : >"$d/.metadata_never_index" 2>/dev/null || :
+    : >"$d/.trackerignore" 2>/dev/null || :
   done < <(find "$base" -type d -readable -print0 2>/dev/null || :)
   ok "Index guards created"
 }
@@ -634,7 +641,7 @@ task_fs_hygiene(){
   [[ -n $ed ]] && { printf '%s\n' "$ed" | xargs -r rm -r && ((cnt++)); }
   ef="$(find "$HOME" -type f -empty 2>/dev/null || :)"
   [[ -n $ef ]] && { printf '%s\n' "$ef" | xargs -r rm && ((cnt++)); }
-  ((cnt> 0)) && ok "Removed empty dirs/files" || info "No empty dirs/files"
+  ((cnt > 0)) && ok "Removed empty dirs/files" || info "No empty dirs/files"
 }
 
 task_large_files(){
@@ -677,7 +684,7 @@ cmd_termux_full(){
 menu(){
   printf '\n%s%s=== Android Optimizer v%s ===%s\n' "$MGN" "$BLD" "$VERSION" "$DEF"
   if ((IS_TERMUX)); then
-    cat << 'EOF'
+    cat <<'EOF'
 [Device] (requires rish/Shizuku)
 1) Full device optimize (Standard)
 2) Experimental Tweaks (Aggressive)
@@ -697,7 +704,7 @@ a) AAPT2 optimize [in] [out]
 q) Quit
 EOF
   else
-    cat << 'EOF'
+    cat <<'EOF'
 1) Full device optimize (ADB)
 2) Experimental Tweaks (Aggressive)
 3) Monolith compile [mode]
@@ -742,7 +749,7 @@ interactive(){
 }
 
 usage(){
-  cat << EOF
+  cat <<EOF
 android-optimize. sh v$VERSION - Unified Android optimizer (ADB or Termux+Shizuku)
 
 Device commands:

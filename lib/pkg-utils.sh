@@ -66,7 +66,7 @@ detect_pkg_manager(){
 # Usage: pkgmgr=$(get_pkg_manager)
 get_pkg_manager(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager>/dev/null
+    detect_pkg_manager >/dev/null
   fi
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
@@ -75,7 +75,7 @@ get_pkg_manager(){
 # Usage: mapfile -t aur_opts < <(get_aur_opts)
 get_aur_opts(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager>/dev/null
+    detect_pkg_manager >/dev/null
   fi
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
@@ -110,7 +110,7 @@ pkg_install(){
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay)
+    paru | yay)
       local -a opts
       mapfile -t opts < <(get_aur_opts)
       "$pkgmgr" -S --needed --noconfirm "${opts[@]}" "$@"
@@ -118,7 +118,7 @@ pkg_install(){
     pacman)
       run_priv pacman -S --needed --noconfirm "$@"
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" install -y "$@"
       ;;
     *)
@@ -136,11 +136,11 @@ pkg_remove(){
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay|pacman)
-      run_priv pacman -Rns --noconfirm "$@" 2>/dev/null || \
-        run_priv pacman -Rn --noconfirm "$@"
+    paru | yay | pacman)
+      run_priv pacman -Rns --noconfirm "$@" 2>/dev/null \
+        || run_priv pacman -Rn --noconfirm "$@"
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" remove --purge -y "$@"
       ;;
     *)
@@ -157,10 +157,10 @@ pkg_installed(){
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay|pacman)
+    paru | yay | pacman)
       pacman -Q "$pkg" &>/dev/null
       ;;
-    apt|apt-get)
+    apt | apt-get)
       dpkg -l "$pkg" 2>/dev/null | grep -q '^ii'
       ;;
     *)
@@ -176,7 +176,7 @@ pkg_update(){
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay)
+    paru | yay)
       local -a opts
       mapfile -t opts < <(get_aur_opts)
       "$pkgmgr" -Sy --noconfirm "${opts[@]}"
@@ -184,7 +184,7 @@ pkg_update(){
     pacman)
       run_priv pacman -Sy --noconfirm
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" update
       ;;
     *)
@@ -200,7 +200,7 @@ pkg_upgrade(){
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay)
+    paru | yay)
       local -a opts
       mapfile -t opts < <(get_aur_opts)
       "$pkgmgr" -Syu --noconfirm "${opts[@]}"
@@ -208,7 +208,7 @@ pkg_upgrade(){
     pacman)
       run_priv pacman -Syu --noconfirm
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" upgrade -y
       ;;
     *)
@@ -224,12 +224,12 @@ pkg_clean(){
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay|pacman)
+    paru | yay | pacman)
       run_priv paccache -rk0 -q 2>/dev/null || :
       run_priv pacman -Scc --noconfirm 2>/dev/null || :
       has paru && paru -Scc --noconfirm 2>/dev/null || :
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" clean -y 2>/dev/null || :
       run_priv "$pkgmgr" autoclean 2>/dev/null || :
       run_priv "$pkgmgr" autoremove --purge -y 2>/dev/null || :
@@ -247,12 +247,12 @@ pkg_autoremove(){
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay|pacman)
+    paru | yay | pacman)
       local orphans
       orphans=$(pacman -Qdtq 2>/dev/null || :)
       [[ -n $orphans ]] && run_priv pacman -Rns --noconfirm "$orphans" || :
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" autoremove --purge -y
       ;;
     *)

@@ -15,7 +15,7 @@ while (($#)) && [[ $1 == -* ]]; do
     -n | --dry-run) dry=1 ;;
     -v | --verbose) verbose=1 ;;
     -h | --help)
-      cat << 'EOF'
+      cat <<'EOF'
 Usage: wbfsmv.sh [-c|--convert] [-t|--trim] [-n|--dry-run] [-v|--verbose] [target_dir]
 Options:
   -c, --convert   Convert ISO/CISO/WIA/WDF to WBFS (requires wit)
@@ -28,7 +28,7 @@ EOF
       exit 0
       ;;
     *)
-      printf 'Unknown arg: %s\n' "$1">&2
+      printf 'Unknown arg: %s\n' "$1" >&2
       exit 2
       ;;
   esac
@@ -37,23 +37,23 @@ done
 
 TARGET=${1:-.}
 [[ -d $TARGET ]] || {
-  printf 'Not a directory: %s\n' "$TARGET">&2
+  printf 'Not a directory: %s\n' "$TARGET" >&2
   exit 2
 }
 command -v dd &>/dev/null || {
-  printf 'dd required\n'>&2
+  printf 'dd required\n' >&2
   exit 1
 }
 have_wit=0
 command -v wit &>/dev/null && have_wit=1
 ((trim || convert)) && ((!have_wit)) && {
-  printf 'wit required for --convert/--trim\n'>&2
+  printf 'wit required for --convert/--trim\n' >&2
   exit 1
 }
 # map region names to wit values
 declare -A region_map=([PAL]=EUROPE [NTSC]=USA [JAP]=JAPAN [KOR]=KOREA [FREE]=FREE)
 wit_region=${region_map[${REGION^^}]:-EUROPE}
-log(){ ((verbose)) && printf '%s\n' "$*">&2 || :; }
+log(){ ((verbose)) && printf '%s\n' "$*" >&2 || :; }
 run(){ ((dry)) && log "[dry] $*" || "$@"; }
 # WBFS: ID at 0x200 (512); ISO/CISO/WIA/WDF: ID at 0x0
 get_id(){
@@ -76,10 +76,10 @@ get_title(){
 clean(){
   local s=${1//_/ }
   s=${s// / }
-  s=$(sed -E 's/[[:space:]]*\(([A-Z][a-z](,[A-Z][a-z])+)\)//g; s/[[:space:]]*\[([A-Z][a-z](,[A-Z][a-z])+)\]//g' <<< "$s")
-  s=$(sed -E 's/[[:space:]]*[\(\[][^]\)]*(\bPAL\b|\bNTSC\b|\bEurope\b|\bUSA?\b|\bJapan\b|\bAsia\b|\bWorld\b|\bRev[[:space:]]*[0-9]*\b)[^]\)]*[\)\]]//gI' <<< "$s")
-  s=$(sed -E 's/[[:space:]]*\((Europe|USA?|Japan|Asia|World|PAL|NTSC)\)//gI; s/[[:space:]]*\[(Europe|USA?|Japan|Asia|World|PAL|NTSC)\]//gI' <<< "$s")
-  s=$(sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//; s/[[:space:]\/-]+$//' <<< "$s")
+  s=$(sed -E 's/[[:space:]]*\(([A-Z][a-z](,[A-Z][a-z])+)\)//g; s/[[:space:]]*\[([A-Z][a-z](,[A-Z][a-z])+)\]//g' <<<"$s")
+  s=$(sed -E 's/[[:space:]]*[\(\[][^]\)]*(\bPAL\b|\bNTSC\b|\bEurope\b|\bUSA?\b|\bJapan\b|\bAsia\b|\bWorld\b|\bRev[[:space:]]*[0-9]*\b)[^]\)]*[\)\]]//gI' <<<"$s")
+  s=$(sed -E 's/[[:space:]]*\((Europe|USA?|Japan|Asia|World|PAL|NTSC)\)//gI; s/[[:space:]]*\[(Europe|USA?|Japan|Asia|World|PAL|NTSC)\]//gI' <<<"$s")
+  s=$(sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//; s/[[:space:]\/-]+$//' <<<"$s")
   printf '%s' "$s"
 }
 set_region(){
@@ -124,7 +124,7 @@ process_file(){
   else
     name=$(clean "${base%.*}")
     name=${name//\[$id\]/}
-    name=$(sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' <<< "$name")
+    name=$(sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' <<<"$name")
   fi
   [[ -n $name ]] || name="Unknown"
   newdir="$TARGET/${name} [${id}]"

@@ -60,10 +60,10 @@ clean_sqlite_dbs(){
   while IFS= read -r -d '' db; do
     [[ -f $db ]] || continue
     saved=$(vacuum_sqlite "$db" || printf '0')
-    ((saved> 0)) && total=$((total + saved))
+    ((saved > 0)) && total=$((total + saved))
   done < <(find . -maxdepth 2 -type f -name '*.sqlite*' -print0 2>/dev/null)
 
-  if ((total> 0)); then
+  if ((total > 0)); then
     printf '  %s\n' "${GRN:-}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF:-}"
   fi
 }
@@ -84,13 +84,13 @@ ensure_not_running(){
 
   # Show waiting message for found processes
   for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &>/dev/null && \
-      printf '  %s\n' "${YLW:-}Waiting for ${p} to exit...${DEF:-}"
+    pgrep -x -u "$USER" "$p" &>/dev/null \
+      && printf '  %s\n' "${YLW:-}Waiting for ${p} to exit...${DEF:-}"
   done
 
   # Single wait loop checking all processes with one pgrep call
   local wait_time=$timeout
-  while ((wait_time--> 0)); do
+  while ((wait_time-- > 0)); do
     pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return 0
     sleep 1
   done

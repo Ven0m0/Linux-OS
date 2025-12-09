@@ -67,7 +67,7 @@ debloat_debian(){
   msg "Disabling Popularity Contest..."
   if [[ -f /etc/popularity-contest.conf ]]; then
     if ! grep -q '^PARTICIPATE=' /etc/popularity-contest.conf; then
-      printf '%s\n' 'PARTICIPATE=no' | sudo tee -a /etc/popularity-contest.conf>/dev/null
+      printf '%s\n' 'PARTICIPATE=no' | sudo tee -a /etc/popularity-contest.conf >/dev/null
     else
       sudo sed -i 's/^PARTICIPATE=.*/PARTICIPATE=no/' /etc/popularity-contest.conf
     fi

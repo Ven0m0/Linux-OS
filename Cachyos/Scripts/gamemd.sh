@@ -25,7 +25,7 @@ echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy &>/dev/null
 sudo systemctl stop bluetooth.service
 # enable USB autosuspend
 for usb_device in /sys/bus/usb/devices/*/power/control; do
-  echo 'auto' | sudo tee "$usb_device">/dev/null
+  echo 'auto' | sudo tee "$usb_device" >/dev/null
 done
 # disable NMI watchdog
 echo 0 | sudo tee /proc/sys/kernel/nmi_watchdog
@@ -41,4 +41,5 @@ export USE_CCACHE=1
 if has gamemoderun; then
   gamemoderun
 fi
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches
+sync
+echo 3 | sudo tee /proc/sys/vm/drop_caches

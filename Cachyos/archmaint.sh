@@ -23,14 +23,14 @@ print_banner(){
   local -a lines=()
   while IFS= read -r line || [[ -n $line ]]; do
     lines+=("$line")
-  done <<< "$banner"
+  done <<<"$banner"
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
     printf '%s%s%s\n' "${flag_colors[0]}" "${lines[0]}" "$DEF"
   else
     for i in "${!lines[@]}"; do
       local segment_index=$((i * (segments - 1) / (line_count - 1)))
-      ((segment_index>= segments)) && segment_index=$((segments - 1))
+      ((segment_index >= segments)) && segment_index=$((segments - 1))
       printf '%s%s%s\n' "${flag_colors[segment_index]}" "${lines[i]}" "$DEF"
     done
   fi
@@ -38,7 +38,7 @@ print_banner(){
 }
 
 get_update_banner(){
-  cat << 'EOF'
+  cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -49,7 +49,7 @@ EOF
 }
 
 get_clean_banner(){
-  cat << 'EOF'
+  cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
@@ -236,7 +236,7 @@ update_shells(){
 
   # Update basher if installed
   if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null; then
-    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD>/dev/null; then
+    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null; then
       log "✅${GRN}Updated Basher${DEF}"
     else
       log "⚠️${YLW}Basher pull failed${DEF}"
@@ -274,8 +274,8 @@ update_python(){
     else
       log "⚠️${YLW}jq not found, using fallback method${DEF}"
       # Optimize by avoiding process substitution when possible
-      uv pip install --upgrade -r <(uv pip list --format freeze) &>/dev/null ||
-        log "⚠️${YLW}Failed to update packages${DEF}"
+      uv pip install --upgrade -r <(uv pip list --format freeze) &>/dev/null \
+        || log "⚠️${YLW}Failed to update packages${DEF}"
     fi
 
     log "🔄${BLU}Updating Python interpreters...${DEF}"
@@ -407,7 +407,7 @@ run_clean(){
   # Drop caches
   sync
   log "🔄${BLU}Dropping cache...${DEF}"
-  sudo tee /proc/sys/vm/drop_caches &>/dev/null <<< 3
+  sudo tee /proc/sys/vm/drop_caches &>/dev/null <<<3
 
   # Store and sort modprobed database
   if has modprobed-db; then
@@ -619,8 +619,8 @@ run_clean(){
     )
     clean_paths "${firefox_paths[@]}" 2>/dev/null || :
     # Firefox crashes cleanup using find (no Python overhead)
-    [[ -d "${HOME}/.mozilla/firefox" ]] &&
-      find "${HOME}/.mozilla/firefox" -type d -name 'crashes' -exec find {} -type f -delete \; 2>/dev/null || :
+    [[ -d "${HOME}/.mozilla/firefox" ]] \
+      && find "${HOME}/.mozilla/firefox" -type d -name 'crashes' -exec find {} -type f -delete \; 2>/dev/null || :
   } &
 
   # Wine cleanup (background)
@@ -709,7 +709,7 @@ trap 'exit 143' TERM
 
 #=========== CLI Interface =============
 show_usage(){
-  cat << EOF
+  cat <<EOF
 Usage: ${0##*/} [OPTIONS] COMMAND
 
 Arch Linux system maintenance script for updating and cleaning.

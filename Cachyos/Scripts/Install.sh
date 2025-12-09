@@ -11,7 +11,7 @@ has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
 die(){
-  printf '%b%s%b\n' "$RED" "$*" "$DEF">&2
+  printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2
   exit "${2:-1}"
 }
 #──────────── Setup ────────────
@@ -33,7 +33,7 @@ setup_repositories(){
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   )
   has_repo(){ grep -qF -- "$1" "$conf"; }
-  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf">/dev/null; }
+  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
@@ -96,9 +96,9 @@ Include = /etc/pacman.d/endeavouros-mirrorlist'
     msg "Adding CachyOS repo"
     local tmp
     tmp=$(mktemp -d)
-    (cd "$tmp" && curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o repo.tar.xz &&
-      tar xf repo.tar.xz && cd cachyos-repo && chmod +x cachyos-repo.sh &&
-      sudo bash cachyos-repo.sh) || warn "CachyOS repo setup failed"
+    (cd "$tmp" && curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o repo.tar.xz \
+      && tar xf repo.tar.xz && cd cachyos-repo && chmod +x cachyos-repo.sh \
+      && sudo bash cachyos-repo.sh) || warn "CachyOS repo setup failed"
     rm -rf "$tmp"
   fi
   # Sync if repos were added
@@ -110,17 +110,17 @@ Include = /etc/pacman.d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 init_system(){
   msg "Initializing system"
-  localectl set-locale C.UTF-8>/dev/null
+  localectl set-locale C.UTF-8 >/dev/null
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
   [[ -d ~/.gnupg ]] && chmod -R 700 ~/.gnupg
-  ssh-keyscan -H aur.archlinux.org github.com>> ~/.ssh/known_hosts 2>/dev/null || :
+  ssh-keyscan -H aur.archlinux.org github.com >>~/.ssh/known_hosts 2>/dev/null || :
   [[ -f /etc/doas.conf ]] && {
     sudo chown root:root /etc/doas.conf
     sudo chmod 0400 /etc/doas.conf
   }
   modprobed-db store &>/dev/null
   sudo modprobed-db store &>/dev/null
-  sudo modprobe zram tcp_bbr kvm kvm-intel>/dev/null
+  sudo modprobe zram tcp_bbr kvm kvm-intel >/dev/null
   [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck
   sudo pacman-key --init &>/dev/null
   sudo pacman-key --populate archlinux cachyos &>/dev/null
@@ -169,7 +169,7 @@ install_packages(){
       local fail="${HOME}/failed_pkgs.txt"
       msg "Batch install failed → $fail"
       for p in "${missing[@]}"; do
-        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p">> "$fail"
+        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p" >>"$fail"
       done
     }
   else
@@ -259,7 +259,6 @@ setup_tools(){
 # TODO: add am
 # wget https://raw.githubusercontent.com/ivan-hc/AM/main/INSTALL && chmod a+x ./INSTALL && sudo ./INSTALL && rm ./INSTALL
 
-
 #══════════════════════════════════════════════════════════════
 #  SHELL INTEGRATION
 #══════════════════════════════════════════════════════════════
@@ -282,10 +281,10 @@ setup_shells(){
   # Zsh
   if has zsh; then
     msg "Configuring Zsh"
-    [[ -f "$HOME/.zshenv" ]] || echo 'export ZDOTDIR="$HOME/.config/zsh"'> "$HOME/.zshenv"
+    [[ -f "$HOME/.zshenv" ]] || echo 'export ZDOTDIR="$HOME/.config/zsh"' >"$HOME/.zshenv"
     mkdir -p "$HOME/.config/zsh"
-    [[ -d "$HOME/.local/share/antidote" ]] ||
-      git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "$HOME/.local/share/antidote" 2>/dev/null &
+    [[ -d "$HOME/.local/share/antidote" ]] \
+      || git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "$HOME/.local/share/antidote" 2>/dev/null &
   fi
 }
 

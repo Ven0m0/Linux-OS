@@ -43,7 +43,7 @@ else
   find_cache_files(){ find "$CACHE_DIR" -maxdepth 1 -type f -print0 2>/dev/null; }
 fi
 FINDER_OPTS=(--layout=reverse-list --no-hscroll)
-[[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && read -r -a FINDER_OPTS <<< "$APT_FUZZ_FINDER_OPTS"
+[[ -n ${APT_FUZZ_FINDER_OPTS:-} ]] && read -r -a FINDER_OPTS <<<"$APT_FUZZ_FINDER_OPTS"
 # Manager detection
 declare -A MANAGERS=([apt]=1)
 has nala && MANAGERS[nala]=1
@@ -60,12 +60,12 @@ byte_to_human(){
     i=$((i + 1))
   done
   local v10=$(((bytes * 10 + (pow / 2)) / pow)) w=$((v10 / 10)) d=$((v10 % 10))
-  ((d> 0)) && printf '%d.%d%s\n' "$w" "$d" "${units[i]}" || printf '%d%s\n' "$w" "${units[i]}"
+  ((d > 0)) && printf '%d.%d%s\n' "$w" "$d" "${units[i]}" || printf '%d%s\n' "$w" "${units[i]}"
 }
 # Index-based cache management
 _update_cache_index(){
   local tmp=$(mktemp "${CACHE_INDEX}.XXXXXX")
-  find_cache_files | xargs -0 -r stat -c '%n|%s|%Y'> "$tmp" 2>/dev/null || :
+  find_cache_files | xargs -0 -r stat -c '%n|%s|%Y' >"$tmp" 2>/dev/null || :
   mv -f "$tmp" "$CACHE_INDEX"
 }
 _cache_info_from_index(){ awk -F'|' 'BEGIN{t=f=o=0}{f++;t+=$2;if(!o||$3<o)o=$3}END{print t,f,o}' "$CACHE_INDEX" 2>/dev/null || echo "0 0 0"; }
@@ -77,13 +77,13 @@ evict_old_cache(){
   del=$(mktemp)
   valid=$(mktemp)
   trap 'rm -f "$del" "$valid"' RETURN
-  awk -F'|' -v c="$cutoff" '$3<c{print $1}' "$CACHE_INDEX"> "$del"
-  awk -F'|' -v c="$cutoff" '$3>=c' "$CACHE_INDEX"> "$valid"
-  if ((limit> 0)) && [[ -s $valid ]]; then
+  awk -F'|' -v c="$cutoff" '$3<c{print $1}' "$CACHE_INDEX" >"$del"
+  awk -F'|' -v c="$cutoff" '$3>=c' "$CACHE_INDEX" >"$valid"
+  if ((limit > 0)) && [[ -s $valid ]]; then
     local total=$(awk -F'|' '{s+=$2}END{print s+0}' "$valid") excess
-    if ((total> limit)); then
+    if ((total > limit)); then
       excess=$((total - limit))
-      sort -t'|' -k3,3n "$valid" | awk -F'|' -v e="$excess" 'BEGIN{d=0}d<e{print $1;d+=$2}'>> "$del"
+      sort -t'|' -k3,3n "$valid" | awk -F'|' -v e="$excess" 'BEGIN{d=0}d<e{print $1;d+=$2}' >>"$del"
     fi
   fi
   xargs -r -a "$del" rm -f --
@@ -99,7 +99,7 @@ _generate_preview(){
     apt-cache show "$pkg" 2>/dev/null || :
     printf '\n--- changelog (first 200 lines) ---\n'
     apt-get changelog "$pkg" 2>/dev/null | sed -n '1,200p' || :
-  }> "$tmp" 2>/dev/null
+  } >"$tmp" 2>/dev/null
   sed -i 's/\x1b\[[0-9;]*m//g' "$tmp" 2>/dev/null || :
   mv -f "$tmp" "$out"
   chmod 644 "$out" 2>/dev/null || :
@@ -119,9 +119,9 @@ _cached_preview_print(){
 export -f _cached_preview_print _cache_file_for _generate_preview
 # Background prefetch
 _prefetch_lists(){
-  (apt-cache pkgnames> "$CACHE_DIR/pkgnames.list" 2>/dev/null) &
-  (dpkg-query -W -f='${Package}\n'> "$CACHE_DIR/installed.list" 2>/dev/null) &
-  (apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}'> "$CACHE_DIR/upgradable.list") &
+  (apt-cache pkgnames >"$CACHE_DIR/pkgnames.list" 2>/dev/null) &
+  (dpkg-query -W -f='${Package}\n' >"$CACHE_DIR/installed.list" 2>/dev/null) &
+  (apt list --upgradable 2>/dev/null | awk -F/ 'NR>1{print $1}' >"$CACHE_DIR/upgradable.list") &
 }
 _prefetch_previews(){
   wait
@@ -190,7 +190,7 @@ menu_search(){
     --preview="bash -c '_cached_preview_print {}'" --preview-window=right:60% --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
   local -a pkgs
-  mapfile -t pkgs <<< "$sel"
+  mapfile -t pkgs <<<"$sel"
   action_menu_for_pkgs "${pkgs[@]}"
 }
 menu_installed(){
@@ -198,7 +198,7 @@ menu_installed(){
     --preview="bash -c '_cached_preview_print {}'" --preview-window=right:60% --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
   local -a pkgs
-  mapfile -t pkgs <<< "$sel"
+  mapfile -t pkgs <<<"$sel"
   action_menu_for_pkgs "${pkgs[@]}"
 }
 menu_upgradable(){
@@ -206,18 +206,18 @@ menu_upgradable(){
     --preview="bash -c '_cached_preview_print {}'" --preview-window=right:60% --bind 'tab:toggle+down,ctrl-a:select-all,ctrl-d:deselect-all')
   [[ -z $sel ]] && return
   local -a pkgs
-  mapfile -t pkgs <<< "$sel"
+  mapfile -t pkgs <<<"$sel"
   [[ ${#pkgs[@]} -gt 0 ]] && run_mgr install "${pkgs[@]}"
 }
 backup_installed(){
   local out="${1:-pkglist-$(date +%F).txt}"
-  dpkg-query -W -f='${Package}\n' | sort -u> "$out"
+  dpkg-query -W -f='${Package}\n' | sort -u >"$out"
   printf 'Saved: %s\n' "$out"
 }
 restore_from_file(){
   local file="$1"
   [[ ! -f $file ]] && {
-    echo "File not found: $file">&2
+    echo "File not found: $file" >&2
     return 1
   }
   local -a pkgs
@@ -274,7 +274,7 @@ _install_self(){
   chmod +x -- "$dest"
   printf 'Installed: %s\n' "$dest"
   mkdir -p -- "$compdir"
-  cat> "$compdir/apt-fuzz" << 'COMP'
+  cat >"$compdir/apt-fuzz" <<'COMP'
 _complete_apt_fuzz(){
   local cur="${COMP_WORDS[COMP_CWORD]}" opts="search installed upgradable install remove purge backup restore maintenance choose-manager quit"
   COMPREPLY=(); (( COMP_CWORD==1 )) && { COMPREPLY=( $(compgen -W "$opts" -- "$cur") ); return; }
@@ -295,7 +295,7 @@ _uninstall_self(){
   printf 'Removed: %s\n%s\n%s\n' "$dest" "$comp" "$CACHE_DIR"
 }
 # Entry point
-if (($#> 0)); then
+if (($# > 0)); then
   case "$1" in
     --install)
       _install_self
@@ -307,7 +307,7 @@ if (($#> 0)); then
       ;;
     --preview)
       [[ -z ${2:-} ]] && {
-        echo "usage: $0 --preview <pkg>">&2
+        echo "usage: $0 --preview <pkg>" >&2
         exit 2
       }
       _cached_preview_print "$2"
@@ -315,7 +315,7 @@ if (($#> 0)); then
       ;;
     install | remove | purge)
       [[ $# -lt 2 ]] && {
-        echo "Usage: $0 $1 <pkgs...>">&2
+        echo "Usage: $0 $1 <pkgs...>" >&2
         exit 2
       }
       action="$1"
@@ -329,7 +329,7 @@ if (($#> 0)); then
       ;;
   esac
 fi
-cat << 'EOF'
+cat <<'EOF'
 apt-fuzz: sk/fzf frontend for apt/nala/apt-fast
 Controls: fuzzy-search, multi-select (TAB), Enter to confirm
 EOF

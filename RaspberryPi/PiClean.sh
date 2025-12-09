@@ -12,7 +12,7 @@ load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/die
 run_dietpi_cleanup(){
   if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
     if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then
-      printf '%s\n' "dietpi-update failed (both standard and fallback commands).">&2
+      printf '%s\n' "dietpi-update failed (both standard and fallback commands)." >&2
     fi
     sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null || G_SUDO dietpi-logclear 2 2>/dev/null || :
     sudo /boot/dietpi/func/dietpi-cleaner 2 2>/dev/null || G_SUDO dietpi-cleaner 2 2>/dev/null || :

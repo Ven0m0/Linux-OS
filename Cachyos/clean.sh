@@ -52,16 +52,16 @@ configure_firefox_privacy(){
       touch "$prefs_file"
       # Read existing prefs once instead of calling grep for each pref
       local existing_prefs
-      existing_prefs=$(< "$prefs_file" 2>/dev/null) || existing_prefs=""
+      existing_prefs=$(<"$prefs_file" 2>/dev/null) || existing_prefs=""
       for pref in "${firefox_prefs[@]}"; do
         [[ $existing_prefs == *"$pref"* ]] || {
-          printf '%s\n' "$pref">> "$prefs_file"
+          printf '%s\n' "$pref" >>"$prefs_file"
           ((prefs_changed++))
         }
       done
     done < <(find "$dir" -maxdepth 1 -type d \( -name "*.default*" -o -name "default-*" \))
   done
-  ((prefs_changed> 0)) && printf '  %s %d prefs\n' "${GRN}Firefox privacy:" "$prefs_changed${DEF}"
+  ((prefs_changed > 0)) && printf '  %s %d prefs\n' "${GRN}Firefox privacy:" "$prefs_changed${DEF}"
 }
 
 configure_python_history(){

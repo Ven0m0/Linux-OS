@@ -25,7 +25,7 @@ display_banner(){
   local banner_text="$1"
   shift
   local -a flag_colors=("$@")
-  mapfile -t banner_lines <<< "$banner_text"
+  mapfile -t banner_lines <<<"$banner_text"
   local line_count=${#banner_lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
     for bline in "${banner_lines[@]}"; do
@@ -34,14 +34,14 @@ display_banner(){
   else
     for i in "${!banner_lines[@]}"; do
       local segment_index=$((i * (segments - 1) / (line_count - 1)))
-      ((segment_index>= segments)) && segment_index=$((segments - 1))
+      ((segment_index >= segments)) && segment_index=$((segments - 1))
       printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
     done
   fi
 }
 # Banner
 banner=$(
-  cat << 'EOF'
+  cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗

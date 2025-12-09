@@ -1,5 +1,6 @@
- #!/usr/bin/env bash
-set -euo pipefail; shopt -s nullglob
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s nullglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C
 # === Color Palette (Trans Flag) ===
@@ -18,7 +19,10 @@ log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
 warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
 err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die(){ err "$1"; exit "${2:-1}"; }
+die(){
+  err "$1"
+  exit "${2:-1}"
+}
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 sec(){ printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
 # === Tool Detection ===
@@ -79,11 +83,17 @@ device_ok(){
   local adb_cmd
   adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
   if ((IS_TERMUX)); then
-    [[ -n $adb_cmd ]] || { err "rish not available; install Shizuku"; return 1; }
+    [[ -n $adb_cmd ]] || {
+      err "rish not available; install Shizuku"
+      return 1
+    }
     return 0
   fi
   "$adb_cmd" start-server &>/dev/null || :
-  "$adb_cmd" get-state &>/dev/null || { err "No device connected; enable USB debugging"; return 1; }
+  "$adb_cmd" get-state &>/dev/null || {
+    err "No device connected; enable USB debugging"
+    return 1
+  }
   return 0
 }
 
@@ -110,8 +120,8 @@ confirm(){
   while :; do
     read -rp "$prompt [y/N] " reply
     case "${reply,,}" in
-      y|yes) return 0 ;;
-      n|no|"") return 1 ;;
+      y | yes) return 0 ;;
+      n | no | "") return 1 ;;
       *) warn "Please answer y or n" ;;
     esac
   done
@@ -143,7 +153,7 @@ start(){
   adb_cmd="${ADB_CMD:-$(detect_adb)}"
 
   # Run loops directly on device to avoid ADB latency overhead (1 call vs 1000+)
-  "$adb_cmd" shell << 'CLEANUP_EOF' && msg "Cleanup complete" || err "Cleanup failed"
+  "$adb_cmd" shell <<'CLEANUP_EOF' && msg "Cleanup complete" || err "Cleanup failed"
 for pkg in $(pm list packages -3 | cut -d: -f2); do
   pm uninstall -k --user 0 "$pkg" 2>/dev/null || true
 done
@@ -166,10 +176,7 @@ tweaks(){
 
   # Batch all adb shell commands for massive performance improvement
   # This reduces 1100+ separate ADB connections to just 1
-  "$adb_cmd" shell << 'TWEAKS_EOF' && msg "Tweaks applied successfully" || {
-    err "Some tweaks may have failed (this is normal on some devices)"
-    return 1
-  }
+  "$adb_cmd" shell <<'TWEAKS_EOF' && msg "Tweaks applied successfully" || err "Some tweaks may have failed (this is normal on some devices)"
 device_config put runtime_native_boot pin_camera false
 device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
 device_config put launcher enable_quick_launch_v2 true
@@ -1088,5 +1095,13 @@ settings put global ro.hw.gyroscope false
 settings put global ro.config.hw_temperature_warn true
 settings put global ro.config. hw_sensorhub false
 settings put global ro.vendor.sensors.rawdata_mode false
-settings put global ro.vendor. sensors.pedometer false
-settings put global ro.vendor.
+settings put global ro.vendor.sensors.pedometer false
+TWEAKS_EOF
+}
+
+main(){
+  detect_adb
+  tweaks
+}
+
+main "$@"

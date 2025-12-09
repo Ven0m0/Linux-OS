@@ -27,15 +27,15 @@ readonly BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 readonly BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 
 # Trans flag palette
-readonly LBLU=$'\e[38;5;117m'  # Light blue
-readonly PNK=$'\e[38;5;218m'   # Pink
-readonly BWHT=$'\e[97m'        # Bright white
+readonly LBLU=$'\e[38;5;117m' # Light blue
+readonly PNK=$'\e[38;5;218m'  # Pink
+readonly BWHT=$'\e[97m'       # Bright white
 
 # Formatting
-readonly DEF=$'\e[0m'   # Reset
-readonly BLD=$'\e[1m'   # Bold
-readonly DIM=$'\e[2m'   # Dim
-readonly UL=$'\e[4m'    # Underline
+readonly DEF=$'\e[0m' # Reset
+readonly BLD=$'\e[1m' # Bold
+readonly DIM=$'\e[2m' # Dim
+readonly UL=$'\e[4m'  # Underline
 
 # Export for subshells if needed
 export BLK RED GRN YLW BLU MGN CYN WHT LBLU PNK BWHT DEF BLD DIM UL
@@ -294,7 +294,7 @@ download_file(){
         curl "${DL_ARGS[@]}" "$url"
       fi
       ;;
-    wget*|wget2)
+    wget* | wget2)
       if [[ -n $output ]]; then
         "$DL_CMD" "${DL_ARGS[@]}" -O "$output" "$url"
       else

@@ -14,8 +14,11 @@ RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
 has(){ command -v "$1" &>/dev/null; }
 log(){ printf '%s\n' "${BLU}→${DEF} $*"; }
 warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
-err(){ printf '%s\n' "${RED}ERROR:${DEF} $*">&2; }
-die(){ err "$*"; exit "${2:-1}"; }
+err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
+die(){
+  err "$*"
+  exit "${2:-1}"
+}
 
 confirm(){
   local prompt=${1:-"Continue?"} default=${2:-n}
@@ -29,7 +32,7 @@ KERNEL_BRANCH=${KERNEL_BRANCH:-rpi-6.16.y}
 KERNEL_SRC=${KERNEL_SRC:-/usr/src/linux}
 
 usage(){
-  cat << EOF
+  cat <<EOF
 Usage: Kbuild.sh [OPTIONS]
 
 Build and install Raspberry Pi kernel from source.
@@ -120,7 +123,7 @@ main(){
   # Update bootloader config (avoid duplicate entry)
   if ! grep -q '^dtoverlay=vc4-kms-v3d' /boot/config.txt 2>/dev/null; then
     log "Adding dtoverlay to config.txt..."
-    echo "dtoverlay=vc4-kms-v3d">> /boot/config.txt
+    echo "dtoverlay=vc4-kms-v3d" >>/boot/config.txt
   fi
 
   log "${GRN}Kernel installed successfully${DEF}"

@@ -19,9 +19,9 @@ check_deps(){
   python3 -c "import httpx" 2>/dev/null || missing+=(python-httpx)
   python3 -c "import orjson" 2>/dev/null || missing+=(python-orjson)
   python3 -c "import uvloop" 2>/dev/null || missing+=(python-uvloop)
-  if ((${#missing[@]}> 0)); then
-    printf 'Missing dependencies: %s\n' "${missing[*]}">&2
-    printf 'Install: pacman -S python-praw python-httpx python-orjson python-uvloop sherlock-git\n'>&2
+  if ((${#missing[@]} > 0)); then
+    printf 'Missing dependencies: %s\n' "${missing[*]}" >&2
+    printf 'Install: pacman -S python-praw python-httpx python-orjson python-uvloop sherlock-git\n' >&2
     return 1
   fi
 }

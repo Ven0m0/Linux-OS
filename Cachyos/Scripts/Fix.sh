@@ -5,7 +5,6 @@ export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 has(){ command -v -- "$1" &>/dev/null;}
 xecho(){ printf '%b\n' "$*";}
 log(){ xecho "$*";}
-die(){ xecho "${RED}Error:${DEF} $*" >&2;exit 1;}
 confirm(){ local msg="$1";printf '%s [y/N]: ' "$msg" >&2;read -r ans;[[ $ans == [Yy]* ]];}
 print_banner(){
   local banner="$1" title="${2:-}" flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU") -a lines=()
@@ -38,7 +37,7 @@ EOF
 }
 print_named_banner(){
   local name="$1" title="${2:-Meow (> ^ <)}" banner
-  case "$name" in update) banner=$(get_update_banner);;clean) banner=$(get_clean_banner);;*) die "Unknown banner name: $name";;esac
+  case "$name" in update) banner=$(get_update_banner);;clean) banner=$(get_clean_banner);;*) xecho "${RED}Error:${DEF} Unknown banner name: $name" >&2;exit 1;;esac
   print_banner "$banner" "$title"
 }
 setup_build_env(){

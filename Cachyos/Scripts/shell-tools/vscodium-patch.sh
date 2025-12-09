@@ -2,7 +2,6 @@
 set -euo pipefail;shopt -s nullglob globstar;IFS=$'\n\t';LC_ALL=C
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
 warn(){ printf '%b\n' "${Y}⚠${D} $*" >&2;}
-die(){ printf '%b\n' "${R}✗${D} $*" >&2;exit "${2:-1}";}
 has(){ command -v -- "$1" &>/dev/null;}
 ok(){ printf '%b\n' "${G}✓${D} $*";}
 vscode_json_set(){
@@ -32,14 +31,14 @@ for sf in settings_files:
 sys.exit(0 if changed>0 else 1)
 EOF
 }
-JQ=;has jaq && JQ=jaq||JQ=jq;has "$JQ"||die "Need jq/jaq"
+JQ=;has jaq && JQ=jaq||JQ=jq;has "$JQ"||{ printf '%b\n' "${R}✗${D} Need jq/jaq" >&2;exit 1;}
 KEYS_PROD=(nameShort nameLong applicationName dataFolderName serverDataFolderName darwinBundleIdentifier linuxIconName licenseUrl extensionAllowedProposedApi extensionEnabledApiProposals extensionKind extensionPointExtensionKind extensionSyncedKeys extensionVirtualWorkspacesSupport extensionsGallery extensionTips extensionImportantTips exeBasedExtensionTips configBasedExtensionTips keymapExtensionTips languageExtensionTips remoteExtensionTips webExtensionTips virtualWorkspaceExtensionTips trustedExtensionAuthAccess trustedExtensionUrlPublicKeys auth configurationSync "configurationSync.store" editSessions "editSessions.store" settingsSync aiConfig commandPaletteSuggestedCommandIds extensionRecommendations extensionKeywords extensionAllowedBadgeProviders extensionAllowedBadgeProvidersRegex linkProtectionTrustedDomains msftInternalDomains documentationUrl introductoryVideosUrl tipsAndTricksUrl newsletterSignupUrl releaseNotesUrl keyboardShortcutsUrlMac keyboardShortcutsUrlLinux keyboardShortcutsUrlWin quality settingsSearchUrl tasConfig tunnelApplicationName tunnelApplicationConfig serverApplicationName serverGreeting urlProtocol webUrl webEndpointUrl webEndpointUrlTemplate webviewContentExternalBaseUrlTemplate builtInExtensions extensionAllowedExtensionKinds crash aiRelatedInformationUrl defaultChatAgent)
 dl(){
   local u=$1 o=$2;mkdir -p "${o%/*}"
   if has aria2c;then aria2c -q --max-tries=3 --retry-wait=1 -d "${o%/*}" -o "${o##*/}" "$u"
   elif has curl;then curl -fsSL --retry 3 --http2 --tlsv1.2 "$u" -o "$o"
   elif has wget;then wget -qO "$o" "$u"
-  else die "Need aria2c/curl/wget";fi
+  else printf '%b\n' "${R}✗${D} Need aria2c/curl/wget" >&2;exit 1;fi
 }
 xdg_patch(){
   local -a files=()
@@ -59,19 +58,19 @@ xdg_patch(){
 json_op(){
   local op=$1 prod=$2 patch=$3 cache=$4 tmp="${prod}.tmp.$$"
   [[ -f $prod ]]||{ warn "$prod missing";return 1;}
-  [[ -f $patch ]]||die "Patch missing: $patch"
+  [[ -f $patch ]]||{ printf '%b\n' "${R}✗${D} Patch missing: $patch" >&2;exit 1;}
   case $op in
     apply) [[ -f $cache ]]||printf '{}' >"$cache"
       "$JQ" -s '.[0] as $b|.[1] as $p|($b|to_entries|map(select(.key as $k|$p|has($k)))|from_entries) as $c|($b+$p)|{p:.,c:$c}' "$prod" "$patch" >"$tmp"||return 1
       "$JQ" -r .p "$tmp" >"$prod" && "$JQ" -r .c "$tmp" >"$cache" && rm -f "$tmp" && ok "Applied → $prod";;
-    restore) [[ -f $cache ]]||die "Cache missing: $cache"
+    restore) [[ -f $cache ]]||{ printf '%b\n' "${R}✗${D} Cache missing: $cache" >&2;exit 1;}
       "$JQ" -s '.[0] as $b|.[1] as $p|.[2] as $c|($b|to_entries|map(select(.key as $k|($p|has($k))|not))|from_entries)+$c' "$prod" "$patch" "$cache" >"$tmp"||return 1
       mv "$tmp" "$prod" && ok "Restored → $prod";;
   esac
 }
 update_json(){
   local v=$1 out=$2;local -n kref="$3"
-  [[ $v ]]||die "Version required"
+  [[ $v ]]||{ printf '%b\n' "${R}✗${D} Version required" >&2;exit 1;}
   local work="/tmp/code-up.$$" u="https://update.code.visualstudio.com/${v}/linux-x64/stable"
   printf "⬇ VSCode %s...\n" "$v"
   dl "$u" "$work/c.tgz"||{ rm -rf "$work";return 1;}
@@ -86,7 +85,7 @@ sign_fix(){
 }
 repo_swap(){
   local f=${1:-/usr/share/vscodium/resources/app/product.json} mode=${2:-0}
-  [[ -f $f ]]||die "No product.json: $f"
+  [[ -f $f ]]||{ printf '%b\n' "${R}✗${D} No product.json: $f" >&2;exit 1;}
   if ((mode));then
     sed -i -e 's|"serviceUrl":.*|"serviceUrl": "https://open-vsx.org/vscode/gallery",|' -e '/"cacheUrl"/d' -e 's|"itemUrl":.*|"itemUrl": "https://open-vsx.org/vscode/item"|' -e '/"linkProtectionTrustedDomains"/d' -e '/"documentationUrl"/i\  "linkProtectionTrustedDomains": ["https://open-vsx.org"],' "$f"
     ok "Repo → Open-VSX"
@@ -97,9 +96,9 @@ repo_swap(){
 }
 vscodium_prod_full(){
   local dst=${1:-/usr/share/vscodium/resources/app/product.json}
-  [[ -f $dst ]]||die "Missing: $dst"
+  [[ -f $dst ]]||{ printf '%b\n' "${R}✗${D} Missing: $dst" >&2;exit 1;}
   local v work="/tmp/vp.$$" src bak;src="${work}/product.json";bak="${dst}.backup.$(date +%s)"
-  v=$("$JQ" -r '.version//empty' "$dst")||die "No version in $dst"
+  v=$("$JQ" -r '.version//empty' "$dst")||{ printf '%b\n' "${R}✗${D} No version in $dst" >&2;exit 1;}
   cp "$dst" "$bak"
   dl "https://update.code.visualstudio.com/$v/linux-x64/stable" "${work}/c.tgz"||{ rm -rf "$work";return 1;}
   tar xf "${work}/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2>/dev/null
@@ -109,7 +108,7 @@ vscodium_prod_full(){
 vscodium_restore(){
   local d=${1:-/usr/share/vscodium/resources/app/product.json} -a blist=() b
   mapfile -t blist < <(find "${d%/*}" -maxdepth 1 -name "${d##*/}.backup.*" -printf "%T@ %p\n" 2>/dev/null|sort -rn|head -1)
-  ((${#blist[@]}))||die "No backup found for $d"
+  ((${#blist[@]}))||{ printf '%b\n' "${R}✗${D} No backup found for $d" >&2;exit 1;}
   b=${blist[0]#* };cp -f "$b" "$d" && ok "Restored ← $b"
 }
 configure_privacy(){

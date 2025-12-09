@@ -14,34 +14,33 @@ log(){ xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*";}
 msg(){ xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*";}
 warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2;}
 err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2;}
-die(){ err "$1";cleanup;exit "${2:-1}";}
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*"||:;}
 get_drive_trans(){ local dev="${1:?}";lsblk -dno TRAN "$dev" 2>/dev/null||echo "unknown";}
 assert_usb_dev(){
   local dev="${1:?}";((cfg[no_usb_check])) && return 0
   [[ $dev == /dev/loop* ]] && return 0
   local trans;trans=$(get_drive_trans "$dev")
-  [[ $trans != usb && $trans != mmc ]] && die "Device $dev is not USB/MMC (Detected: $trans). Use -U to bypass."
+  [[ $trans != usb && $trans != mmc ]]&&{ err "Device $dev is not USB/MMC (Detected: $trans). Use -U to bypass.";cleanup;exit 1;}
 }
 assert_size(){
   local img="${1:?}" dev="${2:?}";((cfg[no_size_check])) && return 0
   [[ ! -b $dev ]] && return 0
   local img_bytes dev_bytes
   img_bytes=$(stat -c%s "$img");dev_bytes=$(blockdev --getsize64 "$dev")
-  ((img_bytes>dev_bytes)) && die "Image ($((img_bytes/1024/1024))MB) exceeds target ($((dev_bytes/1024/1024))MB)."
+  ((img_bytes>dev_bytes))&&{ err "Image ($((img_bytes/1024/1024))MB) exceeds target ($((dev_bytes/1024/1024))MB).";cleanup;exit 1;}
 }
 select_target_interactive(){
-  has fzf||die "fzf required for interactive selection."
+  has fzf||{ err "fzf required for interactive selection.";cleanup;exit 1;}
   log "Scanning for removable drives..."
   local selection
   selection=$(lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG|awk -v skip="${cfg[no_usb_check]}" 'tolower($0) ~ /disk/ && (skip == "1" || tolower($0) ~ /usb|mmc/)'|fzf --header="TARGET SELECTION (Safety: USB/MMC Only)" --prompt="Select Drive > " --with-nth=1,2,3,4)
-  [[ -z $selection ]] && die "No target selected."
+  [[ -z $selection ]]&&{ err "No target selected.";cleanup;exit 1;}
   echo "$selection"|awk '{print $1}'
 }
 check_deps(){
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid partprobe lsblk flock awk curl) missing=() cmd
   for cmd in "${deps[@]}";do has "$cmd"||missing+=("$cmd");done
-  ((${#missing[@]}>0)) && die "Missing dependencies: ${missing[*]}"
+  ((${#missing[@]}>0))&&{ err "Missing dependencies: ${missing[*]}";cleanup;exit 1;}
 }
 cleanup(){
   local ret=$?;set +e
@@ -60,7 +59,7 @@ wait_for_partitions(){
   local dev=${1:?};((cfg[dry_run])) && return 0
   partprobe "$dev" &>/dev/null;udevadm settle &>/dev/null;sleep 1;derive_partition_paths "$dev"
   local i;for ((i=0;i<30;i++));do [[ -b $BOOT_PART && -b $ROOT_PART ]] && return 0;sleep 0.5;done
-  die "Partitions failed to appear on $dev"
+  err "Partitions failed to appear on $dev";cleanup;exit 1
 }
 prepare_environment(){
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" rf2fs.XXXXXX);SRC_IMG="$WORKDIR/source.img"
@@ -70,17 +69,17 @@ process_source(){
   [[ $SRC_PATH == dietpi ]]&&{ log "Keyword 'dietpi' detected. Using URL: $DIETPI_URL";SRC_PATH="$DIETPI_URL";}
   if [[ $SRC_PATH =~ ^https?:// ]];then
     log "Downloading image from URL..."
-    [[ $SRC_PATH == *.xz ]] && curl -Lfs --progress-bar "$SRC_PATH"|xz -dc >"$SRC_IMG"||curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG"||die "Download failed."
+    [[ $SRC_PATH == *.xz ]] && curl -Lfs --progress-bar "$SRC_PATH"|xz -dc >"$SRC_IMG"||curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG"||{ err "Download failed.";cleanup;exit 1;}
     return 0
   fi
-  log "Processing local source: $SRC_PATH";[[ -f $SRC_PATH ]]||die "Source file not found."
+  log "Processing local source: $SRC_PATH";[[ -f $SRC_PATH ]]||{ err "Source file not found.";cleanup;exit 1;}
   if [[ $SRC_PATH == *.xz ]];then log "Decompressing xz archive...";xz -dc "$SRC_PATH" >"$SRC_IMG"
   elif ((cfg[keep_source]));then cp --reflink=auto "$SRC_PATH" "$SRC_IMG"
   else ln "$SRC_PATH" "$SRC_IMG" 2>/dev/null||cp "$SRC_PATH" "$SRC_IMG";fi
 }
 setup_target_device(){
   log "Preparing target: $TGT_PATH";LOCK_FILE="/run/lock/raspi-f2fs-${TGT_PATH//\//_}.lock";mkdir -p "${LOCK_FILE%/*}"
-  exec {LOCK_FD}>"$LOCK_FILE"||die "Cannot create lock file";flock -n "$LOCK_FD"||die "Device $TGT_PATH is in use."
+  exec {LOCK_FD}>"$LOCK_FILE"||{ err "Cannot create lock file";cleanup;exit 1;};flock -n "$LOCK_FD"||{ err "Device $TGT_PATH is in use.";cleanup;exit 1;}
   assert_usb_dev "$TGT_PATH";assert_size "$SRC_IMG" "$TGT_PATH";((cfg[dry_run])) && return 0
   warn "${RED}WARNING: ALL DATA ON $TGT_PATH WILL BE ERASED!${DEF}"
   wipefs -af "$TGT_PATH" &>/dev/null;log "Partitioning..."
@@ -142,9 +141,9 @@ while getopts "b:i:d:sknxhUF" opt;do
     b) cfg[boot_size]=$OPTARG;;i) SRC_PATH=$OPTARG;;d) TGT_PATH=$OPTARG;;s) cfg[ssh]=1;;k) cfg[keep_source]=1;;n) cfg[dry_run]=1;;U) cfg[no_usb_check]=1;;F) cfg[no_size_check]=1;;h) usage;;*) usage;;
   esac
 done
-[[ $EUID -ne 0 ]] && die "This script requires root privileges (sudo)."
+[[ $EUID -ne 0 ]]&&{ err "This script requires root privileges (sudo).";cleanup;exit 1;}
 check_deps
-[[ -z $SRC_PATH ]] && SRC_PATH=$(find . -maxdepth 2 -name "*.img*" -o -name "*.xz"|fzf --prompt="Select Source Image (or enter URL/dietpi) > ") && [[ -z $SRC_PATH ]] && die "No source image selected."
+[[ -z $SRC_PATH ]] && SRC_PATH=$(find . -maxdepth 2 -name "*.img*" -o -name "*.xz"|fzf --prompt="Select Source Image (or enter URL/dietpi) > ") && [[ -z $SRC_PATH ]]&&{ err "No source image selected.";cleanup;exit 1;}
 [[ -z $TGT_PATH ]] && TGT_PATH=$(select_target_interactive)
 prepare_environment;process_source;setup_target_device;format_target;clone_data;configure_pi_boot
 msg "${GRN}SUCCESS:${DEF} Flashed to $TGT_PATH with F2FS."

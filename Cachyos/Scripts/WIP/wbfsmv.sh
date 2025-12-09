@@ -15,7 +15,7 @@ while (($#)) && [[ $1 == -* ]]; do
     -n | --dry-run) dry=1 ;;
     -v | --verbose) verbose=1 ;;
     -h | --help)
-      cat << 'EOF'
+      cat <<'EOF'
 Usage: wbfsmv.sh [-c|--convert] [-t|--trim] [-n|--dry-run] [-v|--verbose] [target_dir]
 Options:
   -c, --convert   Convert ISO/CISO/WIA/WDF to WBFS (requires wit)
@@ -28,7 +28,7 @@ EOF
       exit 0
       ;;
     *)
-      printf 'Unknown arg: %s\n' "$1">&2
+      printf 'Unknown arg: %s\n' "$1" >&2
       exit 2
       ;;
   esac
@@ -37,26 +37,26 @@ done
 
 TARGET=${1:-.}
 [[ -d $TARGET ]] || {
-  printf 'Not a directory: %s\n' "$TARGET">&2
+  printf 'Not a directory: %s\n' "$TARGET" >&2
   exit 2
 }
 command -v dd &>/dev/null || {
-  printf 'dd required\n'>&2
+  printf 'dd required\n' >&2
   exit 1
 }
 have_wit=0
 command -v wit &>/dev/null && have_wit=1
 ((trim || convert)) && ((!have_wit)) && {
-  printf 'wit required for --convert/--trim\n'>&2
+  printf 'wit required for --convert/--trim\n' >&2
   exit 1
 }
 # map region names to wit values
 declare -A region_map=([PAL]=EUROPE [NTSC]=USA [JAP]=JAPAN [KOR]=KOREA [FREE]=FREE)
 wit_region=${region_map[${REGION^^}]:-EUROPE}
-log(){ ((verbose)) && printf '%s\n' "$*">&2 || :; }
-run(){ ((dry)) && log "[dry] $*" || "$@"; }
+log() { ((verbose)) && printf '%s\n' "$*" >&2 || :; }
+run() { ((dry)) && log "[dry] $*" || "$@"; }
 # WBFS: ID at 0x200 (512); ISO/CISO/WIA/WDF: ID at 0x0
-get_id(){
+get_id() {
   local f="$1" id='' off=0
   [[ ${f,,} == *.wbfs ]] && off=512
   if ((have_wit)); then
@@ -65,7 +65,7 @@ get_id(){
   [[ -z $id ]] && id=$(dd if="$f" bs=1 skip="$off" count=6 2>/dev/null | tr -dc 'A-Za-z0-9')
   printf '%s' "${id^^}"
 }
-get_title(){
+get_title() {
   local f="$1"
   ((have_wit)) || return 0
   wit dump -ll -- "$f" 2>/dev/null | awk -F': ' '
@@ -73,16 +73,16 @@ get_title(){
     /^Game title[[:space:]]*:/ && $2!="" {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2; exit}
   '
 }
-clean(){
+clean() {
   local s=${1//_/ }
   s=${s// / }
-  s=$(sed -E 's/[[:space:]]*\(([A-Z][a-z](,[A-Z][a-z])+)\)//g; s/[[:space:]]*\[([A-Z][a-z](,[A-Z][a-z])+)\]//g' <<< "$s")
-  s=$(sed -E 's/[[:space:]]*[\(\[][^]\)]*(\bPAL\b|\bNTSC\b|\bEurope\b|\bUSA?\b|\bJapan\b|\bAsia\b|\bWorld\b|\bRev[[:space:]]*[0-9]*\b)[^]\)]*[\)\]]//gI' <<< "$s")
-  s=$(sed -E 's/[[:space:]]*\((Europe|USA?|Japan|Asia|World|PAL|NTSC)\)//gI; s/[[:space:]]*\[(Europe|USA?|Japan|Asia|World|PAL|NTSC)\]//gI' <<< "$s")
-  s=$(sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//; s/[[:space:]\/-]+$//' <<< "$s")
+  s=$(sed -E 's/[[:space:]]*\(([A-Z][a-z](,[A-Z][a-z])+)\)//g; s/[[:space:]]*\[([A-Z][a-z](,[A-Z][a-z])+)\]//g' <<<"$s")
+  s=$(sed -E 's/[[:space:]]*[\(\[][^]\)]*(\bPAL\b|\bNTSC\b|\bEurope\b|\bUSA?\b|\bJapan\b|\bAsia\b|\bWorld\b|\bRev[[:space:]]*[0-9]*\b)[^]\)]*[\)\]]//gI' <<<"$s")
+  s=$(sed -E 's/[[:space:]]*\((Europe|USA?|Japan|Asia|World|PAL|NTSC)\)//gI; s/[[:space:]]*\[(Europe|USA?|Japan|Asia|World|PAL|NTSC)\]//gI' <<<"$s")
+  s=$(sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//; s/[[:space:]\/-]+$//' <<<"$s")
   printf '%s' "$s"
 }
-set_region(){
+set_region() {
   local f="$1"
   ((have_wit)) || return 0
   local cur
@@ -92,7 +92,7 @@ set_region(){
   run wit edit --region "$wit_region" -q -- "$f" || :
 }
 # trim: remove unused blocks + update partition (safe for real hardware)
-trim_game(){
+trim_game() {
   local src="$1" dst="$2"
   log "trim: $src -> $dst"
   # --psel=data,-update keeps game data, removes update partition (safe)
@@ -100,12 +100,12 @@ trim_game(){
   run wit copy --wbfs --trim --psel=data,-update -q -- "$src" "$dst"
 }
 exts=(wbfs iso ciso wia wdf)
-is_game_ext(){
+is_game_ext() {
   local f=${1,,}
   for e in "${exts[@]}"; do [[ $f == *."$e" ]] && return 0; done
   return 1
 }
-process_file(){
+process_file() {
   local f="$1" id title name newdir ext base
   is_game_ext "$f" || return 0
   base=${f##*/}
@@ -124,7 +124,7 @@ process_file(){
   else
     name=$(clean "${base%.*}")
     name=${name//\[$id\]/}
-    name=$(sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' <<< "$name")
+    name=$(sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' <<<"$name")
   fi
   [[ -n $name ]] || name="Unknown"
   newdir="$TARGET/${name} [${id}]"
@@ -169,7 +169,7 @@ process_file(){
   fi
 }
 
-process_dir(){
+process_dir() {
   local d=$1 id='' g='' title name newdir
   local base=${d##*/}
   [[ $base =~ \[[A-Z0-9]{6}\] ]] && {

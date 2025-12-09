@@ -17,7 +17,7 @@ fi
 
 # Vacuum a single SQLite database and return bytes saved
 # Usage: saved=$(vacuum_sqlite /path/to/db.sqlite)
-vacuum_sqlite(){
+vacuum_sqlite() {
   local db=${1:?} s_old s_new
 
   [[ -f $db ]] || {
@@ -54,16 +54,16 @@ vacuum_sqlite(){
 
 # Clean SQLite databases in current working directory
 # Usage: (cd /path/to/profile && clean_sqlite_dbs)
-clean_sqlite_dbs(){
+clean_sqlite_dbs() {
   local total=0 db saved
 
   while IFS= read -r -d '' db; do
     [[ -f $db ]] || continue
     saved=$(vacuum_sqlite "$db" || printf '0')
-    ((saved> 0)) && total=$((total + saved))
+    ((saved > 0)) && total=$((total + saved))
   done < <(find . -maxdepth 2 -type f -name '*.sqlite*' -print0 2>/dev/null)
 
-  if ((total> 0)); then
+  if ((total > 0)); then
     printf '  %s\n' "${GRN:-}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF:-}"
   fi
 }
@@ -74,7 +74,7 @@ clean_sqlite_dbs(){
 
 # Wait for processes to exit, kill if timeout
 # Usage: ensure_not_running firefox chromium brave
-ensure_not_running(){
+ensure_not_running() {
   local timeout=6 p
   local pattern=$(printf '%s|' "$@")
   pattern=${pattern%|}
@@ -84,13 +84,13 @@ ensure_not_running(){
 
   # Show waiting message for found processes
   for p in "$@"; do
-    pgrep -x -u "$USER" "$p" &>/dev/null && \
-      printf '  %s\n' "${YLW:-}Waiting for ${p} to exit...${DEF:-}"
+    pgrep -x -u "$USER" "$p" &>/dev/null \
+      && printf '  %s\n' "${YLW:-}Waiting for ${p} to exit...${DEF:-}"
   done
 
   # Single wait loop checking all processes with one pgrep call
   local wait_time=$timeout
-  while ((wait_time--> 0)); do
+  while ((wait_time-- > 0)); do
     pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return 0
     sleep 1
   done
@@ -109,7 +109,7 @@ ensure_not_running(){
 
 # Find default Firefox-family profile directory
 # Usage: profile=$(foxdir ~/.mozilla/firefox)
-foxdir(){
+foxdir() {
   local base=${1:?}
   local p
 
@@ -139,7 +139,7 @@ foxdir(){
 # List all Mozilla profiles in a base directory
 # Handles both installs.ini and profiles.ini with IsRelative flag
 # Usage: while read -r profile; do ...; done < <(mozilla_profiles ~/.mozilla/firefox)
-mozilla_profiles(){
+mozilla_profiles() {
   local base=${1:?}
   local p is_rel path_val
 
@@ -185,7 +185,7 @@ mozilla_profiles(){
 
 # List Default + Profile * dirs under a Chromium root
 # Usage: while read -r profile; do ...; done < <(chrome_profiles ~/.config/google-chrome)
-chrome_profiles(){
+chrome_profiles() {
   local root=${1:?}
   local d
 
@@ -196,7 +196,7 @@ chrome_profiles(){
 
 # List common Chrome-based browser root directories
 # Usage: while read -r root; do ...; done < <(chrome_roots_for "$USER")
-chrome_roots_for(){
+chrome_roots_for() {
   local user=${1:-$USER}
   local home
 
@@ -229,7 +229,7 @@ chrome_roots_for(){
 
 # List common Mozilla-based browser base directories
 # Usage: while read -r base; do ...; done < <(mozilla_bases_for "$USER")
-mozilla_bases_for(){
+mozilla_bases_for() {
   local user=${1:-$USER}
   local home
 
@@ -258,7 +258,7 @@ mozilla_bases_for(){
 
 # List common Thunderbird/mail client base directories
 # Usage: while read -r base; do ...; done < <(mail_bases_for "$USER")
-mail_bases_for(){
+mail_bases_for() {
   local user=${1:-$USER}
   local home
 

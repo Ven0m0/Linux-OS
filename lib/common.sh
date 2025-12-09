@@ -11,7 +11,7 @@ readonly LINUX_OS_COMMON_LOADED=1
 # ============================================================================
 
 # Initialize shell with strict error handling and sane defaults
-init_shell(){
+init_shell() {
   set -Eeuo pipefail
   shopt -s nullglob globstar extglob dotglob 2>/dev/null || :
   IFS=$'\n\t'
@@ -27,15 +27,15 @@ readonly BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 readonly BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 
 # Trans flag palette
-readonly LBLU=$'\e[38;5;117m'  # Light blue
-readonly PNK=$'\e[38;5;218m'   # Pink
-readonly BWHT=$'\e[97m'        # Bright white
+readonly LBLU=$'\e[38;5;117m' # Light blue
+readonly PNK=$'\e[38;5;218m'  # Pink
+readonly BWHT=$'\e[97m'       # Bright white
 
 # Formatting
-readonly DEF=$'\e[0m'   # Reset
-readonly BLD=$'\e[1m'   # Bold
-readonly DIM=$'\e[2m'   # Dim
-readonly UL=$'\e[4m'    # Underline
+readonly DEF=$'\e[0m' # Reset
+readonly BLD=$'\e[1m' # Bold
+readonly DIM=$'\e[2m' # Dim
+readonly UL=$'\e[4m'  # Underline
 
 # Export for subshells if needed
 export BLK RED GRN YLW BLU MGN CYN WHT LBLU PNK BWHT DEF BLD DIM UL
@@ -46,11 +46,11 @@ export BLK RED GRN YLW BLU MGN CYN WHT LBLU PNK BWHT DEF BLD DIM UL
 
 # Check if command exists in PATH
 # Usage: has command_name
-has(){ command -v "$1" &>/dev/null; }
+has() { command -v "$1" &>/dev/null; }
 
 # Printf wrapper for consistent output formatting
 # Usage: xecho "formatted text"
-xecho(){ printf '%b\n' "$*"; }
+xecho() { printf '%b\n' "$*"; }
 
 # ============================================================================
 # LOGGING FUNCTIONS
@@ -58,36 +58,36 @@ xecho(){ printf '%b\n' "$*"; }
 
 # Standard log message with blue arrow prefix
 # Usage: log "message"
-log(){ xecho "${BLU}→${DEF} $*"; }
+log() { xecho "${BLU}→${DEF} $*"; }
 
 # Warning message with yellow prefix
 # Usage: warn "warning message"
-warn(){ xecho "${YLW}⚠${DEF} $*" >&2; }
+warn() { xecho "${YLW}⚠${DEF} $*" >&2; }
 
 # Error message with red prefix to stderr
 # Usage: err "error message"
-err(){ xecho "${RED}✗${DEF} $*" >&2; }
+err() { xecho "${RED}✗${DEF} $*" >&2; }
 
 # Fatal error - print message and exit with code
 # Usage: die "error message" [exit_code]
-die(){
+die() {
   err "$1"
   exit "${2:-1}"
 }
 
 # Debug logging (only when DEBUG=1)
 # Usage: dbg "debug message"
-dbg(){
+dbg() {
   [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :
 }
 
 # Success message with green checkmark
 # Usage: ok "success message"
-ok(){ xecho "${GRN}✓${DEF} $*"; }
+ok() { xecho "${GRN}✓${DEF} $*"; }
 
 # Info message with cyan prefix
 # Usage: info "info message"
-info(){ xecho "${CYN}ℹ${DEF} $*"; }
+info() { xecho "${CYN}ℹ${DEF} $*"; }
 
 # ============================================================================
 # USER INTERACTION
@@ -95,7 +95,7 @@ info(){ xecho "${CYN}ℹ${DEF} $*"; }
 
 # Confirm action with user (returns 0 for yes, 1 for no)
 # Usage: confirm "Proceed with operation?" && do_something
-confirm(){
+confirm() {
   local prompt="${1:-Continue?}"
   local reply
   printf '%b' "${YLW}?${DEF} ${prompt} [y/N] "
@@ -109,20 +109,20 @@ confirm(){
 
 # Error handler for ERR trap - shows line number
 # Usage: trap 'on_err $LINENO' ERR
-on_err(){
+on_err() {
   err "Failed at line ${1:-?}"
 }
 
 # Standard cleanup function template (override in your script)
 # Usage: cleanup(){ your_cleanup_code; }; trap cleanup EXIT
-cleanup(){
+cleanup() {
   set +e
   [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
 }
 
 # Setup standard traps for error handling
 # Usage: setup_traps
-setup_traps(){
+setup_traps() {
   trap 'cleanup' EXIT
   trap 'on_err $LINENO' ERR
   trap ':' INT TERM
@@ -135,7 +135,7 @@ setup_traps(){
 # Detect and cache privilege escalation command
 # Sets PRIV_CMD global variable
 # Usage: detect_priv_cmd
-detect_priv_cmd(){
+detect_priv_cmd() {
   if [[ -n ${PRIV_CMD:-} ]]; then
     return 0
   fi
@@ -157,7 +157,7 @@ detect_priv_cmd(){
 
 # Run command with privilege escalation
 # Usage: run_priv command args...
-run_priv(){
+run_priv() {
   detect_priv_cmd
   if [[ -z $PRIV_CMD ]]; then
     "$@"
@@ -172,7 +172,7 @@ run_priv(){
 
 # Find command with fallback chain: fd → fdfind → find
 # Sets FD_CMD global variable
-detect_fd(){
+detect_fd() {
   if [[ -n ${FD_CMD:-} ]]; then
     return 0
   fi
@@ -192,7 +192,7 @@ detect_fd(){
 
 # Grep command with fallback: rg → grep
 # Sets GREP_CMD global variable
-detect_grep(){
+detect_grep() {
   if [[ -n ${GREP_CMD:-} ]]; then
     return 0
   fi
@@ -210,7 +210,7 @@ detect_grep(){
 
 # Download command with fallback: aria2c → curl → wget2 → wget
 # Sets DL_CMD and DL_ARGS global variables
-detect_download(){
+detect_download() {
   if [[ -n ${DL_CMD:-} ]]; then
     return 0
   fi
@@ -236,7 +236,7 @@ detect_download(){
 
 # JSON processor with fallback: jaq → jq
 # Sets JSON_CMD global variable
-detect_json(){
+detect_json() {
   if [[ -n ${JSON_CMD:-} ]]; then
     return 0
   fi
@@ -258,7 +258,7 @@ detect_json(){
 
 # NUL-safe file finder with fallback to find
 # Usage: find0 pattern [path]
-find0(){
+find0() {
   local pattern=${1:?}
   local path=${2:-.}
 
@@ -273,7 +273,7 @@ find0(){
 
 # Download file with automatic tool selection
 # Usage: download_file url [output_file]
-download_file(){
+download_file() {
   local url=${1:?}
   local output=${2:-}
 
@@ -294,7 +294,7 @@ download_file(){
         curl "${DL_ARGS[@]}" "$url"
       fi
       ;;
-    wget*|wget2)
+    wget* | wget2)
       if [[ -n $output ]]; then
         "$DL_CMD" "${DL_ARGS[@]}" -O "$output" "$url"
       else
@@ -309,28 +309,28 @@ download_file(){
 # ============================================================================
 
 # Check if running on Wayland
-is_wayland(){
+is_wayland() {
   [[ ${XDG_SESSION_TYPE:-} == wayland ]] || [[ -n ${WAYLAND_DISPLAY:-} ]]
 }
 
 # Check if running on Arch-based system
-is_arch(){
+is_arch() {
   has pacman
 }
 
 # Check if running on Debian-based system
-is_debian(){
+is_debian() {
   has apt
 }
 
 # Check if running on Raspberry Pi (ARM architecture)
-is_pi(){
+is_pi() {
   [[ $(uname -m) =~ ^(arm|aarch64) ]]
 }
 
 # Detect current distribution
 # Returns: arch, debian, or unknown
-detect_distro(){
+detect_distro() {
   if is_arch; then
     printf 'arch'
   elif is_debian; then
@@ -346,7 +346,7 @@ detect_distro(){
 
 # Load array from file, filtering comments and blank lines
 # Usage: load_array_from_file arrayname filename
-load_array_from_file(){
+load_array_from_file() {
   local -n arr="$1"
   local file=${2:?}
 
@@ -361,7 +361,7 @@ load_array_from_file(){
 
 # Wait for process to exit with timeout
 # Usage: wait_for_process process_name timeout_seconds
-wait_for_process(){
+wait_for_process() {
   local proc=${1:?}
   local timeout=${2:-30}
   local elapsed=0
@@ -379,7 +379,7 @@ wait_for_process(){
 
 # Kill process by name if running
 # Usage: kill_process process_name
-kill_process(){
+kill_process() {
   local proc=${1:?}
 
   if pgrep -x "$proc" &>/dev/null; then

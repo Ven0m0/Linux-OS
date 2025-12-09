@@ -12,7 +12,7 @@ printf '%s\n' "Setting up Copyparty with network access and Samba support..."
 # Install necessary packages (apt for Debian/Raspbian)
 printf '%s\n' "Installing packages..."
 sudo apt-get update && sudo apt-get install -y python3-pip samba avahi-daemon libnss-mdns || {
-  printf '%s\n' "Error: Failed to install required packages">&2
+  printf '%s\n' "Error: Failed to install required packages" >&2
   exit 1
 }
 # Install copyparty via pip if not available
@@ -23,7 +23,7 @@ fi
 # Create config directory
 mkdir -p ~/.config/copyparty
 # Configure copyparty
-cat> ~/.config/copyparty/config.py << 'EOF'
+cat >~/.config/copyparty/config.py <<'EOF'
 #!/usr/bin/env python3
 """copyparty config"""
 import socket
@@ -58,7 +58,7 @@ mkdir -p ~/Public/uploads ~/Public/share
 # Configure Samba
 printf '%s\n' "Configuring Samba..."
 CURRENT_USER="$(whoami)"
-sudo tee /etc/samba/smb.conf>/dev/null << EOF
+sudo tee /etc/samba/smb.conf >/dev/null <<EOF
 [global]
   workgroup = WORKGROUP
   server string = Copyparty Samba Server
@@ -80,7 +80,7 @@ sudo tee /etc/samba/smb.conf>/dev/null << EOF
 EOF
 # Create systemd user service
 mkdir -p ~/.config/systemd/user
-cat> ~/.config/systemd/user/copyparty.service << 'EOF'
+cat >~/.config/systemd/user/copyparty.service <<'EOF'
 [Unit]
 Description=Copyparty web server
 After=network-online.target
@@ -97,12 +97,12 @@ WantedBy=default.target
 EOF
 # Enable services
 printf '%s\n' "Enabling and starting services..."
-sudo systemctl enable --now smbd nmbd avahi-daemon || printf '%s\n' "Warning: Failed to enable some system services">&2
+sudo systemctl enable --now smbd nmbd avahi-daemon || printf '%s\n' "Warning: Failed to enable some system services" >&2
 systemctl --user daemon-reload
 systemctl --user enable copyparty.service
 systemctl --user start copyparty.service || {
-  printf '%s\n' "Error: Failed to start copyparty service">&2
-  printf '%s\n' "Check logs with: systemctl --user status copyparty.service">&2
+  printf '%s\n' "Error: Failed to start copyparty service" >&2
+  printf '%s\n' "Check logs with: systemctl --user status copyparty.service" >&2
   exit 1
 }
 # Enable linger

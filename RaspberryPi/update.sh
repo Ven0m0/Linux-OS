@@ -6,26 +6,26 @@ export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRON
 # Colors
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m'
 # Core helper functions
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 # DietPi functions
-load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
+load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 # APT functions
-clean_apt_cache(){
+clean_apt_cache() {
   sudo apt-get clean -y 2>/dev/null || :
   sudo apt-get autoclean -y 2>/dev/null || :
   sudo apt-get autoremove --purge -y 2>/dev/null || :
 }
-run_apt(){
+run_apt() {
   yes | sudo apt-get -y --allow-releaseinfo-change \
     -o Acquire::Languages=none -o APT::Get::Fix-Missing=true \
     -o APT::Get::Fix-Broken=true "$@"
 }
 # Display colorized banner with gradient effect
-display_banner(){
+display_banner() {
   local banner_text="$1"
   shift
   local -a flag_colors=("$@")
-  mapfile -t banner_lines <<< "$banner_text"
+  mapfile -t banner_lines <<<"$banner_text"
   local line_count=${#banner_lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then
     for bline in "${banner_lines[@]}"; do
@@ -34,14 +34,14 @@ display_banner(){
   else
     for i in "${!banner_lines[@]}"; do
       local segment_index=$((i * (segments - 1) / (line_count - 1)))
-      ((segment_index>= segments)) && segment_index=$((segments - 1))
+      ((segment_index >= segments)) && segment_index=$((segments - 1))
       printf "%s%s%s\n" "${flag_colors[segment_index]}" "${banner_lines[i]}" "$DEF"
     done
   fi
 }
 # Banner
 banner=$(
-  cat << 'EOF'
+  cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗

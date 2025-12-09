@@ -9,7 +9,7 @@ LINKER_FLAGS="-s -w -trimpath -modcacherw"
 export GOGC=200 GOMAXPROCS="$(nproc)"
 export GOFLAGS="-ldflags=$LINKER_FLAGS"
 # 2. Helper function to check/install tools (Avoids re-installing if present)
-ensure_tool(){
+ensure_tool() {
   local cmd="$1" pkg="$2"
   if ! command -v "$cmd" &>/dev/null; then
     printf "Installing %s...\n" "$cmd"

@@ -25,7 +25,7 @@ _AUR_OPTS_CACHED=()
 #   mapfile -t result < <(detect_pkg_manager)
 #   pkgmgr=${result[0]}
 #   aur_opts=("${result[@]:1}")
-detect_pkg_manager(){
+detect_pkg_manager() {
   # Return cached values if available
   if [[ -n $_PKG_MGR_CACHED ]]; then
     printf '%s\n' "$_PKG_MGR_CACHED"
@@ -64,18 +64,18 @@ detect_pkg_manager(){
 
 # Get cached package manager name (detect if not already cached)
 # Usage: pkgmgr=$(get_pkg_manager)
-get_pkg_manager(){
+get_pkg_manager() {
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager>/dev/null
+    detect_pkg_manager >/dev/null
   fi
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
 
 # Get cached AUR helper options
 # Usage: mapfile -t aur_opts < <(get_aur_opts)
-get_aur_opts(){
+get_aur_opts() {
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager>/dev/null
+    detect_pkg_manager >/dev/null
   fi
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
@@ -86,7 +86,7 @@ get_aur_opts(){
 
 # Get standard AUR helper installation flags
 # Usage: mapfile -t flags < <(get_aur_install_flags)
-get_aur_install_flags(){
+get_aur_install_flags() {
   printf '%s\n' \
     --needed \
     --noconfirm \
@@ -103,14 +103,14 @@ get_aur_install_flags(){
 
 # Install packages using detected package manager
 # Usage: pkg_install package1 package2 package3
-pkg_install(){
+pkg_install() {
   [[ $# -eq 0 ]] && return 0
 
   local pkgmgr
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay)
+    paru | yay)
       local -a opts
       mapfile -t opts < <(get_aur_opts)
       "$pkgmgr" -S --needed --noconfirm "${opts[@]}" "$@"
@@ -118,7 +118,7 @@ pkg_install(){
     pacman)
       run_priv pacman -S --needed --noconfirm "$@"
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" install -y "$@"
       ;;
     *)
@@ -129,18 +129,18 @@ pkg_install(){
 
 # Remove packages using detected package manager
 # Usage: pkg_remove package1 package2 package3
-pkg_remove(){
+pkg_remove() {
   [[ $# -eq 0 ]] && return 0
 
   local pkgmgr
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay|pacman)
-      run_priv pacman -Rns --noconfirm "$@" 2>/dev/null || \
-        run_priv pacman -Rn --noconfirm "$@"
+    paru | yay | pacman)
+      run_priv pacman -Rns --noconfirm "$@" 2>/dev/null \
+        || run_priv pacman -Rn --noconfirm "$@"
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" remove --purge -y "$@"
       ;;
     *)
@@ -151,16 +151,16 @@ pkg_remove(){
 
 # Check if package is installed
 # Usage: pkg_installed package_name && echo "installed"
-pkg_installed(){
+pkg_installed() {
   local pkg=${1:?}
   local pkgmgr
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay|pacman)
+    paru | yay | pacman)
       pacman -Q "$pkg" &>/dev/null
       ;;
-    apt|apt-get)
+    apt | apt-get)
       dpkg -l "$pkg" 2>/dev/null | grep -q '^ii'
       ;;
     *)
@@ -171,12 +171,12 @@ pkg_installed(){
 
 # Update package database
 # Usage: pkg_update
-pkg_update(){
+pkg_update() {
   local pkgmgr
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay)
+    paru | yay)
       local -a opts
       mapfile -t opts < <(get_aur_opts)
       "$pkgmgr" -Sy --noconfirm "${opts[@]}"
@@ -184,7 +184,7 @@ pkg_update(){
     pacman)
       run_priv pacman -Sy --noconfirm
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" update
       ;;
     *)
@@ -195,12 +195,12 @@ pkg_update(){
 
 # Upgrade all packages
 # Usage: pkg_upgrade
-pkg_upgrade(){
+pkg_upgrade() {
   local pkgmgr
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay)
+    paru | yay)
       local -a opts
       mapfile -t opts < <(get_aur_opts)
       "$pkgmgr" -Syu --noconfirm "${opts[@]}"
@@ -208,7 +208,7 @@ pkg_upgrade(){
     pacman)
       run_priv pacman -Syu --noconfirm
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" upgrade -y
       ;;
     *)
@@ -219,17 +219,17 @@ pkg_upgrade(){
 
 # Clean package cache
 # Usage: pkg_clean
-pkg_clean(){
+pkg_clean() {
   local pkgmgr
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay|pacman)
+    paru | yay | pacman)
       run_priv paccache -rk0 -q 2>/dev/null || :
       run_priv pacman -Scc --noconfirm 2>/dev/null || :
       has paru && paru -Scc --noconfirm 2>/dev/null || :
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" clean -y 2>/dev/null || :
       run_priv "$pkgmgr" autoclean 2>/dev/null || :
       run_priv "$pkgmgr" autoremove --purge -y 2>/dev/null || :
@@ -242,17 +242,17 @@ pkg_clean(){
 
 # Remove orphaned packages
 # Usage: pkg_autoremove
-pkg_autoremove(){
+pkg_autoremove() {
   local pkgmgr
   pkgmgr=$(get_pkg_manager)
 
   case $pkgmgr in
-    paru|yay|pacman)
+    paru | yay | pacman)
       local orphans
       orphans=$(pacman -Qdtq 2>/dev/null || :)
       [[ -n $orphans ]] && run_priv pacman -Rns --noconfirm "$orphans" || :
       ;;
-    apt|apt-get)
+    apt | apt-get)
       run_priv "$pkgmgr" autoremove --purge -y
       ;;
     *)
@@ -267,7 +267,7 @@ pkg_autoremove(){
 
 # Setup optimized build environment for native compilation
 # Usage: setup_build_env
-setup_build_env(){
+setup_build_env() {
   # C/C++ compiler flags
   export CFLAGS="-march=native -mtune=native -O3 -pipe"
   export CXXFLAGS="$CFLAGS"

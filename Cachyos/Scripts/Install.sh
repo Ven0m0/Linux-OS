@@ -149,7 +149,7 @@ install_packages(){
     makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an jdk-temurin jdk25-graalvm-bin
     vscodium-electron vk-hdr-layer-kwin6-git soar zoi-bin cargo-binstall cargo-edit cargo-c cargo-update
     cargo-outdated cargo-make cargo-llvm-cov cargo-cache cargo-machete cargo-pgo cargo-binutils
-    cargo-udeps cargo-pkgbuild simagef-bin crabz
+    cargo-udeps cargo-pkgbuild crabz
   )
   msg "Checking packages"
   mapfile -t installed < <(pacman -Qq 2>/dev/null)

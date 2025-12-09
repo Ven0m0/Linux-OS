@@ -26,3 +26,17 @@ uv pip install praw httpx sherlock-project orjson uvloop
 # Or pip
 pip3 install praw httpx sherlock-project orjson uvloop
 ```
+
+### Usage
+
+```bash
+# Sherlock Only
+./account_scanner.py username --mode sherlock
+
+# Reddit Only
+./account_scanner.py username \
+  --mode reddit \
+  --perspective-api-key YOUR_KEY \
+  --client-id YOUR_ID \
+  --client-secret YOUR_SECRET \
+  --user-agent "Bot/1.0"

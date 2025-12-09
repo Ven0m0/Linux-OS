@@ -1,66 +1,9 @@
 #!/usr/bin/env bash
 # Source common library
-SCRIPT_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C LANGUAGE=C
-BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m' MGN=$'\e[35m' PNK=$'\e[38;5;218m' DEF=$'\e[0m' BLD=$'\e[1m'
-export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 has(){ command -v -- "$1" &>/dev/null; }
-xecho(){ printf '%b\m' "$*"; }
-log(){ xecho "$*"; }
-die(){ xecho "${RED}Error:${DEF} $*" >&2; exit 1; }
-confirm(){
-  local msg="$1"
-  printf '%s [y/N]: ' "$msg" >&2
-  read -r ans
-  [[ $ans == [Yy]* ]]
-}
-get_clean_banner(){
-  cat << 'EOF'
- ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
-██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
-██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
-██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║
-╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝
- ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝
-EOF
-}
-print_named_banner(){
-  local name="$1" title="${2:-Meow (> ^ <)}" banner
-  case "$name" in update) banner=$(get_update_banner) ;; clean) banner=$(get_clean_banner) ;; *) die "Unknown banner name: $name" ;; esac
-  print_banner "$banner" "$title"
-}
-setup_build_env(){
-  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
-  export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-  export CFLAGS="-march=native -mtune=native -O3 -pipe"
-  export CXXFLAGS="$CFLAGS"
-  export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
-  export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always
-  export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1
-  local nproc_count
-  nproc_count=$(nproc 2>/dev/null || echo 4)
-  export MAKEFLAGS="-j${nproc_count}"
-  export NINJAFLAGS="-j${nproc_count}"
-  if has clang && has clang++; then
-    export CC=clang CXX=clang++ AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib
-    if has ld.lld; then export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"; fi
-  fi
-  has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
-}
-run_system_maintenance(){
-  local cmd=$1
-  shift
-  local args=("$@")
-  has "$cmd" || return 0
-  case "$cmd" in modprobed-db) "$cmd" store &>/dev/null || : ;; hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null || : ;; mandb) sudo "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;; *) sudo "$cmd" "${args[@]}" &>/dev/null || : ;; esac
-}
-capture_disk_usage(){
-  local var_name=$1
-  local -n ref="$var_name"
-  ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
-}
 
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null
 echo within_size | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled &>/dev/null
@@ -95,6 +38,6 @@ export USE_CCACHE=1
 # hdparm -B 254
 # Completely disables APM
 # hdparm -B 255
-if command -v gamemoderun &>/dev/null; then
+if has gamemoderun; then
   gamemoderun
 fi

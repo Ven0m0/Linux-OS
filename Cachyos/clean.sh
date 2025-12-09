@@ -1,21 +1,209 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Enhanced system cleaning with privacy configuration
 # Refactored version with improved structure and maintainability
 
-# Source shared libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/common.sh"
-source "$SCRIPT_DIR/../lib/browser-utils.sh"
-source "$SCRIPT_DIR/../lib/pkg-utils.sh"
+set -euo pipefail
+shopt -s nullglob globstar extglob
+IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
 
-# Initialize shell with strict settings
-init_shell
-export HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
+# Colors (trans flag palette)
+BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
+LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
+DEF=$'\e[0m' BLD=$'\e[1m'
+export BLK RED GRN YLW BLU MGN CYN WHT LBLU PNK BWHT DEF BLD
+
+# Core helper functions
+has(){ command -v -- "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
 
 # Capture current disk usage
 capture_disk_usage(){
   df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'
+}
+
+# Package manager detection (cached)
+_PKG_MGR_CACHED=""
+_AUR_OPTS_CACHED=()
+
+detect_pkg_manager(){
+  if [[ -n $_PKG_MGR_CACHED ]]; then
+    printf '%s\n' "$_PKG_MGR_CACHED"
+    printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
+    return 0
+  fi
+  local pkgmgr
+  if has paru; then
+    pkgmgr=paru
+    _AUR_OPTS_CACHED=(--batchinstall --combinedupgrade --nokeepsrc)
+  elif has yay; then
+    pkgmgr=yay
+    _AUR_OPTS_CACHED=(--answerclean y --answerdiff n --answeredit n --answerupgrade y)
+  else
+    pkgmgr=pacman
+    _AUR_OPTS_CACHED=()
+  fi
+  _PKG_MGR_CACHED=$pkgmgr
+  printf '%s\n' "$pkgmgr"
+  printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
+}
+
+get_pkg_manager(){
+  if [[ -z $_PKG_MGR_CACHED ]]; then
+    detect_pkg_manager >/dev/null
+  fi
+  printf '%s\n' "$_PKG_MGR_CACHED"
+}
+
+# NUL-safe finder using fdf/fd/fdfind/find
+find0(){
+  local root="$1"
+  shift
+  if has fdf; then
+    fdf -H -0 "$@" . "$root"
+  elif has fd; then
+    fd -H -0 "$@" . "$root"
+  elif has fdfind; then
+    fdfind -H -0 "$@" . "$root"
+  else
+    find "$root" "$@" -print0
+  fi
+}
+
+# Browser helper functions
+# Vacuum a single SQLite database and return bytes saved
+vacuum_sqlite(){
+  local db=$1 s_old s_new
+  [[ -f $db ]] || {
+    printf '0\n'
+    return
+  }
+  # Skip if probably open
+  [[ -f ${db}-wal || -f ${db}-journal ]] && {
+    printf '0\n'
+    return
+  }
+  # Validate it's actually a SQLite database file
+  if ! head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3'; then
+    printf '0\n'
+    return
+  fi
+  s_old=$(stat -c%s "$db" 2>/dev/null) || {
+    printf '0\n'
+    return
+  }
+  # VACUUM already rebuilds indices, making REINDEX redundant
+  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || {
+    printf '0\n'
+    return
+  }
+  s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
+  printf '%d\n' "$((s_old - s_new))"
+}
+
+# Clean SQLite databases in current working directory
+clean_sqlite_dbs(){
+  local total=0 db saved
+  while IFS= read -r -d '' db; do
+    [[ -f $db ]] || continue
+    saved=$(vacuum_sqlite "$db" || printf '0')
+    ((saved > 0)) && total=$((total + saved))
+  done < <(find0 . -maxdepth 2 -type f -name '*.sqlite*' -print0 2>/dev/null)
+  ((total > 0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF}"
+}
+
+# Wait for processes to exit, kill if timeout
+ensure_not_running(){
+  local timeout=6 p
+  local pattern=$(printf '%s|' "$@")
+  pattern=${pattern%|}
+
+  # Quick check if any processes are running
+  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return 0
+
+  # Show waiting message for found processes
+  for p in "$@"; do
+    pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
+  done
+
+  # Single wait loop checking all processes with one pgrep call
+  local wait_time=$timeout
+  while ((wait_time-- > 0)); do
+    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return 0
+    sleep 1
+  done
+
+  # Kill any remaining processes
+  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null; then
+    printf '  %s\n' "${RED}Killing remaining processes...${DEF}"
+    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
+    sleep 1
+  fi
+}
+
+# Firefox-family profile discovery (single default)
+foxdir(){
+  local base=$1 p
+  [[ -d $base ]] || return 1
+  if [[ -f $base/installs.ini ]]; then
+    p=$(awk -F= '/^\[.*\]/{f=0} /^\[Install/{f=1;next} f&&/^Default=/{print $2;exit}' "$base/installs.ini")
+    [[ -n $p && -d $base/$p ]] && {
+      printf '%s\n' "$base/$p"
+      return 0
+    }
+  fi
+  if [[ -f $base/profiles.ini ]]; then
+    p=$(awk -F= '/^\[.*\]/{s=0} /^\[Profile[0-9]+\]/{s=1} s&&/^Default=1/{d=1} s&&/^Path=/{if(d){print $2;exit}}' "$base/profiles.ini")
+    [[ -n $p && -d $base/$p ]] && {
+      printf '%s\n' "$base/$p"
+      return 0
+    }
+  fi
+  return 1
+}
+
+# List all Mozilla profiles in a base directory
+mozilla_profiles(){
+  local base=$1 p is_rel path_val
+  [[ -d $base ]] || return 0
+
+  # Process installs.ini
+  if [[ -f $base/installs.ini ]]; then
+    while IFS='=' read -r key val; do
+      [[ $key == Default ]] && {
+        path_val=$val
+        [[ -d $base/$path_val ]] && printf '%s\n' "$base/$path_val"
+      }
+    done < <(grep -E '^Default=' "$base/installs.ini" 2>/dev/null)
+  fi
+
+  # Process profiles.ini with IsRelative support
+  if [[ -f $base/profiles.ini ]]; then
+    is_rel=1 path_val=''
+    while IFS='=' read -r key val; do
+      case $key in
+        IsRelative) is_rel=$val ;;
+        Path)
+          path_val="$val"
+          if [[ $is_rel -eq 0 ]]; then
+            [[ -d $path_val ]] && printf '%s\n' "$path_val"
+          else
+            [[ -d $base/$path_val ]] && printf '%s\n' "$base/$path_val"
+          fi
+          path_val='' is_rel=1
+          ;;
+      esac
+    done < <(grep -E '^(IsRelative|Path)=' "$base/profiles.ini" 2>/dev/null)
+  fi
+}
+
+# List Default + Profile * dirs under a Chromium root
+chrome_profiles(){
+  local root=$1 d
+  for d in "$root"/Default "$root"/"Profile "*; do
+    [[ -d $d ]] && printf '%s\n' "$d"
+  done
 }
 
 #============ Configuration ============
@@ -53,10 +241,10 @@ configure_firefox_privacy(){
       touch "$prefs_file"
       # Read existing prefs once instead of calling grep for each pref
       local existing_prefs
-      existing_prefs=$(<"$prefs_file" 2>/dev/null) || existing_prefs=""
+      existing_prefs=$(< "$prefs_file" 2>/dev/null) || existing_prefs=""
       for pref in "${firefox_prefs[@]}"; do
         [[ $existing_prefs == *"$pref"* ]] || {
-          printf '%s\n' "$pref" >>"$prefs_file"
+          printf '%s\n' "$pref" >> "$prefs_file"
           ((prefs_changed++))
         }
       done
@@ -84,11 +272,21 @@ banner(){
 #============ Cleaning Functions ============
 clean_browsers(){
   printf '%s\n' "🔄${BLU}Cleaning browsers...${DEF}"
-
-  # Clean Mozilla-based browsers
+  local -a moz_bases=(
+    "${HOME}/.mozilla/firefox"
+    "${HOME}/.librewolf"
+    "${HOME}/.floorp"
+    "${HOME}/.waterfox"
+    "${HOME}/.moonchild productions/pale moon"
+    "${HOME}/.conkeror.mozdev.org/conkeror"
+    "${HOME}/.var/app/org.mozilla.firefox/.mozilla/firefox"
+    "${HOME}/.var/app/io.gitlab.librewolf-community/.mozilla/firefox"
+    "${HOME}/.var/app/com.google.Chrome/.mozilla/firefox" # Added for Chrome Flatpak
+    "${HOME}/snap/firefox/common/.mozilla/firefox"
+  )
   ensure_not_running firefox librewolf floorp waterfox palemoon conkeror
-  while IFS= read -r base; do
-    # Special handling for Waterfox nested structure
+  for base in "${moz_bases[@]}"; do
+    [[ -d $base ]] || continue
     if [[ $base == "$HOME/.waterfox" ]]; then
       for b in "$base"/*; do
         [[ -d $b ]] || continue
@@ -101,32 +299,47 @@ clean_browsers(){
         [[ -d $prof ]] && (cd "$prof" && clean_sqlite_dbs)
       done < <(mozilla_profiles "$base")
     fi
-  done < <(mozilla_bases_for "$USER")
-
-  # Clean Mozilla cache directories
+  done
   rm -rf "${HOME}/.cache/mozilla"/* "${HOME}/.var/app/org.mozilla.firefox/cache"/* \
     "${HOME}/snap/firefox/common/.cache"/* &>/dev/null || :
-
-  # Clean Chromium-based browsers
   ensure_not_running google-chrome chromium brave-browser brave opera vivaldi midori qupzilla
-  while IFS= read -r root; do
+  local -a chrome_dirs=(
+    "${HOME}/.config/google-chrome"
+    "${HOME}/.config/chromium"
+    "${HOME}/.config/BraveSoftware/Brave-Browser"
+    "${HOME}/.config/opera"
+    "${HOME}/.config/vivaldi"
+    "${HOME}/.config/midori"
+    "${HOME}/.var/app/com.google.Chrome/config/google-chrome"
+    "${HOME}/.var/app/org.chromium.Chromium/config/chromium"
+    "${HOME}/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser"
+  )
+  for root in "${chrome_dirs[@]}"; do
+    [[ -d $root ]] || continue
     rm -rf "$root"/{GraphiteDawnCache,ShaderCache,*_crx_cache} &>/dev/null || :
     while IFS= read -r profdir; do
       [[ -d $profdir ]] || continue
       (cd "$profdir" && clean_sqlite_dbs)
       rm -rf "$profdir"/{Cache,GPUCache,"Code Cache","Service Worker",Logs} &>/dev/null || :
     done < <(chrome_profiles "$root")
-  done < <(chrome_roots_for "$USER")
+  done
 }
 
 clean_mail_clients(){
   printf '%s\n' "📧${BLU}Cleaning mail clients...${DEF}"
+  local -a mail_bases=(
+    "${HOME}/.thunderbird"
+    "${HOME}/.icedove"
+    "${HOME}/.mozilla-thunderbird"
+    "${HOME}/.var/app/org.mozilla.Thunderbird/.thunderbird"
+  )
   ensure_not_running thunderbird icedove
-  while IFS= read -r base; do
+  for base in "${mail_bases[@]}"; do
+    [[ -d $base ]] || continue
     while IFS= read -r prof; do
       [[ -d $prof ]] && (cd "$prof" && clean_sqlite_dbs)
     done < <(mozilla_profiles "$base")
-  done < <(mail_bases_for "$USER")
+  done
 }
 
 clean_electron(){
@@ -154,7 +367,16 @@ privacy_config(){
 }
 
 pkg_cache_clean(){
-  pkg_clean
+  if has pacman; then
+    local pkgmgr=$(get_pkg_manager)
+    sudo paccache -rk0 -q &>/dev/null || :
+    sudo "$pkgmgr" -Scc --noconfirm &>/dev/null || :
+    has paru && paru -Scc --noconfirm &>/dev/null || :
+  fi
+  has apt-get && {
+    sudo apt-get clean -y &>/dev/null
+    sudo apt-get autoclean &>/dev/null
+  }
 }
 
 snap_flatpak_trim(){

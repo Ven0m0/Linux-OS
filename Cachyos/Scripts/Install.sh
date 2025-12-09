@@ -15,26 +15,13 @@ die(){
   exit "${2:-1}"
 }
 #──────────── Setup ────────────
-check_supported_isa_level(){
-  /lib/ld-linux-x86-64.so.2 --help | grep -q "$1 (supported, searched)"
-  echo "$?"
-}
-
 if has paru; then
   pkgmgr=(paru) aur=1
 else
   pkgmgr=(sudo pacman) aur=0
 fi
-
 #──────────── Build Environment ────────────
 jobs=$(nproc 2>/dev/null || echo 4)
-[[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf &>/dev/null
-export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true \
-  RUSTFLAGS="${RUSTFLAGS:-'-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols'}" \
-  OPT_LEVEL=3 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_OPT_LEVEL=3 \
-  UV_COMPILE_BYTECODE=1 PYTHONOPTIMIZE=2
-unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
-
 #══════════════════════════════════════════════════════════════
 #  REPOSITORY CONFIGURATION
 #══════════════════════════════════════════════════════════════

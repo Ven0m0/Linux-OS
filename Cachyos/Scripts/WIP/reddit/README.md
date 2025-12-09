@@ -14,7 +14,7 @@ Multi-source account intelligence: Reddit toxicity analysis + Sherlock OSINT pla
 
 ```bash
 # Core dependencies
-pacman -S python-praw python-pandas python-httpx
+pacman -S python-praw python-httpx
 
 # Sherlock
 yay -S sherlock-git

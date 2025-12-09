@@ -1,21 +1,9 @@
 #!/usr/bin/env python3
 """Multi-source account scanner: Reddit toxicity + Sherlock OSINT.
 
-Optimized with orjson and uvloop.
 """
-import argparse
-import asyncio
-import csv
-import shutil
-import sys
-import time
+import argparse, asyncio, csv, shutil, sys, time, orjson, uvloop, httpx, praw
 from pathlib import Path
-
-# High-performance libraries
-import orjson
-import uvloop
-import httpx
-import praw
 
 # Perspective API constants
 PERSPECTIVE_URL = "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"

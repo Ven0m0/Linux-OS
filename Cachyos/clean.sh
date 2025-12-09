@@ -13,7 +13,7 @@ init_shell
 export HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
 
 # Capture current disk usage
-capture_disk_usage() {
+capture_disk_usage(){
   df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'
 }
 
@@ -21,7 +21,7 @@ capture_disk_usage() {
 declare -r MAX_PARALLEL_JOBS="$(nproc 2>/dev/null || echo 4)"
 declare -r SQLITE_TIMEOUT=30
 
-configure_firefox_privacy() {
+configure_firefox_privacy(){
   local prefs_changed=0
   local -a firefox_prefs=(
     'user_pref("browser.startup.homepage_override.mstone", "ignore");'
@@ -64,14 +64,14 @@ configure_firefox_privacy() {
   ((prefs_changed > 0)) && printf '  %s %d prefs\n' "${GRN}Firefox privacy:" "$prefs_changed${DEF}"
 }
 
-configure_python_history() {
+configure_python_history(){
   local history_file="${HOME}/.python_history"
   [[ -f $history_file ]] || touch "$history_file"
   sudo chattr +i "$history_file" &>/dev/null && printf '  %s\n' "${GRN}Python history locked${DEF}" || :
 }
 
 #============ Banner ============
-banner() {
+banner(){
   printf '%s\n' "${LBLU} ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗ ${DEF}"
   printf '%s\n' "${PNK}██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝ ${DEF}"
   printf '%s\n' "${BWHT}██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗${DEF}"
@@ -81,7 +81,7 @@ banner() {
 }
 
 #============ Cleaning Functions ============
-clean_browsers() {
+clean_browsers(){
   printf '%s\n' "🔄${BLU}Cleaning browsers...${DEF}"
 
   # Clean Mozilla-based browsers
@@ -118,7 +118,7 @@ clean_browsers() {
   done < <(chrome_roots_for "$USER")
 }
 
-clean_mail_clients() {
+clean_mail_clients(){
   printf '%s\n' "📧${BLU}Cleaning mail clients...${DEF}"
   ensure_not_running thunderbird icedove
   while IFS= read -r base; do
@@ -128,7 +128,7 @@ clean_mail_clients() {
   done < <(mail_bases_for "$USER")
 }
 
-clean_electron() {
+clean_electron(){
   local -a apps=("Code" "VSCodium" "Microsoft/Microsoft Teams")
   for app in "${apps[@]}"; do
     local d="${HOME}/.config/$app"
@@ -137,7 +137,7 @@ clean_electron() {
   done
 }
 
-privacy_clean() {
+privacy_clean(){
   printf '%s\n' "🔒${MGN}Privacy cleanup...${DEF}"
   rm -f "${HOME}/.bash_history" "${HOME}/.zsh_history" "${HOME}/.python_history" "${HOME}/.history" \
     "${HOME}/.local/share/fish/fish_history" &>/dev/null || :
@@ -146,17 +146,17 @@ privacy_clean() {
   rm -f "${HOME}/.recently-used.xbel" "${HOME}/.local/share/recently-used.xbel"* &>/dev/null || :
 }
 
-privacy_config() {
+privacy_config(){
   printf '%s\n' "🔒${MGN}Privacy configuration...${DEF}"
   configure_firefox_privacy
   configure_python_history
 }
 
-pkg_cache_clean() {
+pkg_cache_clean(){
   pkg_clean
 }
 
-snap_flatpak_trim() {
+snap_flatpak_trim(){
   has flatpak && flatpak uninstall --unused --delete-data -y &>/dev/null || :
   if has snap; then
     printf '%s\n' "🔄${BLU}Removing old Snap revisions...${DEF}"
@@ -168,7 +168,7 @@ snap_flatpak_trim() {
   sudo rm -rf /var/lib/snapd/cache/* /var/tmp/flatpak-cache-* &>/dev/null || :
 }
 
-system_clean() {
+system_clean(){
   printf '%s\n' "🔄${BLU}System cleanup...${DEF}"
   sudo resolvectl flush-caches &>/dev/null || :
   sudo systemd-resolve --flush-caches &>/dev/null || :
@@ -195,7 +195,7 @@ system_clean() {
 }
 
 #============ Main ============
-main() {
+main(){
   case ${1:-} in
     config)
       banner

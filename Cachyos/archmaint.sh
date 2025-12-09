@@ -13,11 +13,11 @@ source "$SCRIPT_DIR/../lib/pkg-utils.sh"
 init_shell
 
 # Override log() and msg() with custom formatting for this script
-log() { xecho "${BLU}${BLD}[*]${DEF} $*"; }
-msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
+log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
 
 #============ Banner Printing Functions ============
-print_banner() {
+print_banner(){
   local banner="$1" title="${2:-}"
   local flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU")
   local -a lines=()
@@ -37,7 +37,7 @@ print_banner() {
   [[ -n $title ]] && xecho "$title"
 }
 
-get_update_banner() {
+get_update_banner(){
   cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -48,7 +48,7 @@ get_update_banner() {
 EOF
 }
 
-get_clean_banner() {
+get_clean_banner(){
   cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
@@ -59,7 +59,7 @@ get_clean_banner() {
 EOF
 }
 
-print_named_banner() {
+print_named_banner(){
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in
     update) banner=$(get_update_banner) ;;
@@ -71,7 +71,7 @@ print_named_banner() {
 
 #============ Build Environment Setup (Extended) ============
 # Override setup_build_env with extended version for archmaint
-setup_build_env() {
+setup_build_env(){
   # Call base implementation from pkg-utils.sh
   source "$SCRIPT_DIR/../lib/pkg-utils.sh"
 
@@ -84,7 +84,7 @@ setup_build_env() {
 }
 
 #============ System Maintenance Functions ============
-run_system_maintenance() {
+run_system_maintenance(){
   local cmd=$1
   shift
   local args=("$@")
@@ -98,7 +98,7 @@ run_system_maintenance() {
 }
 
 #============ Disk Usage Helpers ============
-capture_disk_usage() {
+capture_disk_usage(){
   local var_name=$1
   local -n ref="$var_name"
   ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
@@ -106,10 +106,10 @@ capture_disk_usage() {
 
 #============ Function Aliases for Backward Compatibility ============
 # archmaint uses ensure_not_running_any instead of ensure_not_running
-ensure_not_running_any() { ensure_not_running "$@"; }
+ensure_not_running_any(){ ensure_not_running "$@"; }
 
 # Utility function for expanding wildcards in paths
-_expand_wildcards() {
+_expand_wildcards(){
   local path=$1
   local -n result_ref="$2"
   if [[ $path == *\** ]]; then
@@ -126,7 +126,7 @@ _expand_wildcards() {
 }
 
 #============ Script-specific Functions ============
-cleanup_pacman_lock() {
+cleanup_pacman_lock(){
   sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
 }
 
@@ -138,12 +138,12 @@ ASSUME_YES=0
 MODE=""
 
 # Override log function to respect QUIET
-log() { ((QUIET)) || xecho "$*"; }
+log(){ ((QUIET)) || xecho "$*"; }
 
 #=========== Update Functions ===========
 # Note: run_system_maintenance is now provided by common.sh
 
-update_system_packages() {
+update_system_packages(){
   local pkgmgr aur_opts
   log "🔄${BLU}System update${DEF}"
   # Use cached package manager detection
@@ -173,7 +173,7 @@ update_system_packages() {
   fi
 }
 
-update_with_topgrade() {
+update_with_topgrade(){
   if has topgrade; then
     log "🔄${BLU}Running Topgrade updates...${DEF}"
     local disable_user=(--disable={config_update,system,tldr,maza,yazi,micro})
@@ -183,7 +183,7 @@ update_with_topgrade() {
   fi
 }
 
-update_flatpak() {
+update_flatpak(){
   if has flatpak; then
     log "🔄${BLU}Updating Flatpak...${DEF}"
     sudo flatpak update -y --noninteractive --appstream &>/dev/null || :
@@ -191,7 +191,7 @@ update_flatpak() {
   fi
 }
 
-update_rust() {
+update_rust(){
   if has rustup; then
     log "🔄${BLU}Updating Rust...${DEF}"
     rustup update
@@ -217,13 +217,13 @@ update_rust() {
   fi
 }
 
-update_editors() {
+update_editors(){
   # Update editor plugins
   has micro && micro -plugin update &>/dev/null || :
   has yazi && ya pkg upgrade &>/dev/null || :
 }
 
-update_shells() {
+update_shells(){
   if has fish; then
     log "🔄${BLU}Updating Fish...${DEF}"
     fish -c "fish_update_completions" || :
@@ -247,7 +247,7 @@ update_shells() {
   has tldr && sudo tldr -cuq || :
 }
 
-update_python() {
+update_python(){
   if has uv; then
     log "🔄${BLU}Updating UV...${DEF}"
     uv self update -q &>/dev/null || log "⚠️${YLW}Failed to update UV${DEF}"
@@ -284,7 +284,7 @@ update_python() {
   fi
 }
 
-update_system_utils() {
+update_system_utils(){
   log "🔄${BLU}Running miscellaneous updates...${DEF}"
   # Pre-filter commands that exist to reduce repeated has() calls
   local cmds=(
@@ -318,7 +318,7 @@ update_system_utils() {
   fi
 }
 
-update_boot() {
+update_boot(){
   log "🔍${BLU}Checking boot configuration...${DEF}"
   # Update systemd-boot if installed
   if [[ -d /sys/firmware/efi ]] && has bootctl && sudo bootctl is-installed -q &>/dev/null; then
@@ -363,7 +363,7 @@ update_boot() {
   fi
 }
 
-run_update() {
+run_update(){
   print_named_banner "update" "Meow (> ^ <)"
   setup_build_env
 
@@ -392,7 +392,7 @@ run_update() {
 #=========== Clean Functions ===========
 # Note: clean_paths() and clean_with_sudo() are defined in the inlined lib/common.sh above
 
-run_clean() {
+run_clean(){
   print_named_banner "clean"
 
   # Ensure sudo access
@@ -697,7 +697,7 @@ run_clean() {
 
 #=========== Traps & Cleanup ===========
 # Enhanced cleanup for archmaint
-cleanup_archmaint() {
+cleanup_archmaint(){
   cleanup_pacman_lock
   # Reset environment variables
   unset LC_ALL RUSTFLAGS CFLAGS CXXFLAGS LDFLAGS
@@ -708,7 +708,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 #=========== CLI Interface =============
-show_usage() {
+show_usage(){
   cat <<EOF
 Usage: ${0##*/} [OPTIONS] COMMAND
 
@@ -733,7 +733,7 @@ Examples:
 EOF
 }
 
-parse_args() {
+parse_args(){
   # Process options
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -758,7 +758,7 @@ parse_args() {
 }
 
 #=========== Main Function =============
-main() {
+main(){
   parse_args "$@"
   if [[ $DRYRUN -eq 1 ]]; then
     log "${YLW}Running in dry-run mode. No changes will be made.${DEF}"

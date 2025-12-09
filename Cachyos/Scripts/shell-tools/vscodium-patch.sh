@@ -4,10 +4,10 @@ shopt -s nullglob globstar
 IFS=$'\n\t'
 LC_ALL=C
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
-warn() { printf '%b\n' "${Y}⚠${D} $*" >&2; }
-has() { command -v -- "$1" &>/dev/null; }
-ok() { printf '%b\n' "${G}✓${D} $*"; }
-vscode_json_set() {
+warn(){ printf '%b\n' "${Y}⚠${D} $*" >&2; }
+has(){ command -v -- "$1" &>/dev/null; }
+ok(){ printf '%b\n' "${G}✓${D} $*"; }
+vscode_json_set(){
   local prop=$1 val=$2
   has python3 || {
     warn "No python3: $prop"
@@ -44,7 +44,7 @@ has "$JQ" || {
   exit 1
 }
 KEYS_PROD=(nameShort nameLong applicationName dataFolderName serverDataFolderName darwinBundleIdentifier linuxIconName licenseUrl extensionAllowedProposedApi extensionEnabledApiProposals extensionKind extensionPointExtensionKind extensionSyncedKeys extensionVirtualWorkspacesSupport extensionsGallery extensionTips extensionImportantTips exeBasedExtensionTips configBasedExtensionTips keymapExtensionTips languageExtensionTips remoteExtensionTips webExtensionTips virtualWorkspaceExtensionTips trustedExtensionAuthAccess trustedExtensionUrlPublicKeys auth configurationSync "configurationSync.store" editSessions "editSessions.store" settingsSync aiConfig commandPaletteSuggestedCommandIds extensionRecommendations extensionKeywords extensionAllowedBadgeProviders extensionAllowedBadgeProvidersRegex linkProtectionTrustedDomains msftInternalDomains documentationUrl introductoryVideosUrl tipsAndTricksUrl newsletterSignupUrl releaseNotesUrl keyboardShortcutsUrlMac keyboardShortcutsUrlLinux keyboardShortcutsUrlWin quality settingsSearchUrl tasConfig tunnelApplicationName tunnelApplicationConfig serverApplicationName serverGreeting urlProtocol webUrl webEndpointUrl webEndpointUrlTemplate webviewContentExternalBaseUrlTemplate builtInExtensions extensionAllowedExtensionKinds crash aiRelatedInformationUrl defaultChatAgent)
-dl() {
+dl(){
   local u=$1 o=$2
   mkdir -p "${o%/*}"
   if has aria2c; then
@@ -58,7 +58,7 @@ dl() {
     exit 1
   fi
 }
-xdg_patch() {
+xdg_patch(){
   local -a files=()
   mapfile -t files < <(find /usr/{lib/code*,share/applications} /opt/{visual-studio-code*,vscodium*} -type f \( -name "package.json" -o -name "*.desktop" \) ! -name "*-url-handler.desktop" 2>/dev/null || :)
   ((${#files[@]})) || {
@@ -84,7 +84,7 @@ xdg_patch() {
     esac
   done
 }
-json_op() {
+json_op(){
   local op=$1 prod=$2 patch=$3 cache=$4 tmp="${prod}.tmp.$$"
   [[ -f $prod ]] || {
     warn "$prod missing"
@@ -110,7 +110,7 @@ json_op() {
       ;;
   esac
 }
-update_json() {
+update_json(){
   local v=$1 out=$2
   local -n kref="$3"
   [[ $v ]] || {
@@ -129,11 +129,11 @@ update_json() {
   ok "Updated → $out"
   [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD &>/dev/null || :
 }
-sign_fix() {
+sign_fix(){
   local f="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js" old=${1:-@vscode/vsce-sign} new=${2:-node-ovsx-sign}
   [[ -f $f ]] && sed -i "s|import(\"${old}\")|import(\"${new}\")|g" "$f" && ok "Sign fix: $new"
 }
-repo_swap() {
+repo_swap(){
   local f=${1:-/usr/share/vscodium/resources/app/product.json} mode=${2:-0}
   [[ -f $f ]] || {
     printf '%b\n' "${R}✗${D} No product.json: $f" >&2
@@ -147,7 +147,7 @@ repo_swap() {
     ok "Repo → MS Marketplace"
   fi
 }
-vscodium_prod_full() {
+vscodium_prod_full(){
   local dst=${1:-/usr/share/vscodium/resources/app/product.json}
   [[ -f $dst ]] || {
     printf '%b\n' "${R}✗${D} Missing: $dst" >&2
@@ -170,7 +170,7 @@ vscodium_prod_full() {
   rm -rf "$work"
   ok "VSCodium Full Patch (backup: $bak)"
 }
-vscodium_restore() {
+vscodium_restore(){
   local d=${1:-/usr/share/vscodium/resources/app/product.json} -a blist=() b
   mapfile -t blist < <(find "${d%/*}" -maxdepth 1 -name "${d##*/}.backup.*" -printf "%T@ %p\n" 2>/dev/null | sort -rn | head -1)
   ((${#blist[@]})) || {
@@ -180,7 +180,7 @@ vscodium_restore() {
   b=${blist[0]#* }
   cp -f "$b" "$d" && ok "Restored ← $b"
 }
-configure_privacy() {
+configure_privacy(){
   printf '%bConfiguring VSCode/VSCodium privacy settings...%b\n' "$Y" "$D"
   local changed=0 settings=('telemetry.telemetryLevel;"off"' 'telemetry.enableTelemetry;false' 'telemetry.enableCrashReporter;false' 'workbench.enableExperiments;false' 'update.mode;"none"' 'update.channel;"none"' 'update.showReleaseNotes;false' 'npm.fetchOnlinePackageInfo;false' 'git.autofetch;false' 'workbench.settings.enableNaturalLanguageSearch;false' 'typescript.disableAutomaticTypeAcquisition;true' 'workbench.experimental.editSessions.enabled;false' 'workbench.experimental.editSessions.autoStore;false' 'workbench.editSessions.autoResume;false' 'workbench.editSessions.continueOn;false' 'extensions.autoUpdate;false' 'extensions.autoCheckUpdates;false' 'extensions.showRecommendationsOnlyOnDemand;true')
   for setting in "${settings[@]}"; do
@@ -192,7 +192,7 @@ configure_privacy() {
   done
   ok "Privacy: $changed settings changed"
 }
-main() {
+main(){
   local CP="/usr/lib/code/product.json" CD="/usr/share"
   case ${1:-} in
     xdg) xdg_patch ;;

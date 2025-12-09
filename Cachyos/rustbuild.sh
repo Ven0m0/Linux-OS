@@ -7,7 +7,7 @@ export LC_ALL=C LANG=C
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup trap
 # ──────────────────────────────────────────────────────────────────────────────
-cleanup() {
+cleanup(){
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
   command -v cargo-cache &>/dev/null && cargo-cache -efg &>/dev/null
@@ -32,12 +32,12 @@ DRY_RUN=0
 CRATES=()
 BUILD_ARGS=()
 # Helpers
-has() { command -v "$1" &>/dev/null; }
-run() { ((DRY_RUN)) && echo "[DRY] $*" || "$@"; }
+has(){ command -v "$1" &>/dev/null; }
+run(){ ((DRY_RUN)) && echo "[DRY] $*" || "$@"; }
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage
 # ──────────────────────────────────────────────────────────────────────────────
-usage() {
+usage(){
   cat <<'EOF'
 Usage: cargo-build.sh [MODE] [OPTIONS] [<crate>...]
 
@@ -158,7 +158,7 @@ done
 # ──────────────────────────────────────────────────────────────────────────────
 # System setup
 # ──────────────────────────────────────────────────────────────────────────────
-setup_system() {
+setup_system(){
   echo "==> Setting up build environment..."
   [[ $EUID -ne 0 ]] && { sudo -v || {
     echo "Error: sudo failed" >&2
@@ -190,7 +190,7 @@ setup_system() {
 # ──────────────────────────────────────────────────────────────────────────────
 # Environment setup
 # ──────────────────────────────────────────────────────────────────────────────
-setup_env() {
+setup_env(){
   local jobs
   jobs=$(nproc 2>/dev/null || echo 4)
   if has sccache; then
@@ -244,7 +244,7 @@ setup_env() {
 # ──────────────────────────────────────────────────────────────────────────────
 # Profile helpers
 # ──────────────────────────────────────────────────────────────────────────────
-profileon() {
+profileon(){
   echo "==> Profiling mode ON"
   sudo sh -c "echo 0>/proc/sys/kernel/randomize_va_space" || :
   sudo sh -c "echo 0>/proc/sys/kernel/nmi_watchdog" || :
@@ -252,7 +252,7 @@ profileon() {
   sudo sh -c "echo 0>/proc/sys/kernel/kptr_restrict" || :
   sudo sh -c "echo 0>/proc/sys/kernel/perf_event_paranoid" || :
 }
-profileoff() {
+profileoff(){
   echo "==> Profiling mode OFF"
   sudo sh -c "echo 1>/proc/sys/kernel/randomize_va_space" || :
   sudo sh -c "echo 0>/sys/devices/system/cpu/intel_pstate/no_turbo" || :
@@ -261,7 +261,7 @@ profileoff() {
 # ──────────────────────────────────────────────────────────────────────────────
 # Asset optimization helpers
 # ──────────────────────────────────────────────────────────────────────────────
-optimize_assets() {
+optimize_assets(){
   [[ $SKIP_ASSETS -eq 1 ]] && return
   local fd_cmd=""
   has fd && fd_cmd="fd" || has fdfind && fd_cmd="fdfind"

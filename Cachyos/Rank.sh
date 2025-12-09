@@ -43,16 +43,16 @@ KEYSERVERS=( # We want to use keyservers only with secured (hkps or https) conne
 # Colors
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[1;33m' CYN=$'\e[36m' DEF=$'\e[0m' BLD=$'\e[1m'
 # Helpers
-has() { command -v "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "${GRN}${BLD}[${1:-INFO}]${DEF} ${*:2}" | tee -a "$LOGFILE"; }
-warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die() {
+has(){ command -v "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "${GRN}${BLD}[${1:-INFO}]${DEF} ${*:2}" | tee -a "$LOGFILE"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){
   err "$1"
   exit "${2:-1}"
 }
-backup() {
+backup(){
   [[ -f $1 ]] || return 0
   mkdir -p "$BACKUPDIR"
   cp -a "$1" "$BACKUPDIR/${1##*/}-$(printf '%s' "$EPOCHSECONDS").bak"
@@ -60,7 +60,7 @@ backup() {
 }
 
 # Actions
-rank_keys() {
+rank_keys(){
   [[ -f $GPGCONF ]] || return 0
   log KEY "Ranking keyservers..."
   backup "$GPGCONF"
@@ -89,7 +89,7 @@ rank_keys() {
   fi
 }
 
-rank_repo() {
+rank_repo(){
   local name=$1 file="$MIRRORDIR/${1}-mirrorlist"
   [[ -f $file ]] || return 0
   log REPO "Ranking $name..."
@@ -106,7 +106,7 @@ rank_repo() {
   rm -f "$tmp"
 }
 
-rank_arch() {
+rank_arch(){
   local file="$MIRRORDIR/mirrorlist" url="$ARCHLIST_URL_GLOBAL"
   [[ $COUNTRY == "DE" ]] && url="$ARCHLIST_URL_DE"
   log ARCH "Fetching latest Arch mirrors ($COUNTRY)..."

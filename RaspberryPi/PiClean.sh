@@ -6,10 +6,10 @@ export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRON
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 # Core helper functions
-has() { command -v -- "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 # DietPi functions
-load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
-run_dietpi_cleanup() {
+load_dietpi_globals(){ [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
+run_dietpi_cleanup(){
   if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
     if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then
       printf '%s\n' "dietpi-update failed (both standard and fallback commands)." >&2
@@ -19,33 +19,33 @@ run_dietpi_cleanup() {
   fi
 }
 # APT functions
-clean_apt_cache() {
+clean_apt_cache(){
   sudo apt-get clean -y 2>/dev/null || :
   sudo apt-get autoclean -y 2>/dev/null || :
   sudo apt-get autoremove --purge -y 2>/dev/null || :
 }
 # System cleanup functions
-clean_cache_dirs() {
+clean_cache_dirs(){
   sudo rm -rf /tmp/* /var/tmp/* /var/cache/apt/archives/* 2>/dev/null || :
   rm -rf ~/.cache/* ~/.thumbnails/* ~/.cache/thumbnails/* 2>/dev/null || :
   sudo rm -rf /root/.cache/* 2>/dev/null || :
 }
-clean_trash() {
+clean_trash(){
   rm -rf ~/.local/share/Trash/* 2>/dev/null || :
   sudo rm -rf /root/.local/share/Trash/* 2>/dev/null || :
   rm -rf ~/snap/*/*/.local/share/Trash/* 2>/dev/null || :
   rm -rf ~/.var/app/*/data/Trash/* 2>/dev/null || :
 }
-clean_crash_dumps() {
+clean_crash_dumps(){
   has coredumpctl && sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
   sudo rm -rf /var/crash/* /var/lib/systemd/coredump/* 2>/dev/null || :
 }
-clean_history_files() {
+clean_history_files(){
   rm -f ~/.python_history ~/.bash_history 2>/dev/null || :
   sudo rm -f /root/.python_history /root/.bash_history 2>/dev/null || :
   history -c 2>/dev/null || :
 }
-clean_journal_logs() {
+clean_journal_logs(){
   sudo journalctl --rotate --vacuum-size=1 --flush --sync -q 2>/dev/null || :
   sudo rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2>/dev/null || :
   sudo systemd-tmpfiles --clean 2>/dev/null || :

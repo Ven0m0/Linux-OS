@@ -17,15 +17,15 @@ LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 [[ ! -t 1 ]] && BLK='' RED='' GRN='' YLW='' BLU='' MGN='' CYN='' WHT='' LBLU='' PNK='' BWHT='' DEF='' BLD=''
 # Helpers
-has() { command -v -- "$1" &>/dev/null; }
-msg() { printf '%b\n' "${2:-$GRN}$1$DEF" "${@:3}"; }
-warn() { msg "$*" "$YLW" >&2; }
-err() { msg "$*" "$RED" >&2; }
-die() {
+has(){ command -v -- "$1" &>/dev/null; }
+msg(){ printf '%b\n' "${2:-$GRN}$1$DEF" "${@:3}"; }
+warn(){ msg "$*" "$YLW" >&2; }
+err(){ msg "$*" "$RED" >&2; }
+die(){
   err "$*"
   exit "${2:-1}"
 }
-get_priv_cmd() {
+get_priv_cmd(){
   local c
   for c in sudo-rs sudo doas; do
     has "$c" && {
@@ -36,11 +36,11 @@ get_priv_cmd() {
   [[ $EUID -eq 0 ]] || die "No privilege tool found and not root."
 }
 PRIV_CMD=${PRIV_CMD:-$(get_priv_cmd || true)}
-run_priv() { [[ $EUID -eq 0 || -z ${PRIV_CMD:-} ]] && "$@" || "$PRIV_CMD" -- "$@"; }
-unique() { awk '! x[$0]++'; }
-max_lines() { awk "NR<=$1"; }
-matches() { [[ $1 =~ $2 ]]; }
-__xargs() { env -i HOME="$HOME" LC_CTYPE="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" PATH="$PATH" TERM="${TERM:-}" USER="${USER:-}" xargs "$@"; }
+run_priv(){ [[ $EUID -eq 0 || -z ${PRIV_CMD:-} ]] && "$@" || "$PRIV_CMD" -- "$@"; }
+unique(){ awk '! x[$0]++'; }
+max_lines(){ awk "NR<=$1"; }
+matches(){ [[ $1 =~ $2 ]]; }
+__xargs(){ env -i HOME="$HOME" LC_CTYPE="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" PATH="$PATH" TERM="${TERM:-}" USER="${USER:-}" xargs "$@"; }
 
 # Config
 CONF_FILE="/etc/apt-ultra.conf"
@@ -66,7 +66,7 @@ eval "$(apt-config shell APTCACHE Dir::Cache::archives/d 2>/dev/null)" || true
 [[ -z ${APTCACHE:-} ]] && APTCACHE="/var/cache/apt/archives"
 
 # Aria2c downloader function
-run_downloader() {
+run_downloader(){
   aria2c --no-conf -c -j "$_MAXNUM" -x "$_MAXCONPERSRV" -s "$_SPLITCON" -i "$DLLIST" \
     --min-split-size="$_MINSPLITSZ" --stream-piece-selector="$_PIECEALGO" \
     --connect-timeout=600 --timeout=600 --max-connection-per-server="$_MAXCONPERSRV" \
@@ -75,17 +75,17 @@ run_downloader() {
 
 # Lock
 CLEANUP_STATE=0
-_create_lock() {
+_create_lock(){
   exec {LCK_FD}>"$LCK_FILE.lock"
   flock -n "$LCK_FD" || die "apt-ultra already running! Remove $LCK_FILE.lock if stuck."
   trap "cleanup_all; exit \$CLEANUP_STATE" EXIT
   trap "cleanup_all; exit 1" INT TERM
 }
-_remove_lock() {
+_remove_lock(){
   flock -u "$LCK_FD" 2>/dev/null || :
   rm -f "$LCK_FILE.lock"
 }
-cleanup_all() {
+cleanup_all(){
   local rc=$?
   [[ $CLEANUP_STATE -eq 0 ]] && CLEANUP_STATE=$rc
   [[ -f $DLLIST ]] && { mv "$DLLIST"{,.old} 2>/dev/null || rm -f "$DLLIST" 2>/dev/null || warn "Could not clean download list."; }
@@ -93,7 +93,7 @@ cleanup_all() {
 }
 
 #────────── Mirror Discovery ────────
-get_dist_name() {
+get_dist_name(){
   if [[ -r /etc/os-release ]]; then
     (
       source /etc/os-release
@@ -109,7 +109,7 @@ get_dist_name() {
   fi
 }
 
-get_dist_version_name() {
+get_dist_version_name(){
   if [[ -r /etc/os-release ]]; then
     (
       source /etc/os-release
@@ -125,7 +125,7 @@ get_dist_version_name() {
   fi
 }
 
-read_main_mirror_from_deb822_file() {
+read_main_mirror_from_deb822_file(){
   [[ -f $1 ]] || return 0
   local line mirror_uri='' mirror_main=''
   while IFS= read -r line; do
@@ -149,7 +149,7 @@ read_main_mirror_from_deb822_file() {
   done <"$1"
 }
 
-get_current_mirror() {
+get_current_mirror(){
   local dist_name=$(get_dist_name)
   case $dist_name in
     debian | kali | ubuntu | pop) ;;
@@ -192,7 +192,7 @@ get_current_mirror() {
   }
 }
 
-find_fast_mirror() {
+find_fast_mirror(){
   has curl || {
     msg "Installing curl..." "$YLW"
     run_priv apt-get -o Acquire::http::Timeout=10 update \
@@ -368,7 +368,7 @@ EOF
   [[ ! -t 1 ]] && echo "$fastest"
 }
 
-set_mirror() {
+set_mirror(){
   local new_mirror=${1:? }
   matches "${new_mirror,,}" '^(https?|ftp)://' || die "Malformed URL: $new_mirror"
   local dist_name=$(get_dist_name)
@@ -398,8 +398,8 @@ set_mirror() {
 }
 
 # APT Operations
-urldecode() { printf '%b' "${1//%/\\x}"; }
-get_uris() {
+urldecode(){ printf '%b' "${1//%/\\x}"; }
+get_uris(){
   [[ ! -d $(dirname "$DLLIST") ]] && { mkdir -p "$(dirname "$DLLIST")" || die "Cannot create download dir."; }
   [[ -f $DLLIST ]] && { rm -f "$DLLIST" 2>/dev/null || die "Cannot write to $DLLIST"; }
   echo "# apt-ultra download list: $(date)" >"$DLLIST"
@@ -427,7 +427,7 @@ get_uris() {
 }
 
 # Main
-usage() {
+usage(){
   cat <<EOF
 ${LBLU}apt-ultra${DEF} v${VERSION} - Fast APT package manager
 ${BLD}Usage:${DEF}  apt-ultra <command> [options] [packages...]
@@ -442,7 +442,7 @@ ${BLD}Examples:${DEF}  apt-ultra install nginx  apt-ultra find-mirror --apply  a
 EOF
 }
 
-main() {
+main(){
   _create_lock
   local cmd=${1:-}
   [[ $cmd == "--help" || $cmd == "-h" || -z $cmd ]] && {

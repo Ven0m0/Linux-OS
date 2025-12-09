@@ -14,21 +14,21 @@ else
   readonly LBLU="" PNK="" BWHT="" DEF="" BLD="" UND=""
 fi
 # === Logging Functions ===
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "${BLU}${BLD}[*]${DEF} $*"; }
-msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-die() {
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+die(){
   err "$1"
   exit "${2:-1}"
 }
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
-sec() { printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
+sec(){ printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
 # === Tool Detection ===
-has() { command -v "$1" &>/dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 
-hasname() {
+hasname(){
   local cmd
   for cmd in "$@"; do
     if has "$cmd"; then
@@ -44,7 +44,7 @@ readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && echo 1 || echo 0)"
 readonly NPROC="$(nproc 2>/dev/null || echo 4)"
 
 # === ADB/Device Utilities ===
-detect_adb() {
+detect_adb(){
   local adb_cmd
   if ((IS_TERMUX)); then
     adb_cmd="$(hasname rish)" || {
@@ -60,7 +60,7 @@ detect_adb() {
   printf '%s' "$adb_cmd"
 }
 
-ash() {
+ash(){
   local adb_cmd
   adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
 
@@ -79,7 +79,7 @@ ash() {
   fi
 }
 
-device_ok() {
+device_ok(){
   local adb_cmd
   adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
   if ((IS_TERMUX)); then
@@ -97,7 +97,7 @@ device_ok() {
   return 0
 }
 
-wait_for_device() {
+wait_for_device(){
   local timeout="${1:-30}"
   local adb_cmd
   adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
@@ -113,7 +113,7 @@ wait_for_device() {
 }
 
 # === Confirmation Prompt ===
-confirm() {
+confirm(){
   local prompt="${1:-Continue? }"
   local reply
 
@@ -142,7 +142,7 @@ export ADB_CMD
 # WARNING: These tweaks are extremely aggressive and may cause instability.
 # For a safer, optimized subset, use: ./android-optimize.sh experimental
 
-start() {
+start(){
   sec "Aggressive Cleanup (on-device)"
   warn "This will uninstall 3rd-party apps and clear system app data"
   confirm "Proceed with aggressive cleanup?" || return 0
@@ -167,7 +167,7 @@ pm uninstall --user 0 com.google.android.googlequicksearchbox 2>/dev/null || tru
 CLEANUP_EOF
 }
 
-tweaks() {
+tweaks(){
   sec "Applying Experimental Tweaks"
   log "Batching 1100+ commands into 1 ADB call for massive performance improvement..."
 
@@ -1099,7 +1099,7 @@ settings put global ro.vendor.sensors.pedometer false
 TWEAKS_EOF
 }
 
-main() {
+main(){
   detect_adb
   tweaks
 }

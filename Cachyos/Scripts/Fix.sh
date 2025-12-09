@@ -5,16 +5,16 @@ IFS=$'\n\t'
 LC_ALL=C LANG=C
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m' MGN=$'\e[35m' PNK=$'\e[38;5;218m' DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
-has() { command -v -- "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "$*"; }
-confirm() {
+has(){ command -v -- "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "$*"; }
+confirm(){
   local msg="$1"
   printf '%s [y/N]: ' "$msg" >&2
   read -r ans
   [[ $ans == [Yy]* ]]
 }
-print_banner() {
+print_banner(){
   local banner="$1" title="${2:-}" flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU") -a lines=()
   while IFS= read -r line || [[ -n $line ]]; do lines+=("$line"); done <<<"$banner"
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
@@ -25,7 +25,7 @@ print_banner() {
   done; fi
   [[ -n $title ]] && xecho "$title"
 }
-get_update_banner() {
+get_update_banner(){
   cat <<'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
@@ -35,7 +35,7 @@ get_update_banner() {
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 }
-get_clean_banner() {
+get_clean_banner(){
   cat <<'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
@@ -45,7 +45,7 @@ get_clean_banner() {
  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝
 EOF
 }
-print_named_banner() {
+print_named_banner(){
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in update) banner=$(get_update_banner) ;; clean) banner=$(get_clean_banner) ;; *)
     xecho "${RED}Error:${DEF} Unknown banner name: $name" >&2
@@ -54,7 +54,7 @@ print_named_banner() {
   esac
   print_banner "$banner" "$title"
 }
-setup_build_env() {
+setup_build_env(){
   [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
   export CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
@@ -69,7 +69,7 @@ setup_build_env() {
   fi
   has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
 }
-run_system_maintenance() {
+run_system_maintenance(){
   local cmd=$1
   shift
   local args=("$@")
@@ -81,19 +81,19 @@ run_system_maintenance() {
     *) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
   esac
 }
-capture_disk_usage() {
+capture_disk_usage(){
   local var_name=$1
   local -n ref="$var_name"
   ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
 }
-find_files() { has fd && fd -H "$@" || find "$@"; }
-find0() {
+find_files(){ has fd && fd -H "$@" || find "$@"; }
+find0(){
   local root="$1"
   shift
   if has fdf; then fdf -H -0 "$@" . "$root"; elif has fd; then fd -H -0 "$@" . "$root"; else find "$root" "$@" -print0; fi
 }
 _PKG_MGR_CACHED="" _AUR_OPTS_CACHED=()
-detect_pkg_manager() {
+detect_pkg_manager(){
   if [[ -n $_PKG_MGR_CACHED ]]; then
     printf '%s\n' "$_PKG_MGR_CACHED" "${_AUR_OPTS_CACHED[@]}"
     return 0
@@ -112,15 +112,15 @@ detect_pkg_manager() {
   _PKG_MGR_CACHED=$pkgmgr
   printf '%s\n' "$pkgmgr" "${_AUR_OPTS_CACHED[@]}"
 }
-get_pkg_manager() {
+get_pkg_manager(){
   [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager >/dev/null
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
-get_aur_opts() {
+get_aur_opts(){
   [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager >/dev/null
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
-vacuum_sqlite() {
+vacuum_sqlite(){
   local db=$1 s_old s_new
   [[ -f $db ]] || {
     printf '0\n'
@@ -145,7 +145,7 @@ vacuum_sqlite() {
   s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
   printf '%d\n' "$((s_old - s_new))"
 }
-clean_sqlite_dbs() {
+clean_sqlite_dbs(){
   local total=0 db saved
   while IFS= read -r -d '' db; do
     [[ -f $db ]] || continue
@@ -154,7 +154,7 @@ clean_sqlite_dbs() {
   done < <(find0 . -maxdepth 1 -type f)
   ((total > 0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF}"
 }
-ensure_not_running_any() {
+ensure_not_running_any(){
   local timeout=6 p pattern="$(printf '%s|' "$@")"
   pattern=${pattern%|}
   pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
@@ -170,7 +170,7 @@ ensure_not_running_any() {
     sleep 1
   fi
 }
-foxdir() {
+foxdir(){
   local base=$1 p
   [[ -d $base ]] || return 1
   if [[ -f $base/installs.ini ]]; then
@@ -189,7 +189,7 @@ foxdir() {
   fi
   return 1
 }
-mozilla_profiles() {
+mozilla_profiles(){
   local base=$1 p
   declare -A seen
   [[ -d $base ]] || return 0
@@ -202,18 +202,18 @@ mozilla_profiles() {
     seen[$p]=1
   }; done < <(awk -F= '/^Path=/ {print $2}' "$base/profiles.ini"); fi
 }
-chrome_roots_for() { case "$1" in
+chrome_roots_for(){ case "$1" in
   chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
   chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
   brave) printf '%s\n' "$HOME/.config/BraveSoftware/Brave-Browser" "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser" "$HOME/snap/brave/current/.config/BraveSoftware/Brave-Browser" ;;
   opera) printf '%s\n' "$HOME/.config/opera" "$HOME/.config/opera-beta" "$HOME/.config/opera-developer" ;;
   *) : ;;
 esac }
-chrome_profiles() {
+chrome_profiles(){
   local root=$1 d
   for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
 }
-_expand_wildcards() {
+_expand_wildcards(){
   local path=$1
   local -n result_ref="$2"
   if [[ $path == *\** ]]; then
@@ -223,18 +223,18 @@ _expand_wildcards() {
     shopt -u nullglob
   else [[ -e $path ]] && result_ref+=("$path"); fi
 }
-clean_paths() {
+clean_paths(){
   local paths=("$@") path existing_paths=()
   for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done
   [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
-clean_with_sudo() {
+clean_with_sudo(){
   local paths=("$@") path existing_paths=()
   for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done
   [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
 }
 _DOWNLOAD_TOOL_CACHED=""
-get_download_tool() {
+get_download_tool(){
   local skip_aria2=0
   [[ ${1:-} == --no-aria2 ]] && skip_aria2=1
   if [[ -n $_DOWNLOAD_TOOL_CACHED && $skip_aria2 -eq 0 ]]; then
@@ -246,7 +246,7 @@ get_download_tool() {
   [[ $skip_aria2 -eq 0 ]] && _DOWNLOAD_TOOL_CACHED=$tool
   printf '%s' "$tool"
 }
-download_file() {
+download_file(){
   local url=$1 output=$2 tool
   tool=$(get_download_tool) || return 1
   case $tool in
@@ -257,16 +257,16 @@ download_file() {
     *) return 1 ;;
   esac
 }
-update() {
+update(){
   sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
   sudo pacman -Syu --noconfirm
   has paru && paru -Syu --noconfirm --skipreview
 }
-mirrorfix() {
+mirrorfix(){
   log "Fix mirrors"
   has cachyos-rate-mirrors && sudo cachyos-rate-mirrors
 }
-cache() {
+cache(){
   sudo rm -r /var/cache/pacman/pkg/*
   has paru && paru -Scc --noconfirm || sudo pacman -Scc --noconfirm
 }

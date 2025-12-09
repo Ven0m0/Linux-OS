@@ -11,7 +11,7 @@ readonly SCANNER="${SCRIPT_DIR}/account_scanner.py"
 
 printf '\n=== Account Scanner Demo ===\n\n'
 
-check_deps() {
+check_deps(){
   local -a missing=()
   command -v python3 &>/dev/null || missing+=(python3)
   command -v sherlock &>/dev/null || missing+=(sherlock)

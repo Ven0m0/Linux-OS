@@ -3,7 +3,7 @@
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C LANG=C LANGUAGE=C
-has() { command -v -- "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 
 echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null
 echo within_size | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled &>/dev/null

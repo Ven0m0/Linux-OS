@@ -4,22 +4,22 @@ shopt -s nullglob globstar extglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
-has() { command -v "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "${BLU}${BLD}[*]${DEF} $*"; }
-msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
-cleanup_pacman_lock() { sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
-main() {
+has(){ command -v "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
+cleanup_pacman_lock(){ sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
+main(){
   trap cleanup_pacman_lock EXIT INT TERM
-  update_system() {
+  update_system(){
     log "🔄${BLU} System Packages${DEF}"
     sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
     has paru && paru -Syu --noconfirm --needed --skipreview || sudo pacman -Syu --noconfirm --needed
   }
-  update_extras() {
+  update_extras(){
     log "🔄${BLU} Extra Tooling${DEF}"
     if has topgrade; then
       local user_flags=('--disable=system' '--disable=self-update' '--disable=brew')
@@ -48,7 +48,7 @@ main() {
     has soar && sudo soar upgrade --all --noconfirm || :
     has zoi && zoi upgrade --yes --all || :
   }
-  update_python() {
+  update_python(){
     has uv || return 0
     log "🔄${BLU} Python Environment (uv)${DEF}"
     mapfile -t pkgs < <(uv tool list --format=json 2>/dev/null | jq -r '.[].name')
@@ -56,7 +56,7 @@ main() {
     mapfile -t outdated < <(uv pip list --outdated --format=json 2>/dev/null | jq -r '.[].name')
     [[ ${#outdated[@]} -gt 0 ]] && uv pip install -Uq --system --no-break-system-packages "${outdated[@]}" || :
   }
-  update_maintenance() {
+  update_maintenance(){
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
     for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb fwupdmgr; do has "$cmd" && sudo "$cmd" || :; done

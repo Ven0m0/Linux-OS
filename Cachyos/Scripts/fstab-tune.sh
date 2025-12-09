@@ -5,7 +5,7 @@ IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 
 # Check deps early
-has() { command -v -- "$1" &>/dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 for dep in yad findmnt blkid sed cp; do has "$dep" || {
   printf 'Missing: %s\n' "$dep"
   exit 1
@@ -14,13 +14,13 @@ for dep in yad findmnt blkid sed cp; do has "$dep" || {
 OPT_DESKTOP="defaults,noatime,mode=adaptive,memory=normal,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,checkpoint_merge,background_gc=on"
 OPT_SERVER="defaults,noatime,nodiratime,mode=adaptive,memory=high,compress_algorithm=zstd,compress_chksum,inline_xattr,inline_data,checkpoint_merge,background_gc=sync,flush_merge,nobarrier"
 # Yad helpers
-ymsg() { yad --info --title="fstab-tune" --text="$1" --width=400 --timeout=7; }
-ydie() {
+ymsg(){ yad --info --title="fstab-tune" --text="$1" --width=400 --timeout=7; }
+ydie(){
   yad --error --title="fstab-tune" --text="$1" --width=400
   exit 1
 }
-yask() { yad --question --title="fstab-tune" --text="$1" --width=450; }
-ypick() {
+yask(){ yad --question --title="fstab-tune" --text="$1" --width=450; }
+ypick(){
   local file="$1" entries
   mapfile -t entries < <(awk '($1 ~ "^#" || NF < 4){next} {printf "%d\t%-.55s\n", NR, $0}' "$file")
   [[ ${#entries[@]} -eq 0 ]] && ymsg "No non-comment fstab entries." && return 1
@@ -29,10 +29,10 @@ ypick() {
   [[ $? -eq 0 && -n $pick ]] || return 1
   printf '%s\n' "${pick%%:*}"
 }
-edit_at_line() { sudo "${EDITOR:-vim}" +"$1" "$2"; }
+edit_at_line(){ sudo "${EDITOR:-vim}" +"$1" "$2"; }
 
 # Main
-main() {
+main(){
   [[ $EUID -eq 0 ]] || exec sudo -E "$0" "$@"
   local fstab="/etc/fstab" opts optdesc profile backup uuid root_src root_type
   root_src=$(findmnt -n -o SOURCE /)

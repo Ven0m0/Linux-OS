@@ -3,28 +3,28 @@ set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}" PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"
-fdate() {
+fdate(){
   local fmt="${1:-%T}"
   printf "%($fmt)T" '-1'
 }
-fcat() { printf '%s\n' "$(<"${1}")"; }
+fcat(){ printf '%s\n' "$(<"${1}")"; }
 declare -A cfg=([boot_size]="512M" [ssh]=1 [dry_run]=0 [keep_source]=0 [no_usb_check]=0 [no_size_check]=0)
 declare -r DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
 declare -r RED GRN YLW BLU DEF BLD
 declare -g SRC_PATH="" TGT_PATH="" SRC_IMG="" WORKDIR="" LOOP_DEV="" TGT_DEV="" BOOT_PART="" ROOT_PART="" LOCK_FD=-1 LOCK_FILE="" -ga MOUNTED_DIRS=()
-has() { command -v "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
-msg() { xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
-warn() { xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
-err() { xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*" || :; }
-get_drive_trans() {
+has(){ command -v "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
+msg(){ xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
+warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
+err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
+dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*" || :; }
+get_drive_trans(){
   local dev="${1:?}"
   lsblk -dno TRAN "$dev" 2>/dev/null || echo "unknown"
 }
-assert_usb_dev() {
+assert_usb_dev(){
   local dev="${1:?}"
   ((cfg[no_usb_check])) && return 0
   [[ $dev == /dev/loop* ]] && return 0
@@ -36,7 +36,7 @@ assert_usb_dev() {
     exit 1
   }
 }
-assert_size() {
+assert_size(){
   local img="${1:?}" dev="${2:?}"
   ((cfg[no_size_check])) && return 0
   [[ ! -b $dev ]] && return 0
@@ -49,7 +49,7 @@ assert_size() {
     exit 1
   }
 }
-select_target_interactive() {
+select_target_interactive(){
   has fzf || {
     err "fzf required for interactive selection."
     cleanup
@@ -65,7 +65,7 @@ select_target_interactive() {
   }
   echo "$selection" | awk '{print $1}'
 }
-check_deps() {
+check_deps(){
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid partprobe lsblk flock awk curl) missing=() cmd
   for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
   ((${#missing[@]} > 0)) && {
@@ -74,7 +74,7 @@ check_deps() {
     exit 1
   }
 }
-cleanup() {
+cleanup(){
   local ret=$?
   set +e
   for ((i = ${#MOUNTED_DIRS[@]} - 1; i >= 0; i--)); do umount -lf "${MOUNTED_DIRS[i]}" &>/dev/null; done
@@ -87,7 +87,7 @@ cleanup() {
   [[ -n ${WORKDIR:-} && -d $WORKDIR ]] && rm -rf "$WORKDIR"
   return "$ret"
 }
-derive_partition_paths() {
+derive_partition_paths(){
   local dev="${1:?}"
   [[ $dev =~ (nvme|mmcblk|loop) ]] && {
     BOOT_PART="${dev}p1"
@@ -97,7 +97,7 @@ derive_partition_paths() {
     ROOT_PART="${dev}2"
   }
 }
-wait_for_partitions() {
+wait_for_partitions(){
   local dev=${1:?}
   ((cfg[dry_run])) && return 0
   partprobe "$dev" &>/dev/null
@@ -113,14 +113,14 @@ wait_for_partitions() {
   cleanup
   exit 1
 }
-prepare_environment() {
+prepare_environment(){
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" rf2fs.XXXXXX)
   SRC_IMG="$WORKDIR/source.img"
   trap cleanup EXIT INT TERM
   sync
   sudo sh -c 'echo 3> /proc/sys/vm/drop_caches'
 }
-process_source() {
+process_source(){
   [[ $SRC_PATH == dietpi ]] && {
     log "Keyword 'dietpi' detected. Using URL: $DIETPI_URL"
     SRC_PATH="$DIETPI_URL"
@@ -147,7 +147,7 @@ process_source() {
     cp --reflink=auto "$SRC_PATH" "$SRC_IMG"
   else ln "$SRC_PATH" "$SRC_IMG" 2>/dev/null || cp "$SRC_PATH" "$SRC_IMG"; fi
 }
-setup_target_device() {
+setup_target_device(){
   log "Preparing target: $TGT_PATH"
   LOCK_FILE="/run/lock/raspi-f2fs-${TGT_PATH//\//_}.lock"
   mkdir -p "${LOCK_FILE%/*}"
@@ -174,13 +174,13 @@ setup_target_device() {
   wait_for_partitions "$TGT_PATH"
   TGT_DEV="$TGT_PATH"
 }
-format_target() {
+format_target(){
   log "Formatting filesystems..."
   ((cfg[dry_run])) && return 0
   mkfs.vfat -F32 -n BOOT "$BOOT_PART" >/dev/null
   mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART" >/dev/null
 }
-clone_data() {
+clone_data(){
   log "Cloning data (rsync)..."
   ((cfg[dry_run])) && return 0
   LOOP_DEV=$(losetup --show -f -P "$SRC_IMG")
@@ -201,7 +201,7 @@ clone_data() {
   rsync -aHAX --info=progress2 --exclude 'lost+found' "$WORKDIR/src/root/" "$WORKDIR/tgt/root/"
   sync
 }
-configure_pi_boot() {
+configure_pi_boot(){
   log "Configuring F2FS boot parameters..."
   ((cfg[dry_run])) && return 0
   local boot_uuid root_uuid cmdline fstab
@@ -218,7 +218,7 @@ configure_pi_boot() {
   ((cfg[ssh])) && touch "$WORKDIR/tgt/boot/ssh"
   log "Configuration complete."
 }
-usage() {
+usage(){
   cat <<-EOF
 	Usage: $(basename "$0") [OPTIONS]
 	Flash Raspberry Pi image to SD card using F2FS root filesystem.

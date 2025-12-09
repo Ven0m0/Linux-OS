@@ -21,12 +21,12 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Core Helper Functions ============
-has() { command -v -- "$1" &>/dev/null; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "$*"; }
-warn() { xecho "${YLW}WARN:${DEF} $*" >&2; }
-err() { xecho "${RED}ERROR:${DEF} $*" >&2; }
-die() {
+has(){ command -v -- "$1" &>/dev/null; }
+xecho(){ printf '%b\n' "$*"; }
+log(){ xecho "$*"; }
+warn(){ xecho "${YLW}WARN:${DEF} $*" >&2; }
+err(){ xecho "${RED}ERROR:${DEF} $*" >&2; }
+die(){
   err "$*"
   exit "${2:-1}"
 }
@@ -37,7 +37,7 @@ export HOME="/home/${SUDO_USER:-$USER}"
 # Initialize privilege tool
 
 # Usage information
-usage() {
+usage(){
   cat <<EOF
 Usage: $0 [OPTIONS]
 
@@ -118,19 +118,19 @@ jobs8="$((nproc_count / 2))"
 # Save original turbo state
 if [[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then
   o1="$(</sys/devices/system/cpu/intel_pstate/no_turbo)"
-  Reset() {
+  Reset(){
     echo "$o1" | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
   }
   # Set performance mode
   sudo cpupower frequency-set --governor performance &>/dev/null || :
   echo 1 | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
 else
-  Reset() { :; }
+  Reset(){ :; }
   sudo cpupower frequency-set --governor performance &>/dev/null || :
 fi
 
 # Benchmark function for parallel/sort tests
-benchmark() {
+benchmark(){
   local name="$1"
   shift
   local cmd="$*"
@@ -141,7 +141,7 @@ benchmark() {
 }
 
 # Benchmark function for copy tests with JSON export
-benchmark_copy() {
+benchmark_copy(){
   local name="$1"
   shift
   local cmd="$*"

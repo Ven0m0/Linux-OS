@@ -7,10 +7,10 @@ export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 #──────────── Helpers ────────────
-has() { command -v -- "$1" &>/dev/null; }
-msg() { printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
-warn() { printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
-die() {
+has(){ command -v -- "$1" &>/dev/null; }
+msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
+warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
+die(){
   printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2
   exit "${2:-1}"
 }
@@ -25,15 +25,15 @@ jobs=$(nproc 2>/dev/null || echo 4)
 #══════════════════════════════════════════════════════════════
 #  REPOSITORY CONFIGURATION
 #══════════════════════════════════════════════════════════════
-setup_repositories() {
+setup_repositories(){
   local -r conf=/etc/pacman.conf
   local -r chaotic_key=3056513887B78AEB
   local -a chaotic_urls=(
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   )
-  has_repo() { grep -qF -- "$1" "$conf"; }
-  add_block() { printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
+  has_repo(){ grep -qF -- "$1" "$conf"; }
+  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
@@ -108,7 +108,7 @@ Include = /etc/pacman.d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 #  SYSTEM INITIALIZATION
 #══════════════════════════════════════════════════════════════
-init_system() {
+init_system(){
   msg "Initializing system"
   localectl set-locale C.UTF-8 >/dev/null
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
@@ -131,7 +131,7 @@ init_system() {
 #══════════════════════════════════════════════════════════════
 #  PACKAGE INSTALLATION
 #══════════════════════════════════════════════════════════════
-install_packages() {
+install_packages(){
   local -a pkgs=(
     git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
     paru polly optipng svgo graphicsmagick yadm mise micro hyfetch polkit-kde-agent
@@ -180,7 +180,7 @@ install_packages() {
 #══════════════════════════════════════════════════════════════
 #  FLATPAK
 #══════════════════════════════════════════════════════════════
-setup_flatpak() {
+setup_flatpak(){
   has flatpak || return 0
   msg "Configuring Flatpak"
   flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo &>/dev/null || :
@@ -192,7 +192,7 @@ setup_flatpak() {
 #══════════════════════════════════════════════════════════════
 #  RUST TOOLCHAIN
 #══════════════════════════════════════════════════════════════
-setup_rust() {
+setup_rust(){
   if ! has rustup; then
     msg "Installing Rust"
     bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs)" -- -y --profile minimal -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
@@ -214,7 +214,7 @@ setup_rust() {
 #══════════════════════════════════════════════════════════════
 #  EDITOR & SHELL TOOLS
 #══════════════════════════════════════════════════════════════
-setup_tools() {
+setup_tools(){
   # Micro editor
   if has micro; then
     msg "Configuring micro"
@@ -262,7 +262,7 @@ setup_tools() {
 #══════════════════════════════════════════════════════════════
 #  SHELL INTEGRATION
 #══════════════════════════════════════════════════════════════
-setup_shells() {
+setup_shells(){
   # Fish
   if has fish; then
     msg "Configuring Fish shell"
@@ -291,7 +291,7 @@ setup_shells() {
 #══════════════════════════════════════════════════════════════
 #  SYSTEM SERVICES
 #══════════════════════════════════════════════════════════════
-enable_services() {
+enable_services(){
   msg "Enabling services"
   local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency)
   for sv in "${svcs[@]}"; do
@@ -302,7 +302,7 @@ enable_services() {
 #══════════════════════════════════════════════════════════════
 #  SYSTEM MAINTENANCE
 #══════════════════════════════════════════════════════════════
-maintenance() {
+maintenance(){
   msg "Running maintenance"
   has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry 2>/dev/null || :
   has fc-cache && sudo fc-cache -f || :
@@ -331,7 +331,7 @@ maintenance() {
 #══════════════════════════════════════════════════════════════
 #  CLEANUP
 #══════════════════════════════════════════════════════════════
-cleanup() {
+cleanup(){
   msg "Cleaning up"
   local orphans
   orphans=$(pacman -Qdtq 2>/dev/null) && sudo pacman -Rns --noconfirm "$orphans" 2>/dev/null || :
@@ -344,7 +344,7 @@ cleanup() {
 #══════════════════════════════════════════════════════════════
 #  MAIN EXECUTION
 #══════════════════════════════════════════════════════════════
-main() {
+main(){
   setup_repositories
   init_system
   install_packages

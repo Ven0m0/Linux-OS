@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail
-shopt -s nullglob globstar extglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t'; export LC_ALL=C
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
 has(){ command -v "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
@@ -18,7 +16,7 @@ main(){
   update_system(){
     log "🔄${BLU} System Packages${DEF}"
     sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
-    has paru && paru -Syu --noconfirm --needed --skipreview || sudo pacman -Syu --noconfirm --needed
+    has paru && paru -Syuq --noconfirm --needed --skipreview || sudo pacman -Syuq --noconfirm --needed
   }
   update_extras(){
     log "🔄${BLU} Extra Tooling${DEF}"
@@ -35,8 +33,7 @@ main(){
       has cargo-install-update && cargo install-update -ag || :
     fi
     if has mise; then
-      mise p i -ay
-      mise prune -y
+      mise p i -ay; mise prune -y
       mise up -y || :
     fi
     if has bun; then
@@ -45,9 +42,14 @@ main(){
       pnpm up -Lg || :
     elif has npm; then npm update -g || :; fi
     has micro && micro -plugin update || :
+    if has ya && has yazi; then
+      ya pkg upgrade
+    fi
+    has code && code --update-extensions || :
     has fish && fish -c "fish_update_completions; and fisher update" || :
     has soar && sudo soar upgrade --all --noconfirm || :
     has zoi && zoi upgrade --yes --all || :
+    has gh && gh extension upgrade --all || :
   }
   update_python(){
     has uv || return 0

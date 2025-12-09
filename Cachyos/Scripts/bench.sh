@@ -21,7 +21,7 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 
 #============ Core Helper Functions ============
-has(){ command -v -- "$1" &> /dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "$*"; }
 warn(){ xecho "${YLW}WARN:${DEF} $*" >&2; }
@@ -107,7 +107,7 @@ done
 has hyperfine || die "hyperfine not found in PATH. Please install it first."
 
 # Cache nproc result to avoid repeated calls
-nproc_count="$(nproc 2> /dev/null || echo 1)"
+nproc_count="$(nproc 2>/dev/null || echo 1)"
 jobs16="$nproc_count"
 jobs8="$((nproc_count / 2))"
 ((jobs8 < 1)) && jobs8=1
@@ -116,14 +116,14 @@ jobs8="$((nproc_count / 2))"
 if [[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then
   o1="$(< /sys/devices/system/cpu/intel_pstate/no_turbo)"
   Reset(){
-    echo "$o1" | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &> /dev/null || :
+    echo "$o1" | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
   }
   # Set performance mode
-  sudo cpupower frequency-set --governor performance &> /dev/null || :
-  echo 1 | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &> /dev/null || :
+  sudo cpupower frequency-set --governor performance &>/dev/null || :
+  echo 1 | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
 else
   Reset(){ :; }
-  sudo cpupower frequency-set --governor performance &> /dev/null || :
+  sudo cpupower frequency-set --governor performance &>/dev/null || :
 fi
 
 # Benchmark function for parallel/sort tests
@@ -227,7 +227,7 @@ if [[ $RUN_COPY -eq 1 ]]; then
     has cpui && benchmark_copy "cpui" "cpui -f -y cachyos.iso cachyos-cpui.iso" || log "${YLW}⊘ cpui not available${DEF}"
 
     # Cleanup test files
-    rm -f cachyos-*.iso &> /dev/null || :
+    rm -f cachyos-*.iso &>/dev/null || :
   fi
 fi
 

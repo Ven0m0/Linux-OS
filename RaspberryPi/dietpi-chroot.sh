@@ -23,7 +23,7 @@ declare -g IMG_FILE="" LOOP_DEV="" ROOT_PART="" BOOT_PART=""
 declare -ga MOUNTED_POINTS=()
 
 # Helpers
-has(){ command -v "$1" &> /dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 log(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${BLU}${BLD}[*]${DEF} " "$*"; }
 msg(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${GRN}${BLD}[+]${DEF} " "$*"; }
 warn(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
@@ -48,7 +48,7 @@ check_deps(){
   # Check binfmt_misc
   if [ ! -f /proc/sys/fs/binfmt_misc/aarch64 ]; then
     warn "binfmt_misc for aarch64 not detected. Trying to load..."
-    sudo systemctl restart systemd-binfmt 2> /dev/null || :
+    sudo systemctl restart systemd-binfmt 2>/dev/null || :
     if [ ! -f /proc/sys/fs/binfmt_misc/aarch64 ]; then
       die "Could not verify aarch64 binfmt registration. Is 'qemu-user-static-binfmt' installed and service active?"
     fi
@@ -62,26 +62,26 @@ cleanup(){
   # 1. Kill processes inside the mount to free handles
   if [[ -d "$MOUNT_DIR" ]]; then
     # Gentle kill then force kill
-    fuser -k -M "$MOUNT_DIR" 2> /dev/null
+    fuser -k -M "$MOUNT_DIR" 2>/dev/null
   fi
 
   # 2. Unmount filesystems in reverse order
   if mountpoint -q "$MOUNT_DIR/boot"; then
-    umount "$MOUNT_DIR/boot" 2> /dev/null
+    umount "$MOUNT_DIR/boot" 2>/dev/null
   fi
 
   # Recursive unmount for proc, sys, dev, etc.
   if mountpoint -q "$MOUNT_DIR"; then
-    umount -R "$MOUNT_DIR" 2> /dev/null
+    umount -R "$MOUNT_DIR" 2>/dev/null
   fi
 
   # 3. Detach loop device
   if [[ -n "$LOOP_DEV" ]]; then
-    losetup -d "$LOOP_DEV" 2> /dev/null
+    losetup -d "$LOOP_DEV" 2>/dev/null
   fi
 
   # 4. Remove mount point
-  [[ -d "$MOUNT_DIR" ]] && rmdir "$MOUNT_DIR" 2> /dev/null
+  [[ -d "$MOUNT_DIR" ]] && rmdir "$MOUNT_DIR" 2>/dev/null
 
   msg "Cleanup complete. Image saved."
 }

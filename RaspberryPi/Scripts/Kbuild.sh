@@ -11,7 +11,7 @@ export HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}"
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
 
 # Helpers
-has(){ command -v "$1" &> /dev/null; }
+has(){ command -v "$1" &>/dev/null; }
 log(){ printf '%s\n' "${BLU}→${DEF} $*"; }
 warn(){ printf '%s\n' "${YLW}WARN:${DEF} $*"; }
 err(){ printf '%s\n' "${RED}ERROR:${DEF} $*" >&2; }
@@ -118,7 +118,7 @@ main(){
   cp arch/arm64/boot/Image.gz /boot/kernel8.img
 
   # Update bootloader config (avoid duplicate entry)
-  if ! grep -q '^dtoverlay=vc4-kms-v3d' /boot/config.txt 2> /dev/null; then
+  if ! grep -q '^dtoverlay=vc4-kms-v3d' /boot/config.txt 2>/dev/null; then
     log "Adding dtoverlay to config.txt..."
     echo "dtoverlay=vc4-kms-v3d" >> /boot/config.txt
   fi

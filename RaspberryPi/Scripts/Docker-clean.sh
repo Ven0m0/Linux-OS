@@ -51,7 +51,7 @@ EOF
 poll_for_docker_readiness(){
   printf 'Waiting for docker engine to start:\n'
   local i=0
-  while ! docker system info &> /dev/null; do
+  while ! docker system info &>/dev/null; do
     printf '%*s\n' "$i" '' | tr ' ' '.'
     i=$((i + 1))
     sleep 1
@@ -60,7 +60,7 @@ poll_for_docker_readiness(){
   printf '\n\n'
 }
 # Checks if a particular program is installed
-is_program_installed(){ command -v "$1" &> /dev/null; }
+is_program_installed(){ command -v "$1" &>/dev/null; }
 # Restarts the Docker engine
 restart_docker_engine(){
   [[ $DONT_RESTART_DOCKER_ENGINE -eq 1 ]] && return

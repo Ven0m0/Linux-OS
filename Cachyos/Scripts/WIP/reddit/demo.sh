@@ -14,11 +14,11 @@ printf '\n=== Account Scanner Demo ===\n\n'
 # Check dependencies
 check_deps(){
   local -a missing=()
-  command -v python3 &> /dev/null || missing+=(python3)
-  command -v sherlock &> /dev/null || missing+=(sherlock)
-  python3 -c "import praw" 2> /dev/null || missing+=(python-praw)
-  python3 -c "import pandas" 2> /dev/null || missing+=(python-pandas)
-  python3 -c "import httpx" 2> /dev/null || missing+=(python-httpx)
+  command -v python3 &>/dev/null || missing+=(python3)
+  command -v sherlock &>/dev/null || missing+=(sherlock)
+  python3 -c "import praw" 2>/dev/null || missing+=(python-praw)
+  python3 -c "import pandas" 2>/dev/null || missing+=(python-pandas)
+  python3 -c "import httpx" 2>/dev/null || missing+=(python-httpx)
   if ((${#missing[@]} > 0)); then
     printf 'Missing dependencies: %s\n' "${missing[*]}" >&2
     printf '\nInstall on Arch:\n' >&2
@@ -105,7 +105,7 @@ else
 fi
 printf '\n\n=== Demo Complete ===\n'
 printf '\nGenerated files:\n'
-ls -lh demo_* 2> /dev/null || printf 'No demo files (credentials may be missing)\n'
+ls -lh demo_* 2>/dev/null || printf 'No demo files (credentials may be missing)\n'
 printf '\nTry these commands:\n'
 printf '  # Quick username check (no API keys)\n'
 printf '  ./account_scanner.py USERNAME --mode sherlock\n\n'

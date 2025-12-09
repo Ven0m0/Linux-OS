@@ -7,7 +7,7 @@ SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 # Usage: sqlite-tune db.sqlite [aggressive|safe|readonly]
 # ============ Inlined from lib/common.sh ============
-has(){ command -v -- "$1" &> /dev/null; }
+has(){ command -v -- "$1" &>/dev/null; }
 die(){
   echo "ERROR: $*" >&2
   exit 1

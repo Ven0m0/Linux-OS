@@ -16,7 +16,7 @@ sudo apt-get update && sudo apt-get install -y python3-pip samba avahi-daemon li
   exit 1
 }
 # Install copyparty via pip if not available
-if ! command -v copyparty &> /dev/null; then
+if ! command -v copyparty &>/dev/null; then
   printf '%s\n' "Installing copyparty via pip..."
   pip3 install --user copyparty
 fi
@@ -58,7 +58,7 @@ mkdir -p ~/Public/uploads ~/Public/share
 # Configure Samba
 printf '%s\n' "Configuring Samba..."
 CURRENT_USER="$(whoami)"
-sudo tee /etc/samba/smb.conf > /dev/null << EOF
+sudo tee /etc/samba/smb.conf >/dev/null << EOF
 [global]
   workgroup = WORKGROUP
   server string = Copyparty Samba Server

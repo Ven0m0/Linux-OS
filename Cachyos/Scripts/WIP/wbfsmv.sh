@@ -40,12 +40,12 @@ TARGET=${1:-.}
   printf 'Not a directory: %s\n' "$TARGET" >&2
   exit 2
 }
-command -v dd &> /dev/null || {
+command -v dd &>/dev/null || {
   printf 'dd required\n' >&2
   exit 1
 }
 have_wit=0
-command -v wit &> /dev/null && have_wit=1
+command -v wit &>/dev/null && have_wit=1
 ((trim || convert)) && ((!have_wit)) && {
   printf 'wit required for --convert/--trim\n' >&2
   exit 1
@@ -60,15 +60,15 @@ get_id(){
   local f="$1" id='' off=0
   [[ ${f,,} == *.wbfs ]] && off=512
   if ((have_wit)); then
-    id=$(wit ID6 -- "$f" 2> /dev/null | head -n1) || id=
+    id=$(wit ID6 -- "$f" 2>/dev/null | head -n1) || id=
   fi
-  [[ -z $id ]] && id=$(dd if="$f" bs=1 skip="$off" count=6 2> /dev/null | tr -dc 'A-Za-z0-9')
+  [[ -z $id ]] && id=$(dd if="$f" bs=1 skip="$off" count=6 2>/dev/null | tr -dc 'A-Za-z0-9')
   printf '%s' "${id^^}"
 }
 get_title(){
   local f="$1"
   ((have_wit)) || return 0
-  wit dump -ll -- "$f" 2> /dev/null | awk -F': ' '
+  wit dump -ll -- "$f" 2>/dev/null | awk -F': ' '
     /^(Disc )?Title[[:space:]]*:/ && $2!="" {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2; exit}
     /^Game title[[:space:]]*:/ && $2!="" {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2; exit}
   '
@@ -86,7 +86,7 @@ set_region(){
   local f="$1"
   ((have_wit)) || return 0
   local cur
-  cur=$(wit dump -ll -- "$f" 2> /dev/null | awk -F': ' '/^Region[[:space:]]*:/{print $2; exit}')
+  cur=$(wit dump -ll -- "$f" 2>/dev/null | awk -F': ' '/^Region[[:space:]]*:/{print $2; exit}')
   [[ ${cur^^} == "${wit_region^^}" ]] && return 0
   log "set region $wit_region: $f"
   run wit edit --region "$wit_region" -q -- "$f" || :
@@ -132,7 +132,7 @@ process_file(){
   ext=${ext,,}
   local dest="$newdir/${id}.wbfs"
   # check if already correct
-  if [[ $ext == wbfs ]] && [[ $f -ef $dest ]] 2> /dev/null && ((!trim)); then
+  if [[ $ext == wbfs ]] && [[ $f -ef $dest ]] 2>/dev/null && ((!trim)); then
     set_region "$f"
     log "skip (already ok): $f"
     return 0
@@ -143,7 +143,7 @@ process_file(){
     # trim always outputs wbfs
     if trim_game "$f" "$dest"; then
       set_region "$dest"
-      [[ $f -ef $dest ]] 2> /dev/null || {
+      [[ $f -ef $dest ]] 2>/dev/null || {
         log "removing original: $f"
         run rm -f -- "$f"
       }
@@ -194,7 +194,7 @@ process_dir(){
   name=$(clean "${title:-$base}")
   [[ -n $name ]] || name="Unknown"
   newdir="$TARGET/${name} [${id}]"
-  [[ $d -ef $newdir ]] 2> /dev/null && ((!trim)) && {
+  [[ $d -ef $newdir ]] 2>/dev/null && ((!trim)) && {
     log "skip (already ok): $d"
     return 0
   }
@@ -219,7 +219,7 @@ process_dir(){
       gext=${gext,,}
       gdest="$newdir/${gid}.wbfs"
       if ((trim)) && ((have_wit)); then
-        if [[ $gf -ef $gdest ]] 2> /dev/null; then
+        if [[ $gf -ef $gdest ]] 2>/dev/null; then
           # in-place trim: use temp file
           local tmp="$newdir/.trim_tmp_${gid}.wbfs"
           if trim_game "$gf" "$tmp"; then

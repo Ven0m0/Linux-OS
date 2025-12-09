@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # apt-ultra: Unified fast APT package manager
 # Combines fast-apt-mirror.sh + apt-fast functionality
 # SPDX-License-Identifier: Apache-2.0

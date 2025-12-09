@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 set -Eeuo pipefail
 shopt -s nullglob
 IFS=$'\n\t'

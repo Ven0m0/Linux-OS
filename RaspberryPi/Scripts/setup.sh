@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # DESCRIPTION: Automated Raspberry Pi system optimization and tooling setup
 #              Targets: Debian/Raspbian, DietPi
 set -euo pipefail

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # wbfsmv.sh - organize Wii games for USB Loader GX: "Game Name [GAMEID]/GAMEID.wbfs"
 # Usage: wbfsmv.sh [-c|--convert] [-t|--trim] [-n|--dry-run] [-v|--verbose] [target_dir]
 # Env: WBFSMV_REGION (default: PAL) - region to set (PAL|NTSC|JAP|KOR|FREE)

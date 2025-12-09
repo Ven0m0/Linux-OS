@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Optimized: 2025-11-19 - Applied bash optimization techniques
 set -euo pipefail
 shopt -s nullglob globstar

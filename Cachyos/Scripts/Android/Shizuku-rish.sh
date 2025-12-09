@@ -1,4 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 set -euo pipefail
 shopt -s nullglob
 IFS=$'\n\t'

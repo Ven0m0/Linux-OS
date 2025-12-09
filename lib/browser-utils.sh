@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Browser and SQLite utility functions for Linux-OS scripts
 # Source this file: source "${BASH_SOURCE%/*}/../lib/browser-utils.sh"
 

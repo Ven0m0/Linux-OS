@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Optimized: 2025-11-19 - Applied bash optimization techniques
 # Refactored: 2025-12-04 - Inlined common helpers for portability
 # Refactored: 2025-12-09 - Migrated to shared libraries

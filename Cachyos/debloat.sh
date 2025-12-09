@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 # Unified Debloat Script for Arch-based and Debian-based systems
 # Refactored version with improved structure and maintainability
 # Removes unnecessary packages and disables telemetry services

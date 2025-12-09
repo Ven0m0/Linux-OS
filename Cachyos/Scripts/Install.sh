@@ -256,6 +256,9 @@ setup_tools(){
     soar i -yq 'sstrip.upx.ss#github.com.pkgforge-dev.super-strip' 2>/dev/null || :
   fi
 }
+# TODO: add am
+# wget https://raw.githubusercontent.com/ivan-hc/AM/main/INSTALL && chmod a+x ./INSTALL && sudo ./INSTALL && rm ./INSTALL
+
 
 #══════════════════════════════════════════════════════════════
 #  SHELL INTEGRATION

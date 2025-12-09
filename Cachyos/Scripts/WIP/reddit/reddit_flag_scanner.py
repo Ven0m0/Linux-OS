@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 """Reddit toxicity scanner optimized with orjson and uvloop."""
-import argparse
-import asyncio
-import csv
-import sys
-import time
-import httpx
-import orjson
-import praw
-import uvloop
+import argparse, asyncio, csv, sys, time, httpx, orjson, praw, uvloop
 
 API_URL = "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"
 ATTRS = ["TOXICITY", "INSULT", "PROFANITY", "SEXUALLY_EXPLICIT"]

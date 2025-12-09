@@ -16,7 +16,7 @@ Optimized for performance using `orjson` (fast JSON) and `uvloop` (fast async lo
 
 ```bash
 # Core dependencies
-pacman -S python-praw python-httpx python-orjson python-uvloop
+sudo pacman -S python-praw python-httpx python-orjson python-uvloop
 
 # Sherlock
-yay -S sherlock-git
+paru -S sherlock-git

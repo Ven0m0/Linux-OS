@@ -20,14 +20,10 @@
 | `<link rel="prefetch">` | Pre-populating the HTTP cache | Use to prefetch same-site future navigation resources or subresources used on those pages. Uses HTTP cache therefore has a number of issues with document prefetches, such as being potentially blocked by Cache-Control headers. Use the Speculation Rules API for document prefetches instead, where it is supported. |
 | `<link rel="prerender">` | Preparing for the next navigation | Deprecated; you are advised not to use this. Use Speculation Rules API prerender instead, where it is supported. |
 
-
 ## Markdown
-
 - Use ```<br>``` to insert a line break.
 - Use ```<p></p>``` to create a new paragraph with extra spacing.
 - Use ```&nbsp;``` to add a single space between words or elements.
-
-
 
 ## Useful websites
 
@@ -37,7 +33,6 @@
 
 
 ## Bash
-
 - https://github.com/adrianlarion/useful-sed
 - <https://dotfiles.github.io/>
 - <https://terminal.sexy/>
@@ -47,3 +42,21 @@
 - [Bash Guide](https://guide.bash.academy) **|** [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
 - [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
 - [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)
+
+### FFMPEG
+
+```bash
+ffmpeg -i input.mkv -c:v libsvtav1 \
+  -preset 4 -crf 30 -g 240 \
+  -pix_fmt yuv420p10le \
+  -svtav1-params tune=0:enable-qm=1 \
+  -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
+  -c:a libopus -b:a 96k -ac 2 -rematrix_maxval 1.0 \
+  -f mkv -hide_banner -y -nostdin -loglevel error -stats \
+  output.mkv
+```
+or depending on speed
+```bash
+-preset 5
+-preset 6
+```

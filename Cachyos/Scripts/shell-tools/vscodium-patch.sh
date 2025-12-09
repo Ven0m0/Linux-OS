@@ -1,24 +1,14 @@
 #!/usr/bin/env bash
+set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t' LC_ALL=C
 # VSCode/VSCodium patcher - XDG, marketplace, feature, and privacy patches
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-LC_ALL=C
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
 warn(){ printf '%b\n' "${Y}⚠${D} $*" >&2; }
-die(){
-  printf '%b\n' "${R}✗${D} $*" >&2
-  exit "${2:-1}"
-}
+die(){ printf '%b\n' "${R}✗${D} $*" >&2;  exit "${2:-1}"; }
 has(){ command -v -- "$1" &> /dev/null; }
 ok(){ printf '%b\n' "${G}✓${D} $*"; }
-
 vscode_json_set(){
   local prop=$1 val=$2
-  has python3 || {
-    warn "No python3: $prop"
-    return 1
-  }
+  has python3 || { warn "No python3: $prop"; return 1; }
   python3 << EOF
 from pathlib import Path
 import os, json, sys

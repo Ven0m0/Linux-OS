@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-LC_ALL=C
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
 warn(){ printf '%b\n' "${Y}⚠${D} $*" >&2; }
 has(){ command -v -- "$1" &>/dev/null; }

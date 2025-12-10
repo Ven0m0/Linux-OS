@@ -1,28 +1,26 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 # DESCRIPTION: Chroot into ARM64 DietPi/PiOS images from x86_64 Arch Linux
 #              - Uses qemu-user-static for cross-architecture execution
 #              - Safely handles mounting/unmounting to prevent corruption
 #              - Injects QEMU binary and resolv.conf automatically
 # DEPENDENCIES: qemu-user-static, qemu-user-static-binfmt, util-linux, parted
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"
+
+# TODO: find out if this is needed for path safety
+# export PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"
 
 # Configuration
 QEMU_BIN="/usr/bin/qemu-aarch64-static"
 MOUNT_DIR="/mnt/dietpi-chroot"
-
 # Colors
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-
 # Globals
 declare -g IMG_FILE="" LOOP_DEV="" ROOT_PART="" BOOT_PART=""
 declare -ga MOUNTED_POINTS=()
-
 # Helpers
 has(){ command -v "$1" &>/dev/null; }
 log(){ printf '[%s] %b%s%b\n' "$(date +%T)" "${BLU}${BLD}[*]${DEF} " "$*"; }
@@ -34,7 +32,6 @@ die(){
   cleanup
   exit "${2:-1}"
 }
-
 check_deps(){
   local -a deps=(losetup parted mount umount qemu-aarch64-static)
   local missing=()

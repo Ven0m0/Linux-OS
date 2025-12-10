@@ -1,25 +1,14 @@
 #!/usr/bin/env bash
-# Optimized: 2025-11-19 - Applied bash optimization techniques
-# Refactored: 2025-12-04 - Inlined common helpers for portability
-
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar extglob dotglob
-
-# Export common locale settings
-export LC_ALL=C LANG=C LANGUAGE=C
-
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
 #============ Color & Effects ============
-# Trans flag color palette (LBLU → PNK → BWHT → PNK → LBLU)
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
-
-# Export color variables
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
-
 #============ Helper Functions ============
 has(){ command -v "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
@@ -36,7 +25,6 @@ confirm(){
     case "${r,,}" in y | yes) return 0 ;; n | no | "") return 1 ;; *) warn "Please answer y or n" ;; esac
   done
 }
-
 #============ Banner Printing Functions ============
 print_banner(){
   local banner="$1" title="${2:-}"

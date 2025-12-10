@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail
-shopt -s nullglob
-IFS=$'\n\t'
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 # Demo script showing all scanner modes
 readonly TEST_USER="${1:-spez}"
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
@@ -11,7 +10,6 @@ SCRIPT_DIR="$(pwd -P)"
 readonly SCANNER="${SCRIPT_DIR}/account_scanner.py"
 
 printf '\n=== Account Scanner Demo ===\n\n'
-
 check_deps(){
   local -a missing=()
   command -v python3 &>/dev/null || missing+=(python3)
@@ -26,11 +24,9 @@ check_deps(){
     return 1
   fi
 }
-
 printf 'Checking dependencies...\n'
 check_deps || exit 1
 printf 'Using test username: %s\n\n' "$TEST_USER"
-
 # Demo 1: Sherlock
 printf '\n--- Demo 1: Sherlock Mode ---\n'
 printf 'Press Enter to run (or Ctrl+C to skip)...'
@@ -38,7 +34,6 @@ read -r
 python3 "$SCANNER" "$TEST_USER" --mode sherlock \
   --output-sherlock "demo_sherlock_${TEST_USER}.json" \
   --sherlock-timeout 30 --verbose
-
 # Demo 2: Reddit
 printf '\n\n--- Demo 2: Reddit Mode ---\n'
 printf 'Skip this demo? (Y/n): '

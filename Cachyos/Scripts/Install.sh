@@ -253,9 +253,27 @@ setup_tools(){
     soar S &>/dev/null && soar u --no-verify &>/dev/null || :
     soar i -yq 'sstrip.upx.ss#github.com.pkgforge-dev.super-strip' 2>/dev/null || :
   fi
+  # AM (AppImage Manager)
+  if ! has am; then
+    msg "Installing AM (AppImage Manager)"
+    local tmpdir
+    tmpdir=$(mktemp -d)
+    if has curl; then
+      curl -fsSL 'https://raw.githubusercontent.com/ivan-hc/AM/main/INSTALL' -o "$tmpdir/INSTALL" \
+        && chmod a+x "$tmpdir/INSTALL" \
+        && sudo "$tmpdir/INSTALL" 2>/dev/null \
+        && rm -rf "$tmpdir" || { warn "AM installation failed"; rm -rf "$tmpdir"; }
+    elif has wget; then
+      wget -qO "$tmpdir/INSTALL" 'https://raw.githubusercontent.com/ivan-hc/AM/main/INSTALL' \
+        && chmod a+x "$tmpdir/INSTALL" \
+        && sudo "$tmpdir/INSTALL" 2>/dev/null \
+        && rm -rf "$tmpdir" || { warn "AM installation failed"; rm -rf "$tmpdir"; }
+    else
+      warn "curl or wget required to install AM"
+      rm -rf "$tmpdir"
+    fi
+  fi
 }
-# TODO: add am
-# wget https://raw.githubusercontent.com/ivan-hc/AM/main/INSTALL && chmod a+x ./INSTALL && sudo ./INSTALL && rm ./INSTALL
 
 #══════════════════════════════════════════════════════════════
 #  SHELL INTEGRATION

@@ -132,6 +132,7 @@ init_system(){
   sudo pacman-key --populate archlinux cachyos &>/dev/null
   sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null
   sudo pacman -Syyu --noconfirm 2>/dev/null
+  sudo systemctl enable --now fstrim.timer
 }
 
 #══════════════════════════════════════════════════════════════

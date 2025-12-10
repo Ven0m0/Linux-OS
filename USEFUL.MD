@@ -52,7 +52,7 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
   -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
   -c:a libopus -b:a 96k -ac 2 -rematrix_maxval 1.0 \
   -f mkv -hide_banner -y -nostdin -loglevel error -stats \
-  output.mkv
+  -map_metadata 0 output.mkv
 ```
 
 or depending on speed `-preset 5` or `-preset 6`

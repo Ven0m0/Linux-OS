@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail
-shopt -s nullglob globstar
-LC_ALL=C LANG=C
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
 # 1. Centralize Flags
 # -s -w: Strip debug info (smaller binary)
 # -trimpath: Remove file system paths (reproducible builds)

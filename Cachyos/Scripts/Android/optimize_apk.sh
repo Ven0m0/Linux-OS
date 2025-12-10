@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -Eeuo pipefail
-shopt -s nullglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
-
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 # optimize_apk.sh: Automate APK linting, stripping, bytecode optimization, and repackaging
 # Usage: ./optimize_apk.sh input.apk output.apk
 # Requirements: apktool, redex, dex2jar, proguard (or R8), zipalign, apksigner, pngcrush, jpegoptim, 7z
@@ -14,7 +11,6 @@ KEYSTORE_PATH="${KEYSTORE_PATH:-mykey.keystore}"
 KEY_ALIAS="${KEY_ALIAS:-myalias}"
 KEYSTORE_PASS="${KEYSTORE_PASS:-changeit}"
 KEY_PASS="${KEY_PASS:-changeit}"
-
 # Tools
 readonly APKTOOL="apktool"
 readonly REDEX="redex"
@@ -25,7 +21,6 @@ readonly APKSIGNER="apksigner"
 readonly PNGCRUSH="pngcrush"
 readonly JPEGOPTIM="jpegoptim"
 readonly SEVENZIP="7z"
-
 # Logging
 log(){ printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
 err(){ printf '[ERROR] %s\n' "$*" >&2; }
@@ -33,10 +28,8 @@ die(){
   err "$1"
   exit "${2:-1}"
 }
-
 # Check required tools
 has(){ command -v "$1" &>/dev/null; }
-
 check_tools(){
   local missing=0
   for tool in "$APKTOOL" "$ZIPALIGN" "$APKSIGNER" "$SEVENZIP"; do

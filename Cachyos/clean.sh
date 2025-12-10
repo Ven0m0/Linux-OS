@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
 # Enhanced system cleaning with privacy configuration
 # Refactored version with improved structure and maintainability
-
-set -euo pipefail
-shopt -s nullglob globstar extglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
-
-# Colors (trans flag palette)
+# Colors
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
@@ -17,16 +14,13 @@ export BLK RED GRN YLW BLU MGN CYN WHT LBLU PNK BWHT DEF BLD
 # Core helper functions
 has(){ command -v -- "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
-
 # Capture current disk usage
 capture_disk_usage(){
   df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}'
 }
-
 # Package manager detection (cached)
 _PKG_MGR_CACHED=""
 _AUR_OPTS_CACHED=()
-
 detect_pkg_manager(){
   if [[ -n $_PKG_MGR_CACHED ]]; then
     printf '%s\n' "$_PKG_MGR_CACHED"

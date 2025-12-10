@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t' LC_ALL=C
-# TODO: see if this is needed or not for safety
-# HOME="/home/${SUDO_USER:-$USER}" PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"
+export LC_ALL=C; IFS=$'\n\t'
+s=${BASH_SOURCE[0]}; [[ $s != /* ]] && s=$PWD/$s; cd -P -- "${s%/*}"
 fdate(){ local fmt="${1:-%T}"; printf "%($fmt)T" '-1'; }
 fcat(){ printf '%s\n' "$(<"${1}")"; }
-declare -A cfg=([boot_size]="512M" [ssh]=1 [dry_run]=0 [keep_source]=0 [no_usb_check]=0 [no_size_check]=0)
+declare -A cfg=([boot_size]="512M" [ssh]=1 [dry_run]=0 [keep_source]=0 [no_usb_check]=0 [no_size_check]=0 [shrink]=0)
 declare -r DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
 declare -r RED GRN YLW BLU DEF BLD
@@ -20,7 +19,7 @@ err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*" || :; }
 get_drive_trans(){
   local dev="${1:?}"
-  lsblk -dno TRAN "$dev" 2>/dev/null || echo "unknown"
+  lsblk -dno TRAN "$dev" 2>&1 || echo "unknown"
 }
 assert_usb_dev(){
   local dev="${1:?}"
@@ -41,8 +40,8 @@ assert_size(){
   local img_bytes dev_bytes
   img_bytes=$(stat -c%s "$img")
   dev_bytes=$(blockdev --getsize64 "$dev")
-  ((img_bytes > dev_bytes)) && {
-    err "Image ($((img_bytes / 1024 / 1024))MB) exceeds target ($((dev_bytes / 1024 / 1024))MB)."
+  ((img_bytes>dev_bytes)) && {
+    err "Image ($((img_bytes/1024/1024))MB) exceeds target ($((dev_bytes/1024/1024))MB)."
     cleanup
     exit 1
   }
@@ -55,18 +54,19 @@ select_target_interactive(){
   }
   log "Scanning for removable drives..."
   local selection
-  selection=$(lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG | awk -v skip="${cfg[no_usb_check]}" 'tolower($0) ~ /disk/ && (skip == "1" || tolower($0) ~ /usb|mmc/)' | fzf --header="TARGET SELECTION (Safety: USB/MMC Only)" --prompt="Select Drive> " --with-nth=1,2,3,4)
+  selection=$(lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG | awk -v skip="${cfg[no_usb_check]}" 'tolower($0)~/disk/ && (skip=="1" || tolower($0)~/usb|mmc/)' | fzf --header="TARGET SELECTION (Safety: USB/MMC Only)" --prompt="Select Drive> " --with-nth=1,2,3,4)
   [[ -z $selection ]] && {
     err "No target selected."
     cleanup
     exit 1
   }
-  echo "$selection" | awk '{print $1}'
+  awk '{print $1}' <<<"$selection"
 }
 check_deps(){
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid partprobe lsblk flock awk curl) missing=() cmd
+  ((cfg[shrink])) && deps+=(e2fsck resize2fs tune2fs truncate)
   for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
-  ((${#missing[@]} > 0)) && {
+  ((${#missing[@]}>0)) && {
     err "Missing dependencies: ${missing[*]}"
     cleanup
     exit 1
@@ -75,9 +75,9 @@ check_deps(){
 cleanup(){
   local ret=$?
   set +e
-  for ((i = ${#MOUNTED_DIRS[@]} - 1; i >= 0; i--)); do umount -lf "${MOUNTED_DIRS[i]}" &>/dev/null; done
+  for ((i=${#MOUNTED_DIRS[@]}-1; i>=0; i--)); do umount -lf "${MOUNTED_DIRS[i]}" &>/dev/null; done
   [[ -b ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" &>/dev/null
-  ((LOCK_FD >= 0)) && {
+  ((LOCK_FD>=0)) && {
     exec {LOCK_FD}>&-
     LOCK_FD=-1
   }
@@ -103,7 +103,7 @@ wait_for_partitions(){
   sleep 1
   derive_partition_paths "$dev"
   local i
-  for ((i = 0; i < 30; i++)); do
+  for ((i=0; i<30; i++)); do
     [[ -b $BOOT_PART && -b $ROOT_PART ]] && return 0
     sleep 0.5
   done
@@ -116,7 +116,7 @@ prepare_environment(){
   SRC_IMG="$WORKDIR/source.img"
   trap cleanup EXIT INT TERM
   sync
-  sudo sh -c 'echo 3> /proc/sys/vm/drop_caches'
+  sudo sh -c 'echo 3>/proc/sys/vm/drop_caches'
 }
 process_source(){
   [[ $SRC_PATH == dietpi ]] && {
@@ -143,7 +143,90 @@ process_source(){
     xz -dc "$SRC_PATH" >"$SRC_IMG"
   elif ((cfg[keep_source])); then
     cp --reflink=auto "$SRC_PATH" "$SRC_IMG"
-  else ln "$SRC_PATH" "$SRC_IMG" 2>/dev/null || cp "$SRC_PATH" "$SRC_IMG"; fi
+  else ln "$SRC_PATH" "$SRC_IMG" 2>&1 || cp "$SRC_PATH" "$SRC_IMG"; fi
+}
+check_filesystem(){
+  local dev="${1:?}"
+  log "Checking filesystem on $dev..."
+  e2fsck -pf "$dev"
+  (($?<4)) && return
+  warn "Filesystem error detected! Attempting recovery..."
+  e2fsck -y "$dev"
+  (($?<4)) && return
+  e2fsck -fy -b 32768 "$dev"
+  (($?<4)) && return
+  err "Filesystem recovery failed (non-fatal, continuing...)"
+}
+shrink_source_image(){
+  log "Shrinking source image before flash..."
+  local parted_out partnum partstart parttype currentsize blocksize minsize extra_space partnewsize newpartend endresult
+  parted_out=$(parted -ms "$SRC_IMG" unit B print) || {
+    err "parted failed (non-fatal, skipping shrink)"
+    return
+  }
+  partnum=$(awk -F: 'END{print $1}' <<<"$parted_out")
+  partstart=$(awk -F: 'END{print $2}' <<<"$parted_out" | tr -d B)
+  [[ -z $(parted -s "$SRC_IMG" unit B print | grep "$partstart" | grep logical) ]] && parttype="primary" || parttype="logical"
+  LOOP_DEV=$(losetup -f --show -o "$partstart" "$SRC_IMG") || {
+    err "Failed to setup loop device (skipping shrink)"
+    return
+  }
+  check_filesystem "$LOOP_DEV"
+  local tune_out
+  tune_out=$(tune2fs -l "$LOOP_DEV" 2>&1) || {
+    err "tune2fs failed (skipping shrink)"
+    losetup -d "$LOOP_DEV" &>/dev/null
+    return
+  }
+  currentsize=$(awk -F: '/^Block count:/{gsub(" ","",$2);print $2}' <<<"$tune_out")
+  blocksize=$(awk -F: '/^Block size:/{gsub(" ","",$2);print $2}' <<<"$tune_out")
+  minsize=$(resize2fs -P "$LOOP_DEV" 2>&1 | awk -F: '{gsub(" ","",$2);print $2}') || {
+    err "resize2fs -P failed (skipping shrink)"
+    losetup -d "$LOOP_DEV" &>/dev/null
+    return
+  }
+  [[ $currentsize -eq $minsize ]] && {
+    log "Source image already at minimum size"
+    losetup -d "$LOOP_DEV" &>/dev/null
+    return
+  }
+  extra_space=$((currentsize-minsize))
+  for space in 5000 1000 100; do ((extra_space>space)) && { minsize=$((minsize+space)); break; }; done
+  log "Resizing source filesystem to ${minsize} blocks..."
+  resize2fs -p "$LOOP_DEV" "$minsize" || {
+    err "resize2fs failed (skipping shrink)"
+    losetup -d "$LOOP_DEV" &>/dev/null
+    return
+  }
+  local mnt
+  mnt=$(mktemp -d)
+  mount "$LOOP_DEV" "$mnt"
+  log "Zeroing free space in source..."
+  cat /dev/zero >"$mnt/zero_file" 2>&1 || :
+  rm -f "$mnt/zero_file"
+  umount "$mnt"
+  rmdir "$mnt"
+  partnewsize=$((minsize*blocksize))
+  newpartend=$((partstart+partnewsize))
+  log "Shrinking source partition..."
+  parted -s -a minimal "$SRC_IMG" rm "$partnum" || {
+    err "parted rm failed (skipping shrink)"
+    losetup -d "$LOOP_DEV" &>/dev/null
+    return
+  }
+  parted -s "$SRC_IMG" unit B mkpart "$parttype" "$partstart" "$newpartend" || {
+    err "parted mkpart failed (skipping shrink)"
+    losetup -d "$LOOP_DEV" &>/dev/null
+    return
+  }
+  losetup -d "$LOOP_DEV" &>/dev/null
+  endresult=$(parted -ms "$SRC_IMG" unit B print free | tail -1 | awk -F: '{print $2}' | tr -d B)
+  log "Truncating source image to ${endresult}B..."
+  truncate -s "$endresult" "$SRC_IMG" || {
+    err "truncate failed (non-fatal)"
+    return
+  }
+  msg "Source image shrunk successfully (faster flash ahead!)"
 }
 setup_target_device(){
   log "Preparing target: $TGT_PATH"
@@ -175,8 +258,8 @@ setup_target_device(){
 format_target(){
   log "Formatting filesystems..."
   ((cfg[dry_run])) && return 0
-  mkfs.vfat -F32 -n BOOT "$BOOT_PART" >/dev/null
-  mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART" >/dev/null
+  mkfs.vfat -F32 -n BOOT "$BOOT_PART" &>/dev/null
+  mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART" &>/dev/null
 }
 clone_data(){
   log "Cloning data (rsync)..."
@@ -224,18 +307,19 @@ usage(){
 	  -i FILE   Source image (.img, .img.xz, URL, or 'dietpi')
 	  -d DEV    Target device (e.g., /dev/sdX)
 	  -b SIZE   Boot partition size (default: 512M)
+	  -z        Shrink source image before flash (PiShrink)
 	  -s        Enable SSH
 	  -k        Keep source file (don't delete if extracted)
 	  -U        Disable USB/MMC safety check (Dangerous)
 	  -F        Disable Size safety check
 	  -n        Dry-run
 	  -h        Help
-	EOF
+EOF
   exit 0
 }
-while getopts "b:i:d:sknxhUF" opt; do
+while getopts "b:i:d:zsknhUF" opt; do
   case $opt in
-    b) cfg[boot_size]=$OPTARG ;; i) SRC_PATH=$OPTARG ;; d) TGT_PATH=$OPTARG ;; s) cfg[ssh]=1 ;; k) cfg[keep_source]=1 ;; n) cfg[dry_run]=1 ;; U) cfg[no_usb_check]=1 ;; F) cfg[no_size_check]=1 ;; h) usage ;; *) usage ;;
+    b) cfg[boot_size]=$OPTARG ;; i) SRC_PATH=$OPTARG ;; d) TGT_PATH=$OPTARG ;; z) cfg[shrink]=1 ;; s) cfg[ssh]=1 ;; k) cfg[keep_source]=1 ;; n) cfg[dry_run]=1 ;; U) cfg[no_usb_check]=1 ;; F) cfg[no_size_check]=1 ;; h) usage ;; *) usage ;;
   esac
 done
 [[ $EUID -ne 0 ]] && {
@@ -244,7 +328,7 @@ done
   exit 1
 }
 check_deps
-[[ -z $SRC_PATH ]] && SRC_PATH=$(find . -maxdepth 2 -name "*.img*" -o -name "*.xz" | fzf --prompt="Select Source Image (or enter URL/dietpi)> ") && [[ -z $SRC_PATH ]] && {
+[[ -z $SRC_PATH ]] && SRC_PATH=$(find . -maxdepth 2 \( -name "*.img*" -o -name "*.xz" \) | fzf --prompt="Select Source Image (or enter URL/dietpi)> ") && [[ -z $SRC_PATH ]] && {
   err "No source image selected."
   cleanup
   exit 1
@@ -252,6 +336,7 @@ check_deps
 [[ -z $TGT_PATH ]] && TGT_PATH=$(select_target_interactive)
 prepare_environment
 process_source
+((cfg[shrink])) && shrink_source_image
 setup_target_device
 format_target
 clone_data

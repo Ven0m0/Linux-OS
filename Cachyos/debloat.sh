@@ -1,21 +1,17 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
 # Unified Debloat Script for Arch-based and Debian-based systems
 # Refactored version with improved structure and maintainability
 # Removes unnecessary packages and disables telemetry services
-set -euo pipefail
-shopt -s nullglob globstar extglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="${HOME:-/home/${SUDO_USER:-$USER}}"
-# Colors (trans flag palette)
+# Colors
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
-export RED GRN YLW DEF
 # Core helper functions
 has(){ command -v -- "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 sudo -v
-
 # --- Platform Detection ---
 detect_platform(){
   if command -v pacman &>/dev/null; then
@@ -26,7 +22,6 @@ detect_platform(){
     echo "unknown"
   fi
 }
-
 # --- Arch-based Debloat ---
 debloat_arch(){
   msg "## Debloating Arch-based system..."

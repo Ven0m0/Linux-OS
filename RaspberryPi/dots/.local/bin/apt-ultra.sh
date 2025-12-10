@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 # apt-ultra: Unified fast APT package manager
 # Combines fast-apt-mirror.sh + apt-fast functionality
-# SPDX-License-Identifier: Apache-2.0
-# shellcheck disable=SC2155,SC1091,SC2120
-set -euo pipefail
-shopt -s nullglob globstar extglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
-
 #──────────── Constants ────────────
 readonly VERSION="1.0.0" RC_INVALID_ARGS=3 RC_MISC_ERROR=222 LCK_FILE="/tmp/apt-ultra" LCK_FD=99
 # Colors

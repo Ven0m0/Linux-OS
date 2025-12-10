@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-# If not running interactively, don't do anything
 [[ $- != *i* ]] && return
-
 # --- Keybindings ---
 # These work universally as they are mksh/terminal features
 set -o emacs
@@ -12,9 +10,7 @@ bind '"\e[A"=search-history-up'   # Up arrow history search
 bind '"\e[B"=search-history-down' # Down arrow history search
 bind ^[a=beginning-of-line
 bind ^[e=end-of-line
-
 export HISTCONTROL="ignoredups:ignorespace"
-
 # Report status of background jobs immediately upon completion
 set -o notify
 # Run background jobs at a lower priority (also disables the bell)
@@ -25,20 +21,15 @@ set -o noclobber
 # Function to create a directory and move into it
 set +o nohup # disable nohup mode
 set -o utf8-mode
-
 mkcd(){
   mkdir -p "$1" && cd "$1" || exit
 }
 cdl(){
   cd "$1" && ls -a --color=auto
 }
-
-CDPATH=".:~:/sdcard:/sdcard/Android/data:/:/storage/emulated/0"
-export CDPATH
-
+export CDPATH=".:~:/sdcard:/sdcard/Android/data:/:/storage/emulated/0"
 # File patterns to ignore during tab completion
 export FIGNORE='.o:~:*.swp'
-
 alias grep='grep --color=auto'
 # Package Manager (pm)
 alias pml='pm list packages'

@@ -14,8 +14,8 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 # Core helpers
 has(){ command -v -- "$1" &>/dev/null; }
 log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
-warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
-err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
+warn(){ printf '%b\n' "${YLW}⚠${DEF} $*">&2; }
+err(){ printf '%b\n' "${RED}✗${DEF} $*">&2; }
 die(){
   err "$1"
   exit "${2:-1}"
@@ -57,7 +57,7 @@ parse_args(){
       -m | --minimal) cfg[minimal]=1 ;;
       -q | --quiet)
         cfg[quiet]=1
-        exec >/dev/null
+        exec>/dev/null
         ;;
       -h | --help)
         usage
@@ -79,7 +79,7 @@ parse_args(){
 # APT Configuration
 configure_apt(){
   log "Configuring APT for performance & reliability"
-  sudo tee /etc/apt/apt.conf.d/99parallel >/dev/null <<'EOF'
+  sudo tee /etc/apt/apt.conf.d/99parallel>/dev/null <<'EOF'
 APT::Acquire::Retries "5";
 Acquire::Queue-Mode "access";
 Acquire::Languages "none";
@@ -89,7 +89,7 @@ Acquire::CompressionTypes::Order:: "gz";
 APT { Get { Assume-Yes "true"; Fix-Broken "true"; Fix-Missing "true"; List-Cleanup "true"; };};
 APT::Acquire::Max-Parallel-Downloads "5";
 EOF
-  sudo tee /etc/apt/apt.conf.d/50-unattended-upgrades >/dev/null <<'EOF'
+  sudo tee /etc/apt/apt.conf.d/50-unattended-upgrades>/dev/null <<'EOF'
 APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::AutocleanInterval "7";
 APT::Periodic::Download-Upgradeable-Packages "1";
@@ -98,15 +98,15 @@ Unattended-Upgrade::AutoFixInterruptedDpkg "true";
 APT::Periodic::Update-Package-Lists "1";
 Unattended-Upgrade::MinimalSteps "true";
 EOF
-  sudo tee /etc/apt/apt.conf.d/01disable-log >/dev/null <<'EOF'
+  sudo tee /etc/apt/apt.conf.d/01disable-log>/dev/null <<'EOF'
 Dir::Log::Terminal "";
 EOF
-  sudo tee /etc/apt/apt.conf.d/71debconf >/dev/null <<'EOF'
+  sudo tee /etc/apt/apt.conf.d/71debconf>/dev/null <<'EOF'
 DPkg::Options {
    "--force-confdef";
 };
 EOF
-  sudo tee /etc/dpkg/dpkg.cfg.d/force-unsafe-io >/dev/null <<'EOF'
+  sudo tee /etc/dpkg/dpkg.cfg.d/force-unsafe-io>/dev/null <<'EOF'
 force-unsafe-io
 EOF
 }
@@ -115,7 +115,7 @@ enable_ip_forwarding(){
   sudo sysctl -w net.ipv4.ip_forward=1
   sudo sysctl -w net.ipv6.conf.all.forwarding=1
   sudo sysctl -w net.ipv6.conf.default.forwarding=1
-  sudo tee /etc/sysctl.d/99-ip-forward.conf >/dev/null <<'EOF'
+  sudo tee /etc/sysctl.d/99-ip-forward.conf>/dev/null <<'EOF'
 net.ipv4.ip_forward=1
 net.ipv6.conf.all.forwarding=1
 net.ipv6.conf.default.forwarding=1
@@ -124,7 +124,7 @@ EOF
 # Documentation Cleanup
 configure_dpkg_nodoc(){
   log "Configuring dpkg to exclude documentation"
-  sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null <<'EOF'
+  sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc>/dev/null <<'EOF'
 path-exclude /usr/share/doc/*
 path-exclude /usr/share/help/*
 path-exclude /usr/share/man/*
@@ -149,18 +149,18 @@ clean_docs(){
 optimize_system(){
   log "Applying system-level optimizations"
   sudo systemctl mask NetworkManager-wait-online.service 2>/dev/null || :
-  sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf >/dev/null <<'EOF'
+  sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf>/dev/null <<'EOF'
 [connectivity]
 enabled=false
 EOF
   [[ -f /etc/selinux/config ]] && {
-    sudo tee /etc/selinux/config >/dev/null <<'EOF'
+    sudo tee /etc/selinux/config>/dev/null <<'EOF'
 SELINUX=disabled
 SELINUXTYPE=minimum
 EOF
     sudo setenforce 0 2>/dev/null || :
   }
-  sudo tee /etc/modprobe.d/misc.conf >/dev/null <<'EOF'
+  sudo tee /etc/modprobe.d/misc.conf>/dev/null <<'EOF'
 options cec debug=0
 options pstore backend=null
 options snd_hda_intel power_save=1
@@ -169,7 +169,7 @@ options usbhid mousepoll=20 kbpoll=20
 options usbcore autosuspend=10
 EOF
   for dev in /sys/block/sd*[!0-9]/queue/iosched/fifo_batch /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch; do
-    [[ -f $dev ]] && sudo tee "$dev" >/dev/null <<<32 || :
+    [[ -f $dev ]] && sudo tee "$dev">/dev/null <<<32 || :
   done
   local root_dev home_dev
   root_dev=$(findmnt -n -o SOURCE /)
@@ -187,7 +187,7 @@ EOF
     sudo tune2fs -O ^metadata_csum,^quota "$home_dev" 2>/dev/null || :
   }
   if ip -o link | grep -q wlan; then
-    sudo tee /etc/modprobe.d/wlan.conf >/dev/null <<'EOF'
+    sudo tee /etc/modprobe.d/wlan.conf>/dev/null <<'EOF'
 options iwlwifi power_save=1
 options iwlmvm power_scheme=3
 options rfkill default_state=0 master_switch_mode=0
@@ -199,7 +199,7 @@ EOF
       sudo ethtool -C eth0 adaptive-rx on adaptive-tx on 2>/dev/null || :
     }
   fi
-  sudo tee /etc/systemd/journald.conf.d/optimization.conf >/dev/null <<'EOF'
+  sudo tee /etc/systemd/journald.conf.d/optimization.conf>/dev/null <<'EOF'
 [Journal]
 ForwardToSyslog=no
 ForwardToKMsg=no
@@ -208,7 +208,7 @@ ForwardToWall=no
 Compress=yes
 EOF
   sudo journalctl --rotate --vacuum-time=1s 2>/dev/null || :
-  sudo tee /etc/sysctl.d/50-coredump.conf >/dev/null <<'EOF'
+  sudo tee /etc/sysctl.d/50-coredump.conf>/dev/null <<'EOF'
 kernel.core_pattern=/dev/null
 kernel.hung_task_timeout_secs=0
 EOF
@@ -243,7 +243,7 @@ install_extended_tools(){
     wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc \
       | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
     echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" \
-      | sudo tee /etc/apt/sources.list.d/gierens.list >/dev/null
+      | sudo tee /etc/apt/sources.list.d/gierens.list>/dev/null
     sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
     sudo apt-get update
     sudo apt-get install -y eza
@@ -259,7 +259,7 @@ install_package_managers(){
     curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBC5934FD3DEBD4DAEA544F791E2824A7F22B44BD" \
       | sudo gpg --dearmor -o /etc/apt/keyrings/apt-fast.gpg
     echo "deb [signed-by=/etc/apt/keyrings/apt-fast.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main" \
-      | sudo tee /etc/apt/sources.list.d/apt-fast.list >/dev/null
+      | sudo tee /etc/apt/sources.list.d/apt-fast.list>/dev/null
     sudo apt-get update
     sudo apt-get install -y apt-fast
   fi

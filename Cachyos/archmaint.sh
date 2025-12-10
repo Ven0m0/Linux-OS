@@ -14,8 +14,8 @@ has(){ command -v "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*">&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*">&2; }
 die(){ err "$1"; exit "${2:-1}"; }
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 confirm(){
@@ -160,14 +160,14 @@ detect_pkg_manager(){
 
 get_pkg_manager(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
+    detect_pkg_manager>/dev/null
   fi
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
 
 get_aur_opts(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
+    detect_pkg_manager>/dev/null
   fi
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
@@ -417,7 +417,7 @@ update_shells(){
 
   # Update basher if installed
   if [[ -d ${HOME}/.basher ]] && git -C "${HOME}/.basher" rev-parse --is-inside-work-tree &>/dev/null; then
-    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD >/dev/null; then
+    if git -C "${HOME}/.basher" pull --rebase --autostash --prune origin HEAD>/dev/null; then
       log "✅${GRN}Updated Basher${DEF}"
     else
       log "⚠️${YLW}Basher pull failed${DEF}"

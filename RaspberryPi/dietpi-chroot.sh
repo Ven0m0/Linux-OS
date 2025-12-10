@@ -25,8 +25,8 @@ has(){ command -v "$1" &>/dev/null; }
 fdate(){ local x="${1:-%T}"; printf "%($x)T\n" '-1'; }
 log(){ printf '[%s] %b%s%b\n' "$(fdate)" "${BLU}${BLD}[*]${DEF} " "$*"; }
 msg(){ printf '[%s] %b%s%b\n' "$(fdate)" "${GRN}${BLD}[+]${DEF} " "$*"; }
-warn(){ printf '[%s] %b%s%b\n' "$(fdate)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
-err(){ printf '[%s] %b%s%b\n' "$(fdate)" "${RED}${BLD}[-]${DEF} " "$*" >&2; }
+warn(){ printf '[%s] %b%s%b\n' "$(fdate)" "${YLW}${BLD}[!]${DEF} " "$*">&2; }
+err(){ printf '[%s] %b%s%b\n' "$(fdate)" "${RED}${BLD}[-]${DEF} " "$*">&2; }
 die(){
   err "$1"
   cleanup
@@ -118,7 +118,7 @@ shrink_image(){
   mnt=$(mktemp -d)
   mount "$LOOP_DEV" "$mnt"
   log "Zeroing free space..."
-  cat /dev/zero >"$mnt/zero_file" 2>&1 || :
+  cat /dev/zero>"$mnt/zero_file" 2>&1 || :
   rm -f "$mnt/zero_file"
   umount "$mnt"
   rmdir "$mnt"

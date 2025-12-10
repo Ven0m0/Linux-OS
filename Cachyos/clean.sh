@@ -45,7 +45,7 @@ detect_pkg_manager(){
 
 get_pkg_manager(){
   if [[ -z $_PKG_MGR_CACHED ]]; then
-    detect_pkg_manager >/dev/null
+    detect_pkg_manager>/dev/null
   fi
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
@@ -238,7 +238,7 @@ configure_firefox_privacy(){
       existing_prefs=$(< "$prefs_file" 2>/dev/null) || existing_prefs=""
       for pref in "${firefox_prefs[@]}"; do
         [[ $existing_prefs == *"$pref"* ]] || {
-          printf '%s\n' "$pref" >> "$prefs_file"
+          printf '%s\n' "$pref">> "$prefs_file"
           ((prefs_changed++))
         }
       done

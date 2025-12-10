@@ -93,7 +93,7 @@ while [[ $# -gt 0 ]]; do
     --pgo)
       shift
       [[ $1 =~ ^[0-2]$ ]] || {
-        echo "Error: --pgo requires 0, 1, or 2" >&2
+        echo "Error: --pgo requires 0, 1, or 2">&2
         exit 1
       }
       PGO_LEVEL=$1 MODE="pgo"
@@ -135,7 +135,7 @@ while [[ $# -gt 0 ]]; do
       break
       ;;
     -*)
-      echo "Error: unknown option '$1'" >&2
+      echo "Error: unknown option '$1'">&2
       usage 1
       ;;
     *)
@@ -146,11 +146,11 @@ while [[ $# -gt 0 ]]; do
 done
 # Validate
 [[ $MODE == "install" && ${#CRATES[@]} -eq 0 ]] && {
-  echo "Error: install requires crate(s)" >&2
+  echo "Error: install requires crate(s)">&2
   usage 1
 }
 [[ $BOLT_ENABLED -eq 1 && $PGO_LEVEL -ne 2 ]] && {
-  echo "Error: BOLT requires --pgo 2" >&2
+  echo "Error: BOLT requires --pgo 2">&2
   exit 1
 }
 
@@ -160,7 +160,7 @@ done
 setup_system(){
   echo "==> Setting up build environment..."
   [[ $EUID -ne 0 ]] && { sudo -v || {
-    echo "Error: sudo failed" >&2
+    echo "Error: sudo failed">&2
     exit 1
   }; }
   sudo cpupower frequency-set --governor performance &>/dev/null || :
@@ -379,7 +379,7 @@ case $MODE in
     elif [[ $PGO_LEVEL -eq 2 ]]; then
       profileon
       [[ ! -f default.profdata ]] && {
-        echo "Error: default.profdata missing. Run --pgo 1 first." >&2
+        echo "Error: default.profdata missing. Run --pgo 1 first.">&2
         exit 1
       }
       if [[ $BOLT_ENABLED -eq 1 ]]; then

@@ -9,7 +9,7 @@ xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "$*"; }
 confirm(){
   local msg="$1"
-  printf '%s [y/N]: ' "$msg" >&2
+  printf '%s [y/N]: ' "$msg">&2
   read -r ans
   [[ $ans == [Yy]* ]]
 }
@@ -47,7 +47,7 @@ EOF
 print_named_banner(){
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in update) banner=$(get_update_banner) ;; clean) banner=$(get_clean_banner) ;; *)
-    xecho "${RED}Error:${DEF} Unknown banner name: $name" >&2
+    xecho "${RED}Error:${DEF} Unknown banner name: $name">&2
     exit 1
     ;;
   esac
@@ -112,11 +112,11 @@ detect_pkg_manager(){
   printf '%s\n' "$pkgmgr" "${_AUR_OPTS_CACHED[@]}"
 }
 get_pkg_manager(){
-  [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager >/dev/null
+  [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager>/dev/null
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
 get_aur_opts(){
-  [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager >/dev/null
+  [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager>/dev/null
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
 vacuum_sqlite(){

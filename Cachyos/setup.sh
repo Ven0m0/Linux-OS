@@ -9,7 +9,7 @@ has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
 die(){
-  printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2
+  printf '%b%s%b\n' "$RED" "$*" "$DEF">&2
   exit "${2:-1}"
 }
 #──────────── Setup ────────────
@@ -39,7 +39,7 @@ setup_repositories(){
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   )
   has_repo(){ grep -qF -- "$1" "$conf"; }
-  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
+  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf">/dev/null; }
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
@@ -116,17 +116,17 @@ Include = /etc/pacman.d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 init_system(){
   msg "Initializing system"
-  localectl set-locale C.UTF-8 >/dev/null
+  localectl set-locale C.UTF-8>/dev/null
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
   [[ -d ~/.gnupg ]] && chmod -R 700 ~/.gnupg
-  ssh-keyscan -H aur.archlinux.org github.com >>~/.ssh/known_hosts 2>/dev/null || :
+  ssh-keyscan -H aur.archlinux.org github.com>>~/.ssh/known_hosts 2>/dev/null || :
   [[ -f /etc/doas.conf ]] && {
     sudo chown root:root /etc/doas.conf
     sudo chmod 0400 /etc/doas.conf
   }
   modprobed-db store &>/dev/null
   sudo modprobed-db store &>/dev/null
-  sudo modprobe zram tcp_bbr kvm kvm-intel >/dev/null
+  sudo modprobe zram tcp_bbr kvm kvm-intel>/dev/null
   [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck
   sudo pacman-key --init &>/dev/null
   sudo pacman-key --populate archlinux cachyos &>/dev/null
@@ -176,7 +176,7 @@ install_packages(){
       local fail="${HOME}/failed_pkgs.txt"
       msg "Batch install failed → $fail"
       for p in "${missing[@]}"; do
-        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p" >>"$fail"
+        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p">>"$fail"
       done
     }
   else
@@ -286,7 +286,7 @@ setup_shells(){
   # Zsh
   if has zsh; then
     msg "Configuring Zsh"
-    [[ -f "$HOME/.zshenv" ]] || echo 'export ZDOTDIR="$HOME/.config/zsh"' >"$HOME/.zshenv"
+    [[ -f "$HOME/.zshenv" ]] || echo 'export ZDOTDIR="$HOME/.config/zsh"'>"$HOME/.zshenv"
     mkdir -p "$HOME/.config/zsh"
     [[ -d "$HOME/.local/share/antidote" ]] \
       || git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "$HOME/.local/share/antidote" 2>/dev/null &
@@ -314,7 +314,7 @@ configure_auth_limits(){
   sudo sed -i 's|^\(auth\s\+\[default=die\]\s\+pam_faillock.so\)\s\+authfail.*$|\1 authfail deny=10 unlock_time=120|' /etc/pam.d/system-auth
 
   # Increase sudo password retries to 10
-  echo "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries >/dev/null
+  echo "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries>/dev/null
   sudo chmod 440 /etc/sudoers.d/passwd-tries
 }
 
@@ -343,7 +343,7 @@ setup_nvidia(){
   sudo pacman -S --needed --noconfirm "$headers" "$driver" nvidia-utils lib32-nvidia-utils egl-wayland libva-nvidia-driver qt5-wayland qt6-wayland
 
   # Early KMS
-  echo "options nvidia_drm modeset=1" | sudo tee /etc/modprobe.d/nvidia.conf >/dev/null
+  echo "options nvidia_drm modeset=1" | sudo tee /etc/modprobe.d/nvidia.conf>/dev/null
 
   # mkinitcpio: remove old nvidia modules, add fresh
   local conf=/etc/mkinitcpio.conf
@@ -354,7 +354,7 @@ setup_nvidia(){
   # Rebuild happens in maintenance step
 
   # Hyprland env vars
-  [[ -f "$HOME/.config/hypr/hyprland.conf" ]] && cat >>"$HOME/.config/hypr/hyprland.conf" <<'EOF'
+  [[ -f "$HOME/.config/hypr/hyprland.conf" ]] && cat>>"$HOME/.config/hypr/hyprland.conf" <<'EOF'
 
 # NVIDIA environment variables
 env = NVD_BACKEND,direct
@@ -369,14 +369,14 @@ setup_printers(){
 
   # Disable systemd-resolved mDNS; use avahi
   sudo mkdir -p /etc/systemd/resolved.conf.d
-  echo -e "[Resolve]\nMulticastDNS=no" | sudo tee /etc/systemd/resolved.conf.d/10-disable-multicast.conf >/dev/null
+  echo -e "[Resolve]\nMulticastDNS=no" | sudo tee /etc/systemd/resolved.conf.d/10-disable-multicast.conf>/dev/null
   sudo systemctl enable --now avahi-daemon.service
 
   # Enable mDNS in nsswitch
   sudo sed -i 's/^hosts:.*/hosts: mymachines mdns_minimal [NOTFOUND=return] resolve files myhostname dns/' /etc/nsswitch.conf
 
   # Auto-add remote printers
-  grep -q '^CreateRemotePrinters Yes' /etc/cups/cups-browsed.conf 2>/dev/null || echo 'CreateRemotePrinters Yes' | sudo tee -a /etc/cups/cups-browsed.conf >/dev/null
+  grep -q '^CreateRemotePrinters Yes' /etc/cups/cups-browsed.conf 2>/dev/null || echo 'CreateRemotePrinters Yes' | sudo tee -a /etc/cups/cups-browsed.conf>/dev/null
   sudo systemctl enable --now cups-browsed.service
 }
 
@@ -395,7 +395,7 @@ set_wireless_regdom(){
   [[ ! $country =~ ^[A-Z]{2}$ && -f /usr/share/zoneinfo/zone.tab ]] && country=$(awk -v tz="$tz" '$3 == tz {print $1; exit}' /usr/share/zoneinfo/zone.tab)
 
   [[ $country =~ ^[A-Z]{2}$ ]] || return 0
-  echo "WIRELESS_REGDOM=\"$country\"" | sudo tee -a /etc/conf.d/wireless-regdom >/dev/null
+  echo "WIRELESS_REGDOM=\"$country\"" | sudo tee -a /etc/conf.d/wireless-regdom>/dev/null
   command -v iw &>/dev/null && sudo iw reg set "$country" || :
 }
 firewall(){
@@ -403,7 +403,7 @@ firewall(){
     sudo ufw disable
     sudo ufw limit 22/tcp
     sudo ufw allow 80/tcp
-    sudo ufw ufw allow 443/tcp
+    sudo ufw allow 443/tcp
     sudo ufw default deny incoming
     sudo ufw default allow outgoing
     sudo ufw enable
@@ -491,7 +491,7 @@ auto_setup_tweaks(){
       if grep -qE "^#*${key}=" "$file"; then
         sudo sed -i -E "s|^#*${key}=.*|$kv|" "$file"
       else
-        echo "$kv" | sudo tee -a "$file" >/dev/null
+        echo "$kv" | sudo tee -a "$file">/dev/null
       fi
     done
   done
@@ -549,11 +549,11 @@ auto_setup_tweaks(){
   # NetworkManager & Modprobe
   msg "Disable wait online & GPU polling"
   sudo mkdir -p /etc/NetworkManager/conf.d
-  echo -e "[connectivity]\nenabled=false" | sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf >/dev/null
+  echo -e "[connectivity]\nenabled=false" | sudo tee /etc/NetworkManager/conf.d/20-connectivity.conf>/dev/null
   sudo systemctl mask NetworkManager-wait-online.service systemd-networkd-wait-online.service &>/dev/null || :
   sudo systemctl disable --now systemd-networkd-wait-online.service &>/dev/null || :
 
-  echo "options drm_kms_helper poll=0" | sudo tee /etc/modprobe.d/disable-gpu-polling.conf >/dev/null
+  echo "options drm_kms_helper poll=0" | sudo tee /etc/modprobe.d/disable-gpu-polling.conf>/dev/null
 
   # Preload & Pacman config
   [[ -f /etc/preload.conf ]] && sudo sed -i 's/sortstrategy =.*/sortstrategy = 0/' /etc/preload.conf
@@ -599,16 +599,16 @@ auto_setup_tweaks(){
   [[ -f /etc/systemd/journald.conf ]] && sudo sed -i -e 's/^#ForwardTo\(Syslog\|KMsg\|Console\|Wall\)=.*/ForwardTo\1=no/' -e 's/^#Compress=yes/Compress=yes/' /etc/systemd/journald.conf
   [[ -f /etc/logrotate.conf ]] && sudo sed -i -e 's/^#compress/compress/' /etc/logrotate.conf
 
-  echo "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf >/dev/null
+  echo "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf>/dev/null
   sudo sed -i -e 's/^#\(DumpCore\|CrashShell\)=.*/\1=no/' /etc/systemd/{system,user}.conf 2>/dev/null || :
 
   # Modprobe tweaks
-  [[ -f /etc/modprobe.d/disable-usb-autosuspend.conf ]] || echo "options usbcore autosuspend=-1" | sudo tee /etc/modprobe.d/disable-usb-autosuspend.conf >/dev/null
+  [[ -f /etc/modprobe.d/disable-usb-autosuspend.conf ]] || echo "options usbcore autosuspend=-1" | sudo tee /etc/modprobe.d/disable-usb-autosuspend.conf>/dev/null
   sudo update-ca-trust &>/dev/null || :
-  echo "options processor ignore_ppc=1" | sudo tee /etc/modprobe.d/ignore_ppc.conf >/dev/null
-  echo "options nvidia NVreg_UsePageAttributeTable=1 NVreg_InitializeSystemMemoryAllocations=0 NVreg_DynamicPowerManagement=0x02" | sudo tee /etc/modprobe.d/nvidia.conf >/dev/null
+  echo "options processor ignore_ppc=1" | sudo tee /etc/modprobe.d/ignore_ppc.conf>/dev/null
+  echo "options nvidia NVreg_UsePageAttributeTable=1 NVreg_InitializeSystemMemoryAllocations=0 NVreg_DynamicPowerManagement=0x02" | sudo tee /etc/modprobe.d/nvidia.conf>/dev/null
 
-  cat <<EOF | sudo tee /etc/modprobe.d/misc.conf >/dev/null
+  cat <<EOF | sudo tee /etc/modprobe.d/misc.conf>/dev/null
 options vfio_pci disable_vga=1
 options cec debug=0
 options kvm mmu_audit=0 ignore_msrs=1 report_ignored_msrs=0 kvmclock_periodic_sync=1
@@ -618,7 +618,7 @@ options libahci ignore_sss=1 skip_host_reset=1
 options uhci-hcd debug=0
 options usbcore usbfs_snoop=0 autosuspend=10
 EOF
-  printf '%s\n' bfq ntsync tcp_bbr zram | sudo tee /etc/modprobe.d/modules.conf >/dev/null
+  printf '%s\n' bfq ntsync tcp_bbr zram | sudo tee /etc/modprobe.d/modules.conf>/dev/null
 
   # VSCode Privacy
   msg "Configure VSCode privacy"

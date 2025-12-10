@@ -14,8 +14,8 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 # Helpers
 has(){ command -v -- "$1" &>/dev/null; }
 log(){ printf '%b\n' "${GRN}▶${DEF} $*"; }
-warn(){ printf '%b\n' "${YLW}⚠${DEF} $*" >&2; }
-err(){ printf '%b\n' "${RED}✗${DEF} $*" >&2; }
+warn(){ printf '%b\n' "${YLW}⚠${DEF} $*">&2; }
+err(){ printf '%b\n' "${RED}✗${DEF} $*">&2; }
 die(){
   err "$1"
   exit "${2:-1}"
@@ -88,7 +88,7 @@ parse_args(){
 # dpkg & Documentation
 configure_dpkg_nodoc(){
   log "Configuring dpkg to exclude docs/man/locales"
-  sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc >/dev/null <<'EOF'
+  sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc>/dev/null <<'EOF'
 path-exclude /usr/share/doc/*
 path-exclude /usr/share/help/*
 path-exclude /usr/share/man/*
@@ -232,7 +232,7 @@ disable_swap(){
 }
 enable_zram(){
   log "Enabling ZRAM (compressed swap in RAM)"
-  sudo tee /usr/local/bin/zram-init >/dev/null <<'ZRAMSCRIPT'
+  sudo tee /usr/local/bin/zram-init>/dev/null <<'ZRAMSCRIPT'
 #!/bin/bash
 set -euo pipefail
 CORES=$(nproc); ZRAM_SIZE_MB=${ZRAM_SIZE_MB:-2048}
@@ -246,7 +246,7 @@ echo 1> /sys/kernel/mm/ksm/run
 ZRAMSCRIPT
   sudo chmod +x /usr/local/bin/zram-init
   sudo /usr/local/bin/zram-init
-  sudo tee /etc/systemd/system/zram-init.service >/dev/null <<'EOF'
+  sudo tee /etc/systemd/system/zram-init.service>/dev/null <<'EOF'
 [Unit]
 Description=ZRAM compressed swap initialization
 After=local-fs.target

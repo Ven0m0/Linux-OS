@@ -18,8 +18,8 @@ fi
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*">&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*">&2; }
 die(){
   err "$1"
   exit "${2:-1}"
@@ -535,10 +535,10 @@ cmd_index_nomedia(){
   local base="${1:-/storage/emulated/0}"
   sec "Index guard (. nomedia)"
   while IFS= read -r -d '' d; do
-    : >"$d/.nomedia" 2>/dev/null || :
-    : >"$d/.noindex" 2>/dev/null || :
-    : >"$d/.metadata_never_index" 2>/dev/null || :
-    : >"$d/.trackerignore" 2>/dev/null || :
+    :>"$d/.nomedia" 2>/dev/null || :
+    :>"$d/.noindex" 2>/dev/null || :
+    :>"$d/.metadata_never_index" 2>/dev/null || :
+    :>"$d/.trackerignore" 2>/dev/null || :
   done < <(find "$base" -type d -readable -print0 2>/dev/null || :)
   ok "Index guards created"
 }

@@ -7,8 +7,8 @@ has(){ command -v "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*">&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*">&2; }
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 cleanup_pacman_lock(){ sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
 main(){

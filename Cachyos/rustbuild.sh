@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
 # Unified Rust build & optimization system: build, install, PGO/BOLT, workflow automation
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup trap
 # ──────────────────────────────────────────────────────────────────────────────

@@ -1,17 +1,16 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
+
 # media-optimizer.sh - Comprehensive media optimization toolkit
-#
 # Features:
 # - Smart image compression to WebP (with fallbacks)
 # - Video transcoding to AV1 using SVT-AV1-Essential
 # - Deduplication to save storage space
 # - Multi-threaded processing for performance
 # - Intelligent format selection based on content
-set -euo pipefail
-IFS=$'\n\t'
-shopt -s nullglob globstar
-export LC_ALL=C LANG=C
+
 # Configuration (overridable via environment variables)
 : "${MEDIA_OPT_QUALITY:=auto}"     # auto, lossless, lossy-low, lossy-medium, lossy-high
 : "${MEDIA_OPT_THREADS:=$(nproc)}" # Number of threads to use

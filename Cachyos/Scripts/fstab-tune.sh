@@ -75,7 +75,7 @@ main(){
   ymsg "Backup: $backup"
   # Δ: Remove old, append new root f2fs entry
   sed -i "\|^UUID=${uuid}[[:space:]]\+/[[:space:]]\+f2fs|d" "$fstab"
-  printf "UUID=%-36s /    f2fs    %s 0 1\n" "$uuid" "$opts" >>"$fstab"
+  printf "UUID=%-36s /    f2fs    %s 0 1\n" "$uuid" "$opts">>"$fstab"
   yad --info --title="fstab-tune" --text="Updated /etc/fstab\nBackup: $backup" --width=400
   yad --info --title="fstab-tune" --text="Reboot or run:\n<b>mount -o remount /</b>\nto apply." --width=410
 }

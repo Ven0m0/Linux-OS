@@ -8,7 +8,7 @@ cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 # ============ Inlined from lib/common.sh ============
 has(){ command -v -- "$1" &>/dev/null; }
 die(){
-  echo "ERROR: $*" >&2
+  echo "ERROR: $*">&2
   exit 1
 }
 # ============ End of inlined lib/common.sh ============

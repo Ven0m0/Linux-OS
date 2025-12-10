@@ -13,7 +13,7 @@ if [[ -d "${HOME}/.steam/steam" ]]; then
 elif [[ -d "$XDG_DATA_HOME/Steam" ]]; then
   steam_root="$XDG_DATA_HOME/Steam"
 else
-  printf "Error: Steam installation not found.\n" >&2
+  printf "Error: Steam installation not found.\n">&2
   exit 1
 fi
 printf "Found Steam at: %s\n" "$steam_root"
@@ -30,7 +30,7 @@ printf "Stopping Steam processes...\n"
 pkill -15 -x "${kill_procs[@]}" 2>/dev/null || true
 # Wait up to 5 seconds for them to exit gracefully
 for i in {1..10}; do
-  if ! pgrep -x "${kill_procs[@]}" >/dev/null; then
+  if ! pgrep -x "${kill_procs[@]}">/dev/null; then
     break
   fi
   sleep 0.5

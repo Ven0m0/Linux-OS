@@ -15,8 +15,8 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 has(){ command -v -- "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${GRN}▶${DEF} $*"; }
-warn(){ xecho "${YLW}⚠${DEF} $*" >&2; }
-err(){ xecho "${RED}✗${DEF} $*" >&2; }
+warn(){ xecho "${YLW}⚠${DEF} $*">&2; }
+err(){ xecho "${RED}✗${DEF} $*">&2; }
 die(){
   err "$1"
   exit "${2:-1}"

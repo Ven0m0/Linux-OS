@@ -16,12 +16,12 @@ setup-podman(){
   # ensure /var/run exists
   sudo mkdir -p /var/run
   # create tmpfiles entry to create symlink each boot
-  sudo tee /etc/tmpfiles.d/podman-docker.conf >/dev/null <<'EOF'
+  sudo tee /etc/tmpfiles.d/podman-docker.conf>/dev/null <<'EOF'
 # Type Path         Mode UID  GID Age Argument
 L    /var/run/docker.sock -    -    -    -    /run/podman/podman.sock
 EOF
   # create docker.service that runs podman system service on /var/run/docker.sock
-  sudo tee /etc/systemd/system/docker.service >/dev/null <<'EOF'
+  sudo tee /etc/systemd/system/docker.service>/dev/null <<'EOF'
 [Unit]
 Description=Podman Docker-compat service
 After=network.target podman.socket
@@ -49,7 +49,7 @@ EOF
     ln -sf /root/.local/bin/podman-compose /usr/local/bin/podman-compose || :
   fi
   if ! command -v docker &>/dev/null; then
-    printf 'warning: docker CLI not found; podman-docker package likely failed to install\n' >&2
+    printf 'warning: docker CLI not found; podman-docker package likely failed to install\n'>&2
   fi
   export DOCKER_HOST=unix:///run/podman/podman.sock
   # final: friendly status lines
@@ -64,7 +64,7 @@ EOF
 setup-docker(){
   echo "Configuring Docker daemon..."
   sudo mkdir -p /etc/docker
-  sudo tee /etc/docker/daemon.json >/dev/null <<'EOF'
+  sudo tee /etc/docker/daemon.json>/dev/null <<'EOF'
 {
   "log-driver": "json-file",
   "log-opts": { "max-size": "10m", "max-file": "5" },
@@ -74,7 +74,7 @@ setup-docker(){
 EOF
   echo "Configuring systemd-resolved for Docker..."
   sudo mkdir -p /etc/systemd/resolved.conf.d
-  printf '[Resolve]\nDNSStubListenerExtra=172.17.0.1\n' | sudo tee /etc/systemd/resolved.conf.d/20-docker-dns.conf >/dev/null
+  printf '[Resolve]\nDNSStubListenerExtra=172.17.0.1\n' | sudo tee /etc/systemd/resolved.conf.d/20-docker-dns.conf>/dev/null
   sudo systemctl restart systemd-resolved
   echo "Enabling Docker service..."
   sudo systemctl enable --now docker
@@ -82,7 +82,7 @@ EOF
   sudo usermod -aG docker "$USER"
   echo "Configuring Docker systemd unit..."
   sudo mkdir -p /etc/systemd/system/docker.service.d
-  sudo tee /etc/systemd/system/docker.service.d/no-block-boot.conf >/dev/null <<'EOF'
+  sudo tee /etc/systemd/system/docker.service.d/no-block-boot.conf>/dev/null <<'EOF'
 [Unit]
 DefaultDependencies=no
 EOF

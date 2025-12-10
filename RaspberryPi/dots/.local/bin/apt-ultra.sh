@@ -15,8 +15,8 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 # Helpers
 has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf '%b\n' "${2:-$GRN}$1$DEF" "${@:3}"; }
-warn(){ msg "$*" "$YLW" >&2; }
-err(){ msg "$*" "$RED" >&2; }
+warn(){ msg "$*" "$YLW">&2; }
+err(){ msg "$*" "$RED">&2; }
 die(){
   err "$*"
   exit "${2:-1}"
@@ -310,7 +310,7 @@ EOF
          else status="nolastmod"; fi
        fi
        echo "$last_modified $status {}"
-      >&2 printf "."'
+>&2 printf "."'
   )
   msg " ✓ done" "$GRN"
 
@@ -398,7 +398,7 @@ urldecode(){ printf '%b' "${1//%/\\x}"; }
 get_uris(){
   [[ ! -d $(dirname "$DLLIST") ]] && { mkdir -p "$(dirname "$DLLIST")" || die "Cannot create download dir."; }
   [[ -f $DLLIST ]] && { rm -f "$DLLIST" 2>/dev/null || die "Cannot write to $DLLIST"; }
-  echo "# apt-ultra download list: $(date)" >"$DLLIST"
+  echo "# apt-ultra download list: $(date)">"$DLLIST"
   local uri_mgr="$_APTMGR"
   case "$(basename "$_APTMGR")" in apt | apt-get) uri_mgr="$_APTMGR" ;; *) uri_mgr='apt-get' ;; esac
   local uris_full=$("$uri_mgr" -y --print-uris "$@" 2>&1)
@@ -417,14 +417,14 @@ get_uris(){
     {
       echo "$uri"
       echo " out=$filename"
-    } >>"$DLLIST"
+    }>>"$DLLIST"
   done <<<"$(echo "$uris_full" | grep -E "^'(https?|ftp)://")"
   msg "Download size: $(echo "$DOWNLOAD_SIZE" | numfmt --to=iec-i --suffix=B)" "$LBLU"
 }
 
 # Main
 usage(){
-  cat <<EOF
+  cat<<EOF
 ${LBLU}apt-ultra${DEF} v${VERSION} - Fast APT package manager
 ${BLD}Usage:${DEF}  apt-ultra <command> [options] [packages...]
 ${BLD}Commands:${DEF}

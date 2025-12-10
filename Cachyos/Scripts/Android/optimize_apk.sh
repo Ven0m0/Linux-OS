@@ -23,7 +23,7 @@ readonly JPEGOPTIM="jpegoptim"
 readonly SEVENZIP="7z"
 # Logging
 log(){ printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
-err(){ printf '[ERROR] %s\n' "$*" >&2; }
+err(){ printf '[ERROR] %s\n' "$*">&2; }
 die(){
   err "$1"
   exit "${2:-1}"
@@ -93,7 +93,7 @@ if has "$DEX2JAR" && [[ -f $PROGUARD_JAR ]]; then
   }
 
   log "[6/10] Running ProGuard shrink..."
-  cat >"$WORKDIR/proguard-rules.pro" <<EOL
+  cat>"$WORKDIR/proguard-rules.pro" <<EOL
 -keep public class * {
     public *;
 }
@@ -116,7 +116,7 @@ EOL
     cp "$WORKDIR/classes.dex" "$WORKDIR/apk_unpack/"
     cd "$WORKDIR/apk_unpack" || exit
     zip -q -r ../repackaged.apk .
-    cd - >/dev/null || die "Failed to return from working directory"
+    cd ->/dev/null || die "Failed to return from working directory"
   else
     log "dx not found, skipping ProGuard integration"
     cp "$WORKDIR/redexed.apk" "$WORKDIR/repackaged.apk"
@@ -127,7 +127,7 @@ else
 fi
 
 log "[8/10] Aligning APK..."
-"$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk" >/dev/null || die "Failed to align APK"
+"$ZIPALIGN" -v -p 4 "$WORKDIR/repackaged.apk" "$WORKDIR/aligned.apk">/dev/null || die "Failed to align APK"
 
 log "[9/10] Signing APK..."
 if [[ -f $KEYSTORE_PATH ]]; then
@@ -153,8 +153,8 @@ fi
 
 # Rezip final APK
 cd "$WORKDIR/final_unpack" || die "Failed to enter final unpack directory"
-"$SEVENZIP" a -tzip -mx=9 "../output.apk" . >/dev/null || die "Failed to create final APK"
-cd - >/dev/null || die "Failed to return from working directory"
+"$SEVENZIP" a -tzip -mx=9 "../output.apk" .>/dev/null || die "Failed to create final APK"
+cd ->/dev/null || die "Failed to return from working directory"
 
 mv "$WORKDIR/output.apk" "$OUTPUT_APK" || die "Failed to move output APK"
 log "✅ Optimized APK created at: $OUTPUT_APK"

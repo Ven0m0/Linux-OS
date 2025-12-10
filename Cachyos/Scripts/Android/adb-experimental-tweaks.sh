@@ -16,8 +16,8 @@ fi
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
+warn(){ xecho "${YLW}${BLD}[!]${DEF} $*">&2; }
+err(){ xecho "${RED}${BLD}[-]${DEF} $*">&2; }
 die(){
   err "$1"
   exit "${2:-1}"

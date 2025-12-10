@@ -14,8 +14,8 @@ has(){ command -v "$1" &>/dev/null; }
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
+warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*">&2; }
+err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*">&2; }
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*" || :; }
 get_drive_trans(){
   local dev="${1:?}"
@@ -125,7 +125,7 @@ process_source(){
   }
   if [[ $SRC_PATH =~ ^https?:// ]]; then
     log "Downloading image from URL..."
-    [[ $SRC_PATH == *.xz ]] && curl -Lfs --progress-bar "$SRC_PATH" | xz -dc >"$SRC_IMG" || curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG" || {
+    [[ $SRC_PATH == *.xz ]] && curl -Lfs --progress-bar "$SRC_PATH" | xz -dc>"$SRC_IMG" || curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG" || {
       err "Download failed."
       cleanup
       exit 1
@@ -140,7 +140,7 @@ process_source(){
   }
   if [[ $SRC_PATH == *.xz ]]; then
     log "Decompressing xz archive..."
-    xz -dc "$SRC_PATH" >"$SRC_IMG"
+    xz -dc "$SRC_PATH">"$SRC_IMG"
   elif ((cfg[keep_source])); then
     cp --reflink=auto "$SRC_PATH" "$SRC_IMG"
   else ln "$SRC_PATH" "$SRC_IMG" 2>&1 || cp "$SRC_PATH" "$SRC_IMG"; fi
@@ -202,7 +202,7 @@ shrink_source_image(){
   mnt=$(mktemp -d)
   mount "$LOOP_DEV" "$mnt"
   log "Zeroing free space in source..."
-  cat /dev/zero >"$mnt/zero_file" 2>&1 || :
+  cat /dev/zero>"$mnt/zero_file" 2>&1 || :
   rm -f "$mnt/zero_file"
   umount "$mnt"
   rmdir "$mnt"
@@ -290,8 +290,8 @@ configure_pi_boot(){
   root_uuid=$(blkid -s PARTUUID -o value "$ROOT_PART")
   cmdline="$WORKDIR/tgt/boot/cmdline.txt"
   fstab="$WORKDIR/tgt/root/etc/fstab"
-  awk -v uuid="$root_uuid" '{line="";for(i=1;i<=NF;i++){if($i~/^root=/)$i="root=PARTUUID="uuid;else if($i~/^rootfstype=/)$i="rootfstype=f2fs";else if($i~/^init=.*init_resize\.sh/)continue;line=(line?line" ":"")$i}if(line!~/rootwait/)line=line" rootwait";if(line!~/fsck\.repair=yes/)line=line" fsck.repair=yes";print line}' "$cmdline" >"${cmdline}.tmp" && mv "${cmdline}.tmp" "$cmdline"
-  cat >"$fstab" <<-EOF
+  awk -v uuid="$root_uuid" '{line="";for(i=1;i<=NF;i++){if($i~/^root=/)$i="root=PARTUUID="uuid;else if($i~/^rootfstype=/)$i="rootfstype=f2fs";else if($i~/^init=.*init_resize\.sh/)continue;line=(line?line" ":"")$i}if(line!~/rootwait/)line=line" rootwait";if(line!~/fsck\.repair=yes/)line=line" fsck.repair=yes";print line}' "$cmdline">"${cmdline}.tmp" && mv "${cmdline}.tmp" "$cmdline"
+  cat>"$fstab" <<-EOF
 	proc            /proc           proc    defaults          0       0
 	PARTUUID=$boot_uuid  /boot           vfat    defaults          0       2
 	PARTUUID=$root_uuid  /               f2fs    defaults,noatime  0       1
@@ -300,7 +300,7 @@ configure_pi_boot(){
   log "Configuration complete."
 }
 usage(){
-  cat <<-EOF
+  cat<<-EOF
 	Usage: $(basename "$0") [OPTIONS]
 	Flash Raspberry Pi image to SD card using F2FS root filesystem.
 	OPTIONS:

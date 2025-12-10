@@ -748,7 +748,7 @@ interactive(){
 }
 
 usage(){
-  cat <<EOF
+  cat<<EOF
 android-optimize. sh v$VERSION - Unified Android optimizer (ADB or Termux+Shizuku)
 
 Device commands:

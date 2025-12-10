@@ -526,7 +526,7 @@ process_directory(){
 
 # Command-line interface
 usage(){
-  cat <<EOF
+  cat<<EOF
 Usage: $SCRIPT_NAME [OPTIONS] DIRECTORY
 
 Media optimization toolkit for images and videos.

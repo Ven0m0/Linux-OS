@@ -300,7 +300,7 @@ configure_pi_boot(){
   log "Configuration complete."
 }
 usage(){
-  cat <<-EOF
+  cat<<-EOF
 	Usage: $(basename "$0") [OPTIONS]
 	Flash Raspberry Pi image to SD card using F2FS root filesystem.
 	OPTIONS:

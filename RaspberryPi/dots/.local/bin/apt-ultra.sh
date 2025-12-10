@@ -424,7 +424,7 @@ get_uris(){
 
 # Main
 usage(){
-  cat <<EOF
+  cat<<EOF
 ${LBLU}apt-ultra${DEF} v${VERSION} - Fast APT package manager
 ${BLD}Usage:${DEF}  apt-ultra <command> [options] [packages...]
 ${BLD}Commands:${DEF}

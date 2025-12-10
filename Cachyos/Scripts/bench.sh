@@ -21,7 +21,7 @@ die(){
 }
 # Usage information
 usage(){
-  cat <<EOF
+  cat<<EOF
 Usage: $0 [OPTIONS]
 
 Unified benchmark script for testing parallel commands, sorting, and file copy operations.

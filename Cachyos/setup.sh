@@ -608,7 +608,7 @@ auto_setup_tweaks(){
   echo "options processor ignore_ppc=1" | sudo tee /etc/modprobe.d/ignore_ppc.conf>/dev/null
   echo "options nvidia NVreg_UsePageAttributeTable=1 NVreg_InitializeSystemMemoryAllocations=0 NVreg_DynamicPowerManagement=0x02" | sudo tee /etc/modprobe.d/nvidia.conf>/dev/null
 
-  cat <<EOF | sudo tee /etc/modprobe.d/misc.conf>/dev/null
+  cat<<EOF | sudo tee /etc/modprobe.d/misc.conf>/dev/null
 options vfio_pci disable_vga=1
 options cec debug=0
 options kvm mmu_audit=0 ignore_msrs=1 report_ignored_msrs=0 kvmclock_periodic_sync=1

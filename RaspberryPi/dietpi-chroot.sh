@@ -149,7 +149,7 @@ run_optimization(){
   sync
 }
 usage(){
-  cat <<-'EOF'
+  cat<<-'EOF'
 	Usage: sudo $0 [OPTIONS] <image_file.img>
 	OPTIONS:
 	  -z    Shrink image after chroot (PiShrink integration)

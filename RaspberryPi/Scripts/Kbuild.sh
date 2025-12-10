@@ -28,7 +28,7 @@ KERNEL_BRANCH=${KERNEL_BRANCH:-rpi-6.16.y}
 KERNEL_SRC=${KERNEL_SRC:-/usr/src/linux}
 
 usage(){
-  cat <<EOF
+  cat<<EOF
 Usage: Kbuild.sh [OPTIONS]
 
 Build and install Raspberry Pi kernel from source.

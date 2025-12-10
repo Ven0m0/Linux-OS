@@ -890,7 +890,7 @@ trap 'exit 143' TERM
 
 #=========== CLI Interface =============
 show_usage(){
-  cat << EOF
+  cat<<EOF
 Usage: ${0##*/} [OPTIONS] COMMAND
 
 Arch Linux system maintenance script for updating and cleaning.

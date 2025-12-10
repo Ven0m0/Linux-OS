@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 # wbfsmv.sh - organize Wii games for USB Loader GX: "Game Name [GAMEID]/GAMEID.wbfs"
 # Usage: wbfsmv.sh [-c|--convert] [-t|--trim] [-n|--dry-run] [-v|--verbose] [target_dir]
 # Env: WBFSMV_REGION (default: PAL) - region to set (PAL|NTSC|JAP|KOR|FREE)
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t' LC_ALL=C LANG=C
-
 convert=0 trim=0 dry=0 verbose=0
 REGION=${WBFSMV_REGION:-PAL}
 while (($#)) && [[ $1 == -* ]]; do

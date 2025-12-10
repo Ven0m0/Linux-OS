@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+set -euo pipefail; shopt -s nullglob globstar
+export LC_ALL=C; IFS=$'\n\t'
 
 # Check deps early
 has(){ command -v -- "$1" &>/dev/null; }

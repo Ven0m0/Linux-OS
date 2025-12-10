@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail
-shopt -s nullglob
-IFS=$'\n\t'
-export LC_ALL=C LANG=C
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 # === Color Palette (Trans Flag) ===
 if [[ -t 1 ]]; then
   readonly BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'

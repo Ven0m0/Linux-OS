@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 # Optimized: 2025-11-21 - Applied bash optimization techniques
 # Set shell options:
 #   -e, exit immediately if a command exits with a non-zero status
 #   -o pipefail, means that if any element of the pipeline fails, then the pipeline as a whole will fail.
 #   -u, treat unset variables as an error when substituting.
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}" DEBIAN_FRONTEND=noninteractive
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 DONT_RESTART_DOCKER_ENGINE=0 DONT_ASK_CONFIRMATION=0

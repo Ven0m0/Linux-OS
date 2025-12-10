@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 # Build and install Raspberry Pi kernel from source
 # WARNING: This script will reboot the system after kernel installation
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C LANG=C DEBIAN_FRONTEND=noninteractive
-export HOME="/home/${SUDO_USER:-${USER:-$(id -un)}}"
-
 # Colors
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' DEF=$'\e[0m'
-
 # Helpers
 has(){ command -v "$1" &>/dev/null; }
 log(){ printf '%s\n' "${BLU}→${DEF} $*"; }

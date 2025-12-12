@@ -2,9 +2,9 @@
 # Top-most EditorConfig file
 root = true
 
-# =============================================================================
+###############################################################################
 # Default Settings for All Files
-# =============================================================================
+###############################################################################
 [*]
 end_of_line = lf
 charset = utf-8
@@ -14,66 +14,47 @@ indent_style = space
 indent_size = 2
 tab_width = 2
 max_line_length = 120
+ktlint_code_style = intellij_idea
+ktlint_standard_no-wildcard-imports = disabled
+shell_variant = bash
 spaces_around_operators = true
 spaces_around_brackets = false
-quote_type = auto
-spelling_language = en
-shell_variant = auto
 keep_padding = false
 space_redirects = false
 switch_case_indent = false
 function_next_line = false
 binary_next_line = true
 
-# =============================================================================
+###############################################################################
 # Shell Scripts
-# =============================================================================
-[**.{sh,bash},bash_*,PKGBUILD,.bash*,.profile]
-shell_variant = bash
-indent_style = space
-indent_size = 2
-tab_width = 2
-spaces_around_operators = true
-spaces_around_brackets = false
-keep_padding = false
-space_redirects = false
-switch_case_indent = false
-function_next_line = false
-binary_next_line = true
-
-[.{bashrc,bash_profile,bash_logout,zshrc,zshenv,zprofile}]
-shell_variant = bash
-indent_style = space
-indent_size = 2
-
-[.profile,**.dash,.dashrc]
-shell_variant = posix
-indent_style = space
-indent_size = 2
-
+###############################################################################
+# Fish
 [**.{fish,fish_*},fishd.*,fish_*]
 indent_style = space
 indent_size = 4
 tab_width = 2
 
+# Windows shell scripts
 [**.{bat,cmd,ps1,psm1}]
 indent_style = tab
 indent_size = 4
+tab_width = 2
 end_of_line = crlf
 
-# =============================================================================
+###############################################################################
 # Programming Languages
-# =============================================================================
+###############################################################################
 # C/C++
 [**.{c,cc,cpp,cxx,h,hpp,hxx}]
 indent_style = space
 indent_size = 4
 max_line_length = 100
 
-# C#
-[**.cs]
+# C#, Java, PHP, Perl
+[**.{cs,java,php,pl,pm}]
 indent_style = space
 indent_size = 4
+max_line_length = 120
 
 # Go (requires tabs)
 [**.go,go.mod,go.sum]
@@ -81,183 +62,53 @@ indent_style = tab
 indent_size = 4
 tab_width = 4
 
-# Rust
-[**.rs,Cargo.toml,Cargo.lock]
-indent_style = space
-indent_size = 4
-max_line_length = 100
-
-# Zig
-[**.zig]
+# Rust & Zig
+[**.{rs,zig}]
 indent_style = space
 indent_size = 4
 
-# Python
-[**.{py,pyw,pyi}]
-indent_style = space
-indent_size = 4
-max_line_length = 88
-quote_type = double
-
-# Ruby
-[**.rb,Gemfile,Rakefile]
-indent_style = space
-indent_size = 2
-
-# Java
-[**.java]
-indent_style = space
-indent_size = 4
-max_line_length = 120
-
-# JavaScript/TypeScript
-[**.{js,mjs,cjs,jsx}]
-indent_style = space
-indent_size = 2
-quote_type = single
-
-[**.{ts,mts,cts,tsx}]
-indent_style = space
-indent_size = 2
-quote_type = single
-
-# PHP
-[**.php]
-indent_style = space
-indent_size = 4
-
-# Perl
-[**.{pl,pm}]
-indent_style = space
-indent_size = 4
-
-# =============================================================================
-# Configuration Files
-# =============================================================================
-# JSON
-[**.{json,json5,jsonc}]
-indent_style = space
-indent_size = 2
-
-# YAML
-[**.{yml,yaml}]
+###############################################################################
+# Configuration / Data Files
+###############################################################################
+# JSON, YAML, TOML
+[**.{json,json5,jsonc,yml,yaml,toml}]
 indent_style = space
 indent_size = 2
 max_line_length = 120
 
-# TOML
-[**.toml]
-indent_style = space
-indent_size = 2
-
-# XML
-[**.{xml,svg}]
-indent_style = space
+# XML / HTML
+[**.{xml,html,htm}]
 indent_size = 4
 
-# HTML/CSS
-[**.{html,htm}]
+[**.svg]
 indent_style = space
 indent_size = 2
 
-[**.{css,scss,sass,less}]
-indent_style = space
-indent_size = 2
-
-# INI files
-[**.{ini,cfg,conf,desktop}]
-indent_style = space
-indent_size = 2
-
-# =============================================================================
-# Markup/Documentation
-# =============================================================================
+###############################################################################
+# Markup / Documentation
+###############################################################################
 [**.{md,markdown}]
-indent_style = space
-indent_size = 2
-max_line_length = 80
+max_line_length = 88
 trim_trailing_whitespace = false
 
 [**.{rst,txt}]
-indent_style = space
-indent_size = 2
 trim_trailing_whitespace = false
 
 [**.{patch,diff}]
 trim_trailing_whitespace = false
-insert_final_newline = false
 
-# =============================================================================
+###############################################################################
 # Build Systems & Package Managers
-# =============================================================================
+###############################################################################
 # Makefiles (require tabs)
 [{Makefile,**.mk,.gitmodules}]
 indent_style = tab
 indent_size = 4
 tab_width = 4
 
-# CMake
-[{CMakeLists.txt,**.cmake}]
-indent_style = space
-indent_size = 2
-
-# Dockerfile
-[{Dockerfile,**.dockerfile}]
-indent_style = space
-indent_size = 2
-
-# Package managers
-[{package.json,package-lock.json,yarn.lock,pnpm-lock.yaml}]
-indent_style = space
-indent_size = 2
-
-[{Cargo.toml,Cargo.lock}]
-indent_style = space
-indent_size = 2
-
-[{Gemfile,Gemfile.lock}]
-indent_style = space
-indent_size = 2
-
-[{poetry.lock,pyproject.toml,setup.py,setup.cfg}]
-indent_style = space
-indent_size = 4
-
-# =============================================================================
-# Git & Version Control
-# =============================================================================
-[.git*]
-indent_style = space
-indent_size = 2
-
-[.gitconfig]
-indent_style = tab
-tab_width = 8
-
-# =============================================================================
-# Editor/IDE Configs
-# =============================================================================
-[.editorconfig]
-indent_style = space
-indent_size = 2
-
-[**.{vimrc,vim}]
-indent_style = space
-indent_size = 2
-
-[**.el]
-indent_style = space
-indent_size = 2
-
-# =============================================================================
+###############################################################################
 # Special Cases
-# =============================================================================
+###############################################################################
 # Minified files
 [**.min.{js,css}]
-insert_final_newline = false
-
-# SVG
-[**.svg]
-indent_style = space
-indent_size = 2
 insert_final_newline = false

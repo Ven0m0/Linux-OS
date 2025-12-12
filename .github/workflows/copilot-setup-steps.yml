@@ -1,0 +1,14 @@
+name: Copilot Context
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+jobs:
+  context:
+    uses: Ven0m0/.github/.github/workflows/copilot-context.yml@main
+    with:
+      enable-node: true
+      enable-python: true
+      commit-output: true
+    secrets:
+      github-token: ${{ secrets.GITHUB_TOKEN }}

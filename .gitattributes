@@ -1,74 +1,91 @@
-# Auto detect text files and normalize line endings to LF
-* text=auto eol=lf
+# Normalize line endings and mark most files as text
+* text=auto eol=lf linguist-detectable
 
-# =============================================================================
-# Shell Scripts
-# =============================================================================
+###############################################################################
+# Shell / scripts
+###############################################################################
 *.sh text eol=lf diff=bash
 *.bash text eol=lf diff=bash
-*.zsh text eol=lf
-*.fish text eol=lf
-.bashrc text eol=lf
-.bash_profile text eol=lf
-.bash_logout text eol=lf
-.zshrc text eol=lf
-.zprofile text eol=lf
-.zshenv text eol=lf
-.profile text eol=lf
+*.zsh text eol=lf diff=bash
+.bashrc text eol=lf diff=bash
+.zshrc text eol=lf diff=bash
 
-# =============================================================================
-# Programming Languages
-# =============================================================================
+# Windows shell scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.ahk text eol=crlf
+
+###############################################################################
+# Programming languages
+###############################################################################
 *.py text diff=python
 *.py3 text diff=python
-*.pyc text diff=python
-*.js diff=java
-*.lua linguist-language=Lua
-*.nix linguist-language=Nix
+*.js text diff=java
+*.lua text linguist-language=Lua
+*.nix text linguist-language=Nix
 
-# =============================================================================
-# Configuration & Data Formats
-# =============================================================================
-*.json diff=json
-*.jsonc diff=json linguist-language=JSONC
-*.yaml diff=yaml
-*.yml diff=yaml
-*.toml diff=toml linguist-language=TOML
-*.ron linguist-language=RON
-*.xml diff=xml
-*.html diff=html
-*.css diff=css
-*.md diff=markdown linguist-detectable linguist-documentation
-*.txt linguist-documentation
-*.ini text
-*.cfg text
-*.conf text
-*.service text
-*.rules text
+###############################################################################
+# Configuration & data formats
+###############################################################################
+*.json text diff=json linguist-language=JSON
+*.jsonc text diff=json linguist-language=JSONC
+*.yaml text diff=yaml linguist-language=YAML
+*.yml text diff=yaml linguist-language=YAML
+*.toml text diff=toml linguist-language=TOML
+*.ron text linguist-language=RON
+*.xml text diff=xml
+*.html text diff=html
+*.css text diff=css
+*.md text diff=markdown linguist-detectable linguist-documentation
+*.mdx text diff=markdown linguist-detectable linguist-documentation
 
-# =============================================================================
-# Binary Files
-# =============================================================================
-# Images
+*.txt text linguist-documentation
+# CSVs as text but with CRLF (common on Windows exports)
+*.csv text eol=crlf
+
+###############################################################################
+# Images & binary blobs
+###############################################################################
+# Raster images with exif diff
 *.jpg binary diff=exif
 *.jpeg binary diff=exif
 *.webp binary diff=exif
 *.avif binary diff=exif
+*.jxl binary diff=exif
+
+# SVGs are text; let linguist handle them
 *.svg text
 
-# Fonts
+# Archives
+*.7z binary
+*.gz binary
+*.tgz binary
+*.tar binary
+*.zip binary
+*.zstd binary
 *.ttf binary
 
-# =============================================================================
-# Special Cases
-# =============================================================================
-# Makefiles must use tabs
+###############################################################################
+# Build / tooling specifics
+###############################################################################
+# Makefiles must use tabs; relax some whitespace warnings
 Makefile text eol=lf whitespace=blank-at-eol,-blank-at-eof,-space-before-tab,tab-in-indent,tabwidth=4
 
-# Patches
-*.patch diff=patch
+# Patches as raw patches; don't normalize line endings
+*.patch -text diff=patch
 
-# Git files
+###############################################################################
+# Git / repo files
+###############################################################################
 .gitignore export-ignore
-.gitattributes export-ignore
-.editorconfig text
+.ignore export-ignore
+
+###############################################################################
+# Office / docs treated as text for diffing
+###############################################################################
+*.doc diff=astextplain
+*.docx diff=astextplain
+*.dot diff=astextplain
+*.pdf diff=astextplain
+*.rtf diff=astextplain

@@ -1,63 +1,257 @@
-# Compiled and build artifacts
-*.pyc
+#######################
+# Git / VCS
+#######################
+.git/
+.github-personal-access-token
+.gitconfig.local
+
+#######################
+# yadm
+#######################
+# Ignore yadm state files but keep repository configuration
+.yadm/repo.git/
+.yadm/archive
+.yadm/encrypt
+.yadm/files.gpg
+# Keep repository .yadm/ configuration files
+!.yadm/bootstrap
+!.yadm/config
+!.yadm/hooks/
+
+#######################
+# Dotfiles / shell history
+#######################
+.*history
+*history
+*lesshst
+*-hst
+fishd.*
+.*hist
+.thumbnails/
+.antidote/
+.zcompcache/
+.zsh_sessions/
+.zcompdump*
+.zsh_history
+*.local.zsh
+*.zwc
+
+#######################
+# XDG user dirs (home)
+#######################
+Desktop/
+Documents/
+Downloads/
+Music/
+Pictures/
+Public/
+Templates/
+Videos/
+
+#######################
+# Security / secrets
+#######################
+.gnupg/
+.ssh/
+.android/
+.config/gh/hosts.yml
+
+# SSH keys
+id_rsa
+id_rsa.pub
+id_dsa
+id_ecdsa
+id_ed25519
+
+# Generic sensitive material
+*.key
+*.pem
+*.credentials
+*.password
+*.secret
+apikeys.txt
+
+#######################
+# Backups / temp artifacts
+#######################
+*.bak
+*.gho
+*.ori
+*.orig
+*.rej
+*.TAG
+*.old
+*.tmp
+*.bk
+**/*.bk
+*.kate-swp
+*swp.*
+.~lock.*
+*.lock
+*.lck
+
+#######################
+# Keep
+#######################
+!.cargo/config.toml
+!.ssh/config
+
+#######################
+# Logs / runtime
+#######################
+*.log
+*.log.*
+log.*
+log/
+logs/
+log.txt
+tmp/
+token
+nohup.out
+.nv/ComputeCache/
+pids
+*.pid
+*.seed
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+false.*
+
+#######################
+# OS / Desktop cruft
+#######################
+.directory
+.Trash-*
+.Trashes
+.fuse_hidden*
+*~
+.nfs*
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+#######################
+# Python
+#######################
 __pycache__/
+.pytest_cache/
+*.py[cod]
+*$py.class
+.env
+.env.*/
+.venv/
+.venv*/
+
+#######################
+# Node / JS / TS
+#######################
+node_modules/
+npm-debug.log*
+.babel.cache
+.eslintcache
+.stylelintcache
+*.tgz
+
+#######################
+# Java / Kotlin / JVM
+#######################
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.tar.gz
+hs_err_pid*
+*.iml
+.idea/
+out/
+.gradle/
+.gradle-cache/
+build/
+target/
+
+#######################
+# .NET / C# / F#
+#######################
+bin/
+obj/
+*.user
+*.suo
+*.pdb
+*.mdb
+
+#######################
+# C/C++ / Rust / Go / compiled
+#######################
 *.o
 *.obj
-dist/
-build/
-*.out
-
-# Dependencies
-.venv/
-venv/
-node_modules/
-.julia/
-.zig/
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-*.swo
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
-.vscode/
-.idea/
-
-# System files
-.DS_Store
-Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
+*.so
+*.dll
+*.exe
+*.com
+*.a
+*.lib
+*.lo
+*.la
+*.rdb
+*.msi
+*.iso
+*.dmg
 *.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+*.rmeta
+*.rlib
+*.dSYM/
+# Rust
+target/
+*.mutants.out*/
+# Go
+go/
+*.test
+# Generic build / dist
+dist/
+result
+result-*
+
+#######################
+# PHP / Composer
+#######################
+vendor/
+composer.lock
+
+#######################
+# Nix / package managers
+#######################
+.npm/
+.cargo/
+.nix-gc-roots/
+.cache/
+
+#######################
+# Linter / QA
+#######################
+github-step-summary.md
+megalinter-reports/
+**/megalinter-reports/*
+mega-linter.report
+*megalinter_file_names_cspell.txt
+.ruff_cache/
+github_conf
+
+#######################
+# Databases / misc
+#######################
+*.sqlite
+*.db
+*.rdb
+
+#######################
+# Editors / IDEs
+#######################
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.idea/

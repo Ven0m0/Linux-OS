@@ -3,9 +3,35 @@ applyTo: "**/*.py"
 name: python-optimizer
 description: Maintain, lint, format, and optimize Python code (Ruff/Mypy focus)
 mode: agent
+model: GPT-5.1-Codex-Max
 modelParameters:
   temperature: 0.2
-tools: ['bash', 'view', 'read_file', 'edit/editFiles', 'codebase', 'search', 'semanticSearch', 'problems', 'runTasks', 'terminalLastCommand', 'terminalSelection', 'testFailure', 'usages', 'changes', 'searchResults', 'vscodeAPI', 'extensions', 'github', 'githubRepo', 'fetch', 'openSimpleBrowser']
+tools:
+  [
+    "read",
+    "Write",
+    "edit",
+    "search",
+    "execute",
+    "web",
+    "todo",
+    "codebase",
+    "semanticSearch",
+    "problems",
+    "runTasks",
+    "terminalLastCommand",
+    "terminalSelection",
+    "testFailure",
+    "usages",
+    "changes",
+    "searchResults",
+    "vscodeAPI",
+    "extensions",
+    "github",
+    "githubRepo",
+    "fetch",
+    "openSimpleBrowser",
+  ]
 ---
 
 ## Role

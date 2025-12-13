@@ -309,7 +309,7 @@ setup_shells(){
 #══════════════════════════════════════════════════════════════
 enable_services(){
   msg "Enabling services"
-  local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency)
+  local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency fstrim.timer bluetooth avahi-daemon)
   for sv in "${svcs[@]}"; do
     systemctl is-enabled "$sv" &>/dev/null || sudo systemctl enable --now "$sv" &>/dev/null || :
   done
@@ -327,7 +327,6 @@ maintenance(){
     sudo fwupdmgr refresh -y &>/dev/null || :
     sudo fwupdmgr update &>/dev/null || :
   fi
-
   # Initramfs rebuild
   if has update-initramfs; then
     sudo update-initramfs || :
@@ -372,7 +371,8 @@ main(){
   enable_services
   maintenance
   cleanup
-
+  # Ignore lid switch
+  sudo sed -i 's/^\#HandleLidSwitch=suspend/HandleLidSwitch=ignore/' /etc/systemd/logind.conf
   msg "Setup complete! Restart shell."
   [[ -f "$HOME/failed_pkgs.txt" ]] && warn "Check ~/failed_pkgs.txt for failures"
 }

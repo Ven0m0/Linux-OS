@@ -109,12 +109,13 @@ main(){
   log "Installing modules..."
   make modules_install
 
-  # Install kernel and device trees
+  # Install kernel and device trees (parallelized for faster I/O)
   log "Installing kernel..."
-  cp arch/arm64/boot/dts/broadcom/*.dtb /boot/
-  cp arch/arm64/boot/dts/overlays/*.dtb* /boot/overlays/
-  cp arch/arm64/boot/dts/overlays/README /boot/overlays/
-  cp arch/arm64/boot/Image.gz /boot/kernel8.img
+  cp arch/arm64/boot/dts/broadcom/*.dtb /boot/ &
+  cp arch/arm64/boot/dts/overlays/*.dtb* /boot/overlays/ &
+  cp arch/arm64/boot/dts/overlays/README /boot/overlays/ &
+  cp arch/arm64/boot/Image.gz /boot/kernel8.img &
+  wait
 
   # Update bootloader config (avoid duplicate entry)
   if ! grep -q '^dtoverlay=vc4-kms-v3d' /boot/config.txt 2>/dev/null; then

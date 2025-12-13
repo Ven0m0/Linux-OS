@@ -262,15 +262,16 @@ profileoff(){
 # ──────────────────────────────────────────────────────────────────────────────
 optimize_assets(){
   [[ $SKIP_ASSETS -eq 1 ]] && return
-  local fd_cmd=""
+  local fd_cmd="" nproc_val
+  nproc_val=$(nproc 2>/dev/null || echo 4)
   has fd && fd_cmd="fd" || has fdfind && fd_cmd="fdfind"
   # HTML minification
   if has minhtml; then
     echo "==> Minifying HTML..."
     if [[ -n $fd_cmd ]]; then
-      while IFS= read -r f; do run minhtml -i "$f" -o "$f"; done < <("$fd_cmd" -H -t f '\.html$')
+      "$fd_cmd" -H -t f '\.html$' -print0 | xargs -0 -P"$nproc_val" -I{} sh -c 'minhtml -i "$1" -o "$1"' _ {}
     else
-      while IFS= read -r f; do run minhtml -i "$f" -o "$f"; done < <(find . -type f -name '*.html')
+      find . -type f -name '*.html' -print0 | xargs -0 -P"$nproc_val" -I{} sh -c 'minhtml -i "$1" -o "$1"' _ {}
     fi
   fi
   # Image optimization
@@ -278,16 +279,16 @@ optimize_assets(){
     echo "==> Optimizing images..."
     if has oxipng; then
       if [[ -n $fd_cmd ]]; then
-        while IFS= read -r f; do run oxipng -o 4 -q "$f"; done < <("$fd_cmd" -t f '\.png$' assets)
+        "$fd_cmd" -t f '\.png$' assets -print0 | xargs -0 -P"$nproc_val" oxipng -o 4 -q
       else
-        while IFS= read -r f; do run oxipng -o 4 -q "$f"; done < <(find assets -type f -name '*.png')
+        find assets -type f -name '*.png' -print0 | xargs -0 -P"$nproc_val" oxipng -o 4 -q
       fi
     fi
     if has jpegoptim; then
       if [[ -n $fd_cmd ]]; then
-        while IFS= read -r f; do run jpegoptim --strip-all -q "$f"; done < <("$fd_cmd" -t f '\.(jpg|jpeg)$' assets)
+        "$fd_cmd" -t f '\.(jpg|jpeg)$' assets -print0 | xargs -0 -P"$nproc_val" jpegoptim --strip-all -q
       else
-        while IFS= read -r f; do run jpegoptim --strip-all -q "$f"; done < <(find assets -type f -name '*.jpg' -o -name '*.jpeg')
+        find assets -type f \( -name '*.jpg' -o -name '*.jpeg' \) -print0 | xargs -0 -P"$nproc_val" jpegoptim --strip-all -q
       fi
     fi
   fi

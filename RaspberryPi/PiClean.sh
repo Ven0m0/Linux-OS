@@ -100,18 +100,11 @@ docker_cleanup(){
   printf '%s\n' "👉 Docker disk usage"
   docker system df || :
   ask_user_for_confirmation
-  printf '%s\n' "👉 Remove all stopped containers"
-  docker ps --filter "status=exited" -q | xargs -r docker rm --force
-  printf '%s\n' "👉 Remove all orphan image layers"
-  docker images -f "dangling=true" -q | xargs -r docker rmi -f
-  printf '%s\n' "👉 Remove all unused volumes"
-  docker volume ls -qf dangling=true | xargs -r docker volume rm
-  printf '%s\n' "👉 Remove Docker builder cache"
-  DOCKER_BUILDKIT=1 docker builder prune -af
-  printf '%s\n' "👉 Remove networks not used by at least one container"
-  docker network prune -f
-  printf '%s\n' "👉 Remove unused volumes and caches (system prune)"
+  printf '%s\n' "👉 Comprehensive Docker cleanup (system prune + builder cache)"
+  # System prune removes: stopped containers, dangling images, unused volumes, unused networks
   docker system prune -af --volumes
+  # Separately clean builder cache
+  DOCKER_BUILDKIT=1 docker builder prune -af
   docker-remove-stale-assets || :
   printf '%s\n' "👉 Docker disk usage (after cleanup)"
   docker system df || :

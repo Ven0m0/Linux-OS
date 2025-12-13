@@ -175,9 +175,8 @@ install_packages(){
       --gpgflags '--batch -q --yes --skip-verify' --cleanafter --removemake "${missing[@]}" 2>/dev/null || {
       local fail="${HOME}/failed_pkgs.txt"
       msg "Batch install failed → $fail"
-      for p in "${missing[@]}"; do
-        pacman -Qq "$p" &>/dev/null || printf '%s\n' "$p">>"$fail"
-      done
+      # Batch check: find packages from missing array that are not installed
+      comm -23 <(printf '%s\n' "${missing[@]}" | sort) <(pacman -Qq 2>/dev/null | sort) > "$fail" || :
     }
   else
     sudo pacman -S --needed --noconfirm --disable-download-timeout "${missing[@]}" || die "Install failed"

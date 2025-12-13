@@ -62,7 +62,10 @@ main(){
   update_maintenance(){
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
-    for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb fwupdmgr; do has "$cmd" && sudo "$cmd" || :; done
+    # Run independent maintenance commands in parallel
+    for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do has "$cmd" && sudo "$cmd" & done
+    has fwupdmgr && sudo fwupdmgr refresh &>/dev/null &
+    wait
     printf 'Syncing time...\n'
     sudo systemctl restart systemd-timesyncd || :
     has bootctl && [[ -d /sys/firmware/efi ]] && sudo bootctl update || :

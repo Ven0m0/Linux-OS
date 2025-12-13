@@ -1,35 +1,48 @@
 #!/usr/bin/env python3
 """Reddit toxicity scanner optimized with orjson and uvloop."""
-import argparse, asyncio, csv, sys, time, httpx, orjson, praw, uvloop
+import argparse
+import asyncio
+import csv
+import sys
+import time
+
+import httpx
+import orjson
+import praw
+import uvloop
 
 API_URL = "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"
 ATTRS = ["TOXICITY", "INSULT", "PROFANITY", "SEXUALLY_EXPLICIT"]
+
 
 async def analyze(client, text, key, limiter):
     if not text.strip():
         return {}
     await limiter()
-    
+
     payload = {
         "comment": {"text": text},
-        "languages": ["en"], 
-        "requestedAttributes": {a: {} for a in ATTRS}
+        "languages": ["en"],
+        "requestedAttributes": {a: {} for a in ATTRS},
     }
 
     try:
         resp = await client.post(
-            API_URL, 
-            params={"key": key}, 
+            API_URL,
+            params={"key": key},
             content=orjson.dumps(payload),
             headers={"Content-Type": "application/json"},
-            timeout=10
+            timeout=10,
         )
         if resp.status_code == 200:
             data = orjson.loads(resp.content)
-            return {k: v["summaryScore"]["value"] for k, v in data.get("attributeScores", {}).items()}
+            return {
+                k: v["summaryScore"]["value"] for k, v in data.get("attributeScores", {}).items()
+            }
     except Exception:
         pass
     return {}
+
 
 async def main_async():
     p = argparse.ArgumentParser()
@@ -48,6 +61,7 @@ async def main_async():
     # Rate limiter closure
     delay = 60.0 / args.rate_per_min
     last = [0.0]
+
     async def limiter():
         now = time.monotonic()
         if now - last[0] < delay:
@@ -58,25 +72,35 @@ async def main_async():
     try:
         r = praw.Reddit(client_id=args.cid, client_secret=args.sec, user_agent=args.ua)
         u = r.redditor(args.username)
-        items = [("cmt", c.subreddit.display_name, c.body, c.created_utc) for c in u.comments.new(limit=args.comments)]
-        items += [("post", s.subreddit.display_name, f"{s.title}\n{s.selftext}", s.created_utc) for s in u.submissions.new(limit=args.posts)]
+        items = [
+            ("cmt", c.subreddit.display_name, c.body, c.created_utc)
+            for c in u.comments.new(limit=args.comments)
+        ]
+        items += [
+            ("post", s.subreddit.display_name, f"{s.title}\n{s.selftext}", s.created_utc)
+            for s in u.submissions.new(limit=args.posts)
+        ]
     except Exception as e:
         sys.exit(f"Reddit Error: {e}")
 
     print(f"Analyzing {len(items)} items...")
     async with httpx.AsyncClient() as client:
-        results = await asyncio.gather(*(analyze(client, txt, args.key, limiter) for _, _, txt, _ in items))
+        results = await asyncio.gather(
+            *(analyze(client, txt, args.key, limiter) for _, _, txt, _ in items)
+        )
 
     flagged = []
     for (kind, sub, txt, ts), scores in zip(items, results):
         if any(s >= args.thresh for s in scores.values()):
-            flagged.append({
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts)),
-                "type": kind,
-                "subreddit": str(sub),
-                "content": txt,
-                **scores
-            })
+            flagged.append(
+                {
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts)),
+                    "type": kind,
+                    "subreddit": str(sub),
+                    "content": txt,
+                    **scores,
+                }
+            )
 
     if flagged:
         with open(args.output, "w", newline="", encoding="utf-8") as f:
@@ -87,9 +111,11 @@ async def main_async():
     else:
         print("Clean scan. No toxic content found.")
 
+
 def main():
     uvloop.install()
     asyncio.run(main_async())
+
 
 if __name__ == "__main__":
     main()

@@ -72,6 +72,7 @@ When invoked with a GitHub issue number:
 ## Output Format
 
 Throughout the process:
+
 1. Explain each phase as you begin it
 2. Share relevant findings from your research
 3. Document any challenges or decisions

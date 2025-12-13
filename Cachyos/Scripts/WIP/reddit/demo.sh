@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 # Demo script showing all scanner modes
 readonly TEST_USER="${1:-spez}"
@@ -10,17 +11,17 @@ SCRIPT_DIR="$(pwd -P)"
 readonly SCANNER="${SCRIPT_DIR}/account_scanner.py"
 
 printf '\n=== Account Scanner Demo ===\n\n'
-check_deps(){
+check_deps() {
   local -a missing=()
-  command -v python3 &>/dev/null || missing+=(python3)
-  command -v sherlock &>/dev/null || missing+=(sherlock)
-  python3 -c "import praw" 2>/dev/null || missing+=(python-praw)
-  python3 -c "import httpx" 2>/dev/null || missing+=(python-httpx)
-  python3 -c "import orjson" 2>/dev/null || missing+=(python-orjson)
-  python3 -c "import uvloop" 2>/dev/null || missing+=(python-uvloop)
+  command -v python3 &> /dev/null || missing+=(python3)
+  command -v sherlock &> /dev/null || missing+=(sherlock)
+  python3 -c "import praw" 2> /dev/null || missing+=(python-praw)
+  python3 -c "import httpx" 2> /dev/null || missing+=(python-httpx)
+  python3 -c "import orjson" 2> /dev/null || missing+=(python-orjson)
+  python3 -c "import uvloop" 2> /dev/null || missing+=(python-uvloop)
   if ((${#missing[@]} > 0)); then
-    printf 'Missing dependencies: %s\n' "${missing[*]}">&2
-    printf 'Install: pacman -S python-praw python-httpx python-orjson python-uvloop sherlock-git\n'>&2
+    printf 'Missing dependencies: %s\n' "${missing[*]}" >&2
+    printf 'Install: pacman -S python-praw python-httpx python-orjson python-uvloop sherlock-git\n' >&2
     return 1
   fi
 }

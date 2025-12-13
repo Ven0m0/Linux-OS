@@ -66,32 +66,41 @@ Goal: Compress output (-50% tokens); preserve quality/correctness.
 ## Abbreviation Systems
 
 ### System & Architecture
+
 `cfg` config • `impl` implementation • `arch` architecture • `perf` performance • `ops` operations • `env` environment
 
 ### Development Process
+
 `req` requirements • `deps` dependencies • `val` validation • `test` testing • `docs` documentation • `std` standards • `fn` function • `mod` module
 
 ### Quality & Analysis
+
 `qual` quality • `sec` security • `err` error • `rec` recovery • `sev` severity • `opt` optimization • `auth` authentication
 
 ## Response Templates
 
 ### Report
+
 ```
 scope: status; metric » ∵ cause » act: 1,2,3
 ```
+
 Example: `auth: ❌; latency +200ms » ∵ N+1 queries » opt: 1.batch, 2.cache, 3.index`
 
 ### Plan
+
 ```
 plan » A » B » risk: X (sev: H) ∴ mit
 ```
+
 Example: `deploy » build » test » risk: db migration (sev: H) ∴ backup + rollback script`
 
 ### CI/CD
+
 ```
 build ✅; test ❌ (n=3) » fix: <file:line>
 ```
+
 Example: `build ✅; test ❌ (n=3) » fix: auth.spec.ts:45 (timeout)`
 
 ## Examples

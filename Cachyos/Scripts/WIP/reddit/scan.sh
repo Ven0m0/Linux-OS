@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 # Convenience wrapper for account_scanner.py with env var support
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
@@ -18,12 +19,12 @@ args=()
 [[ ${REDDIT_CLIENT_SECRET:-} ]] && args+=(--client-secret "$REDDIT_CLIENT_SECRET")
 [[ ${REDDIT_USER_AGENT:-} ]] && args+=(--user-agent "$REDDIT_USER_AGENT")
 # Check deps
-command -v python3 &>/dev/null || {
-  printf 'python3 not found\n'>&2
+command -v python3 &> /dev/null || {
+  printf 'python3 not found\n' >&2
   exit 1
 }
 [[ -f $SCANNER ]] || {
-  printf 'Scanner not found: %s\n' "$SCANNER">&2
+  printf 'Scanner not found: %s\n' "$SCANNER" >&2
   exit 1
 }
 # Run

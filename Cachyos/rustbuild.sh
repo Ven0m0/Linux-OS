@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
-export LC_ALL=C; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+export LC_ALL=C
+IFS=$'\n\t'
 # Unified Rust build & optimization system: build, install, PGO/BOLT, workflow automation
 # ──────────────────────────────────────────────────────────────────────────────
 # Cleanup trap
 # ──────────────────────────────────────────────────────────────────────────────
-cleanup(){
+cleanup() {
   trap - ERR EXIT HUP QUIT TERM INT ABRT
   set +e
-  command -v cargo-cache &>/dev/null && cargo-cache -efg &>/dev/null
-  cargo clean &>/dev/null || :
-  command -v cargo-pgo &>/dev/null && cargo pgo clean &>/dev/null || :
-  rm -rf "$HOME/.cache/sccache/"* &>/dev/null || :
+  command -v cargo-cache &> /dev/null && cargo-cache -efg &> /dev/null
+  cargo clean &> /dev/null || :
+  command -v cargo-pgo &> /dev/null && cargo pgo clean &> /dev/null || :
+  rm -rf "$HOME/.cache/sccache/"* &> /dev/null || :
   set -e
 }
 trap cleanup ERR EXIT HUP QUIT TERM INT ABRT
@@ -31,13 +33,13 @@ DRY_RUN=0
 CRATES=()
 BUILD_ARGS=()
 # Helpers
-has(){ command -v "$1" &>/dev/null; }
-run(){ ((DRY_RUN)) && echo "[DRY] $*" || "$@"; }
+has() { command -v "$1" &> /dev/null; }
+run() { ((DRY_RUN)) && echo "[DRY] $*" || "$@"; }
 # ──────────────────────────────────────────────────────────────────────────────
 # Usage
 # ──────────────────────────────────────────────────────────────────────────────
-usage(){
-  cat <<'EOF'
+usage() {
+  cat << 'EOF'
 Usage: cargo-build.sh [MODE] [OPTIONS] [<crate>...]
 
 Unified Rust build system: build, install, optimize, workflow automation.
@@ -93,7 +95,7 @@ while [[ $# -gt 0 ]]; do
     --pgo)
       shift
       [[ $1 =~ ^[0-2]$ ]] || {
-        echo "Error: --pgo requires 0, 1, or 2">&2
+        echo "Error: --pgo requires 0, 1, or 2" >&2
         exit 1
       }
       PGO_LEVEL=$1 MODE="pgo"
@@ -135,7 +137,7 @@ while [[ $# -gt 0 ]]; do
       break
       ;;
     -*)
-      echo "Error: unknown option '$1'">&2
+      echo "Error: unknown option '$1'" >&2
       usage 1
       ;;
     *)
@@ -146,29 +148,29 @@ while [[ $# -gt 0 ]]; do
 done
 # Validate
 [[ $MODE == "install" && ${#CRATES[@]} -eq 0 ]] && {
-  echo "Error: install requires crate(s)">&2
+  echo "Error: install requires crate(s)" >&2
   usage 1
 }
 [[ $BOLT_ENABLED -eq 1 && $PGO_LEVEL -ne 2 ]] && {
-  echo "Error: BOLT requires --pgo 2">&2
+  echo "Error: BOLT requires --pgo 2" >&2
   exit 1
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
 # System setup
 # ──────────────────────────────────────────────────────────────────────────────
-setup_system(){
+setup_system() {
   echo "==> Setting up build environment..."
   [[ $EUID -ne 0 ]] && { sudo -v || {
-    echo "Error: sudo failed">&2
+    echo "Error: sudo failed" >&2
     exit 1
   }; }
-  sudo cpupower frequency-set --governor performance &>/dev/null || :
+  sudo cpupower frequency-set --governor performance &> /dev/null || :
   if [[ $MODE == "install" ]]; then
     read -r -p "Update Rust toolchains? [y/N] " ans
-    [[ $ans =~ ^[Yy]$ ]] && rustup update &>/dev/null || :
+    [[ $ans =~ ^[Yy]$ ]] && rustup update &> /dev/null || :
   fi
-  if [[ $GIT_CLEANUP -eq 1 ]] && git rev-parse --is-inside-work-tree &>/dev/null; then
+  if [[ $GIT_CLEANUP -eq 1 ]] && git rev-parse --is-inside-work-tree &> /dev/null; then
     echo "==> Git cleanup..."
     git reflog expire --expire=now --all
     git gc --prune=now --aggressive
@@ -189,13 +191,13 @@ setup_system(){
 # ──────────────────────────────────────────────────────────────────────────────
 # Environment setup
 # ──────────────────────────────────────────────────────────────────────────────
-setup_env(){
+setup_env() {
   local jobs
-  jobs=$(nproc 2>/dev/null || echo 4)
+  jobs=$(nproc 2> /dev/null || echo 4)
   if has sccache; then
     export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
     export SCCACHE_DIRECT=true SCCACHE_RECACHE=true SCCACHE_IDLE_TIMEOUT=10800
-    sccache --start-server &>/dev/null || :
+    sccache --start-server &> /dev/null || :
   else
     export CC=clang CXX=clang++
     unset RUSTC_WRAPPER
@@ -209,7 +211,7 @@ setup_env(){
   export CARGO_BUILD_JOBS="$jobs" CARGO_PROFILE_RELEASE_LTO=true OPT_LEVEL=3
   export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
   export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-  echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null || :
+  echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &> /dev/null || :
   local -a lflags=() cldflags=()
   if [[ $USE_MOLD -eq 1 ]]; then
     lflags+=(-Clink-arg=-fuse-ld=mold)
@@ -243,7 +245,7 @@ setup_env(){
 # ──────────────────────────────────────────────────────────────────────────────
 # Profile helpers
 # ──────────────────────────────────────────────────────────────────────────────
-profileon(){
+profileon() {
   echo "==> Profiling mode ON"
   sudo sh -c "echo 0>/proc/sys/kernel/randomize_va_space" || :
   sudo sh -c "echo 0>/proc/sys/kernel/nmi_watchdog" || :
@@ -251,7 +253,7 @@ profileon(){
   sudo sh -c "echo 0>/proc/sys/kernel/kptr_restrict" || :
   sudo sh -c "echo 0>/proc/sys/kernel/perf_event_paranoid" || :
 }
-profileoff(){
+profileoff() {
   echo "==> Profiling mode OFF"
   sudo sh -c "echo 1>/proc/sys/kernel/randomize_va_space" || :
   sudo sh -c "echo 0>/sys/devices/system/cpu/intel_pstate/no_turbo" || :
@@ -260,10 +262,10 @@ profileoff(){
 # ──────────────────────────────────────────────────────────────────────────────
 # Asset optimization helpers
 # ──────────────────────────────────────────────────────────────────────────────
-optimize_assets(){
+optimize_assets() {
   [[ $SKIP_ASSETS -eq 1 ]] && return
   local fd_cmd="" nproc_val
-  nproc_val=$(nproc 2>/dev/null || echo 4)
+  nproc_val=$(nproc 2> /dev/null || echo 4)
   has fd && fd_cmd="fd" || has fdfind && fd_cmd="fdfind"
   # HTML minification
   if has minhtml; then
@@ -307,15 +309,15 @@ setup_env
 case $MODE in
   build)
     echo "==> Building project..."
-    if git rev-parse --is-inside-work-tree &>/dev/null; then
-      run cargo update --recursive &>/dev/null || :
-      run cargo fix --workspace --all-targets --allow-dirty -r &>/dev/null || :
-      run cargo clippy --fix --workspace --allow-dirty &>/dev/null || :
-      run cargo fmt &>/dev/null || :
-      has cargo-shear && run cargo-shear --fix &>/dev/null || :
-      has cargo-machete && run cargo-machete --fix &>/dev/null || :
+    if git rev-parse --is-inside-work-tree &> /dev/null; then
+      run cargo update --recursive &> /dev/null || :
+      run cargo fix --workspace --all-targets --allow-dirty -r &> /dev/null || :
+      run cargo clippy --fix --workspace --allow-dirty &> /dev/null || :
+      run cargo fmt &> /dev/null || :
+      has cargo-shear && run cargo-shear --fix &> /dev/null || :
+      has cargo-machete && run cargo-machete --fix &> /dev/null || :
     fi
-    run cargo-cache -g -f -e clean-unref &>/dev/null || :
+    run cargo-cache -g -f -e clean-unref &> /dev/null || :
     run cargo +nightly build --release "${BUILD_ARGS[@]}"
     echo "✅ Build complete"
     ;;
@@ -339,7 +341,7 @@ case $MODE in
     run cargo clippy -- -D warnings
     has cargo-udeps && {
       echo "→ Checking unused deps..."
-      run cargo +nightly udeps --all-targets 2>/dev/null || :
+      run cargo +nightly udeps --all-targets 2> /dev/null || :
     }
     has cargo-shear && run cargo shear || :
     has cargo-machete && {
@@ -380,7 +382,7 @@ case $MODE in
     elif [[ $PGO_LEVEL -eq 2 ]]; then
       profileon
       [[ ! -f default.profdata ]] && {
-        echo "Error: default.profdata missing. Run --pgo 1 first.">&2
+        echo "Error: default.profdata missing. Run --pgo 1 first." >&2
         exit 1
       }
       if [[ $BOLT_ENABLED -eq 1 ]]; then

@@ -21,10 +21,10 @@ set -o noclobber
 # Function to create a directory and move into it
 set +o nohup # disable nohup mode
 set -o utf8-mode
-mkcd(){
+mkcd() {
   mkdir -p "$1" && cd "$1" || exit
 }
-cdl(){
+cdl() {
   cd "$1" && ls -a --color=auto
 }
 export CDPATH=".:~:/sdcard:/sdcard/Android/data:/:/storage/emulated/0"
@@ -56,12 +56,12 @@ alias ......="cd ../../../"
 alias ........="cd ../../../../"
 
 # Show current focused app and activity
-current_activity(){
+current_activity() {
   dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'
 }
 
 # a function to help users find the local ip (from gh:omz/sysadmin plugin)
-myip(){
+myip() {
   if [[ -x "$(command -v 'ip')" ]]; then
     ip addr | awk '/inet /{print $2}' | grep -v 127.0.0.1
   else
@@ -70,13 +70,13 @@ myip(){
 }
 
 # Simulate 'man' command using --help output
-man(){
+man() {
   [[ -z $1 ]] && {
-    echo -e "What manual page do you want?\nFor example, try 'man ls'.">&2
+    echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2
     return 1
   }
-  "$1" --help &>/dev/null && "$1" --help 2>&1 || {
-    echo "No manual entry for $1">&2
+  "$1" --help &> /dev/null && "$1" --help 2>&1 || {
+    echo "No manual entry for $1" >&2
     return 16
   }
 }

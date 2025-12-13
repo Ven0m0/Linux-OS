@@ -43,6 +43,6 @@ Replacement** | **Why** | | :--- | :--- | :--- | | `json` | **`orjson`** | ~6x f
 
 Do **not** output code immediately. Follow this process:
 
-1.  **Plan**: Bullet-point summary of changes, rationale, and verification steps.
-2.  **Refactor**: Incremental, atomic changes.
-3.  **Verify**: Run linters/tests. Compare metrics (complexity, coverage) if possible.
+1. **Plan**: Bullet-point summary of changes, rationale, and verification steps.
+2. **Refactor**: Incremental, atomic changes.
+3. **Verify**: Run linters/tests. Compare metrics (complexity, coverage) if possible.

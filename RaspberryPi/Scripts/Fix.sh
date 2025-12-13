@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 # DESCRIPTION: System fixes for Raspberry Pi - time sync, SSH permissions, Nextcloud
 #              Targets: Debian/Raspbian, DietPi
@@ -12,19 +13,19 @@ BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 # Core helpers
-has(){ command -v -- "$1" &>/dev/null; }
-xecho(){ printf '%b\n' "$*"; }
-log(){ xecho "${GRN}▶${DEF} $*"; }
-warn(){ xecho "${YLW}⚠${DEF} $*">&2; }
-err(){ xecho "${RED}✗${DEF} $*">&2; }
-die(){
+has() { command -v -- "$1" &> /dev/null; }
+xecho() { printf '%b\n' "$*"; }
+log() { xecho "${GRN}▶${DEF} $*"; }
+warn() { xecho "${YLW}⚠${DEF} $*" >&2; }
+err() { xecho "${RED}✗${DEF} $*" >&2; }
+die() {
   err "$1"
   exit "${2:-1}"
 }
 # Find files/directories with fd/fdfind/find fallback
-find_with_fallback(){
+find_with_fallback() {
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
-  shift 4 2>/dev/null || shift $#
+  shift 4 2> /dev/null || shift $#
   if has fd; then
     fd -H -t "$ftype" "$pattern" "$search_path" "${action:+"$action"}" "$@"
   elif has fdfind; then
@@ -45,8 +46,8 @@ find_with_fallback(){
   fi
 }
 
-usage(){
-  cat <<'EOF'
+usage() {
+  cat << 'EOF'
 Fix.sh - System fixes for Raspberry Pi
 Usage: Fix.sh [OPTIONS]
 Options:
@@ -61,7 +62,7 @@ EOF
 }
 
 # Parse arguments
-parse_args(){
+parse_args() {
   while (($#)); do
     case "$1" in
       -h | --help)
@@ -83,7 +84,7 @@ parse_args(){
 }
 
 # Time synchronization
-fix_time_sync(){
+fix_time_sync() {
   log "Fixing time synchronization"
   if ! dpkg -l | grep -q ntpdate; then
     sudo apt-get update -qq
@@ -95,7 +96,7 @@ fix_time_sync(){
 }
 
 # CA certificates
-fix_ca_certificates(){
+fix_ca_certificates() {
   log "Ensuring CA certificates are installed"
   if ! dpkg -l | grep -q ca-certificates; then
     sudo apt-get update -qq
@@ -106,7 +107,7 @@ fix_ca_certificates(){
 }
 
 # SSH permissions
-fix_ssh_permissions(){
+fix_ssh_permissions() {
   log "Fixing SSH permissions"
   if [[ -d ~/.ssh ]]; then
     find_with_fallback f "*" ~/.ssh/ -exec chmod 600 {} +
@@ -120,7 +121,7 @@ fix_ssh_permissions(){
 }
 
 # GnuPG permissions
-fix_gnupg_permissions(){
+fix_gnupg_permissions() {
   log "Fixing GnuPG permissions"
   if [[ -d ~/.gnupg ]]; then
     chmod 700 ~/.gnupg
@@ -131,7 +132,7 @@ fix_gnupg_permissions(){
 }
 
 # Nextcloud container fix
-fix_nextcloud(){
+fix_nextcloud() {
   log "Checking for Nextcloud container"
   if ! has docker; then
     warn "Docker not found, skipping Nextcloud fix"
@@ -144,7 +145,7 @@ fix_nextcloud(){
   fi
 
   log "Fixing Nextcloud /tmp permissions"
-  if sudo docker exec nextcloud ls -ld /tmp &>/dev/null; then
+  if sudo docker exec nextcloud ls -ld /tmp &> /dev/null; then
     sudo docker exec nextcloud chown -R www-data:www-data /tmp || warn "Failed to chown /tmp in nextcloud"
     sudo docker exec nextcloud chmod -R 755 /tmp || warn "Failed to chmod /tmp in nextcloud"
     log "Nextcloud permissions fixed"
@@ -154,7 +155,7 @@ fix_nextcloud(){
 }
 
 # Main execution
-main(){
+main() {
   parse_args "$@"
   log "${BLD}Raspberry Pi System Fixes${DEF}"
 

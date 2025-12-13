@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 # apt-ultra: Unified fast APT package manager
 # Combines fast-apt-mirror.sh + apt-fast functionality
@@ -13,15 +14,15 @@ LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 [[ ! -t 1 ]] && BLK='' RED='' GRN='' YLW='' BLU='' MGN='' CYN='' WHT='' LBLU='' PNK='' BWHT='' DEF='' BLD=''
 # Helpers
-has(){ command -v -- "$1" &>/dev/null; }
-msg(){ printf '%b\n' "${2:-$GRN}$1$DEF" "${@:3}"; }
-warn(){ msg "$*" "$YLW">&2; }
-err(){ msg "$*" "$RED">&2; }
-die(){
+has() { command -v -- "$1" &> /dev/null; }
+msg() { printf '%b\n' "${2:-$GRN}$1$DEF" "${@:3}"; }
+warn() { msg "$*" "$YLW" >&2; }
+err() { msg "$*" "$RED" >&2; }
+die() {
   err "$*"
   exit "${2:-1}"
 }
-get_priv_cmd(){
+get_priv_cmd() {
   local c
   for c in sudo-rs sudo doas; do
     has "$c" && {
@@ -32,11 +33,11 @@ get_priv_cmd(){
   [[ $EUID -eq 0 ]] || die "No privilege tool found and not root."
 }
 PRIV_CMD=${PRIV_CMD:-$(get_priv_cmd || true)}
-run_priv(){ [[ $EUID -eq 0 || -z ${PRIV_CMD:-} ]] && "$@" || "$PRIV_CMD" -- "$@"; }
-unique(){ awk '! x[$0]++'; }
-max_lines(){ awk "NR<=$1"; }
-matches(){ [[ $1 =~ $2 ]]; }
-__xargs(){ env -i HOME="$HOME" LC_CTYPE="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" PATH="$PATH" TERM="${TERM:-}" USER="${USER:-}" xargs "$@"; }
+run_priv() { [[ $EUID -eq 0 || -z ${PRIV_CMD:-} ]] && "$@" || "$PRIV_CMD" -- "$@"; }
+unique() { awk '! x[$0]++'; }
+max_lines() { awk "NR<=$1"; }
+matches() { [[ $1 =~ $2 ]]; }
+__xargs() { env -i HOME="$HOME" LC_CTYPE="${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" PATH="$PATH" TERM="${TERM:-}" USER="${USER:-}" xargs "$@"; }
 
 # Config
 CONF_FILE="/etc/apt-ultra.conf"
@@ -58,11 +59,11 @@ VERBOSE_OUTPUT=
 [[ -f $CONF_FILE ]] && source "$CONF_FILE" || true
 
 # Detect apt cache
-eval "$(apt-config shell APTCACHE Dir::Cache::archives/d 2>/dev/null)" || true
+eval "$(apt-config shell APTCACHE Dir::Cache::archives/d 2> /dev/null)" || true
 [[ -z ${APTCACHE:-} ]] && APTCACHE="/var/cache/apt/archives"
 
 # Aria2c downloader function
-run_downloader(){
+run_downloader() {
   aria2c --no-conf -c -j "$_MAXNUM" -x "$_MAXCONPERSRV" -s "$_SPLITCON" -i "$DLLIST" \
     --min-split-size="$_MINSPLITSZ" --stream-piece-selector="$_PIECEALGO" \
     --connect-timeout=600 --timeout=600 --max-connection-per-server="$_MAXCONPERSRV" \
@@ -71,25 +72,25 @@ run_downloader(){
 
 # Lock
 CLEANUP_STATE=0
-_create_lock(){
-  exec {LCK_FD}>"$LCK_FILE.lock"
+_create_lock() {
+  exec {LCK_FD}> "$LCK_FILE.lock"
   flock -n "$LCK_FD" || die "apt-ultra already running! Remove $LCK_FILE.lock if stuck."
   trap "cleanup_all; exit \$CLEANUP_STATE" EXIT
   trap "cleanup_all; exit 1" INT TERM
 }
-_remove_lock(){
-  flock -u "$LCK_FD" 2>/dev/null || :
+_remove_lock() {
+  flock -u "$LCK_FD" 2> /dev/null || :
   rm -f "$LCK_FILE.lock"
 }
-cleanup_all(){
+cleanup_all() {
   local rc=$?
   [[ $CLEANUP_STATE -eq 0 ]] && CLEANUP_STATE=$rc
-  [[ -f $DLLIST ]] && { mv "$DLLIST"{,.old} 2>/dev/null || rm -f "$DLLIST" 2>/dev/null || warn "Could not clean download list."; }
+  [[ -f $DLLIST ]] && { mv "$DLLIST"{,.old} 2> /dev/null || rm -f "$DLLIST" 2> /dev/null || warn "Could not clean download list."; }
   _remove_lock
 }
 
 #────────── Mirror Discovery ────────
-get_dist_name(){
+get_dist_name() {
   if [[ -r /etc/os-release ]]; then
     (
       source /etc/os-release
@@ -105,7 +106,7 @@ get_dist_name(){
   fi
 }
 
-get_dist_version_name(){
+get_dist_version_name() {
   if [[ -r /etc/os-release ]]; then
     (
       source /etc/os-release
@@ -121,7 +122,7 @@ get_dist_version_name(){
   fi
 }
 
-read_main_mirror_from_deb822_file(){
+read_main_mirror_from_deb822_file() {
   [[ -f $1 ]] || return 0
   local line mirror_uri='' mirror_main=''
   while IFS= read -r line; do
@@ -142,10 +143,10 @@ read_main_mirror_from_deb822_file(){
       echo "$mirror_uri"
       return
     }
-  done <"$1"
+  done < "$1"
 }
 
-get_current_mirror(){
+get_current_mirror() {
   local dist_name=$(get_dist_name)
   case $dist_name in
     debian | kali | ubuntu | pop) ;;
@@ -188,11 +189,11 @@ get_current_mirror(){
   }
 }
 
-find_fast_mirror(){
+find_fast_mirror() {
   has curl || {
     msg "Installing curl..." "$YLW"
-    run_priv apt-get -o Acquire::http::Timeout=10 update \
-      && run_priv apt-get -o Acquire::http::Timeout=10 install -y --no-install-recommends curl ca-certificates || return "$RC_MISC_ERROR"
+    run_priv apt-get -o Acquire::http::Timeout=10 update &&
+      run_priv apt-get -o Acquire::http::Timeout=10 install -y --no-install-recommends curl ca-certificates || return "$RC_MISC_ERROR"
   }
   local parallel=1 healthchecks=20 speedtests=5 sample_kb=200 sample_secs=3 country= apply= exclude_current= ignore_sync= verbosity=0
   while [[ $# -gt 0 ]]; do
@@ -226,7 +227,7 @@ find_fast_mirror(){
       --ignore-sync-state) ignore_sync=true ;;
       -v | --verbose) ((verbosity++)) ;;
       --help)
-        cat <<'EOF'
+        cat << 'EOF'
 Usage: apt-ultra find-mirror [OPTIONS]
 Options:
   --apply              Apply fastest mirror
@@ -260,7 +261,7 @@ EOF
   case $dist_name in
     debian)
       reference_mirror=$(curl --max-time 5 -sSL -o /dev/null http://deb.debian.org/debian -w "%{url_effective}" || echo http://deb.debian.org/debian/)
-      mirrors=$(curl --max-time 5 -sSL https://www.debian.org/mirror/list 2>/dev/null | grep -Eo '(https?|ftp)://[^"]+/debian/' || true)
+      mirrors=$(curl --max-time 5 -sSL https://www.debian.org/mirror/list 2> /dev/null | grep -Eo '(https?|ftp)://[^"]+/debian/' || true)
       [[ -z $mirrors ]] && mirrors=$reference_mirror
       last_modified_path="/dists/${dist_version}-updates/main/Contents-${dist_arch}.gz"
       ;;
@@ -290,12 +291,12 @@ EOF
   mirrors=$(echo "$mirrors" | unique | max_lines "$healthchecks" | sort)
   msg "✓ Selected $(echo "$mirrors" | wc -l) mirrors" "$GRN"
 
-  [[ $verbosity -gt 1 ]] && while IFS= read -r m; do msg " → $m" "$CYN"; done <<<"$mirrors"
+  [[ $verbosity -gt 1 ]] && while IFS= read -r m; do msg " → $m" "$CYN"; done <<< "$mirrors"
 
   msg "Health-checking mirrors..." "$BLU"
   local healthcheck_results=$(
-    echo "$mirrors" \
-      | __xargs -i -P "$(echo "$mirrors" | wc -l)" bash -c \
+    echo "$mirrors" |
+      __xargs -i -P "$(echo "$mirrors" | wc -l)" bash -c \
         'set -o pipefail
        headers=$(curl --max-time 3 -sSIL "{}'"$last_modified_path"'" 2>/dev/null || echo "CURL_ERROR")
        http_status=$(printf "%s\n" "$headers" | awk '"'"'toupper($1) ~ /^HTTP\// { code=$2 } END { print code }'"'"')
@@ -325,7 +326,7 @@ EOF
       0) msg " → $st $url" "$YLW" ;;
       *) msg " → outdated ($(date -d "@$lm" +'%Y-%m-%d %H:%M:%S %Z')) $url" "$RED" ;;
     esac
-  done <<<"$sorted"
+  done <<< "$sorted"
   local healthy
   if [[ $ignore_sync == "true" ]]; then
     healthy=$(echo "$sorted" | awk '$2 != "missing" && $2 != "error" { $1=""; $2=""; sub(/^  /, ""); if ($0 != "") print }')
@@ -342,12 +343,12 @@ EOF
   msg "Speed testing $(echo "$speedtest_mirrors" | wc -l) mirrors (${sample_kb}KB sample)..." "$BLU"
   local sample_bytes=$((sample_kb * 1024))
   local mirrors_with_speed=$(
-    echo "$speedtest_mirrors" \
-      | grep -v '^[[:space:]]*$' \
-      | __xargs -P "$parallel" -I{} bash -c \
-        "printf '%s\t%s\n' \"\$(curl -r 0-$sample_bytes --max-time $sample_secs -sS -w '%{speed_download}' -o /dev/null \"\${1}ls-lR.gz\" 2>/dev/null || echo 0)\" \"\$1\";>&2 printf '.'" _ {} \
-      | awk -F'\t' '$1 ~ /^[0-9.]+$/ && $2 ~ /^https?:\/\// { print }' \
-      | sort -rg
+    echo "$speedtest_mirrors" |
+      grep -v '^[[:space:]]*$' |
+      __xargs -P "$parallel" -I{} bash -c \
+        "printf '%s\t%s\n' \"\$(curl -r 0-$sample_bytes --max-time $sample_secs -sS -w '%{speed_download}' -o /dev/null \"\${1}ls-lR.gz\" 2>/dev/null || echo 0)\" \"\$1\";>&2 printf '.'" _ {} |
+      awk -F'\t' '$1 ~ /^[0-9.]+$/ && $2 ~ /^https?:\/\// { print }' |
+      sort -rg
   )
   msg " ✓ done" "$GRN"
   [[ -z $mirrors_with_speed ]] && die "Could not determine fast mirror."
@@ -364,7 +365,7 @@ EOF
   [[ ! -t 1 ]] && echo "$fastest"
 }
 
-set_mirror(){
+set_mirror() {
   local new_mirror=${1:? }
   matches "${new_mirror,,}" '^(https?|ftp)://' || die "Malformed URL: $new_mirror"
   local dist_name=$(get_dist_name)
@@ -394,11 +395,11 @@ set_mirror(){
 }
 
 # APT Operations
-urldecode(){ printf '%b' "${1//%/\\x}"; }
-get_uris(){
+urldecode() { printf '%b' "${1//%/\\x}"; }
+get_uris() {
   [[ ! -d $(dirname "$DLLIST") ]] && { mkdir -p "$(dirname "$DLLIST")" || die "Cannot create download dir."; }
-  [[ -f $DLLIST ]] && { rm -f "$DLLIST" 2>/dev/null || die "Cannot write to $DLLIST"; }
-  echo "# apt-ultra download list: $(date)">"$DLLIST"
+  [[ -f $DLLIST ]] && { rm -f "$DLLIST" 2> /dev/null || die "Cannot write to $DLLIST"; }
+  echo "# apt-ultra download list: $(date)" > "$DLLIST"
   local uri_mgr="$_APTMGR"
   case "$(basename "$_APTMGR")" in apt | apt-get) uri_mgr="$_APTMGR" ;; *) uri_mgr='apt-get' ;; esac
   local uris_full=$("$uri_mgr" -y --print-uris "$@" 2>&1)
@@ -412,19 +413,19 @@ get_uris(){
     [[ -z $uri ]] && continue
     uri="${uri//\'/}"
     local fname_dec=$(urldecode "$filename")
-    IFS='_' read -r pkg ver _ <<<"$fname_dec"
+    IFS='_' read -r pkg ver _ <<< "$fname_dec"
     DOWNLOAD_SIZE=$((DOWNLOAD_SIZE + filesize))
     {
       echo "$uri"
       echo " out=$filename"
-    }>>"$DLLIST"
-  done <<<"$(echo "$uris_full" | grep -E "^'(https?|ftp)://")"
+    } >> "$DLLIST"
+  done <<< "$(echo "$uris_full" | grep -E "^'(https?|ftp)://")"
   msg "Download size: $(echo "$DOWNLOAD_SIZE" | numfmt --to=iec-i --suffix=B)" "$LBLU"
 }
 
 # Main
-usage(){
-  cat<<EOF
+usage() {
+  cat << EOF
 ${LBLU}apt-ultra${DEF} v${VERSION} - Fast APT package manager
 ${BLD}Usage:${DEF}  apt-ultra <command> [options] [packages...]
 ${BLD}Commands:${DEF}
@@ -438,7 +439,7 @@ ${BLD}Examples:${DEF}  apt-ultra install nginx  apt-ultra find-mirror --apply  a
 EOF
 }
 
-main(){
+main() {
   _create_lock
   local cmd=${1:-}
   [[ $cmd == "--help" || $cmd == "-h" || -z $cmd ]] && {
@@ -459,13 +460,13 @@ main(){
       if has aria2c; then
         msg "Fetching package URIs..." "$BLU"
         get_uris "$@"
-        if [[ -f $DLLIST && $(wc -l <"$DLLIST") -gt 1 ]]; then
+        if [[ -f $DLLIST && $(wc -l < "$DLLIST") -gt 1 ]]; then
           [[ ! -d $DLDIR ]] && mkdir -p "$DLDIR"
           cd "$DLDIR" || die "Cannot cd to $DLDIR"
           run_downloader
-          find . -type f \( -name '*.deb' -o -name '*.ddeb' \) -execdir mv -ft "$APTCACHE" {} + 2>/dev/null || :
+          find . -type f \( -name '*.deb' -o -name '*.ddeb' \) -execdir mv -ft "$APTCACHE" {} + 2> /dev/null || :
           for x in *.aria2; do rm -f "$x" "${x%.aria2}"; done
-          cd - &>/dev/null || :
+          cd - &> /dev/null || :
         fi
         run_priv "$_APTMGR" "$@"
       elif has apt-fast; then
@@ -483,7 +484,7 @@ main(){
       run_priv "$_APTMGR" "$@"
       [[ -d $DLDIR ]] && {
         find "$DLDIR" -maxdepth 1 -type f -delete
-        rm -f "$DLLIST"* 2>/dev/null || :
+        rm -f "$DLLIST"* 2> /dev/null || :
       }
       ;;
     *) run_priv "$_APTMGR" "$@" ;;

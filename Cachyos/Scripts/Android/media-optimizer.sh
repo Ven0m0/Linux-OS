@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 
 # media-optimizer.sh - Comprehensive media optimization toolkit
@@ -38,15 +39,15 @@ else
 fi
 
 # Helper functions
-log(){ printf '[%s] %s\n' "$(date +%H:%M:%S)" "$1" | tee -a "$LOG_FILE"; }
-log_debug(){ [[ ${MEDIA_OPT_DEBUG:-0} -eq 1 ]] && printf '[DEBUG %s] %s\n' "$(date +%H:%M:%S)" "$1" | tee -a "$LOG_FILE"; }
-log_err(){ printf '[ERROR %s] %s\n' "$(date +%H:%M:%S)" "$1" | tee -a "$LOG_FILE">&2; }
+log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$1" | tee -a "$LOG_FILE"; }
+log_debug() { [[ ${MEDIA_OPT_DEBUG:-0} -eq 1 ]] && printf '[DEBUG %s] %s\n' "$(date +%H:%M:%S)" "$1" | tee -a "$LOG_FILE"; }
+log_err() { printf '[ERROR %s] %s\n' "$(date +%H:%M:%S)" "$1" | tee -a "$LOG_FILE" >&2; }
 
-file_size(){
-  stat -c "%s" "$1" 2>/dev/null || stat -f "%z" "$1" 2>/dev/null || echo 0
+file_size() {
+  stat -c "%s" "$1" 2> /dev/null || stat -f "%z" "$1" 2> /dev/null || echo 0
 }
 
-human_size(){
+human_size() {
   local bytes="$1" scale=0
   local units=("B" "KB" "MB" "GB" "TB")
 
@@ -59,9 +60,9 @@ human_size(){
 }
 
 # Check for tool availability and install guidance if missing
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &> /dev/null; }
 
-require_tool(){
+require_tool() {
   local tool="$1" pkg="${2:-$1}" alt="${3:-}"
 
   if has "$tool"; then
@@ -92,7 +93,7 @@ require_tool(){
 }
 
 # Tool detection and initialization
-check_tools(){
+check_tools() {
   local missing=0
 
   # Core tools
@@ -155,7 +156,7 @@ check_tools(){
 }
 
 # Image optimization functions
-optimize_jpeg(){
+optimize_jpeg() {
   local input="$1" output="${2:-$1}" quality="${3:-85}"
 
   if has compresscli; then
@@ -179,7 +180,7 @@ optimize_jpeg(){
   fi
 }
 
-optimize_png(){
+optimize_png() {
   local input="$1" output="${2:-$1}" lossy="${3:-0}"
 
   if has compresscli; then
@@ -215,7 +216,7 @@ optimize_png(){
   fi
 }
 
-convert_to_webp(){
+convert_to_webp() {
   local input="$1" output="$2" quality="${3:-$MEDIA_OPT_WEBP_QUALITY}"
 
   if has compresscli; then
@@ -233,7 +234,7 @@ convert_to_webp(){
   fi
 }
 
-optimize_video_to_av1(){
+optimize_video_to_av1() {
   local input="$1" output="$2" preset="${3:-$MEDIA_OPT_AV1_PRESET}" crf="${4:-$MEDIA_OPT_AV1_CRF}"
 
   if has SVT-AV1; then
@@ -254,7 +255,7 @@ optimize_video_to_av1(){
   fi
 }
 
-deduplicate_images(){
+deduplicate_images() {
   local dir="$1"
 
   if [[ ${MEDIA_OPT_DEDUPE} -ne 1 ]]; then
@@ -283,7 +284,7 @@ deduplicate_images(){
 }
 
 # Batch processing functions
-process_image(){
+process_image() {
   local file="$1"
   local ext="${file##*.}"
   ext="${ext,,}" # Convert to lowercase
@@ -384,7 +385,7 @@ process_image(){
   return 0
 }
 
-process_video(){
+process_video() {
   local file="$1"
   local ext="${file##*.}"
   ext="${ext,,}" # Convert to lowercase
@@ -434,7 +435,7 @@ process_video(){
 }
 
 # Main processing function
-process_directory(){
+process_directory() {
   local dir="$1"
 
   # Create backup directory if needed
@@ -462,9 +463,9 @@ process_directory(){
   local image_files=()
   if has fd; then
     # Using fd in the directory
-    pushd "$dir">/dev/null || return 1
+    pushd "$dir" > /dev/null || return 1
     mapfile -t image_files < <("${find_cmd[@]}")
-    popd>/dev/null || return 1
+    popd > /dev/null || return 1
 
     # Prepend the directory
     for i in "${!image_files[@]}"; do
@@ -502,9 +503,9 @@ process_directory(){
 
     local video_files=()
     if has fd; then
-      pushd "$dir">/dev/null || return 1
+      pushd "$dir" > /dev/null || return 1
       mapfile -t video_files < <("${video_find_cmd[@]}")
-      popd>/dev/null || return 1
+      popd > /dev/null || return 1
 
       for i in "${!video_files[@]}"; do
         video_files[$i]="$dir/${video_files[$i]}"
@@ -525,8 +526,8 @@ process_directory(){
 }
 
 # Command-line interface
-usage(){
-  cat<<EOF
+usage() {
+  cat << EOF
 Usage: $SCRIPT_NAME [OPTIONS] DIRECTORY
 
 Media optimization toolkit for images and videos.
@@ -554,7 +555,7 @@ EOF
 }
 
 # Main function
-main(){
+main() {
   local target_dir=""
 
   # Parse command-line arguments

@@ -3,13 +3,18 @@ name = "account-scanner"
 version = "1.1.0"
 description = "Multi-source account scanner: Reddit toxicity + Sherlock OSINT"
 requires-python = ">=3.10"
-dependencies = ["praw", "httpx", "sherlock-project", "orjson", "uvloop"]
+dependencies = ["httpx", "orjson", "praw", "sherlock-project", "uvloop"]
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "pytest", "black"]
 
 [tool.black]
 line-length = 100
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
 
 [tool.ruff]
 line-length = 100
@@ -19,8 +24,3 @@ exclude = [".git", ".cache", ".var", "node_modules"]
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "B", "C4", "SIM", "ASYNC", "TCH"]
 ignore = []
-
-[tool.mypy]
-python_version = "3.10"
-strict = true
-ignore_missing_imports = true

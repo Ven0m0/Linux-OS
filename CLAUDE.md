@@ -105,7 +105,7 @@ Always quote variables unless intentional glob/split.
 ## Tool Hierarchy (Fallbacks Required)
 
 | Task | Primary | Fallback Chain |
-|:---|:---|:---|
+| :------- | :-------------- | :----------------------------------- |
 | Find | `fd` | `fdfind`→`find` |
 | Grep | `rg` | `grep -E` (prefer `-F` for literals) |
 | View | `bat` | `cat` |

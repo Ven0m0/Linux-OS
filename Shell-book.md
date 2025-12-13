@@ -6,9 +6,11 @@
 - [bpkg](https://bpkg.sh)
 
 </details>
+
 <details>
+
 <summary><b>Resources</b></summary>
-  
+
 - [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
 - [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
 - [Bash Guide](https://guide.bash.academy) [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
@@ -16,11 +18,13 @@
 - [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)
 - [Ascii flag color codes](https://www.flagcolorcodes.com)
 - [Bash prompt generator](https://bash-prompt-generator.org) [Ezprompt generator](https://ezprompt.net)
+
 </details>
 
 ## Bash snippets
 
 <details>
+
 <summary><b>Script start template</b></summary>
 
 ```bash
@@ -40,8 +44,11 @@ fcat(){ printf '%s\n' "$(<${1})"; }
 
 # vim:set sw=2 ts=2 et:
 ```
+
 </details>
+
 <details>
+
 <summary><b>Ascii color table</b></summary>
 
 ```bash
@@ -73,28 +80,39 @@ BGRGB(){ printf $'\e[48;2;%s;%s;%sm' "$1" "$2" "$3"; }
 ```
 
 </details>
+
 <details>
+
 <summary><b>Basename</b></summary>
 
 Usage: basename "path" ["suffix"]
+
 ```bash
 bname(){ local t=${1%${1##*[!/}]}; t=${t##*/}; [[ $2 && $t == *"$2" ]] && t=${t%$2}; printf '%s\n' "${t:-/}"; }
 ```
+
 </details>
+
 <details>
+
 <summary><b>Dirname</b></summary>
-  
+
 Usage: dirname "path"
+
 ```bash
 dname(){ local p=${1:-.}; [[ $p != *[!/]* ]] && { printf '/\n'; return; }; p=${p%${p##*[!/]}}; [[ $p != */* ]] && { printf '.\n'; return; }; p=${p%/*}; p=${p%${p##*[!/]}}; printf '%s\n' "${p:-/}"; }
 ```
+
 </details>
+
 <details>
+
 <summary><b>Date</b></summary>
 
 Usage: date "format"
 Prints either current date 'day/month-hour-minute' or whatever you give it via 'date
 See: 'man strftime' for format.
+
 ```bash
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 ```

@@ -23,10 +23,9 @@ Analyze code vs lang-spec standards (PEP8, ES6+, etc) for qual/maint.
 
 ```markdown
 ## Review
-**Sum**: Stack: []; Score: X/10; Key Improv: []
-**Good**: [Prac 1, 2]
-**Improv**:
+
+**Sum**: Stack: []; Score: X/10; Key Improv: [] **Good**: [Prac 1, 2] **Improv**:
+
 1. **High**: [Name] (Curr -> Rec -> Why)
-2. **Med**: ...
-**Quick Wins**: [List]
+2. **Med**: ... **Quick Wins**: [List]
 ```

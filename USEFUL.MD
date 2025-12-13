@@ -1,6 +1,6 @@
 ## HTML
 
-- <https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Speculative_loading>
+- [https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Speculative_loading](https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Speculative_loading)
 
 ```html
 <link rel="prefetch" href="next.html" />
@@ -9,10 +9,10 @@
 <link rel="preload" href="main.js" as="script" />
 <link rel="prerender" href="/next-page" />
 <link rel="modulepreload" href="main.js" />
-````
+```
 
 | Speculative loading features | Purpose | When to use |
-| :--- | :--- | :--- |
+| :--------------------------- | :------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `<link rel="preconnect">` | Cross-origin connection warming | Use on your most critical cross-origin connections to provide performance improvements when connecting to them. |
 | `<link rel="dns-prefetch">` | Cross-origin connection warming | Use on all of your cross-origin connections to provide small performance improvements when connecting to them. |
 | `<link rel="preload">` | High-priority loading of current page subresources | Use to load high-priority resources faster on the current page, for strategic performance improvements. Don't preload everything, otherwise you won't see the benefit. Also has some other interesting uses — see Preload: What Is It Good For? on Smashing Magazine (2016) |
@@ -21,22 +21,24 @@
 | `<link rel="prerender">` | Preparing for the next navigation | Deprecated; you are advised not to use this. Use Speculation Rules API prerender instead, where it is supported. |
 
 ## Markdown
-- Use ```<br>``` to insert a line break.
-- Use ```<p></p>``` to create a new paragraph with extra spacing.
-- Use ```&nbsp;``` to add a single space between words or elements.
+
+- Use `<br>` to insert a line break.
+- Use `<p></p>` to create a new paragraph with extra spacing.
+- Use `&nbsp;` to add a single space between words or elements.
 
 ## Useful websites
 
 **Discord related**
+
 - https://autocompressor.net/av1
 - https://autocompressor.net
 
-
 ## Bash
+
 - https://github.com/adrianlarion/useful-sed
-- <https://dotfiles.github.io/>
-- <https://terminal.sexy/>
-- <https://wiki.archlinux.org/title/Git>
+- [https://dotfiles.github.io/](https://dotfiles.github.io/)
+- [https://terminal.sexy/](https://terminal.sexy/)
+- [https://wiki.archlinux.org/title/Git](https://wiki.archlinux.org/title/Git)
 - [Pure-bash-bible](https://github.com/dylanaraps/pure-bash-bible)
 - [Pure-sh-bible](https://github.com/dylanaraps/pure-sh-bible)
 - [Bash Guide](https://guide.bash.academy) **|** [Bash Guide old](https://mywiki.wooledge.org/BashGuide)

@@ -35,6 +35,7 @@ Result: **self-organizing, domain-driven knowledge base** growing smarter with e
 - `lesson content` - Required
 
 **Examples:**
+
 - `/remember >shell-scripting now we've forgotten fish syntax too many times`
 - `/remember >clojure prefer passing maps over parameter lists`
 - `/remember avoid over-escaping`
@@ -46,10 +47,12 @@ Result: **self-organizing, domain-driven knowledge base** growing smarter with e
 ## Memory File Structure
 
 ### Frontmatter
+
 - **description**: General domain responsibility (not implementation specifics)
 - **applyTo**: Glob patterns for file/directory targets (few, broad)
 
 ### Content
+
 - **Main Headline**: `# <Domain Name> Memory` (level 1)
 - **Tag Line**: Succinct tagline capturing core patterns/value
 - **Learnings**: Each lesson with level 2 headline

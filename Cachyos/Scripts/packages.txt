@@ -9,7 +9,7 @@
 
 
 # Appimages
-# am -e 
+# am -e
 # soar
 
 

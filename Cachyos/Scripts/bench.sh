@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
-export LC_ALL=C; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+export LC_ALL=C
+IFS=$'\n\t'
 #============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -10,18 +12,18 @@ MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
 #============ Core Helper Functions ============
-has(){ command -v -- "$1" &>/dev/null; }
-xecho(){ printf '%b\n' "$*"; }
-log(){ xecho "$*"; }
-warn(){ xecho "${YLW}WARN:${DEF} $*">&2; }
-err(){ xecho "${RED}ERROR:${DEF} $*">&2; }
-die(){
+has() { command -v -- "$1" &> /dev/null; }
+xecho() { printf '%b\n' "$*"; }
+log() { xecho "$*"; }
+warn() { xecho "${YLW}WARN:${DEF} $*" >&2; }
+err() { xecho "${RED}ERROR:${DEF} $*" >&2; }
+die() {
   err "$*"
   exit "${2:-1}"
 }
 # Usage information
-usage(){
-  cat<<EOF
+usage() {
+  cat << EOF
 Usage: $0 [OPTIONS]
 
 Unified benchmark script for testing parallel commands, sorting, and file copy operations.
@@ -93,27 +95,27 @@ done
 has hyperfine || die "hyperfine not found in PATH. Please install it first."
 
 # Cache nproc result to avoid repeated calls
-nproc_count="$(nproc 2>/dev/null || echo 1)"
+nproc_count="$(nproc 2> /dev/null || echo 1)"
 jobs16="$nproc_count"
 jobs8="$((nproc_count / 2))"
 ((jobs8 < 1)) && jobs8=1
 
 # Save original turbo state
 if [[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then
-  o1="$(</sys/devices/system/cpu/intel_pstate/no_turbo)"
-  Reset(){
-    echo "$o1" | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
+  o1="$(< /sys/devices/system/cpu/intel_pstate/no_turbo)"
+  Reset() {
+    echo "$o1" | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &> /dev/null || :
   }
   # Set performance mode
-  sudo cpupower frequency-set --governor performance &>/dev/null || :
-  echo 1 | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
+  sudo cpupower frequency-set --governor performance &> /dev/null || :
+  echo 1 | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &> /dev/null || :
 else
-  Reset(){ :; }
-  sudo cpupower frequency-set --governor performance &>/dev/null || :
+  Reset() { :; }
+  sudo cpupower frequency-set --governor performance &> /dev/null || :
 fi
 
 # Benchmark function for parallel/sort tests
-benchmark(){
+benchmark() {
   local name="$1"
   shift
   local cmd="$*"
@@ -124,7 +126,7 @@ benchmark(){
 }
 
 # Benchmark function for copy tests with JSON export
-benchmark_copy(){
+benchmark_copy() {
   local name="$1"
   shift
   local cmd="$*"
@@ -140,7 +142,7 @@ benchmark_copy(){
 
     if [[ -f /tmp/hf-"$name".json ]]; then
       jq -c '{cmd: .command, mean: .results[0].mean, stddev: .results[0].stddev}' \
-        /tmp/hf-"$name".json>>"$LOG"
+        /tmp/hf-"$name".json >> "$LOG"
       rm -f /tmp/hf-"$name".json
     fi
   else
@@ -154,7 +156,7 @@ benchmark_copy(){
 # Initialize JSON log if needed
 if [[ $EXPORT_JSON -eq 1 ]]; then
   LOG="bench-results-$(date -u +%Y%m%dT%H%M%SZ).jsonl"
-  :>"$LOG" # Truncate file using : as no-op command
+  : > "$LOG" # Truncate file using : as no-op command
   log "${GRN}Results will be exported to: $LOG${DEF}"
 fi
 
@@ -213,7 +215,7 @@ if [[ $RUN_COPY -eq 1 ]]; then
     has cpui && benchmark_copy "cpui" "cpui -f -y cachyos.iso cachyos-cpui.iso" || log "${YLW}⊘ cpui not available${DEF}"
 
     # Cleanup test files
-    rm -f cachyos-*.iso &>/dev/null || :
+    rm -f cachyos-*.iso &> /dev/null || :
   fi
 fi
 

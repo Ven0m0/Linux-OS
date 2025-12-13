@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
-export LC_ALL=C; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+export LC_ALL=C
+IFS=$'\n\t'
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m' MGN=$'\e[35m' PNK=$'\e[38;5;218m' DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
-has(){ command -v -- "$1" &>/dev/null; }
-xecho(){ printf '%b\n' "$*"; }
-log(){ xecho "$*"; }
-confirm(){
+has() { command -v -- "$1" &> /dev/null; }
+xecho() { printf '%b\n' "$*"; }
+log() { xecho "$*"; }
+confirm() {
   local msg="$1"
-  printf '%s [y/N]: ' "$msg">&2
+  printf '%s [y/N]: ' "$msg" >&2
   read -r ans
   [[ $ans == [Yy]* ]]
 }
-print_banner(){
+print_banner() {
   local banner="$1" title="${2:-}" flag_colors=("$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU") -a lines=()
-  while IFS= read -r line || [[ -n $line ]]; do lines+=("$line"); done <<<"$banner"
+  while IFS= read -r line || [[ -n $line ]]; do lines+=("$line"); done <<< "$banner"
   local line_count=${#lines[@]} segments=${#flag_colors[@]}
   if ((line_count <= 1)); then printf '%s%s%s\n' "${flag_colors[0]}" "${lines[0]}" "$DEF"; else for i in "${!lines[@]}"; do
     local segment_index=$((i * (segments - 1) / (line_count - 1)))
@@ -24,8 +26,8 @@ print_banner(){
   done; fi
   [[ -n $title ]] && xecho "$title"
 }
-get_update_banner(){
-  cat <<'EOF'
+get_update_banner() {
+  cat << 'EOF'
 ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗███████╗███████╗
 ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔════╝██╔════╝
 ██║   ██║██████╔╝██║  ██║███████║   ██║   █████╗  ███████╗
@@ -34,8 +36,8 @@ get_update_banner(){
  ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 EOF
 }
-get_clean_banner(){
-  cat <<'EOF'
+get_clean_banner() {
+  cat << 'EOF'
  ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗
@@ -44,55 +46,55 @@ get_clean_banner(){
  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝
 EOF
 }
-print_named_banner(){
+print_named_banner() {
   local name="$1" title="${2:-Meow (> ^ <)}" banner
   case "$name" in update) banner=$(get_update_banner) ;; clean) banner=$(get_clean_banner) ;; *)
-    xecho "${RED}Error:${DEF} Unknown banner name: $name">&2
+    xecho "${RED}Error:${DEF} Unknown banner name: $name" >&2
     exit 1
     ;;
   esac
   print_banner "$banner" "$title"
 }
-setup_build_env(){
-  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
+setup_build_env() {
+  [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &> /dev/null
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
   export CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
   export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
   export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1
   local nproc_count
-  nproc_count=$(nproc 2>/dev/null || echo 4)
+  nproc_count=$(nproc 2> /dev/null || echo 4)
   export MAKEFLAGS="-j${nproc_count}" NINJAFLAGS="-j${nproc_count}"
   if has clang && has clang++; then
     export CC=clang CXX=clang++ AR=llvm-ar NM=llvm-nm RANLIB=llvm-ranlib
     has ld.lld && export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"
   fi
-  has dbus-launch && eval "$(dbus-launch 2>/dev/null || :)"
+  has dbus-launch && eval "$(dbus-launch 2> /dev/null || :)"
 }
-run_system_maintenance(){
+run_system_maintenance() {
   local cmd=$1
   shift
   local args=("$@")
   has "$cmd" || return 0
   case "$cmd" in
-    modprobed-db) "$cmd" store &>/dev/null || : ;;
-    hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
-    mandb) sudo "$cmd" -q &>/dev/null || mandb -q &>/dev/null || : ;;
-    *) sudo "$cmd" "${args[@]}" &>/dev/null || : ;;
+    modprobed-db) "$cmd" store &> /dev/null || : ;;
+    hwclock | updatedb | chwd) sudo "$cmd" "${args[@]}" &> /dev/null || : ;;
+    mandb) sudo "$cmd" -q &> /dev/null || mandb -q &> /dev/null || : ;;
+    *) sudo "$cmd" "${args[@]}" &> /dev/null || : ;;
   esac
 }
-capture_disk_usage(){
+capture_disk_usage() {
   local var_name=$1
   local -n ref="$var_name"
-  ref=$(df -h --output=used,pcent / 2>/dev/null | awk 'NR==2{print $1, $2}')
+  ref=$(df -h --output=used,pcent / 2> /dev/null | awk 'NR==2{print $1, $2}')
 }
-find_files(){ has fd && fd -H "$@" || find "$@"; }
-find0(){
+find_files() { has fd && fd -H "$@" || find "$@"; }
+find0() {
   local root="$1"
   shift
   if has fdf; then fdf -H -0 "$@" . "$root"; elif has fd; then fd -H -0 "$@" . "$root"; else find "$root" "$@" -print0; fi
 }
 _PKG_MGR_CACHED="" _AUR_OPTS_CACHED=()
-detect_pkg_manager(){
+detect_pkg_manager() {
   if [[ -n $_PKG_MGR_CACHED ]]; then
     printf '%s\n' "$_PKG_MGR_CACHED" "${_AUR_OPTS_CACHED[@]}"
     return 0
@@ -111,15 +113,15 @@ detect_pkg_manager(){
   _PKG_MGR_CACHED=$pkgmgr
   printf '%s\n' "$pkgmgr" "${_AUR_OPTS_CACHED[@]}"
 }
-get_pkg_manager(){
-  [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager>/dev/null
+get_pkg_manager() {
+  [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager > /dev/null
   printf '%s\n' "$_PKG_MGR_CACHED"
 }
-get_aur_opts(){
-  [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager>/dev/null
+get_aur_opts() {
+  [[ -z $_PKG_MGR_CACHED ]] && detect_pkg_manager > /dev/null
   printf '%s\n' "${_AUR_OPTS_CACHED[@]}"
 }
-vacuum_sqlite(){
+vacuum_sqlite() {
   local db=$1 s_old s_new
   [[ -f $db ]] || {
     printf '0\n'
@@ -129,22 +131,22 @@ vacuum_sqlite(){
     printf '0\n'
     return
   }
-  head -c 16 "$db" 2>/dev/null | grep -qF -- 'SQLite format 3' || {
+  head -c 16 "$db" 2> /dev/null | grep -qF -- 'SQLite format 3' || {
     printf '0\n'
     return
   }
-  s_old=$(stat -c%s "$db" 2>/dev/null) || {
+  s_old=$(stat -c%s "$db" 2> /dev/null) || {
     printf '0\n'
     return
   }
-  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &>/dev/null || {
+  sqlite3 "$db" 'PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;' &> /dev/null || {
     printf '0\n'
     return
   }
-  s_new=$(stat -c%s "$db" 2>/dev/null) || s_new=$s_old
+  s_new=$(stat -c%s "$db" 2> /dev/null) || s_new=$s_old
   printf '%d\n' "$((s_old - s_new))"
 }
-clean_sqlite_dbs(){
+clean_sqlite_dbs() {
   local total=0 db saved
   while IFS= read -r -d '' db; do
     [[ -f $db ]] || continue
@@ -153,23 +155,23 @@ clean_sqlite_dbs(){
   done < <(find0 . -maxdepth 1 -type f)
   ((total > 0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF}"
 }
-ensure_not_running_any(){
+ensure_not_running_any() {
   local timeout=6 p pattern="$(printf '%s|' "$@")"
   pattern=${pattern%|}
-  pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
-  for p in "$@"; do pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"; done
+  pgrep -x -u "$USER" -f "$pattern" &> /dev/null || return
+  for p in "$@"; do pgrep -x -u "$USER" "$p" &> /dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"; done
   local wait_time=$timeout
   while ((wait_time-- > 0)); do
-    pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return
+    pgrep -x -u "$USER" -f "$pattern" &> /dev/null || return
     sleep 1
   done
-  if pgrep -x -u "$USER" -f "$pattern" &>/dev/null; then
+  if pgrep -x -u "$USER" -f "$pattern" &> /dev/null; then
     printf '  %s\n' "${RED}Killing remaining processes...${DEF}"
-    pkill -KILL -x -u "$USER" -f "$pattern" &>/dev/null || :
+    pkill -KILL -x -u "$USER" -f "$pattern" &> /dev/null || :
     sleep 1
   fi
 }
-foxdir(){
+foxdir() {
   local base=$1 p
   [[ -d $base ]] || return 1
   if [[ -f $base/installs.ini ]]; then
@@ -188,7 +190,7 @@ foxdir(){
   fi
   return 1
 }
-mozilla_profiles(){
+mozilla_profiles() {
   local base=$1 p
   declare -A seen
   [[ -d $base ]] || return 0
@@ -201,18 +203,18 @@ mozilla_profiles(){
     seen[$p]=1
   }; done < <(awk -F= '/^Path=/ {print $2}' "$base/profiles.ini"); fi
 }
-chrome_roots_for(){ case "$1" in
+chrome_roots_for() { case "$1" in
   chrome) printf '%s\n' "$HOME/.config/google-chrome" "$HOME/.var/app/com.google.Chrome/config/google-chrome" "$HOME/snap/google-chrome/current/.config/google-chrome" ;;
   chromium) printf '%s\n' "$HOME/.config/chromium" "$HOME/.var/app/org.chromium.Chromium/config/chromium" "$HOME/snap/chromium/current/.config/chromium" ;;
   brave) printf '%s\n' "$HOME/.config/BraveSoftware/Brave-Browser" "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser" "$HOME/snap/brave/current/.config/BraveSoftware/Brave-Browser" ;;
   opera) printf '%s\n' "$HOME/.config/opera" "$HOME/.config/opera-beta" "$HOME/.config/opera-developer" ;;
   *) : ;;
 esac }
-chrome_profiles(){
+chrome_profiles() {
   local root=$1 d
   for d in "$root"/Default "$root"/"Profile "*; do [[ -d $d ]] && printf '%s\n' "$d"; done
 }
-_expand_wildcards(){
+_expand_wildcards() {
   local path=$1
   local -n result_ref="$2"
   if [[ $path == *\** ]]; then
@@ -222,18 +224,18 @@ _expand_wildcards(){
     shopt -u nullglob
   else [[ -e $path ]] && result_ref+=("$path"); fi
 }
-clean_paths(){
+clean_paths() {
   local paths=("$@") path existing_paths=()
   for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done
-  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && rm -rf --preserve-root -- "${existing_paths[@]}" &> /dev/null || :
 }
-clean_with_sudo(){
+clean_with_sudo() {
   local paths=("$@") path existing_paths=()
   for path in "${paths[@]}"; do _expand_wildcards "$path" existing_paths; done
-  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &>/dev/null || :
+  [[ ${#existing_paths[@]} -gt 0 ]] && sudo rm -rf --preserve-root -- "${existing_paths[@]}" &> /dev/null || :
 }
 _DOWNLOAD_TOOL_CACHED=""
-get_download_tool(){
+get_download_tool() {
   local skip_aria2=0
   [[ ${1:-} == --no-aria2 ]] && skip_aria2=1
   if [[ -n $_DOWNLOAD_TOOL_CACHED && $skip_aria2 -eq 0 ]]; then
@@ -245,7 +247,7 @@ get_download_tool(){
   [[ $skip_aria2 -eq 0 ]] && _DOWNLOAD_TOOL_CACHED=$tool
   printf '%s' "$tool"
 }
-download_file(){
+download_file() {
   local url=$1 output=$2 tool
   tool=$(get_download_tool) || return 1
   case $tool in
@@ -256,16 +258,16 @@ download_file(){
     *) return 1 ;;
   esac
 }
-update(){
-  sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
+update() {
+  sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :
   sudo pacman -Syu --noconfirm
   has paru && paru -Syu --noconfirm --skipreview
 }
-mirrorfix(){
+mirrorfix() {
   log "Fix mirrors"
   has cachyos-rate-mirrors && sudo cachyos-rate-mirrors
 }
-cache(){
+cache() {
   sudo rm -r /var/cache/pacman/pkg/*
   has paru && paru -Scc --noconfirm || sudo pacman -Scc --noconfirm
 }

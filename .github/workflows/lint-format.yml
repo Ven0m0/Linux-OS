@@ -17,17 +17,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-
       - name: Set up Python
         uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6
         with:
           python-version: '3.12'
-
       - name: Install core tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq fd-find ripgrep shellcheck
-
       - name: Cache tool installations
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
@@ -36,34 +33,28 @@ jobs:
             ~/.local/bin
             ~/go/bin
           key: ${{ runner.os }}-lint-tools-v2
-
       - name: Install Python tools
         run: |
           pip install --upgrade pip
           pip install black ruff yamllint
-
       - name: Install Node.js tools
         run: |
           npm install -g prettier markdownlint-cli
-
       - name: Install Go tools
         run: |
           go install mvdan.cc/sh/v3/cmd/shfmt@latest
           go install github.com/google/yamlfmt/cmd/yamlfmt@latest
           go install github.com/rhysd/actionlint/cmd/actionlint@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
-
       - name: Install Rust tools
         run: |
           cargo install --locked taplo-cli stylua shellharden || true
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
       - name: Run lint and format (fix mode)
         run: |
           chmod +x ./lint-format.sh
           export FD=fdfind
           ./lint-format.sh || true
-
       - name: Check for uncommitted changes
         id: git-check
         run: |
@@ -74,7 +65,6 @@ jobs:
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
-
       - name: Auto-commit formatting changes
         if: steps.git-check.outputs.has_changes == 'true' && github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
         run: |
@@ -83,13 +73,11 @@ jobs:
           git add -A
           git commit -m "chore: auto-format [skip ci]"
           git push
-
       - name: Run lint check (strict mode)
         run: |
           chmod +x ./lint-format.sh
           export FD=fdfind
           ./lint-format.sh -c
-
       - name: Comment on PR if formatting needed
         if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
@@ -101,4 +89,3 @@ jobs:
               repo: context.repo.repo,
               body: '❌ **Lint/Format Check Failed**\n\nPlease run `./lint-format.sh` locally to fix formatting issues.'
             })
-

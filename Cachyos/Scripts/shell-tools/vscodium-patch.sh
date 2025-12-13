@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
-export LC_ALL=C; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+export LC_ALL=C
+IFS=$'\n\t'
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
-warn(){ printf '%b\n' "${Y}⚠${D} $*">&2; }
-has(){ command -v -- "$1" &>/dev/null; }
-ok(){ printf '%b\n' "${G}✓${D} $*"; }
-vscode_json_set(){
+warn() { printf '%b\n' "${Y}⚠${D} $*" >&2; }
+has() { command -v -- "$1" &> /dev/null; }
+ok() { printf '%b\n' "${G}✓${D} $*"; }
+vscode_json_set() {
   local prop=$1 val=$2
   has python3 || {
     warn "No python3: $prop"
     return 1
   }
-  python3 <<EOF
+  python3 << EOF
 from pathlib import Path
 import os,json,sys
 property_name='$prop'
@@ -39,11 +41,11 @@ EOF
 JQ=
 has jaq && JQ=jaq || JQ=jq
 has "$JQ" || {
-  printf '%b\n' "${R}✗${D} Need jq/jaq">&2
+  printf '%b\n' "${R}✗${D} Need jq/jaq" >&2
   exit 1
 }
 KEYS_PROD=(nameShort nameLong applicationName dataFolderName serverDataFolderName darwinBundleIdentifier linuxIconName licenseUrl extensionAllowedProposedApi extensionEnabledApiProposals extensionKind extensionPointExtensionKind extensionSyncedKeys extensionVirtualWorkspacesSupport extensionsGallery extensionTips extensionImportantTips exeBasedExtensionTips configBasedExtensionTips keymapExtensionTips languageExtensionTips remoteExtensionTips webExtensionTips virtualWorkspaceExtensionTips trustedExtensionAuthAccess trustedExtensionUrlPublicKeys auth configurationSync "configurationSync.store" editSessions "editSessions.store" settingsSync aiConfig commandPaletteSuggestedCommandIds extensionRecommendations extensionKeywords extensionAllowedBadgeProviders extensionAllowedBadgeProvidersRegex linkProtectionTrustedDomains msftInternalDomains documentationUrl introductoryVideosUrl tipsAndTricksUrl newsletterSignupUrl releaseNotesUrl keyboardShortcutsUrlMac keyboardShortcutsUrlLinux keyboardShortcutsUrlWin quality settingsSearchUrl tasConfig tunnelApplicationName tunnelApplicationConfig serverApplicationName serverGreeting urlProtocol webUrl webEndpointUrl webEndpointUrlTemplate webviewContentExternalBaseUrlTemplate builtInExtensions extensionAllowedExtensionKinds crash aiRelatedInformationUrl defaultChatAgent)
-dl(){
+dl() {
   local u=$1 o=$2
   mkdir -p "${o%/*}"
   if has aria2c; then
@@ -53,13 +55,13 @@ dl(){
   elif has wget; then
     wget -qO "$o" "$u"
   else
-    printf '%b\n' "${R}✗${D} Need aria2c/curl/wget">&2
+    printf '%b\n' "${R}✗${D} Need aria2c/curl/wget" >&2
     exit 1
   fi
 }
-xdg_patch(){
+xdg_patch() {
   local -a files=()
-  mapfile -t files < <(find /usr/{lib/code*,share/applications} /opt/{visual-studio-code*,vscodium*} -type f \( -name "package.json" -o -name "*.desktop" \) ! -name "*-url-handler.desktop" 2>/dev/null || :)
+  mapfile -t files < <(find /usr/{lib/code*,share/applications} /opt/{visual-studio-code*,vscodium*} -type f \( -name "package.json" -o -name "*.desktop" \) ! -name "*-url-handler.desktop" 2> /dev/null || :)
   ((${#files[@]})) || {
     warn "No XDG files found"
     return 0
@@ -83,37 +85,37 @@ xdg_patch(){
     esac
   done
 }
-json_op(){
+json_op() {
   local op=$1 prod=$2 patch=$3 cache=$4 tmp="${prod}.tmp.$$"
   [[ -f $prod ]] || {
     warn "$prod missing"
     return 1
   }
   [[ -f $patch ]] || {
-    printf '%b\n' "${R}✗${D} Patch missing: $patch">&2
+    printf '%b\n' "${R}✗${D} Patch missing: $patch" >&2
     exit 1
   }
   case $op in
     apply)
-      [[ -f $cache ]] || printf '{}'>"$cache"
-      "$JQ" -s '.[0] as $b|.[1] as $p|($b|to_entries|map(select(.key as $k|$p|has($k)))|from_entries) as $c|($b+$p)|{p:.,c:$c}' "$prod" "$patch">"$tmp" || return 1
-      "$JQ" -r .p "$tmp">"$prod" && "$JQ" -r .c "$tmp">"$cache" && rm -f "$tmp" && ok "Applied → $prod"
+      [[ -f $cache ]] || printf '{}' > "$cache"
+      "$JQ" -s '.[0] as $b|.[1] as $p|($b|to_entries|map(select(.key as $k|$p|has($k)))|from_entries) as $c|($b+$p)|{p:.,c:$c}' "$prod" "$patch" > "$tmp" || return 1
+      "$JQ" -r .p "$tmp" > "$prod" && "$JQ" -r .c "$tmp" > "$cache" && rm -f "$tmp" && ok "Applied → $prod"
       ;;
     restore)
       [[ -f $cache ]] || {
-        printf '%b\n' "${R}✗${D} Cache missing: $cache">&2
+        printf '%b\n' "${R}✗${D} Cache missing: $cache" >&2
         exit 1
       }
-      "$JQ" -s '.[0] as $b|.[1] as $p|.[2] as $c|($b|to_entries|map(select(.key as $k|($p|has($k))|not))|from_entries)+$c' "$prod" "$patch" "$cache">"$tmp" || return 1
+      "$JQ" -s '.[0] as $b|.[1] as $p|.[2] as $c|($b|to_entries|map(select(.key as $k|($p|has($k))|not))|from_entries)+$c' "$prod" "$patch" "$cache" > "$tmp" || return 1
       mv "$tmp" "$prod" && ok "Restored → $prod"
       ;;
   esac
 }
-update_json(){
+update_json() {
   local v=$1 out=$2
   local -n kref="$3"
   [[ $v ]] || {
-    printf '%b\n' "${R}✗${D} Version required">&2
+    printf '%b\n' "${R}✗${D} Version required" >&2
     exit 1
   }
   local work="/tmp/code-up.$$" u="https://update.code.visualstudio.com/${v}/linux-x64/stable"
@@ -122,20 +124,20 @@ update_json(){
     rm -rf "$work"
     return 1
   }
-  tar xf "$work/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2>/dev/null
-  "$JQ" -r --argjson k "$(printf '%s\n' "${kref[@]}" | "$JQ" -R . | "$JQ" -s .)" 'reduce $k[] as $x ({}; . + {($x): (getpath($x|split("."))?)}) | . + {enableTelemetry:false}' "$work/product.json">"$out"
+  tar xf "$work/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2> /dev/null
+  "$JQ" -r --argjson k "$(printf '%s\n' "${kref[@]}" | "$JQ" -R . | "$JQ" -s .)" 'reduce $k[] as $x ({}; . + {($x): (getpath($x|split("."))?)}) | . + {enableTelemetry:false}' "$work/product.json" > "$out"
   rm -rf "$work"
   ok "Updated → $out"
-  [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD &>/dev/null || :
+  [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD &> /dev/null || :
 }
-sign_fix(){
+sign_fix() {
   local f="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js" old=${1:-@vscode/vsce-sign} new=${2:-node-ovsx-sign}
   [[ -f $f ]] && sed -i "s|import(\"${old}\")|import(\"${new}\")|g" "$f" && ok "Sign fix: $new"
 }
-repo_swap(){
+repo_swap() {
   local f=${1:-/usr/share/vscodium/resources/app/product.json} mode=${2:-0}
   [[ -f $f ]] || {
-    printf '%b\n' "${R}✗${D} No product.json: $f">&2
+    printf '%b\n' "${R}✗${D} No product.json: $f" >&2
     exit 1
   }
   if ((mode)); then
@@ -146,17 +148,17 @@ repo_swap(){
     ok "Repo → MS Marketplace"
   fi
 }
-vscodium_prod_full(){
+vscodium_prod_full() {
   local dst=${1:-/usr/share/vscodium/resources/app/product.json}
   [[ -f $dst ]] || {
-    printf '%b\n' "${R}✗${D} Missing: $dst">&2
+    printf '%b\n' "${R}✗${D} Missing: $dst" >&2
     exit 1
   }
   local v work="/tmp/vp.$$" src bak
   src="${work}/product.json"
   bak="${dst}.backup.$(date +%s)"
   v=$("$JQ" -r '.version//empty' "$dst") || {
-    printf '%b\n' "${R}✗${D} No version in $dst">&2
+    printf '%b\n' "${R}✗${D} No version in $dst" >&2
     exit 1
   }
   cp "$dst" "$bak"
@@ -164,26 +166,26 @@ vscodium_prod_full(){
     rm -rf "$work"
     return 1
   }
-  tar xf "${work}/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2>/dev/null
-  "$JQ" -s --argjson k "$(printf '%s\n' "${KEYS_PROD[@]}" | "$JQ" -R . | "$JQ" -s .)" '.[0] as $d|.[1] as $s|$d+($s|with_entries(select(.key as $x|$k|index($x))))|.+{enableTelemetry:false,dataFolderName:".local/share/codium"}' "$dst" "$src">"${dst}.tmp" && mv "${dst}.tmp" "$dst"
+  tar xf "${work}/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2> /dev/null
+  "$JQ" -s --argjson k "$(printf '%s\n' "${KEYS_PROD[@]}" | "$JQ" -R . | "$JQ" -s .)" '.[0] as $d|.[1] as $s|$d+($s|with_entries(select(.key as $x|$k|index($x))))|.+{enableTelemetry:false,dataFolderName:".local/share/codium"}' "$dst" "$src" > "${dst}.tmp" && mv "${dst}.tmp" "$dst"
   rm -rf "$work"
   ok "VSCodium Full Patch (backup: $bak)"
 }
-vscodium_restore(){
+vscodium_restore() {
   local d=${1:-/usr/share/vscodium/resources/app/product.json} -a blist=() b
-  mapfile -t blist < <(find "${d%/*}" -maxdepth 1 -name "${d##*/}.backup.*" -printf "%T@ %p\n" 2>/dev/null | sort -rn | head -1)
+  mapfile -t blist < <(find "${d%/*}" -maxdepth 1 -name "${d##*/}.backup.*" -printf "%T@ %p\n" 2> /dev/null | sort -rn | head -1)
   ((${#blist[@]})) || {
-    printf '%b\n' "${R}✗${D} No backup found for $d">&2
+    printf '%b\n' "${R}✗${D} No backup found for $d" >&2
     exit 1
   }
   b=${blist[0]#* }
   cp -f "$b" "$d" && ok "Restored ← $b"
 }
-configure_privacy(){
+configure_privacy() {
   printf '%bConfiguring VSCode/VSCodium privacy settings...%b\n' "$Y" "$D"
   local changed=0 settings=('telemetry.telemetryLevel;"off"' 'telemetry.enableTelemetry;false' 'telemetry.enableCrashReporter;false' 'workbench.enableExperiments;false' 'update.mode;"none"' 'update.channel;"none"' 'update.showReleaseNotes;false' 'npm.fetchOnlinePackageInfo;false' 'git.autofetch;false' 'workbench.settings.enableNaturalLanguageSearch;false' 'typescript.disableAutomaticTypeAcquisition;true' 'workbench.experimental.editSessions.enabled;false' 'workbench.experimental.editSessions.autoStore;false' 'workbench.editSessions.autoResume;false' 'workbench.editSessions.continueOn;false' 'extensions.autoUpdate;false' 'extensions.autoCheckUpdates;false' 'extensions.showRecommendationsOnlyOnDemand;true')
   for setting in "${settings[@]}"; do
-    IFS=';' read -r prop val <<<"$setting"
+    IFS=';' read -r prop val <<< "$setting"
     vscode_json_set "$prop" "$val" && {
       printf '  %b %s\n' "${G}✓${D}" "$prop"
       ((changed++))
@@ -191,7 +193,7 @@ configure_privacy(){
   done
   ok "Privacy: $changed settings changed"
 }
-main(){
+main() {
   local CP="/usr/lib/code/product.json" CD="/usr/share"
   case ${1:-} in
     xdg) xdg_patch ;;

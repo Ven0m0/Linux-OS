@@ -120,12 +120,12 @@ adb shell am start -a "com.android.webview.SHOW_DEV_UI"
 
 `CacheSharingForPervasiveScripts` -> `Disabled`
 
-## for devices without google play services:
+## for devices without google play services
 
 `WebViewUseMetricsUploadService` -> `Disabled`
 
 `WebViewUseMetricsUploadServiceOnlySdkRuntime` -> `Disabled`
 
-## for devices with hdr support:
+## for devices with hdr support
 
 `AndroidHDR` -> `Enabled`

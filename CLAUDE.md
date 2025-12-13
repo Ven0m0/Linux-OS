@@ -443,13 +443,13 @@ Kernel building automation for Raspberry Pi with optimized flags.
 
 ## References
 
-- **Bash Manual:** https://www.gnu.org/software/bash/manual/
-- **Google Shell Style:** https://google.github.io/styleguide/shellguide.html
-- **ShellCheck:** https://www.shellcheck.net/wiki/
-- **Pure Bash Bible:** https://github.com/dylanaraps/pure-bash-bible
-- **EditorConfig:** https://editorconfig.org/
-- **CachyOS:** https://cachyos.org/
-- **Arch Wiki:** https://wiki.archlinux.org/
+- **Bash Manual:** <https://www.gnu.org/software/bash/manual/>
+- **Google Shell Style:** <https://google.github.io/styleguide/shellguide.html>
+- **ShellCheck:** <https://www.shellcheck.net/wiki/>
+- **Pure Bash Bible:** <https://github.com/dylanaraps/pure-bash-bible>
+- **EditorConfig:** <https://editorconfig.org/>
+- **CachyOS:** <https://cachyos.org/>
+- **Arch Wiki:** <https://wiki.archlinux.org/>
 
 ## Token-Efficient Notation
 

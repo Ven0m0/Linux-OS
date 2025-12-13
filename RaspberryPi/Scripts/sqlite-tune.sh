@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 # Usage: sqlite-tune db.sqlite [aggressive|safe|readonly]
 # ============ Inlined from lib/common.sh ============
-has(){ command -v -- "$1" &>/dev/null; }
-die(){
-  echo "ERROR: $*">&2
+has() { command -v -- "$1" &> /dev/null; }
+die() {
+  echo "ERROR: $*" >&2
   exit 1
 }
 # ============ End of inlined lib/common.sh ============
 db=${1:?db path}
 mode=${2:-safe}
-run(){ sqlite3 "$db" "$1"; }
+run() { sqlite3 "$db" "$1"; }
 case $mode in
   safe)
     run 'PRAGMA foreign_keys=ON;'

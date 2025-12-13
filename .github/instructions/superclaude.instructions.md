@@ -22,11 +22,13 @@ category: workflow
 **Flow:** Analyze → Plan → Generate → Validate → Integrate
 
 **Usage:**
+
 ```
 /sc:implement <desc> [--type component|api|service|feature] [--framework react|vue|express] [--safe] [--with-tests]
 ```
 
 **Behavior:**
+
 - Context detection → persona activation (frontend/backend/security/qa)
 - Framework patterns via Context7 MCP
 - UI generation via Magic MCP
@@ -34,6 +36,7 @@ category: workflow
 - Test integration via Playwright MCP
 
 **Examples:**
+
 ```bash
 /sc:implement user profile component --type component --framework react
 /sc:implement user auth API --type api --safe --with-tests
@@ -49,17 +52,20 @@ category: workflow
 **Flow:** Analyze → Plan → Execute → Validate → Document
 
 **Usage:**
+
 ```
 /sc:improve <target> [--type quality|performance|maintainability|style] [--safe] [--interactive]
 ```
 
 **Behavior:**
+
 - Multi-persona (architect, performance, quality, security)
 - Sequential MCP for complex analysis
 - Context7 MCP for framework optimization
 - Safe refactoring with rollback
 
 **Examples:**
+
 ```bash
 /sc:improve src/ --type quality --safe
 /sc:improve api-endpoints --type performance --interactive
@@ -76,11 +82,13 @@ category: workflow
 **Flow:** Scan → Analyze → Clean → Validate → Report
 
 **Usage:**
+
 ```
 /sc:cleanup <scope> [--type unused|duplicates|format|all] [--safe] [--preview]
 ```
 
 **Behavior:**
+
 - Dead code elimination
 - Duplicate detection & consolidation
 - Format standardization
@@ -88,6 +96,7 @@ category: workflow
 - Safe removal with validation
 
 **Examples:**
+
 ```bash
 /sc:cleanup src/ --type unused --safe
 /sc:cleanup . --type duplicates --preview
@@ -103,17 +112,20 @@ category: workflow
 **Flow:** Detect → Execute → Validate
 
 **Usage:**
+
 ```
 /sc:git <action> [options]
 ```
 
 **Actions:**
+
 - `commit` - Smart commits with conventional messages
 - `branch` - Branch management and cleanup
 - `pr` - Pull request creation
 - `sync` - Sync with remote
 
 **Examples:**
+
 ```bash
 /sc:git commit --type feat --scope auth
 /sc:git branch --cleanup --merged
@@ -125,18 +137,21 @@ category: workflow
 ## Global Patterns
 
 **Tool Coordination:**
+
 - Read/Grep/Glob → analysis
 - Write/Edit/MultiEdit → modification
 - TodoWrite → tracking
 - Task → delegation
 
 **MCP Integration:**
+
 - Context7 → framework docs/patterns
 - Sequential → multi-step workflows
 - Magic → UI generation
 - Playwright → testing
 
 **Persona Activation:**
+
 - architect → system design, structure
 - frontend → UI/UX, client-side
 - backend → APIs, data, server-side

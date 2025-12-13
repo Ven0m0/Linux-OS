@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 
 adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS
@@ -17,7 +18,7 @@ if [[ ! -f $DEX ]]; then
 fi
 
 # Create a Shizuku script file with optimized port detection
-tee "${BIN}/shizuku">/dev/null <<'EOF'
+tee "${BIN}/shizuku" > /dev/null << 'EOF'
 #!/data/data/com.termux/files/usr/bin/bash
 
 # Common wireless debugging ports (try these first for speed)
@@ -76,7 +77,7 @@ EOF
 dex="${HOME}/rish_shizuku.dex"
 
 # Create a Rish script file
-tee "${BIN}/rish">/dev/null <<EOF
+tee "${BIN}/rish" > /dev/null << EOF
 #!/data/data/com.termux/files/usr/bin/bash
 
 [[ -z "\$RISH_APPLICATION_ID" ]] && export RISH_APPLICATION_ID="com.termux"

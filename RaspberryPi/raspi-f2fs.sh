@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C
@@ -7,23 +7,24 @@ IFS=$'\n\t'
 s=${BASH_SOURCE[0]}
 [[ $s != /* ]] && s=$PWD/$s
 cd -P -- "${s%/*}"
-fdate() {
-  local fmt="${1:-%T}"
-  printf "%($fmt)T" '-1'
-}
+fdate() { printf '%(%T)T' '-1'; }
 fcat() { printf '%s\n' "$(< "${1}")"; }
 declare -A cfg=([boot_size]="512M" [ssh]=1 [dry_run]=0 [keep_source]=0 [no_usb_check]=0 [no_size_check]=0 [shrink]=0)
 declare -r DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
 declare -r RED GRN YLW BLU DEF BLD
-declare -g SRC_PATH="" TGT_PATH="" SRC_IMG="" WORKDIR="" LOOP_DEV="" TGT_DEV="" BOOT_PART="" ROOT_PART="" LOCK_FD=-1 LOCK_FILE="" -ga MOUNTED_DIRS=()
-has() { command -v "$1" &> /dev/null; }
+declare -g SRC_PATH="" TGT_PATH="" SRC_IMG="" WORKDIR="" LOOP_DEV="" TGT_DEV="" BOOT_PART="" ROOT_PART="" LOCK_FD=-1 LOCK_FILE=""
+declare -ga MOUNTED_DIRS=()
 xecho() { printf '%b\n' "$*"; }
 log() { xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
 msg() { xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
 warn() { xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
 err() { xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*" || :; }
+dbg() {
+  if [[ ${DEBUG:-0} -eq 1 ]]; then
+    xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*"
+  fi
+}
 get_drive_trans() {
   local dev="${1:?}"
   lsblk -dno TRAN "$dev" 2>&1 || echo "unknown"
@@ -54,11 +55,11 @@ assert_size() {
   }
 }
 select_target_interactive() {
-  has fzf || {
+  if ! command -v -- fzf &> /dev/null; then
     err "fzf required for interactive selection."
     cleanup
     exit 1
-  }
+  fi
   log "Scanning for removable drives..."
   local selection
   selection=$(lsblk -p -d -n -o NAME,MODEL,VENDOR,SIZE,TRAN,TYPE,HOTPLUG | awk -v skip="${cfg[no_usb_check]}" 'tolower($0)~/disk/ && (skip=="1" || tolower($0)~/usb|mmc/)' | fzf --header="TARGET SELECTION (Safety: USB/MMC Only)" --prompt="Select Drive> " --with-nth=1,2,3,4)
@@ -72,7 +73,11 @@ select_target_interactive() {
 check_deps() {
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid partprobe lsblk flock awk curl) missing=() cmd
   ((cfg[shrink])) && deps+=(e2fsck resize2fs tune2fs truncate)
-  for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
+  for cmd in "${deps[@]}"; do
+    if ! command -v -- "$cmd" &> /dev/null; then
+      missing+=("$cmd")
+    fi
+  done
   ((${#missing[@]} > 0)) && {
     err "Missing dependencies: ${missing[*]}"
     cleanup
@@ -94,13 +99,13 @@ cleanup() {
 }
 derive_partition_paths() {
   local dev="${1:?}"
-  [[ $dev =~ (nvme|mmcblk|loop) ]] && {
+  if [[ $dev =~ (nvme|mmcblk|loop) ]]; then
     BOOT_PART="${dev}p1"
     ROOT_PART="${dev}p2"
-  } || {
+  else
     BOOT_PART="${dev}1"
     ROOT_PART="${dev}2"
-  }
+  fi
 }
 wait_for_partitions() {
   local dev=${1:?}
@@ -173,7 +178,11 @@ shrink_source_image() {
   }
   partnum=$(awk -F: 'END{print $1}' <<< "$parted_out")
   partstart=$(awk -F: 'END{print $2}' <<< "$parted_out" | tr -d B)
-  [[ -z $(parted -s "$SRC_IMG" unit B print | grep "$partstart" | grep logical) ]] && parttype="primary" || parttype="logical"
+  if parted -s "$SRC_IMG" unit B print | grep -q "$partstart" | grep -q logical; then
+    parttype="logical"
+  else
+    parttype="primary"
+  fi
   LOOP_DEV=$(losetup -f --show -o "$partstart" "$SRC_IMG") || {
     err "Failed to setup loop device (skipping shrink)"
     return

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
 [[ $- != *i* ]] && return
 # --- Keybindings ---
 # These work universally as they are mksh/terminal features

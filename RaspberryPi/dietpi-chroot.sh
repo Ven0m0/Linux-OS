@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C
@@ -25,15 +25,13 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 declare -g IMG_FILE="" LOOP_DEV="" ROOT_PART="" BOOT_PART="" SHRINK=0
 declare -ga MOUNTED_POINTS=()
 # Helpers
-has() { command -v "$1" &> /dev/null; }
 fdate() {
-  local x="${1:-%T}"
-  printf "%($x)T\n" '-1'
+  printf '%(%T)T\n' '-1'
 }
-log() { printf '[%s] %b%s%b\n' "$(fdate)" "${BLU}${BLD}[*]${DEF} " "$*"; }
-msg() { printf '[%s] %b%s%b\n' "$(fdate)" "${GRN}${BLD}[+]${DEF} " "$*"; }
-warn() { printf '[%s] %b%s%b\n' "$(fdate)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
-err() { printf '[%s] %b%s%b\n' "$(fdate)" "${RED}${BLD}[-]${DEF} " "$*" >&2; }
+log() { printf '[%s] %b%s\n' "$(fdate)" "${BLU}${BLD}[*]${DEF} " "$*"; }
+msg() { printf '[%s] %b%s\n' "$(fdate)" "${GRN}${BLD}[+]${DEF} " "$*"; }
+warn() { printf '[%s] %b%s\n' "$(fdate)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
+err() { printf '[%s] %b%s\n' "$(fdate)" "${RED}${BLD}[-]${DEF} " "$*" >&2; }
 die() {
   err "$1"
   cleanup
@@ -43,7 +41,11 @@ check_deps() {
   local -a deps=(losetup parted mount umount qemu-aarch64-static)
   ((SHRINK)) && deps+=(e2fsck resize2fs tune2fs truncate)
   local -a missing=() cmd
-  for cmd in "${deps[@]}"; do has "$cmd" || missing+=("$cmd"); done
+  for cmd in "${deps[@]}"; do
+    if ! command -v -- "$cmd" &> /dev/null; then
+      missing+=("$cmd")
+    fi
+  done
   ((${#missing[@]} > 0)) && {
     err "Missing dependencies: ${missing[*]}"
     err "On Arch: sudo pacman -S qemu-user-static qemu-user-static-binfmt parted e2fsprogs"
@@ -104,7 +106,11 @@ shrink_image() {
   parted_out=$(parted -ms "$IMG_FILE" unit B print) || die "parted failed"
   partnum=$(awk -F: 'END{print $1}' <<< "$parted_out")
   partstart=$(awk -F: 'END{print $2}' <<< "$parted_out" | tr -d B)
-  [[ -z $(parted -s "$IMG_FILE" unit B print | grep "$partstart" | grep logical) ]] && parttype="primary" || parttype="logical"
+  if parted -s "$IMG_FILE" unit B print | grep -q "$partstart" | grep -q logical; then
+    parttype="logical"
+  else
+    parttype="primary"
+  fi
   LOOP_DEV=$(losetup -f --show -o "$partstart" "$IMG_FILE") || die "Failed to setup loop device"
   check_filesystem
   local tune_out

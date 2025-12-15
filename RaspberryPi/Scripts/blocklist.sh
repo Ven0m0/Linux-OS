@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
@@ -28,7 +28,7 @@ extract_pattern() {
   grep -E "$pattern" "$@"
 }
 extract_urls() { grep -oE '(https?|ftp)://[^[:space:]]+' "$@"; }
-extract_ips() { grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' "$@"; }
+extract_ips() { grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' "$@"; }
 count_lines() { grep -c . "$@" 2> /dev/null || echo 0; }
 normalize_whitespace() { sed -e 's/ / /g' -e 's/  */ /g'; }
 # https://github.com/hectorm/hblock/blob/master/hblock

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
 [[ $- != *i* ]] && return
 # --- Keybindings ---
 # These work universally as they are mksh/terminal features
@@ -75,7 +75,7 @@ man() {
     echo -e "What manual page do you want?\nFor example, try 'man ls'." >&2
     return 1
   }
-  "$1" --help &> /dev/null && "$1" --help 2>&1 || {
+  "$1" --help &>/dev/null && "$1" --help 2>&1 || {
     echo "No manual entry for $1" >&2
     return 16
   }

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C DEBIAN_FRONTEND=noninteractive
@@ -11,57 +11,57 @@ cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 DONT_RESTART_DOCKER_ENGINE=0
 DONT_ASK_CONFIRMATION=0
 
-has() { command -v -- "$1" &> /dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 
-load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :; }
+load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 run_dietpi_cleanup() {
   if [[ -f /boot/dietpi/func/dietpi-logclear ]]; then
     if ! sudo dietpi-update 1 && ! sudo /boot/dietpi/dietpi-update 1; then
       printf '%s\n' "dietpi-update failed (both standard and fallback commands)." >&2
     fi
-    sudo /boot/dietpi/func/dietpi-logclear 2 2> /dev/null || G_SUDO dietpi-logclear 2 2> /dev/null || :
-    sudo /boot/dietpi/func/dietpi-cleaner 2 2> /dev/null || G_SUDO dietpi-cleaner 2 2> /dev/null || :
+    sudo /boot/dietpi/func/dietpi-logclear 2 2>/dev/null || G_SUDO dietpi-logclear 2 2>/dev/null || :
+    sudo /boot/dietpi/func/dietpi-cleaner 2 2>/dev/null || G_SUDO dietpi-cleaner 2 2>/dev/null || :
   fi
 }
 
 clean_apt_cache() {
-  sudo apt-get clean -y 2> /dev/null || :
-  sudo apt-get autoclean -y 2> /dev/null || :
-  sudo apt-get autoremove --purge -y 2> /dev/null || :
+  sudo apt-get clean -y 2>/dev/null || :
+  sudo apt-get autoclean -y 2>/dev/null || :
+  sudo apt-get autoremove --purge -y 2>/dev/null || :
 }
 
 clean_cache_dirs() {
-  sudo rm -rf /tmp/* /var/tmp/* /var/cache/apt/archives/* 2> /dev/null || :
-  rm -rf ~/.cache/* ~/.thumbnails/* ~/.cache/thumbnails/* 2> /dev/null || :
-  sudo rm -rf /root/.cache/* 2> /dev/null || :
+  sudo rm -rf /tmp/* /var/tmp/* /var/cache/apt/archives/* 2>/dev/null || :
+  rm -rf ~/.cache/* ~/.thumbnails/* ~/.cache/thumbnails/* 2>/dev/null || :
+  sudo rm -rf /root/.cache/* 2>/dev/null || :
 }
 
 clean_trash() {
-  rm -rf ~/.local/share/Trash/* 2> /dev/null || :
-  sudo rm -rf /root/.local/share/Trash/* 2> /dev/null || :
-  rm -rf ~/snap/*/*/.local/share/Trash/* 2> /dev/null || :
-  rm -rf ~/.var/app/*/data/Trash/* 2> /dev/null || :
+  rm -rf ~/.local/share/Trash/* 2>/dev/null || :
+  sudo rm -rf /root/.local/share/Trash/* 2>/dev/null || :
+  rm -rf ~/snap/*/*/.local/share/Trash/* 2>/dev/null || :
+  rm -rf ~/.var/app/*/data/Trash/* 2>/dev/null || :
 }
 
 clean_crash_dumps() {
-  has coredumpctl && sudo coredumpctl --quiet --no-legend clean 2> /dev/null || :
-  sudo rm -rf /var/crash/* /var/lib/systemd/coredump/* 2> /dev/null || :
+  has coredumpctl && sudo coredumpctl --quiet --no-legend clean 2>/dev/null || :
+  sudo rm -rf /var/crash/* /var/lib/systemd/coredump/* 2>/dev/null || :
 }
 
 clean_history_files() {
-  rm -f ~/.python_history ~/.bash_history 2> /dev/null || :
-  sudo rm -f /root/.python_history /root/.bash_history 2> /dev/null || :
-  history -c 2> /dev/null || :
+  rm -f ~/.python_history ~/.bash_history 2>/dev/null || :
+  sudo rm -f /root/.python_history /root/.bash_history 2>/dev/null || :
+  history -c 2>/dev/null || :
 }
 
 clean_journal_logs() {
-  sudo journalctl --rotate --vacuum-size=1 --flush --sync -q 2> /dev/null || :
-  sudo rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2> /dev/null || :
-  sudo systemd-tmpfiles --clean 2> /dev/null || :
+  sudo journalctl --rotate --vacuum-size=1 --flush --sync -q 2>/dev/null || :
+  sudo rm -rf --preserve-root -- /run/log/journal/* /var/log/journal/* 2>/dev/null || :
+  sudo systemd-tmpfiles --clean 2>/dev/null || :
 }
 
 ask_user_for_confirmation() {
-  cat << 'EOF'
+  cat <<'EOF'
 ==============================================
 This script reclaims disk space by removing stale and unused Docker data:
  > removes stopped containers
@@ -131,14 +131,14 @@ main() {
   printf '%s\n' "Cleaning apt cache"
   sudo rm -rf /var/lib/apt/lists/*
   clean_apt_cache
-  sudo apt-get purge '?config-files' 2> /dev/null || :
+  sudo apt-get purge '?config-files' 2>/dev/null || :
   printf '%s\n' "Cleaning leftover config files"
-  has dpkg && dpkg -l | awk '/^rc/ {print $2}' | xargs -r sudo apt-get purge -y 2> /dev/null || :
+  has dpkg && dpkg -l | awk '/^rc/ {print $2}' | xargs -r sudo apt-get purge -y 2>/dev/null || :
   printf '%s\n' "orphan removal"
-  has deborphan && sudo deborphan | xargs -r sudo apt-get -y remove --purge --auto-remove 2> /dev/null || :
+  has deborphan && sudo deborphan | xargs -r sudo apt-get -y remove --purge --auto-remove 2>/dev/null || :
   if has uv; then
-    uv cache prune -q 2> /dev/null || :
-    uv cache clean -q 2> /dev/null || :
+    uv cache prune -q 2>/dev/null || :
+    uv cache clean -q 2>/dev/null || :
   fi
   printf '%s\n' "Removing common cache directories and trash"
   clean_cache_dirs
@@ -156,7 +156,7 @@ main() {
   sudo find /var/crash/ -name "core.*" -type f -mtime +3 -delete
   sudo find /var/cache/apt/ -name "*.bin" -type f -mtime +3 -delete
   sync
-  printf '3' | sudo tee /proc/sys/vm/drop_caches &> /dev/null
+  printf '3' | sudo tee /proc/sys/vm/drop_caches &>/dev/null
   printf '%s\n' "Clearing DietPi..."
   load_dietpi_globals
   run_dietpi_cleanup

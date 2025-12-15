@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C
 IFS=$'\n\t'
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' D=$'\e[0m'
 warn() { printf '%b\n' "${Y}⚠${D} $*" >&2; }
-has() { command -v -- "$1" &> /dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 ok() { printf '%b\n' "${G}✓${D} $*"; }
 vscode_json_set() {
   local prop=$1 val=$2
@@ -14,7 +14,7 @@ vscode_json_set() {
     warn "No python3: $prop"
     return 1
   }
-  python3 << EOF
+  python3 <<EOF
 from pathlib import Path
 import os,json,sys
 property_name='$prop'
@@ -61,7 +61,7 @@ dl() {
 }
 xdg_patch() {
   local -a files=()
-  mapfile -t files < <(find /usr/{lib/code*,share/applications} /opt/{visual-studio-code*,vscodium*} -type f \( -name "package.json" -o -name "*.desktop" \) ! -name "*-url-handler.desktop" 2> /dev/null || :)
+  mapfile -t files < <(find /usr/{lib/code*,share/applications} /opt/{visual-studio-code*,vscodium*} -type f \( -name "package.json" -o -name "*.desktop" \) ! -name "*-url-handler.desktop" 2>/dev/null || :)
   ((${#files[@]})) || {
     warn "No XDG files found"
     return 0
@@ -97,16 +97,16 @@ json_op() {
   }
   case $op in
     apply)
-      [[ -f $cache ]] || printf '{}' > "$cache"
-      "$JQ" -s '.[0] as $b|.[1] as $p|($b|to_entries|map(select(.key as $k|$p|has($k)))|from_entries) as $c|($b+$p)|{p:.,c:$c}' "$prod" "$patch" > "$tmp" || return 1
-      "$JQ" -r .p "$tmp" > "$prod" && "$JQ" -r .c "$tmp" > "$cache" && rm -f "$tmp" && ok "Applied → $prod"
+      [[ -f $cache ]] || printf '{}' >"$cache"
+      "$JQ" -s '.[0] as $b|.[1] as $p|($b|to_entries|map(select(.key as $k|$p|has($k)))|from_entries) as $c|($b+$p)|{p:.,c:$c}' "$prod" "$patch" >"$tmp" || return 1
+      "$JQ" -r .p "$tmp" >"$prod" && "$JQ" -r .c "$tmp" >"$cache" && rm -f "$tmp" && ok "Applied → $prod"
       ;;
     restore)
       [[ -f $cache ]] || {
         printf '%b\n' "${R}✗${D} Cache missing: $cache" >&2
         exit 1
       }
-      "$JQ" -s '.[0] as $b|.[1] as $p|.[2] as $c|($b|to_entries|map(select(.key as $k|($p|has($k))|not))|from_entries)+$c' "$prod" "$patch" "$cache" > "$tmp" || return 1
+      "$JQ" -s '.[0] as $b|.[1] as $p|.[2] as $c|($b|to_entries|map(select(.key as $k|($p|has($k))|not))|from_entries)+$c' "$prod" "$patch" "$cache" >"$tmp" || return 1
       mv "$tmp" "$prod" && ok "Restored → $prod"
       ;;
   esac
@@ -124,11 +124,11 @@ update_json() {
     rm -rf "$work"
     return 1
   }
-  tar xf "$work/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2> /dev/null
-  "$JQ" -r --argjson k "$(printf '%s\n' "${kref[@]}" | "$JQ" -R . | "$JQ" -s .)" 'reduce $k[] as $x ({}; . + {($x): (getpath($x|split("."))?)}) | . + {enableTelemetry:false}' "$work/product.json" > "$out"
+  tar xf "$work/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2>/dev/null
+  "$JQ" -r --argjson k "$(printf '%s\n' "${kref[@]}" | "$JQ" -R . | "$JQ" -s .)" 'reduce $k[] as $x ({}; . + {($x): (getpath($x|split("."))?)}) | . + {enableTelemetry:false}' "$work/product.json" >"$out"
   rm -rf "$work"
   ok "Updated → $out"
-  [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD &> /dev/null || :
+  [[ -f ./PKGBUILD ]] && has updpkgsums && updpkgsums ./PKGBUILD &>/dev/null || :
 }
 sign_fix() {
   local f="/usr/lib/code/out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js" old=${1:-@vscode/vsce-sign} new=${2:-node-ovsx-sign}
@@ -166,14 +166,14 @@ vscodium_prod_full() {
     rm -rf "$work"
     return 1
   }
-  tar xf "${work}/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2> /dev/null
-  "$JQ" -s --argjson k "$(printf '%s\n' "${KEYS_PROD[@]}" | "$JQ" -R . | "$JQ" -s .)" '.[0] as $d|.[1] as $s|$d+($s|with_entries(select(.key as $x|$k|index($x))))|.+{enableTelemetry:false,dataFolderName:".local/share/codium"}' "$dst" "$src" > "${dst}.tmp" && mv "${dst}.tmp" "$dst"
+  tar xf "${work}/c.tgz" -C "$work" --strip-components=3 VSCode-linux-x64/resources/app/product.json 2>/dev/null
+  "$JQ" -s --argjson k "$(printf '%s\n' "${KEYS_PROD[@]}" | "$JQ" -R . | "$JQ" -s .)" '.[0] as $d|.[1] as $s|$d+($s|with_entries(select(.key as $x|$k|index($x))))|.+{enableTelemetry:false,dataFolderName:".local/share/codium"}' "$dst" "$src" >"${dst}.tmp" && mv "${dst}.tmp" "$dst"
   rm -rf "$work"
   ok "VSCodium Full Patch (backup: $bak)"
 }
 vscodium_restore() {
   local d=${1:-/usr/share/vscodium/resources/app/product.json} -a blist=() b
-  mapfile -t blist < <(find "${d%/*}" -maxdepth 1 -name "${d##*/}.backup.*" -printf "%T@ %p\n" 2> /dev/null | sort -rn | head -1)
+  mapfile -t blist < <(find "${d%/*}" -maxdepth 1 -name "${d##*/}.backup.*" -printf "%T@ %p\n" 2>/dev/null | sort -rn | head -1)
   ((${#blist[@]})) || {
     printf '%b\n' "${R}✗${D} No backup found for $d" >&2
     exit 1
@@ -185,7 +185,7 @@ configure_privacy() {
   printf '%bConfiguring VSCode/VSCodium privacy settings...%b\n' "$Y" "$D"
   local changed=0 settings=('telemetry.telemetryLevel;"off"' 'telemetry.enableTelemetry;false' 'telemetry.enableCrashReporter;false' 'workbench.enableExperiments;false' 'update.mode;"none"' 'update.channel;"none"' 'update.showReleaseNotes;false' 'npm.fetchOnlinePackageInfo;false' 'git.autofetch;false' 'workbench.settings.enableNaturalLanguageSearch;false' 'typescript.disableAutomaticTypeAcquisition;true' 'workbench.experimental.editSessions.enabled;false' 'workbench.experimental.editSessions.autoStore;false' 'workbench.editSessions.autoResume;false' 'workbench.editSessions.continueOn;false' 'extensions.autoUpdate;false' 'extensions.autoCheckUpdates;false' 'extensions.showRecommendationsOnlyOnDemand;true')
   for setting in "${settings[@]}"; do
-    IFS=';' read -r prop val <<< "$setting"
+    IFS=';' read -r prop val <<<"$setting"
     vscode_json_set "$prop" "$val" && {
       printf '  %b %s\n' "${G}✓${D}" "$prop"
       ((changed++))

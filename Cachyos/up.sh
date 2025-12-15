@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t'
 export LC_ALL=C
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
-has() { command -v "$1" &> /dev/null; }
+has() { command -v "$1" &>/dev/null; }
 xecho() { printf '%b\n' "$*"; }
 log() { xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
 warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
 err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
 dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
-cleanup_pacman_lock() { sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :; }
+cleanup_pacman_lock() { sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
 main() {
   trap cleanup_pacman_lock EXIT INT TERM
   update_system() {
     log "🔄${BLU} System Packages${DEF}"
-    sudo rm -f /var/lib/pacman/db.lck &> /dev/null || :
+    sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
     has paru && paru -Syuq --noconfirm --needed --skipreview || sudo pacman -Syuq --noconfirm --needed
   }
   update_extras() {
@@ -57,9 +57,9 @@ main() {
   update_python() {
     has uv || return 0
     log "🔄${BLU} Python Environment (uv)${DEF}"
-    mapfile -t pkgs < <(uv tool list --format=json 2> /dev/null | jq -r '.[].name')
+    mapfile -t pkgs < <(uv tool list --format=json 2>/dev/null | jq -r '.[].name')
     [[ ${#pkgs[@]} -gt 0 ]] && uv tool upgrade "${pkgs[@]}" || :
-    mapfile -t outdated < <(uv pip list --outdated --format=json 2> /dev/null | jq -r '.[].name')
+    mapfile -t outdated < <(uv pip list --outdated --format=json 2>/dev/null | jq -r '.[].name')
     [[ ${#outdated[@]} -gt 0 ]] && uv pip install -Uq --system --no-break-system-packages "${outdated[@]}" || :
   }
   update_maintenance() {
@@ -67,7 +67,7 @@ main() {
     local cmd
     # Run independent maintenance commands in parallel
     for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do has "$cmd" && sudo "$cmd" & done
-    has fwupdmgr && sudo fwupdmgr refresh &> /dev/null &
+    has fwupdmgr && sudo fwupdmgr refresh &>/dev/null &
     wait
     printf 'Syncing time...\n'
     sudo systemctl restart systemd-timesyncd || :

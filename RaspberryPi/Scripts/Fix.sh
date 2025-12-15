@@ -13,7 +13,7 @@ BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 # Core helpers
-has() { command -v -- "$1" &> /dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 xecho() { printf '%b\n' "$*"; }
 log() { xecho "${GRN}▶${DEF} $*"; }
 warn() { xecho "${YLW}⚠${DEF} $*" >&2; }
@@ -25,7 +25,7 @@ die() {
 # Find files/directories with fd/fdfind/find fallback
 find_with_fallback() {
   local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
-  shift 4 2> /dev/null || shift $#
+  shift 4 2>/dev/null || shift $#
   if has fd; then
     fd -H -t "$ftype" "$pattern" "$search_path" "${action:+"$action"}" "$@"
   elif has fdfind; then
@@ -47,7 +47,7 @@ find_with_fallback() {
 }
 
 usage() {
-  cat << 'EOF'
+  cat <<'EOF'
 Fix.sh - System fixes for Raspberry Pi
 Usage: Fix.sh [OPTIONS]
 Options:
@@ -145,7 +145,7 @@ fix_nextcloud() {
   fi
 
   log "Fixing Nextcloud /tmp permissions"
-  if sudo docker exec nextcloud ls -ld /tmp &> /dev/null; then
+  if sudo docker exec nextcloud ls -ld /tmp &>/dev/null; then
     sudo docker exec nextcloud chown -R www-data:www-data /tmp || warn "Failed to chown /tmp in nextcloud"
     sudo docker exec nextcloud chmod -R 755 /tmp || warn "Failed to chmod /tmp in nextcloud"
     log "Nextcloud permissions fixed"

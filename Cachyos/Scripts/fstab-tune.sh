@@ -6,7 +6,7 @@ export LC_ALL=C
 IFS=$'\n\t'
 
 # Check deps early
-has() { command -v -- "$1" &> /dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 for dep in yad findmnt blkid sed cp; do has "$dep" || {
   printf 'Missing: %s\n' "$dep"
   exit 1
@@ -77,7 +77,7 @@ main() {
   ymsg "Backup: $backup"
   # Δ: Remove old, append new root f2fs entry
   sed -i "\|^UUID=${uuid}[[:space:]]\+/[[:space:]]\+f2fs|d" "$fstab"
-  printf "UUID=%-36s /    f2fs    %s 0 1\n" "$uuid" "$opts" >> "$fstab"
+  printf "UUID=%-36s /    f2fs    %s 0 1\n" "$uuid" "$opts" >>"$fstab"
   yad --info --title="fstab-tune" --text="Updated /etc/fstab\nBackup: $backup" --width=400
   yad --info --title="fstab-tune" --text="Reboot or run:\n<b>mount -o remount /</b>\nto apply." --width=410
 }

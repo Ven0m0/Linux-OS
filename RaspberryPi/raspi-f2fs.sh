@@ -8,7 +8,7 @@ s=${BASH_SOURCE[0]}
 [[ $s != /* ]] && s=$PWD/$s
 cd -P -- "${s%/*}"
 fdate() { printf '%(%T)T' '-1'; }
-fcat() { printf '%s\n' "$(< "${1}")"; }
+fcat() { printf '%s\n' "$(<"${1}")"; }
 declare -A cfg=([boot_size]="512M" [ssh]=1 [dry_run]=0 [keep_source]=0 [no_usb_check]=0 [no_size_check]=0 [shrink]=0)
 declare -r DIETPI_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
@@ -55,7 +55,7 @@ assert_size() {
   }
 }
 select_target_interactive() {
-  if ! command -v -- fzf &> /dev/null; then
+  if ! command -v -- fzf &>/dev/null; then
     err "fzf required for interactive selection."
     cleanup
     exit 1
@@ -68,13 +68,13 @@ select_target_interactive() {
     cleanup
     exit 1
   }
-  awk '{print $1}' <<< "$selection"
+  awk '{print $1}' <<<"$selection"
 }
 check_deps() {
   local -a deps=(losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid partprobe lsblk flock awk curl) missing=() cmd
   ((cfg[shrink])) && deps+=(e2fsck resize2fs tune2fs truncate)
   for cmd in "${deps[@]}"; do
-    if ! command -v -- "$cmd" &> /dev/null; then
+    if ! command -v -- "$cmd" &>/dev/null; then
       missing+=("$cmd")
     fi
   done
@@ -87,8 +87,8 @@ check_deps() {
 cleanup() {
   local ret=$?
   set +e
-  for ((i = ${#MOUNTED_DIRS[@]} - 1; i >= 0; i--)); do umount -lf "${MOUNTED_DIRS[i]}" &> /dev/null; done
-  [[ -b ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" &> /dev/null
+  for ((i = ${#MOUNTED_DIRS[@]} - 1; i >= 0; i--)); do umount -lf "${MOUNTED_DIRS[i]}" &>/dev/null; done
+  [[ -b ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" &>/dev/null
   ((LOCK_FD >= 0)) && {
     exec {LOCK_FD}>&-
     LOCK_FD=-1
@@ -110,8 +110,8 @@ derive_partition_paths() {
 wait_for_partitions() {
   local dev=${1:?}
   ((cfg[dry_run])) && return 0
-  partprobe "$dev" &> /dev/null
-  udevadm settle &> /dev/null
+  partprobe "$dev" &>/dev/null
+  udevadm settle &>/dev/null
   sleep 1
   derive_partition_paths "$dev"
   local i
@@ -137,7 +137,7 @@ process_source() {
   }
   if [[ $SRC_PATH =~ ^https?:// ]]; then
     log "Downloading image from URL..."
-    [[ $SRC_PATH == *.xz ]] && curl -Lfs --progress-bar "$SRC_PATH" | xz -dc > "$SRC_IMG" || curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG" || {
+    [[ $SRC_PATH == *.xz ]] && curl -Lfs --progress-bar "$SRC_PATH" | xz -dc >"$SRC_IMG" || curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG" || {
       err "Download failed."
       cleanup
       exit 1
@@ -152,7 +152,7 @@ process_source() {
   }
   if [[ $SRC_PATH == *.xz ]]; then
     log "Decompressing xz archive..."
-    xz -dc "$SRC_PATH" > "$SRC_IMG"
+    xz -dc "$SRC_PATH" >"$SRC_IMG"
   elif ((cfg[keep_source])); then
     cp --reflink=auto "$SRC_PATH" "$SRC_IMG"
   else ln "$SRC_PATH" "$SRC_IMG" 2>&1 || cp "$SRC_PATH" "$SRC_IMG"; fi
@@ -176,8 +176,8 @@ shrink_source_image() {
     err "parted failed (non-fatal, skipping shrink)"
     return
   }
-  partnum=$(awk -F: 'END{print $1}' <<< "$parted_out")
-  partstart=$(awk -F: 'END{print $2}' <<< "$parted_out" | tr -d B)
+  partnum=$(awk -F: 'END{print $1}' <<<"$parted_out")
+  partstart=$(awk -F: 'END{print $2}' <<<"$parted_out" | tr -d B)
   if parted -s "$SRC_IMG" unit B print | grep -q "$partstart" | grep -q logical; then
     parttype="logical"
   else
@@ -191,19 +191,19 @@ shrink_source_image() {
   local tune_out
   tune_out=$(tune2fs -l "$LOOP_DEV" 2>&1) || {
     err "tune2fs failed (skipping shrink)"
-    losetup -d "$LOOP_DEV" &> /dev/null
+    losetup -d "$LOOP_DEV" &>/dev/null
     return
   }
-  currentsize=$(awk -F: '/^Block count:/{gsub(" ","",$2);print $2}' <<< "$tune_out")
-  blocksize=$(awk -F: '/^Block size:/{gsub(" ","",$2);print $2}' <<< "$tune_out")
+  currentsize=$(awk -F: '/^Block count:/{gsub(" ","",$2);print $2}' <<<"$tune_out")
+  blocksize=$(awk -F: '/^Block size:/{gsub(" ","",$2);print $2}' <<<"$tune_out")
   minsize=$(resize2fs -P "$LOOP_DEV" 2>&1 | awk -F: '{gsub(" ","",$2);print $2}') || {
     err "resize2fs -P failed (skipping shrink)"
-    losetup -d "$LOOP_DEV" &> /dev/null
+    losetup -d "$LOOP_DEV" &>/dev/null
     return
   }
   [[ $currentsize -eq $minsize ]] && {
     log "Source image already at minimum size"
-    losetup -d "$LOOP_DEV" &> /dev/null
+    losetup -d "$LOOP_DEV" &>/dev/null
     return
   }
   extra_space=$((currentsize - minsize))
@@ -214,14 +214,14 @@ shrink_source_image() {
   log "Resizing source filesystem to ${minsize} blocks..."
   resize2fs -p "$LOOP_DEV" "$minsize" || {
     err "resize2fs failed (skipping shrink)"
-    losetup -d "$LOOP_DEV" &> /dev/null
+    losetup -d "$LOOP_DEV" &>/dev/null
     return
   }
   local mnt
   mnt=$(mktemp -d)
   mount "$LOOP_DEV" "$mnt"
   log "Zeroing free space in source..."
-  cat /dev/zero > "$mnt/zero_file" 2>&1 || :
+  cat /dev/zero >"$mnt/zero_file" 2>&1 || :
   rm -f "$mnt/zero_file"
   umount "$mnt"
   rmdir "$mnt"
@@ -230,15 +230,15 @@ shrink_source_image() {
   log "Shrinking source partition..."
   parted -s -a minimal "$SRC_IMG" rm "$partnum" || {
     err "parted rm failed (skipping shrink)"
-    losetup -d "$LOOP_DEV" &> /dev/null
+    losetup -d "$LOOP_DEV" &>/dev/null
     return
   }
   parted -s "$SRC_IMG" unit B mkpart "$parttype" "$partstart" "$newpartend" || {
     err "parted mkpart failed (skipping shrink)"
-    losetup -d "$LOOP_DEV" &> /dev/null
+    losetup -d "$LOOP_DEV" &>/dev/null
     return
   }
-  losetup -d "$LOOP_DEV" &> /dev/null
+  losetup -d "$LOOP_DEV" &>/dev/null
   endresult=$(parted -ms "$SRC_IMG" unit B print free | tail -1 | awk -F: '{print $2}' | tr -d B)
   log "Truncating source image to ${endresult}B..."
   truncate -s "$endresult" "$SRC_IMG" || {
@@ -251,7 +251,7 @@ setup_target_device() {
   log "Preparing target: $TGT_PATH"
   LOCK_FILE="/run/lock/raspi-f2fs-${TGT_PATH//\//_}.lock"
   mkdir -p "${LOCK_FILE%/*}"
-  exec {LOCK_FD}> "$LOCK_FILE" || {
+  exec {LOCK_FD}>"$LOCK_FILE" || {
     err "Cannot create lock file"
     cleanup
     exit 1
@@ -265,7 +265,7 @@ setup_target_device() {
   assert_size "$SRC_IMG" "$TGT_PATH"
   ((cfg[dry_run])) && return 0
   warn "${RED}WARNING: ALL DATA ON $TGT_PATH WILL BE ERASED!${DEF}"
-  wipefs -af "$TGT_PATH" &> /dev/null
+  wipefs -af "$TGT_PATH" &>/dev/null
   log "Partitioning..."
   parted -s "$TGT_PATH" mklabel msdos
   parted -s "$TGT_PATH" mkpart primary fat32 0% "${cfg[boot_size]}"
@@ -277,8 +277,8 @@ setup_target_device() {
 format_target() {
   log "Formatting filesystems..."
   ((cfg[dry_run])) && return 0
-  mkfs.vfat -F32 -n BOOT "$BOOT_PART" &> /dev/null
-  mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART" &> /dev/null
+  mkfs.vfat -F32 -n BOOT "$BOOT_PART" &>/dev/null
+  mkfs.f2fs -f -l ROOT -O extra_attr,inode_checksum,sb_checksum,compression "$ROOT_PART" &>/dev/null
 }
 clone_data() {
   log "Cloning data (rsync)..."
@@ -309,8 +309,8 @@ configure_pi_boot() {
   root_uuid=$(blkid -s PARTUUID -o value "$ROOT_PART")
   cmdline="$WORKDIR/tgt/boot/cmdline.txt"
   fstab="$WORKDIR/tgt/root/etc/fstab"
-  awk -v uuid="$root_uuid" '{line="";for(i=1;i<=NF;i++){if($i~/^root=/)$i="root=PARTUUID="uuid;else if($i~/^rootfstype=/)$i="rootfstype=f2fs";else if($i~/^init=.*init_resize\.sh/)continue;line=(line?line" ":"")$i}if(line!~/rootwait/)line=line" rootwait";if(line!~/fsck\.repair=yes/)line=line" fsck.repair=yes";print line}' "$cmdline" > "${cmdline}.tmp" && mv "${cmdline}.tmp" "$cmdline"
-  cat > "$fstab" <<- EOF
+  awk -v uuid="$root_uuid" '{line="";for(i=1;i<=NF;i++){if($i~/^root=/)$i="root=PARTUUID="uuid;else if($i~/^rootfstype=/)$i="rootfstype=f2fs";else if($i~/^init=.*init_resize\.sh/)continue;line=(line?line" ":"")$i}if(line!~/rootwait/)line=line" rootwait";if(line!~/fsck\.repair=yes/)line=line" fsck.repair=yes";print line}' "$cmdline" >"${cmdline}.tmp" && mv "${cmdline}.tmp" "$cmdline"
+  cat >"$fstab" <<-EOF
 	proc            /proc           proc    defaults          0       0
 	PARTUUID=$boot_uuid  /boot           vfat    defaults          0       2
 	PARTUUID=$root_uuid  /               f2fs    defaults,noatime  0       1
@@ -319,7 +319,7 @@ configure_pi_boot() {
   log "Configuration complete."
 }
 usage() {
-  cat <<- EOF
+  cat <<-EOF
 	Usage: $(basename "$0") [OPTIONS]
 	Flash Raspberry Pi image to SD card using F2FS root filesystem.
 	OPTIONS:

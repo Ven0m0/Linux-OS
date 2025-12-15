@@ -26,7 +26,7 @@ die() {
 dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 sec() { printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
 # === Tool Detection ===
-has() { command -v "$1" &> /dev/null; }
+has() { command -v "$1" &>/dev/null; }
 
 hasname() {
   local cmd
@@ -41,7 +41,7 @@ hasname() {
 
 # === Environment Detection ===
 readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && echo 1 || echo 0)"
-readonly NPROC="$(nproc 2> /dev/null || echo 4)"
+readonly NPROC="$(nproc 2>/dev/null || echo 4)"
 
 # === ADB/Device Utilities ===
 detect_adb() {
@@ -68,13 +68,13 @@ ash() {
     if [[ $# -eq 0 ]]; then
       "$adb_cmd" sh
     else
-      "$adb_cmd" "$@" 2> /dev/null || return 1
+      "$adb_cmd" "$@" 2>/dev/null || return 1
     fi
   else
     if [[ $# -eq 0 ]]; then
       "$adb_cmd" shell
     else
-      "$adb_cmd" shell "$@" 2> /dev/null || return 1
+      "$adb_cmd" shell "$@" 2>/dev/null || return 1
     fi
   fi
 }
@@ -89,8 +89,8 @@ device_ok() {
     }
     return 0
   fi
-  "$adb_cmd" start-server &> /dev/null || :
-  "$adb_cmd" get-state &> /dev/null || {
+  "$adb_cmd" start-server &>/dev/null || :
+  "$adb_cmd" get-state &>/dev/null || {
     err "No device connected; enable USB debugging"
     return 1
   }
@@ -153,7 +153,7 @@ start() {
   adb_cmd="${ADB_CMD:-$(detect_adb)}"
 
   # Run loops directly on device to avoid ADB latency overhead (1 call vs 1000+)
-  "$adb_cmd" shell << 'CLEANUP_EOF' && msg "Cleanup complete" || err "Cleanup failed"
+  "$adb_cmd" shell <<'CLEANUP_EOF' && msg "Cleanup complete" || err "Cleanup failed"
 for pkg in $(pm list packages -3 | cut -d: -f2); do
   pm uninstall -k --user 0 "$pkg" 2>/dev/null || true
 done
@@ -176,7 +176,7 @@ tweaks() {
 
   # Batch all adb shell commands for massive performance improvement
   # This reduces 1100+ separate ADB connections to just 1
-  "$adb_cmd" shell << 'TWEAKS_EOF' && msg "Tweaks applied successfully" || err "Some tweaks may have failed (this is normal on some devices)"
+  "$adb_cmd" shell <<'TWEAKS_EOF' && msg "Tweaks applied successfully" || err "Some tweaks may have failed (this is normal on some devices)"
 device_config put runtime_native_boot pin_camera false
 device_config put launcher ENABLE_QUICK_LAUNCH_V2 true
 device_config put launcher enable_quick_launch_v2 true

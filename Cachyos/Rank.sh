@@ -47,7 +47,7 @@ KEYSERVERS=( # We want to use keyservers only with secured (hkps or https) conne
 # Colors
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[1;33m' CYN=$'\e[36m' DEF=$'\e[0m' BLD=$'\e[1m'
 # Helpers
-has() { command -v "$1" &> /dev/null; }
+has() { command -v "$1" &>/dev/null; }
 xecho() { printf '%b\n' "$*"; }
 log() { xecho "${GRN}${BLD}[${1:-INFO}]${DEF} ${*:2}" | tee -a "$LOGFILE"; }
 warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
@@ -75,7 +75,7 @@ rank_keys() {
     # Perf: Native Bash timing
     printf -v start_ts "%.3f" "$EPOCHREALTIME"
     t1="${start_ts/./}"
-    if curl -sI -m2 "$test_url" &> /dev/null; then
+    if curl -sI -m2 "$test_url" &>/dev/null; then
       printf -v end_ts "%.3f" "$EPOCHREALTIME"
       t2="${end_ts/./}"
       local diff=$((t2 - t1))
@@ -102,7 +102,7 @@ rank_repo() {
   tmp=$(mktemp)
   # Pipe URLs directly to rate-mirrors stdin
   if grep -oP 'https?://[^ ]+' "$file" | sort -u | rate-mirrors --save="$tmp" --entry-country="$COUNTRY" stdin \
-    --fetch-mirrors-timeout=5000 --path-to-return='$repo/os/$arch' &> /dev/null; then
+    --fetch-mirrors-timeout=5000 --path-to-return='$repo/os/$arch' &>/dev/null; then
     install -m644 "$tmp" "$file"
   else
     warn "Failed to rank $name"
@@ -122,9 +122,9 @@ rank_arch() {
     rm -f "$tmp" "$tmp.mlst"
     return 1
   fi # Uncomment servers using sed
-  sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" > "$tmp.raw"
+  sed -E 's|^##[ ]*Server|Server|' "$tmp.mlst" >"$tmp.raw"
   # Rank
-  if rate-mirrors --save="$tmp" --entry-country="$COUNTRY" --top-mirrors-number-to-retest=5 arch --file "$tmp.raw" &> /dev/null; then
+  if rate-mirrors --save="$tmp" --entry-country="$COUNTRY" --top-mirrors-number-to-retest=5 arch --file "$tmp.raw" &>/dev/null; then
     install -m644 "$tmp" "$file"
   else
     warn "rate-mirrors failed for Arch"
@@ -147,5 +147,5 @@ else
   done
 fi
 log INFO "Syncing DB..."
-sudo pacman -Syyq --noconfirm &> /dev/null
+sudo pacman -Syyq --noconfirm &>/dev/null
 log DONE "Mirrors updated."

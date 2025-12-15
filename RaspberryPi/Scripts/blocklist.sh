@@ -5,8 +5,8 @@ shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
-has() { command -v -- "$1" &> /dev/null; }
-[[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &> /dev/null || :
+has() { command -v -- "$1" &>/dev/null; }
+[[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
 
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
@@ -29,7 +29,7 @@ extract_pattern() {
 }
 extract_urls() { grep -oE '(https?|ftp)://[^[:space:]]+' "$@"; }
 extract_ips() { grep -oE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' "$@"; }
-count_lines() { grep -c . "$@" 2> /dev/null || echo 0; }
+count_lines() { grep -c . "$@" 2>/dev/null || echo 0; }
 normalize_whitespace() { sed -e 's/ / /g' -e 's/  */ /g'; }
 # https://github.com/hectorm/hblock/blob/master/hblock
 # Remove comments from string (function already defined in lib/text.sh above)

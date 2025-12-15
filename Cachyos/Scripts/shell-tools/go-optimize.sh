@@ -13,14 +13,14 @@ export GOFLAGS="-ldflags=$LINKER_FLAGS"
 # 2. Helper function to check/install tools (Avoids re-installing if present)
 ensure_tool() {
   local cmd="$1" pkg="$2"
-  if ! command -v "$cmd" &> /dev/null; then
+  if ! command -v "$cmd" &>/dev/null; then
     printf "Installing %s...\n" "$cmd"
     go install "$pkg@latest"
   fi
 }
 
 # 3. Disable telemetry once
-go telemetry off 2> /dev/null || :
+go telemetry off 2>/dev/null || :
 
 # 4. Install tools only if missing
 ensure_tool "betteralign" "github.com/dkorunic/betteralign/cmd/betteralign"

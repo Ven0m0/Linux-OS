@@ -44,7 +44,7 @@ log_debug() { [[ ${MEDIA_OPT_DEBUG:-0} -eq 1 ]] && printf '[DEBUG %s] %s\n' "$(d
 log_err() { printf '[ERROR %s] %s\n' "$(date +%H:%M:%S)" "$1" | tee -a "$LOG_FILE" >&2; }
 
 file_size() {
-  stat -c "%s" "$1" 2> /dev/null || stat -f "%z" "$1" 2> /dev/null || echo 0
+  stat -c "%s" "$1" 2>/dev/null || stat -f "%z" "$1" 2>/dev/null || echo 0
 }
 
 human_size() {
@@ -60,7 +60,7 @@ human_size() {
 }
 
 # Check for tool availability and install guidance if missing
-has() { command -v -- "$1" &> /dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 
 require_tool() {
   local tool="$1" pkg="${2:-$1}" alt="${3:-}"
@@ -463,9 +463,9 @@ process_directory() {
   local image_files=()
   if has fd; then
     # Using fd in the directory
-    pushd "$dir" > /dev/null || return 1
+    pushd "$dir" >/dev/null || return 1
     mapfile -t image_files < <("${find_cmd[@]}")
-    popd > /dev/null || return 1
+    popd >/dev/null || return 1
 
     # Prepend the directory
     for i in "${!image_files[@]}"; do
@@ -503,9 +503,9 @@ process_directory() {
 
     local video_files=()
     if has fd; then
-      pushd "$dir" > /dev/null || return 1
+      pushd "$dir" >/dev/null || return 1
       mapfile -t video_files < <("${video_find_cmd[@]}")
-      popd > /dev/null || return 1
+      popd >/dev/null || return 1
 
       for i in "${!video_files[@]}"; do
         video_files[$i]="$dir/${video_files[$i]}"
@@ -527,7 +527,7 @@ process_directory() {
 
 # Command-line interface
 usage() {
-  cat << EOF
+  cat <<EOF
 Usage: $SCRIPT_NAME [OPTIONS] DIRECTORY
 
 Media optimization toolkit for images and videos.

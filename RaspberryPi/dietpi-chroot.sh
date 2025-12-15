@@ -42,7 +42,7 @@ check_deps() {
   ((SHRINK)) && deps+=(e2fsck resize2fs tune2fs truncate)
   local -a missing=() cmd
   for cmd in "${deps[@]}"; do
-    if ! command -v -- "$cmd" &> /dev/null; then
+    if ! command -v -- "$cmd" &>/dev/null; then
       missing+=("$cmd")
     fi
   done
@@ -53,18 +53,18 @@ check_deps() {
   }
   [[ ! -f /proc/sys/fs/binfmt_misc/aarch64 ]] && {
     warn "binfmt_misc for aarch64 not detected. Trying to load..."
-    sudo systemctl restart systemd-binfmt &> /dev/null || :
+    sudo systemctl restart systemd-binfmt &>/dev/null || :
     [[ ! -f /proc/sys/fs/binfmt_misc/aarch64 ]] && die "Could not verify aarch64 binfmt registration. Is 'qemu-user-static-binfmt' installed and service active?"
   }
 }
 cleanup() {
   set +e
   log "Cleaning up..."
-  [[ -d $MOUNT_DIR ]] && fuser -k -M "$MOUNT_DIR" &> /dev/null
-  mountpoint -q "$MOUNT_DIR/boot" && umount "$MOUNT_DIR/boot" &> /dev/null
-  mountpoint -q "$MOUNT_DIR" && umount -R "$MOUNT_DIR" &> /dev/null
-  [[ -n $LOOP_DEV ]] && losetup -d "$LOOP_DEV" &> /dev/null
-  [[ -d $MOUNT_DIR ]] && rmdir "$MOUNT_DIR" &> /dev/null
+  [[ -d $MOUNT_DIR ]] && fuser -k -M "$MOUNT_DIR" &>/dev/null
+  mountpoint -q "$MOUNT_DIR/boot" && umount "$MOUNT_DIR/boot" &>/dev/null
+  mountpoint -q "$MOUNT_DIR" && umount -R "$MOUNT_DIR" &>/dev/null
+  [[ -n $LOOP_DEV ]] && losetup -d "$LOOP_DEV" &>/dev/null
+  [[ -d $MOUNT_DIR ]] && rmdir "$MOUNT_DIR" &>/dev/null
   msg "Cleanup complete. Image saved."
 }
 setup_image() {
@@ -100,12 +100,12 @@ check_filesystem() {
 }
 shrink_image() {
   log "Shrinking image..."
-  umount -R "$MOUNT_DIR" &> /dev/null
-  losetup -d "$LOOP_DEV" &> /dev/null
+  umount -R "$MOUNT_DIR" &>/dev/null
+  losetup -d "$LOOP_DEV" &>/dev/null
   local parted_out partnum partstart parttype currentsize blocksize minsize extra_space partnewsize newpartend endresult
   parted_out=$(parted -ms "$IMG_FILE" unit B print) || die "parted failed"
-  partnum=$(awk -F: 'END{print $1}' <<< "$parted_out")
-  partstart=$(awk -F: 'END{print $2}' <<< "$parted_out" | tr -d B)
+  partnum=$(awk -F: 'END{print $1}' <<<"$parted_out")
+  partstart=$(awk -F: 'END{print $2}' <<<"$parted_out" | tr -d B)
   if parted -s "$IMG_FILE" unit B print | grep -q "$partstart" | grep -q logical; then
     parttype="logical"
   else
@@ -115,12 +115,12 @@ shrink_image() {
   check_filesystem
   local tune_out
   tune_out=$(tune2fs -l "$LOOP_DEV") || die "tune2fs failed"
-  currentsize=$(awk -F: '/^Block count:/{gsub(" ","",$2);print $2}' <<< "$tune_out")
-  blocksize=$(awk -F: '/^Block size:/{gsub(" ","",$2);print $2}' <<< "$tune_out")
+  currentsize=$(awk -F: '/^Block count:/{gsub(" ","",$2);print $2}' <<<"$tune_out")
+  blocksize=$(awk -F: '/^Block size:/{gsub(" ","",$2);print $2}' <<<"$tune_out")
   minsize=$(resize2fs -P "$LOOP_DEV" 2>&1 | awk -F: '{gsub(" ","",$2);print $2}') || die "resize2fs -P failed"
   [[ $currentsize -eq $minsize ]] && {
     log "Filesystem already at minimum size"
-    losetup -d "$LOOP_DEV" &> /dev/null
+    losetup -d "$LOOP_DEV" &>/dev/null
     return
   }
   extra_space=$((currentsize - minsize))
@@ -134,7 +134,7 @@ shrink_image() {
   mnt=$(mktemp -d)
   mount "$LOOP_DEV" "$mnt"
   log "Zeroing free space..."
-  cat /dev/zero > "$mnt/zero_file" 2>&1 || :
+  cat /dev/zero >"$mnt/zero_file" 2>&1 || :
   rm -f "$mnt/zero_file"
   umount "$mnt"
   rmdir "$mnt"
@@ -143,7 +143,7 @@ shrink_image() {
   log "Shrinking partition..."
   parted -s -a minimal "$IMG_FILE" rm "$partnum" || die "parted rm failed"
   parted -s "$IMG_FILE" unit B mkpart "$parttype" "$partstart" "$newpartend" || die "parted mkpart failed"
-  losetup -d "$LOOP_DEV" &> /dev/null
+  losetup -d "$LOOP_DEV" &>/dev/null
   endresult=$(parted -ms "$IMG_FILE" unit B print free | tail -1 | awk -F: '{print $2}' | tr -d B)
   log "Truncating image to ${endresult}B..."
   truncate -s "$endresult" "$IMG_FILE" || die "truncate failed"
@@ -165,7 +165,7 @@ run_optimization() {
   sync
 }
 usage() {
-  cat <<- 'EOF'
+  cat <<-'EOF'
 	Usage: sudo $0 [OPTIONS] <image_file.img>
 	OPTIONS:
 	  -z    Shrink image after chroot (PiShrink integration)

@@ -1,0 +1,66 @@
+# Structured bulk settings for device apply
+# Blank lines and # comments are ignored
+# Sections are labels for readability only
+
+[render]
+setprop debug.composition.type dyn
+setprop debug.sf.use_phase_offsets_as_durations 1
+setprop debug.sf.predict_hwc_composition_strategy 1
+setprop debug.sf.gpu_comp_tiling 1
+setprop debug.sf.enable_gl_backpressure 1
+settings put global force_gpu_rendering 1
+settings put global disable_hw_overlays 1
+settings put global gpu_rasterization_forced 1
+
+[performance]
+setprop debug.performance.tuning 1
+device_config put graphics enable_cpu_boost true
+device_config put graphics enable_gpu_boost true
+device_config put graphics render_thread_priority high
+device_config put activity_manager force_high_refresh_rate true
+device_config put activity_manager enable_background_cpu_boost true
+device_config put activity_manager use_compaction true
+
+[audio]
+settings put global audio.offload.video true
+settings put global audio.offload.track.enable true
+settings put global audio.offload.gapless.enabled true
+settings put global audio.offload.multiple.enabled true
+settings put global media.stagefright.thumbnail.prefer_hw_codecs true
+
+[battery]
+settings put global dynamic_power_savings_enabled 1
+settings put global adaptive_battery_management_enabled 0
+settings put global app_auto_restriction_enabled 1
+settings put global cached_apps_freezer enabled
+cmd power suppress-ambient-display true
+cmd power set-fixed-performance-mode-enabled false
+cmd power set-adaptive-power-saver-enabled true
+
+[input]
+settings put global animator_duration_scale 0.0
+settings put global transition_animation_scale 0.0
+settings put global window_animation_scale 0.0
+wm disable-blur true
+
+[network]
+cmd netpolicy set restrict-background true
+settings put global data_saver_mode 1
+settings put global mobile_data_always_on 0
+settings put global wifi_scan_always_enabled 0
+settings put global ble_scan_always_enabled 0
+settings put global network_avoid_bad_wifi 1
+
+[webview_angle]
+cmd webviewupdate set-webview-implementation com.android.webview.beta
+settings put global angle_gl_driver_all_angle 1
+settings put global angle_debug_package com.android.angle
+settings put global angle_gl_driver_selection_values angle
+settings put global angle_gl_driver_selection_pkgs com.android.webview,com.android.webview.beta
+
+[misc]
+setprop debug.debuggerd.disable 1
+settings put secure USAGE_METRICS_UPLOAD_ENABLED 0
+settings put system send_security_reports 0
+device_config put systemui window_shadow 0
+device_config put systemui window_blur 0

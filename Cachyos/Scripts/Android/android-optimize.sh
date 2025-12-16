@@ -76,6 +76,7 @@ EOF
 
 task_cleanup_fs(){
   ash 'find /sdcard /storage/emulated/0 -type f -iregex ".*\.\(log\|bak\|old\|tmp\)$" -delete 2>/dev/null || :'
+  cmd_wa_clean "/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media"
 }
 
 task_art(){
@@ -122,7 +123,7 @@ cmd_device_all(){
 
 cmd_monolith(){
   device_ok || return 1
-  local mode="${1:-everything-profile}"
+  local mode="${1:-speed-profile}"
   ash "pm compile -a --full -r cmdline -m \"$mode\""
   ok "Compilation complete"
 }
@@ -146,7 +147,7 @@ cmd_wa_clean(){
   ash <<EOF
 [ -d "$wa_base" ] || exit 0
 before=$(du -sm "$wa_base" 2>/dev/null | cut -f1 || printf 0)
-find "$wa_base" -type f -iregex '.*\.\(jpg\|jpeg\|png\|gif\|mp4\|mov\|wmv\|flv\|webm\|mxf\|avi\|avchd\|mkv\|opus\)$' -mtime +45 -delete 2>/dev/null || :
+find "$wa_base" -type f -iregex '.*\.\(jpg\|jpeg\|png\|gif\|mp4\|mov\|wmv\|flv\|webm\|mxf\|avi\|avchd\|mkv\|opus\)$' -mtime +30 -delete 2>/dev/null || :
 rm -rf "$wa_base/WhatsApp AI Media"/* "$wa_base/WhatsApp Bug Report Attachments"/* "$wa_base/WhatsApp Stickers"/* 2>/dev/null || :
 after=$(du -sm "$wa_base" 2>/dev/null | cut -f1 || printf 0)
 printf 'Freed %s MB\n' "$((before - after))"
@@ -215,11 +216,11 @@ usage(){
   cat <<EOF
 android-optimize.sh - Device-only optimizer (ADB or Termux+Shizuku)
 Commands:
-  device-all               Full device optimization (standard)
+  device-all               Full device optimization (standard; includes cleanup + WA cleanup)
   apply [file]             Apply bulk settings file (default: android-settings.txt)
-  monolith [mode]          Compile all apps (default: everything-profile)
+  monolith [mode]          Compile all apps (default: speed-profile)
   cache-clean              Clear app caches
-  wa-clean [path]          WhatsApp media cleanup >45d
+  wa-clean [path]          WhatsApp media cleanup >30d
   compile-speed            Compile selected high-usage apps to speed
   compile-system           Compile core system apps to everything
   menu                     Interactive menu (default)

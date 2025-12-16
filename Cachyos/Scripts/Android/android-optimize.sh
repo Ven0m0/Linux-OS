@@ -1,19 +1,12 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail
-shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 
-if [[ -t 1 ]]; then
-  readonly BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-  readonly BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
-  readonly LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
-  readonly DEF=$'\e[0m' BLD=$'\e[1m' UND=$'\e[4m'
-else
-  readonly BLK="" RED="" GRN="" YLW="" BLU="" MGN="" CYN="" WHT=""
-  readonly LBLU="" PNK="" BWHT="" DEF="" BLD="" UND=""
-fi
-
+readonly BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+readonly BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
+readonly LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
+readonly DEF=$'\e[0m' BLD=$'\e[1m' UND=$'\e[4m'
 xecho(){ printf '%b\n' "$*"; }
 log(){ xecho "${BLU}${BLD}[*]${DEF} $*"; }
 msg(){ xecho "${GRN}${BLD}[+]${DEF} $*"; }
@@ -21,35 +14,28 @@ warn(){ xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
 err(){ xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
 dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 sec(){ printf '\n%s%s=== %s ===%s\n' "$CYN" "$BLD" "$*" "$DEF"; }
-
 has(){ command -v "$1" &>/dev/null; }
 hasname(){
   local cmd
   for cmd in "$@"; do
     if has "$cmd"; then
-      printf '%s' "$cmd"
-      return 0
+      printf '%s' "$cmd"; return 0
     fi
   done
   return 1
 }
-
 readonly IS_TERMUX="$([[ -d /data/data/com.termux/files ]] && echo 1 || echo 0)"
 readonly NPROC="$(nproc 2>/dev/null || echo 4)"
-
 detect_adb(){
-  local adb_cmd
   if ((IS_TERMUX)); then
-    adb_cmd="$(hasname rish)" || { warn "rish not found; install Shizuku for device access"; return 1; }
+    local adb_cmd="$(hasname rish)" || { warn "rish not found; install Shizuku for device access"; return 1; }
   else
-    adb_cmd="$(hasname adb)" || { err "adb not found; install Android SDK platform-tools"; return 1; }
+    local adb_cmd="$(hasname adb)" || { err "adb not found; install Android SDK platform-tools"; return 1; }
   fi
   printf '%s' "$adb_cmd"
 }
-
 ash(){
-  local adb_cmd
-  adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
+  local adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
   if ((IS_TERMUX)); then
     [[ $# -eq 0 ]] && "$adb_cmd" sh || "$adb_cmd" "$@" 2>/dev/null || return 1
   else
@@ -77,7 +63,6 @@ wait_for_device(){
   timeout "$timeout" "$adb_cmd" wait-for-device || { err "Device connection timeout"; return 1; }
   msg "Device connected"
 }
-
 pm_detect(){
   if has paru; then printf 'paru'; return; fi
   if has yay; then printf 'yay'; return; fi
@@ -86,7 +71,6 @@ pm_detect(){
   if has pkg && ((IS_TERMUX)); then printf 'pkg'; return; fi
   printf ''
 }
-
 confirm(){
   local prompt="${1:-Continue? }" reply
   while :; do
@@ -98,32 +82,25 @@ confirm(){
     esac
   done
 }
-
 file_size(){ stat -c "%s" "$1" 2>/dev/null || stat -f "%z" "$1" 2>/dev/null || echo 0; }
 human_size(){
   local bytes="$1" scale=0 units=(B KB MB GB TB)
   while ((bytes > 1024 && scale < 4)); do bytes=$((bytes/1024)); ((scale++)); done
   printf "%d %s" "$bytes" "${units[$scale]}"
 }
-
 cleanup_workdir(){ [[ -n ${WORKDIR:-} && -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :; }
 cleanup_mount(){ [[ -n ${MNT_PT:-} ]] && mountpoint -q -- "$MNT_PT" && umount -R "$MNT_PT" || :; }
 cleanup_loop(){ [[ -n ${LOOP_DEV:-} && -b ${LOOP_DEV:-} ]] && losetup -d "$LOOP_DEV" || :; }
 setup_cleanup(){ trap 'cleanup_workdir; cleanup_mount; cleanup_loop' EXIT; trap 'err "failed at line ${LINENO}"' ERR; }
-
 FD="${FD:-$(hasname fd fdfind || :)}"
 RG="${RG:-$(hasname rg grep || :)}"
 BAT="${BAT:-$(hasname bat batcat cat || :)}"
 SD="${SD:-$(hasname sd || :)}"
 readonly FD RG BAT SD
-
 readonly VERSION="3.0.0"
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/android-toolkit"
 readonly CONFIG_FILE="${CONFIG_DIR}/config.toml"
-
-ADB_CMD="$(detect_adb || :)"
-export ADB_CMD
-
+export ADB_CMD="$(detect_adb || :)"
 readonly SPEED_APPS=(
   com.whatsapp com.snapchat.android com.instagram.android com.zhiliaoapp.musically
   app.revanced.android.youtube anddea.youtube.music com.spotify.music
@@ -137,10 +114,8 @@ readonly SYSTEM_APPS=(
   com.android.providers.settings com.android.server.telecom com.android.location.fused
   com.mediatek.location.lppe.main com.google.android.permissioncontroller com.android.bluetooth
 )
-
 info(){ log "$1"; }
 ok(){ msg "$1"; }
-
 aapt2_jar(){
   local roots=("${ANDROID_HOME:-}" "${ANDROID_SDK_ROOT:-}" "$HOME/Android/Sdk" "$HOME/Library/Android/sdk" /opt/android-sdk) jar
   for r in "${roots[@]}"; do
@@ -149,7 +124,6 @@ aapt2_jar(){
     [[ -n $jar ]] && { printf '%s' "$jar"; return; }
   done
 }
-
 task_maint(){
   sec "Maintenance"
   ash <<'EOF'
@@ -211,7 +185,6 @@ device_config put privacy location_access_check_enabled false
 device_config put privacy location_accuracy_enabled false
 EOF
 }
-
 task_render(){
   sec "Rendering tweaks"
   ash <<'EOF'
@@ -233,7 +206,6 @@ settings put global disable_hw_overlays 1
 settings put global gpu_rasterization_forced 1
 EOF
 }
-
 task_audio(){
   sec "Audio tweaks"
   ash <<'EOF'
@@ -244,7 +216,6 @@ settings put global audio.offload.multiple.enabled true
 settings put global media.stagefright.thumbnail.prefer_hw_codecs true
 EOF
 }
-
 task_battery(){
   sec "Battery tweaks"
   ash <<'EOF'
@@ -257,7 +228,6 @@ cmd power set-fixed-performance-mode-enabled false
 cmd power set-adaptive-power-saver-enabled true
 EOF
 }
-
 task_input(){
   sec "Input/animations"
   ash <<'EOF'
@@ -267,7 +237,6 @@ settings put global window_animation_scale 0.0
 wm disable-blur true
 EOF
 }
-
 task_net(){
   sec "Network tweaks"
   ash <<'EOF'
@@ -279,7 +248,6 @@ settings put global ble_scan_always_enabled 0
 settings put global network_avoid_bad_wifi 1
 EOF
 }
-
 task_webview(){
   sec "WebView/ANGLE"
   ash <<'EOF'
@@ -290,7 +258,6 @@ settings put global angle_gl_driver_selection_values angle
 settings put global angle_gl_driver_selection_pkgs com.android.webview,com.android.webview.beta
 EOF
 }
-
 task_misc(){
   sec "Misc tweaks"
   ash <<'EOF'
@@ -301,7 +268,6 @@ device_config put systemui window_shadow 0
 device_config put systemui window_blur 0
 EOF
 }
-
 task_experimental_short(){
   sec "Experimental Tweaks (short aggressive set)"
   confirm "These are aggressive experimental tweaks. Proceed?" || return 0
@@ -328,7 +294,6 @@ settings put global fstrim_mandatory_interval 1
 EOF
   ok "Experimental tweaks applied"
 }
-
 task_aggressive_cleanup(){
   sec "Aggressive Cleanup (on-device)"
   warn "This will uninstall 3rd-party apps and clear system app data"
@@ -347,7 +312,6 @@ done
 pm uninstall --user 0 com.google.android.googlequicksearchbox 2>/dev/null || true
 CLEANUP_EOF
 }
-
 task_experimental_batch(){
   sec "Experimental Tweaks (Monolith Batch)"
   log "Batching 1100+ commands into 1 ADB call; failures are expected on some devices"
@@ -1273,27 +1237,23 @@ settings put global ro.vendor.sensors.rawdata_mode false
 settings put global ro.vendor.sensors.pedometer false
 TWEAKS_EOF
 }
-
 task_experimental_full(){
   device_ok || return 1
   task_aggressive_cleanup
   task_experimental_batch
 }
-
 task_compile_speed(){
   sec "High-perf apps → speed"
   local batch=""
   for p in "${SPEED_APPS[@]}"; do batch+="cmd package compile -f --full -r cmdline -m speed $p"$'\n'; done
   ash <<<"$batch"
 }
-
 task_compile_system(){
   sec "System apps → everything"
   local batch=""
   for p in "${SYSTEM_APPS[@]}"; do batch+="cmd package compile -f --full -r cmdline -m everything $p"$'\n'; done
   ash <<<"$batch"
 }
-
 task_finalize(){
   sec "Finalize"
   ash <<'EOF'
@@ -1304,7 +1264,6 @@ cmd activity kill-all
 dumpsys batterystats --reset
 EOF
 }
-
 task_permissions_toml(){
   sec "Applying permissions from TOML"
   [[ -f $CONFIG_FILE ]] || { warn "Config not found: $CONFIG_FILE"; return; }
@@ -1328,14 +1287,12 @@ task_permissions_toml(){
   [[ -n $batch ]] && ash <<<"$batch"
   ok "Permissions applied"
 }
-
 cmd_device_all(){
   device_ok || return 1
   task_maint; task_cleanup_fs; task_art; task_perf; task_render; task_audio; task_battery; task_input
   task_net; task_webview; task_misc; task_compile_speed; task_compile_system; task_permissions_toml; task_finalize
   ok "Device optimization complete"
 }
-
 cmd_monolith(){
   device_ok || return 1
   local mode="${1:-everything-profile}"
@@ -1343,7 +1300,6 @@ cmd_monolith(){
   ash "cmd package compile -a --full -r cmdline -m \"$mode\""
   ok "Compilation complete"
 }
-
 cmd_cache_clean(){
   device_ok || return 1
   sec "Clear app caches"
@@ -1358,7 +1314,6 @@ cmd_cache_clean(){
   ash 'pm trim-caches 128G'; ash 'logcat -b all -c'
   ok "Cache cleared"
 }
-
 cmd_index_nomedia(){
   local base="${1:-/storage/emulated/0}"
   sec "Index guard (.nomedia)"
@@ -1370,7 +1325,6 @@ cmd_index_nomedia(){
   done < <(find "$base" -type d -readable -print0 2>/dev/null || :)
   ok "Index guards created"
 }
-
 cmd_wa_clean(){
   local wa_base="${1:-/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media}"
   sec "WhatsApp cleanup"
@@ -1390,7 +1344,6 @@ cmd_wa_clean(){
     fi
   fi
 }
-
 cmd_aapt2_opt(){
   local in="${1:-target/release/app-unsigned.apk}" out="${2:-target/release/app-optimized.apk}"
   sec "AAPT2 optimize"
@@ -1402,7 +1355,6 @@ cmd_aapt2_opt(){
   aapt2 optimize --collapse-resource-names --shorten-resource-paths --enable-sparse-encoding -o "$out" "$in"
   ok "Saved → $out"
 }
-
 task_pkg_maint(){
   sec "Package maintenance"
   info "Updating packages..."
@@ -1412,7 +1364,6 @@ task_pkg_maint(){
   pkg clean -y; pkg autoclean -y; apt-get autoremove -y &>/dev/null || :
   ok "Packages updated"
 }
-
 task_cache_termux(){
   sec "Cache cleanup"
   local cleaned=()
@@ -1423,7 +1374,6 @@ task_cache_termux(){
   [[ -d /data/data/com.termux/files/usr/tmp ]] && { find /data/data/com.termux/files/usr/tmp -mindepth 1 -delete 2>/dev/null || :; cleaned+=(termux-tmp); }
   ok "Cleaned: ${cleaned[*]:-none}"
 }
-
 task_fs_hygiene(){
   sec "Filesystem hygiene"
   local ed ef cnt=0
@@ -1431,7 +1381,6 @@ task_fs_hygiene(){
   ef="$(find "$HOME" -type f -empty 2>/dev/null || :)"; [[ -n $ef ]] && { printf '%s\n' "$ef" | xargs -r rm && ((cnt++)); }
   ((cnt > 0)) && ok "Removed empty dirs/files" || info "No empty dirs/files"
 }
-
 task_large_files(){
   local mb="${1:-100}" path="${2:-$HOME}"
   sec "Large files (>${mb}MB)"
@@ -1444,19 +1393,15 @@ task_large_files(){
   fi
   [[ -n $lf ]] && { ok "Found:"; printf '%s\n' "$lf"; } || info "None found"
 }
-
 task_updatedb(){
   sec "Update locate DB"
   command -v updatedb &>/dev/null || { warn "Install: pkg install findutils"; return; }
   info "Indexing..."; updatedb; ok "DB updated"
 }
-
 cmd_termux_full(){ task_pkg_maint; task_cache_termux; task_fs_hygiene; task_updatedb; ok "Termux optimization complete"; }
-
 cmd_device_all_experimental(){ device_ok || return 1; task_aggressive_cleanup; task_experimental_batch; ok "Aggressive cleanup + experimental tweaks complete"; }
 cmd_experimental_batch(){ device_ok || return 1; task_experimental_batch; }
 cmd_experimental_short(){ device_ok || return 1; task_experimental_short; }
-
 menu(){
   printf '\n%s%s=== Android Optimizer v%s ===%s\n' "$MGN" "$BLD" "$VERSION" "$DEF"
   if ((IS_TERMUX)); then
@@ -1501,7 +1446,6 @@ q) Quit
 EOF
   fi
 }
-
 interactive(){
   while :; do
     menu
@@ -1528,7 +1472,6 @@ interactive(){
   done
   info "Done"
 }
-
 usage(){
   cat <<EOF
 android-optimize.sh v$VERSION - Unified Android optimizer (ADB or Termux+Shizuku)
@@ -1560,7 +1503,6 @@ Environment: $([[ $IS_TERMUX -eq 1 ]] && printf "Termux" || printf "Desktop+ADB"
 Termux device access: $([[ $IS_TERMUX -eq 1 && -n ${RISH:-} ]] && printf "rish (Shizuku)" || printf "N/A")
 EOF
 }
-
 main(){
   local cmd="${1:-menu}"
   shift || :

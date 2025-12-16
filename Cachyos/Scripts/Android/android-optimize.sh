@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t' LC_ALL=C
+IFS=$'\n\t'; export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 
 has(){ command -v "$1" &>/dev/null; }
 log(){ printf '%s\n' "[*] $*"; }
 ok(){ printf '%s\n' "[+] $*"; }
 warn(){ printf '%s\n' "[!] $*" >&2; }
 err(){ printf '%s\n' "[-] $*" >&2; }
+
 IS_TERMUX=$([[ -d /data/data/com.termux/files ]] && printf 1 || printf 0)
 NPROC=$(nproc 2>/dev/null || printf 4)
+
 detect_adb(){
   if ((IS_TERMUX)); then
     local a; a=$(has rish && printf rish || printf '')
@@ -21,6 +23,7 @@ detect_adb(){
     printf '%s' "$a"
   fi
 }
+
 ash(){
   local adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
   if ((IS_TERMUX)); then
@@ -29,6 +32,7 @@ ash(){
     [[ $# -eq 0 ]] && "$adb_cmd" shell || "$adb_cmd" shell "$@" 2>/dev/null || return 1
   fi
 }
+
 device_ok(){
   local adb_cmd; adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
   if ((IS_TERMUX)); then
@@ -38,14 +42,7 @@ device_ok(){
   "$adb_cmd" start-server &>/dev/null || :
   "$adb_cmd" get-state &>/dev/null || { err "No device connected; enable USB debugging"; return 1; }
 }
-wait_for_device(){
-  local timeout="${1:-30}" adb_cmd
-  adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
-  ((IS_TERMUX)) && return 0
-  log "Waiting for device (${timeout}s)..."
-  timeout "$timeout" "$adb_cmd" wait-for-device || { err "Timeout waiting for device"; return 1; }
-  ok "Device connected"
-}
+
 apply_settings_file(){
   local file="${1:-android-settings.txt}"
   [[ -f $file ]] || { err "Settings file not found: $file"; return 1; }
@@ -58,6 +55,7 @@ apply_settings_file(){
   [[ -z $batch ]] && { warn "No settings to apply"; return 0; }
   ash "$batch"
 }
+
 task_maint(){
   ash <<'EOF'
 sync
@@ -75,26 +73,33 @@ cmd system_update
 cmd otadexopt cleanup
 EOF
 }
-task_cleanup_fs(){ ash 'find /sdcard /storage/emulated/0 -type f -iregex ".*\.\(log\|bak\|old\|tmp\)$" -delete 2>/dev/null || :'; }
+
+task_cleanup_fs(){
+  ash 'find /sdcard /storage/emulated/0 -type f -iregex ".*\.\(log\|bak\|old\|tmp\)$" -delete 2>/dev/null || :'
+}
+
 task_art(){
   local jid
   jid="$(ash 'cmd jobscheduler list-jobs android 2>/dev/null' | grep -F background-dexopt | awk '{print $2}' || :)"
   ash <<EOF
 $([[ -n $jid ]] && printf "cmd jobscheduler run -f android %s\n" "$jid")
-cmd package compile -af --full -r cmdline -m speed
-cmd package compile -a --full -r cmdline -m speed-profile
+pm compile -af --full -r cmdline -m speed
+pm compile -a --full -r cmdline -m speed-profile
 pm art dexopt-packages -r bg-dexopt
 art pr-deopt-job --run
 pm bg-dexopt-job
 EOF
 }
+
 task_block(){
   [[ $1 == enable ]] && ash 'cmd connectivity set-chain3-enabled true'
   [[ $1 == disable ]] && ash 'cmd connectivity set-chain3-enabled false'
   [[ $1 == block ]] && ash "cmd connectivity set-package-networking-enabled false \"$2\""
   [[ $1 == unblock ]] && ash "cmd connectivity set-package-networking-enabled true \"$2\""
 }
+
 task_perf(){ apply_settings_file "${1:-android-settings.txt}"; }
+
 task_finalize(){
   ash <<'EOF'
 am broadcast -a android.intent.action.ACTION_OPTIMIZE_DEVICE
@@ -104,6 +109,7 @@ cmd activity kill-all
 dumpsys batterystats --reset
 EOF
 }
+
 cmd_device_all(){
   device_ok || return 1
   task_maint
@@ -113,12 +119,14 @@ cmd_device_all(){
   task_finalize
   ok "Device optimization complete"
 }
+
 cmd_monolith(){
   device_ok || return 1
   local mode="${1:-everything-profile}"
   ash "pm compile -a --full -r cmdline -m \"$mode\""
   ok "Compilation complete"
 }
+
 cmd_cache_clean(){
   device_ok || return 1
   if ((IS_TERMUX)); then
@@ -132,18 +140,7 @@ cmd_cache_clean(){
   ash 'pm trim-caches 128G'; ash 'logcat -b all -c'
   ok "Cache cleared"
 }
-cmd_index_nomedia(){
-  local base="${1:-/storage/emulated/0}"
-  ash <<EOF
-find "$base" -type d -readable -print0 2>/dev/null | while IFS= read -r -d '' d; do
-  : >"$d/.nomedia" 2>/dev/null || :
-  : >"$d/.noindex" 2>/dev/null || :
-  : >"$d/.metadata_never_index" 2>/dev/null || :
-  : >"$d/.trackerignore" 2>/dev/null || :
-done
-EOF
-  ok "Index guards created"
-}
+
 cmd_wa_clean(){
   local wa_base="${1:-/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media}"
   ash <<EOF
@@ -165,7 +162,7 @@ cmd_compile_speed(){
     com.nothing.camera com.android.htmlviewer com.android.providers.media
   )
   local batch=""
-  for p in "${pkgs[@]}"; do batch+="cmd package compile -f --full -r cmdline -m speed $p"$'\n'; done
+  for p in "${pkgs[@]}"; do batch+="pm compile -f --full -r cmdline -m speed $p"$'\n'; done
   ash "$batch"
 }
 
@@ -177,37 +174,22 @@ cmd_compile_system(){
     com.mediatek.location.lppe.main com.google.android.permissioncontroller com.android.bluetooth
   )
   local batch=""
-  for p in "${pkgs[@]}"; do batch+="cmd package compile -f --full -r cmdline -m everything $p"$'\n'; done
+  for p in "${pkgs[@]}"; do batch+="pm compile -f --full -r cmdline -m everything $p"$'\n'; done
   ash "$batch"
 }
 
 menu(){
   printf '\n=== Android Optimizer (device-only) ===\n'
-  if ((IS_TERMUX)); then
-    cat <<'EOF'
-1) Full device optimize (Standard)
+  cat <<'EOF'
+1) Full device optimize
 2) Apply settings file
 3) Monolith compile [mode]
 4) Clear app caches
-5) Create index guards [path]
-6) WhatsApp cleanup [path]
-7) Compile speed apps
-8) Compile system apps
+5) WhatsApp cleanup [path]
+6) Compile speed apps
+7) Compile system apps
 q) Quit
 EOF
-  else
-    cat <<'EOF'
-1) Full device optimize (ADB)
-2) Apply settings file
-3) Monolith compile [mode]
-4) Clear app caches
-5) Create index guards [path]
-6) WhatsApp cleanup [path]
-7) Compile speed apps
-8) Compile system apps
-q) Quit
-EOF
-  fi
 }
 
 interactive(){
@@ -219,10 +201,9 @@ interactive(){
       2) task_perf "$args" ;;
       3) cmd_monolith "$args" ;;
       4) cmd_cache_clean ;;
-      5) cmd_index_nomedia "$args" ;;
-      6) cmd_wa_clean "$args" ;;
-      7) cmd_compile_speed ;;
-      8) cmd_compile_system ;;
+      5) cmd_wa_clean "$args" ;;
+      6) cmd_compile_speed ;;
+      7) cmd_compile_system ;;
       q|Q) break ;;
       *) warn "Invalid" ;;
     esac
@@ -238,7 +219,6 @@ Commands:
   apply [file]             Apply bulk settings file (default: android-settings.txt)
   monolith [mode]          Compile all apps (default: everything-profile)
   cache-clean              Clear app caches
-  index-nomedia [path]     Create .nomedia/.noindex guards (default: /storage/emulated/0)
   wa-clean [path]          WhatsApp media cleanup >45d
   compile-speed            Compile selected high-usage apps to speed
   compile-system           Compile core system apps to everything
@@ -246,6 +226,7 @@ Commands:
   -h|--help|help           Show this help
 EOF
 }
+
 main(){
   export ADB_CMD="${ADB_CMD:-$(detect_adb || true)}"
   local cmd="${1:-menu}"
@@ -255,7 +236,6 @@ main(){
     apply) task_perf "$@" ;;
     monolith) cmd_monolith "$@" ;;
     cache-clean) cmd_cache_clean ;;
-    index-nomedia) cmd_index_nomedia "$@" ;;
     wa-clean) cmd_wa_clean "$@" ;;
     compile-speed) cmd_compile_speed ;;
     compile-system) cmd_compile_system ;;

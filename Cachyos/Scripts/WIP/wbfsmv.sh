@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C
+IFS=$'\n\t'; export LC_ALL=C
 
 convert=0 trim=0 dry=0 verbose=0
 readonly REGION=${WBFSMV_REGION:-PAL}

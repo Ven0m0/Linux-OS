@@ -1,65 +1,57 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C
+IFS=$'\n\t' LC_ALL=C
 
-convert=0 trim=0 dry=0 verbose=0
+convert=1 trim=1 dry=0 verbose=0
 readonly REGION=${WBFSMV_REGION:-PAL}
 while (($#)) && [[ $1 == -* ]]; do
   case $1 in
     -c|--convert) convert=1 ;;
+    --no-convert) convert=0 ;;
     -t|--trim) trim=1 ;;
+    --no-trim) trim=0 ;;
     -n|--dry-run) dry=1 ;;
     -v|--verbose) verbose=1 ;;
     -h|--help)
       cat <<'EOF'
-Usage: wbfsmv.sh [-c|--convert] [-t|--trim] [-n|--dry-run] [-v|--verbose] [target_dir]
+Usage: wbfsmv.sh [options] [target_dir]
 Options:
-  -c, --convert   Convert ISO/CISO/WIA/WDF to WBFS (requires wit)
-  -t, --trim      Trim/scrub games to reduce size (requires wit, safe for real hardware)
-  -n, --dry-run   Show what would be done without making changes
-  -v, --verbose   Print progress messages
+  -c, --convert      Convert to WBFS (default: on)
+      --no-convert   Do not convert
+  -t, --trim         Trim/scrub via wit (default: on)
+      --no-trim      Do not trim
+  -n, --dry-run      Show actions only
+  -v, --verbose      Print progress
 Environment:
-  WBFSMV_REGION   Region to set on games (PAL|NTSC|JAP|KOR|FREE) [default: PAL]
+  WBFSMV_REGION      PAL|NTSC|JAP|KOR|FREE [default: PAL]
+Defaults: trim+convert on; outputs go through wit --wbfs --trim --psel=data,-update.
 EOF
-      exit 0
-      ;;
+      exit 0 ;;
     *) printf 'Unknown arg: %s\n' "$1" >&2; exit 2 ;;
-  esac
-  shift
+  esac; shift
 done
-
 TARGET=${1:-.}
 [[ -d $TARGET ]] || { printf 'Not a directory: %s\n' "$TARGET" >&2; exit 2; }
 command -v dd &>/dev/null || { printf 'dd required\n' >&2; exit 1; }
-
 have_wit=0
 command -v wit &>/dev/null && have_wit=1
-((trim || convert)) && ((!have_wit)) && { printf 'wit required for --convert/--trim\n' >&2; exit 1; }
-
+((trim || convert)) && ((!have_wit)) && { printf 'wit required for trim/convert\n' >&2; exit 1; }
 declare -rA region_map=([PAL]=EUROPE [NTSC]=USA [JAP]=JAPAN [KOR]=KOREA [FREE]=FREE)
 readonly wit_region=${region_map[${REGION^^}]:-EUROPE}
 log(){ ((verbose)) && printf '%s\n' "$*" >&2 || :; }
 run(){ ((dry)) && log "[dry] $*" || "$@"; }
-
 get_id(){
   local f=$1 id='' off=0
   [[ ${f,,} == *.wbfs ]] && off=512
-  if ((have_wit)); then
-    id=$(wit ID6 -- "$f" 2>/dev/null | head -n1 || printf '')
-  fi
+  if ((have_wit)); then id=$(wit ID6 -- "$f" 2>/dev/null | awk 'NR==1{print;exit}' || printf ''); fi
   [[ -z $id ]] && id=$(dd if="$f" bs=1 skip="$off" count=6 2>/dev/null | tr -dc 'A-Za-z0-9')
   printf '%s' "${id^^}"
 }
-
 get_title(){
   ((have_wit)) || return 0
-  wit dump -ll -- "$1" 2>/dev/null | awk -F': ' '
-    /^(Disc )?Title[[:space:]]*:/ && $2!="" {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2; exit}
-    /^Game title[[:space:]]*:/ && $2!="" {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2); print $2; exit}
-  '
+  wit dump -ll -- "$1" 2>/dev/null | awk -F': ' 'tolower($1)~/^(disc )?title[[:space:]]*:$/||tolower($1)~/^game title[[:space:]]*:$/ {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2);print $2;exit}'
 }
-
 clean(){
   local s=${1//_/ }
   s=$(printf '%s' "$s" | sed -E '
@@ -72,28 +64,24 @@ clean(){
   ')
   printf '%s' "$s"
 }
-
 set_region(){
   ((have_wit)) || return 0
   local f=$1 cur
-  cur=$(wit dump -ll -- "$f" 2>/dev/null | awk -F': ' '/^Region[[:space:]]*:/{print $2; exit}')
+  cur=$(wit dump -ll -- "$f" 2>/dev/null | awk -F': ' '/^Region[[:space:]]*:/{print $2;exit}')
   [[ ${cur^^} == "${wit_region^^}" ]] && return 0
   log "set region $wit_region: $f"
   run wit edit --region "$wit_region" -q -- "$f" || :
 }
-
 trim_game(){
   log "trim: $1 -> $2"
   run wit copy --wbfs --trim --psel=data,-update -q -- "$1" "$2"
 }
-
 readonly exts=(wbfs iso ciso wia wdf)
 is_game_ext(){
   local f=${1,,} e
   for e in "${exts[@]}"; do [[ $f == *."$e" ]] && return 0; done
   return 1
 }
-
 process_file(){
   local f=$1 id title name newdir ext base dest
   is_game_ext "$f" || return 0
@@ -115,21 +103,23 @@ process_file(){
   newdir="$TARGET/${name} [${id}]"
   ext=${f##*.}; ext=${ext,,}
   dest="$newdir/${id}.wbfs"
-  if [[ $ext == wbfs ]] && [[ $f -ef $dest ]] 2>/dev/null && ((!trim)); then
-    set_region "$f"; log "skip (already ok): $f"; return 0
-  fi
-  log "file: $f -> $dest"
-  run mkdir -p -- "$newdir"
   if ((trim)) && ((have_wit)); then
+    log "file: $f -> $dest"
+    run mkdir -p -- "$newdir"
     if trim_game "$f" "$dest"; then
       set_region "$dest"
       [[ $f -ef $dest ]] 2>/dev/null || { log "removing original: $f"; run rm -f -- "$f"; }
     else
-      log "trim failed, moving as-is"
-      run mv -n -- "$f" "$newdir/${id}.${ext}"
-      set_region "$newdir/${id}.${ext}"
+      log "trim failed, keeping original layout"
     fi
-  elif ((convert)) && [[ $ext != wbfs ]] && ((have_wit)); then
+    return 0
+  fi
+  if [[ $ext == wbfs ]] && [[ $f -ef $dest ]] 2>/dev/null; then
+    set_region "$f"; log "skip (already ok): $f"; return 0
+  fi
+  log "file: $f -> $dest"
+  run mkdir -p -- "$newdir"
+  if ((convert)) && [[ $ext != wbfs ]] && ((have_wit)); then
     if run wit copy --wbfs -q -- "$f" "$dest"; then
       set_region "$dest"; log "converted, removing original: $f"; run rm -f -- "$f"
     else
@@ -143,7 +133,6 @@ process_file(){
     set_region "$target_file"
   fi
 }
-
 process_dir(){
   local d=$1 id='' g='' title name newdir base=${d##*/}
   [[ $base =~ \[[A-Z0-9]{6}\] ]] && { log "skip (already tagged): $d"; return 0; }
@@ -189,7 +178,6 @@ process_dir(){
     done
   done
 }
-
 for entry in "$TARGET"/*; do
   [[ -e $entry ]] || continue
   [[ -f $entry ]] && process_file "$entry"

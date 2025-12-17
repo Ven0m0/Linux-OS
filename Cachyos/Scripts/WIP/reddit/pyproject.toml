@@ -1,9 +1,15 @@
 [project]
 name = "account-scanner"
-version = "1.1.0"
-description = "Multi-source account scanner: Reddit toxicity + Sherlock OSINT"
+version = "1.2.0"
+description = "Multi-source account scanner: Reddit toxicity + Sherlock OSINT (async)"
 requires-python = ">=3.11"
-dependencies = ["httpx", "orjson", "praw", "sherlock-project", "uvloop"]
+dependencies = [
+  "httpx[http2]",
+  "orjson",
+  "asyncpraw",
+  "sherlock-project",
+  "uvloop"
+]
 
 [project.optional-dependencies]
 dev = ["ruff", "mypy", "pytest", "black"]

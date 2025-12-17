@@ -9,7 +9,7 @@ dependencies = ["httpx", "orjson", "praw", "sherlock-project", "uvloop"]
 dev = ["ruff", "mypy", "pytest", "black"]
 
 [tool.black]
-line-length = 100
+line-length = 80
 
 [tool.mypy]
 python_version = "3.11"
@@ -17,7 +17,7 @@ strict = true
 ignore_missing_imports = true
 
 [tool.ruff]
-line-length = 100
+line-length = 80
 target-version = "py311"
 exclude = [".git", ".cache", ".var", "node_modules"]
 

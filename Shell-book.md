@@ -31,16 +31,19 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 set -euo pipefail; shopt -s nullglob globstar
-export LC_ALL=C; IFS=$'\n\t'
+IFS=$'\n\t' LC_ALL=C
 s=${BASH_SOURCE[0]}; [[ $s != /* ]] && s=$PWD/$s; cd -P -- "${s%/*}"
 has(){ command -v -- "$1" &>/dev/null; }
+# Text functiontions
+msg(){ printf '%s\n' "$@"; }
+log(){ printf '%s\n' "$@" >&2; }
+die(){ printf '%s\n' "$1" >&2; exit "${2:-1}"; }
 # Bash sleep replacement
 sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
 # Faster date
 date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 # Faster cat
 fcat(){ printf '%s\n' "$(<${1})"; }
-
 
 # vim:set sw=2 ts=2 et:
 ```

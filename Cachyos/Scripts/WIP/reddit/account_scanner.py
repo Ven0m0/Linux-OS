@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Multi-source account scanner: Reddit toxicity + Sherlock OSINT."""
+"""Multi-source account scanner: Reddit toxicity + Sherlock OSINT (async)."""
 import argparse
 import asyncio
 import csv
@@ -9,9 +9,9 @@ import time
 from pathlib import Path
 import httpx
 import orjson
-import praw
 import uvloop
-
+from asyncpraw import Reddit
+from asyncprawcore import AsyncPrawcoreException
 PERSPECTIVE_URL = "https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze"
 DEFAULT_TIMEOUT = 10
 ATTRIBUTES = ["TOXICITY", "INSULT", "PROFANITY", "SEXUALLY_EXPLICIT"]
@@ -54,21 +54,40 @@ async def check_toxicity(client: httpx.AsyncClient, text: str, key: str, limiter
     except Exception:
         return {}
     return {}
-async def scan_reddit(args):
+async def fetch_reddit_items(args):
     limiter = get_limiter(args.rate_per_min)
     print(f"🤖 Reddit: Fetching content for u/{args.username}...")
     try:
-        reddit = praw.Reddit(client_id=args.client_id, client_secret=args.client_secret, user_agent=args.user_agent)
-        user = reddit.redditor(args.username)
-        items = [("comment", c.subreddit.display_name, c.body, c.created_utc) for c in user.comments.new(limit=args.comments)]
-        items.extend([("post", s.subreddit.display_name, f"{s.title}\n{s.selftext}", s.created_utc) for s in user.submissions.new(limit=args.posts)])
+        reddit = Reddit(client_id=args.client_id, client_secret=args.client_secret, user_agent=args.user_agent, requestor_kwargs={"request_timeout": DEFAULT_TIMEOUT})
     except Exception as e:
+        print(f"Reddit init error: {e}", file=sys.stderr)
+        return None, None, limiter
+    user = reddit.redditor(args.username)
+    comments = []
+    posts = []
+    try:
+        async for c in user.comments.new(limit=args.comments):
+            comments.append(("comment", c.subreddit.display_name, c.body, c.created_utc))
+        async for s in user.submissions.new(limit=args.posts):
+            posts.append(("post", s.subreddit.display_name, f"{s.title}\n{s.selftext}", s.created_utc))
+    except AsyncPrawcoreException as e:
         print(f"Reddit API Error: {e}", file=sys.stderr)
-        return
+        await reddit.close()
+        return None, None, limiter
+    items = comments + posts
+    await reddit.close()
+    if not items:
+        print("🤖 Reddit: No items to analyze.")
+        return None, None, limiter
+    return items, limiter, reddit
+async def scan_reddit(args):
+    items, limiter, _ = await fetch_reddit_items(args)
+    if not items:
+        return None
     print(f"🤖 Reddit: Analyzing {len(items)} items...")
-    async with httpx.AsyncClient() as client:
-        tasks = [check_toxicity(client, text, args.api_key, limiter) for _, _, text, _ in items]
-        results = await asyncio.gather(*tasks)
+    limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+    async with httpx.AsyncClient(http2=True, limits=limits) as client:
+        results = await asyncio.gather(*[check_toxicity(client, text, args.api_key, limiter) for _, _, text, _ in items])
     flagged = []
     for (kind, sub, text, ts), scores in zip(items, results):
         if any(s >= args.threshold for s in scores.values()):
@@ -81,6 +100,7 @@ async def scan_reddit(args):
         print(f"🤖 Reddit: Saved {len(flagged)} flagged items → {args.output_reddit}")
     else:
         print("🤖 Reddit: No toxic content found.")
+    return flagged
 async def main_async():
     p = argparse.ArgumentParser()
     p.add_argument("username")

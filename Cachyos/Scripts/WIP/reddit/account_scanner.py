@@ -17,7 +17,6 @@ PERSPECTIVE_URL = "https://commentanalyzer.googleapis.com/v1alpha1/comments:anal
 DEFAULT_TIMEOUT = 10
 ATTRIBUTES = ["TOXICITY", "INSULT", "PROFANITY", "SEXUALLY_EXPLICIT"]
 
-
 def get_limiter(rate_per_min):
     """Closure-based rate limiter."""
     delay = 60.0 / rate_per_min
@@ -31,7 +30,6 @@ def get_limiter(rate_per_min):
         last_call[0] = time.monotonic()
 
     return wait
-
 
 async def run_sherlock(username, timeout, verbose):
     """Run Sherlock username search via subprocess."""
@@ -77,7 +75,6 @@ async def run_sherlock(username, timeout, verbose):
             print(f"Sherlock error: {e}", file=sys.stderr)
         return []
 
-
 async def check_toxicity(client, text, key, limiter):
     """Analyze text toxicity via Perspective API using orjson."""
     if not text.strip():
@@ -109,7 +106,6 @@ async def check_toxicity(client, text, key, limiter):
         return {}
     except Exception:
         return {}
-
 
 async def scan_reddit(args):
     """Fetch and analyze Reddit content."""
@@ -173,7 +169,6 @@ async def scan_reddit(args):
     else:
         print("🤖 Reddit: No toxic content found.")
 
-
 async def main_async():
     p = argparse.ArgumentParser()
     p.add_argument("username")
@@ -222,11 +217,9 @@ async def main_async():
             f.write(orjson.dumps(sherlock_data, option=orjson.OPT_INDENT_2))
         print(f"🔎 Sherlock: Found {len(sherlock_data)} accounts → {args.output_sherlock}")
 
-
 def main():
     uvloop.install()
     asyncio.run(main_async())
-
 
 if __name__ == "__main__":
     main()

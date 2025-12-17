@@ -38,6 +38,8 @@ has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf '%s\n' "$@"; }
 log(){ printf '%s\n' "$@" >&2; }
 die(){ printf '%s\n' "$1" >&2; exit "${2:-1}"; }
+# Verbose termination
+trap 'die "interrupted" 130' INT TERM
 # Bash sleep replacement
 sleepy(){ read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
 # Faster date

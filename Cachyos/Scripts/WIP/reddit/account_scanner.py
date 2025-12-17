@@ -7,7 +7,6 @@ import shutil
 import sys
 import time
 from pathlib import Path
-
 import httpx
 import orjson
 import praw

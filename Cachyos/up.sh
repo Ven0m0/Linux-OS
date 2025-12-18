@@ -53,6 +53,7 @@ main() {
     has soar && sudo soar upgrade --all --noconfirm || :
     has zoi && zoi upgrade --yes --all || :
     has gh && gh extension upgrade --all || :
+    has yt-dlp && yt-dlp --rm-cache-dir -U || :
   }
   update_python() {
     has uv || return 0

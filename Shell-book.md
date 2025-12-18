@@ -47,7 +47,7 @@ date(){ local x="${1:-%d/%m/%y-%R}"; printf "%($x)T\n" '-1'; }
 # Faster cat
 fcat(){ printf '%s\n' "$(<${1})"; }
 
-# vim:set sw=2 ts=2 et:
+# vim:set sw=2 ts=2 ft=sh et:
 ```
 
 </details>

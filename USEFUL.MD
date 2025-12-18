@@ -58,3 +58,5 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
 ```
 
 or depending on speed `-preset 5` or `-preset 6`
+
+`tile-columns=2` `tile-rows`

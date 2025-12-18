@@ -1,46 +1,130 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail
-shopt -s nullglob globstar
-export LC_ALL=C
-IFS=$'\n\t'
-has() { command -v -- "$1" &>/dev/null; }
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 
-echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null
-echo within_size | sudo tee /sys/kernel/mm/transparent_hugepage/shmem_enabled &>/dev/null
-echo 1 | sudo tee /sys/kernel/mm/ksm/use_zero_pages &>/dev/null
-echo 0 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo &>/dev/null
-echo 1 | sudo tee /proc/sys/vm/page_lock_unfairness &>/dev/null
-echo 0 | sudo tee /sys/kernel/mm/transparent_hugepage/use_zero_page &>/dev/null
-echo 0 | sudo tee /sys/kernel/mm/transparent_hugepage/shrink_underused &>/dev/null
-echo kyber | sudo tee /sys/block/nvme0n1/queue/scheduler &>/dev/null
-echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor &>/dev/null
-sudo powerprofilesctl set performance &>/dev/null
-sudo cpupower frequency-set -g performance &>/dev/null
-echo 512 | sudo tee /sys/block/nvme0n1/queue/nr_requests &>/dev/null
-echo 1024 | sudo tee /sys/block/nvme0n1/queue/read_ahead_kb &>/dev/null
-echo 0 | sudo tee /sys/block/sda/queue/add_random &>/dev/null
-echo performance | sudo tee /sys/module/pcie_aspm/parameters/policy &>/dev/null
+has(){ command -v -- "$1" &>/dev/null; }
+msg(){ printf '%s\n' "$@"; }
+log(){ printf '%s\n' "$@" >&2; }
+die(){ printf '%s\n' "$1" >&2; exit "${2:-1}"; }
+write_sys(){ local val=$1 path=$2; [[ -e $path ]] || return 0; printf '%s\n' "$val" | sudo tee "$path" >/dev/null; }
+write_many(){ local val=$1; shift; local p; for p in "$@"; do write_sys "$val" "$p"; done; }
 
-# disable bluetooth
-sudo systemctl stop bluetooth.service
-# enable USB autosuspend
-for usb_device in /sys/bus/usb/devices/*/power/control; do
-  echo 'auto' | sudo tee "$usb_device" >/dev/null
-done
-# disable NMI watchdog
-echo 0 | sudo tee /proc/sys/kernel/nmi_watchdog
-# disable Wake-on-Timer
-echo 0 | sudo tee /sys/class/rtc/rtc0/wakealarm
-export USE_CCACHE=1
-# Enable HDD write cache:
-# hdparm -W 1 /dev/sdX
-# Disables aggressive power-saving, but keeps APM enabled
-# hdparm -B 254
-# Completely disables APM
-# hdparm -B 255
-if has gamemoderun; then
-  gamemoderun
-fi
-sync
-echo 3 | sudo tee /proc/sys/vm/drop_caches
+main(){
+  [[ ${EUID:-1} -eq 0 ]] && die "Run as user with sudo, not root."
+  has sudo || die "sudo required."
+  export USE_CCACHE=1
+
+  sys_writes=(
+    "always:/sys/kernel/mm/transparent_hugepage/enabled"
+    "within_size:/sys/kernel/mm/transparent_hugepage/shmem_enabled"
+    "1:/sys/kernel/mm/ksm/use_zero_pages"
+    "0:/sys/devices/system/cpu/intel_pstate/no_turbo"
+    "1:/proc/sys/vm/page_lock_unfairness"
+    "0:/sys/kernel/mm/transparent_hugepage/use_zero_page"
+    "0:/sys/kernel/mm/transparent_hugepage/shrink_underused"
+    "kyber:/sys/block/nvme0n1/queue/scheduler"
+    "512:/sys/block/nvme0n1/queue/nr_requests"
+    "1024:/sys/block/nvme0n1/queue/read_ahead_kb"
+    "0:/sys/block/sda/queue/add_random"
+    "performance:/sys/module/pcie_aspm/parameters/policy"
+  )
+  local entry val path
+  for entry in "${sys_writes[@]}"; do
+    IFS=':' read -r val path <<<"$entry"
+    write_sys "$val" "$path"
+  done
+
+  governor_paths=(/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)
+  write_many performance "${governor_paths[@]}"
+
+  sudo powerprofilesctl set performance &>/dev/null || true
+  sudo cpupower frequency-set -g performance &>/dev/null || true
+
+  sudo systemctl stop bluetooth.service &>/dev/null || true
+  for usb_device in /sys/bus/usb/devices/*/power/control; do
+    [[ -e $usb_device ]] || continue
+    printf 'auto\n' | sudo tee "$usb_device" >/dev/null
+  done
+  write_sys 0 /proc/sys/kernel/nmi_watchdog
+  write_sys 0 /sys/class/rtc/rtc0/wakealarm
+
+  cleanup_shader_cache
+  if has gamemoderun; then gamemoderun; fi
+  sync
+  write_sys 3 /proc/sys/vm/drop_caches
+}
+
+cleanup_shader_cache(){
+  readonly XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
+  readonly XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
+
+  if [[ -d "${HOME}/.steam/steam" ]]; then
+    steam_root="${HOME}/.steam/steam"
+  elif [[ -d "$XDG_DATA_HOME/Steam" ]]; then
+    steam_root="$XDG_DATA_HOME/Steam"
+  else
+    log "Steam not found; skipping cache cleanup."
+    return 0
+  fi
+  msg "Found Steam at: $steam_root"
+
+  declare -A games=([730]="cs2:Counter-Strike Global Offensive:csgo")
+  readonly kill_procs=(steam steamwebhelper cs2)
+  msg "Stopping Steam processes..."
+  pkill -15 -x "${kill_procs[@]}" 2>/dev/null || true
+  for _ in {1..10}; do
+    pgrep -x "${kill_procs[@]}" >/dev/null || break
+    sleep 0.5
+  done
+  pkill -9 -x "${kill_procs[@]}" 2>/dev/null || true
+  msg "Steam stopped."
+
+  readonly logs=("$steam_root/logs" "$steam_root/dumps")
+  msg "Cleaning Steam logs..."
+  local dir
+  for dir in "${logs[@]}"; do
+    [[ -d $dir ]] || continue
+    rm -f "${dir:?}/"* 2>/dev/null || true
+  done
+
+  msg "Cleaning game caches..."
+  local appid exe gamedir mod game_path t_dir
+  for appid in "${!games[@]}"; do
+    IFS=':' read -r exe gamedir mod <<<"${games[$appid]}"
+    game_path="$steam_root/steamapps/common/$gamedir"
+    [[ -d $game_path ]] || continue
+    msg "  -> Cleaning $gamedir ($appid)..."
+    find "$game_path" -type f -name '*.mdmp' -delete 2>/dev/null || true
+    target_dirs=(
+      "$game_path/game/$mod/shadercache"
+      "$steam_root/steamapps/shadercache/$appid"
+    )
+    for t_dir in "${target_dirs[@]}"; do
+      [[ -d $t_dir ]] || continue
+      rm -rf "${t_dir:?}/"* 2>/dev/null || true
+    done
+  done
+
+  msg "Cleaning GPU caches..."
+  readonly gpu_cache_dirs=(
+    "${XDG_CACHE_HOME}/mesa_shader_cache"
+    "${XDG_CACHE_HOME}/nvidia/GLCache"
+    "${XDG_CACHE_HOME}/nvidia/DXCache"
+    "${XDG_CACHE_HOME}/nvidia/OptixCache"
+    "${HOME}/.nv/ComputeCache"
+    "${HOME}/.nv/GLCache"
+    "${XDG_CACHE_HOME}/AMD/DxCache"
+    "${XDG_CACHE_HOME}/AMD/GLCache"
+    "${XDG_CACHE_HOME}/AMD/VkCache"
+    "${XDG_CACHE_HOME}/Intel/ShaderCache"
+    "${XDG_CACHE_HOME}/dxvk-cache"
+  )
+  for dir in "${gpu_cache_dirs[@]}"; do
+    [[ -d $dir ]] || continue
+    msg "  -> Purging ${dir##*/}"
+    rm -rf "${dir:?}/"* 2>/dev/null || true
+  done
+  msg $'\n\033[32mCleanup complete!\033[0m'
+}
+main "$@"

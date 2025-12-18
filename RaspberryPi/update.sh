@@ -20,7 +20,7 @@ clean_apt_cache() {
   sudo apt-get autoremove --purge -y 2>/dev/null || :
 }
 run_apt() {
-  yes | sudo apt-get -y --allow-releaseinfo-change \
+  yes | sudo apt-get -y --allow-releaseinfo-change --no-install-recommends --no-install-suggests \
     -o Acquire::Languages=none -o APT::Get::Fix-Missing=true \
     -o APT::Get::Fix-Broken=true "$@"
 }

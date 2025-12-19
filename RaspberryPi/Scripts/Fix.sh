@@ -116,7 +116,7 @@ fix_ssh_permissions() {
     chmod 700 ~/.ssh
     log "SSH permissions fixed"
   else
-    warn "~/.ssh directory not found, skipping"
+    warn "$HOME/.ssh directory not found, skipping"
   fi
 }
 
@@ -127,7 +127,7 @@ fix_gnupg_permissions() {
     chmod 700 ~/.gnupg
     log "GnuPG permissions fixed"
   else
-    warn "~/.gnupg directory not found, skipping"
+    warn "$HOME/.gnupg directory not found, skipping"
   fi
 }
 

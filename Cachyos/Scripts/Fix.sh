@@ -58,7 +58,8 @@ print_named_banner() {
 setup_build_env() {
   [[ -r /etc/makepkg.conf ]] && source /etc/makepkg.conf &>/dev/null
   export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=symbols"
-  export CFLAGS="-march=native -mtune=native -O3 -pipe" CXXFLAGS="$CFLAGS"
+  export CFLAGS="-march=native -mtune=native -O3 -pipe"
+  export CXXFLAGS="$CFLAGS"
   export LDFLAGS="-Wl,-O3 -Wl,--sort-common -Wl,--as-needed -Wl,-z,now -Wl,-z,pack-relative-relocs -Wl,-gc-sections"
   export CARGO_CACHE_AUTO_CLEAN_FREQUENCY=always CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true CARGO_CACHE_RUSTC_INFO=1 RUSTC_BOOTSTRAP=1
   local nproc_count

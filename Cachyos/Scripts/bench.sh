@@ -104,11 +104,11 @@ jobs8="$((nproc_count / 2))"
 if [[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then
   o1="$(</sys/devices/system/cpu/intel_pstate/no_turbo)"
   Reset() {
-    echo "$o1" | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
+    printf '%s\n' "$o1" | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" >/dev/null || :
   }
   # Set performance mode
   sudo cpupower frequency-set --governor performance &>/dev/null || :
-  echo 1 | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" &>/dev/null || :
+  printf '%s\n' 1 | sudo tee "/sys/devices/system/cpu/intel_pstate/no_turbo" >/dev/null || :
 else
   Reset() { :; }
   sudo cpupower frequency-set --governor performance &>/dev/null || :
@@ -121,7 +121,7 @@ benchmark() {
   local cmd="$*"
   log "${BLU}▶${DEF} $name"
   command hyperfine -w 25 -m 50 -i -S bash \
-    -p "sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null; resolvectl flush-caches &>/dev/null || :; hash -r" \
+    -p "sync; printf '%s\n' 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null; resolvectl flush-caches &>/dev/null || :; hash -r" \
     "$cmd"
 }
 
@@ -136,7 +136,7 @@ benchmark_copy() {
   if [[ $EXPORT_JSON -eq 1 ]]; then
     hyperfine \
       --warmup 5 \
-      --prepare "sudo fstrim -a --quiet-unsupported &>/dev/null; sudo journalctl --vacuum-time=1s &>/dev/null; sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null" \
+      --prepare "sudo fstrim -a --quiet-unsupported &>/dev/null; sudo journalctl --vacuum-time=1s &>/dev/null; sync; printf '%s\n' 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null" \
       --export-json /tmp/hf-"$name".json \
       "$cmd"
 
@@ -148,7 +148,7 @@ benchmark_copy() {
   else
     hyperfine \
       --warmup 5 \
-      --prepare "sudo fstrim -a --quiet-unsupported &>/dev/null; sudo journalctl --vacuum-time=1s &>/dev/null; sync; echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null" \
+      --prepare "sudo fstrim -a --quiet-unsupported &>/dev/null; sudo journalctl --vacuum-time=1s &>/dev/null; sync; printf '%s\n' 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null" \
       "$cmd"
   fi
 }

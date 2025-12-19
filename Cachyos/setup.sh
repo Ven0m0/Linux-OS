@@ -115,8 +115,8 @@ Include = /etc/pacman. d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 init_system(){
   msg "Initializing system"
-  localectl set-locale C. UTF-8 >/dev/null
-  [[ -d ~/. ssh ]] && chmod -R 700 ~/.ssh
+  localectl set-locale C.UTF-8 >/dev/null
+  [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
   [[ -d ~/.gnupg ]] && chmod -R 700 ~/.gnupg
   ssh-keyscan -H aur.archlinux.org github.com >>~/.ssh/known_hosts 2>/dev/null || : 
   [[ -f /etc/doas.conf ]] && {
@@ -324,7 +324,7 @@ configure_auth_limits(){
   msg "Configuring auth limits"
   sudo sed -i 's|^\(auth\s\+required\s\+pam_faillock. so\)\s\+preauth.*$|\1 preauth silent deny=10 unlock_time=120|' /etc/pam.d/system-auth
   sudo sed -i 's|^\(auth\s\+\[default=die\]\s\+pam_faillock.so\)\s\+authfail.*$|\1 authfail deny=10 unlock_time=120|' /etc/pam. d/system-auth
-  echo "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries >/dev/null
+  printf '%s\n' "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries >/dev/null
   sudo chmod 440 /etc/sudoers. d/passwd-tries
 }
 
@@ -494,7 +494,7 @@ auto_setup_tweaks(){
     [[ -d $dir ]] && touch "$dir/. metadata_never_index" "$dir/.noindex" "$dir/.nomedia" "$dir/.trackerignore" 2>/dev/null || : 
   done
   msg "Enable write cache & Disable logs/services"
-  echo "write back" | sudo tee /sys/block/*/queue/write_cache &>/dev/null || :
+  printf '%s\n' "write back" | sudo tee /sys/block/*/queue/write_cache >/dev/null 2>&1 || :
   sudo systemctl mask systemd-update-utmp{,-runlevel,-shutdown}.service systemd-journal-{flush,catalog-update}.service systemd-journald-{dev-log,audit}.socket &>/dev/null || : 
   sudo systemctl disable --global speech-dispatcher smartmontools systemd-rfkill. {service,socket} &>/dev/null || :
   sudo systemctl disable speech-dispatcher smartmontools systemd-rfkill.{service,socket} &>/dev/null || : 
@@ -540,11 +540,11 @@ auto_setup_tweaks(){
   sudo journalctl --rotate --vacuum-time=0. 1 &>/dev/null || :
   [[ -f /etc/systemd/journald.conf ]] && sudo sed -i -e 's/^#ForwardTo\(Syslog\|KMsg\|Console\|Wall\)=. */ForwardTo\1=no/' -e 's/^#Compress=yes/Compress=yes/' /etc/systemd/journald.conf
   [[ -f /etc/logrotate.conf ]] && sudo sed -i -e 's/^#compress/compress/' /etc/logrotate.conf
-  echo "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf >/dev/null
+  printf '%s\n' "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf >/dev/null
   sudo sed -i -e 's/^#\(DumpCore\|CrashShell\)=.*/\1=no/' /etc/systemd/{system,user}.conf 2>/dev/null || : 
   [[ -f /etc/modprobe.d/disable-usb-autosuspend.conf ]] || echo "options usbcore autosuspend=-1" | sudo tee /etc/modprobe.d/disable-usb-autosuspend.conf >/dev/null
   sudo update-ca-trust &>/dev/null || :
-  echo "options processor ignore_ppc=1" | sudo tee /etc/modprobe.d/ignore_ppc.conf >/dev/null
+  printf '%s\n' "options processor ignore_ppc=1" | sudo tee /etc/modprobe.d/ignore_ppc.conf >/dev/null
   echo "options nvidia NVreg_UsePageAttributeTable=1 NVreg_InitializeSystemMemoryAllocations=0 NVreg_DynamicPowerManagement=0x02" | sudo tee /etc/modprobe.d/nvidia. conf >/dev/null
   cat <<EOF | sudo tee /etc/modprobe.d/misc.conf >/dev/null
 options vfio_pci disable_vga=1

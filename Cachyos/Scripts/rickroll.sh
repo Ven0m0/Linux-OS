@@ -16,13 +16,13 @@ red='\x1b[38;5;9m'
 yell='\x1b[38;5;216m'
 green='\x1b[38;5;10m'
 purp='\x1b[38;5;171m'
-echo -en '\x1b[s'  # Save cursor.
+echo -en '\x1b[s' # Save cursor.
 
 has?() { hash $1 2>/dev/null; }
-cleanup() { (( audpid > 1 )) && kill $audpid 2>/dev/null; }
+cleanup() { ((audpid > 1)) && kill $audpid 2>/dev/null; }
 quit() { echo -e "\x1b[2J \x1b[0H ${purp}<3 \x1b[?25h \x1b[u \x1b[m"; }
 
-usage () {
+usage() {
   echo -en "${green}Rick Astley performs ♪ Never Gonna Give You Up ♪ on STDOUT."
   echo -e "  ${purp}[v$version]"
   echo -e "${yell}Usage: ./astley.sh [OPTIONS...]"
@@ -35,7 +35,7 @@ for arg in "$@"; do
     usage && exit
   elif [[ "$arg" == "inject" ]]; then
     echo -en "${red}[Inject] "
-    echo $NEVER_GONNA >> $MAKE_YOU_CRY
+    echo $NEVER_GONNA >>$MAKE_YOU_CRY
     echo -e "${green}Appended to $MAKE_YOU_CRY. <3"
     echo -en "${yell}If you've astley overdosed, "
     echo -e "delete the line ${purp}\"$NEVER_GONNA\"${yell}."
@@ -50,12 +50,15 @@ trap "quit" EXIT
 
 # Bean streamin' - agnostic to curl or wget availability.
 obtainium() {
-  if has? curl; then curl -s $1
-  elif has? wget; then wget -q -O - $1
-  else echo "Cannot has internets. :(" && exit
+  if has? curl; then
+    curl -s $1
+  elif has? wget; then
+    wget -q -O - $1
+  else
+    echo "Cannot has internets. :(" && exit
   fi
 }
-echo -en "\x1b[?25l \x1b[2J \x1b[H"  # Hide cursor, clear screen.
+echo -en "\x1b[?25l \x1b[2J \x1b[H" # Hide cursor, clear screen.
 
 #echo -e "${yell}Fetching audio..."
 if has? afplay; then
@@ -75,7 +78,8 @@ audpid=$!
 #echo -e "${yell}Fetching video..."
 # Sync FPS to reality as best as possible. Mac's freebsd version of date cannot
 # has nanoseconds so inject python. :/
-python <(cat <<EOF
+python <(
+  cat <<EOF
 import sys
 import time
 fps = 25; time_per_frame = 1.0 / fps
@@ -96,4 +100,4 @@ try:
 except KeyboardInterrupt:
   pass
 EOF
-) < <(obtainium $video | bunzip2 -q 2> /dev/null)
+) < <(obtainium $video | bunzip2 -q 2>/dev/null)

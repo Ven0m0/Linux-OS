@@ -51,10 +51,15 @@ main() {
     has code && code --update-extensions || :
     has fish && fish -c "fish_update_completions; and fisher update" || :
     if has soar; then
-      soar S -q; soar u -q; soar clean -q
+      soar S -q
+      soar u -q
+      soar clean -q
     fi
     if has am; then
-      am -s; am -u; am --icons --all; am -c
+      am -s
+      am -u
+      am --icons --all
+      am -c
     fi
     has zoi && zoi upgrade --yes --all || :
     has gh && gh extension upgrade --all || :

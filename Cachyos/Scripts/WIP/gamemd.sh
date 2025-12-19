@@ -1,16 +1,29 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 
-has(){ command -v -- "$1" &>/dev/null; }
-msg(){ printf '%s\n' "$@"; }
-log(){ printf '%s\n' "$@" >&2; }
-die(){ printf '%s\n' "$1" >&2; exit "${2:-1}"; }
-write_sys(){ local val=$1 path=$2; [[ -e $path ]] || return 0; printf '%s\n' "$val" | sudo tee "$path" >/dev/null; }
-write_many(){ local val=$1; shift; local p; for p in "$@"; do write_sys "$val" "$p"; done; }
+has() { command -v -- "$1" &>/dev/null; }
+msg() { printf '%s\n' "$@"; }
+log() { printf '%s\n' "$@" >&2; }
+die() {
+  printf '%s\n' "$1" >&2
+  exit "${2:-1}"
+}
+write_sys() {
+  local val=$1 path=$2
+  [[ -e $path ]] || return 0
+  printf '%s\n' "$val" | sudo tee "$path" >/dev/null
+}
+write_many() {
+  local val=$1
+  shift
+  local p
+  for p in "$@"; do write_sys "$val" "$p"; done
+}
 
-main(){
+main() {
   [[ ${EUID:-1} -eq 0 ]] && die "Run as user with sudo, not root."
   has sudo || die "sudo required."
   export USE_CCACHE=1
@@ -29,23 +42,23 @@ main(){
     "performance:/sys/module/pcie_aspm/parameters/policy"
   )
   # https://wiki.archlinux.org/title/Gaming
-  echo 0 > /proc/sys/vm/compaction_proactiveness
-  echo 1 > /proc/sys/vm/watermark_boost_factor
-  echo 1048576 > /proc/sys/vm/min_free_kbytes
-  echo 500 > /proc/sys/vm/watermark_scale_factor
-  echo 5 > /sys/kernel/mm/lru_gen/enabled
-  echo 0 > /proc/sys/vm/zone_reclaim_mode
-  echo madvise > /sys/kernel/mm/transparent_hugepage/enabled
-  echo advise > /sys/kernel/mm/transparent_hugepage/shmem_enabled
-  echo never > /sys/kernel/mm/transparent_hugepage/defrag
-  echo 1 > /proc/sys/vm/page_lock_unfairness
-  echo 0 > /proc/sys/kernel/sched_child_runs_first
-  echo 1 > /proc/sys/kernel/sched_autogroup_enabled
+  echo 0 >/proc/sys/vm/compaction_proactiveness
+  echo 1 >/proc/sys/vm/watermark_boost_factor
+  echo 1048576 >/proc/sys/vm/min_free_kbytes
+  echo 500 >/proc/sys/vm/watermark_scale_factor
+  echo 5 >/sys/kernel/mm/lru_gen/enabled
+  echo 0 >/proc/sys/vm/zone_reclaim_mode
+  echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
+  echo advise >/sys/kernel/mm/transparent_hugepage/shmem_enabled
+  echo never >/sys/kernel/mm/transparent_hugepage/defrag
+  echo 1 >/proc/sys/vm/page_lock_unfairness
+  echo 0 >/proc/sys/kernel/sched_child_runs_first
+  echo 1 >/proc/sys/kernel/sched_autogroup_enabled
   setpci -v -s '*:*' latency_timer=20
   setpci -v -s '0:0' latency_timer=0
   setpci -v -d "*:*:04xx" latency_timer=80
   export LD_BIND_NOW=1
-  
+
   local entry val path
   for entry in "${sys_writes[@]}"; do
     IFS=':' read -r val path <<<"$entry"
@@ -72,7 +85,7 @@ main(){
   write_sys 3 /proc/sys/vm/drop_caches
 }
 
-cleanup_shader_cache(){
+cleanup_shader_cache() {
   readonly XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
   readonly XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
 

@@ -1,30 +1,40 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail; shopt -s nullglob globstar
-IFS=$'\n\t'; export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
+export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
 
-has(){ command -v "$1" &>/dev/null; }
-log(){ printf '%s\n' "[*] $*"; }
-ok(){ printf '%s\n' "[+] $*"; }
-warn(){ printf '%s\n' "[!] $*" >&2; }
-err(){ printf '%s\n' "[-] $*" >&2; }
+has() { command -v "$1" &>/dev/null; }
+log() { printf '%s\n' "[*] $*"; }
+ok() { printf '%s\n' "[+] $*"; }
+warn() { printf '%s\n' "[!] $*" >&2; }
+err() { printf '%s\n' "[-] $*" >&2; }
 
 IS_TERMUX=$([[ -d /data/data/com.termux/files ]] && printf 1 || printf 0)
 NPROC=$(nproc 2>/dev/null || printf 4)
 
-detect_adb(){
+detect_adb() {
   if ((IS_TERMUX)); then
-    local a; a=$(has rish && printf rish || printf '')
-    [[ -n $a ]] || { warn "rish not found; install Shizuku"; return 1; }
+    local a
+    a=$(has rish && printf rish || printf '')
+    [[ -n $a ]] || {
+      warn "rish not found; install Shizuku"
+      return 1
+    }
     printf '%s' "$a"
   else
-    local a; a=$(has adb && printf adb || printf '')
-    [[ -n $a ]] || { err "adb not found; install platform-tools"; return 1; }
+    local a
+    a=$(has adb && printf adb || printf '')
+    [[ -n $a ]] || {
+      err "adb not found; install platform-tools"
+      return 1
+    }
     printf '%s' "$a"
   fi
 }
 
-ash(){
+ash() {
   local adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
   if ((IS_TERMUX)); then
     [[ $# -eq 0 ]] && "$adb_cmd" sh || "$adb_cmd" "$@" 2>/dev/null || return 1
@@ -33,30 +43,43 @@ ash(){
   fi
 }
 
-device_ok(){
-  local adb_cmd; adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
+device_ok() {
+  local adb_cmd
+  adb_cmd="${ADB_CMD:-$(detect_adb)}" || return 1
   if ((IS_TERMUX)); then
-    [[ -n $adb_cmd ]] || { err "rish unavailable"; return 1; }
+    [[ -n $adb_cmd ]] || {
+      err "rish unavailable"
+      return 1
+    }
     return 0
   fi
   "$adb_cmd" start-server &>/dev/null || :
-  "$adb_cmd" get-state &>/dev/null || { err "No device connected; enable USB debugging"; return 1; }
+  "$adb_cmd" get-state &>/dev/null || {
+    err "No device connected; enable USB debugging"
+    return 1
+  }
 }
 
-apply_settings_file(){
+apply_settings_file() {
   local file="${1:-android-settings.txt}"
-  [[ -f $file ]] || { err "Settings file not found: $file"; return 1; }
+  [[ -f $file ]] || {
+    err "Settings file not found: $file"
+    return 1
+  }
   local batch=""
   while IFS= read -r line || [[ -n $line ]]; do
     [[ -z $line || $line =~ ^[[:space:]]*# ]] && continue
     [[ $line =~ ^\[[^]]+\]$ ]] && continue
     batch+="$line"$'\n'
   done <"$file"
-  [[ -z $batch ]] && { warn "No settings to apply"; return 0; }
+  [[ -z $batch ]] && {
+    warn "No settings to apply"
+    return 0
+  }
   ash "$batch"
 }
 
-task_maint(){
+task_maint() {
   ash <<'EOF'
 sync
 cmd stats write-to-disk
@@ -74,12 +97,12 @@ cmd otadexopt cleanup
 EOF
 }
 
-task_cleanup_fs(){
+task_cleanup_fs() {
   ash 'find /sdcard /storage/emulated/0 -type f -iregex ".*\.\(log\|bak\|old\|tmp\)$" -delete 2>/dev/null || :'
   cmd_wa_clean "/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media"
 }
 
-task_art(){
+task_art() {
   local jid
   jid="$(ash 'cmd jobscheduler list-jobs android 2>/dev/null' | grep -F background-dexopt | awk '{print $2}' || :)"
   ash <<EOF
@@ -92,16 +115,16 @@ pm bg-dexopt-job
 EOF
 }
 
-task_block(){
+task_block() {
   [[ $1 == enable ]] && ash 'cmd connectivity set-chain3-enabled true'
   [[ $1 == disable ]] && ash 'cmd connectivity set-chain3-enabled false'
   [[ $1 == block ]] && ash "cmd connectivity set-package-networking-enabled false \"$2\""
   [[ $1 == unblock ]] && ash "cmd connectivity set-package-networking-enabled true \"$2\""
 }
 
-task_perf(){ apply_settings_file "${1:-android-settings.txt}"; }
+task_perf() { apply_settings_file "${1:-android-settings.txt}"; }
 
-task_finalize(){
+task_finalize() {
   ash <<'EOF'
 am broadcast -a android.intent.action.ACTION_OPTIMIZE_DEVICE
 am broadcast -a com.android.systemui.action.CLEAR_MEMORY
@@ -111,7 +134,7 @@ dumpsys batterystats --reset
 EOF
 }
 
-cmd_device_all(){
+cmd_device_all() {
   device_ok || return 1
   task_maint
   task_cleanup_fs
@@ -121,28 +144,30 @@ cmd_device_all(){
   ok "Device optimization complete"
 }
 
-cmd_monolith(){
+cmd_monolith() {
   device_ok || return 1
   local mode="${1:-speed-profile}"
   ash "pm compile -a --full -r cmdline -m \"$mode\""
   ok "Compilation complete"
 }
 
-cmd_cache_clean(){
+cmd_cache_clean() {
   device_ok || return 1
   if ((IS_TERMUX)); then
     ash 'pm list packages -3' | cut -d: -f2 | xargs -r -n1 -P"$NPROC" -I{} ash "pm clear --cache-only {}" &>/dev/null || :
     ash 'pm list packages -s' | cut -d: -f2 | xargs -r -n1 -P"$NPROC" -I{} ash "pm clear --cache-only {}" &>/dev/null || :
   else
-    local adb_cmd; adb_cmd="${ADB_CMD:-$(detect_adb)}"
+    local adb_cmd
+    adb_cmd="${ADB_CMD:-$(detect_adb)}"
     "$adb_cmd" shell 'pm list packages -3' 2>/dev/null | cut -d: -f2 | xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &>/dev/null || :
     "$adb_cmd" shell 'pm list packages -s' 2>/dev/null | cut -d: -f2 | xargs -r -n1 -P"$NPROC" -I{} "$adb_cmd" shell pm clear --cache-only {} &>/dev/null || :
   fi
-  ash 'pm trim-caches 128G'; ash 'logcat -b all -c'
+  ash 'pm trim-caches 128G'
+  ash 'logcat -b all -c'
   ok "Cache cleared"
 }
 
-cmd_wa_clean(){
+cmd_wa_clean() {
   local wa_base="${1:-/storage/emulated/0/Android/media/com.whatsapp/WhatsApp/Media}"
   ash <<EOF
 [ -d "$wa_base" ] || exit 0
@@ -154,7 +179,7 @@ printf 'Freed %s MB\n' "$((before - after))"
 EOF
 }
 
-cmd_compile_speed(){
+cmd_compile_speed() {
   local pkgs=(
     com.whatsapp com.snapchat.android com.instagram.android com.zhiliaoapp.musically
     app.revanced.android.youtube anddea.youtube.music com.spotify.music
@@ -167,7 +192,7 @@ cmd_compile_speed(){
   ash "$batch"
 }
 
-cmd_compile_system(){
+cmd_compile_system() {
   local pkgs=(
     com.android.systemui com.nothing.launcher com.android.internal.systemui.navbar.threebutton
     com.google.android.webview com.google.android.webview.beta com.google.android.inputmethod.latin
@@ -179,7 +204,7 @@ cmd_compile_system(){
   ash "$batch"
 }
 
-menu(){
+menu() {
   printf '\n=== Android Optimizer (device-only) ===\n'
   cat <<'EOF'
 1) Full device optimize
@@ -193,7 +218,7 @@ q) Quit
 EOF
 }
 
-interactive(){
+interactive() {
   while :; do
     menu
     read -rp "Select: " c args
@@ -205,14 +230,14 @@ interactive(){
       5) cmd_wa_clean "$args" ;;
       6) cmd_compile_speed ;;
       7) cmd_compile_system ;;
-      q|Q) break ;;
+      q | Q) break ;;
       *) warn "Invalid" ;;
     esac
   done
   log "Done"
 }
 
-usage(){
+usage() {
   cat <<EOF
 android-optimize.sh - Device-only optimizer (ADB or Termux+Shizuku)
 Commands:
@@ -228,7 +253,7 @@ Commands:
 EOF
 }
 
-main(){
+main() {
   export ADB_CMD="${ADB_CMD:-$(detect_adb || true)}"
   local cmd="${1:-menu}"
   shift || :
@@ -241,8 +266,12 @@ main(){
     compile-speed) cmd_compile_speed ;;
     compile-system) cmd_compile_system ;;
     menu) interactive ;;
-    -h|--help|help) usage ;;
-    *) err "Unknown: $cmd"; usage; exit 2 ;;
+    -h | --help | help) usage ;;
+    *)
+      err "Unknown: $cmd"
+      usage
+      exit 2
+      ;;
   esac
 }
 main "$@"

@@ -31,9 +31,9 @@ usage() {
   echo -e " inject - Append to ${purp}${USER}${yell}'s bashrc. (Recommended :D)"
 }
 for arg in "$@"; do
-  if [[ "$arg" == "help"* || "$arg" == "-h"* || "$arg" == "--h"* ]]; then
+  if [[ $arg == "help"* || $arg == "-h"* || $arg == "--h"* ]]; then
     usage && exit
-  elif [[ "$arg" == "inject" ]]; then
+  elif [[ $arg == "inject" ]]; then
     echo -en "${red}[Inject] "
     echo $NEVER_GONNA >>$MAKE_YOU_CRY
     echo -e "${green}Appended to $MAKE_YOU_CRY. <3"

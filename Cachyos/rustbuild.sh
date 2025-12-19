@@ -211,7 +211,7 @@ setup_env() {
   export CARGO_BUILD_JOBS="$jobs" CARGO_PROFILE_RELEASE_LTO=true OPT_LEVEL=3
   export MALLOC_CONF="thp:always,metadata_thp:always,tcache:true,percpu_arena:percpu"
   export _RJEM_MALLOC_CONF="$MALLOC_CONF"
-  echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled &>/dev/null || :
+  printf '%s\n' always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled >/dev/null || :
   local -a lflags=() cldflags=()
   if [[ $USE_MOLD -eq 1 ]]; then
     lflags+=(-Clink-arg=-fuse-ld=mold)
@@ -247,16 +247,16 @@ setup_env() {
 # ──────────────────────────────────────────────────────────────────────────────
 profileon() {
   echo "==> Profiling mode ON"
-  sudo sh -c "echo 0>/proc/sys/kernel/randomize_va_space" || :
-  sudo sh -c "echo 0>/proc/sys/kernel/nmi_watchdog" || :
-  sudo sh -c "echo 1>/sys/devices/system/cpu/intel_pstate/no_turbo" || :
-  sudo sh -c "echo 0>/proc/sys/kernel/kptr_restrict" || :
-  sudo sh -c "echo 0>/proc/sys/kernel/perf_event_paranoid" || :
+  printf '%s\n' 0 | sudo tee /proc/sys/kernel/randomize_va_space >/dev/null || :
+  printf '%s\n' 0 | sudo tee /proc/sys/kernel/nmi_watchdog >/dev/null || :
+  printf '%s\n' 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null || :
+  printf '%s\n' 0 | sudo tee /proc/sys/kernel/kptr_restrict >/dev/null || :
+  printf '%s\n' 0 | sudo tee /proc/sys/kernel/perf_event_paranoid >/dev/null || :
 }
 profileoff() {
   echo "==> Profiling mode OFF"
-  sudo sh -c "echo 1>/proc/sys/kernel/randomize_va_space" || :
-  sudo sh -c "echo 0>/sys/devices/system/cpu/intel_pstate/no_turbo" || :
+  printf '%s\n' 1 | sudo tee /proc/sys/kernel/randomize_va_space >/dev/null || :
+  printf '%s\n' 0 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null || :
 }
 
 # ──────────────────────────────────────────────────────────────────────────────

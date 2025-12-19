@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Pre-commit hook for performance and quality checks
+
+set -euo pipefail
+
+# Color codes
+RED=$'\e[31m'
+GRN=$'\e[32m'
+YLW=$'\e[33m'
+DEF=$'\e[0m'
+
+has() { command -v -- "$1" &>/dev/null; }
+
+echo "${GRN}Running pre-commit checks...${DEF}"
+
+# Get list of shell files being committed
+mapfile -t shell_files < <(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(sh|bash)$' || true)
+
+if [[ ${#shell_files[@]} -eq 0 ]]; then
+  echo "${GRN}✓${DEF} No shell files to check"
+  exit 0
+fi
+
+echo "Checking ${#shell_files[@]} shell file(s)..."
+
+# Track if any checks fail
+failed=0
+
+# 1. ShellCheck
+if has shellcheck; then
+  echo "Running shellcheck..."
+  if ! shellcheck --severity=error "${shell_files[@]}"; then
+    echo "${RED}✗${DEF} ShellCheck errors found"
+    failed=1
+  else
+    echo "${GRN}✓${DEF} ShellCheck passed"
+  fi
+else
+  echo "${YLW}⚠${DEF} shellcheck not installed, skipping"
+fi
+
+# 2. Performance anti-patterns
+echo "Checking for performance anti-patterns..."
+performance_issues=0
+
+for file in "${shell_files[@]}"; do
+  # Check for inefficient tr usage (can use ${var,,})
+  if grep -q 'tr.*\[:upper:\].*\[:lower:\]' "$file" 2>/dev/null; then
+    echo "${YLW}⚠${DEF} $file: Consider using \${var,,} instead of tr for case conversion"
+    ((performance_issues++))
+  fi
+  
+  # Check for basename/dirname usage
+  if grep -q '\$(basename\|$(dirname' "$file" 2>/dev/null; then
+    echo "${YLW}⚠${DEF} $file: Consider using parameter expansion instead of basename/dirname"
+    ((performance_issues++))
+  fi
+  
+  # Check for inefficient sudo sh -c pattern
+  if grep -q 'sudo sh -c.*echo' "$file" 2>/dev/null; then
+    echo "${YLW}⚠${DEF} $file: Consider using 'printf | sudo tee' instead of 'sudo sh -c echo'"
+    ((performance_issues++))
+  fi
+  
+  # Check for cat file in command substitution
+  if grep -q '\$(cat ' "$file" 2>/dev/null; then
+    echo "${YLW}⚠${DEF} $file: Consider using \$(<file) instead of \$(cat file)"
+    ((performance_issues++))
+  fi
+done
+
+if ((performance_issues > 0)); then
+  echo "${YLW}⚠${DEF} Found $performance_issues performance warning(s)"
+  echo "See docs/PERFORMANCE.md for best practices"
+else
+  echo "${GRN}✓${DEF} No performance issues detected"
+fi
+
+# 3. Syntax check
+echo "Running syntax check..."
+for file in "${shell_files[@]}"; do
+  if ! bash -n "$file" 2>/dev/null; then
+    echo "${RED}✗${DEF} Syntax error in $file"
+    failed=1
+  fi
+done
+
+if ((failed == 0)); then
+  echo "${GRN}✓${DEF} All syntax checks passed"
+fi
+
+# 4. Format check (if shfmt available)
+if has shfmt; then
+  echo "Checking formatting..."
+  if ! shfmt -i 2 -bn -ci -s -ln bash -d "${shell_files[@]}" >/dev/null 2>&1; then
+    echo "${YLW}⚠${DEF} Formatting issues detected. Run: shfmt -i 2 -bn -ci -s -ln bash -w <files>"
+  else
+    echo "${GRN}✓${DEF} Formatting OK"
+  fi
+fi
+
+if ((failed > 0)); then
+  echo "${RED}✗${DEF} Pre-commit checks failed"
+  exit 1
+fi
+
+echo "${GRN}✓${DEF} All checks passed"
+exit 0

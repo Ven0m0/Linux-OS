@@ -59,7 +59,8 @@ byte_to_human() {
     pow=$((pow * 1024))
     i=$((i + 1))
   done
-  local v10=$(((bytes * 10 + (pow / 2)) / pow)) w=$((v10 / 10)) d=$((v10 % 10))
+  local v10=$(((bytes * 10 + (pow / 2)) / pow))
+  local w=$((v10 / 10)) d=$((v10 % 10))
   ((d > 0)) && printf '%d.%d%s\n' "$w" "$d" "${units[i]}" || printf '%d%s\n' "$w" "${units[i]}"
 }
 # Index-based cache management

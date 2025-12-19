@@ -401,7 +401,8 @@ get_uris() {
   [[ -f $DLLIST ]] && { rm -f "$DLLIST" 2>/dev/null || die "Cannot write to $DLLIST"; }
   echo "# apt-ultra download list: $(date)" >"$DLLIST"
   local uri_mgr="$_APTMGR"
-  case "$(basename "$_APTMGR")" in apt | apt-get) uri_mgr="$_APTMGR" ;; *) uri_mgr='apt-get' ;; esac
+  local aptmgr_name="${_APTMGR##*/}"
+  case "$aptmgr_name" in apt | apt-get) uri_mgr="$_APTMGR" ;; *) uri_mgr='apt-get' ;; esac
   local uris_full=$("$uri_mgr" -y --print-uris "$@" 2>&1)
   CLEANUP_STATE=$?
   [[ $CLEANUP_STATE -ne 0 ]] && {

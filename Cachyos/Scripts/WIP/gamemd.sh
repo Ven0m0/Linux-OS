@@ -14,7 +14,6 @@ main(){
   [[ ${EUID:-1} -eq 0 ]] && die "Run as user with sudo, not root."
   has sudo || die "sudo required."
   export USE_CCACHE=1
-
   sys_writes=(
     "always:/sys/kernel/mm/transparent_hugepage/enabled"
     "within_size:/sys/kernel/mm/transparent_hugepage/shmem_enabled"
@@ -29,6 +28,24 @@ main(){
     "0:/sys/block/sda/queue/add_random"
     "performance:/sys/module/pcie_aspm/parameters/policy"
   )
+  # https://wiki.archlinux.org/title/Gaming
+  echo 0 > /proc/sys/vm/compaction_proactiveness
+  echo 1 > /proc/sys/vm/watermark_boost_factor
+  echo 1048576 > /proc/sys/vm/min_free_kbytes
+  echo 500 > /proc/sys/vm/watermark_scale_factor
+  echo 5 > /sys/kernel/mm/lru_gen/enabled
+  echo 0 > /proc/sys/vm/zone_reclaim_mode
+  echo madvise > /sys/kernel/mm/transparent_hugepage/enabled
+  echo advise > /sys/kernel/mm/transparent_hugepage/shmem_enabled
+  echo never > /sys/kernel/mm/transparent_hugepage/defrag
+  echo 1 > /proc/sys/vm/page_lock_unfairness
+  echo 0 > /proc/sys/kernel/sched_child_runs_first
+  echo 1 > /proc/sys/kernel/sched_autogroup_enabled
+  setpci -v -s '*:*' latency_timer=20
+  setpci -v -s '0:0' latency_timer=0
+  setpci -v -d "*:*:04xx" latency_timer=80
+  export LD_BIND_NOW=1
+  
   local entry val path
   for entry in "${sys_writes[@]}"; do
     IFS=':' read -r val path <<<"$entry"

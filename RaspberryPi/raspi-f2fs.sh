@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR external-sources=true
 #──────────────────────────────────────────────────────────────────────────────
-# raspi-f2fs. sh - Raspberry Pi SD Card Flasher with F2FS Root Filesystem
+# raspi-f2fs.sh - Raspberry Pi SD Card Flasher with F2FS Root Filesystem
 #──────────────────────────────────────────────────────────────────────────────
 # Description: 
 #   Automates the process of flashing a Raspberry Pi image to an SD card or USB
@@ -23,7 +23,7 @@
 #   - Root privileges (sudo)
 #   - Kernel with F2FS support
 #   - f2fs-tools, rsync, parted, xz-utils
-#   - Optional:  fzf (for interactive selection)
+#   - Optional: fzf (for interactive selection)
 #
 # Usage Examples:
 #   # Interactive mode (prompts for source and target)
@@ -33,7 +33,7 @@
 #   sudo ./raspi-f2fs.sh -i dietpi -d /dev/sdb -s
 #
 #   # Flash from URL with shrinking
-#   sudo ./raspi-f2fs.sh -i https://example.com/image.img.xz -d /dev/sdc -z
+#   sudo ./raspi-f2fs.sh -i https://example.com/image.img. xz -d /dev/sdc -z
 #
 #   # Flash local image with custom boot size
 #   sudo ./raspi-f2fs.sh -i raspios. img -d /dev/sdd -b 1024M
@@ -121,7 +121,7 @@ dbg(){
 #──────────────────────────────────────────────────────────────────────────────
 
 # Get device transport type (usb, mmc, sata, nvme, etc.)
-# Returns: Transport type string or "unknown"
+# Returns:  Transport type string or "unknown"
 get_drive_trans(){
   local dev="${1:?missing device}"
   lsblk -dno TRAN "$dev" 2>&1 || echo "unknown"
@@ -131,7 +131,7 @@ get_drive_trans(){
 # Prevents accidental writes to internal drives
 # Bypassed with -U flag or for loop devices
 assert_usb_dev(){
-  local dev="${1:? missing device}"
+  local dev="${1:?missing device}"
   ((cfg[no_usb_check])) && return 0
   [[ $dev == /dev/loop* ]] && return 0
   
@@ -170,7 +170,7 @@ assert_size(){
 
 # Interactive target device selection using fzf
 # Filters for USB/MMC disk devices (unless -U flag set)
-# Returns: Device path (e.g., /dev/sdb)
+# Returns:  Device path (e.g., /dev/sdb)
 select_target_interactive(){
   if !  has fzf; then
     err "fzf required for interactive selection"
@@ -269,7 +269,7 @@ cleanup(){
 # Sets global:  BOOT_PART, ROOT_PART
 derive_partition_paths(){
   local dev="${1:?missing device}"
-  if [[ $dev =~ (nvme|mmcblk|loop) ]]; then
+  if [[ $dev =~ nvme|mmcblk|loop ]]; then
     BOOT_PART="${dev}p1"
     ROOT_PART="${dev}p2"
   else
@@ -281,7 +281,7 @@ derive_partition_paths(){
 # Wait for kernel to recognize new partitions
 # Uses partprobe + udevadm settle + polling loop
 wait_for_partitions(){
-  local dev="${1:? missing device}"
+  local dev="${1:?missing device}"
   ((cfg[dry_run])) && return 0
   
   # Trigger kernel partition re-read
@@ -435,7 +435,7 @@ shrink_source_image(){
   partstart=$(awk -F: 'END{print $2}' <<<"$parted_out" | tr -d B)
   
   # Detect partition type (primary vs logical)
-  if parted -s "$SRC_IMG" unit B print | grep -q "$partstart" | grep -q logical; then
+  if parted -s "$SRC_IMG" unit B print | grep "$partstart" | grep -q logical; then
     parttype="logical"
   else
     parttype="primary"
@@ -547,8 +547,10 @@ shrink_source_image(){
 setup_target_device(){
   log "Preparing target device:  $TGT_PATH"
   
-  # Create device-specific lock file
-  LOCK_FILE="/run/lock/raspi-f2fs-${TGT_PATH//\//_}. lock"
+  # Create device-specific lock file (sanitize path for filename)
+  local lock_suffix
+  lock_suffix=${TGT_PATH//\//_}
+  LOCK_FILE="/run/lock/raspi-f2fs-${lock_suffix}. lock"
   mkdir -p "${LOCK_FILE%/*}"
   
   # Open lock file
@@ -572,7 +574,7 @@ setup_target_device(){
   ((cfg[dry_run])) && return 0
   
   # Final warning
-  warn "${RED}${BLD}WARNING:  ALL DATA ON $TGT_PATH WILL BE PERMANENTLY ERASED! ${DEF}"
+  warn "${RED}${BLD}WARNING: ALL DATA ON $TGT_PATH WILL BE PERMANENTLY ERASED! ${DEF}"
   
   # Wipe existing filesystem signatures
   wipefs -af "$TGT_PATH" &>/dev/null
@@ -623,7 +625,7 @@ format_target(){
 
 # Clone data from source image to target device
 # Uses rsync for efficient file-level copying with: 
-#   - Archive mode (-a): preserves permissions, timestamps, etc. 
+#   - Archive mode (-a): preserves permissions, timestamps, etc.
 #   - Hard links (-H): preserves hard link relationships
 #   - ACLs (-A): preserves access control lists
 #   - Extended attributes (-X): preserves xattrs
@@ -708,7 +710,7 @@ configure_pi_boot(){
     }
     print line
   }' "$cmdline" >"${cmdline}.new"
-  mv "${cmdline}.new" "$cmdline"
+  mv "${cmdline}. new" "$cmdline"
   
   # Regenerate fstab
   cat >"$fstab" <<-EOF
@@ -743,7 +745,7 @@ usage(){
 	performance and longevity on flash media.
 	
 	USAGE: 
-	  sudo ./raspi-f2fs.sh [OPTIONS]
+	  sudo ./raspi-f2fs. sh [OPTIONS]
 	
 	OPTIONS:
 	  -i FILE|URL     Source image (. img, .img.xz, URL, or 'dietpi')

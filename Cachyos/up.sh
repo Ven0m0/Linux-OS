@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
+# DESCRIPTION: Comprehensive system update orchestrator for Arch/CachyOS
+#              Updates: pacman/AUR, flatpak, rust, python (uv), npm/bun/pnpm,
+#              mise, topgrade, VSCode, fish, and system maintenance
 set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t'
@@ -13,7 +16,42 @@ warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
 err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
 dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
 cleanup_pacman_lock() { sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
+usage() {
+  cat <<'EOF'
+up.sh - Comprehensive Arch/CachyOS system update orchestrator
+
+Usage: up.sh [OPTIONS]
+
+Options:
+  -h, --help     Show this help message
+  --version      Show version
+
+Updates:
+  • System packages (pacman/paru/yay)
+  • Flatpak apps (system + user)
+  • Rust toolchain (rustup + cargo packages)
+  • Python packages (uv tools + pip)
+  • Node packages (bun/pnpm/npm global)
+  • Mise/rtx managed tools
+  • Topgrade integration
+  • VSCode extensions
+  • Fish completions + fisher
+  • soar, am, zoi, gh extensions
+  • System maintenance (bootctl, mkinitcpio, firmware)
+
+Environment:
+  DEBUG=1        Enable debug output
+
+Examples:
+  up.sh          # Full system update
+  DEBUG=1 up.sh  # Debug mode
+EOF
+}
 main() {
+  case "${1:-}" in
+    -h|--help) usage; exit 0 ;;
+    --version) printf 'up.sh 1.0.0\n'; exit 0 ;;
+  esac
   trap cleanup_pacman_lock EXIT INT TERM
   update_system() {
     log "🔄${BLU} System Packages${DEF}"

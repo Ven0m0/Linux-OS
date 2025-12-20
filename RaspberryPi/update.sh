@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
+# DESCRIPTION: Raspberry Pi system update script for Debian/Raspbian/DietPi
+#              Updates: APT packages, DietPi, Pi-hole, firmware (EEPROM/rpi-update)
 set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
@@ -7,6 +9,33 @@ IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m'
 # Core helper functions
 has() { command -v -- "$1" &>/dev/null; }
+usage() {
+  cat <<'EOF'
+update.sh - Raspberry Pi system update automation
+
+Usage: update.sh [OPTIONS]
+
+Options:
+  -h, --help     Show this help message
+  --version      Show version
+
+Updates:
+  • APT packages (apt-fast/nala/apt-get with optimizations)
+  • DietPi system (if installed)
+  • Pi-hole (if installed)
+  • Raspberry Pi firmware (EEPROM + rpi-update)
+  • Automatic cleanup (cache, autoremove, autopurge)
+
+Supported Systems:
+  • Raspberry Pi OS (Raspbian)
+  • DietPi
+  • Debian-based distributions
+
+Examples:
+  update.sh              # Full system update
+  curl -fsSL <URL> | bash  # One-liner update
+EOF
+}
 # DietPi functions
 load_dietpi_globals() {
   if [[ -f /boot/dietpi/func/dietpi-globals ]]; then
@@ -43,6 +72,11 @@ display_banner() {
     done
   fi
 }
+# Parse arguments
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+  --version) printf 'update.sh 1.0.0\n'; exit 0 ;;
+esac
 # Banner
 banner=$(
   cat <<'EOF'

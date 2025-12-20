@@ -121,9 +121,15 @@ parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
       --no-restart) DONT_RESTART_DOCKER_ENGINE=1 ;;
-      -y|--yes) DONT_ASK_CONFIRMATION=1 ;;
-      -h|--help) usage; exit 0 ;;
-      --version) printf 'PiClean.sh 1.0.0\n'; exit 0 ;;
+      -y | --yes) DONT_ASK_CONFIRMATION=1 ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      --version)
+        printf 'PiClean.sh 1.0.0\n'
+        exit 0
+        ;;
       *)
         printf 'Unknown parameter passed: %s\n' "$1"
         exit 1

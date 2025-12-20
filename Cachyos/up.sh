@@ -49,8 +49,14 @@ EOF
 }
 main() {
   case "${1:-}" in
-    -h|--help) usage; exit 0 ;;
-    --version) printf 'up.sh 1.0.0\n'; exit 0 ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --version)
+      printf 'up.sh 1.0.0\n'
+      exit 0
+      ;;
   esac
   trap cleanup_pacman_lock EXIT INT TERM
   update_system() {

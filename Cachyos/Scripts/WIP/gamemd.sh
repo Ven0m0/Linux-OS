@@ -33,6 +33,12 @@ main() {
   export DXVK_NVAPI_DRS_NGX_DLSS_FG_OVERRIDE=on
   export DXVK_NVAPI_DRS_NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_latest
   export DXVK_NVAPI_DRS_NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_latest
+  # Reset the latency timer for all PCI devices
+  sudo setpci -v -s '*:*' latency_timer=20
+  sudo setpci -v -s '0:0' latency_timer=0
+  # Set latency timer for all sound cards
+  sudo setpci -v -d "*:*:04xx" latency_timer=80
+  
   sys_writes=(
     "always:/sys/kernel/mm/transparent_hugepage/enabled"
     "within_size:/sys/kernel/mm/transparent_hugepage/shmem_enabled"

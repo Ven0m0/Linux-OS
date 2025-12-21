@@ -27,6 +27,19 @@ main() {
   [[ ${EUID:-1} -eq 0 ]] && die "Run as user with sudo, not root."
   has sudo || die "sudo required."
   export USE_CCACHE=1
+  export PROTON_ENABLE_NGX_UPDATER=1
+  export DXVK_NVAPI_DRS_NGX_DLSS_RR_OVERRIDE=on
+  export DXVK_NVAPI_DRS_NGX_DLSS_SR_OVERRIDE=on
+  export DXVK_NVAPI_DRS_NGX_DLSS_FG_OVERRIDE=on
+  export DXVK_NVAPI_DRS_NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_latest
+  export DXVK_NVAPI_DRS_NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_latest
+  export __GLX_VENDOR_LIBRARY_NAME=mesa
+  # Reset the latency timer for all PCI devices
+  sudo setpci -v -s '*:*' latency_timer=20
+  sudo setpci -v -s '0:0' latency_timer=0
+  # Set latency timer for all sound cards
+  sudo setpci -v -d "*:*:04xx" latency_timer=80
+  
   sys_writes=(
     "always:/sys/kernel/mm/transparent_hugepage/enabled"
     "within_size:/sys/kernel/mm/transparent_hugepage/shmem_enabled"
@@ -58,19 +71,15 @@ main() {
   setpci -v -s '0:0' latency_timer=0
   setpci -v -d "*:*:04xx" latency_timer=80
   export LD_BIND_NOW=1
-
   local entry val path
   for entry in "${sys_writes[@]}"; do
     IFS=':' read -r val path <<<"$entry"
     write_sys "$val" "$path"
   done
-
   governor_paths=(/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)
   write_many performance "${governor_paths[@]}"
-
   sudo powerprofilesctl set performance &>/dev/null || true
   sudo cpupower frequency-set -g performance &>/dev/null || true
-
   sudo systemctl stop bluetooth.service &>/dev/null || true
   for usb_device in /sys/bus/usb/devices/*/power/control; do
     [[ -e $usb_device ]] || continue
@@ -78,7 +87,6 @@ main() {
   done
   write_sys 0 /proc/sys/kernel/nmi_watchdog
   write_sys 0 /sys/class/rtc/rtc0/wakealarm
-
   cleanup_shader_cache
   if has gamemoderun; then gamemoderun; fi
   sync
@@ -88,7 +96,6 @@ main() {
 cleanup_shader_cache() {
   readonly XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
   readonly XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
-
   if [[ -d "${HOME}/.steam/steam" ]]; then
     steam_root="${HOME}/.steam/steam"
   elif [[ -d "$XDG_DATA_HOME/Steam" ]]; then
@@ -98,7 +105,6 @@ cleanup_shader_cache() {
     return 0
   fi
   msg "Found Steam at: $steam_root"
-
   declare -A games=([730]="cs2:Counter-Strike Global Offensive:csgo")
   readonly kill_procs=(steam steamwebhelper cs2)
   msg "Stopping Steam processes..."
@@ -109,7 +115,6 @@ cleanup_shader_cache() {
   done
   pkill -9 -x "${kill_procs[@]}" 2>/dev/null || true
   msg "Steam stopped."
-
   readonly logs=("$steam_root/logs" "$steam_root/dumps")
   msg "Cleaning Steam logs..."
   local dir
@@ -117,7 +122,6 @@ cleanup_shader_cache() {
     [[ -d $dir ]] || continue
     rm -f "${dir:?}/"* 2>/dev/null || true
   done
-
   msg "Cleaning game caches..."
   local appid exe gamedir mod game_path t_dir
   for appid in "${!games[@]}"; do
@@ -135,7 +139,6 @@ cleanup_shader_cache() {
       rm -rf "${t_dir:?}/"* 2>/dev/null || true
     done
   done
-
   msg "Cleaning GPU caches..."
   readonly gpu_cache_dirs=(
     "${XDG_CACHE_HOME}/mesa_shader_cache"
@@ -158,3 +161,10 @@ cleanup_shader_cache() {
   msg $'\n\033[32mCleanup complete!\033[0m'
 }
 main "$@"
+
+# TODO:
+#if command -v powerprofilesctl &>/dev/null; then
+#  exec powerprofilesctl launch -p performance -r "Launched with optimizations" -- "$@"
+#else
+#  exec "$@"
+#fi

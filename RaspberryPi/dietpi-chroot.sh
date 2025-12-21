@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 export LC_ALL=C
 IFS=$'\n\t'
 s=${BASH_SOURCE[0]}
@@ -23,16 +24,20 @@ DEF=$'\e[0m' BLD=$'\e[1m'
 declare -g IMG_FILE="" LOOP_DEV="" ROOT_PART="" BOOT_PART="" SHRINK=0
 declare -ga MOUNTED_POINTS=()
 # Helpers
-fdate(){
+fdate() {
   printf '%(%T)T\n' '-1'
 }
-log(){ printf '[%s] %b%s\n' "$(fdate)" "${BLU}${BLD}[*]${DEF} " "$*"; }
-msg(){ printf '[%s] %b%s\n' "$(fdate)" "${GRN}${BLD}[+]${DEF} " "$*"; }
-warn(){ printf '[%s] %b%s\n' "$(fdate)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
-err(){ printf '[%s] %b%s\n' "$(fdate)" "${RED}${BLD}[-]${DEF} " "$*" >&2; }
-die(){ err "$1"; cleanup; exit "${2:-1}"; }
+log() { printf '[%s] %b%s\n' "$(fdate)" "${BLU}${BLD}[*]${DEF} " "$*"; }
+msg() { printf '[%s] %b%s\n' "$(fdate)" "${GRN}${BLD}[+]${DEF} " "$*"; }
+warn() { printf '[%s] %b%s\n' "$(fdate)" "${YLW}${BLD}[!]${DEF} " "$*" >&2; }
+err() { printf '[%s] %b%s\n' "$(fdate)" "${RED}${BLD}[-]${DEF} " "$*" >&2; }
+die() {
+  err "$1"
+  cleanup
+  exit "${2:-1}"
+}
 
-check_deps(){
+check_deps() {
   local -a deps=(losetup parted mount umount qemu-aarch64-static)
   ((SHRINK)) && deps+=(e2fsck resize2fs tune2fs truncate)
   local -a missing=() cmd
@@ -52,7 +57,7 @@ check_deps(){
     [[ ! -f /proc/sys/fs/binfmt_misc/aarch64 ]] && die "Could not verify aarch64 binfmt registration. Is 'qemu-user-static-binfmt' installed and service active?"
   }
 }
-cleanup(){
+cleanup() {
   set +e
   log "Cleaning up..."
   [[ -d $MOUNT_DIR ]] && fuser -k -M "$MOUNT_DIR" &>/dev/null
@@ -62,7 +67,7 @@ cleanup(){
   [[ -d $MOUNT_DIR ]] && rmdir "$MOUNT_DIR" &>/dev/null
   msg "Cleanup complete. Image saved."
 }
-setup_image(){
+setup_image() {
   local img="$1"
   [[ -f $img ]] || die "Image file not found: $img"
   log "Setting up loop device for $img..."
@@ -76,13 +81,13 @@ setup_image(){
   log "Mounting boot partition..."
   mount "$BOOT_PART" "$MOUNT_DIR/boot" || die "Failed to mount boot"
 }
-setup_chroot(){
+setup_chroot() {
   log "Setting up QEMU and bind mounts..."
   cp "$QEMU_BIN" "$MOUNT_DIR/usr/bin/" || die "Failed to copy qemu binary"
   cp /etc/resolv.conf "$MOUNT_DIR/etc/resolv.conf" || warn "Failed to copy resolv.conf"
   for i in /dev /dev/pts /proc /sys; do mount -B "$i" "$MOUNT_DIR$i"; done
 }
-check_filesystem(){
+check_filesystem() {
   log "Checking filesystem..."
   e2fsck -pf "$ROOT_PART"
   (($? < 4)) && return
@@ -93,7 +98,7 @@ check_filesystem(){
   (($? < 4)) && return
   die "Filesystem recovery failed."
 }
-shrink_image(){
+shrink_image() {
   log "Shrinking image..."
   umount -R "$MOUNT_DIR" &>/dev/null
   losetup -d "$LOOP_DEV" &>/dev/null
@@ -144,7 +149,7 @@ shrink_image(){
   truncate -s "$endresult" "$IMG_FILE" || die "truncate failed"
   msg "Image shrunk successfully"
 }
-run_optimization(){
+run_optimization() {
   msg "Entering CHROOT environment (ARM64)..."
   printf '%s\n' "-----------------------------------------------------" \
     "  You are now inside the image." \
@@ -159,7 +164,7 @@ run_optimization(){
   log "Syncing filesystem..."
   sync
 }
-usage(){
+usage() {
   cat <<-'EOF'
 	Usage: sudo $0 [OPTIONS] <image_file.img>
 	OPTIONS:

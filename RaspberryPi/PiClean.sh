@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
+# DESCRIPTION: Comprehensive Raspberry Pi cleanup script
+#              Cleans: APT cache, logs, temp files, trash, Docker, DietPi artifacts
 set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C DEBIAN_FRONTEND=noninteractive
@@ -12,6 +14,36 @@ DONT_RESTART_DOCKER_ENGINE=0
 DONT_ASK_CONFIRMATION=0
 
 has() { command -v -- "$1" &>/dev/null; }
+
+usage() {
+  cat <<'EOF'
+PiClean.sh - Raspberry Pi system cleanup automation
+
+Usage: PiClean.sh [OPTIONS]
+
+Options:
+  -y, --yes          Skip confirmation prompts
+  --no-restart       Don't restart Docker engine after cleanup
+  -h, --help         Show this help message
+  --version          Show version
+
+Cleanup Operations:
+  • APT cache (clean, autoclean, autoremove)
+  • System cache (/tmp, /var/tmp, ~/.cache)
+  • User trash (~/.local/share/Trash)
+  • Crash dumps (coredumpctl, /var/crash)
+  • History files (.bash_history, .python_history)
+  • Journal logs (systemd-journald)
+  • Docker artifacts (containers, images, volumes, build cache)
+  • DietPi cleanup (if installed)
+
+Examples:
+  ./PiClean.sh           # Interactive cleanup
+  ./PiClean.sh -y        # Automatic cleanup (no prompts)
+  ./PiClean.sh -y --no-restart  # Skip Docker restart
+  curl -fsSL <URL> | bash  # One-liner cleanup
+EOF
+}
 
 load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
 run_dietpi_cleanup() {
@@ -89,7 +121,15 @@ parse_args() {
   while [[ $# -gt 0 ]]; do
     case $1 in
       --no-restart) DONT_RESTART_DOCKER_ENGINE=1 ;;
-      -y) DONT_ASK_CONFIRMATION=1 ;;
+      -y | --yes) DONT_ASK_CONFIRMATION=1 ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      --version)
+        printf 'PiClean.sh 1.0.0\n'
+        exit 0
+        ;;
       *)
         printf 'Unknown parameter passed: %s\n' "$1"
         exit 1

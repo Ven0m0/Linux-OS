@@ -33,6 +33,7 @@ main() {
   export DXVK_NVAPI_DRS_NGX_DLSS_FG_OVERRIDE=on
   export DXVK_NVAPI_DRS_NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_latest
   export DXVK_NVAPI_DRS_NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_latest
+  export __GLX_VENDOR_LIBRARY_NAME=mesa
   # Reset the latency timer for all PCI devices
   sudo setpci -v -s '*:*' latency_timer=20
   sudo setpci -v -s '0:0' latency_timer=0

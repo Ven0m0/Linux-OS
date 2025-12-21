@@ -4,7 +4,7 @@ permissions:
   pull-requests: write
 jobs:
   dependabot:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'Ven0m0/Linux-OS'
     steps:
       - name: Dependabot metadata

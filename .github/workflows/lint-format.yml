@@ -22,9 +22,9 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install core tools
+        shell: bash
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fd-find ripgrep shellcheck
+          sudo apt-get update -yqq; sudo apt-get install -yqq fd-find ripgrep shellcheck
       - name: Cache tool installations
         uses: actions/cache@v5
         with:
@@ -33,21 +33,16 @@ jobs:
             ~/.local/bin
             ~/go/bin
           key: ${{ runner.os }}-lint-tools-v2
-      - name: Install Python tools
+      - name: Install tools
+        shell: bash
         run: |
           pip install --upgrade pip
           pip install black ruff yamllint
-      - name: Install Node.js tools
-        run: |
           npm install -g prettier markdownlint-cli
-      - name: Install Go tools
-        run: |
           go install mvdan.cc/sh/v3/cmd/shfmt@latest
           go install github.com/google/yamlfmt/cmd/yamlfmt@latest
           go install github.com/rhysd/actionlint/cmd/actionlint@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
-      - name: Install Rust tools
-        run: |
           cargo install --locked taplo-cli stylua shellharden || true
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Run lint and format (fix mode)

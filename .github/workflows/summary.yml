@@ -1,21 +1,17 @@
 name: Summarize new issues
-
 on:
   issues:
     types: [opened]
-
 jobs:
   summary:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       issues: write
       models: read
       contents: read
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v6
       - name: Run AI inference
         id: inference
         uses: actions/ai-inference@v1
@@ -24,7 +20,6 @@ jobs:
             Summarize the following GitHub issue in one paragraph:
             Title: ${{ github.event.issue.title }}
             Body: ${{ github.event.issue.body }}
-
       - name: Comment with AI summary
         run: |
           gh issue comment $ISSUE_NUMBER --body '${{ steps.inference.outputs.response }}'

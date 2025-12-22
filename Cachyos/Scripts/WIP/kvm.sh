@@ -11,3 +11,5 @@ sudo systemctl enable --now libvirtd
 
 # Add yourself to libvirt group (re-login required after this)
 sudo usermod -aG libvirt "$USER"
+
+echo "Debloat windows: iwr -useb christitus.com/win | iex"

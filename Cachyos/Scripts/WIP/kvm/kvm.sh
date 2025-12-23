@@ -12,4 +12,5 @@ sudo systemctl enable --now libvirtd
 # Add yourself to libvirt group (re-login required after this)
 sudo usermod -aG libvirt "$USER"
 
+echo "add 'intel_iommu=on' to your kernel cmdline!"
 echo "Debloat windows: iwr -useb christitus.com/win | iex"

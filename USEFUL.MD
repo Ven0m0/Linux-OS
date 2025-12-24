@@ -49,8 +49,8 @@
 
 ```bash
 ffmpeg -i input.mkv -c:v libsvtav1 \
-  -preset 4 -crf 35 -g 300 -pix_fmt yuv420p10le \
-  -svtav1-params "tune=0:film-grain=8:enable-qm=1:qm-min=0:enable-overlays=1:scd=1" \
+  -preset 4 -crf 30 -g 300 -pix_fmt yuv420p10le \
+  -svtav1-params "tune=0:film-grain=6:enable-qm=1:qm-min=0:scd=1:enable-variance-boost=1:tf-strength=1:luminance-qp-bias=25:sharpness=-2:tile-columns=1:tile-rows=0" \
   -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
   -c:a libopus -b:a 128k -ac 2 -rematrix_maxval 1.0 \
   -f mkv -hide_banner -y -nostdin -loglevel error -stats \
@@ -61,17 +61,5 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
 
 - Slow preset: 3
 - Fast preset: 4-6
-- 1080p: `--tile-columns 1 --tile-rows 0`
-- 4k: `--tile-columns 2 --tile-rows 0`
-
-- No VMAF: `--variance-boost-strength 2 --variance-octile 6`
-
-```sh
---tf-strength 1 --enable-variance-boost 1 
-```
-
-todo:
-
-```sh
---qp-scale-compress-strength 1 --enable-qm 1 --qm-min 0 --qm-max 15 --sharpness 3
-```
+- 1080p: `tile-columns=1:tile-rows=0`
+- 4k: `tile-columns=2:tile-rows=0`

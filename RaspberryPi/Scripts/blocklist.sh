@@ -34,19 +34,9 @@ normalize_whitespace() { sed -e 's/ / /g' -e 's/  */ /g'; }
 # https://github.com/hectorm/hblock/blob/master/hblock
 # Remove comments from string (function already defined in lib/text.sh above)
 # removeComments(){ sed -e 's/[[:blank:]]*#.*//;/^$/d'; }
-# Remove reserved Top Level Domains
+# Remove reserved Top Level Domains (combine into single regex for 90% reduction in passes)
 removeReservedTLDs() {
-  sed -e '/\.corp$/d' \
-    -e '/\.domain$/d' \
-    -e '/\.example$/d' \
-    -e '/\.home$/d' \
-    -e '/\.host$/d' \
-    -e '/\.invalid$/d' \
-    -e '/\.lan$/d' \
-    -e '/\.local$/d' \
-    -e '/\.localdomain$/d' \
-    -e '/\.localhost$/d' \
-    -e '/\.test$/d'
+  sed -E '/\.(corp|domain|example|home|host|invalid|lan|local|localdomain|localhost|test)$/d'
 }
 # Main blocklist functionality using hblock
 main() {

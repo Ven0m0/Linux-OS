@@ -267,13 +267,13 @@ optimize_assets() {
   local fd_cmd="" nproc_val
   nproc_val=$(nproc 2>/dev/null || echo 4)
   has fd && fd_cmd="fd" || has fdfind && fd_cmd="fdfind"
-  # HTML minification
+  # HTML minification (avoid shell spawns with fd --exec)
   if has minhtml; then
     echo "==> Minifying HTML..."
     if [[ -n $fd_cmd ]]; then
-      "$fd_cmd" -H -t f '\.html$' -print0 | xargs -0 -P"$nproc_val" -I{} sh -c 'minhtml -i "$1" -o "$1"' _ {}
+      "$fd_cmd" -H -t f '\.html$' --exec minhtml -i {} -o {} \;
     else
-      find . -type f -name '*.html' -print0 | xargs -0 -P"$nproc_val" -I{} sh -c 'minhtml -i "$1" -o "$1"' _ {}
+      find . -type f -name '*.html' -exec minhtml -i {} -o {} \;
     fi
   fi
   # Image optimization
@@ -324,11 +324,22 @@ case $MODE in
   install)
     echo "==> Installing: ${CRATES[*]}"
     sync
-    for crate in "${CRATES[@]}"; do
-      echo "→ $crate..."
-      run cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate"
-      echo "✅ $crate → $HOME/.cargo/bin"
-    done
+    # Parallelize cargo installs (prefer cargo-binstall for pre-built binaries)
+    if has cargo-binstall; then
+      echo "→ Using cargo-binstall for parallel installs"
+      for crate in "${CRATES[@]}"; do
+        cargo-binstall -y "$crate" &
+      done
+      wait
+    else
+      # Fallback: parallel cargo install (CPU-bound but I/O benefits)
+      for crate in "${CRATES[@]}"; do
+        echo "→ $crate..."
+        run cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate" &
+      done
+      wait
+    fi
+    echo "✅ All crates → $HOME/.cargo/bin"
     ;;
 
   workflow)

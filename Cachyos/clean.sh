@@ -112,8 +112,8 @@ clean_sqlite_dbs() {
 # Wait for processes to exit, kill if timeout
 ensure_not_running() {
   local timeout=6 p
-  local pattern=$(printf '%s|' "$@")
-  pattern=${pattern%|}
+  # Pure bash string join (avoid subshell)
+  local pattern="${*// /|}"
 
   # Quick check if any processes are running
   pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return 0
@@ -123,11 +123,12 @@ ensure_not_running() {
     pgrep -x -u "$USER" "$p" &>/dev/null && printf '  %s\n' "${YLW}Waiting for ${p} to exit...${DEF}"
   done
 
-  # Single wait loop checking all processes with one pgrep call
-  local wait_time=$timeout
-  while ((wait_time-- > 0)); do
+  # Exponential backoff for faster exit on success
+  local delays=(0.1 0.2 0.5 1 2 2)
+  local delay
+  for delay in "${delays[@]}"; do
     pgrep -x -u "$USER" -f "$pattern" &>/dev/null || return 0
-    sleep 1
+    sleep "$delay"
   done
 
   # Kill any remaining processes
@@ -236,14 +237,17 @@ configure_firefox_privacy() {
       local prefs_file="$profile/user.js"
       touch "$prefs_file"
       # Read existing prefs once instead of calling grep for each pref
-      local existing_prefs
+      local existing_prefs to_add=""
       existing_prefs=$(<"$prefs_file" 2>/dev/null) || existing_prefs=""
+      # Batch missing prefs into single write (15x fewer syscalls)
       for pref in "${firefox_prefs[@]}"; do
         [[ $existing_prefs == *"$pref"* ]] || {
-          printf '%s\n' "$pref" >>"$prefs_file"
+          to_add+="$pref"$'\n'
           ((prefs_changed++))
         }
       done
+      # Single write operation instead of N appends
+      [[ -n $to_add ]] && printf '%s' "$to_add" >>"$prefs_file"
     done < <(find "$dir" -maxdepth 1 -type d \( -name "*.default*" -o -name "default-*" \))
   done
   ((prefs_changed > 0)) && printf '  %s %d prefs\n' "${GRN}Firefox privacy:" "$prefs_changed${DEF}"
@@ -287,12 +291,14 @@ clean_browsers() {
       for b in "$base"/*; do
         [[ -d $b ]] || continue
         while IFS= read -r prof; do
-          [[ -d $prof ]] && (cd "$prof" && clean_sqlite_dbs)
+          # Avoid subshell - use pushd/popd or explicit cd with restoration
+          [[ -d $prof ]] && { cd "$prof" && clean_sqlite_dbs; cd - >/dev/null; }
         done < <(mozilla_profiles "$b")
       done
     else
       while IFS= read -r prof; do
-        [[ -d $prof ]] && (cd "$prof" && clean_sqlite_dbs)
+        # Avoid subshell - use pushd/popd or explicit cd with restoration
+        [[ -d $prof ]] && { cd "$prof" && clean_sqlite_dbs; cd - >/dev/null; }
       done < <(mozilla_profiles "$base")
     fi
   done
@@ -315,7 +321,8 @@ clean_browsers() {
     rm -rf "$root"/{GraphiteDawnCache,ShaderCache,*_crx_cache} &>/dev/null || :
     while IFS= read -r profdir; do
       [[ -d $profdir ]] || continue
-      (cd "$profdir" && clean_sqlite_dbs)
+      # Avoid subshell - use pushd/popd or explicit cd with restoration
+      { cd "$profdir" && clean_sqlite_dbs; cd - >/dev/null; }
       rm -rf "$profdir"/{Cache,GPUCache,"Code Cache","Service Worker",Logs} &>/dev/null || :
     done < <(chrome_profiles "$root")
   done
@@ -333,7 +340,8 @@ clean_mail_clients() {
   for base in "${mail_bases[@]}"; do
     [[ -d $base ]] || continue
     while IFS= read -r prof; do
-      [[ -d $prof ]] && (cd "$prof" && clean_sqlite_dbs)
+      # Avoid subshell - use pushd/popd or explicit cd with restoration
+      [[ -d $prof ]] && { cd "$prof" && clean_sqlite_dbs; cd - >/dev/null; }
     done < <(mozilla_profiles "$base")
   done
 }

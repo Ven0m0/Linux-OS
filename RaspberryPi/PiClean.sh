@@ -192,9 +192,10 @@ main() {
   printf '%s\n' "Running fstrim"
   sudo fstrim -a --quiet-unsupported
   printf '%s\n' "Removing old log files"
-  sudo find /var/log/ -name "*.log" -type f -mtime +3 -delete
-  sudo find /var/crash/ -name "core.*" -type f -mtime +3 -delete
-  sudo find /var/cache/apt/ -name "*.bin" -type f -mtime +3 -delete
+  # Combine find operations (3 traversals → 1)
+  sudo find /var/log /var/crash /var/cache/apt \
+    \( -path "/var/log/*.log" -o -path "/var/crash/core.*" -o -path "/var/cache/apt/*.bin" \) \
+    -type f -mtime +3 -delete 2>/dev/null || :
   sync
   printf '3' | sudo tee /proc/sys/vm/drop_caches &>/dev/null
   printf '%s\n' "Clearing DietPi..."

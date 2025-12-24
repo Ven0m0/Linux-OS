@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 LC_ALL=C IFS=$'\n\t'
 # https://github.com/keroserene/rickrollrc
 # Rick Astley in your Terminal.

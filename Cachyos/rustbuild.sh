@@ -80,80 +80,33 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -b | --build)
-      MODE="build"
-      shift
-      ;;
-    -i | --install)
-      MODE="install"
-      shift
-      ;;
-    -w | --workflow)
-      MODE="workflow"
-      shift
-      ;;
-    --pgo)
-      shift
-      [[ $1 =~ ^[0-2]$ ]] || {
-        echo "Error: --pgo requires 0, 1, or 2" >&2
-        exit 1
-      }
-      PGO_LEVEL=$1 MODE="pgo"
-      shift
-      ;;
-    --bolt)
-      BOLT_ENABLED=1
-      shift
-      ;;
-    -m | --mold)
-      USE_MOLD=1
-      shift
-      ;;
-    -l | --locked)
-      LOCKED_FLAG="--locked"
-      shift
-      ;;
-    -g | --git)
-      GIT_CLEANUP=1
-      shift
-      ;;
-    -d | --debug)
-      DEBUG_MODE=1 set -x
-      export RUST_LOG=trace RUST_BACKTRACE=1
-      shift
-      ;;
-    --skip-assets)
-      SKIP_ASSETS=1
-      shift
-      ;;
-    --dry-run)
-      DRY_RUN=1
-      shift
-      ;;
-    -h | --help) usage 0 ;;
-    --)
-      shift
-      BUILD_ARGS=("$@")
-      break
-      ;;
-    -*)
-      echo "Error: unknown option '$1'" >&2
-      usage 1
-      ;;
-    *)
-      CRATES+=("$1")
-      shift
-      ;;
+    -b | --build) MODE="build"; shift ;;
+    -i|--install)
+      MODE="install"; shift ;;
+    -w|--workflow)
+      MODE="workflow"; shift ;;
+    --pgo) shift; [[ $1 =~ ^[0-2]$ ]] || { echo "Error: --pgo requires 0, 1, or 2" >&2; exit 1; }
+      PGO_LEVEL=$1 MODE="pgo"; shift ;;
+    --bolt) BOLT_ENABLED=1; shift ;;
+    -m|--mold) USE_MOLD=1; shift ;;
+    -l|--locked)
+      LOCKED_FLAG="--locked"; shift ;;
+    -g|--git) GIT_CLEANUP=1; shift ;;
+    -d|--debug) DEBUG_MODE=1 set -x; export RUST_LOG=trace RUST_BACKTRACE=1; shift ;;
+    --skip-assets) SKIP_ASSETS=1; shift ;;
+    --dry-run) DRY_RUN=1; shift ;;
+    -h|--help) usage 0 ;;
+    --) shift; BUILD_ARGS=("$@"); break ;;
+    -*) echo "Error: unknown option '$1'" >&2; usage 1 ;;
+    *) CRATES+=("$1"); shift ;;
   esac
 done
 # Validate
 [[ $MODE == "install" && ${#CRATES[@]} -eq 0 ]] && {
-  echo "Error: install requires crate(s)" >&2
-  usage 1
+  echo "Error: install requires crate(s)" >&2; usage 1
 }
 [[ $BOLT_ENABLED -eq 1 && $PGO_LEVEL -ne 2 ]] && {
-  echo "Error: BOLT requires --pgo 2" >&2
-  exit 1
+  echo "Error: BOLT requires --pgo 2" >&2; exit 1
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -162,8 +115,7 @@ done
 setup_system() {
   echo "==> Setting up build environment..."
   [[ $EUID -ne 0 ]] && { sudo -v || {
-    echo "Error: sudo failed" >&2
-    exit 1
+    echo "Error: sudo failed" >&2; exit 1
   }; }
   sudo cpupower frequency-set --governor performance &>/dev/null || :
   if [[ $MODE == "install" ]]; then
@@ -172,19 +124,14 @@ setup_system() {
   fi
   if [[ $GIT_CLEANUP -eq 1 ]] && git rev-parse --is-inside-work-tree &>/dev/null; then
     echo "==> Git cleanup..."
-    git reflog expire --expire=now --all
-    git gc --prune=now --aggressive
-    git repack -ad --depth=250 --window=250
+    git maintenance run
     git clean -fdX
   fi
   for tool in cargo-shear cargo-machete cargo-cache; do
     has "$tool" || cargo install "$tool"
   done
   if [[ $MODE == "pgo" || $BOLT_ENABLED -eq 1 ]]; then
-    has cargo-pgo || {
-      rustup component add llvm-tools-preview
-      cargo install cargo-pgo
-    }
+    has cargo-pgo || { rustup component add llvm-tools-preview; cargo install cargo-pgo; }
   fi
 }
 
@@ -195,8 +142,7 @@ setup_env() {
   local jobs
   jobs=$(nproc 2>/dev/null || echo 4)
   if has sccache; then
-    export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
-    export SCCACHE_DIRECT=true SCCACHE_RECACHE=true SCCACHE_IDLE_TIMEOUT=10800
+    export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache SCCACHE_DIRECT=true SCCACHE_RECACHE=true SCCACHE_IDLE_TIMEOUT=10800
     sccache --start-server &>/dev/null || :
   else
     export CC=clang CXX=clang++
@@ -414,12 +360,9 @@ case $MODE in
         echo "Then create final binary:"
         echo "  cargo pgo bolt optimize --with-pgo"
       fi
-
       profileoff
       echo "✅ PGO optimization complete"
-    fi
-    ;;
+    fi ;;
 esac
-
 echo ""
 echo "✅ All operations complete"

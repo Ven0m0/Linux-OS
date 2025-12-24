@@ -50,7 +50,7 @@
 ```bash
 ffmpeg -i input.mkv -c:v libsvtav1 \
   -preset 4 -crf 35 -g 240 -pix_fmt yuv420p10le \
-  -svtav1-params "tune=0:film-grain=8:enable-qm=1:qm-min=0:fast-decode=1:enable-overlays=1:scd=1" \
+  -svtav1-params "tune=0:film-grain=8:enable-qm=1:qm-min=0:enable-overlays=1:scd=1" \
   -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
   -c:a libopus -b:a 128k -ac 2 -rematrix_maxval 1.0 \
   -f mkv -hide_banner -y -nostdin -loglevel error -stats \
@@ -61,3 +61,5 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
 
 - Slow preset: 3
 - Fast preset: 4-6
+
+- Fast decode: `tile-columns=2:fast-decode=1`

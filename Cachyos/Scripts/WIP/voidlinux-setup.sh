@@ -20,7 +20,10 @@ PACKAGES=(
 )
 
 # update repos + install
-xbps-install -Syu "${PACKAGES[@]}" &>/dev/null || { printf 'xbps-install failed\n' >&2; exit 1; }
+xbps-install -Syu "${PACKAGES[@]}" &>/dev/null || {
+  printf 'xbps-install failed\n' >&2
+  exit 1
+}
 
 # enable/start required services (runit)
 for svc in dbus elogind NetworkManager sddm; do

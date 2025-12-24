@@ -71,9 +71,19 @@ main() {
       topgrade -yc --no-retry "${user_flags[@]}" || :
     fi
     # Parallelize independent update operations for 3-5x speedup
-    has flatpak && { sudo flatpak update -y --noninteractive --appstream || :; flatpak update -y --noninteractive -u || :; } &
-    has rustup && { rustup update || :; has cargo-install-update && cargo install-update -ag || :; } &
-    has mise && { mise p i -ay; mise prune -y; mise up -y || :; } &
+    has flatpak && {
+      sudo flatpak update -y --noninteractive --appstream || :
+      flatpak update -y --noninteractive -u || :
+    } &
+    has rustup && {
+      rustup update || :
+      has cargo-install-update && cargo install-update -ag || :
+    } &
+    has mise && {
+      mise p i -ay
+      mise prune -y
+      mise up -y || :
+    } &
     if has bun; then
       bun update -g --latest || bun update -g &
     elif has pnpm; then
@@ -85,8 +95,17 @@ main() {
     has ya && has yazi && ya pkg upgrade &
     has code && code --update-extensions &
     has fish && fish -c "fish_update_completions; and fisher update" &
-    has soar && { soar S -q; soar u -q; soar clean -q; } &
-    has am && { am -s; am -u; am --icons --all; am -c; } &
+    has soar && {
+      soar S -q
+      soar u -q
+      soar clean -q
+    } &
+    has am && {
+      am -s
+      am -u
+      am --icons --all
+      am -c
+    } &
     has zoi && zoi upgrade --yes --all &
     has gh && gh extension upgrade --all &
     has yt-dlp && yt-dlp --rm-cache-dir -U &

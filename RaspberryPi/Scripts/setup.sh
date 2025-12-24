@@ -169,8 +169,8 @@ options usbhid mousepoll=20 kbpoll=20
 options usbcore autosuspend=10
 EOF
   # Batch I/O scheduler configuration (single sudo call)
-  printf '%s\n' /sys/block/sd*[!0-9]/queue/iosched/fifo_batch /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch 2>/dev/null | \
-    xargs -r -I{} sudo bash -c '[[ -f {} ]] && echo 32 > {} || :'
+  printf '%s\n' /sys/block/sd*[!0-9]/queue/iosched/fifo_batch /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch 2>/dev/null \
+    | xargs -r -I{} sudo bash -c '[[ -f {} ]] && echo 32 > {} || :'
   local root_dev home_dev
   root_dev=$(findmnt -n -o SOURCE /)
   home_dev=$(findmnt -n -o SOURCE /home 2>/dev/null || echo "$root_dev")

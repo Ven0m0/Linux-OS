@@ -292,13 +292,19 @@ clean_browsers() {
         [[ -d $b ]] || continue
         while IFS= read -r prof; do
           # Avoid subshell - use pushd/popd or explicit cd with restoration
-          [[ -d $prof ]] && { cd "$prof" && clean_sqlite_dbs; cd - >/dev/null; }
+          [[ -d $prof ]] && {
+            cd "$prof" && clean_sqlite_dbs
+            cd - >/dev/null
+          }
         done < <(mozilla_profiles "$b")
       done
     else
       while IFS= read -r prof; do
         # Avoid subshell - use pushd/popd or explicit cd with restoration
-        [[ -d $prof ]] && { cd "$prof" && clean_sqlite_dbs; cd - >/dev/null; }
+        [[ -d $prof ]] && {
+          cd "$prof" && clean_sqlite_dbs
+          cd - >/dev/null
+        }
       done < <(mozilla_profiles "$base")
     fi
   done
@@ -322,7 +328,10 @@ clean_browsers() {
     while IFS= read -r profdir; do
       [[ -d $profdir ]] || continue
       # Avoid subshell - use pushd/popd or explicit cd with restoration
-      { cd "$profdir" && clean_sqlite_dbs; cd - >/dev/null; }
+      {
+        cd "$profdir" && clean_sqlite_dbs
+        cd - >/dev/null
+      }
       rm -rf "$profdir"/{Cache,GPUCache,"Code Cache","Service Worker",Logs} &>/dev/null || :
     done < <(chrome_profiles "$root")
   done
@@ -341,7 +350,10 @@ clean_mail_clients() {
     [[ -d $base ]] || continue
     while IFS= read -r prof; do
       # Avoid subshell - use pushd/popd or explicit cd with restoration
-      [[ -d $prof ]] && { cd "$prof" && clean_sqlite_dbs; cd - >/dev/null; }
+      [[ -d $prof ]] && {
+        cd "$prof" && clean_sqlite_dbs
+        cd - >/dev/null
+      }
     done < <(mozilla_profiles "$base")
   done
 }

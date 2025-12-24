@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail
-shopt -s nullglob globstar
-export LC_ALL=C IFS=$'\n\t'
+set -euo pipefail; shopt -s nullglob globstar
+LC_ALL=C IFS=$'\n\t'
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 #──────────── Helpers ────────────
-has() { command -v -- "$1" &>/dev/null; }
-msg() { printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
-warn() { printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
-die() {
-  printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2
-  exit "${2:-1}"
-}
+has(){ command -v -- "$1" &>/dev/null; }
+msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
+warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
+die(){ printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; exit "${2:-1}"; }
 #──────────── Setup ────────────
 if has paru; then
   pkgmgr=(paru) aur=1
 else
   pkgmgr=(sudo pacman) aur=0
 fi
-
 #──────────── Build Environment ────────────
 jobs=$(nproc 2>/dev/null || echo 4)
 [[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf &>/dev/null
@@ -28,18 +23,17 @@ export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true \
   OPT_LEVEL=3 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_OPT_LEVEL=3 \
   UV_COMPILE_BYTECODE=1 PYTHONOPTIMIZE=2
 unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
-
 #══════════════════════════════════════════════════════════════
 #  REPOSITORY CONFIGURATION
 #══════════════════════════════════════════════════════════════
-setup_repositories() {
+setup_repositories(){
   local -r conf=/etc/pacman.conf chaotic_key=3056513887B78AEB
   local -a chaotic_urls=(
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   )
-  has_repo() { grep -qF -- "$1" "$conf"; }
-  add_block() { printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
+  has_repo(){ grep -qF -- "$1" "$conf"; }
+  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
@@ -82,8 +76,8 @@ Include = /etc/pacman.d/mirrorlist'
   if ! has_repo '[endeavouros]'; then
     msg "Adding EndeavourOS repo"
     local tmp
-    tmp=$(mktemp -d)
-    local repo=https://github.com/endeavouros-team/PKGBUILDS. git
+    tmp=$(mktemp -d 2>/dev/null)
+    local repo=https://github.com/endeavouros-team/PKGBUILDS.git
     if has gix; then
       gix clone --depth=1 --no-tags "$repo" "$tmp" &>/dev/null
     else
@@ -101,7 +95,7 @@ Include = /etc/pacman. d/endeavouros-mirrorlist'
   if ! pacman -Qq cachyos-mirrorlist &>/dev/null; then
     msg "Adding CachyOS repo"
     local tmp
-    tmp=$(mktemp -d)
+    tmp=$(mktemp -d 2>/dev/null)
     (cd "$tmp" && curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o repo.tar.xz \
       && tar xf repo.tar.xz && cd cachyos-repo && chmod +x cachyos-repo. sh \
       && sudo bash cachyos-repo.sh) || warn "CachyOS repo setup failed"
@@ -113,7 +107,7 @@ Include = /etc/pacman. d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 #  SYSTEM INITIALIZATION
 #══════════════════════════════════════════════════════════════
-init_system() {
+init_system(){
   msg "Initializing system"
   localectl set-locale C.UTF-8 >/dev/null
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
@@ -127,17 +121,16 @@ init_system() {
   sudo modprobed-db store &>/dev/null
   sudo modprobe zram tcp_bbr kvm kvm-intel >/dev/null
   [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck
-  sudo pacman-key --init &>/dev/null
-  sudo pacman-key --populate archlinux cachyos &>/dev/null
-  sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null
-  sudo pacman -Syyu --noconfirm 2>/dev/null
-  sudo systemctl enable --now fstrim.timer
+  sudo pacman-key --init &>/dev/null || :
+  sudo pacman-key --populate archlinux cachyos &>/dev/null || :
+  sudo pacman -Syq archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null
+  sudo pacman -Syyuq --noconfirm 2>/dev/null || :
+  sudo systemctl enable --now fstrim.timer &>/dev/null || :
 }
-
 #══════════════════════════════════════════════════════════════
 #  PACKAGE INSTALLATION
 #══════════════════════════════════════════════════════════════
-install_packages() {
+install_packages(){
   local -a pkgs=(
     git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
     paru polly optipng svgo graphicsmagick yadm mise micro hyfetch polkit-kde-agent
@@ -184,19 +177,18 @@ install_packages() {
 #══════════════════════════════════════════════════════════════
 #  FLATPAK
 #══════════════════════════════════════════════════════════════
-setup_flatpak() {
+setup_flatpak(){
   has flatpak || return 0
   msg "Configuring Flatpak"
-  flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub. flatpakrepo &>/dev/null || :
+  sudo flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub. flatpakrepo &>/dev/null || :
   local -a apps=(io.github.wiiznokes.fan-control)
-  ((${#apps[@]})) && flatpak install -y flathub "${apps[@]}" 2>/dev/null || :
-  flatpak update -y --noninteractive 2>/dev/null || :
+  ((${#apps[@]})) && sudo flatpak install -y flathub "${apps[@]}" 2>/dev/null || :
+  sudo flatpak update -y --noninteractive 2>/dev/null || :
 }
-
 #══════════════════════════════════════════════════════════════
 #  RUST TOOLCHAIN
 #══════════════════════════════════════════════════════════════
-setup_rust() {
+setup_rust(){
   if ! has rustup; then
     msg "Installing Rust"
     bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs)" -- -y --profile minimal -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
@@ -213,11 +205,10 @@ setup_rust() {
   local -a crates=()
   cargo install --locked -f "${crates[@]}" || cargo binstall -y "${crates[@]}" || :
 }
-
 #══════════════════════════════════════════════════════════════
 #  EDITOR & SHELL TOOLS
 #══════════════════════════════════════════════════════════════
-setup_tools() {
+setup_tools(){
   if has micro; then
     msg "Configuring micro"
     local -a plugins=(fish fzf wc filemanager linter lsp autofmt detectindent editorconfig misspell diff ftoptions literate status)
@@ -287,7 +278,7 @@ setup_tools() {
 #══════════════════════════════════════════════════════════════
 #  SHELL INTEGRATION
 #══════════════════════════════════════════════════════════════
-setup_shells() {
+setup_shells(){
   if has fish; then
     msg "Configuring Fish shell"
     mkdir -p "$HOME/.config/fish/conf.d"
@@ -313,7 +304,7 @@ setup_shells() {
 #══════════════════════════════════════════════════════════════
 #  SYSTEM SERVICES
 #══════════════════════════════════════════════════════════════
-enable_services() {
+enable_services(){
   msg "Enabling services"
   local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency bluetooth avahi-daemon fstrim.timer)
   # Batch systemctl operations (N checks → 1 list operation)
@@ -329,7 +320,7 @@ enable_services() {
 #══════════════════════════════════════════════════════════════
 #  ADDITIONAL CONFIGURATION
 #══════════════════════════════════════════════════════════════
-configure_auth_limits() {
+configure_auth_limits(){
   msg "Configuring auth limits"
   sudo sed -i 's|^\(auth\s\+required\s\+pam_faillock. so\)\s\+preauth.*$|\1 preauth silent deny=10 unlock_time=120|' /etc/pam.d/system-auth
   sudo sed -i 's|^\(auth\s\+\[default=die\]\s\+pam_faillock.so\)\s\+authfail.*$|\1 authfail deny=10 unlock_time=120|' /etc/pam. d/system-auth
@@ -337,7 +328,7 @@ configure_auth_limits() {
   sudo chmod 440 /etc/sudoers. d/passwd-tries
 }
 
-setup_nvidia() {
+setup_nvidia(){
   msg "Checking NVIDIA configuration"
   local lspci_output
   lspci_output=$(lspci 2>/dev/null) || return 0
@@ -368,7 +359,7 @@ env = __GLX_VENDOR_LIBRARY_NAME,nvidia
 EOF
 }
 
-setup_printers() {
+setup_printers(){
   msg "Configuring printers"
   sudo systemctl enable --now cups.service
   sudo mkdir -p /etc/systemd/resolved.conf.d
@@ -379,7 +370,7 @@ setup_printers() {
   sudo systemctl enable --now cups-browsed.service
 }
 
-set_wireless_regdom() {
+set_wireless_regdom(){
   msg "Setting wireless regdom"
   [[ -f /etc/conf.d/wireless-regdom ]] && . /etc/conf.d/wireless-regdom
   [[ -n ${WIRELESS_REGDOM:-} ]] && return 0
@@ -394,7 +385,7 @@ set_wireless_regdom() {
   command -v iw &>/dev/null && sudo iw reg set "$country" || :
 }
 
-firewall() {
+firewall(){
   if command -v ufw &>/dev/null; then
     sudo ufw disable
     sudo ufw limit 22/tcp
@@ -409,7 +400,7 @@ firewall() {
 #══════════════════════════════════════════════════════════════
 #  SYSTEM MAINTENANCE
 #══════════════════════════════════════════════════════════════
-maintenance() {
+maintenance(){
   msg "Running maintenance"
   has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry 2>/dev/null || :
   has fc-cache && sudo fc-cache -f || :
@@ -436,7 +427,7 @@ maintenance() {
 #══════════════════════════════════════════════════════════════
 #  AUTO SETUP TWEAKS
 #══════════════════════════════════════════════════════════════
-auto_setup_tweaks() {
+auto_setup_tweaks(){
   msg "Applying AutoSetup system tweaks"
   local root_dev fstype
   root_dev=$(findmnt -n -o SOURCE /)
@@ -571,7 +562,7 @@ options usbcore usbfs_snoop=0 autosuspend=10
 EOF
   printf '%s\n' bfq ntsync tcp_bbr zram | sudo tee /etc/modprobe.d/modules.conf >/dev/null
   msg "Configure VSCode privacy"
-  _vscode_json_set() {
+  _vscode_json_set(){
     local prop=$1 val=$2
     has python3 || return 0
     python3 -c "from pathlib import Path;import os,json;p='$prop';t=json.loads('$val');h=f'/home/{os.getenv(\"SUDO_USER\",os.getenv(\"USER\"))}';[Path(f).write_text(json.dumps({**json.loads(c if(c:=Path(f).read_text() if Path(f).exists() else '')else'{}'),p:t},indent=2))for f in[f'{h}/.config/VSCodium/User/settings. json',f'{h}/.config/Code/User/settings.json']]" 2>/dev/null || :
@@ -603,7 +594,7 @@ EOF
 #══════════════════════════════════════════════════════════════
 #  CLEANUP
 #══════════════════════════════════════════════════════════════
-cleanup() {
+cleanup(){
   msg "Cleaning up"
   local orphans
   orphans=$(pacman -Qdtq 2>/dev/null) && sudo pacman -Rns --noconfirm "$orphans" 2>/dev/null || :
@@ -616,7 +607,7 @@ cleanup() {
 #══════════════════════════════════════════════════════════════
 #  MAIN EXECUTION
 #══════════════════════════════════════════════════════════════
-main() {
+main(){
   setup_repositories
   init_system
   install_packages

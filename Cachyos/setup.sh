@@ -2,7 +2,7 @@
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
 set -euo pipefail
 shopt -s nullglob globstar
-export LC_ALL=C IFS=$'\n\t'
+LC_ALL=C IFS=$'\n\t'
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 #──────────── Helpers ────────────
@@ -19,7 +19,6 @@ if has paru; then
 else
   pkgmgr=(sudo pacman) aur=0
 fi
-
 #──────────── Build Environment ────────────
 jobs=$(nproc 2>/dev/null || echo 4)
 [[ -r /etc/makepkg.conf ]] && . /etc/makepkg.conf &>/dev/null
@@ -28,7 +27,6 @@ export CARGO_HTTP_MULTIPLEXING=true CARGO_NET_GIT_FETCH_WITH_CLI=true \
   OPT_LEVEL=3 CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1 CARGO_PROFILE_RELEASE_OPT_LEVEL=3 \
   UV_COMPILE_BYTECODE=1 PYTHONOPTIMIZE=2
 unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
-
 #══════════════════════════════════════════════════════════════
 #  REPOSITORY CONFIGURATION
 #══════════════════════════════════════════════════════════════
@@ -82,8 +80,8 @@ Include = /etc/pacman.d/mirrorlist'
   if ! has_repo '[endeavouros]'; then
     msg "Adding EndeavourOS repo"
     local tmp
-    tmp=$(mktemp -d)
-    local repo=https://github.com/endeavouros-team/PKGBUILDS. git
+    tmp=$(mktemp -d 2>/dev/null)
+    local repo=https://github.com/endeavouros-team/PKGBUILDS.git
     if has gix; then
       gix clone --depth=1 --no-tags "$repo" "$tmp" &>/dev/null
     else
@@ -101,7 +99,7 @@ Include = /etc/pacman. d/endeavouros-mirrorlist'
   if ! pacman -Qq cachyos-mirrorlist &>/dev/null; then
     msg "Adding CachyOS repo"
     local tmp
-    tmp=$(mktemp -d)
+    tmp=$(mktemp -d 2>/dev/null)
     (cd "$tmp" && curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o repo.tar.xz \
       && tar xf repo.tar.xz && cd cachyos-repo && chmod +x cachyos-repo. sh \
       && sudo bash cachyos-repo.sh) || warn "CachyOS repo setup failed"
@@ -127,13 +125,12 @@ init_system() {
   sudo modprobed-db store &>/dev/null
   sudo modprobe zram tcp_bbr kvm kvm-intel >/dev/null
   [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck
-  sudo pacman-key --init &>/dev/null
-  sudo pacman-key --populate archlinux cachyos &>/dev/null
-  sudo pacman -Sy archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null
-  sudo pacman -Syyu --noconfirm 2>/dev/null
-  sudo systemctl enable --now fstrim.timer
+  sudo pacman-key --init &>/dev/null || :
+  sudo pacman-key --populate archlinux cachyos &>/dev/null || :
+  sudo pacman -Syq archlinux-keyring cachyos-keyring --noconfirm 2>/dev/null
+  sudo pacman -Syyuq --noconfirm 2>/dev/null || :
+  sudo systemctl enable --now fstrim.timer &>/dev/null || :
 }
-
 #══════════════════════════════════════════════════════════════
 #  PACKAGE INSTALLATION
 #══════════════════════════════════════════════════════════════
@@ -187,12 +184,11 @@ install_packages() {
 setup_flatpak() {
   has flatpak || return 0
   msg "Configuring Flatpak"
-  flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub. flatpakrepo &>/dev/null || :
+  sudo flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub. flatpakrepo &>/dev/null || :
   local -a apps=(io.github.wiiznokes.fan-control)
-  ((${#apps[@]})) && flatpak install -y flathub "${apps[@]}" 2>/dev/null || :
-  flatpak update -y --noninteractive 2>/dev/null || :
+  ((${#apps[@]})) && sudo flatpak install -y flathub "${apps[@]}" 2>/dev/null || :
+  sudo flatpak update -y --noninteractive 2>/dev/null || :
 }
-
 #══════════════════════════════════════════════════════════════
 #  RUST TOOLCHAIN
 #══════════════════════════════════════════════════════════════
@@ -213,7 +209,6 @@ setup_rust() {
   local -a crates=()
   cargo install --locked -f "${crates[@]}" || cargo binstall -y "${crates[@]}" || :
 }
-
 #══════════════════════════════════════════════════════════════
 #  EDITOR & SHELL TOOLS
 #══════════════════════════════════════════════════════════════
@@ -228,7 +223,11 @@ setup_tools() {
     msg "Installing gh extensions"
     local -a exts=(gennaro-tedesco/gh-f gennaro-tedesco/gh-s seachicken/gh-poi
       2KAbhishek/gh-repo-man HaywardMorihara/gh-tidy gizmo385/gh-lazy)
-    gh extension install "${exts[@]}" 2>/dev/null || :
+    # Parallelize gh extension installs
+    for ext in "${exts[@]}"; do
+      gh extension install "$ext" &
+    done 2>/dev/null
+    wait
   fi
   if has mise; then
     msg "Configuring mise"
@@ -312,9 +311,14 @@ setup_shells() {
 enable_services() {
   msg "Enabling services"
   local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency bluetooth avahi-daemon fstrim.timer)
-  for sv in "${svcs[@]}"; do
-    systemctl is-enabled "$sv" &>/dev/null || sudo systemctl enable --now "$sv" &>/dev/null || :
-  done
+  # Batch systemctl operations (N checks → 1 list operation)
+  local -a missing
+  mapfile -t missing < <(
+    comm -23 \
+      <(printf '%s\n' "${svcs[@]}" | sort) \
+      <(systemctl list-unit-files --state=enabled --no-pager --plain 2>/dev/null | awk '{print $1}' | sed 's/\.service$//' | sort)
+  )
+  [[ ${#missing[@]} -gt 0 ]] && sudo systemctl enable --now "${missing[@]}" &>/dev/null || :
 }
 
 #══════════════════════════════════════════════════════════════
@@ -334,14 +338,14 @@ setup_nvidia() {
   lspci_output=$(lspci 2>/dev/null) || return 0
   [[ ${lspci_output,,} == *nvidia* ]] || return 0
   local driver="nvidia-dkms"
-  [[ $lspci_output =~ (RTX\ [2-9][0-9]|GTX\ 16[0-9]) ]] && driver="nvidia-open-dkms"
+  # Anchor regex to avoid false matches in PCI IDs
+  [[ $lspci_output =~ (^|[[:space:]])(RTX[[:space:]][2-9][0-9]|GTX[[:space:]]16[0-9])($|[[:space:]]) ]] && driver="nvidia-open-dkms"
   local headers="linux-headers"
-  for kernel in linux-hardened linux-lts linux-zen; do
-    if pacman -Q "$kernel" &>/dev/null; then
-      headers="${kernel}-headers"
-      break
-    fi
-  done
+  # Optimize kernel detection (3 pacman calls → 1 with grep)
+  local -a installed_kernels
+  mapfile -t installed_kernels < <(pacman -Qq 2>/dev/null | grep -E '^linux-(hardened|lts|zen)$')
+  [[ ${#installed_kernels[@]} -gt 0 ]] && headers="${installed_kernels[0]}-headers"
+
   sudo pacman -Syu --noconfirm
   sudo pacman -S --needed --noconfirm "$headers" "$driver" nvidia-utils lib32-nvidia-utils egl-wayland libva-nvidia-driver qt5-wayland qt6-wayland
   echo "options nvidia_drm modeset=1" | sudo tee /etc/modprobe.d/nvidia.conf >/dev/null
@@ -457,14 +461,18 @@ auto_setup_tweaks() {
     [[ -f $file ]] || continue
     local kvs=("Storage=none")
     [[ $svc == journald ]] && kvs+=("Seal=no" "Audit=no")
+    # Build sed script, apply once (N sed calls → 1)
+    local sed_script="" to_append=""
     for kv in "${kvs[@]}"; do
       local key="${kv%%=*}"
       if grep -qE "^#*${key}=" "$file"; then
-        sudo sed -i -E "s|^#*${key}=.*|$kv|" "$file"
+        sed_script+="s|^#*${key}=.*|$kv|;"
       else
-        echo "$kv" | sudo tee -a "$file" >/dev/null
+        to_append+="$kv"$'\n'
       fi
     done
+    [[ -n $sed_script ]] && sudo sed -i -E "$sed_script" "$file"
+    [[ -n $to_append ]] && printf '%s' "$to_append" | sudo tee -a "$file" >/dev/null
   done
   if [[ -f /etc/bluetooth/main.conf ]]; then
     msg "Tweaking Bluetooth config"

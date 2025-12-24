@@ -40,8 +40,10 @@
 #   - Device locking prevents concurrent operations
 #   - Always verify target device before running
 #──────────────────────────────────────────────────────────────────────────────
-set -euo pipefail; shopt -s nullglob globstar
-export LC_ALL=C; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+export LC_ALL=C
+IFS=$'\n\t'
 # Script directory resolution (portable)
 s=${BASH_SOURCE[0]}
 [[ $s != /* ]] && s=$PWD/$s
@@ -50,11 +52,11 @@ cd -P -- "${s%/*}"
 # CORE UTILITIES
 #──────────────────────────────────────────────────────────────────────────────
 # Optimized date formatting (uses printf builtin)
-fdate(){ printf '%(%T)T' '-1'; }
+fdate() { printf '%(%T)T' '-1'; }
 # Fast file reader (avoids cat fork)
-fcat(){ printf '%s\n' "$(<"${1}")"; }
+fcat() { printf '%s\n' "$(<"${1}")"; }
 # Check if command exists (no-fork version)
-has(){ command -v -- "$1" &>/dev/null; }
+has() { command -v -- "$1" &>/dev/null; }
 #──────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION & CONSTANTS
 #──────────────────────────────────────────────────────────────────────────────
@@ -84,23 +86,23 @@ declare -ga MOUNTED_DIRS=()
 # LOGGING FUNCTIONS
 #──────────────────────────────────────────────────────────────────────────────
 # Enhanced echo (interprets color codes)
-xecho(){ printf '%b\n' "$*"; }
+xecho() { printf '%b\n' "$*"; }
 # Logging levels with timestamps and color coding
-log(){ xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
-msg(){ xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
-warn(){ xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
-err(){ xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
-dbg(){ [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*"; }
+log() { xecho "[$(fdate)] ${BLU}${BLD}[*]${DEF} $*"; }
+msg() { xecho "[$(fdate)] ${GRN}${BLD}[+]${DEF} $*"; }
+warn() { xecho "[$(fdate)] ${YLW}${BLD}[!]${DEF} $*" >&2; }
+err() { xecho "[$(fdate)] ${RED}${BLD}[-]${DEF} $*" >&2; }
+dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[$(fdate)] ${MGN}[DBG]${DEF} $*"; }
 #──────────────────────────────────────────────────────────────────────────────
 # DEVICE VALIDATION & SAFETY CHECKS
 #──────────────────────────────────────────────────────────────────────────────
 # Get device transport type (usb, mmc, sata, nvme, etc.)
-get_drive_trans(){
+get_drive_trans() {
   local dev="${1:?missing device}"
   lsblk -dno TRAN "$dev" 2>&1 || echo "unknown"
 }
 # Assert device is USB or MMC (safety check)
-assert_usb_dev(){
+assert_usb_dev() {
   local dev="${1:?missing device}"
   ((cfg[no_usb_check])) && return 0
   [[ $dev == /dev/loop* ]] && return 0
@@ -109,11 +111,12 @@ assert_usb_dev(){
   if [[ $trans != usb && $trans != mmc ]]; then
     err "Device $dev is not USB/MMC (detected:  $trans)"
     err "Use -U to bypass this check (DANGEROUS)"
-    cleanup; exit 1
+    cleanup
+    exit 1
   fi
 }
 # Verify image fits on target device
-assert_size(){
+assert_size() {
   local img="${1:?missing image}" dev="${2:?missing device}"
   ((cfg[no_size_check])) && return 0
   [[ ! -b $dev ]] && return 0
@@ -122,7 +125,8 @@ assert_size(){
   dev_bytes=$(blockdev --getsize64 "$dev")
   if ((img_bytes > dev_bytes)); then
     err "Image size ($((img_bytes / 1024 / 1024))MB) exceeds target ($((dev_bytes / 1024 / 1024))MB)"
-    cleanup; exit 1
+    cleanup
+    exit 1
   fi
 }
 
@@ -130,11 +134,12 @@ assert_size(){
 # INTERACTIVE DEVICE SELECTION
 #──────────────────────────────────────────────────────────────────────────────
 # Interactive target device selection using fzf
-select_target_interactive(){
+select_target_interactive() {
   if ! has fzf; then
     err "fzf required for interactive selection"
     err "Install:  apt install fzf"
-    cleanup; exit 1
+    cleanup
+    exit 1
   fi
   log "Scanning for removable drives..."
   local selection
@@ -151,7 +156,8 @@ select_target_interactive(){
   )
   if [[ -z $selection ]]; then
     err "No target device selected"
-    cleanup; exit 1
+    cleanup
+    exit 1
   fi
   awk '{print $1}' <<<"$selection"
 }
@@ -159,7 +165,7 @@ select_target_interactive(){
 # DEPENDENCY VALIDATION
 #──────────────────────────────────────────────────────────────────────────────
 # Check for required system dependencies
-check_deps(){
+check_deps() {
   local -a deps=(
     losetup parted mkfs.f2fs mkfs.vfat rsync xz blkid
     partprobe lsblk flock awk curl wipefs udevadm
@@ -171,15 +177,17 @@ check_deps(){
   if ((${#missing[@]} > 0)); then
     err "Missing required dependencies: ${missing[*]}"
     err "Install: apt install ${missing[*]}"
-    cleanup; exit 1
+    cleanup
+    exit 1
   fi
 }
 #──────────────────────────────────────────────────────────────────────────────
 # CLEANUP & ERROR HANDLING
 #──────────────────────────────────────────────────────────────────────────────
 # Comprehensive cleanup function (runs on EXIT/INT/TERM)
-cleanup(){
-  local ret="$?"; set +e
+cleanup() {
+  local ret="$?"
+  set +e
   for ((i = ${#MOUNTED_DIRS[@]} - 1; i >= 0; i--)); do
     umount -lf "${MOUNTED_DIRS[i]}" &>/dev/null
   done
@@ -196,15 +204,21 @@ cleanup(){
 # PARTITION PATH HANDLING
 #──────────────────────────────────────────────────────────────────────────────
 # Derive partition paths from base device
-derive_partition_paths(){
+derive_partition_paths() {
   local dev="${1:?missing device}"
   case $dev in
-    *nvme*|*mmcblk*|*loop*) BOOT_PART="${dev}p1"; ROOT_PART="${dev}p2" ;;
-    *) BOOT_PART="${dev}1"; ROOT_PART="${dev}2" ;;
+    *nvme* | *mmcblk* | *loop*)
+      BOOT_PART="${dev}p1"
+      ROOT_PART="${dev}p2"
+      ;;
+    *)
+      BOOT_PART="${dev}1"
+      ROOT_PART="${dev}2"
+      ;;
   esac
 }
 # Wait for kernel to recognize new partitions
-wait_for_partitions(){
+wait_for_partitions() {
   local dev="${1:?missing device}"
   ((cfg[dry_run])) && return 0
   partprobe "$dev" &>/dev/null
@@ -219,23 +233,25 @@ wait_for_partitions(){
     sleep 0.5
   done
   err "Partitions failed to appear on $dev after 15s"
-  cleanup; exit 1
+  cleanup
+  exit 1
 }
 #──────────────────────────────────────────────────────────────────────────────
 # ENVIRONMENT PREPARATION
 #──────────────────────────────────────────────────────────────────────────────
 # Initialize working environment
-prepare_environment(){
+prepare_environment() {
   WORKDIR=$(mktemp -d -p "${TMPDIR:-/tmp}" rf2fs.XXXXXX)
   SRC_IMG="$WORKDIR/source.img"
   trap cleanup EXIT INT TERM
-  sync; sudo sh -c 'echo 3>/proc/sys/vm/drop_caches' &>/dev/null || :
+  sync
+  sudo sh -c 'echo 3>/proc/sys/vm/drop_caches' &>/dev/null || :
 }
 #──────────────────────────────────────────────────────────────────────────────
 # SOURCE IMAGE PROCESSING
 #──────────────────────────────────────────────────────────────────────────────
 # Download or prepare source image
-process_source(){
+process_source() {
   # Handle "dietpi" keyword
   if [[ $SRC_PATH == dietpi ]]; then
     log "Keyword 'dietpi' detected, using:  $DIETPI_URL"
@@ -243,37 +259,51 @@ process_source(){
   fi
   # Download from URL - check for http: // or https://
   case $SRC_PATH in
-    http://*|https://*)
+    http://* | https://*)
       log "Downloading image from URL..."
       case $SRC_PATH in
-        *.xz) curl -Lfs --progress-bar "$SRC_PATH" | xz -dc >"$SRC_IMG" || { err "Download/decompression failed"; cleanup; exit 1; } ;;
-        *) curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG" || { err "Download failed"; cleanup; exit 1; } ;;
+        *.xz) curl -Lfs --progress-bar "$SRC_PATH" | xz -dc >"$SRC_IMG" || {
+          err "Download/decompression failed"
+          cleanup
+          exit 1
+        } ;;
+        *) curl -Lfs --progress-bar "$SRC_PATH" -o "$SRC_IMG" || {
+          err "Download failed"
+          cleanup
+          exit 1
+        } ;;
       esac
-      return 0 ;;
+      return 0
+      ;;
     *) : ;;
   esac
   # Process local file
   log "Processing local source:  $SRC_PATH"
   if [[ ! -f $SRC_PATH ]]; then
     err "Source file not found: $SRC_PATH"
-    cleanup; exit 1
+    cleanup
+    exit 1
   fi
   # Handle xz-compressed images
   case $SRC_PATH in
-    *.xz) log "Decompressing xz archive..."; xz -dc "$SRC_PATH" >"$SRC_IMG" ;;
+    *.xz)
+      log "Decompressing xz archive..."
+      xz -dc "$SRC_PATH" >"$SRC_IMG"
+      ;;
     *)
       if ((cfg[keep_source])); then
         cp --reflink=auto "$SRC_PATH" "$SRC_IMG"
       else
         ln "$SRC_PATH" "$SRC_IMG" 2>/dev/null || cp "$SRC_PATH" "$SRC_IMG"
-      fi ;;
+      fi
+      ;;
   esac
 }
 #──────────────────────────────────────────────────────────────────────────────
 # FILESYSTEM OPERATIONS
 #──────────────────────────────────────────────────────────────────────────────
 # Check and repair ext4 filesystem
-check_filesystem(){
+check_filesystem() {
   local dev="${1:?missing device}"
   log "Checking filesystem on $dev..."
   e2fsck -pf "$dev"
@@ -291,7 +321,7 @@ check_filesystem(){
 # IMAGE SHRINKING (PiShrink-like Algorithm)
 #──────────────────────────────────────────────────────────────────────────────
 # Shrink source image before flashing
-shrink_source_image(){
+shrink_source_image() {
   log "Shrinking source image (PiShrink algorithm)..."
   local parted_out
   parted_out=$(parted -ms "$SRC_IMG" unit B print) || {
@@ -380,7 +410,7 @@ shrink_source_image(){
 # TARGET DEVICE SETUP
 #──────────────────────────────────────────────────────────────────────────────
 # Prepare target device for flashing
-setup_target_device(){
+setup_target_device() {
   log "Preparing target device:  $TGT_PATH"
   local lock_suffix
   lock_suffix=${TGT_PATH//\//_}
@@ -388,11 +418,13 @@ setup_target_device(){
   mkdir -p "${LOCK_FILE%/*}"
   exec {LOCK_FD}>"$LOCK_FILE" || {
     err "Cannot create lock file"
-    cleanup; exit 11
+    cleanup
+    exit 11
   }
   flock -n "$LOCK_FD" || {
     err "Device $TGT_PATH is in use by another process"
-    cleanup; exit 1
+    cleanup
+    exit 1
   }
   assert_usb_dev "$TGT_PATH"
   assert_size "$SRC_IMG" "$TGT_PATH"
@@ -411,7 +443,7 @@ setup_target_device(){
 # FILESYSTEM FORMATTING
 #──────────────────────────────────────────────────────────────────────────────
 # Format boot (FAT32) and root (F2FS) partitions
-format_target(){
+format_target() {
   log "Formatting filesystems..."
   ((cfg[dry_run])) && return 0
   mkfs.vfat -F32 -n BOOT "$BOOT_PART" &>/dev/null
@@ -421,7 +453,7 @@ format_target(){
 # DATA CLONING
 #──────────────────────────────────────────────────────────────────────────────
 # Clone data from source image to target device
-clone_data(){
+clone_data() {
   log "Cloning data (this may take several minutes)..."
   ((cfg[dry_run])) && return 0
   LOOP_DEV=$(losetup --show -f -P "$SRC_IMG")
@@ -447,7 +479,7 @@ clone_data(){
 # BOOT CONFIGURATION
 #──────────────────────────────────────────────────────────────────────────────
 # Configure Raspberry Pi boot parameters for F2FS
-configure_pi_boot(){
+configure_pi_boot() {
   log "Configuring F2FS boot parameters..."
   ((cfg[dry_run])) && return 0
   local boot_uuid root_uuid
@@ -490,7 +522,7 @@ configure_pi_boot(){
 #──────────────────────────────────────────────────────────────────────────────
 # USAGE & CLI PARSING
 #──────────────────────────────────────────────────────────────────────────────
-usage(){
+usage() {
   cat <<-'EOF'
 	━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 	  raspi-f2fs.sh - Raspberry Pi F2FS Flasher
@@ -576,10 +608,11 @@ done
 # MAIN EXECUTION FLOW
 #──────────────────────────────────────────────────────────────────────────────
 # Root privilege check
-if (( EUID != 0 )); then
+if ((EUID != 0)); then
   err "This script requires root privileges"
   err "Run with:  sudo $0 $*"
-  cleanup; exit 1
+  cleanup
+  exit 1
 fi
 # Dependency validation
 check_deps
@@ -595,7 +628,8 @@ if [[ -z $SRC_PATH ]]; then
   )
   if [[ -z $SRC_PATH ]]; then
     err "No source image selected"
-    cleanup; exit 1
+    cleanup
+    exit 1
   fi
 fi
 

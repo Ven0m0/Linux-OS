@@ -172,9 +172,7 @@ setup_system() {
   fi
   if [[ $GIT_CLEANUP -eq 1 ]] && git rev-parse --is-inside-work-tree &>/dev/null; then
     echo "==> Git cleanup..."
-    git reflog expire --expire=now --all
-    git gc --prune=now --aggressive
-    git repack -ad --depth=250 --window=250
+    git maintenance run
     git clean -fdX
   fi
   for tool in cargo-shear cargo-machete cargo-cache; do
@@ -195,8 +193,7 @@ setup_env() {
   local jobs
   jobs=$(nproc 2>/dev/null || echo 4)
   if has sccache; then
-    export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache
-    export SCCACHE_DIRECT=true SCCACHE_RECACHE=true SCCACHE_IDLE_TIMEOUT=10800
+    export CC="sccache clang" CXX="sccache clang++" RUSTC_WRAPPER=sccache SCCACHE_DIRECT=true SCCACHE_RECACHE=true SCCACHE_IDLE_TIMEOUT=10800
     sccache --start-server &>/dev/null || :
   else
     export CC=clang CXX=clang++
@@ -267,13 +264,13 @@ optimize_assets() {
   local fd_cmd="" nproc_val
   nproc_val=$(nproc 2>/dev/null || echo 4)
   has fd && fd_cmd="fd" || has fdfind && fd_cmd="fdfind"
-  # HTML minification
+  # HTML minification (avoid shell spawns with fd --exec)
   if has minhtml; then
     echo "==> Minifying HTML..."
     if [[ -n $fd_cmd ]]; then
-      "$fd_cmd" -H -t f '\.html$' -print0 | xargs -0 -P"$nproc_val" -I{} sh -c 'minhtml -i "$1" -o "$1"' _ {}
+      "$fd_cmd" -H -t f '\.html$' --exec minhtml -i {} -o {} \;
     else
-      find . -type f -name '*.html' -print0 | xargs -0 -P"$nproc_val" -I{} sh -c 'minhtml -i "$1" -o "$1"' _ {}
+      find . -type f -name '*.html' -exec minhtml -i {} -o {} \;
     fi
   fi
   # Image optimization
@@ -324,11 +321,22 @@ case $MODE in
   install)
     echo "==> Installing: ${CRATES[*]}"
     sync
-    for crate in "${CRATES[@]}"; do
-      echo "→ $crate..."
-      run cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate"
-      echo "✅ $crate → $HOME/.cargo/bin"
-    done
+    # Parallelize cargo installs (prefer cargo-binstall for pre-built binaries)
+    if has cargo-binstall; then
+      echo "→ Using cargo-binstall for parallel installs"
+      for crate in "${CRATES[@]}"; do
+        cargo-binstall -y "$crate" &
+      done
+      wait
+    else
+      # Fallback: parallel cargo install (CPU-bound but I/O benefits)
+      for crate in "${CRATES[@]}"; do
+        echo "→ $crate..."
+        run cargo +nightly "${INSTALL_FLAGS[@]}" install "$LOCKED_FLAG" "${MISC_OPT[@]}" "$crate" &
+      done
+      wait
+    fi
+    echo "✅ All crates → $HOME/.cargo/bin"
     ;;
 
   workflow)
@@ -403,12 +411,10 @@ case $MODE in
         echo "Then create final binary:"
         echo "  cargo pgo bolt optimize --with-pgo"
       fi
-
       profileoff
       echo "✅ PGO optimization complete"
     fi
     ;;
 esac
-
 echo ""
 echo "✅ All operations complete"

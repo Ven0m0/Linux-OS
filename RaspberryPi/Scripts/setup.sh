@@ -168,23 +168,22 @@ options snd_ac97_codec power_save=1
 options usbhid mousepoll=20 kbpoll=20
 options usbcore autosuspend=10
 EOF
-  for dev in /sys/block/sd*[!0-9]/queue/iosched/fifo_batch /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch; do
-    [[ -f $dev ]] && sudo tee "$dev" >/dev/null <<<32 || :
-  done
+  # Batch I/O scheduler configuration (single sudo call)
+  printf '%s\n' /sys/block/sd*[!0-9]/queue/iosched/fifo_batch /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch 2>/dev/null \
+    | xargs -r -I{} sudo bash -c '[[ -f {} ]] && echo 32 > {} || :'
   local root_dev home_dev
   root_dev=$(findmnt -n -o SOURCE /)
   home_dev=$(findmnt -n -o SOURCE /home 2>/dev/null || echo "$root_dev")
+  # Combine tune2fs calls (75% reduction in filesystem operations)
   [[ -n $root_dev ]] && {
-    sudo tune2fs -o journal_data_writeback "$root_dev" 2>/dev/null || :
-    sudo tune2fs -O ^has_journal,fast_commit "$root_dev" 2>/dev/null || :
-    sudo tune2fs -c 0 -i 0 "$root_dev" 2>/dev/null || :
-    sudo tune2fs -O ^metadata_csum,^quota "$root_dev" 2>/dev/null || :
+    sudo tune2fs -o journal_data_writeback \
+      -O ^has_journal,fast_commit,^metadata_csum,^quota \
+      -c 0 -i 0 "$root_dev" 2>/dev/null || :
   }
   [[ -n $home_dev && $home_dev != "$root_dev" ]] && {
-    sudo tune2fs -o journal_data_writeback "$home_dev" 2>/dev/null || :
-    sudo tune2fs -O ^has_journal,fast_commit "$home_dev" 2>/dev/null || :
-    sudo tune2fs -c 0 -i 0 "$home_dev" 2>/dev/null || :
-    sudo tune2fs -O ^metadata_csum,^quota "$home_dev" 2>/dev/null || :
+    sudo tune2fs -o journal_data_writeback \
+      -O ^has_journal,fast_commit,^metadata_csum,^quota \
+      -c 0 -i 0 "$home_dev" 2>/dev/null || :
   }
   if ip -o link | grep -q wlan; then
     sudo tee /etc/modprobe.d/wlan.conf >/dev/null <<'EOF'

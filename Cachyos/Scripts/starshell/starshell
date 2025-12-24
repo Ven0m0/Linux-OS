@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# shellcheck enable=all shell=bash source-path=SCRIPTDIR
+set -euo pipefail; shopt -s nullglob globstar
+LC_ALL=C IFS=$'\n\t'
 
 # Credits to Nicholas Farrow (https://nicholasfarrow.com/Printing-a-Star-Wars-Scene-in-Terminal-with-Bash/)
 # Credits to cscs @ forum.manjaro.org for help and ideas

@@ -71,9 +71,7 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
 # ------------------------------------------------
 
 
-
-Mine:
-
+```bash
 ffmpeg -i input.mp4 -c:v libsvtav1 \
   -preset 4 -crf 28 -g 300 -pix_fmt yuv420p10le \
   -svtav1-params "tune=0:film-grain=6:enable-qm=1:qm-min=0:enable-variance-boost=1:tf-strength=1:luminance-qp-bias=25:sharpness=-2:tile-columns=1:tile-rows=0:superres-mode=4:enable-dlf=2" \
@@ -81,8 +79,9 @@ ffmpeg -i input.mp4 -c:v libsvtav1 \
   -c:a libopus -b:a 96k -ac 2 -rematrix_maxval 1.0 \
   -hide_banner -y -nostdin -loglevel error -stats \
   -map_metadata 0 -sn output.mkv
+```
 
-Qwen:
+```bash
 ffmpeg -i input.mkv -c:v libsvtav1 \
   -preset 4 -crf 30 -g 240 -pix_fmt yuv420p10le \
   -svtav1-params "tune=0:enable-qm=1:qm-min=0:scd=1:enable-variance-boost=1:tf-strength=1:luminance-qp-bias=25:sharpness=-5:tile-columns=1:tile-rows=0:enable-dlf=2:" \
@@ -90,13 +89,14 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
   -c:a libopus -b:a 128k -ac 2 -rematrix_maxval 1.0 \
   -f mkv -hide_banner -y -nostdin -loglevel error -stats \
   -map_metadata 0 output.mkv
+```
 
-  
+```bash
 ffmpeg -i input.mp4 -c:v libsvtav1 \
   -preset 4 -crf 24 -g 300 -profile main -pix_fmt yuv420p10le \
   -svtav1-params "tune=1:enable-qm=1:enable-variance-boost=1:variance-boost-strength=2:tf-strength=1:luminance-qp-bias=25:sharpness=-5:tile-columns=1:tile-rows=0:enable-dlf=2:enable-cdef=1:enable-restoration=1" \
   -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
   -c:a libopus -b:a 128k -ac 2 -map_metadata 0 \
   -f mkv -hide_banner -y -nostdin -loglevel error -stats output.mkv
-   
+```
 

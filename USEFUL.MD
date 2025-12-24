@@ -60,8 +60,4 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
 ### AV1 [Presets](https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/CommonQuestions.md#what-presets-do)
 
 - Slow preset: 3
-- Fast preset: 4-4
-
-or depending on speed `-preset 5` or `-preset 6`
-
-`tile-columns=2` `tile-rows`
+- Fast preset: 4-6

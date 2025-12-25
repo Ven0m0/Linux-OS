@@ -6,13 +6,11 @@ LC_ALL=C IFS=$'\n\t'
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 #──────────── Helpers ────────────
-has() { command -v -- "$1" &>/dev/null; }
-msg() { printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
-warn() { printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
-die() {
-  printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2
-  exit "${2:-1}"
-}
+has(){ command -v -- "$1" &>/dev/null; }
+msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
+warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
+die(){ printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; exit "${2:-1}"; }
+
 #──────────── Setup ────────────
 if has paru; then
   pkgmgr=(paru) aur=1
@@ -30,14 +28,14 @@ unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
 #══════════════════════════════════════════════════════════════
 #  REPOSITORY CONFIGURATION
 #══════════════════════════════════════════════════════════════
-setup_repositories() {
+setup_repositories(){
   local -r conf=/etc/pacman.conf chaotic_key=3056513887B78AEB
   local -a chaotic_urls=(
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   )
-  has_repo() { grep -qF -- "$1" "$conf"; }
-  add_block() { printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
+  has_repo(){ grep -qF -- "$1" "$conf"; }
+  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
@@ -111,7 +109,7 @@ Include = /etc/pacman. d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 #  SYSTEM INITIALIZATION
 #══════════════════════════════════════════════════════════════
-init_system() {
+init_system(){
   msg "Initializing system"
   localectl set-locale C.UTF-8 >/dev/null
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
@@ -134,7 +132,7 @@ init_system() {
 #══════════════════════════════════════════════════════════════
 #  PACKAGE INSTALLATION
 #══════════════════════════════════════════════════════════════
-install_packages() {
+install_packages(){
   local -a pkgs=(
     git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
     paru polly optipng svgo graphicsmagick yadm mise micro hyfetch polkit-kde-agent
@@ -151,8 +149,8 @@ install_packages() {
     cleanlib32 multipath-tools sshpass cpio bc fuse2 appimagelauncher xdg-ninja cylon
     makepkg-optimize-mold usb-dirty-pages-udev unzrip-git adbr-git av1an jdk-temurin jdk25-graalvm-bin
     vscodium-electron vk-hdr-layer-kwin6-git soar zoi-bin cargo-binstall cargo-edit cargo-c cargo-update
-    cargo-outdated cargo-make cargo-llvm-cov cargo-cache cargo-machete cargo-pgo cargo-binutils
-    cargo-udeps cargo-pkgbuild simagef-bin crabz
+    cargo-make cargo-llvm-cov cargo-cache cargo-binutils cargo-pkgbuild simagef-bin crabz
+    dua-cli duf
   )
   msg "Checking packages"
   mapfile -t installed < <(pacman -Qq 2>/dev/null)
@@ -166,7 +164,7 @@ install_packages() {
   }
   msg "Installing ${#missing[@]} packages"
   if ((aur)); then
-    paru -S --needed --noconfirm --sudoloop --skipreview --batchinstall --nocheck \
+    paru -Sq --needed --noconfirm --skipreview --sudoloop --batchinstall --nocheck \
       --mflags '--nocheck --skipinteg --skippgpcheck --skipchecksums' \
       --gpgflags '--batch -q --yes --skip-verify' --cleanafter --removemake "${missing[@]}" 2>/dev/null || {
       local fail="${HOME}/failed_pkgs. txt"
@@ -174,25 +172,27 @@ install_packages() {
       comm -23 <(printf '%s\n' "${missing[@]}" | sort) <(pacman -Qq 2>/dev/null | sort) >"$fail" || :
     }
   else
-    sudo pacman -S --needed --noconfirm --disable-download-timeout "${missing[@]}" || die "Install failed"
+    sudo pacman -Sq --needed --noconfirm --disable-download-timeout "${missing[@]}" || die "Install failed"
   fi
 }
 
 #══════════════════════════════════════════════════════════════
 #  FLATPAK
 #══════════════════════════════════════════════════════════════
-setup_flatpak() {
+setup_flatpak(){
   has flatpak || return 0
   msg "Configuring Flatpak"
   sudo flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub. flatpakrepo &>/dev/null || :
   local -a apps=(io.github.wiiznokes.fan-control)
   ((${#apps[@]})) && sudo flatpak install -y flathub "${apps[@]}" 2>/dev/null || :
-  sudo flatpak update -y --noninteractive 2>/dev/null || :
+  flatpak update -y --noninteractive --appstream
+  flatpak update -y --noninteractive --force-remove -u 2>/dev/null || :
+  sudo flatpak update -y --noninteractive --force-remove 2>/dev/null || :
 }
 #══════════════════════════════════════════════════════════════
 #  RUST TOOLCHAIN
 #══════════════════════════════════════════════════════════════
-setup_rust() {
+setup_rust(){
   if ! has rustup; then
     msg "Installing Rust"
     bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs)" -- -y --profile minimal -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
@@ -212,11 +212,11 @@ setup_rust() {
 #══════════════════════════════════════════════════════════════
 #  EDITOR & SHELL TOOLS
 #══════════════════════════════════════════════════════════════
-setup_tools() {
+setup_tools(){
   if has micro; then
     msg "Configuring micro"
     local -a plugins=(fish fzf wc filemanager linter lsp autofmt detectindent editorconfig misspell diff ftoptions literate status)
-    micro -plugin install "${plugins[@]}" &>/dev/null &
+    micro -plugin install "${plugins[@]}" &>/dev/null
     micro -plugin update &>/dev/null &
   fi
   if has gh; then
@@ -225,8 +225,8 @@ setup_tools() {
       2KAbhishek/gh-repo-man HaywardMorihara/gh-tidy gizmo385/gh-lazy)
     # Parallelize gh extension installs
     for ext in "${exts[@]}"; do
-      gh extension install "$ext" &
-    done 2>/dev/null
+      gh ext install "$ext" & 2>/dev/null
+    done
     wait
   fi
   if has mise; then
@@ -238,7 +238,7 @@ setup_tools() {
   fi
   if [[ ! -d "$HOME/.sdkman" ]]; then
     msg "Installing SDKMAN"
-    bash -c "curl -fsSL 'https://get.sdkman.io? ci=true'"
+    bash -c "curl -fsSL 'https://get.sdkman.io?ci=true'"
   fi
   export SDKMAN_DIR="$HOME/.sdkman"
   if [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]]; then
@@ -282,7 +282,7 @@ setup_tools() {
 #══════════════════════════════════════════════════════════════
 #  SHELL INTEGRATION
 #══════════════════════════════════════════════════════════════
-setup_shells() {
+setup_shells(){
   if has fish; then
     msg "Configuring Fish shell"
     mkdir -p "$HOME/.config/fish/conf.d"
@@ -290,8 +290,8 @@ setup_shells() {
     if [[ -r /usr/share/fish/vendor_functions.d/fisher.fish ]]; then
       fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher update" 2>/dev/null &
       local -a plugins=(acomagu/fish-async-prompt kyohsuke/fish-evalcache eugene-babichenko/fish-codegen-cache
-        oh-my-fish/plugin-xdg wk/plugin-ssh-term-helper scaryrawr/cheat. sh. fish y3owk1n/fish-x scaryrawr/zoxide
-        kpbaks/autols. fish patrickf1/fzf. fish jorgebucaran/autopair.fish wawa19933/fish-systemd
+        oh-my-fish/plugin-xdg wk/plugin-ssh-term-helper scaryrawr/cheat.sh.fish y3owk1n/fish-x scaryrawr/zoxide
+        kpbaks/autols. fish patrickf1/fzf.fish jorgebucaran/autopair.fish wawa19933/fish-systemd
         halostatue/fish-rust kpbaks/zellij.fish)
       printf '%s\n' "${plugins[@]}" | fish -c "source /usr/share/fish/vendor_functions.d/fisher.fish && fisher install" 2>/dev/null &
     fi
@@ -308,7 +308,7 @@ setup_shells() {
 #══════════════════════════════════════════════════════════════
 #  SYSTEM SERVICES
 #══════════════════════════════════════════════════════════════
-enable_services() {
+enable_services(){
   msg "Enabling services"
   local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency bluetooth avahi-daemon fstrim.timer)
   # Batch systemctl operations (N checks → 1 list operation)
@@ -324,15 +324,15 @@ enable_services() {
 #══════════════════════════════════════════════════════════════
 #  ADDITIONAL CONFIGURATION
 #══════════════════════════════════════════════════════════════
-configure_auth_limits() {
+configure_auth_limits(){
   msg "Configuring auth limits"
   sudo sed -i 's|^\(auth\s\+required\s\+pam_faillock. so\)\s\+preauth.*$|\1 preauth silent deny=10 unlock_time=120|' /etc/pam.d/system-auth
   sudo sed -i 's|^\(auth\s\+\[default=die\]\s\+pam_faillock.so\)\s\+authfail.*$|\1 authfail deny=10 unlock_time=120|' /etc/pam. d/system-auth
   printf '%s\n' "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries >/dev/null
-  sudo chmod 440 /etc/sudoers. d/passwd-tries
+  sudo chmod 440 /etc/sudoers.d/passwd-tries
 }
 
-setup_nvidia() {
+setup_nvidia(){
   msg "Checking NVIDIA configuration"
   local lspci_output
   lspci_output=$(lspci 2>/dev/null) || return 0
@@ -341,11 +341,10 @@ setup_nvidia() {
   # Anchor regex to avoid false matches in PCI IDs
   [[ $lspci_output =~ (^|[[:space:]])(RTX[[:space:]][2-9][0-9]|GTX[[:space:]]16[0-9])($|[[:space:]]) ]] && driver="nvidia-open-dkms"
   local headers="linux-headers"
-  # Optimize kernel detection (3 pacman calls → 1 with grep)
+  # Optimize kernel detection
   local -a installed_kernels
   mapfile -t installed_kernels < <(pacman -Qq 2>/dev/null | grep -E '^linux-(hardened|lts|zen)$')
   [[ ${#installed_kernels[@]} -gt 0 ]] && headers="${installed_kernels[0]}-headers"
-
   sudo pacman -Syu --noconfirm
   sudo pacman -S --needed --noconfirm "$headers" "$driver" nvidia-utils lib32-nvidia-utils egl-wayland libva-nvidia-driver qt5-wayland qt6-wayland
   echo "options nvidia_drm modeset=1" | sudo tee /etc/modprobe.d/nvidia.conf >/dev/null
@@ -355,7 +354,6 @@ setup_nvidia() {
   sudo sed -i -E 's/^(MODULES=\()/\1nvidia nvidia_modeset nvidia_uvm nvidia_drm /' "$conf"
   sudo sed -i -E 's/  +/ /g' "$conf"
   [[ -f "$HOME/.config/hypr/hyprland.conf" ]] && cat >>"$HOME/.config/hypr/hyprland.conf" <<'EOF'
-
 # NVIDIA environment variables
 env = NVD_BACKEND,direct
 env = LIBVA_DRIVER_NAME,nvidia
@@ -363,7 +361,7 @@ env = __GLX_VENDOR_LIBRARY_NAME,nvidia
 EOF
 }
 
-setup_printers() {
+setup_printers(){
   msg "Configuring printers"
   sudo systemctl enable --now cups.service
   sudo mkdir -p /etc/systemd/resolved.conf.d
@@ -374,7 +372,7 @@ setup_printers() {
   sudo systemctl enable --now cups-browsed.service
 }
 
-set_wireless_regdom() {
+set_wireless_regdom(){
   msg "Setting wireless regdom"
   [[ -f /etc/conf.d/wireless-regdom ]] && . /etc/conf.d/wireless-regdom
   [[ -n ${WIRELESS_REGDOM:-} ]] && return 0
@@ -389,7 +387,7 @@ set_wireless_regdom() {
   command -v iw &>/dev/null && sudo iw reg set "$country" || :
 }
 
-firewall() {
+firewall(){
   if command -v ufw &>/dev/null; then
     sudo ufw disable
     sudo ufw limit 22/tcp
@@ -400,11 +398,18 @@ firewall() {
     sudo ufw enable
   fi
 }
+setup-steam(){ 
+  mkdir /tmp/dumps
+  ln -s /dev/null /tmp/dumps 
+  chmod 600 /tmp/dumps
+  paru --skipreview --noconfirm --needed -Sq lsof libappindicator-gtk2 lib32-libappindicator-gtk2
+}
+
 
 #══════════════════════════════════════════════════════════════
 #  SYSTEM MAINTENANCE
 #══════════════════════════════════════════════════════════════
-maintenance() {
+maintenance(){
   msg "Running maintenance"
   has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry 2>/dev/null || :
   has fc-cache && sudo fc-cache -f || :
@@ -431,7 +436,7 @@ maintenance() {
 #══════════════════════════════════════════════════════════════
 #  AUTO SETUP TWEAKS
 #══════════════════════════════════════════════════════════════
-auto_setup_tweaks() {
+auto_setup_tweaks(){
   msg "Applying AutoSetup system tweaks"
   local root_dev fstype
   root_dev=$(findmnt -n -o SOURCE /)
@@ -566,7 +571,7 @@ options usbcore usbfs_snoop=0 autosuspend=10
 EOF
   printf '%s\n' bfq ntsync tcp_bbr zram | sudo tee /etc/modprobe.d/modules.conf >/dev/null
   msg "Configure VSCode privacy"
-  _vscode_json_set() {
+  _vscode_json_set(){
     local prop=$1 val=$2
     has python3 || return 0
     python3 -c "from pathlib import Path;import os,json;p='$prop';t=json.loads('$val');h=f'/home/{os.getenv(\"SUDO_USER\",os.getenv(\"USER\"))}';[Path(f).write_text(json.dumps({**json.loads(c if(c:=Path(f).read_text() if Path(f).exists() else '')else'{}'),p:t},indent=2))for f in[f'{h}/.config/VSCodium/User/settings. json',f'{h}/.config/Code/User/settings.json']]" 2>/dev/null || :
@@ -598,7 +603,7 @@ EOF
 #══════════════════════════════════════════════════════════════
 #  CLEANUP
 #══════════════════════════════════════════════════════════════
-cleanup() {
+cleanup(){
   msg "Cleaning up"
   local orphans
   orphans=$(pacman -Qdtq 2>/dev/null) && sudo pacman -Rns --noconfirm "$orphans" 2>/dev/null || :
@@ -611,7 +616,7 @@ cleanup() {
 #══════════════════════════════════════════════════════════════
 #  MAIN EXECUTION
 #══════════════════════════════════════════════════════════════
-main() {
+main(){
   setup_repositories
   init_system
   install_packages

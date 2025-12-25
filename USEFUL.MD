@@ -48,13 +48,13 @@
 ### FFMPEG
 
 ```bash
-ffmpeg -i input.mkv -c:v libsvtav1 \
-  -preset 4 -crf 30 -g 300 -pix_fmt yuv420p10le \
-  -svtav1-params "tune=0:film-grain=6:enable-qm=1:qm-min=0:scd=1:enable-variance-boost=1:tf-strength=1:luminance-qp-bias=25:sharpness=-5:tile-columns=1:tile-rows=0:superres-mode=4:enable-dlf=2:" \
-  -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
+ffmpeg -i input.mp4 -c:v libsvtav1 \
+  -preset 3 -crf 26 -g 600 -pix_fmt yuv420p10le \
+  -svtav1-params "tune=0:film-grain=6:enable-qm=1:qm-min=0:enable-variance-boost=1:tf-strength=1:sharpness=1:tile-columns=1:tile-rows=0:enable-dlf=2:scd=1" \
+  -vf "hqdn3d=1.5:1.5:6:6,scale='if(gte(iw,ih),min(1920,iw),-2)':'if(gte(iw,ih),-2,min(1080,ih))',deband,format=yuv420p10le" \
   -c:a libopus -b:a 128k -ac 2 -rematrix_maxval 1.0 \
-  -f mkv -hide_banner -y -nostdin -loglevel error -stats \
-  -map_metadata 0 output.mkv
+  -hide_banner -y -nostdin -loglevel error -stats \
+  -map_metadata 0 -sn output.mkv
 ```
 
 ### AV1 [Presets](https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/CommonQuestions.md#what-presets-do)
@@ -63,40 +63,6 @@ ffmpeg -i input.mkv -c:v libsvtav1 \
 - Fast preset: 4-6
 - 1080p: `tile-columns=1:tile-rows=0`
 - 4k: `tile-columns=2:tile-rows=0`
-- Sharpness: `sharpness=-5` or `sharpness=-2`
+- Sharpness: `sharpness=-2` up to `sharpness=2` 
 
 - [Auto superres](https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/Docs/Appendix-Super-Resolution.md): `superres-mode=4`
-
-
-# ------------------------------------------------
-
-
-```bash
-ffmpeg -i input.mp4 -c:v libsvtav1 \
-  -preset 4 -crf 28 -g 300 -pix_fmt yuv420p10le \
-  -svtav1-params "tune=0:film-grain=6:enable-qm=1:qm-min=0:enable-variance-boost=1:tf-strength=1:luminance-qp-bias=25:sharpness=-2:tile-columns=1:tile-rows=0:superres-mode=4:enable-dlf=2" \
-  -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
-  -c:a libopus -b:a 96k -ac 2 -rematrix_maxval 1.0 \
-  -hide_banner -y -nostdin -loglevel error -stats \
-  -map_metadata 0 -sn output.mkv
-```
-
-```bash
-ffmpeg -i input.mkv -c:v libsvtav1 \
-  -preset 4 -crf 30 -g 240 -pix_fmt yuv420p10le \
-  -svtav1-params "tune=0:enable-qm=1:qm-min=0:scd=1:enable-variance-boost=1:tf-strength=1:luminance-qp-bias=25:sharpness=-5:tile-columns=1:tile-rows=0:enable-dlf=2:" \
-  -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
-  -c:a libopus -b:a 128k -ac 2 -rematrix_maxval 1.0 \
-  -f mkv -hide_banner -y -nostdin -loglevel error -stats \
-  -map_metadata 0 output.mkv
-```
-
-```bash
-ffmpeg -i input.mp4 -c:v libsvtav1 \
-  -preset 4 -crf 24 -g 300 -profile main -pix_fmt yuv420p10le \
-  -svtav1-params "tune=1:enable-qm=1:enable-variance-boost=1:variance-boost-strength=2:tf-strength=1:luminance-qp-bias=25:sharpness=-5:tile-columns=1:tile-rows=0:enable-dlf=2:enable-cdef=1:enable-restoration=1" \
-  -vf "scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1920,ih))',deband" \
-  -c:a libopus -b:a 128k -ac 2 -map_metadata 0 \
-  -f mkv -hide_banner -y -nostdin -loglevel error -stats output.mkv
-```
-

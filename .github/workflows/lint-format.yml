@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           pip install --upgrade pip
-          pip install black ruff yamllint
+          pip install ruff yamllint
           npm install -g prettier markdownlint-cli
           go install mvdan.cc/sh/v3/cmd/shfmt@latest
           go install github.com/google/yamlfmt/cmd/yamlfmt@latest

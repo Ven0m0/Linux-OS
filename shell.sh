@@ -41,3 +41,13 @@ ProgressBarEnd(){ printf "\n" >&2; }
 
 git config --global --add safe.directory "$GITHUB_WORKSPACE"
 git config --global --add safe.directory "$PWD"
+
+
+duperemove -r -d "/run/media/lucy/storage"
+beesd "/run/media/lucy/storage"
+
+
+adb shell pm compile -a --full -r cmdline -p PRIORITY_INTERACTIVE_FAST --force-merge-profile -m speed-profile
+pm compile -a --full -r cmdline -p PRIORITY_INTERACTIVE_FAST --force-merge-profile -m speed-profile
+adb shell pm compile -m verify -f -a
+

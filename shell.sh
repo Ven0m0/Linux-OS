@@ -37,3 +37,7 @@ ProgressBar(){         # This function was converted from the work of @Kresimir,
 }
 ProgressBarInit(){ trap 'printf "\x1B[?25h" >&2' EXIT; printf "\x1B[?25l" >&2; }
 ProgressBarEnd(){ printf "\n" >&2; }
+
+
+git config --global --add safe.directory "$GITHUB_WORKSPACE"
+git config --global --add safe.directory "$PWD"

@@ -298,10 +298,10 @@ setup_shells(){
   fi
   if has zsh; then
     msg "Configuring Zsh"
-    [[ -f "$HOME/.zshenv" ]] || echo 'export ZDOTDIR="$HOME/.config/zsh"' >"$HOME/.zshenv"
-    mkdir -p "$HOME/.config/zsh"
-    [[ -d "$HOME/.local/share/antidote" ]] \
-      || git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "$HOME/.local/share/antidote" 2>/dev/null &
+    [[ -f "${HOME}/.zshenv" ]] || echo 'export ZDOTDIR="$HOME/.config/zsh"' >"${HOME}/.zshenv"
+    mkdir -p "${HOME}/.config/zsh"
+    [[ -d "${HOME}/.local/share/antidote" ]] \
+      || git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "${HOME}/.local/share/antidote" 2>/dev/null &
   fi
 }
 
@@ -403,8 +403,8 @@ setup-steam(){
   ln -s /dev/null /tmp/dumps 
   chmod 600 /tmp/dumps
   paru --skipreview --noconfirm --needed -Sq lsof libappindicator-gtk2 lib32-libappindicator-gtk2
+  has image-optimizer && image-optimizer -r --png-optimization-level max --zopfli-iterations 100 -i "${HOME}/.steam/root"
 }
-
 
 #══════════════════════════════════════════════════════════════
 #  SYSTEM MAINTENANCE
@@ -417,6 +417,12 @@ maintenance(){
   if has fwupdmgr; then
     sudo fwupdmgr refresh -y &>/dev/null || :
     sudo fwupdmgr update &>/dev/null || :
+  fi
+  if has sdboot-manage; then
+    sudo sdboot-manage setup
+    sudo sdboot-manage gen
+    sudo sdboot-manage update
+    sudo sdboot-manage remove
   fi
   if has update-initramfs; then
     sudo update-initramfs || :

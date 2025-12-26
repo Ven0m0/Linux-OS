@@ -544,6 +544,93 @@ rm -rf ~/Downloads/{Movies,Music,ISOS}
 
 </details>
 
+<details>
+
+<summary><b>NanoPager - View files with nano in read-only mode</b></summary>
+
+View files using nano as a pager with modern keybindings.
+
+```bash
+NanoPager(){
+  local file="$1" progname=${0##*/}
+  local -r nano=/bin/nano
+  if [[ -x $nano ]]; then
+    local cmd="$nano +1 --modernbindings --view"
+    if [[ $file ]]; then
+      if [[ -e $file ]]; then
+        $cmd "$file"
+      else
+        echo "==> $progname: file $file not found" >&2
+      fi
+    else
+      $cmd -
+    fi
+  else
+    echo "==> $progname: 'nano' is not installed" >&2
+    return 1
+  fi
+}
+```
+
+**Example Usage:**
+
+```bash
+# View a file
+NanoPager /etc/hosts
+
+# Pipe output to NanoPager
+cat somefile.log | NanoPager
+```
+
+</details>
+
+<details>
+
+<summary><b>ProgressBar - Terminal progress indicator</b></summary>
+
+Display a visual progress bar in the terminal. Converted from @Kresimir's work.
+
+```bash
+ProgressBar(){
+  local msg="$1" percent="$2" barlen="$3" c columns="$COLUMNS"
+  [[ -n $columns ]] || columns=80
+  local msglen=$((columns - barlen - 9))
+  [[ ${#msg} -gt $msglen ]] && msg="${msg::$msglen}"
+  [[ ${msg: -1} = ":" ]] || msg+=":"
+  printf "\r%-*s %3d%% [" "$msglen" "$msg" "$percent" >&2
+  for ((c = 0; c < barlen; c++)); do
+    if ((c <= percent * barlen / 100)); then
+      echo -ne "#" >&2
+    else
+      echo -ne " " >&2
+    fi
+  done
+  stdbuf -oL printf "]" >&2
+}
+
+ProgressBarInit(){
+  trap 'printf "\x1B[?25h" >&2' EXIT
+  printf "\x1B[?25l" >&2
+}
+
+ProgressBarEnd(){
+  printf "\n" >&2
+}
+```
+
+**Example Usage:**
+
+```bash
+ProgressBarInit
+for i in {0..100}; do
+  ProgressBar "Processing" "$i" 40
+  sleep 0.05
+done
+ProgressBarEnd
+```
+
+</details>
+
 **Misc**
 
 ```bash

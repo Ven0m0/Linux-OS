@@ -13,7 +13,10 @@ shopt -s nullglob globstar IFS=$'\n\t' LC_ALL=C
 has() { command -v -- "$1" &>/dev/null; }
 msg() { printf '\033[1;34m[INFO]\033[0m %s\n' "$@"; }
 wrn() { printf '\033[1;33m[WARN]\033[0m %s\n' "$@" >&2; }
-die() { printf '\033[1;31m[ERR ]\033[0m %s\n' "$@" >&2; exit "${2:-1}"; }
+die() {
+  printf '\033[1;31m[ERR ]\033[0m %s\n' "$@" >&2
+  exit "${2:-1}"
+}
 
 # --- Main ---
 main() {
@@ -22,7 +25,7 @@ main() {
 
   has ffmpeg || die "Missing dependency: ffmpeg"
 
-  [[ -d "$input_dir" ]] || die "Input directory not found: $input_dir"
+  [[ -d $input_dir ]] || die "Input directory not found: $input_dir"
   mkdir -p "$output_dir"
 
   msg "Source: $input_dir"
@@ -41,7 +44,7 @@ main() {
     base="${base%.*}"
 
     # Input Guard: Warn if source is already lossy
-    if [[ "$ext" =~ ^(mp3|m4a|aac|ogg)$ ]]; then
+    if [[ $ext =~ ^(mp3|m4a|aac|ogg)$ ]]; then
       wrn "Processing lossy source: $base.$ext (Suboptimal for CD)"
       ((lossy_count++))
     fi
@@ -59,12 +62,12 @@ main() {
   done < <(find "$input_dir" -maxdepth 1 -type f -regextype posix-extended -regex ".*\.(flac|wav|mp3|m4a|aac|ogg|alac|aiff)$")
 
   printf "\n"
-  
-  (( count > 0 )) || die "No audio files found in $input_dir"
+
+  ((count > 0)) || die "No audio files found in $input_dir"
 
   # 2. Final Manifest
   msg "Processed $count files."
-  if (( lossy_count > 0 )); then
+  if ((lossy_count > 0)); then
     wrn "Detected $lossy_count lossy input files. Quality compromised."
   else
     msg "All inputs were lossless. Quality optimized."

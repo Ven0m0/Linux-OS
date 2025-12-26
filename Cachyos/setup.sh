@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 LC_ALL=C IFS=$'\n\t'
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 #──────────── Helpers ────────────
-has(){ command -v -- "$1" &>/dev/null; }
-msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
-warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
-die(){ printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; exit "${2:-1}"; }
+has() { command -v -- "$1" &>/dev/null; }
+msg() { printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
+warn() { printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
+die() {
+  printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2
+  exit "${2:-1}"
+}
 #──────────── Setup ────────────
 if has paru; then
   pkgmgr=(paru) aur=1
@@ -26,14 +30,14 @@ unset CARGO_ENCODED_RUSTFLAGS RUSTC_WORKSPACE_WRAPPER PYTHONDONTWRITEBYTECODE
 #══════════════════════════════════════════════════════════════
 #  REPOSITORY CONFIGURATION
 #══════════════════════════════════════════════════════════════
-setup_repositories(){
+setup_repositories() {
   local -r conf=/etc/pacman.conf chaotic_key=3056513887B78AEB
   local -a chaotic_urls=(
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst'
     'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
   )
-  has_repo(){ grep -qF -- "$1" "$conf"; }
-  add_block(){ printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
+  has_repo() { grep -qF -- "$1" "$conf"; }
+  add_block() { printf '%s\n' "$1" | sudo tee -a "$conf" >/dev/null; }
   # Chaotic-AUR
   if ! has_repo '[chaotic-aur]'; then
     msg "Adding chaotic-aur repo"
@@ -107,7 +111,7 @@ Include = /etc/pacman. d/endeavouros-mirrorlist'
 #══════════════════════════════════════════════════════════════
 #  SYSTEM INITIALIZATION
 #══════════════════════════════════════════════════════════════
-init_system(){
+init_system() {
   msg "Initializing system"
   localectl set-locale C.UTF-8 >/dev/null
   [[ -d ~/.ssh ]] && chmod -R 700 ~/.ssh
@@ -130,7 +134,7 @@ init_system(){
 #══════════════════════════════════════════════════════════════
 #  PACKAGE INSTALLATION
 #══════════════════════════════════════════════════════════════
-install_packages(){
+install_packages() {
   local -a pkgs=(
     git curl wget rsync patchutils ccache sccache mold lld llvm clang nasm yasm openmp
     paru polly optipng svgo graphicsmagick yadm mise micro hyfetch polkit-kde-agent
@@ -177,7 +181,7 @@ install_packages(){
 #══════════════════════════════════════════════════════════════
 #  FLATPAK
 #══════════════════════════════════════════════════════════════
-setup_flatpak(){
+setup_flatpak() {
   has flatpak || return 0
   msg "Configuring Flatpak"
   sudo flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub. flatpakrepo &>/dev/null || :
@@ -190,7 +194,7 @@ setup_flatpak(){
 #══════════════════════════════════════════════════════════════
 #  RUST TOOLCHAIN
 #══════════════════════════════════════════════════════════════
-setup_rust(){
+setup_rust() {
   if ! has rustup; then
     msg "Installing Rust"
     bash -c "$(curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs)" -- -y --profile minimal -c rust-src,llvm-tools,llvm-bitcode-linker,rustfmt,clippy
@@ -210,7 +214,7 @@ setup_rust(){
 #══════════════════════════════════════════════════════════════
 #  EDITOR & SHELL TOOLS
 #══════════════════════════════════════════════════════════════
-setup_tools(){
+setup_tools() {
   if has micro; then
     msg "Configuring micro"
     local -a plugins=(fish fzf wc filemanager linter lsp autofmt detectindent editorconfig misspell diff ftoptions literate status)
@@ -223,7 +227,8 @@ setup_tools(){
       2KAbhishek/gh-repo-man HaywardMorihara/gh-tidy gizmo385/gh-lazy)
     # Parallelize gh extension installs
     for ext in "${exts[@]}"; do
-      gh ext install "$ext" & 2>/dev/null
+      gh ext install "$ext" &
+      2>/dev/null
     done
     wait
   fi
@@ -280,7 +285,7 @@ setup_tools(){
 #══════════════════════════════════════════════════════════════
 #  SHELL INTEGRATION
 #══════════════════════════════════════════════════════════════
-setup_shells(){
+setup_shells() {
   if has fish; then
     msg "Configuring Fish shell"
     mkdir -p "$HOME/.config/fish/conf.d"
@@ -305,7 +310,7 @@ setup_shells(){
 #══════════════════════════════════════════════════════════════
 #  SYSTEM SERVICES
 #══════════════════════════════════════════════════════════════
-enable_services(){
+enable_services() {
   msg "Enabling services"
   local -a svcs=(irqbalance prelockd memavaild uresourced preload pci-latency bluetooth avahi-daemon fstrim.timer)
   # Batch systemctl operations (N checks → 1 list operation)
@@ -320,14 +325,14 @@ enable_services(){
 #══════════════════════════════════════════════════════════════
 #  ADDITIONAL CONFIGURATION
 #══════════════════════════════════════════════════════════════
-configure_auth_limits(){
+configure_auth_limits() {
   msg "Configuring auth limits"
   sudo sed -i 's|^\(auth\s\+required\s\+pam_faillock. so\)\s\+preauth.*$|\1 preauth silent deny=10 unlock_time=120|' /etc/pam.d/system-auth
   sudo sed -i 's|^\(auth\s\+\[default=die\]\s\+pam_faillock.so\)\s\+authfail.*$|\1 authfail deny=10 unlock_time=120|' /etc/pam. d/system-auth
   printf '%s\n' "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries >/dev/null
   sudo chmod 440 /etc/sudoers.d/passwd-tries
 }
-setup_nvidia(){
+setup_nvidia() {
   msg "Checking NVIDIA configuration"
   local lspci_output
   lspci_output=$(lspci 2>/dev/null) || return 0
@@ -355,7 +360,7 @@ env = LIBVA_DRIVER_NAME,nvidia
 env = __GLX_VENDOR_LIBRARY_NAME,nvidia
 EOF
 }
-setup_printers(){
+setup_printers() {
   msg "Configuring printers"
   sudo systemctl enable --now cups.service
   sudo mkdir -p /etc/systemd/resolved.conf.d
@@ -365,7 +370,7 @@ setup_printers(){
   grep -q '^CreateRemotePrinters Yes' /etc/cups/cups-browsed.conf 2>/dev/null || echo 'CreateRemotePrinters Yes' | sudo tee -a /etc/cups/cups-browsed.conf >/dev/null
   sudo systemctl enable --now cups-browsed.service
 }
-set_wireless_regdom(){
+set_wireless_regdom() {
   msg "Setting wireless regdom"
   [[ -f /etc/conf.d/wireless-regdom ]] && . /etc/conf.d/wireless-regdom
   [[ -n ${WIRELESS_REGDOM:-} ]] && return 0
@@ -379,7 +384,7 @@ set_wireless_regdom(){
   echo "WIRELESS_REGDOM=\"$country\"" | sudo tee -a /etc/conf. d/wireless-regdom >/dev/null
   command -v iw &>/dev/null && sudo iw reg set "$country" || :
 }
-firewall(){
+firewall() {
   if command -v ufw &>/dev/null; then
     sudo ufw disable
     sudo ufw limit 22/tcp
@@ -390,9 +395,9 @@ firewall(){
     sudo ufw enable
   fi
 }
-setup-steam(){ 
+setup-steam() {
   mkdir /tmp/dumps
-  ln -s /dev/null /tmp/dumps 
+  ln -s /dev/null /tmp/dumps
   chmod 600 /tmp/dumps
   paru --skipreview --noconfirm --needed -Sq lsof libappindicator-gtk2 lib32-libappindicator-gtk2
   has image-optimizer && image-optimizer -r --png-optimization-level max --zopfli-iterations 100 -i "${HOME}/.steam/root"
@@ -400,7 +405,7 @@ setup-steam(){
 #══════════════════════════════════════════════════════════════
 #  SYSTEM MAINTENANCE
 #══════════════════════════════════════════════════════════════
-maintenance(){
+maintenance() {
   msg "Running maintenance"
   has topgrade && topgrade -cy --skip-notify --no-self-update --no-retry 2>/dev/null || :
   has fc-cache && sudo fc-cache -f || :
@@ -433,7 +438,7 @@ maintenance(){
 #══════════════════════════════════════════════════════════════
 #  AUTO SETUP TWEAKS
 #══════════════════════════════════════════════════════════════
-auto_setup_tweaks(){
+auto_setup_tweaks() {
   msg "Applying AutoSetup system tweaks"
   local root_dev=$(findmnt -n -o SOURCE /) fstype=$(findmnt -n -o FSTYPE /)
   if [[ $fstype == "ext4" ]]; then
@@ -557,7 +562,7 @@ options usbcore usbfs_snoop=0 autosuspend=10
 EOF
   printf '%s\n' bfq ntsync tcp_bbr zram | sudo tee /etc/modprobe.d/modules.conf &>/dev/null
   msg "Configure VSCode privacy"
-  _vscode_json_set(){
+  _vscode_json_set() {
     local prop=$1 val=$2
     has python3 || return 0
     python3 -c "from pathlib import Path;import os,json;p='$prop';t=json.loads('$val');h=f'/home/{os.getenv(\"SUDO_USER\",os.getenv(\"USER\"))}';[Path(f).write_text(json.dumps({**json.loads(c if(c:=Path(f).read_text() if Path(f).exists() else '')else'{}'),p:t},indent=2))for f in[f'{h}/.config/VSCodium/User/settings. json',f'{h}/.config/Code/User/settings.json']]" 2>/dev/null || :
@@ -591,7 +596,7 @@ EOF
 #══════════════════════════════════════════════════════════════
 #  MAIN EXECUTION
 #══════════════════════════════════════════════════════════════
-main(){
+main() {
   setup_repositories
   init_system
   install_packages

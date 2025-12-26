@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail
-shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob globstar
 LC_ALL=C IFS=$'\n\t'
 #──────────── Colors ────────────
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
@@ -10,7 +9,6 @@ has(){ command -v -- "$1" &>/dev/null; }
 msg(){ printf '%b%s%b\n' "$GRN" "$*" "$DEF"; }
 warn(){ printf '%b%s%b\n' "$YLW" "$*" "$DEF"; }
 die(){ printf '%b%s%b\n' "$RED" "$*" "$DEF" >&2; exit "${2:-1}"; }
-
 #──────────── Setup ────────────
 if has paru; then
   pkgmgr=(paru) aur=1
@@ -304,7 +302,6 @@ setup_shells(){
       || git clone --depth=1 --filter=blob:none https://github.com/mattmc3/antidote.git "${HOME}/.local/share/antidote" 2>/dev/null &
   fi
 }
-
 #══════════════════════════════════════════════════════════════
 #  SYSTEM SERVICES
 #══════════════════════════════════════════════════════════════
@@ -320,7 +317,6 @@ enable_services(){
   )
   [[ ${#missing[@]} -gt 0 ]] && sudo systemctl enable --now "${missing[@]}" &>/dev/null || :
 }
-
 #══════════════════════════════════════════════════════════════
 #  ADDITIONAL CONFIGURATION
 #══════════════════════════════════════════════════════════════
@@ -331,7 +327,6 @@ configure_auth_limits(){
   printf '%s\n' "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries >/dev/null
   sudo chmod 440 /etc/sudoers.d/passwd-tries
 }
-
 setup_nvidia(){
   msg "Checking NVIDIA configuration"
   local lspci_output
@@ -360,7 +355,6 @@ env = LIBVA_DRIVER_NAME,nvidia
 env = __GLX_VENDOR_LIBRARY_NAME,nvidia
 EOF
 }
-
 setup_printers(){
   msg "Configuring printers"
   sudo systemctl enable --now cups.service
@@ -371,7 +365,6 @@ setup_printers(){
   grep -q '^CreateRemotePrinters Yes' /etc/cups/cups-browsed.conf 2>/dev/null || echo 'CreateRemotePrinters Yes' | sudo tee -a /etc/cups/cups-browsed.conf >/dev/null
   sudo systemctl enable --now cups-browsed.service
 }
-
 set_wireless_regdom(){
   msg "Setting wireless regdom"
   [[ -f /etc/conf.d/wireless-regdom ]] && . /etc/conf.d/wireless-regdom
@@ -386,7 +379,6 @@ set_wireless_regdom(){
   echo "WIRELESS_REGDOM=\"$country\"" | sudo tee -a /etc/conf. d/wireless-regdom >/dev/null
   command -v iw &>/dev/null && sudo iw reg set "$country" || :
 }
-
 firewall(){
   if command -v ufw &>/dev/null; then
     sudo ufw disable
@@ -405,7 +397,6 @@ setup-steam(){
   paru --skipreview --noconfirm --needed -Sq lsof libappindicator-gtk2 lib32-libappindicator-gtk2
   has image-optimizer && image-optimizer -r --png-optimization-level max --zopfli-iterations 100 -i "${HOME}/.steam/root"
 }
-
 #══════════════════════════════════════════════════════════════
 #  SYSTEM MAINTENANCE
 #══════════════════════════════════════════════════════════════
@@ -444,9 +435,7 @@ maintenance(){
 #══════════════════════════════════════════════════════════════
 auto_setup_tweaks(){
   msg "Applying AutoSetup system tweaks"
-  local root_dev fstype
-  root_dev=$(findmnt -n -o SOURCE /)
-  fstype=$(findmnt -n -o FSTYPE /)
+  local root_dev=$(findmnt -n -o SOURCE /) fstype=$(findmnt -n -o FSTYPE /)
   if [[ $fstype == "ext4" ]]; then
     msg "Applying ext4 fast_commit on $root_dev"
     sudo tune2fs -O fast_commit "$root_dev" 2>/dev/null || :
@@ -472,7 +461,6 @@ auto_setup_tweaks(){
     [[ -f $file ]] || continue
     local kvs=("Storage=none")
     [[ $svc == journald ]] && kvs+=("Seal=no" "Audit=no")
-    # Build sed script, apply once (N sed calls → 1)
     local sed_script="" to_append=""
     for kv in "${kvs[@]}"; do
       local key="${kv%%=*}"
@@ -487,12 +475,9 @@ auto_setup_tweaks(){
   done
   if [[ -f /etc/bluetooth/main.conf ]]; then
     msg "Tweaking Bluetooth config"
-    sudo sed -i \
-      -e 's/AutoEnable. */AutoEnable = false/' \
-      -e 's/FastConnectable.*/FastConnectable = false/' \
-      -e 's/ReconnectAttempts.*/ReconnectAttempts = 1/' \
-      -e 's/ReconnectIntervals.*/ReconnectIntervals = 1/' \
-      /etc/bluetooth/main.conf
+    sudo sed -i -e 's/AutoEnable. */AutoEnable = false/' \
+      -e 's/FastConnectable.*/FastConnectable = false/' -e 's/ReconnectAttempts.*/ReconnectAttempts = 1/' \
+      -e 's/ReconnectIntervals.*/ReconnectIntervals = 1/' /etc/bluetooth/main.conf
   fi
   sudo rm -rf /var/lib/bluetooth/* &>/dev/null || :
   msg "Systemd timeouts & ZRAM"
@@ -509,15 +494,12 @@ auto_setup_tweaks(){
     balooctl6 purge &>/dev/null || :
   fi
   sudo systemctl disable --now plasma-baloorunner &>/dev/null || :
-  for dir in "$HOME" "$HOME"/*/; do
-    [[ -d $dir ]] && touch "$dir/. metadata_never_index" "$dir/.noindex" "$dir/.nomedia" "$dir/.trackerignore" 2>/dev/null || :
-  done
   msg "Enable write cache & Disable logs/services"
   printf '%s\n' "write back" | sudo tee /sys/block/*/queue/write_cache >/dev/null 2>&1 || :
   sudo systemctl mask systemd-update-utmp{,-runlevel,-shutdown}.service systemd-journal-{flush,catalog-update}.service systemd-journald-{dev-log,audit}.socket &>/dev/null || :
   sudo systemctl disable --global speech-dispatcher smartmontools systemd-rfkill. {service,socket} &>/dev/null || :
   sudo systemctl disable speech-dispatcher smartmontools systemd-rfkill.{service,socket} &>/dev/null || :
-  if systemctl list-unit-files dbus-broker. service &>/dev/null; then
+  if systemctl list-unit-files dbus-broker.service &>/dev/null; then
     msg "Enable dbus-broker"
     sudo systemctl enable --global dbus-broker.service &>/dev/null || :
     sudo systemctl enable dbus-broker.service &>/dev/null || :
@@ -536,12 +518,12 @@ auto_setup_tweaks(){
   sudo find /usr/share/doc/ -type f \( -name '*.gz' -o -name '*.pdf' -o -name '*.tex' \) -delete &>/dev/null || :
   sudo find /usr/share/doc/ -depth -type d -empty -delete &>/dev/null || :
   sudo find /usr/share/X11/locale -mindepth 1 -maxdepth 1 ! -name 'en_GB' -type d -exec rm -rf {} + 2>/dev/null || :
-  sudo find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en_GB' -type d -exec rm -rf {} + 2>/dev/null || :
+  sudo find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name 'en' ! -name 'en_US' ! -name 'en@*' -type d -exec rm -rf {} + 2>/dev/null || :
   sudo rm -rf /usr/share/groff /usr/share/info /usr/share/lintian /usr/share/linda /usr/share/man /var/cache/man &>/dev/null || :
   if ((aur)); then
-    paru -Rcc --noconfirm man-pages &>/dev/null || :
+    paru -Scc --noconfirm &>/dev/null || :
   else
-    sudo pacman -Rcc --noconfirm man-pages &>/dev/null || :
+    sudo pacman -Scc --noconfirm &>/dev/null || :
   fi
   if has flatpak; then
     msg "Flush flatpak database"
@@ -549,23 +531,21 @@ auto_setup_tweaks(){
     sudo flatpak repair &>/dev/null || :
   fi
   msg "Optimize fonts & icons"
-  if has woff2_compress; then
-    find /usr/share/fonts/{opentype,truetype} -name '*ttf' -exec woff2_compress {} \; &>/dev/null || :
-  fi
-  sudo fc-cache -rfv &>/dev/null || :
+  has fc-cache && sudo fc-cache -rfv &>/dev/null || :
+  has pyftsubset && pyftsubset font.ttf --output-file=font-optimized.ttf --retain-gids --unicodes='*' --no-subset-tables+=glyf --drop-tables+=DSIG
   sudo gtk-update-icon-cache -f /usr/share/icons/* &>/dev/null || :
   msg "Clean logs & disable crashes"
-  sudo rm -rf /var/crash/*
+  sudo rm -rf -- /var/crash/*
   sudo journalctl --rotate --vacuum-time=0. 1 &>/dev/null || :
   [[ -f /etc/systemd/journald.conf ]] && sudo sed -i -e 's/^#ForwardTo\(Syslog\|KMsg\|Console\|Wall\)=. */ForwardTo\1=no/' -e 's/^#Compress=yes/Compress=yes/' /etc/systemd/journald.conf
   [[ -f /etc/logrotate.conf ]] && sudo sed -i -e 's/^#compress/compress/' /etc/logrotate.conf
-  printf '%s\n' "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf >/dev/null
+  printf '%s\n' "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf &>/dev/null
   sudo sed -i -e 's/^#\(DumpCore\|CrashShell\)=.*/\1=no/' /etc/systemd/{system,user}.conf 2>/dev/null || :
-  [[ -f /etc/modprobe.d/disable-usb-autosuspend.conf ]] || echo "options usbcore autosuspend=-1" | sudo tee /etc/modprobe.d/disable-usb-autosuspend.conf >/dev/null
+  [[ -f /etc/modprobe.d/disable-usb-autosuspend.conf ]] || echo "options usbcore autosuspend=-1" | sudo tee /etc/modprobe.d/disable-usb-autosuspend.conf &>/dev/null
   sudo update-ca-trust &>/dev/null || :
-  printf '%s\n' "options processor ignore_ppc=1" | sudo tee /etc/modprobe.d/ignore_ppc.conf >/dev/null
-  echo "options nvidia NVreg_UsePageAttributeTable=1 NVreg_InitializeSystemMemoryAllocations=0 NVreg_DynamicPowerManagement=0x02" | sudo tee /etc/modprobe.d/nvidia. conf >/dev/null
-  cat <<EOF | sudo tee /etc/modprobe.d/misc.conf >/dev/null
+  printf '%s\n' "options processor ignore_ppc=1" | sudo tee /etc/modprobe.d/ignore_ppc.conf &>/dev/null
+  echo "options nvidia NVreg_UsePageAttributeTable=1 NVreg_InitializeSystemMemoryAllocations=0 NVreg_DynamicPowerManagement=0x02" | sudo tee /etc/modprobe.d/nvidia.conf &>/dev/null
+  cat <<'EOF' | sudo tee /etc/modprobe.d/misc.conf &>/dev/null
 options vfio_pci disable_vga=1
 options cec debug=0
 options kvm mmu_audit=0 ignore_msrs=1 report_ignored_msrs=0 kvmclock_periodic_sync=1
@@ -575,7 +555,7 @@ options libahci ignore_sss=1 skip_host_reset=1
 options uhci-hcd debug=0
 options usbcore usbfs_snoop=0 autosuspend=10
 EOF
-  printf '%s\n' bfq ntsync tcp_bbr zram | sudo tee /etc/modprobe.d/modules.conf >/dev/null
+  printf '%s\n' bfq ntsync tcp_bbr zram | sudo tee /etc/modprobe.d/modules.conf &>/dev/null
   msg "Configure VSCode privacy"
   _vscode_json_set(){
     local prop=$1 val=$2
@@ -604,18 +584,7 @@ EOF
     IFS=: read -r key val <<<"$setting"
     _vscode_json_set "$key" "$val"
   done
-}
-
-#══════════════════════════════════════════════════════════════
-#  CLEANUP
-#══════════════════════════════════════════════════════════════
-cleanup(){
-  msg "Cleaning up"
-  local orphans
-  orphans=$(pacman -Qdtq 2>/dev/null) && sudo pacman -Rns --noconfirm "$orphans" 2>/dev/null || :
-  ((aur)) && paru -Scc --noconfirm 2>/dev/null || sudo pacman -Scc --noconfirm 2>/dev/null || :
-  sudo journalctl --rotate -q 2>/dev/null || :
-  sudo journalctl --vacuum-size=50M -q 2>/dev/null || :
+  sudo pacman -Rns --noconfirm "$(pacman -Qdtq)" 2>/dev/null || :
   sudo fstrim -av 2>/dev/null || :
 }
 
@@ -642,7 +611,6 @@ main(){
   cleanup
   sudo sed -i 's/^\#HandleLidSwitch=suspend/HandleLidSwitch=ignore/' /etc/systemd/logind.conf
   msg "Setup complete!  Restart shell."
-  [[ -f "$HOME/failed_pkgs. txt" ]] && warn "Check ~/failed_pkgs.txt for failures"
+  [[ -f "${HOME}/failed_pkgs. txt" ]] && warn "Check ~/failed_pkgs.txt for failures"
 }
-
 main "$@"

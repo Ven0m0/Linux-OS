@@ -298,19 +298,19 @@ EOF
     echo "$mirrors" \
       | __xargs -i -P "$(echo "$mirrors" | wc -l)" bash -c \
         'set -o pipefail
-       headers=$(curl --max-time 3 -sSIL "{}'"$last_modified_path"'" 2>/dev/null || echo "CURL_ERROR")
-       http_status=$(printf "%s\n" "$headers" | awk '"'"'toupper($1) ~ /^HTTP\// { code=$2 } END { print code }'"'"')
-       last_modified=0; status="error"
-       if [[ "$headers" == "CURL_ERROR" || -z "$http_status" ]]; then status="error"
-       elif [[ "$http_status" == "404" ]]; then status="missing"
-       else
-         last_mod_line=$(printf "%s\n" "$headers" | grep -i "last-modified" | cut -d" " -f2- | head -n1)
-         if [[ -n "$last_mod_line" ]]; then
-           last_modified=$(LANG=C date -f- -u +%s <<<"$last_mod_line" 2>/dev/null || echo 0)
-           [[ "$last_modified" != 0 ]] && status="ok" || status="nolastmod"
-         else status="nolastmod"; fi
-       fi
-       echo "$last_modified $status {}"
+      headers=$(curl --max-time 3 -sSIL "{}'"$last_modified_path"'" 2>/dev/null || echo "CURL_ERROR")
+      http_status=$(printf "%s\n" "$headers" | awk '"'"'toupper($1) ~ /^HTTP\// { code=$2 } END { print code }'"'"')
+      last_modified=0; status="error"
+      if [[ "$headers" == "CURL_ERROR" || -z "$http_status" ]]; then status="error"
+      elif [[ "$http_status" == "404" ]]; then status="missing"
+      else
+        last_mod_line=$(printf "%s\n" "$headers" | grep -i "last-modified" | cut -d" " -f2- | head -n1)
+        if [[ -n "$last_mod_line" ]]; then
+          last_modified=$(LANG=C date -f- -u +%s <<<"$last_mod_line" 2>/dev/null || echo 0)
+          [[ "$last_modified" != 0 ]] && status="ok" || status="nolastmod"
+        else status="nolastmod"; fi
+      fi
+      echo "$last_modified $status {}"
 >&2 printf "."'
   )
   msg " ✓ done" "$GRN"

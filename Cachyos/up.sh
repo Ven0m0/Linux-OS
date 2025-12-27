@@ -77,7 +77,7 @@ main() {
   update_maintenance() {
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
-    for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do has "$cmd" && sudo "$cmd" done
+    for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do has "$cmd" && sudo "$cmd"; done
     has fwupdmgr && { export DISABLE_SSL_STRICT=1; sudo fwupdmgr refresh -y &>/dev/null; sudo fwupdmgr update -y; }
     printf 'Syncing time...\n'
     sudo systemctl restart systemd-timesyncd || :

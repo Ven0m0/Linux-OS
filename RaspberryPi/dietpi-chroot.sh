@@ -170,7 +170,7 @@ usage() {
 	OPTIONS:
 	  -z    Shrink image after chroot (PiShrink integration)
 	  -h    Show this help
-EOF
+	EOF
   exit 0
 }
 while getopts "zh" opt; do

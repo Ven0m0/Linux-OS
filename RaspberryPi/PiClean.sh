@@ -96,13 +96,13 @@ ask_user_for_confirmation() {
   cat <<'EOF'
 ==============================================
 This script reclaims disk space by removing stale and unused Docker data:
- > removes stopped containers
- > removes orphan (dangling) images layers
- > removes unused volumes
- > removes Docker build cache
- > shrinks Docker artifacts (prune)
- > restarts the Docker engine
- > prints Docker disk usage
+> removes stopped containers
+> removes orphan (dangling) images layers
+> removes unused volumes
+> removes Docker build cache
+> shrinks Docker artifacts (prune)
+> restarts the Docker engine
+> prints Docker disk usage
 ==============================================
 EOF
   [[ $DONT_ASK_CONFIRMATION -eq 1 ]] && return
@@ -161,12 +161,12 @@ docker_cleanup() {
 main() {
   parse_args "$@"
   printf '%s\n' '
- ██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗     ███████╗ ███��[...]
+██████╗██╗     ███████╗ █████╗ ███╗   ██╗██╗███╗   ██╗ ██████╗     ███████╗ ███��[...]
 ██╔════╝██║     ██╔════╝██╔══██╗████╗  ██║██║████╗  ██║██╔════╝     ██╔════╝[...]
 ██║     ██║     █████╗  ███████║██╔██╗ ██║██║██╔██╗ ██║██║  ███╗    ███████╗██║   [...]
 ██║     ██║     ██╔══╝  ██╔══██║██║╚██╗██║██║██║╚██╗██║██║   ██║    ╚════██║██║ [...]
 ╚██████╗███████╗███████╗██║  ██║██║ ╚████║██║██║ ╚████║╚██████╔╝    ████[...]
- ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚══════�[...]
+╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚══════�[...]
 '
   printf '%s\n' "Cleaning apt cache"
   sudo rm -rf /var/lib/apt/lists/*

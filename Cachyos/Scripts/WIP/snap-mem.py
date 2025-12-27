@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3 -OO
 """
 Snapchat memories_history. json downloader (stdlib-only).
 
@@ -9,8 +9,8 @@ Features:
   - Optional filtering (video/image), dry-run, skip-existing, retries/backoff
 
 Examples:
-  python3 -OO import_json.py --json /path/memories_history.json --out /path/out
-  python3 -OO import_json.py   # interactive TUI if TTY
+  python3 -OO snap-mem.py --json /path/memories_history.json --out /path/out
+  python3 -OO snap-mem.py   # interactive TUI if TTY
 """
 from __future__ import annotations
 

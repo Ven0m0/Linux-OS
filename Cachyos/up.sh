@@ -106,7 +106,6 @@ main() {
       am --icons --all
       am -c
     } &
-    has zoi && zoi upgrade --yes --all &
     has gh && gh extension upgrade --all &
     has yt-dlp && yt-dlp --rm-cache-dir -U &
     wait
@@ -129,6 +128,7 @@ main() {
     printf 'Syncing time...\n'
     sudo systemctl restart systemd-timesyncd || :
     has bootctl && [[ -d /sys/firmware/efi ]] && sudo bootctl update || :
+    sudo sdboot
     if has mkinitcpio; then
       sudo mkinitcpio -P || :
     elif has dracut; then

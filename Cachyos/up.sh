@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-# DESCRIPTION: Comprehensive system update orchestrator for Arch/CachyOS
-#              Updates: pacman/AUR, flatpak, rust, python (uv), npm/bun/pnpm,
-#              mise, topgrade, VSCode, fish, and system maintenance
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
 has() { command -v "$1" &>/dev/null; }
 xecho() { printf '%b\n' "$*"; }
@@ -15,17 +10,12 @@ msg() { xecho "${GRN}${BLD}[+]${DEF} $*"; }
 warn() { xecho "${YLW}${BLD}[!]${DEF} $*" >&2; }
 err() { xecho "${RED}${BLD}[-]${DEF} $*" >&2; }
 dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "${MGN}[DBG]${DEF} $*" || :; }
-cleanup_pacman_lock() { sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :; }
 usage() {
   cat <<'EOF'
 up.sh - Comprehensive Arch/CachyOS system update orchestrator
-
 Usage: up.sh [OPTIONS]
-
 Options:
-  -h, --help     Show this help message
-  --version      Show version
-
+  -h,--help     Show this help message
 Updates:
   • System packages (pacman/paru/yay)
   • Flatpak apps (system + user)
@@ -36,104 +26,73 @@ Updates:
   • Topgrade integration
   • VSCode extensions
   • Fish completions + fisher
-  • soar, am, zoi, gh extensions
+  • soar, am, gh extensions
   • System maintenance (bootctl, mkinitcpio, firmware)
-
 Environment:
   DEBUG=1        Enable debug output
-
-Examples:
-  up.sh          # Full system update
-  DEBUG=1 up.sh  # Debug mode
 EOF
 }
 main() {
   case "${1:-}" in
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    --version)
-      printf 'up.sh 1.0.0\n'
-      exit 0
-      ;;
+    -h | --help) usage; exit 0 ;;
   esac
-  trap cleanup_pacman_lock EXIT INT TERM
+  trap 'sudo rm -f /var/lib/pacman/db.lck' EXIT INT TERM
   update_system() {
     log "🔄${BLU} System Packages${DEF}"
-    sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
+    [[ -f /var/lib/pacman/db.lck ]] && sudo rm -f /var/lib/pacman/db.lck &>/dev/null || :
     has paru && paru -Syuq --noconfirm --needed --skipreview || sudo pacman -Syuq --noconfirm --needed
   }
   update_extras() {
     log "🔄${BLU} Extra Tooling${DEF}"
     if has topgrade; then
-      local user_flags=('--disable=system' '--disable=self-update' '--disable=brew')
+      local user_flags=('--disable=system' '--disable=self-update' '--disable=brew' '--disable=mise')
       topgrade -yc --no-retry "${user_flags[@]}" || :
     fi
-    # Parallelize independent update operations for 3-5x speedup
-    has flatpak && {
-      sudo flatpak update -y --noninteractive --appstream || :
-      flatpak update -y --noninteractive -u || :
-    } &
-    has rustup && {
-      rustup update || :
-      has cargo-install-update && cargo install-update -ag || :
-    } &
-    has mise && {
-      mise p i -ay
-      mise prune -y
-      mise up -y || :
-    } &
+    has flatpak && { sudo flatpak update -y --noninteractive --appstream || :; flatpak update -y --noninteractive -u || :; }
+    has rustup && { rustup update || :; has cargo-install-update && cargo install-update -ag || :; }
+    has mise && { mise p i -ay; mise prune -y; mise up -y || :; }
     if has bun; then
-      bun update -g --latest || bun update -g &
+      bun update -g --latest || bun update -g
     elif has pnpm; then
-      pnpm up -Lg &
+      pnpm up -Lg
     elif has npm; then
-      npm update -g &
+      npm update -g
     fi
-    has micro && micro -plugin update &
-    has ya && has yazi && ya pkg upgrade &
-    has code && code --update-extensions &
+    has micro && micro -plugin update
+    has ya && has yazi && ya pkg upgrade
+    has code && code --update-extensions
     has fish && fish -c "fish_update_completions; and fisher update" &
-    has soar && {
-      soar S -q
-      soar u -q
-      soar clean -q
-    } &
-    has am && {
-      am -s
-      am -u
-      am --icons --all
-      am -c
-    } &
-    has gh && gh extension upgrade --all &
-    has yt-dlp && yt-dlp --rm-cache-dir -U &
-    wait
+    has soar && { soar S -q; soar u -q; soar clean -q; }
+    has am && { am -s; am -u; am --icons --all; am -c; }
+    has gh && gh extension upgrade --all
+    has yt-dlp && yt-dlp --rm-cache-dir -U
   }
   update_python() {
     has uv || return 0
     log "🔄${BLU} Python Environment (uv)${DEF}"
-    mapfile -t pkgs < <(uv tool list --format=json 2>/dev/null | jq -r '.[].name')
-    [[ ${#pkgs[@]} -gt 0 ]] && uv tool upgrade "${pkgs[@]}" || :
+    uv tool upgrade --all
     mapfile -t outdated < <(uv pip list --outdated --format=json 2>/dev/null | jq -r '.[].name')
     [[ ${#outdated[@]} -gt 0 ]] && uv pip install -Uq --system --no-break-system-packages "${outdated[@]}" || :
   }
   update_maintenance() {
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
-    # Run independent maintenance commands in parallel
-    for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do has "$cmd" && sudo "$cmd" & done
-    has fwupdmgr && sudo fwupdmgr refresh &>/dev/null &
-    wait
+    for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do has "$cmd" && sudo "$cmd" done
+    has fwupdmgr && { export DISABLE_SSL_STRICT=1; sudo fwupdmgr refresh -y &>/dev/null; sudo fwupdmgr update -y; }
     printf 'Syncing time...\n'
     sudo systemctl restart systemd-timesyncd || :
+    # Boot updates
     has bootctl && [[ -d /sys/firmware/efi ]] && sudo bootctl update || :
-    sudo sdboot
-    if has mkinitcpio; then
+    has sdboot-manage && { sudo sdboot-manage setup; sudo sdboot-manage gen; sudo sdboot-manage update; sudo sdboot-manage remove; }
+    if has limine-mkinitcpio; then
+      sudo limine-mkinitcpio
+    elif has mkinitcpio; then
       sudo mkinitcpio -P || :
     elif has dracut; then
       sudo dracut --regenerate-all --force || :
-    elif [[ -x /usr/lib/booster/regenerate_images ]]; then sudo /usr/lib/booster/regenerate_images || :; fi
+    elif [[ -x /usr/lib/booster/regenerate_images ]]; then 
+      sudo /usr/lib/booster/regenerate_images || :
+    fi
   }
   log "\n${GRN}Meow! System Update Starting (> ^ <)${DEF}"
   update_system

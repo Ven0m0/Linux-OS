@@ -17,6 +17,7 @@ mirrorfix() {
   echo "Fix mirrors"
   has cachyos-rate-mirrors && sudo cachyos-rate-mirrors
   [[ -f /etc/pacman.d/chaotic-mirrorlist ]] && sudo rate-mirrors --save "/etc/pacman.d/chaotic-mirrorlist" --allow-root --disable-comments --disable-comments-in-file --entry-country DE chaotic-aur
+  # rate-mirrors chaotic | sudo tee
   [[ -f /etc/pacman.d/endeavouros-mirrorlist ]] && sudo rate-mirrors --save "/etc/pacman.d/endeavouros-mirrorlist" --allow-root --disable-comments --disable-comments-in-file --entry-country DE endeavouros
 }
 cache() {
@@ -51,4 +52,7 @@ rm -rf ~/.local/share/flatpak/repo
 mkdir -p ~/.local/share/flatpak
 flatpak repair
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak update --user
+flatpak update --user -y  --noninteractive
+sudo flatpak update -y  --noninteractive
+
+sudo pacman -S pam-reattach

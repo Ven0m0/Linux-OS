@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m' LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m' BLD=$'\e[1m'
 has() { command -v "$1" &>/dev/null; }
@@ -34,7 +35,10 @@ EOF
 }
 main() {
   case "${1:-}" in
-    -h | --help) usage; exit 0 ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
   esac
   trap 'sudo rm -f /var/lib/pacman/db.lck' EXIT INT TERM
   update_system() {
@@ -48,9 +52,19 @@ main() {
       local user_flags=('--disable=system' '--disable=self-update' '--disable=brew' '--disable=mise')
       topgrade -yc --no-retry "${user_flags[@]}" || :
     fi
-    has flatpak && { sudo flatpak update -y --noninteractive --appstream || :; flatpak update -y --noninteractive -u || :; }
-    has rustup && { rustup update || :; has cargo-install-update && cargo install-update -ag || :; }
-    has mise && { mise p i -ay; mise prune -y; mise up -y || :; }
+    has flatpak && {
+      sudo flatpak update -y --noninteractive --appstream || :
+      flatpak update -y --noninteractive -u || :
+    }
+    has rustup && {
+      rustup update || :
+      has cargo-install-update && cargo install-update -ag || :
+    }
+    has mise && {
+      mise p i -ay
+      mise prune -y
+      mise up -y || :
+    }
     if has bun; then
       bun update -g --latest || bun update -g
     elif has pnpm; then
@@ -62,8 +76,17 @@ main() {
     has ya && has yazi && ya pkg upgrade
     has code && code --update-extensions
     has fish && fish -c "fish_update_completions; and fisher update" &
-    has soar && { soar S -q; soar u -q; soar clean -q; }
-    has am && { am -s; am -u; am --icons --all; am -c; }
+    has soar && {
+      soar S -q
+      soar u -q
+      soar clean -q
+    }
+    has am && {
+      am -s
+      am -u
+      am --icons --all
+      am -c
+    }
     has gh && gh extension upgrade --all
     has yt-dlp && yt-dlp --rm-cache-dir -U
   }
@@ -78,19 +101,28 @@ main() {
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
     for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do has "$cmd" && sudo "$cmd"; done
-    has fwupdmgr && { export DISABLE_SSL_STRICT=1; sudo fwupdmgr refresh -y &>/dev/null; sudo fwupdmgr update -y; }
+    has fwupdmgr && {
+      export DISABLE_SSL_STRICT=1
+      sudo fwupdmgr refresh -y &>/dev/null
+      sudo fwupdmgr update -y
+    }
     printf 'Syncing time...\n'
     sudo systemctl restart systemd-timesyncd || :
     # Boot updates
     has bootctl && [[ -d /sys/firmware/efi ]] && sudo bootctl update || :
-    has sdboot-manage && { sudo sdboot-manage setup; sudo sdboot-manage gen; sudo sdboot-manage update; sudo sdboot-manage remove; }
+    has sdboot-manage && {
+      sudo sdboot-manage setup
+      sudo sdboot-manage gen
+      sudo sdboot-manage update
+      sudo sdboot-manage remove
+    }
     if has limine-mkinitcpio; then
       sudo limine-mkinitcpio
     elif has mkinitcpio; then
       sudo mkinitcpio -P || :
     elif has dracut; then
       sudo dracut --regenerate-all --force || :
-    elif [[ -x /usr/lib/booster/regenerate_images ]]; then 
+    elif [[ -x /usr/lib/booster/regenerate_images ]]; then
       sudo /usr/lib/booster/regenerate_images || :
     fi
   }

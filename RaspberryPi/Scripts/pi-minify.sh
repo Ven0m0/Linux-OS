@@ -107,8 +107,8 @@ purge_docs() {
   run find /usr/share/doc/ -type d -empty -delete 2>/dev/null || :
   sudo rm -rf /usr/share/{groff,info,lintian,linda,man}/* /var/cache/man/* 2>/dev/null || :
   local keep_locale=en_US
-  sudo bash -c "cd /usr/share/locale && ls | grep -v ${keep_locale} | xargs rm -rf" 2>/dev/null || :
-  sudo bash -c "cd /usr/share/X11/locale && ls | grep -v ${keep_locale} | xargs rm -rf" 2>/dev/null || :
+  find /usr/share/locale -mindepth 1 -maxdepth 1 ! -name "${keep_locale}" -exec sudo rm -rf {} + 2>/dev/null || :
+  find /usr/share/X11/locale -mindepth 1 -maxdepth 1 ! -name "${keep_locale}" -exec sudo rm -rf {} + 2>/dev/null || :
 }
 # Package Cleanup
 purge_packages() {
@@ -200,10 +200,12 @@ remove_reportbug() {
   log "Removing reportbug packages"
   has apt-get || return 0
   local pkgs=('reportbug' 'python3-reportbug' 'reportbug-gtk')
-  local pkg
-  for pkg in "${pkgs[@]}"; do
-    if status="$(dpkg-query -W --showformat='${db:Status-Status}' "$pkg" 2>&1)" && [[ $status == installed ]]; then sudo apt-get purge -y "$pkg"; fi
-  done
+  local -a to_purge
+  mapfile -t to_purge < <(
+    dpkg-query -W --showformat='${Package}\t${db:Status-Status}\n' "${pkgs[@]}" 2>/dev/null \
+      | awk '$2=="installed"{print $1}'
+  )
+  ((${#to_purge[@]} > 0)) && sudo apt-get purge -y "${to_purge[@]}" || :
 }
 clean_privacy_data() {
   log "Cleaning privacy-sensitive data"

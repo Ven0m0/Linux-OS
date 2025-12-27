@@ -93,7 +93,7 @@ Include = /etc/pacman.d/mirrorlist'
     rm -rf "$tmp"
     add_block '[endeavouros]
 SigLevel = Optional TrustAll
-Include = /etc/pacman. d/endeavouros-mirrorlist'
+Include = /etc/pacman.d/endeavouros-mirrorlist'
   fi
   # CachyOS
   if ! pacman -Qq cachyos-mirrorlist &>/dev/null; then
@@ -101,7 +101,7 @@ Include = /etc/pacman. d/endeavouros-mirrorlist'
     local tmp
     tmp=$(mktemp -d 2>/dev/null)
     (cd "$tmp" && curl -fsSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o repo.tar.xz \
-      && tar xf repo.tar.xz && cd cachyos-repo && chmod +x cachyos-repo. sh \
+      && tar xf repo.tar.xz && cd cachyos-repo && chmod +x cachyos-repo.sh \
       && sudo bash cachyos-repo.sh) || warn "CachyOS repo setup failed"
     rm -rf "$tmp"
   fi
@@ -169,7 +169,7 @@ install_packages() {
     paru -Sq --needed --noconfirm --skipreview --sudoloop --batchinstall --nocheck \
       --mflags '--nocheck --skipinteg --skippgpcheck --skipchecksums' \
       --gpgflags '--batch -q --yes --skip-verify' --cleanafter --removemake "${missing[@]}" 2>/dev/null || {
-      local fail="${HOME}/failed_pkgs. txt"
+      local fail="${HOME}/failed_pkgs.txt"
       msg "Batch install failed → $fail"
       comm -23 <(printf '%s\n' "${missing[@]}" | sort) <(pacman -Qq 2>/dev/null | sort) >"$fail" || :
     }
@@ -184,7 +184,7 @@ install_packages() {
 setup_flatpak() {
   has flatpak || return 0
   msg "Configuring Flatpak"
-  sudo flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub. flatpakrepo &>/dev/null || :
+  sudo flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo &>/dev/null || :
   local -a apps=(io.github.wiiznokes.fan-control)
   ((${#apps[@]})) && sudo flatpak install -y flathub "${apps[@]}" 2>/dev/null || :
   flatpak update -y --noninteractive --appstream
@@ -227,8 +227,7 @@ setup_tools() {
       2KAbhishek/gh-repo-man HaywardMorihara/gh-tidy gizmo385/gh-lazy)
     # Parallelize gh extension installs
     for ext in "${exts[@]}"; do
-      gh ext install "$ext" &
-      2>/dev/null
+      gh ext install "$ext" 2>/dev/null &
     done
     wait
   fi
@@ -327,8 +326,8 @@ enable_services() {
 #══════════════════════════════════════════════════════════════
 configure_auth_limits() {
   msg "Configuring auth limits"
-  sudo sed -i 's|^\(auth\s\+required\s\+pam_faillock. so\)\s\+preauth.*$|\1 preauth silent deny=10 unlock_time=120|' /etc/pam.d/system-auth
-  sudo sed -i 's|^\(auth\s\+\[default=die\]\s\+pam_faillock.so\)\s\+authfail.*$|\1 authfail deny=10 unlock_time=120|' /etc/pam. d/system-auth
+  sudo sed -i 's|^\(auth\s\+required\s\+pam_faillock.so\)\s\+preauth.*$|\1 preauth silent deny=10 unlock_time=120|' /etc/pam.d/system-auth
+  sudo sed -i 's|^\(auth\s\+\[default=die\]\s\+pam_faillock.so\)\s\+authfail.*$|\1 authfail deny=10 unlock_time=120|' /etc/pam.d/system-auth
   printf '%s\n' "Defaults passwd_tries=10" | sudo tee /etc/sudoers.d/passwd-tries >/dev/null
   sudo chmod 440 /etc/sudoers.d/passwd-tries
 }
@@ -381,7 +380,7 @@ set_wireless_regdom() {
   country="${tz%%/*}"
   [[ ! $country =~ ^[A-Z]{2}$ && -f /usr/share/zoneinfo/zone.tab ]] && country=$(awk -v tz="$tz" '$3 == tz {print $1; exit}' /usr/share/zoneinfo/zone.tab)
   [[ $country =~ ^[A-Z]{2}$ ]] || return 0
-  echo "WIRELESS_REGDOM=\"$country\"" | sudo tee -a /etc/conf. d/wireless-regdom >/dev/null
+  echo "WIRELESS_REGDOM=\"$country\"" | sudo tee -a /etc/conf.d/wireless-regdom >/dev/null
   command -v iw &>/dev/null && sudo iw reg set "$country" || :
 }
 firewall() {
@@ -445,15 +444,15 @@ auto_setup_tweaks() {
     msg "Applying ext4 fast_commit on $root_dev"
     sudo tune2fs -O fast_commit "$root_dev" 2>/dev/null || :
   else
-    msg "Skipping tune2fs (filesystem:  $fstype)"
+    msg "Skipping tune2fs (filesystem: $fstype)"
   fi
   if has kwriteconfig6; then
     msg "Applying Breeze Dark theme"
-    kwriteconfig6 --file ~/. config/kdeglobals --group General --key ColorScheme "BreezeDark" 2>/dev/null || :
+    kwriteconfig6 --file ~/.config/kdeglobals --group General --key ColorScheme "BreezeDark" 2>/dev/null || :
     has plasma-apply-desktoptheme && plasma-apply-desktoptheme breeze-dark 2>/dev/null || :
   fi
   [[ -f "$HOME/.config/alacritty/alacritty.toml" ]] && sed -i 's/opacity = 0.8/opacity = 1.0/' "$HOME/.config/alacritty/alacritty.toml"
-  locale -a | grep -q '^en_US\. utf8$' && export LANG='en_US.UTF-8' LANGUAGE='en_US' || export LANG='C. UTF-8'
+  locale -a | grep -q '^en_US\. utf8$' && export LANG='en_US.UTF-8' LANGUAGE='en_US' || export LANG='C.UTF-8'
   msg "Debloat and fixup"
   sudo pacman -Rns cachyos-v4-mirrorlist cachy-browser --noconfirm &>/dev/null || :
   if ! command -v basher &>/dev/null; then
@@ -480,16 +479,16 @@ auto_setup_tweaks() {
   done
   if [[ -f /etc/bluetooth/main.conf ]]; then
     msg "Tweaking Bluetooth config"
-    sudo sed -i -e 's/AutoEnable. */AutoEnable = false/' \
+    sudo sed -i -e 's/AutoEnable.*/AutoEnable = false/' \
       -e 's/FastConnectable.*/FastConnectable = false/' -e 's/ReconnectAttempts.*/ReconnectAttempts = 1/' \
       -e 's/ReconnectIntervals.*/ReconnectIntervals = 1/' /etc/bluetooth/main.conf
   fi
   sudo rm -rf /var/lib/bluetooth/* &>/dev/null || :
   msg "Systemd timeouts & ZRAM"
-  sudo sed -i -e 's/#DefaultTimeoutStartSec. */DefaultTimeoutStartSec=5s/g' /etc/systemd/system.conf
+  sudo sed -i -e 's/#DefaultTimeoutStartSec.*/DefaultTimeoutStartSec=5s/g' /etc/systemd/system.conf
   sudo sed -i -e 's/#DefaultTimeoutStopSec.*/DefaultTimeoutStopSec=5s/g' /etc/systemd/system.conf
   if [[ -f /etc/default/zramswap ]]; then
-    sudo sed -i -e 's/#ALGO. */ALGO=lz4/g' -e 's/PERCENT.*/PERCENT=25/g' /etc/default/zramswap
+    sudo sed -i -e 's/#ALGO.*/ALGO=lz4/g' -e 's/PERCENT.*/PERCENT=25/g' /etc/default/zramswap
   fi
   msg "Disable Plymouth & Baloo"
   sudo systemctl mask plymouth-{read-write,start,quit,quit-wait}. service &>/dev/null || :
@@ -502,7 +501,7 @@ auto_setup_tweaks() {
   msg "Enable write cache & Disable logs/services"
   printf '%s\n' "write back" | sudo tee /sys/block/*/queue/write_cache >/dev/null 2>&1 || :
   sudo systemctl mask systemd-update-utmp{,-runlevel,-shutdown}.service systemd-journal-{flush,catalog-update}.service systemd-journald-{dev-log,audit}.socket &>/dev/null || :
-  sudo systemctl disable --global speech-dispatcher smartmontools systemd-rfkill. {service,socket} &>/dev/null || :
+  sudo systemctl disable --global speech-dispatcher smartmontools systemd-rfkill.{service,socket} &>/dev/null || :
   sudo systemctl disable speech-dispatcher smartmontools systemd-rfkill.{service,socket} &>/dev/null || :
   if systemctl list-unit-files dbus-broker.service &>/dev/null; then
     msg "Enable dbus-broker"
@@ -515,7 +514,7 @@ auto_setup_tweaks() {
   sudo systemctl mask NetworkManager-wait-online.service systemd-networkd-wait-online.service &>/dev/null || :
   sudo systemctl disable --now systemd-networkd-wait-online.service &>/dev/null || :
   echo "options drm_kms_helper poll=0" | sudo tee /etc/modprobe.d/disable-gpu-polling.conf >/dev/null
-  [[ -f /etc/preload.conf ]] && sudo sed -i 's/sortstrategy =.*/sortstrategy = 0/' /etc/preload. conf
+  [[ -f /etc/preload.conf ]] && sudo sed -i 's/sortstrategy =.*/sortstrategy = 0/' /etc/preload.conf
   [[ -f /etc/pacman.conf ]] && sudo sed -i -e s'/\#LogFile.*/LogFile = /'g /etc/pacman.conf
   sudo timedatectl set-timezone Europe/Berlin &>/dev/null || :
   msg "Cleaning documentation"
@@ -541,7 +540,7 @@ auto_setup_tweaks() {
   sudo gtk-update-icon-cache -f /usr/share/icons/* &>/dev/null || :
   msg "Clean logs & disable crashes"
   sudo rm -rf -- /var/crash/*
-  sudo journalctl --rotate --vacuum-time=0. 1 &>/dev/null || :
+  sudo journalctl --rotate --vacuum-time=0.1 &>/dev/null || :
   [[ -f /etc/systemd/journald.conf ]] && sudo sed -i -e 's/^#ForwardTo\(Syslog\|KMsg\|Console\|Wall\)=. */ForwardTo\1=no/' -e 's/^#Compress=yes/Compress=yes/' /etc/systemd/journald.conf
   [[ -f /etc/logrotate.conf ]] && sudo sed -i -e 's/^#compress/compress/' /etc/logrotate.conf
   printf '%s\n' "kernel.core_pattern=/dev/null" | sudo tee /etc/sysctl.d/50-coredump.conf &>/dev/null
@@ -565,7 +564,7 @@ EOF
   _vscode_json_set() {
     local prop=$1 val=$2
     has python3 || return 0
-    python3 -c "from pathlib import Path;import os,json;p='$prop';t=json.loads('$val');h=f'/home/{os.getenv(\"SUDO_USER\",os.getenv(\"USER\"))}';[Path(f).write_text(json.dumps({**json.loads(c if(c:=Path(f).read_text() if Path(f).exists() else '')else'{}'),p:t},indent=2))for f in[f'{h}/.config/VSCodium/User/settings. json',f'{h}/.config/Code/User/settings.json']]" 2>/dev/null || :
+    python3 -c "from pathlib import Path;import os,json;p='$prop';t=json.loads('$val');h=f'/home/{os.getenv(\"SUDO_USER\",os.getenv(\"USER\"))}';[Path(f).write_text(json.dumps({**json.loads(c if(c:=Path(f).read_text() if Path(f).exists() else '')else'{}'),p:t},indent=2))for f in[f'{h}/.config/VSCodium/User/settings.json',f'{h}/.config/Code/User/settings.json']]" 2>/dev/null || :
   }
   for setting in \
     'telemetry.telemetryLevel:"off"' \
@@ -574,12 +573,12 @@ EOF
     'workbench.enableExperiments:false' \
     'update.mode:"none"' \
     'update.channel:"none"' \
-    'update. showReleaseNotes:false' \
+    'update.showReleaseNotes:false' \
     'npm.fetchOnlinePackageInfo:false' \
     'git.autofetch:false' \
     'workbench.settings.enableNaturalLanguageSearch:false' \
     'typescript.disableAutomaticTypeAcquisition:false' \
-    'workbench.experimental.editSessions. enabled:false' \
+    'workbench.experimental.editSessions.enabled:false' \
     'workbench.experimental.editSessions.autoStore:false' \
     'workbench.editSessions.autoResume:false' \
     'workbench.editSessions.continueOn:false' \
@@ -616,6 +615,6 @@ main() {
   cleanup
   sudo sed -i 's/^\#HandleLidSwitch=suspend/HandleLidSwitch=ignore/' /etc/systemd/logind.conf
   msg "Setup complete!  Restart shell."
-  [[ -f "${HOME}/failed_pkgs. txt" ]] && warn "Check ~/failed_pkgs.txt for failures"
+  [[ -f "${HOME}/failed_pkgs.txt" ]] && warn "Check ~/failed_pkgs.txt for failures"
 }
 main "$@"

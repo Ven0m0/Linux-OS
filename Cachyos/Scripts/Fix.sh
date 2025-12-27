@@ -52,7 +52,7 @@ rm -rf ~/.local/share/flatpak/repo
 mkdir -p ~/.local/share/flatpak
 flatpak repair
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak update --user -y  --noninteractive
-sudo flatpak update -y  --noninteractive
+flatpak update --user -y --noninteractive
+sudo flatpak update -y --noninteractive
 
 sudo pacman -S pam-reattach

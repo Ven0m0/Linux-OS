@@ -104,7 +104,7 @@ Dir::Log::Terminal "";
 EOF
   sudo tee /etc/apt/apt.conf.d/71debconf >/dev/null <<'EOF'
 DPkg::Options {
-   "--force-confdef";
+  "--force-confdef";
 };
 EOF
   sudo tee /etc/dpkg/dpkg.cfg.d/force-unsafe-io >/dev/null <<'EOF'

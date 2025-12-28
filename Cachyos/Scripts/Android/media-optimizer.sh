@@ -356,7 +356,11 @@ process_image() {
       rm -f "$tmpfile"
 
       local saved_bytes=$((original_size - webp_size))
-      log "${GRN}Converted to WebP: $file${RST} ($(human_size "$original_size") → $(human_size "$webp_size"), saved $(human_size "$saved_bytes"))"
+      local size_orig size_webp size_saved
+      size_orig=$(human_size "$original_size")
+      size_webp=$(human_size "$webp_size")
+      size_saved=$(human_size "$saved_bytes")
+      log "${GRN}Converted to WebP: $file${RST} ($size_orig → $size_webp, saved $size_saved)"
 
       # If user wants to replace original
       if [[ ${MEDIA_OPT_REPLACE:-0} -eq 1 ]]; then
@@ -368,7 +372,11 @@ process_image() {
       rm -f "$tmp_webp"
 
       local saved_bytes=$((original_size - optimized_size))
-      log "${GRN}Optimized: $file${RST} ($(human_size "$original_size") → $(human_size "$optimized_size"), saved $(human_size "$saved_bytes"))"
+      local size_orig size_opt size_saved
+      size_orig=$(human_size "$original_size")
+      size_opt=$(human_size "$optimized_size")
+      size_saved=$(human_size "$saved_bytes")
+      log "${GRN}Optimized: $file${RST} ($size_orig → $size_opt, saved $size_saved)"
     fi
   else
     # WebP conversion failed, use optimized original
@@ -379,7 +387,11 @@ process_image() {
     optimized_size=$(file_size "$file")
 
     local saved_bytes=$((original_size - optimized_size))
-    log "${YLW}Optimized (WebP conversion failed): $file${RST} ($(human_size "$original_size") → $(human_size "$optimized_size"), saved $(human_size "$saved_bytes"))"
+    local size_orig size_opt size_saved
+    size_orig=$(human_size "$original_size")
+    size_opt=$(human_size "$optimized_size")
+    size_saved=$(human_size "$saved_bytes")
+    log "${YLW}Optimized (WebP conversion failed): $file${RST} ($size_orig → $size_opt, saved $size_saved)"
   fi
 
   return 0
@@ -420,7 +432,11 @@ process_video() {
     new_size=$(file_size "$output")
 
     local saved_bytes=$((original_size - new_size))
-    log "${GRN}Converted to AV1: $file${RST} ($(human_size "$original_size") → $(human_size "$new_size"), saved $(human_size "$saved_bytes"))"
+    local size_orig size_new size_saved
+    size_orig=$(human_size "$original_size")
+    size_new=$(human_size "$new_size")
+    size_saved=$(human_size "$saved_bytes")
+    log "${GRN}Converted to AV1: $file${RST} ($size_orig → $size_new, saved $size_saved)"
 
     # If user wants to replace original
     if [[ ${MEDIA_OPT_REPLACE:-0} -eq 1 ]]; then

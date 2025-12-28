@@ -588,7 +588,7 @@ EOF
     IFS=: read -r key val <<<"$setting"
     _vscode_json_set "$key" "$val"
   done
-  sudo pacman -Rns --noconfirm "$(pacman -Qdtq)" 2>/dev/null || :
+  pacman -Qdtq 2>/dev/null | xargs -r sudo pacman -Rns --noconfirm || :
   sudo fstrim -av 2>/dev/null || :
 }
 

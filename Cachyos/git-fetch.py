@@ -5,6 +5,7 @@ import os
 import sys
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -77,20 +78,37 @@ def fetch_github(spec: RepoSpec, output: Path) -> None:
   
   if isinstance(data, dict):
     data = [data]
-  
+
+  # Separate files and dirs for parallel processing
+  files_to_download = []
+  dirs_to_process = []
+
   for item in data:
     item_path = item['path']
     local_path = output / Path(item_path).name
-    
+
     if item['type'] == 'file':
-      content = http_get(item['download_url'], headers)
-      local_path.parent.mkdir(parents=True, exist_ok=True)
-      local_path.write_bytes(content)
-      print(f"✓ {item_path}")
+      files_to_download.append((item['download_url'], local_path, item_path))
     elif item['type'] == 'dir':
       local_path.mkdir(parents=True, exist_ok=True)
-      sub_spec = RepoSpec(spec.platform, spec.owner, spec.repo, item_path, spec.branch)
-      fetch_github(sub_spec, local_path)
+      dirs_to_process.append((item_path, local_path))
+
+  # Parallel file downloads
+  def download_file(url, path, item_path):
+    content = http_get(url, headers)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
+    print(f"✓ {item_path}")
+
+  with ThreadPoolExecutor(max_workers=min(32, (os.cpu_count() or 1) + 4)) as executor:
+    futures = [executor.submit(download_file, url, path, item_path) for url, path, item_path in files_to_download]
+    for future in as_completed(futures):
+      future.result()  # Raise exceptions if any
+
+  # Process directories recursively
+  for item_path, local_path in dirs_to_process:
+    sub_spec = RepoSpec(spec.platform, spec.owner, spec.repo, item_path, spec.branch)
+    fetch_github(sub_spec, local_path)
 
 def fetch_gitlab(spec: RepoSpec, output: Path) -> None:
   """Download from GitLab using Repository API."""
@@ -119,11 +137,14 @@ def fetch_gitlab(spec: RepoSpec, output: Path) -> None:
     raise
   
   dirs_created = set()
+  files_to_download = []
+
+  # First pass: create directories and collect files
   for item in data:
     item_path = item['path']
     rel_path = item_path[len(spec.path):].lstrip('/') if spec.path else item_path
     local_path = output / rel_path
-    
+
     if item['type'] == 'tree':
       local_path.mkdir(parents=True, exist_ok=True)
       dirs_created.add(str(local_path))
@@ -131,12 +152,23 @@ def fetch_gitlab(spec: RepoSpec, output: Path) -> None:
       if str(local_path.parent) not in dirs_created:
         local_path.parent.mkdir(parents=True, exist_ok=True)
         dirs_created.add(str(local_path.parent))
-      
+
       file_path_enc = urllib.parse.quote(item_path, safe='')
       raw_url = f"https://gitlab.com/api/v4/projects/{project_id}/repository/files/{file_path_enc}/raw?ref={spec.branch}"
-      content = http_get(raw_url, headers)
-      local_path.write_bytes(content)
-      print(f"✓ {item_path}")
+      files_to_download.append((raw_url, local_path, item_path))
+
+  # Parallel file downloads
+  def download_file(url, path, item_path):
+    content = http_get(url, headers)
+    path.write_bytes(content)
+    print(f"✓ {item_path}")
+
+  with ThreadPoolExecutor(
+    max_workers=min(32, (os.cpu_count() or 1) + 4)
+  ) as executor:
+    futures = [executor.submit(download_file, url, path, ip) for url, path, ip in files_to_download]
+    for future in as_completed(futures):
+      future.result()  # Raise exceptions if any
 
 def main() -> int:
   if len(sys.argv) < 2:

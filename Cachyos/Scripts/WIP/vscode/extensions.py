@@ -36,7 +36,10 @@ def main():
     # Read file
     extensions_from_file = set()
     with open(extensions_filepath, "r") as f:
-        [extensions_from_file.add(l.strip()) for l in f if l.strip()]
+        for l in f:
+            stripped = l.strip()
+            if stripped:
+                extensions_from_file.add(stripped)
 
     # Install
     if args.install:
@@ -56,10 +59,11 @@ def main():
         if not args.overwrite and os.path.exists(extensions_filepath):
             saved_extensions = extensions_from_file
 
-        merged_extensions = sorted(list(saved_extensions.union(current_extensions)))
+        merged_extensions = sorted(saved_extensions.union(current_extensions))
 
         with open(extensions_filepath, "w") as f:
-            [f.write(e + "\n") for e in merged_extensions]
+            for e in merged_extensions:
+                f.write(e + "\n")
 
 
 if __name__ == "__main__":

@@ -537,7 +537,7 @@ auto_setup_tweaks() {
   msg "Optimize fonts & icons"
   has fc-cache && sudo fc-cache -rfv &>/dev/null || :
   has pyftsubset && pyftsubset font.ttf --output-file=font-optimized.ttf --retain-gids --unicodes='*' --no-subset-tables+=glyf --drop-tables+=DSIG
-  sudo gtk-update-icon-cache -f /usr/share/icons/* &>/dev/null || :
+  find /usr/share/icons -mindepth 1 -maxdepth 1 -type d -exec sudo gtk-update-icon-cache -f {} \; &>/dev/null || :
   msg "Clean logs & disable crashes"
   sudo rm -rf -- /var/crash/*
   sudo journalctl --rotate --vacuum-time=0.1 &>/dev/null || :

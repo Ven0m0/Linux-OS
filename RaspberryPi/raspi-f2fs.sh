@@ -376,7 +376,7 @@ shrink_source_image() {
   mnt=$(mktemp -d)
   mount "$LOOP_DEV" "$mnt"
   log "Zeroing free space (this may take a while)..."
-  cat /dev/zero >"$mnt/zero_file" 2>/dev/null || :
+  dd if=/dev/zero of="$mnt/zero_file" bs=8M status=none 2>/dev/null || :
   rm -f "$mnt/zero_file"
   umount "$mnt"
   rmdir "$mnt"

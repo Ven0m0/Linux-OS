@@ -108,8 +108,10 @@ clean_sqlite_dbs() {
     [[ -f "${db}-wal" || -f "${db}-journal" ]] && exit 0
     # Validate SQLite database
     head -c 16 "$db" 2>/dev/null | grep -qF "SQLite format 3" || exit 0
-    # Vacuum (suppress output for parallel execution)
-    sqlite3 "$db" "PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;" &>/dev/null || :
+    # Vacuum (suppress normal output but log failures for debugging)
+    if ! sqlite3 "$db" "PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;" &>/dev/null; then
+      printf "SQLite vacuum failed for %s\n" "$db" >&2
+    fi
   ' _ {}
   [[ -n $(find . -maxdepth 2 -type f -name '*.sqlite*' 2>/dev/null | head -1) ]] && printf '  %s\n' "${GRN}Vacuumed SQLite DBs${DEF}"
 }

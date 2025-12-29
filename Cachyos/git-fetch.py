@@ -100,8 +100,8 @@ def fetch_github(spec: RepoSpec, output: Path) -> None:
     path.write_bytes(content)
     print(f"✓ {item_path}")
 
-  with ThreadPoolExecutor(max_workers=4) as executor:
-    futures = [executor.submit(download_file, url, path, ip) for url, path, ip in files_to_download]
+  with ThreadPoolExecutor(max_workers=min(32, (os.cpu_count() or 1) + 4)) as executor:
+    futures = [executor.submit(download_file, url, path, item_path) for url, path, item_path in files_to_download]
     for future in as_completed(futures):
       future.result()  # Raise exceptions if any
 

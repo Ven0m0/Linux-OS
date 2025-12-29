@@ -1,433 +1,161 @@
 #!/bin/bash
-#
-# shellcheck disable=1090,2034
-#
-# $XDG_CONFIG_HOME should be mapped to $HOME/.config
-# $XDG_DATA_HOME should be mapped to $HOME/.local/share
-# some users may have modified it to a custom location so honor that
+# Compact Profile Cleaner - Optimized
+# shellcheck disable=2034,2155
 
-XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
-XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-VERS="@VERSION@"
+: "${XDG_CONFIG_HOME:=$HOME/.config}"
+: "${XDG_DATA_HOME:=$HOME/.local/share}"
+VERSION="2.0"
 
-#
-# read in config file
-#
-
-config="$XDG_CONFIG_HOME/profile-cleaner.conf"
-
-if [[ -f "$config" ]]; then
-  . "$config"
+# --- Configuration & Colors ---
+CONFIG="$XDG_CONFIG_HOME/profile-cleaner.conf"
+[[ -f "$CONFIG" ]] && . "$CONFIG"
+if [[ "${COLORS:-dark}" == "dark" ]]; then
+    BLD="\e[1m" RED="\e[1;31m" GRN="\e[1;32m" YLW="\e[1;33m" NRM="\e[0m"
 else
-  cat <<END >> "$config"
-#
-# $HOME/.config/profile-cleaner.conf
-#
-
-# Define the background of your terminal theme here.
-# A setting of dark will produce colors that nicely contrast a dark background.
-#  setting of light will produce colors that nicely contrast a light background.
-COLORS=dark
-#COLORS=light
-END
+    BLD="\e[1m" RED="\e[0;31m" GRN="\e[0;32m" YLW="\e[0;34m" NRM="\e[0m"
 fi
 
-[[ -z "$COLORS" ]] && COLORS="dark"
+printf "${BLD}profile-cleaner v%s${NRM}\n\n" "$VERSION"
 
-if [[ "$COLORS" = "dark" ]]; then
-  export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
-elif [[ "$COLORS" = "light" ]]; then
-  export BLD="\e[01m" RED="\e[00;31m" GRN="\e[00;32m" YLW="\e[00;34m" NRM="\e[00m"
-fi
+# --- Dependency Check ---
+for cmd in bc find parallel sqlite3 xargs file; do
+    command -v "$cmd" >/dev/null || { echo >&2 "Missing dependency: $cmd"; exit 1; }
+done
 
-echo -e "${BLD}profile-cleaner v$VERS${NRM}"
-echo
+# --- Core Functions ---
+export GRN YLW NRM
 
-dep_check() {
-  for dep in bc find parallel sqlite3 xargs; do
-    if ! command -v "$dep" > /dev/null 2>&1; then
-      echo "I require $dep but it's not installed. Aborting." >&2
-      exit 1
-    fi
-  done
+do_clean_file() {
+    local db="$1"
+    local bsize=$(du -b "$db" | cut -f1)
+    
+    printf "${GRN} Cleaning${NRM} %s" "${db##*/}"
+    sqlite3 "$db" "VACUUM; REINDEX;"
+    
+    local asize=$(du -b "$db" | cut -f1)
+    local saved=$(echo "scale=2; ($bsize-$asize)/1048576" | bc)
+    printf "\r\033[K${GRN} Done${NRM} -${YLW}%s${NRM} MB\n" "$saved"
 }
+export -f do_clean_file
 
-do_clean() {
-  echo -en "${GRN} Cleaning${NRM} ${1##*/}"
-  bsize=$(du -b "$1" | cut -f 1)
-
-  sqlite3 "$1" vacuum
-  sqlite3 "$1" reindex
-
-  asize=$(du -b "$1" | cut -f 1)
-  dsize=$(echo "scale=2; ($bsize-$asize)/1048576" | bc)
-  echo -e "$(tput cr)$(tput cuf 46) ${GRN}done${NRM}  -${YLW}${dsize}${NRM} Mbytes"
-}
-
-do_clean_parallel () {
-  [[ ${#toclean[@]} -eq 0 ]] && cleanedsize=0 && return 1
-  bsize=$(du -b -c "${toclean[@]}" | tail -n 1 | cut -f 1)
-
-  SHELL=/bin/bash parallel --gnu -k do_clean ::: "${toclean[@]}" 2>/dev/null
-
-  asize=$(du -b -c "${toclean[@]}" | tail -n 1 | cut -f 1)
-  cleanedsize=$(echo "scale=2; ($bsize-$asize)/1048576" | bc)
+run_parallel() {
+    local targets=("$@")
+    [[ ${#targets[@]} -eq 0 ]] && return
+    
+    local total_start=$(du -b -c "${targets[@]}" | tail -n 1 | cut -f 1)
+    
+    # Run in parallel
+    SHELL=/bin/bash parallel --gnu -k --bar do_clean_file ::: "${targets[@]}" 2>/dev/null
+    
+    local total_end=$(du -b -c "${targets[@]}" | tail -n 1 | cut -f 1)
+    local total_saved=$(echo "scale=2; ($total_start-$total_end)/1048576" | bc)
+    
+    printf "\n${BLD}Total reduced by ${YLW}%s${NRM}${BLD} MB.${NRM}\n\n" "$total_saved"
 }
 
 find_dbs() {
-  toclean=()
-  while read -r i; do
-    toclean+=("${i}")
-  done < <( find -L "$@" -maxdepth 2 -type f -not -name '*.sqlite-wal' -print0 2>/dev/null | xargs -0 file -e ascii | sed -n -e "s/:.*SQLite.*//p" )
+    # Finds files, checks if they are SQLite, filters out WAL files
+    find -L "$@" -maxdepth 2 -type f -not -name '*.sqlite-wal' -print0 2>/dev/null | \
+        xargs -0 file -e ascii | \
+        sed -n 's/:.*SQLite.*//p'
 }
 
-do_error_for_chromebased() {
-  if [[ ! -d "$profilepath" ]]; then
-    echo -e "${RED}Error: no profile directory found for:${NRM}${BLD}" "${missingArr[@]}" "${NRM}"
-    exit 1
-  fi
-}
+# Wrapper to handle different browser detection strategies
+# Usage: scan_and_clean [type] [name_for_display] [base_path] [subdirs...]
+scan_and_clean() {
+    local type="$1"
+    local name="$2"
+    local base="$3"
+    shift 3
+    local subdirs=("$@")
+    local paths_to_clean=()
 
-do_chromebased() {
-  if [[ -h "$prepath" ]]; then
-    profilepath=$(readlink "$prepath")
-  else
-    profilepath="$prepath"
-  fi
-  echo -e " ${YLW}Cleaning profile for $name${NRM}"
-  find_dbs "$profilepath"
-  do_clean_parallel
-  echo
-  echo -e " ${BLD}Profile(s) for $name reduced by ${YLW}${cleanedsize}${NRM} ${BLD}Mbytes.${NRM}"
-  echo
-}
+    printf " ${YLW}Checking %s...${NRM}\n" "$name"
 
-do_xulbased() {
-  if [[ -h "$prepath" ]]; then
-    profilepath=$(readlink "$prepath")
-  else
-    profilepath="$prepath"
-  fi
+    if [[ "$type" == "chrome" ]]; then
+        for dir in "${subdirs[@]}"; do
+            [[ -d "$base/$dir" ]] && paths_to_clean+=("$base/$dir")
+        done
+        [[ ${#paths_to_clean[@]} -eq 0 ]] && { echo -e "${RED}Error: No profiles found for $name in $base${NRM}"; exit 1; }
 
-  if [[ ! -d "$profilepath" ]]; then
-    echo -e "${RED}Error: cannot locate $profilepath${NRM}"
-    echo -e "${BLD}This is the default path for $name and where $0 expects to find it.${NRM}"
-    exit 1
-  fi
+    elif [[ "$type" == "mozilla" ]]; then
+        [[ ! -d "$base" ]] && { echo -e "${RED}Error: Directory $base not found${NRM}"; exit 1; }
+        [[ ! -f "$base/profiles.ini" ]] && { echo -e "${RED}Error: profiles.ini not found for $name${NRM}"; exit 1; }
+        
+        # Extract paths from profiles.ini
+        while read -r path_line; do
+            local p_path="${path_line#*=}"
+            # Handle relative vs absolute paths in ini
+            [[ -d "$base/$p_path" ]] && paths_to_clean+=("$base/$p_path") || paths_to_clean+=("$p_path")
+        done < <(grep '^[Pp]ath=' "$base/profiles.ini" | tr -d '\r')
 
-  [[ ! -f $profilepath/profiles.ini ]] &&
-    echo -e "${RED}Error: cannot locate $profilepath/profiles.ini to determine names of profiles for $name.${NRM}" &&
-    exit 1
-
-  # build an array correcting for rel and abs paths therein
-  # while read -r will read line-by-line and will tolerate spaces
-  # whereas a for loop will not
-
-  index=0
-  while read -r line; do
-    if [[ ! -d "$profilepath/$line" ]]; then
-      finalArr[index]="$line"
-    else
-      finalArr[index]="$profilepath/$line"
+    elif [[ "$type" == "path" ]] || [[ "$type" == "simple" ]]; then
+        # 'simple' expects base to be the profile dir; 'path' expects args to be dirs
+        if [[ "$type" == "simple" ]]; then
+            [[ -d "$base" ]] && paths_to_clean+=("$base")
+        else
+            for p in "$base" "${subdirs[@]}"; do
+                 [[ -d "$p" ]] && paths_to_clean+=("$p")
+            done
+        fi
+        [[ ${#paths_to_clean[@]} -eq 0 ]] && { echo -e "${RED}Error: Invalid path(s) provided${NRM}"; exit 1; }
     fi
-    index=$index+1
-  done < <(grep '[Pp]'ath= "$profilepath/profiles.ini" | sed -e 's/[Pp]ath=//' -e 's/\r//' )
 
-  echo -e " ${YLW}Cleaning profile for $name${NRM}"
-  find_dbs "${finalArr[@]}"
-  do_clean_parallel
-  echo
-  echo -e " ${BLD}Profile(s) for $name reduced by ${YLW}${cleanedsize}${NRM} ${BLD}Mbytes.${NRM}"
+    # Execute cleaning
+    mapfile -t targets < <(find_dbs "${paths_to_clean[@]}")
+    run_parallel "${targets[@]}"
 }
 
-do_dbbased() {
-  if [[ -h "$prepath" ]]; then
-    profilepath=$(readlink "$prepath")
-  else
-    profilepath="$prepath"
-  fi
-  if [[ ! -d "$profilepath" ]]; then
-    echo -e "${RED}Error: no profile directory for $name found.${NRM}" &&
-      exit 1
-  fi
-  echo -e " ${YLW}Cleaning profile for $name${NRM}"
-  find_dbs "${profilepath}"
-  do_clean_parallel
-  echo
-  echo -e " ${BLD}Profile(s) for $name reduced by ${YLW}${cleanedsize}${NRM} ${BLD}Mbytes.${NRM}"
-}
-
-do_paths() {
-  profilepaths=()
-  for profilepath in "$@"; do
-    [[ -d "$profilepath" ]] && profilepaths+=("$profilepath")
-  done
-  find_dbs "${profilepaths[@]}"
-  do_clean_parallel
-  echo
-  echo -e " ${BLD}Profile(s) for $name reduced by ${YLW}${cleanedsize}${NRM} ${BLD}Mbytes.${NRM}"
-}
-
-export -f do_clean
-dep_check
-GREP_OPTIONS=
+# --- Main Logic ---
 
 case "$1" in
-  B|b)
-    for name in Brave-Browser Brave-Browser-Dev Brave-Browser-Beta Brave-Browser-Nightly; do
-      if [[ -d "$XDG_CONFIG_HOME"/BraveSoftware/$name ]]; then
-        tocleanArr+=("$name")
-      else
-        missingArr+=("$name")
-      fi
-    done
-    if [[ "${#tocleanArr[@]}" -eq 0 ]]; then
-      do_error_for_chromebased
-    else
-      for name in "${tocleanArr[@]}"; do
-        export name
-        prepath="$XDG_CONFIG_HOME"/BraveSoftware/$name
-        do_chromebased
-      done
-    fi
-    exit 0
-    ;;
-  C|c|CB|cb|CD|cd)
-    for name in chromium chromium-beta chromium-dev; do
-      if [[ -d "$XDG_CONFIG_HOME"/$name ]]; then
-        tocleanArr+=("$name")
-      else
-        missingArr+=("$name")
-      fi
-    done
-    if [[ "${#tocleanArr[@]}" -eq 0 ]]; then
-      do_error_for_chromebased
-    else
-      for name in "${tocleanArr[@]}"; do
-        export name
-        prepath="$XDG_CONFIG_HOME"/$name
-        do_chromebased
-      done
-    fi
-    exit 0
-    ;;
-  E|e)
-    name=microsoft-edge
-    if [[ -d "$XDG_CONFIG_HOME"/$name ]]; then
-      tocleanArr+=("$name")
-    else
-      missingArr+=("$name")
-    fi
-    if [[ "${#tocleanArr[@]}" -eq 0 ]]; then
-      do_error_for_chromebased
-    else
-      for name in "${tocleanArr[@]}"; do
-        export name
-        prepath="$XDG_CONFIG_HOME"/$name
-        do_chromebased
-      done
-    fi
-    exit 0
-    ;;
-  GC|gc|GCB|gcb|GCD|gcd|GCU|gcu)
-    for name in google-chrome google-chrome-beta google-chrome-unstable; do
-      if [[ -d "$XDG_CONFIG_HOME"/$name ]]; then
-        tocleanArr+=("$name")
-      else
-        missingArr+=("$name")
-      fi
-    done
-    if [[ "${#tocleanArr[@]}" -eq 0 ]]; then
-      do_error_for_chromebased
-    else
-      for name in "${tocleanArr[@]}"; do
-        export name
-        prepath="$XDG_CONFIG_HOME"/$name
-        do_chromebased
-      done
-    fi
-    exit 0
-    ;;
-  ix|IX)
-    name="inox"; export name
-    prepath="$XDG_CONFIG_HOME"/$name
-    if [[ -d "$XDG_CONFIG_HOME"/$name ]]; then
-      do_chromebased
-    else
-      do_error_for_chromebased
-    fi
-    exit 0
-    ;;
-  n|N)
-    name="newsboat"; export name
-    if [[ -d "$XDG_DATA_HOME"/$name ]]; then
-      prepath="$XDG_DATA_HOME"/$name
-    elif [[ -d "$HOME/.$name" ]]; then
-      prepath="$HOME/.$name"
-    fi
-    do_dbbased
-    exit 0
-    ;;
-  o|O|on|ON|od|OD|ob|OB)
-    for name in opera opera-next opera-developer opera-beta; do
-      if [[ -d "$XDG_CONFIG_HOME"/$name ]]; then
-        tocleanArr+=("$name")
-      else
-        missingArr+=("$name")
-      fi
-    done
-    if [[ "${#tocleanArr[@]}" -eq 0 ]]; then
-      do_error_for_chromebased
-    else
-      for name in "${tocleanArr[@]}"; do
-        export name
-        prepath="$XDG_CONFIG_HOME"/$name
-        do_chromebased
-      done
-    fi
-    exit 0
-    ;;
-  V|v)
-    for name in vivaldi vivaldi-snapshot; do
-      if [[ -d "$XDG_CONFIG_HOME"/$name ]]; then
-        tocleanArr+=("$name")
-      else
-        missingArr+=("$name")
-      fi
-    done
-    if [[ "${#tocleanArr[@]}" -eq 0 ]]; then
-      do_error_for_chromebased
-    else
-      for name in "${tocleanArr[@]}"; do
-        export name
-        prepath="$XDG_CONFIG_HOME"/$name
-        do_chromebased
-      done
-    fi
-    exit 0
-    ;;
-  H|h)
-    name="aurora"; export name
-    prepath=$HOME/.mozilla/aurora
-    do_xulbased
-    exit 0
-    ;;
-  CK|ck)
-    name="conkeror"; export name
-    prepath=$HOME/.conkeror.mozdev.org/$name
-    do_xulbased
-    exit 0
-    ;;
-  F|f)
-    name="firefox"; export name
-    prepath=$HOME/.mozilla/$name
-    do_xulbased
-    exit 0
-    ;;
-  FA|fa|Fa)
-    name="falkon"; export name
-    prepath=$HOME/.config/$name/profiles
-    do_dbbased
-    exit 0
-    ;;
-  I|i)
-    name="icecat"; export name
-    prepath=$HOME/.mozilla/$name
-    do_xulbased
-    exit 0
-    ;;
-  ID|id)
-    name="icedove"; export name
-    prepath=$HOME/.$name
-    do_xulbased
-    exit 0
-    ;;
-  L|l)
-    name="librewolf"; export name
-    prepath=$HOME/.$name
-    do_xulbased
-    exit 0
-    ;;
-  M|m)
-    name="midori"; export name
-    prepath="$XDG_CONFIG_HOME"/$name
-    do_dbbased
-    exit 0
-    ;;
-  PM|pm)
-    name="palemoon"; export name
-    prepath=$HOME/.moonchild\ productions/pale\ moon
-    do_xulbased
-    exit 0
-    ;;
-  P|p)
-    name="paths"; export name
-    shift
-    do_paths "$@"
-    exit 0
-    ;;
-  S|s)
-    name="seamonkey"; export name
-    prepath=$HOME/.mozilla/$name
-    do_xulbased
-    exit 0
-    ;;
-  Q|q)
-    name="qupzilla"; export name
-    prepath=$HOME/.config/$name/profiles
-    do_dbbased
-    exit 0
-    ;;
-  T|t)
-    name="thunderbird"; export name
-    prepath=$HOME/.$name
-    do_xulbased
-    exit 0
-    ;;
-  TO|to)
-    name="torbrowser"; export name
-    prepath=$HOME/.$name/profile
+    # Chrome/Chromium Based
+    B|b)  scan_and_clean chrome "Brave" "$XDG_CONFIG_HOME/BraveSoftware" Brave-Browser{,-Dev,-Beta,-Nightly} ;;
+    C|c)  scan_and_clean chrome "Chromium" "$XDG_CONFIG_HOME" chromium{,-beta,-dev} ;;
+    E|e)  scan_and_clean chrome "Edge" "$XDG_CONFIG_HOME" microsoft-edge ;;
+    GC|gc) scan_and_clean chrome "Google Chrome" "$XDG_CONFIG_HOME" google-chrome{,-beta,-unstable} ;;
+    ix|IX) scan_and_clean chrome "Inox" "$XDG_CONFIG_HOME" inox ;;
+    O|o)  scan_and_clean chrome "Opera" "$XDG_CONFIG_HOME" opera{,-next,-developer,-beta} ;;
+    V|v)  scan_and_clean chrome "Vivaldi" "$XDG_CONFIG_HOME" vivaldi{,-snapshot} ;;
 
-    # AUR packages for tor-browser customize this for some reason so check for
-    # all in a silly for loop this is a shitty solution if users have more than
-    # 1 language of tor-browser installed
-
-    for lang in de en es fr it ru; do
-      [[ ! -d "$prepath" ]] &&
-        prepath="$HOME/.tor-browser-$lang/INSTALL/Data/profile"
-      done
-      do_dbbased
-      exit 0
-      ;;
+    # Mozilla/XUL Based
+    F|f)  scan_and_clean mozilla "Firefox" "$HOME/.mozilla/firefox" ;;
+    H|h)  scan_and_clean mozilla "Aurora" "$HOME/.mozilla/aurora" ;;
+    I|i)  scan_and_clean mozilla "Icecat" "$HOME/.mozilla/icecat" ;;
+    ID|id) scan_and_clean mozilla "Icedove" "$HOME/.icedove" ;; # Common location
+    L|l)  scan_and_clean mozilla "Librewolf" "$HOME/.librewolf" ;;
+    PM|pm) scan_and_clean mozilla "Pale Moon" "$HOME/.moonchild productions/pale moon" ;;
+    S|s)  scan_and_clean mozilla "Seamonkey" "$HOME/.mozilla/seamonkey" ;;
+    T|t)  scan_and_clean mozilla "Thunderbird" "$HOME/.thunderbird" ;;
+    CK|ck) scan_and_clean mozilla "Conkeror" "$HOME/.conkeror.mozdev.org/conkeror" ;;
+    # Simple DB Based
+    FA|fa) scan_and_clean simple "Falkon" "$HOME/.config/falkon/profiles" ;;
+    M|m)   scan_and_clean simple "Midori" "$XDG_CONFIG_HOME/midori" ;;
+    n|N)   
+        # Newsboat handles XDG or Home
+        nb_path="$HOME/.newsboat"
+        [[ -d "$XDG_DATA_HOME/newsboat" ]] && nb_path="$XDG_DATA_HOME/newsboat"
+        scan_and_clean simple "Newsboat" "$nb_path" 
+        ;;
+    Q|q)   scan_and_clean simple "QupZilla" "$HOME/.config/qupzilla/profiles" ;;
+    # Special Cases
+    TO|to)
+        # Handle Tor Browser's varied install paths
+        base="$HOME/.torbrowser/profile"
+        for lang in de en es fr it ru; do
+            [[ ! -d "$base" ]] && base="$HOME/.tor-browser-$lang/INSTALL/Data/profile"
+        done
+        scan_and_clean simple "TorBrowser" "$base"
+        ;;
+    P|p) 
+        shift
+        scan_and_clean path "Custom Paths" "$@" 
+        ;;
     *)
-      echo -e " ${BLD}$0 ${NRM}${GRN}{browser abbreviation}${NRM}"
-      echo
-      echo -e "   ${BLD}b) ${GRN}b${NRM}${BLD}rave (stable, beta, dev and nightly)${NRM}"
-      echo -e "   ${BLD}c) ${GRN}c${NRM}${BLD}hromium (stable, beta, and dev)${NRM}"
-      echo -e "   ${BLD}e) ${GRN}e${NRM}${BLD}dge${NRM}"
-      echo -e "   ${BLD}f) ${GRN}f${NRM}${BLD}irefox (stable and beta)${NRM}"
-      echo -e "  ${BLD}fa) ${GRN}fa${NRM}${BLD}lkon${NRM}"
-      echo -e "  ${BLD}gc) ${GRN}g${NRM}${BLD}oogle-${GRN}c${NRM}${BLD}hrome (stable, beta, and dev)${NRM}"
-      echo -e "   ${BLD}o) ${GRN}o${NRM}${BLD}pera (stable, next, and developer)${NRM}"
-      echo
-      echo -e "  ${BLD}ck) ${GRN}c${NRM}${BLD}on${GRN}k${NRM}${BLD}eror${NRM}"
-      echo -e "   ${BLD}h) ${GRN}h${NRM}${BLD}eftig's aurora${NRM}"
-      echo -e "   ${BLD}i) ${GRN}i${NRM}${BLD}cecat${NRM}"
-      echo -e "  ${BLD}id) ${GRN}i${NRM}${BLD}ce${GRN}d${NRM}${BLD}ove${NRM}"
-      echo -e "  ${BLD}ix) ${GRN}i${NRM}${BLD}no${GRN}x${NRM}"
-      echo -e "   ${BLD}l) ${GRN}l${NRM}${BLD}ibrewolf${NRM}"
-      echo -e "   ${BLD}m) ${GRN}m${NRM}${BLD}idori${NRM}"
-      echo -e "   ${BLD}n) ${GRN}n${NRM}${BLD}ewsboat${NRM}"
-      echo -e "  ${BLD}pm) ${GRN}p${NRM}${BLD}ale${GRN}m${NRM}${BLD}oon${NRM}"
-      echo -e "   ${BLD}q) ${GRN}q${NRM}${BLD}upZilla${NRM}"
-      echo -e "   ${BLD}s) ${GRN}s${NRM}${BLD}eamonkey${NRM}"
-      echo -e "   ${BLD}t) ${GRN}t${NRM}${BLD}hunderbird${NRM}"
-      echo -e "  ${BLD}to) ${GRN}to${NRM}${BLD}rbrowser${NRM}"
-      echo -e "   ${BLD}v) ${GRN}v${NRM}${BLD}ivaldi (stable and snapshot)${NRM}"
-      echo
-      echo -e "   ${BLD}p) ${GRN}p${NRM}${BLD}aths${NRM}"
-      exit 0
-      ;;
-  esac
-
-# vim:set ts=2 sw=2 et:
+        echo -e "Usage: $0 {browser_code}"
+        echo -e "\nChrome-based: ${GRN}b${NRM}rave, ${GRN}c${NRM}hromium, ${GRN}e${NRM}dge, ${GRN}gc${NRM}hrome, ${GRN}o${NRM}pera, ${GRN}v${NRM}ivaldi, ${GRN}ix${NRM}nox"
+        echo -e "Mozilla-based: ${GRN}f${NRM}irefox, ${GRN}t${NRM}hunderbird, ${GRN}l${NRM}ibrewolf, ${GRN}pm${NRM}oon, ${GRN}s${NRM}eamonkey, ${GRN}i${NRM}cecat"
+        echo -e "Others: ${GRN}fa${NRM}lkon, ${GRN}m${NRM}idori, ${GRN}n${NRM}ewsboat, ${GRN}to${NRM}rbrowser, ${GRN}p${NRM}aths (custom)"
+        exit 0
+        ;;
+esac

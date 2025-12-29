@@ -7,23 +7,21 @@ import concurrent.futures
 from tqdm import tqdm
 from multiprocessing import Pool
 
-def detect_encoding(filepath):
-    with open(filepath, 'rb') as f:
-        result = chardet.detect(f.read())
-    return result['encoding']
-
 def process_file(filepath):
-    # detect the encoding of the file
-    encoding = detect_encoding(filepath)
+    # Detect encoding and process in single pass (avoid double I/O)
+    with open(filepath, 'rb') as f:
+        raw_data = f.read()
+    encoding = chardet.detect(raw_data)['encoding']
+
     words = set()
-    with open(filepath, "r", encoding=encoding, errors='ignore') as file:
-        for line in tqdm(file, desc="Processing file"):
-            # remove any punctuation from the file
-            line = line.translate(str.maketrans("", "", string.punctuation))
-            # split the contents into a list of words
-            words_in_line = re.findall(r"[a-zA-Z0-9]+",line)
-            for word in words_in_line:
-                words.add(word)
+    # Process without tqdm per-line (batch progress instead)
+    text = raw_data.decode(encoding, errors='ignore')
+    for line in text.splitlines():
+        # remove any punctuation from the file
+        line = line.translate(str.maketrans("", "", string.punctuation))
+        # split the contents into a list of words
+        words_in_line = re.findall(r"[a-zA-Z0-9]+", line)
+        words.update(words_in_line)
     return words
 
 def main():
@@ -38,27 +36,21 @@ def main():
     # read the output file path
     outputfile = sys.argv[3]
 
-    with tqdm(total=3, desc="Processing...") as pbar:
+    with tqdm(total=2, desc="Processing...") as pbar:
         with Pool() as pool:
-            # process the input files in parallel
-            words1 = pool.apply(process_file, args=(filepath1,))
-            words2 = pool.apply(process_file, args=(filepath2,))
+            # process the input files in parallel (use map for true parallelism)
+            results = pool.map(process_file, [filepath1, filepath2])
         # combine the unique words from both files
-        words = sorted(words1.union(words2))
-        pbar.update(1)
-    # write the processed words to a new file
+        words = sorted(results[0].union(results[1]))
+        pbar.update(2)
+    # write the processed words to a new file (filter during write, not after)
+    valid_pattern = re.compile(r"^[a-zA-Z0-9_.,!?@#$%^&*()-=+ ]*$")
     with open(outputfile, "w", encoding='utf-8') as file:
         for word in tqdm(words, desc="Writing to file"):
-            file.write(word + " ")
-            file.write('\n')
-            pbar.update(1)
-    with io.open(outputfile, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    with open(outputfile, 'w') as f:
-        for line in tqdm(lines, desc="Cleaning file", unit="line"):
-            if line.strip() and re.search("^[a-zA-Z0-9_.,!?@#$%^&*()-=+ ]*$", line):
-                f.write(line.rstrip()+'\n')
-        pbar.update(1)
+            # Only write valid words (combine write + validation in single pass)
+            line = word + " \n"
+            if line.strip() and valid_pattern.search(line):
+                file.write(line.rstrip() + '\n')
         
 if __name__ == "__main__":
     main()

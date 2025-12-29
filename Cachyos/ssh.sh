@@ -10,7 +10,7 @@ ssh-keygen -t ed25519 -C "$EMAIL" -f ~/.ssh/id_git -q
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_git
 
-cat ~/.ssh/id_git.pub | wl-copy -r || cat ~/.ssh/id_git.pub | xclip -sel clipboard
+wl-copy -r < ~/.ssh/id_git.pub || xclip -sel clipboard < ~/.ssh/id_git.pub
 xdg-open
 echo "copy to to https://github.com/settings/keys and https://gitlab.com/-/user_settings/ssh_keys"
 

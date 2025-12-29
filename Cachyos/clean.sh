@@ -100,13 +100,18 @@ vacuum_sqlite() {
 
 # Clean SQLite databases in current working directory
 clean_sqlite_dbs() {
-  local total=0 db saved
-  while IFS= read -r -d '' db; do
-    [[ -f $db ]] || continue
-    saved=$(vacuum_sqlite "$db" || printf '0')
-    ((saved > 0)) && total=$((total + saved))
-  done < <(find0 . -maxdepth 2 -type f -name '*.sqlite*' -print0 2>/dev/null)
-  ((total > 0)) && printf '  %s\n' "${GRN}Vacuumed SQLite DBs, saved $((total / 1024)) KB${DEF}"
+  # Parallel vacuum (trades progress tracking for speed)
+  find0 . -maxdepth 2 -type f -name '*.sqlite*' -print0 2>/dev/null | xargs -0 -r -P"$(nproc)" -I{} bash -c '
+    db="$1"
+    [[ -f "$db" ]] || exit 0
+    # Skip if probably open
+    [[ -f "${db}-wal" || -f "${db}-journal" ]] && exit 0
+    # Validate SQLite database
+    head -c 16 "$db" 2>/dev/null | grep -qF "SQLite format 3" || exit 0
+    # Vacuum (suppress output for parallel execution)
+    sqlite3 "$db" "PRAGMA journal_mode=delete; VACUUM; PRAGMA optimize;" &>/dev/null || :
+  ' _ {}
+  [[ -n $(find . -maxdepth 2 -type f -name '*.sqlite*' 2>/dev/null | head -1) ]] && printf '  %s\n' "${GRN}Vacuumed SQLite DBs${DEF}"
 }
 
 # Wait for processes to exit, kill if timeout
@@ -291,20 +296,12 @@ clean_browsers() {
       for b in "$base"/*; do
         [[ -d $b ]] || continue
         while IFS= read -r prof; do
-          # Avoid subshell - use pushd/popd or explicit cd with restoration
-          [[ -d $prof ]] && {
-            cd "$prof" && clean_sqlite_dbs
-            cd - >/dev/null
-          }
+          [[ -d $prof ]] && (cd "$prof" && clean_sqlite_dbs)
         done < <(mozilla_profiles "$b")
       done
     else
       while IFS= read -r prof; do
-        # Avoid subshell - use pushd/popd or explicit cd with restoration
-        [[ -d $prof ]] && {
-          cd "$prof" && clean_sqlite_dbs
-          cd - >/dev/null
-        }
+        [[ -d $prof ]] && (cd "$prof" && clean_sqlite_dbs)
       done < <(mozilla_profiles "$base")
     fi
   done
@@ -327,11 +324,7 @@ clean_browsers() {
     rm -rf "$root"/{GraphiteDawnCache,ShaderCache,*_crx_cache} &>/dev/null || :
     while IFS= read -r profdir; do
       [[ -d $profdir ]] || continue
-      # Avoid subshell - use pushd/popd or explicit cd with restoration
-      {
-        cd "$profdir" && clean_sqlite_dbs
-        cd - >/dev/null
-      }
+      (cd "$profdir" && clean_sqlite_dbs)
       rm -rf "$profdir"/{Cache,GPUCache,"Code Cache","Service Worker",Logs} &>/dev/null || :
     done < <(chrome_profiles "$root")
   done
@@ -349,11 +342,7 @@ clean_mail_clients() {
   for base in "${mail_bases[@]}"; do
     [[ -d $base ]] || continue
     while IFS= read -r prof; do
-      # Avoid subshell - use pushd/popd or explicit cd with restoration
-      [[ -d $prof ]] && {
-        cd "$prof" && clean_sqlite_dbs
-        cd - >/dev/null
-      }
+      [[ -d $prof ]] && (cd "$prof" && clean_sqlite_dbs)
     done < <(mozilla_profiles "$base")
   done
 }

@@ -1,242 +1,88 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t' LC_ALL=C
+# wbfsmv.sh - Optimized Wii Backup Manager
+set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'; LC_ALL=C
 
-convert=1 trim=1 dry=0 verbose=0
-readonly REGION=${WBFSMV_REGION:-PAL}
-while (($#)) && [[ $1 == -* ]]; do
+# --- Config & Args ---
+CONV=1 TRIM=1 DRY=0 VERB=0 REGION=${WBFSMV_REGION:-PAL}
+while [[ ${1:-} == -* ]]; do
   case $1 in
-    -c | --convert) convert=1 ;;
-    --no-convert) convert=0 ;;
-    -t | --trim) trim=1 ;;
-    --no-trim) trim=0 ;;
-    -n | --dry-run) dry=1 ;;
-    -v | --verbose) verbose=1 ;;
-    -h | --help)
-      cat <<'EOF'
-Usage: wbfsmv.sh [options] [target_dir]
-Options:
-  -c, --convert      Convert to WBFS (default: on)
-      --no-convert   Do not convert
-  -t, --trim         Trim/scrub via wit (default: on)
-      --no-trim      Do not trim
-  -n, --dry-run      Show actions only
-  -v, --verbose      Print progress
-Environment:
-  WBFSMV_REGION      PAL|NTSC|JAP|KOR|FREE [default: PAL]
-Defaults: trim+convert on; outputs go through wit --wbfs --trim --psel=data,-update.
-EOF
-      exit 0
-      ;;
-    *)
-      printf 'Unknown arg: %s\n' "$1" >&2
-      exit 2
-      ;;
-  esac
-  shift
+    -c|--convert) CONV=1 ;; --no-convert) CONV=0 ;;
+    -t|--trim) TRIM=1 ;; --no-trim) TRIM=0 ;;
+    -n|--dry-run) DRY=1 ;; -v|--verbose) VERB=1 ;;
+    -h|--help) echo "Usage: ${0##*/} [-c|-t|-n|-v] [DIR]"; exit 0 ;;
+    *) echo "Err: $1" >&2; exit 2 ;;
+  esac; shift
 done
-TARGET=${1:-.}
-[[ -d $TARGET ]] || {
-  printf 'Not a directory: %s\n' "$TARGET" >&2
-  exit 2
-}
-command -v dd &>/dev/null || {
-  printf 'dd required\n' >&2
-  exit 1
-}
-have_wit=0
-command -v wit &>/dev/null && have_wit=1
-((trim || convert)) && ((!have_wit)) && {
-  printf 'wit required for trim/convert\n' >&2
-  exit 1
-}
-declare -rA region_map=([PAL]=EUROPE [NTSC]=USA [JAP]=JAPAN [KOR]=KOREA [FREE]=FREE)
-readonly wit_region=${region_map[${REGION^^}]:-EUROPE}
-log() { ((verbose)) && printf '%s\n' "$*" >&2 || :; }
-run() { ((dry)) && log "[dry] $*" || "$@"; }
+TGT=${1:-.}; [[ -d $TGT ]] || { echo "No dir: $TGT" >&2; exit 2; }
+# --- Deps & Vars ---
+command -v dd >/dev/null || { echo "Need dd" >&2; exit 1; }
+HAS_WIT=0; command -v wit >/dev/null && HAS_WIT=1
+((TRIM || CONV)) && ((!HAS_WIT)) && { echo "Need wit for trim/convert" >&2; exit 1; }
+declare -rA RMAP=([PAL]=EUROPE [NTSC]=USA [JAP]=JAPAN [KOR]=KOREA [FREE]=FREE)
+WREG=${RMAP[${REGION^^}]:-EUROPE}
+# --- Helpers ---
+log() { ((VERB)) && echo "$@" >&2 || :; }
+run() { ((DRY)) && log "[dry] $*" || "$@"; }
 get_id() {
-  local f=$1 id='' off=0
-  [[ ${f,,} == *.wbfs ]] && off=512
-  if ((have_wit)); then id=$(wit ID6 -- "$f" 2>/dev/null | awk 'NR==1{print;exit}' || printf ''); fi
-  [[ -z $id ]] && id=$(dd if="$f" bs=1 skip="$off" count=6 2>/dev/null | tr -dc 'A-Za-z0-9')
-  printf '%s' "${id^^}"
+  local f=$1 i s=0; [[ ${f,,} == *.wbfs ]] && s=512
+  ((HAS_WIT)) && i=$(wit ID6 -- "$f" 2>/dev/null | awk 'NR==1{print;exit}')
+  [[ -z ${i:-} ]] && i=$(dd if="$f" bs=1 skip=$s count=6 2>/dev/null | tr -dc 'A-Za-z0-9')
+  echo "${i^^}"
 }
-get_title() {
-  ((have_wit)) || return 0
-  wit dump -ll -- "$1" 2>/dev/null | awk -F': ' 'tolower($1)~/^(disc )?title[[:space:]]*:$/||tolower($1)~/^game title[[:space:]]*:$/ {gsub(/^[[:space:]]+|[[:space:]]+$/,"",$2);print $2;exit}'
+get_title() { ((HAS_WIT)) && wit dump -ll -- "$1" 2>/dev/null | awk -F': ' 'tolower($1)~/^(disc|game) title\s*$/{gsub(/^\s+|\s+$/,"",$2);print $2;exit}'; }
+clean() { sed -E 's/[[:space:]]*[\(\[]([A-Z][a-z](,[A-Z][a-z])+)[\)\]]//g; s/[[:space:]]*[\(\[](Europe|USA?|Japan|Asia|World|PAL|NTSC|Rev[[:space:]]*[0-9]*)[\)\]]//gi; s/[[:space:]]+(PAL|NTSC|Europe|USA?|Japan|Asia|World)$//gi; s/[[:space:]]+/ /g; s/^ //; s/ $//' <<<"${1//_/ }"; }
+set_reg() {
+  ((!HAS_WIT)) && return; local c; c=$(wit dump -ll -- "$1" 2>/dev/null | awk -F': ' '/^Region\s*:/{print $2;exit}')
+  [[ ${c^^} == "${WREG^^}" ]] || { log "Reg->$WREG: $1"; run wit edit --region "$WREG" -q -- "$1"; }
 }
-clean() {
-  local s=${1//_/ }
-  s=$(printf '%s' "$s" | sed -E '
-    s/[[:space:]]*\(([A-Z][a-z](,[A-Z][a-z])+)\)//g;
-    s/[[:space:]]*\[([A-Z][a-z](,[A-Z][a-z])+)\]//g;
-    s/[[:space:]]*\((Europe|USA?|Japan|Asia|World|PAL|NTSC|Rev[[:space:]]*[0-9]*)\)//gi;
-    s/[[:space:]]*\[(Europe|USA?|Japan|Asia|World|PAL|NTSC|Rev[[:space:]]*[0-9]*)\]//gi;
-    s/[[:space:]]+(PAL|NTSC|Europe|USA?|Japan|Asia|World)$//gi;
-    s/[[:space:]]+/ /g; s/^ //; s/ $//; s/[[:space:]\/-]+$//
-  ')
-  printf '%s' "$s"
-}
-set_region() {
-  ((have_wit)) || return 0
-  local f=$1 cur
-  cur=$(wit dump -ll -- "$f" 2>/dev/null | awk -F': ' '/^Region[[:space:]]*:/{print $2;exit}')
-  [[ ${cur^^} == "${wit_region^^}" ]] && return 0
-  log "set region $wit_region: $f"
-  run wit edit --region "$wit_region" -q -- "$f" || :
-}
-trim_game() {
-  log "trim: $1 -> $2"
-  run wit copy --wbfs --trim --psel=data,-update -q -- "$1" "$2"
-}
-readonly exts=(wbfs iso ciso wia wdf)
-is_game_ext() {
-  local f=${1,,} e
-  for e in "${exts[@]}"; do [[ $f == *."$e" ]] && return 0; done
-  return 1
-}
-process_file() {
-  local f=$1 id title name newdir ext base dest
-  is_game_ext "$f" || return 0
-  base=${f##*/}
-  if [[ $base =~ \[([A-Z0-9]{6})\] ]]; then
-    id=${BASH_REMATCH[1]}
-  else
-    id=$(get_id "$f")
-    [[ ${#id} -eq 6 ]] || {
-      log "skip (no ID): $f"
-      return 0
-    }
+trim_game() { log "Trim: $1->$2"; run wit copy --wbfs --trim --psel=data,-update -q -- "$1" "$2"; }
+is_game() { [[ $1 =~ \.(wbfs|iso|ciso|wia|wdf)$ ]]; }
+# --- Main Logic ---
+proc_file() {
+  local f=$1 id t n ndir ext dst
+  is_game "${f,,}" || return
+  if [[ ${f##*/} =~ \[([A-Z0-9]{6})\] ]]; then id=${BASH_REMATCH[1]}
+  else id=$(get_id "$f"); [[ ${#id} -eq 6 ]] || { log "Skip(NoID): $f"; return; }; fi
+  t=$(get_title "$f")
+  if [[ -n $t ]]; then n=$(clean "$t")
+  else n=$(clean "${f##*/}"); n=${n//\[$id\]/}; n=${n%.*}; fi
+  n=$(sed 's/^\s*//;s/\s*$//' <<<"$n"); [[ -n $n ]] || n="Unknown"
+  ndir="$TGT/$n [$id]"; ext=${f##*.}; ext=${ext,,}; dst="$ndir/$id.wbfs"
+  if ((TRIM && HAS_WIT)); then
+    run mkdir -p "$ndir"; trim_game "$f" "$dst" && { set_reg "$dst"; [[ $f -ef $dst ]] || run rm -f "$f"; } || log "Trim Fail"
+    return
   fi
-  title=$(get_title "$f")
-  if [[ -n $title ]]; then
-    name=$(clean "$title")
-  else
-    name=$(clean "${base%.*}")
-    name=${name//\[$id\]/}
-    name=$(printf '%s' "$name" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//')
-  fi
-  [[ -n $name ]] || name="Unknown"
-  newdir="$TARGET/${name} [${id}]"
-  ext=${f##*.}
-  ext=${ext,,}
-  dest="$newdir/${id}.wbfs"
-  if ((trim)) && ((have_wit)); then
-    log "file: $f -> $dest"
-    run mkdir -p -- "$newdir"
-    if trim_game "$f" "$dest"; then
-      set_region "$dest"
-      [[ $f -ef $dest ]] 2>/dev/null || {
-        log "removing original: $f"
-        run rm -f -- "$f"
-      }
-    else
-      log "trim failed, keeping original layout"
-    fi
-    return 0
-  fi
-  if [[ $ext == wbfs ]] && [[ $f -ef $dest ]] 2>/dev/null; then
-    set_region "$f"
-    log "skip (already ok): $f"
-    return 0
-  fi
-  log "file: $f -> $dest"
-  run mkdir -p -- "$newdir"
-  if ((convert)) && [[ $ext != wbfs ]] && ((have_wit)); then
-    if run wit copy --wbfs -q -- "$f" "$dest"; then
-      set_region "$dest"
-      log "converted, removing original: $f"
-      run rm -f -- "$f"
-    else
-      log "convert failed, moving as-is"
-      run mv -n -- "$f" "$newdir/${id}.${ext}"
-      set_region "$newdir/${id}.${ext}"
-    fi
-  else
-    local target_file="$newdir/${id}.${ext}"
-    run mv -n -- "$f" "$target_file"
-    set_region "$target_file"
-  fi
+  [[ $ext == wbfs && $f -ef $dst ]] && { set_reg "$f"; return; }
+  run mkdir -p "$ndir"
+  if ((CONV && HAS_WIT && ext != "wbfs")); then
+    run wit copy --wbfs -q "$f" "$dst" && { set_reg "$dst"; run rm -f "$f"; } || { run mv -n "$f" "$ndir/$id.$ext"; set_reg "$ndir/$id.$ext"; }
+  else run mv -n "$f" "$ndir/$id.$ext"; set_reg "$ndir/$id.$ext"; fi
 }
-process_dir() {
-  local d=$1 id='' g='' title name newdir base=${d##*/}
-  [[ $base =~ \[[A-Z0-9]{6}\] ]] && {
-    log "skip (already tagged): $d"
-    return 0
-  }
-  local e cand
-  for e in "${exts[@]}"; do
-    for cand in "$d"/*."$e"; do
-      [[ -f $cand ]] || continue
-      id=$(get_id "$cand")
-      [[ ${#id} -eq 6 ]] && {
-        g=$cand
-        break 2
-      }
-    done
+
+proc_dir() {
+  local d=$1 base=${d##*/} id g t n ndir f gid
+  [[ $base =~ \[[A-Z0-9]{6}\] ]] && return
+  for f in "$d"/*.{wbfs,iso,ciso,wia,wdf}; do
+    [[ -f $f ]] || continue; id=$(get_id "$f"); [[ ${#id} -eq 6 ]] && { g=$f; break; }
   done
-  [[ ${#id} -eq 6 ]] || {
-    log "skip (no game found): $d"
-    return 0
-  }
-  title=$(get_title "$g")
-  name=$(clean "${title:-$base}")
-  [[ -n $name ]] || name="Unknown"
-  newdir="$TARGET/${name} [${id}]"
-  [[ $d -ef $newdir ]] 2>/dev/null && ((!trim)) && {
-    log "skip (already ok): $d"
-    return 0
-  }
-  if [[ -e $newdir ]] && ! [[ $d -ef $newdir ]]; then
-    log "skip (target exists): $newdir"
-    return 0
-  fi
-  if ! [[ $d -ef $newdir ]]; then
-    log "dir: $d -> $newdir"
-    run mv -n -- "$d" "$newdir"
-  fi
-  local gf gid gbase gext gdest tmp
-  for e in "${exts[@]}"; do
-    for gf in "$newdir"/*."$e"; do
-      [[ -f $gf ]] || continue
-      gid=$(get_id "$gf")
-      [[ ${#gid} -eq 6 ]] || continue
-      gbase=${gf##*/}
-      gext=${gf##*.}
-      gext=${gext,,}
-      gdest="$newdir/${gid}.wbfs"
-      if ((trim)) && ((have_wit)); then
-        if [[ $gf -ef $gdest ]] 2>/dev/null; then
-          tmp="$newdir/.trim_tmp_${gid}.wbfs"
-          if trim_game "$gf" "$tmp"; then
-            run mv -f -- "$tmp" "$gdest"
-            set_region "$gdest"
-          else run rm -f -- "$tmp" || :; fi
-        else
-          if trim_game "$gf" "$gdest"; then
-            set_region "$gdest"
-            run rm -f -- "$gf"
-          fi
-        fi
-      elif ((convert)) && [[ $gext != wbfs ]] && ((have_wit)); then
-        if run wit copy --wbfs -q -- "$gf" "$gdest"; then
-          set_region "$gdest"
-          run rm -f -- "$gf"
-        fi
-      elif [[ $gbase != "${gid}.${gext}" ]]; then
-        run mv -n -- "$gf" "$newdir/${gid}.${gext}"
-        set_region "$newdir/${gid}.${gext}"
-      else
-        set_region "$gf"
-      fi
-    done
+  [[ -z ${g:-} ]] && return
+  t=$(get_title "$g"); n=$(clean "${t:-$base}"); [[ -n $n ]] || n="Unknown"
+  ndir="$TGT/$n [$id]"; [[ -d $ndir && ! $d -ef $ndir ]] && return
+  [[ $d -ef $ndir ]] || { log "Dir: $d->$ndir"; run mv -n "$d" "$ndir"; }
+  for f in "$ndir"/*.{wbfs,iso,ciso,wia,wdf}; do
+    [[ -f $f ]] || continue; gid=$(get_id "$f"); [[ ${#gid} -eq 6 ]] || continue
+    local dst="$ndir/$gid.wbfs" ext=${f##*.}; ext=${ext,,}
+    if ((TRIM && HAS_WIT)); then
+      if [[ $f -ef $dst ]]; then
+        trim_game "$f" "$ndir/.tmp_$gid" && { run mv -f "$ndir/.tmp_$gid" "$dst"; set_reg "$dst"; } || run rm -f "$ndir/.tmp_$gid"
+      else trim_game "$f" "$dst" && { set_reg "$dst"; run rm -f "$f"; }; fi
+    elif ((CONV && HAS_WIT && ext != "wbfs")); then
+      run wit copy --wbfs -q "$f" "$dst" && { set_reg "$dst"; run rm -f "$f"; }
+    elif [[ ${f##*/} != "$gid.$ext" ]]; then
+      run mv -n "$f" "$ndir/$gid.$ext"; set_reg "$ndir/$gid.$ext"
+    else set_reg "$f"; fi
   done
 }
-for entry in "$TARGET"/*; do
-  [[ -e $entry ]] || continue
-  [[ -f $entry ]] && process_file "$entry"
-  [[ -d $entry ]] && process_dir "$entry"
-done
-log "done"
+
+# --- Exec ---
+for x in "$TGT"/*; do [[ -f $x ]] && proc_file "$x"; [[ -d $x ]] && proc_dir "$x"; done; log "Done"

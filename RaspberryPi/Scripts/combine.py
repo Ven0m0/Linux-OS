@@ -48,9 +48,8 @@ def main():
     with open(outputfile, "w", encoding='utf-8') as file:
         for word in tqdm(words, desc="Writing to file"):
             # Only write valid words (combine write + validation in single pass)
-            line = word + " \n"
-            if line.strip() and valid_pattern.search(line):
-                file.write(line.rstrip() + '\n')
+            if word and valid_pattern.search(word):
+                file.write(word + '\n')
         
 if __name__ == "__main__":
     main()

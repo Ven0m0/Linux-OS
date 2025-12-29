@@ -50,7 +50,7 @@
 ```bash
 ffmpeg -i input.mp4 -c:v libsvtav1 \
   -preset 3 -crf 26 -g 600 -pix_fmt yuv420p10le \
-  -svtav1-params "tune=0:film-grain=6:enable-qm=1:qm-min=0:enable-variance-boost=1:tf-strength=1:sharpness=1:tile-columns=1:tile-rows=0:enable-dlf=2:scd=1" \
+  -svtav1-params "tune=0:film-grain=6:enable-qm=1:qm-min=0:enable-variance-boost=1:tf-strength=1:sharpness=-2:tile-columns=1:tile-rows=0:enable-dlf=2:scd=1" \
   -vf "hqdn3d=1.5:1.5:6:6,scale='if(gte(iw,ih),min(1920,iw),-2)':'if(gte(iw,ih),-2,min(1080,ih))',deband,format=yuv420p10le" \
   -c:a libopus -b:a 128k -ac 2 -rematrix_maxval 1.0 \
   -hide_banner -y -nostdin -loglevel error -stats \

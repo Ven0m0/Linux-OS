@@ -1,142 +1,90 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail
-shopt -s nullglob globstar
-export LC_ALL=C
-IFS=$'\n\t'
-# optimize_apk.sh: Decode, strip, shrink, repackage, align, sign, and recompress an APK.
-# Usage: ./optimize_apk.sh input.apk output.apk
-# Requirements (hard): apktool, zipalign, apksigner, 7z, unzip
-# Optional: d2j-dex2jar.sh, proguard.jar, dx, java, zopflipng, pngcrush, jpegoptim, zstd
+# optimize_apk.sh - Advanced APK Optimizer (Resources, Align, Sign)
+set -euo pipefail; shopt -s nullglob; IFS=$'\n\t'
+export LC_ALL=C LANG=C
+
+# --- Config ---
 KEYSTORE_PATH="${KEYSTORE_PATH:-mykey.keystore}"
 KEY_ALIAS="${KEY_ALIAS:-myalias}"
 KEYSTORE_PASS="${KEYSTORE_PASS:-changeit}"
 KEY_PASS="${KEY_PASS:-changeit}"
-readonly APKTOOL="apktool"
-readonly ZIPALIGN="zipalign"
-readonly APKSIGNER="apksigner"
-readonly SEVENZIP="7z"
-readonly UNZIP="unzip"
-readonly DEX2JAR="d2j-dex2jar.sh"
-readonly PROGUARD_JAR="${PROGUARD_JAR:-proguard.jar}"
-readonly DX="dx"
-readonly ZOPFLIPNG="zopflipng"
-readonly PNGCRUSH="pngcrush"
-readonly JPEGOPTIM="jpegoptim"
-readonly ZSTD="zstd"
-log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*"; }
-err() { printf '[ERROR] %s\n' "$*" >&2; }
-die() {
-  err "$1"
-  exit "${2:-1}"
-}
-has() { command -v -- "$1" &>/dev/null; }
+TMP_DIR=$(mktemp -d); trap 'rm -rf "$TMP_DIR"' EXIT
 
-check_tools() {
-  local missing=0
-  for tool in "$APKTOOL" "$ZIPALIGN" "$APKSIGNER" "$SEVENZIP" "$UNZIP"; do
-    if ! has "$tool"; then
-      err "Required tool not found: $tool"
-      missing=1
-    fi
-  done
-  [[ $missing -eq 1 ]] && die "Missing required tools"
-}
-INPUT_APK="${1:-}"
-OUTPUT_APK="${2:-}"
-[[ -n $INPUT_APK && -n $OUTPUT_APK ]] || die "Usage: $0 input.apk output.apk"
-[[ -f $INPUT_APK ]] || die "Input APK not found: $INPUT_APK"
-WORKDIR="$(mktemp -d)"
-cleanup() { [[ -n ${WORKDIR:-} && -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR"; }
-trap cleanup EXIT
-trap 'err "failed at line ${LINENO}"' ERR
+# --- Helpers ---
+R=$'\e[31m' G=$'\e[32m' B=$'\e[34m' X=$'\e[0m'
+log() { printf "%b[%s]%b %s\n" "$B" "$(date +%T)" "$X" "$*"; }
+die() { printf "%b[ERR]%b %s\n" "$R" "$X" "$*" >&2; exit 1; }
+has() { command -v "$1" >/dev/null; }
+req() { has "$1" || die "Missing dependency: $1"; }
 
-check_tools
-SRC_DIR="$WORKDIR/src"
-STRIPPED_APK="$WORKDIR/stripped.apk"
-REPACKAGED_APK="$WORKDIR/repackaged.apk"
-ALIGNED_APK="$WORKDIR/aligned.apk"
-SIGNED_APK="$WORKDIR/signed.apk"
-FINAL_DIR="$WORKDIR/final_unpack"
-OUTPUT_TMP="$WORKDIR/output.apk"
-
-log "[1/9] Decoding APK with apktool..."
-"$APKTOOL" d "$INPUT_APK" -o "$SRC_DIR" >/dev/null
-
-log "[2/9] Stripping resources..."
-# Remove heavy density buckets, specific locales, and raw/assets payloads.
-for d in drawable-xxhdpi drawable-xxxhdpi values-fr; do
-  rm -rf "$SRC_DIR/res/$d"
-done
-for rem in "$SRC_DIR"/res/{drawable-*,values-*}; do
-  [[ -e $rem ]] || continue
-  [[ $rem =~ -en|-zh ]] && rm -rf "$rem"
-done
-find "$SRC_DIR/res" -maxdepth 1 -type d -name "drawable-*" ! -name "drawable-mdpi" -exec rm -rf {} + 2>/dev/null || :
-rm -rf "$SRC_DIR/res/raw" "$SRC_DIR/assets" 2>/dev/null || :
-
-log "[3/9] Rebuilding stripped APK..."
-"$APKTOOL" b "$SRC_DIR" -o "$STRIPPED_APK" >/dev/null
-
-log "[4/9] Optional ProGuard shrink..."
-if has "$DEX2JAR" && [[ -f $PROGUARD_JAR ]] && has java; then
-  "$DEX2JAR" "$STRIPPED_APK" -o "$WORKDIR/app.jar" >/dev/null || die "DEX to JAR conversion failed"
-  cat >"$WORKDIR/proguard-rules.pro" <<'EOR'
--keep public class * { public *; }
--dontwarn **
--dontobfuscate
--printmapping mapping.txt
-EOR
-  java -jar "$PROGUARD_JAR" \
-    -injars "$WORKDIR/app.jar" \
-    -outjars "$WORKDIR/app_proguard.jar" \
-    -libraryjars "${JAVA_HOME:-/usr}/lib/rt.jar" \
-    -include "$WORKDIR/proguard-rules.pro" >/dev/null
-  if has "$DX"; then
-    "$DX" --dex --output="$WORKDIR/classes.dex" "$WORKDIR/app_proguard.jar" >/dev/null
-    "$UNZIP" -q "$STRIPPED_APK" -d "$WORKDIR/apk_unpack"
-    cp "$WORKDIR/classes.dex" "$WORKDIR/apk_unpack/"
-    (cd "$WORKDIR/apk_unpack" && zip -q -r "$REPACKAGED_APK" .)
+# --- Logic ---
+optimize_images() {
+  local dir="$1"
+  log "Optimizing assets (Parallel)..."
+  
+  # PNG Optimization
+  if has zopflipng; then
+    find "$dir" -type f -name "*.png" -print0 | xargs -0 -P$(nproc) -I{} zopflipng -y -m --lossless --filters=01234mepb "{}" "{}" >/dev/null 2>&1
+  elif has pngcrush; then
+    find "$dir" -type f -name "*.png" -print0 | xargs -0 -P$(nproc) -I{} sh -c 'pngcrush -q -rem alla -brute "$1" "$1.tmp" && mv "$1.tmp" "$1"' _ "{}"
   else
-    log "dx not found; skipping ProGuard reintegration"
-    cp "$STRIPPED_APK" "$REPACKAGED_APK"
+    log "Skipping PNGs (zopflipng/pngcrush not found)"
   fi
-else
-  log "dex2jar/proguard/java missing; skipping shrink"
-  cp "$STRIPPED_APK" "$REPACKAGED_APK"
-fi
 
-log "[5/9] Aligning APK..."
-"$ZIPALIGN" -f -p 4 "$REPACKAGED_APK" "$ALIGNED_APK" >/dev/null
+  # JPG Optimization
+  if has jpegoptim; then
+    find "$dir" -type f \( -name "*.jpg" -o -name "*.jpeg" \) -print0 | xargs -0 -P$(nproc) jpegoptim --strip-all --quiet
+  fi
+}
 
-log "[6/9] Signing APK..."
-if [[ -f $KEYSTORE_PATH ]]; then
-  "$APKSIGNER" sign \
-    --ks "$KEYSTORE_PATH" --ks-key-alias "$KEY_ALIAS" \
-    --ks-pass pass:"$KEYSTORE_PASS" --key-pass pass:"$KEY_PASS" \
-    --out "$SIGNED_APK" \
-    "$ALIGNED_APK" >/dev/null
-else
-  log "Keystore not found at $KEYSTORE_PATH; leaving APK unsigned"
-  cp "$ALIGNED_APK" "$SIGNED_APK"
-fi
-log "[7/9] Unpacking for resource recompression..."
-"$UNZIP" -q "$SIGNED_APK" -d "$FINAL_DIR"
+repack() {
+  local src="$1" dst="$2"
+  log "Repacking to $dst..."
+  pushd "$src" >/dev/null
+  # APKs must be standard ZIP (Deflate). 7z provides better compression ratios than 'zip'.
+  # -mx9: Ultra compression, -mm=Deflate: Required for Android
+  req 7z; 7z a -tzip -mx=9 -mm=Deflate "$dst" . >/dev/null
+  popd >/dev/null
+}
 
-log "[8/9] Recompressing assets..."
-if has "$ZOPFLIPNG"; then
-  find "$FINAL_DIR/res" -type f -name '*.png' -print0 | xargs -0 "$ZOPFLIPNG" -m --lossless --iterations=15 --filters=01234mepb &>/dev/null || :
-elif has "$PNGCRUSH"; then
-  find "$FINAL_DIR/res" -type f -name '*.png' -exec "$PNGCRUSH" -q -rem alla -brute {} {}.opt \; -exec mv {}.opt {} + 2>/dev/null || :
-fi
-if has "$JPEGOPTIM"; then
-  find "$FINAL_DIR/res" -type f \( -name '*.jpg' -o -name '*.jpeg' \) -exec "$JPEGOPTIM" --strip-all {} + 2>/dev/null || :
-fi
-if has "$ZSTD"; then
-  find "$FINAL_DIR/assets" -type f -print0 | xargs -0 -I{} sh -c '[[ -f "{}" ]] || exit 0; zstd -19 "{}" -o "{}.zst" && mv "{}.zst" "{}"' &>/dev/null || :
-fi
+main() {
+  [[ $# -lt 2 ]] && die "Usage: ${0##*/} <input.apk> <output.apk>"
+  local input="$1" output="$2"
+  [[ -f $input ]] || die "Input not found: $input"
 
-log "[9/9] Repacking final APK..."
-(cd "$FINAL_DIR" && "$SEVENZIP" a -tzip -mx=9 "$OUTPUT_TMP" . >/dev/null)
-mv "$OUTPUT_TMP" "$OUTPUT_APK"
-log "✅ Optimized APK created at: $OUTPUT_APK"
+  # 1. Dependency Check
+  req unzip; req zipalign; req apksigner; req 7z
+
+  # 2. Extract
+  log "Extracting $input..."
+  unzip -q "$input" -d "$TMP_DIR/payload"
+
+  # 3. Optimize Resources
+  optimize_images "$TMP_DIR/payload/res"
+
+  # 4. Repackage
+  local unaligned="$TMP_DIR/unaligned.apk"
+  repack "$TMP_DIR/payload" "$unaligned"
+
+  # 5. Align (Must be done before signing for v2+ scheme)
+  log "Aligning..."
+  local aligned="$TMP_DIR/aligned.apk"
+  zipalign -f -p 4 "$unaligned" "$aligned"
+
+  # 6. Sign
+  log "Signing..."
+  if [[ -f $KEYSTORE_PATH ]]; then
+    apksigner sign --ks "$KEYSTORE_PATH" \
+      --ks-key-alias "$KEY_ALIAS" \
+      --ks-pass "pass:$KEYSTORE_PASS" \
+      --key-pass "pass:$KEY_PASS" \
+      --out "$output" "$aligned"
+    log "Signed successfully: $output"
+  else
+    log "Keystore ($KEYSTORE_PATH) not found. Copying unsigned aligned APK."
+    cp "$aligned" "$output"
+    log "Warning: Output is UNALIGNED/UNSIGNED (v2 signature missing)"
+  fi
+}
+
+main "$@"

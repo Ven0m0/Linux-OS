@@ -100,8 +100,17 @@ main() {
   update_maintenance() {
     log "🔄${BLU} System Maintenance${DEF}"
     local cmd
-    for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do has "$cmd" && sudo "$cmd" & done
-    wait
+    local -a pids=()
+    for cmd in fc-cache-reload update-desktop-database update-ca-trust update-pciids update-smart-drivedb; do
+      if has "$cmd"; then
+        sudo "$cmd" &
+        pids+=("$!")
+      fi
+    done
+    local pid
+    for pid in "${pids[@]}"; do
+      wait "$pid" || :
+    done
     has fwupdmgr && {
       export DISABLE_SSL_STRICT=1
       sudo fwupdmgr refresh -y &>/dev/null

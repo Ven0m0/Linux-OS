@@ -255,3 +255,6 @@ github_conf
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 .idea/
+
+.gemini/
+gha-creds-*.json

@@ -62,5 +62,6 @@ git clone https://github.com/samoshkin/docker-reclaim-disk-space && chmod +x ./d
 
 ## Build OS
 
-- [https://github.com/OctoPrint/CustoPiZer](https://github.com/OctoPrint/CustoPiZer)
+## - [https://github.com/OctoPrint/CustoPiZer](https://github.com/OctoPrint/CustoPiZer)
+
 -

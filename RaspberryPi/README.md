@@ -6,7 +6,7 @@ Raspberry Pi Related Stuff
 
 ## Folder Structure
 
-```
+```text
 RaspberryPi/
 ├── docs/              # Documentation and reference files
 │   ├── Commands.txt   # Common command reference

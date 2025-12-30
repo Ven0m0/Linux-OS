@@ -103,11 +103,11 @@ Provide concrete examples with clear labels:
 ### Common Patterns to Include
 
 1. **Naming Conventions**: How to name variables, functions, classes, files
-2. **Code Organization**: File structure, module organization, import order
-3. **Error Handling**: Preferred error handling patterns
-4. **Dependencies**: How to manage and document dependencies
-5. **Comments and Documentation**: When and how to document code
-6. **Version Information**: Target language/framework versions
+1. **Code Organization**: File structure, module organization, import order
+1. **Error Handling**: Preferred error handling patterns
+1. **Dependencies**: How to manage and document dependencies
+1. **Comments and Documentation**: When and how to document code
+1. **Version Information**: Target language/framework versions
 
 ## Patterns to Follow
 
@@ -173,8 +173,8 @@ function getUser(id: string): User { // Implementation } \`\`\`
 Before finalizing instruction files:
 
 1. **Test with Copilot**: Try the instructions with actual prompts in VS Code
-2. **Verify Examples**: Ensure code examples are correct and run without errors
-3. **Check Glob Patterns**: Confirm `applyTo` patterns match intended files
+1. **Verify Examples**: Ensure code examples are correct and run without errors
+1. **Check Glob Patterns**: Confirm `applyTo` patterns match intended files
 
 ## Example Structure
 

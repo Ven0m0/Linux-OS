@@ -421,7 +421,7 @@ extract(){
 
 ```bash
 # Extract code blocks from MarkDown file.
-$ extract ~/projects/pure-bash/README.md '```bash' '```'
+extract ~/projects/pure-bash/README.md '```bash' '```'
 # Output here...
 ```
 
@@ -462,9 +462,9 @@ $ extract ~/projects/pure-bash/README.md '```bash' '```'
 ### Expansion
 
 | Parameter | What does it do? |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------- |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `${VAR:OFFSET}` | Remove first `N` chars from variable. |
-| `${VAR:OFFSET:LENGTH}` | Get substring from `N` character to `N` character.
+| `${VAR:OFFSET:LENGTH}` | Get substring from `N` character to `N` character. |
 
 <br>
 

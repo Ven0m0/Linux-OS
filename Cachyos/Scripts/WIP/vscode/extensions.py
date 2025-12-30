@@ -4,13 +4,13 @@ import shutil
 import subprocess
 
 
-def command_required(cmd:str):
+def command_required(cmd: str):
     if shutil.which(cmd) is None:
         print(f"!! Command '{cmd}' is required.")
         exit(1)
 
 
-def run_cmd(cmd:list, text:bool=False) -> subprocess.CompletedProcess:
+def run_cmd(cmd: list, text: bool = False) -> subprocess.CompletedProcess:
     try:
         return subprocess.run(cmd, capture_output=True, text=text, check=True)
     except subprocess.CalledProcessError as e:
@@ -22,12 +22,29 @@ def main():
     command_required("code")
 
     p = argparse.ArgumentParser(description="Manage VS Code extensions.")
-    p.add_argument("-i", "--install", action="store_true", help="Install extensions from extensions.txt")
-    p.add_argument("-u", "--update", action="store_true", help="Update extensions.txt with installed ones")
-    p.add_argument("-o", "--overwrite", action="store_true", help="Overwrite extensions.txt (implies --update)")
+    p.add_argument(
+        "-i",
+        "--install",
+        action="store_true",
+        help="Install extensions from extensions.txt",
+    )
+    p.add_argument(
+        "-u",
+        "--update",
+        action="store_true",
+        help="Update extensions.txt with installed ones",
+    )
+    p.add_argument(
+        "-o",
+        "--overwrite",
+        action="store_true",
+        help="Overwrite extensions.txt (implies --update)",
+    )
     args = p.parse_args()
 
-    extensions_filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "extensions.txt")
+    extensions_filepath = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "extensions.txt"
+    )
 
     if args.install and not os.path.exists(extensions_filepath):
         print(f"!! File not found: '{extensions_filepath}'")
@@ -46,7 +63,7 @@ def main():
         cmd = ["code"]
         for ext in extensions_from_file:
             cmd.extend(["--install-extension", ext, "--force"])
-        run_cmd(cmd);
+        run_cmd(cmd)
 
     # Update / Overwrite
     if args.update or args.overwrite:

@@ -65,10 +65,10 @@ sleepy() { read -rt "${1:-1}" -- <> <(:) &>/dev/null || :; }
 ## Transformations
 
 1. **Compact syntax:** `() {` → `(){`; `> file` → `>file`; `2>&1 >/dev/null` → `&>/dev/null`
-2. **Modernize:** `[ ... ]` → `[[ ... ]]` (when safe)
-3. **Inline:** Functions ≤6 lines, ≤2 call sites, no complex flow
-4. **Dedupe:** Extract repeated blocks >3 lines into functions
-5. **JSON/YAML:** Use `jq`/`yq` parsers, not grep/awk/sed
+1. **Modernize:** `[ ... ]` → `[[ ... ]]` (when safe)
+1. **Inline:** Functions ≤6 lines, ≤2 call sites, no complex flow
+1. **Dedupe:** Extract repeated blocks >3 lines into functions
+1. **JSON/YAML:** Use `jq`/`yq` parsers, not grep/awk/sed
 
 ## Forbidden Patterns
 

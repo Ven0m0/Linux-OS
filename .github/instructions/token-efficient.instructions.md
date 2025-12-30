@@ -81,7 +81,7 @@ Goal: Compress output (-50% tokens); preserve quality/correctness.
 
 ### Report
 
-```
+```text
 scope: status; metric » ∵ cause » act: 1,2,3
 ```
 
@@ -89,7 +89,7 @@ Example: `auth: ❌; latency +200ms » ∵ N+1 queries » opt: 1.batch, 2.cache,
 
 ### Plan
 
-```
+```text
 plan » A » B » risk: X (sev: H) ∴ mit
 ```
 
@@ -97,7 +97,7 @@ Example: `deploy » build » test » risk: db migration (sev: H) ∴ backup + ro
 
 ### CI/CD
 
-```
+```text
 build ✅; test ❌ (n=3) » fix: <file:line>
 ```
 

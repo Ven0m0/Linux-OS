@@ -3,9 +3,9 @@
 ## Control Hierarchy
 
 1. User commands override all rules
-2. Edit > Create (modify minimal lines)
-3. Subtraction > Addition (remove before adding)
-4. Align with existing patterns in repo
+1. Edit > Create (modify minimal lines)
+1. Subtraction > Addition (remove before adding)
+1. Align with existing patterns in repo
 
 ## Style & Format
 

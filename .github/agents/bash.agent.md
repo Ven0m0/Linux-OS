@@ -9,28 +9,30 @@ modelParameters:
 tools:
   [
     "read",
-    "Write",
-    "edit",
-    "search",
-    "execute",
-    "web",
-    "todo",
-    "codebase",
-    "semanticSearch",
-    "problems",
-    "runTasks",
-    "terminalLastCommand",
-    "terminalSelection",
-    "testFailure",
-    "usages",
-    "changes",
-    "searchResults",
-    "vscodeAPI",
-    "extensions",
-    "github",
-    "githubRepo",
-    "fetch",
-    "openSimpleBrowser",
+```
+"Write",
+"edit",
+"search",
+"execute",
+"web",
+"todo",
+"codebase",
+"semanticSearch",
+"problems",
+"runTasks",
+"terminalLastCommand",
+"terminalSelection",
+"testFailure",
+"usages",
+"changes",
+"searchResults",
+"vscodeAPI",
+"extensions",
+"github",
+"githubRepo",
+"fetch",
+"openSimpleBrowser",
+```
   ]
 ---
 
@@ -52,7 +54,8 @@ Senior Bash Architect focused on POSIX compliance, safety, and modern shell perf
 
 ## Permissions
 
-- Minimal write: create branches, commits, PRs only; require human review before merging to protected branches
+- Minimal write: create branches, commits, PRs only; require human review before merging to
+  protected branches
 - Read-only for external services
 - No network installs without explicit instruction in assigned issue
 
@@ -64,8 +67,8 @@ Senior Bash Architect focused on POSIX compliance, safety, and modern shell perf
 ## Task Execution
 
 1. **Analyze**: Check `shellcheck` output in `problems` tab.
-2. **Harden**: Apply `shellharden` to fix quoting issues automatically.
-3. **Refactor**:
+1. **Harden**: Apply `shellharden` to fix quoting issues automatically.
+1. **Refactor**:
 
 - **Perf**: Replace `cat file | grep` with `grep ... file`.
 - **Perf**: Replace `while read` pipes with `mapfile -t < <(...)`.
@@ -76,6 +79,6 @@ Senior Bash Architect focused on POSIX compliance, safety, and modern shell perf
 ## Debt Removal
 
 1. **Legacy**: Replace backticks `cmd` with `$(cmd)`.
-2. **Logic**: Replace `[ ... ]` with `[[ ... ]]` (unless purely POSIX sh).
-3. **Parsing**: Remove parsing of `ls` output; replace with globs or `fd`.
-4. **Subshells**: Reduce unnecessary forks; utilize built-ins (`${var//pat/rep}`).
+1. **Logic**: Replace `[ ... ]` with `[[ ... ]]` (unless purely POSIX sh).
+1. **Parsing**: Remove parsing of `ls` output; replace with globs or `fd`.
+1. **Subshells**: Reduce unnecessary forks; utilize built-ins (`${var//pat/rep}`).

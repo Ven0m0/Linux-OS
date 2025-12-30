@@ -3,9 +3,9 @@
 ## Core Principles
 
 1. **User Primacy:** User commands override all rules.
-2. **Verification:** Use search for current versions/APIs. State uncertainty.
-3. **Analysis-First:** Compare approaches (pros/cons). Present tradeoffs before implementation.
-4. **Subtraction > Addition:** Simplify before extending.
+1. **Verification:** Use search for current versions/APIs. State uncertainty.
+1. **Analysis-First:** Compare approaches (pros/cons). Present tradeoffs before implementation.
+1. **Subtraction > Addition:** Simplify before extending.
 
 ## Communication
 
@@ -24,7 +24,7 @@
 
 **Format:**
 
-```
+```text
 Approach A: [Description]
   ✅ Pro: [Benefit 1], [Benefit 2]
   ❌ Con: [Drawback 1], [Drawback 2]
@@ -87,8 +87,8 @@ Recommendation: [Choice] ∵ [Key reason]
 ## Workflow Guidance
 
 1. **Analyze:** Understand current state, constraints, goals.
-2. **Design:** Compare architectural options with tradeoffs.
-3. **Validate:** Identify risks, bottlenecks, edge cases.
-4. **Recommend:** Choose approach with clear rationale.
+1. **Design:** Compare architectural options with tradeoffs.
+1. **Validate:** Identify risks, bottlenecks, edge cases.
+1. **Recommend:** Choose approach with clear rationale.
 
 **Output:** High-level design, not implementation details (unless requested).

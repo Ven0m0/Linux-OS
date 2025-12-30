@@ -141,9 +141,9 @@ flowchart TD
 Memory Bank updates occur when:
 
 1. Discovering new project patterns
-2. After implementing significant changes
-3. When user requests with **update memory bank** (MUST review ALL files)
-4. When context needs clarification
+1. After implementing significant changes
+1. When user requests with **update memory bank** (MUST review ALL files)
+1. When context needs clarification
 
 ```mermaid
 flowchart TD
@@ -292,10 +292,10 @@ subtask table provides a quick visual reference of current status, while the pro
 details of the work process. When providing updates, I should:
 
 1. Update the overall task status and completion percentage
-2. Update the status of relevant subtasks with the current date
-3. Add a new entry to the progress log with specific details about what was accomplished, challenges encountered, and
+1. Update the status of relevant subtasks with the current date
+1. Add a new entry to the progress log with specific details about what was accomplished, challenges encountered, and
    decisions made
-4. Update the task status in the \_index.md file to reflect current progress
+1. Update the task status in the \_index.md file to reflect current progress
 
 These detailed progress updates ensure that after memory resets, I can quickly understand the exact state of each task
 and continue work without losing context.
@@ -305,23 +305,23 @@ and continue work without losing context.
 When you request **add task** or use the command **create task**, I will:
 
 1. Create a new task file with a unique Task ID in the tasks/ folder
-2. Document our thought process about the approach
-3. Develop an implementation plan
-4. Set an initial status
-5. Update the \_index.md file to include the new task
+1. Document our thought process about the approach
+1. Develop an implementation plan
+1. Set an initial status
+1. Update the \_index.md file to include the new task
 
 For existing tasks, the command **update task [ID]** will prompt me to:
 
 1. Open the specific task file
-2. Add a new progress log entry with today's date
-3. Update the task status if needed
-4. Update the \_index.md file to reflect any status changes
-5. Integrate any new decisions into the thought process
+1. Add a new progress log entry with today's date
+1. Update the task status if needed
+1. Update the \_index.md file to reflect any status changes
+1. Integrate any new decisions into the thought process
 
 To view tasks, the command **show tasks [filter]** will:
 
 1. Display a filtered list of tasks based on the specified criteria
-2. Valid filters include:
+1. Valid filters include:
 
 - **all** - Show all tasks regardless of status
 - **active** - Show only tasks with "In Progress" status

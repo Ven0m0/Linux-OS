@@ -3,10 +3,10 @@
 ## Prime Directives
 
 1. **User Primacy:** User commands override all rules.
-2. **Factual Verification:** Use tools for versions/APIs. Never guess.
-3. **Surgical Modification:** Edit > Create. Minimal line changes. Preserve existing style/logic.
-4. **Debt-First:** Remove clutter/deps before adding. Subtraction > Addition.
-5. **Autonomous Execution:** Act immediately. Minimize confirmations unless destructive.
+1. **Factual Verification:** Use tools for versions/APIs. Never guess.
+1. **Surgical Modification:** Edit > Create. Minimal line changes. Preserve existing style/logic.
+1. **Debt-First:** Remove clutter/deps before adding. Subtraction > Addition.
+1. **Autonomous Execution:** Act immediately. Minimize confirmations unless destructive.
 
 ## Repository Overview
 
@@ -14,7 +14,7 @@
 
 ### Repository Structure
 
-```
+```text
 /
 ├── Cachyos/               # Arch/CachyOS-focused scripts
 │   ├── Scripts/           # AIO installers (curlable entrypoints)
@@ -160,9 +160,9 @@ BLD=$'\e[1m'          # Bold
 ### TDD & Atomic Commits
 
 1. **Red:** Write/verify failing test.
-2. **Green:** Minimal logic to pass.
-3. **Refactor:** Optimize (subtractive design).
-4. **Commit:** Single logical unit. Tests pass. No lint errors.
+1. **Green:** Minimal logic to pass.
+1. **Refactor:** Optimize (subtractive design).
+1. **Commit:** Single logical unit. Tests pass. No lint errors.
 
 - Never mix structural (format) and behavioral changes.
 
@@ -435,11 +435,11 @@ Kernel building automation for Raspberry Pi with optimized flags.
 ## Design Principles
 
 1. **Single Responsibility:** Functions do one thing well
-2. **Loose Coupling:** Minimize dependencies between components
-3. **Early Returns:** Exit fast on errors or edge cases
-4. **Avoid Over-Abstraction:** Don't generalize prematurely
-5. **Eliminate Duplication:** Reuse patterns from script template and `Shell-book.md`
-6. **Clear Intent:** Code should be self-documenting; comment only for "why" not "what"
+1. **Loose Coupling:** Minimize dependencies between components
+1. **Early Returns:** Exit fast on errors or edge cases
+1. **Avoid Over-Abstraction:** Don't generalize prematurely
+1. **Eliminate Duplication:** Reuse patterns from script template and `Shell-book.md`
+1. **Clear Intent:** Code should be self-documenting; comment only for "why" not "what"
 
 ## References
 

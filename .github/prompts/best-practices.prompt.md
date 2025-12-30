@@ -7,9 +7,9 @@ Analyze code vs lang-spec standards (PEP8, ES6+, etc) for qual/maint.
 ## Rules
 
 1. **ID**: Lang/Framework.
-2. **Apply**: Offl guides/idioms.
-3. **Context**: Respect exist patterns.
-4. **Output**: Actionable > Nitpicks.
+1. **Apply**: Offl guides/idioms.
+1. **Context**: Respect exist patterns.
+1. **Output**: Actionable > Nitpicks.
 
 ## Checks
 

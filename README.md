@@ -21,7 +21,7 @@ A curated collection of battle-tested automation scripts for system setup, optim
 
 ## 📂 Repository Structure
 
-```
+```text
 Linux-OS/
 ├── Cachyos/              # Arch/CachyOS system scripts
 │   ├── Scripts/          # Curlable AIO installers
@@ -55,16 +55,19 @@ Linux-OS/
 ### Arch Linux / CachyOS
 
 **System Update** (packages, flatpak, rust, python, npm, etc.)
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/up.sh | bash
 ```
 
 **System Cleanup** (package cache, orphans, logs, privacy hardening)
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/clean.sh | bash
 ```
 
 **Mirror Ranking** (optimize download speeds)
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rank.sh | bash
 ```
@@ -72,16 +75,19 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/Rank.s
 ### Raspberry Pi
 
 **System Update**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/RaspberryPi/update.sh | bash
 ```
 
 **System Cleanup**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/RaspberryPi/PiClean.sh | bash
 ```
 
 **F2FS Image Creation** (convert Raspbian/DietPi images to F2FS)
+
 ```bash
 wget https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/RaspberryPi/raspi-f2fs.sh
 chmod +x raspi-f2fs.sh
@@ -126,6 +132,7 @@ sudo ./raspi-f2fs.sh -i dietpi -d /dev/sdX -s
 ## 🛠️ Features
 
 ### Arch/CachyOS Scripts
+
 - **Multi-source updates**: pacman/paru/yay, flatpak, rustup, npm, pip/uv, mise, topgrade
 - **Aggressive caching cleanup**: Package cache, build artifacts, logs, browser data
 - **Privacy hardening**: Browser history/cache/cookies cleanup, SQLite optimization
@@ -134,6 +141,7 @@ sudo ./raspi-f2fs.sh -i dietpi -d /dev/sdX -s
 - **Service debloating**: Remove unnecessary systemd services and packages
 
 ### Raspberry Pi Scripts
+
 - **F2FS root filesystem**: Better performance and longevity on SD cards/USB
 - **APT optimization**: Parallel downloads, compression, auto-upgrade config
 - **Modern tooling**: fd, ripgrep, bat, eza, zoxide, navi, yt-dlp
@@ -146,11 +154,13 @@ sudo ./raspi-f2fs.sh -i dietpi -d /dev/sdX -s
 ## 📋 Requirements
 
 ### Arch/CachyOS
+
 - **Base**: bash 5.0+, coreutils, sudo
 - **Package managers**: pacman (+ optional: paru/yay for AUR)
 - **Optional**: flatpak, rustup, npm, python/uv, topgrade, mise
 
 ### Raspberry Pi
+
 - **Base**: bash 5.0+, coreutils, sudo, rsync
 - **OS**: Debian-based (Raspbian, Raspberry Pi OS, DietPi)
 - **For raspi-f2fs.sh**: f2fs-tools, parted, xz-utils, fzf (optional)
@@ -172,6 +182,7 @@ sudo ./raspi-f2fs.sh -i dietpi -d /dev/sdX -s
 ## 📖 Usage Examples
 
 ### Example 1: Setup fresh Arch system
+
 ```bash
 # Clone repo
 git clone https://github.com/Ven0m0/Linux-OS.git
@@ -192,6 +203,7 @@ git clone https://aur.archlinux.org/paru.git && cd paru && makepkg -si
 ```
 
 ### Example 2: Flash DietPi to Raspberry Pi with F2FS
+
 ```bash
 # Download script
 wget https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/RaspberryPi/raspi-f2fs.sh
@@ -205,6 +217,7 @@ sudo ./raspi-f2fs.sh
 ```
 
 ### Example 3: Raspberry Pi initial setup
+
 ```bash
 # Clone repo on Pi
 git clone https://github.com/Ven0m0/Linux-OS.git
@@ -221,6 +234,7 @@ cd .. && ./update.sh
 ```
 
 ### Example 4: One-liner updates
+
 ```bash
 # Arch: Update everything
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/Cachyos/up.sh | bash
@@ -235,6 +249,7 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/RaspberryPi/Pi
 ## 🧪 Development
 
 ### Code Standards
+
 - **Strict mode**: `set -euo pipefail`, `shopt -s nullglob globstar`
 - **Linting**: shellcheck (severity=style), shfmt (2-space indent)
 - **Testing**: bats-core for unit tests, manual integration testing
@@ -242,13 +257,16 @@ curl -fsSL https://raw.githubusercontent.com/Ven0m0/Linux-OS/main/RaspberryPi/Pi
 - **See**: [CLAUDE.md](CLAUDE.md) for detailed guidelines
 
 ### Helper Functions
+
 All scripts include standardized helpers (from [Shell-book.md](Shell-book.md)):
+
 - `has()` - Command existence check
 - `log/msg/warn/err/die()` - Logging hierarchy
 - `dbg()` - Debug logging (enabled via `DEBUG=1`)
 - Trans flag color palette (LBLU/PNK/BWHT)
 
 ### Tool Hierarchy (with fallbacks)
+
 | Task | Primary | Fallback Chain |
 |:-----|:--------|:---------------|
 | Find | `fd` | `fdfind` → `find` |
@@ -264,11 +282,12 @@ All scripts include standardized helpers (from [Shell-book.md](Shell-book.md)):
 ## 🤝 Contributing
 
 Contributions welcome! Please follow:
+
 1. **Bash standards**: See [CLAUDE.md](CLAUDE.md) for style guide
-2. **Testing**: Run `shellcheck` and test on target systems
-3. **Atomic commits**: One logical change per commit
-4. **Descriptive messages**: Explain "why" not "what"
-5. **Documentation**: Update README and inline comments
+1. **Testing**: Run `shellcheck` and test on target systems
+1. **Atomic commits**: One logical change per commit
+1. **Descriptive messages**: Explain "why" not "what"
+1. **Documentation**: Update README and inline comments
 
 ---
 

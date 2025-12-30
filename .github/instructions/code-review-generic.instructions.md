@@ -44,12 +44,12 @@ When performing a code review, prioritize issues in the following order:
 When performing a code review, follow these principles:
 
 1. **Be specific**: Reference exact lines, files, and provide concrete examples
-2. **Provide context**: Explain WHY something is an issue and the potential impact
-3. **Suggest solutions**: Show corrected code when applicable, not just what's wrong
-4. **Be constructive**: Focus on improving the code, not criticizing the author
-5. **Recognize good practices**: Acknowledge well-written code and smart solutions
-6. **Be pragmatic**: Not every suggestion needs immediate implementation
-7. **Group related comments**: Avoid multiple comments about the same topic
+1. **Provide context**: Explain WHY something is an issue and the potential impact
+1. **Suggest solutions**: Show corrected code when applicable, not just what's wrong
+1. **Be constructive**: Focus on improving the code, not criticizing the author
+1. **Recognize good practices**: Acknowledge well-written code and smart solutions
+1. **Be pragmatic**: Not every suggestion needs immediate implementation
+1. **Group related comments**: Avoid multiple comments about the same topic
 
 ## Code Quality Standards
 
@@ -277,7 +277,7 @@ stmt.setString(1, email);
 
 **Reference:** OWASP SQL Injection Prevention Cheat Sheet
 
-```
+```text
 
 #### Important Issue
 ```markdown
@@ -296,14 +296,22 @@ Add test case:
 test('should process full refund when order is cancelled', () => {
     const order = createOrder({ total: 100, status: 'cancelled' });
 
-    const result = processPayment(order, { type: 'refund' });
+```
 
-    expect(result.refundAmount).toBe(100);
-    expect(result.status).toBe('refunded');
+const result = processPayment(order, { type: 'refund' });
+
+```text
+
+```
+
+expect(result.refundAmount).toBe(100);
+expect(result.status).toBe('refunded');
+
+```text
 });
 ```
 
-```
+```text
 
 #### Suggestion
 ```markdown
@@ -319,10 +327,14 @@ Simpler code is easier to maintain, debug, and test.
 // Instead of nested ifs:
 if (user) {
     if (user.isActive) {
-        if (user.hasPermission('write')) {
-            // do something
-        }
-    }
+```
+
+if (user.hasPermission('write')) {
+// do something
+}
+}
+
+```text
 }
 
 // Consider guard clauses:
@@ -332,7 +344,7 @@ if (!user || !user.isActive || !user.hasPermission('write')) {
 // do something
 ```
 
-```
+```text
 
 ## Review Checklist
 

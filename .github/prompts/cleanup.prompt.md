@@ -7,17 +7,17 @@ Reduce tokens via dedup/pruning; maintain info density.
 ## Analysis
 
 1. **Audit:** `find . -name "CLAUDE-*.md" ...` (Target >20KB).
-2. **Scope:** REMOVED/DEPRECATED, generated/tmp, duplicates.
+1. **Scope:** REMOVED/DEPRECATED, generated/tmp, duplicates.
 
 ## Strategy (Priority Order)
 
 1. **Prune (Highest):** Delete obsolete/tmp files. Clean refs.
-2. **Consolidate (High):** Merge overlapping (Sec, Perf, Arch) → `*-comprehensive.md`.
+1. **Consolidate (High):** Merge overlapping (Sec, Perf, Arch) → `*-comprehensive.md`.
 
 - _Reqs:_ Keep impl details, snippets, troubleshooting.
 
 1. **Streamline (Med):** Summarize `CLAUDE.md`. Remove verbose arch/setup.
-2. **Archive (Med):** Move resolved/historic → `archive/`. Index in `archive/README.md`.
+1. **Archive (Med):** Move resolved/historic → `archive/`. Index in `archive/README.md`.
 
 ## Standards
 

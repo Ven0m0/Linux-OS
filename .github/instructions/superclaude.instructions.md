@@ -23,7 +23,7 @@ category: workflow
 
 **Usage:**
 
-```
+```text
 /sc:implement <desc> [--type component|api|service|feature] [--framework react|vue|express] [--safe] [--with-tests]
 ```
 
@@ -53,7 +53,7 @@ category: workflow
 
 **Usage:**
 
-```
+```text
 /sc:improve <target> [--type quality|performance|maintainability|style] [--safe] [--interactive]
 ```
 
@@ -83,7 +83,7 @@ category: workflow
 
 **Usage:**
 
-```
+```text
 /sc:cleanup <scope> [--type unused|duplicates|format|all] [--safe] [--preview]
 ```
 
@@ -113,7 +113,7 @@ category: workflow
 
 **Usage:**
 
-```
+```text
 /sc:git <action> [options]
 ```
 

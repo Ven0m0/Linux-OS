@@ -11,7 +11,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.1
       - name: Run AI inference
         id: inference
         uses: actions/ai-inference@v2

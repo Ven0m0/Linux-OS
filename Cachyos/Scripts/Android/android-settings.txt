@@ -1,6 +1,6 @@
-# Structured bulk settings for device apply
-# Blank lines and # comments are ignored
-# Sections are labels for readability only
+# Android Optimization Settings - Execute via android-optimize.sh
+# Sections: [render], [performance], [audio], [battery], [input], [network], [webview], [doze], [samsung]
+# Use: ./android-optimize.sh settings [file] [safe|aggressive|samsung]
 
 [render]
 setprop debug.composition.type dyn
@@ -20,6 +20,8 @@ device_config put graphics render_thread_priority high
 device_config put activity_manager force_high_refresh_rate true
 device_config put activity_manager enable_background_cpu_boost true
 device_config put activity_manager use_compaction true
+device_config put activity_manager bg_current_drain_auto_restrict_abusive_apps_enabled 1
+device_config put app_hibernation app_hibernation_enabled 1
 
 [audio]
 settings put global audio.offload.video true
@@ -30,17 +32,20 @@ settings put global media.stagefright.thumbnail.prefer_hw_codecs true
 
 [battery]
 settings put global dynamic_power_savings_enabled 1
-settings put global adaptive_battery_management_enabled 0
+settings put global adaptive_battery_management_enabled 1
 settings put global app_auto_restriction_enabled 1
 settings put global cached_apps_freezer enabled
+settings put global wifi_power_save 1
+settings put global wifi_scan_throttle_enabled 1
 cmd power suppress-ambient-display true
 cmd power set-fixed-performance-mode-enabled false
 cmd power set-adaptive-power-saver-enabled true
+settings put global battery_saver_constants "advertise_is_enabled=true,datasaver_disabled=false,enable_night_mode=true,launch_boost_disabled=true,vibration_disabled=true,animation_disabled=false,soundtrigger_disabled=true,fullbackup_deferred=true,keyvaluebackup_deferred=true,firewall_disabled=false,gps_mode=0,adjust_brightness_disabled=false,adjust_brightness_factor=1.5,force_all_apps_standby=true,force_background_check=true,optional_sensors_disabled=true,aod_disabled=false,quick_doze_enabled=true"
 
 [input]
-settings put global animator_duration_scale 0.0
-settings put global transition_animation_scale 0.0
-settings put global window_animation_scale 0.0
+settings put global animator_duration_scale 0.5
+settings put global transition_animation_scale 0.5
+settings put global window_animation_scale 0.5
 wm disable-blur true
 
 [network]
@@ -49,18 +54,56 @@ settings put global data_saver_mode 1
 settings put global mobile_data_always_on 0
 settings put global wifi_scan_always_enabled 0
 settings put global ble_scan_always_enabled 0
+settings put system nearby_scanning_enabled 0
 settings put global network_avoid_bad_wifi 1
 
-[webview_angle]
+[webview]
 cmd webviewupdate set-webview-implementation com.android.webview.beta
 settings put global angle_gl_driver_all_angle 1
 settings put global angle_debug_package com.android.angle
 settings put global angle_gl_driver_selection_values angle
 settings put global angle_gl_driver_selection_pkgs com.android.webview,com.android.webview.beta
 
+[doze]
+device_config put device_idle light_after_inactive_to 0
+device_config put device_idle light_pre_idle_to 30000
+device_config put device_idle light_idle_to 15000
+device_config put device_idle light_idle_factor 2
+device_config put device_idle light_max_idle_to 60000
+device_config put device_idle inactive_to 30000
+device_config put device_idle sensing_to 0
+device_config put device_idle locating_to 0
+device_config put device_idle motion_inactive_to 0
+device_config put device_idle idle_after_inactive_to 0
+device_config put device_idle quick_doze_delay_to 10000
+
 [misc]
 setprop debug.debuggerd.disable 1
-settings put secure USAGE_METRICS_UPLOAD_ENABLED 0
+settings put secure usage_metrics_upload_enabled 0
 settings put system send_security_reports 0
 device_config put systemui window_shadow 0
 device_config put systemui window_blur 0
+
+[aggressive]
+settings put global low_power 1
+settings put global battery_saver_constants "advertise_is_enabled=true,datasaver_disabled=false,enable_night_mode=true,launch_boost_disabled=true,vibration_disabled=true,animation_disabled=true,soundtrigger_disabled=true,fullbackup_deferred=true,keyvaluebackup_deferred=true,firewall_disabled=true,gps_mode=0,adjust_brightness_disabled=false,adjust_brightness_factor=2,force_all_apps_standby=true,force_background_check=true,optional_sensors_disabled=true,aod_disabled=false,quick_doze_enabled=true"
+device_config put device_idle inactive_to 15000
+device_config put device_idle quick_doze_delay_to 5000
+settings put global animator_duration_scale 0.0
+settings put global transition_animation_scale 0.0
+settings put global window_animation_scale 0.0
+
+[samsung]
+settings put system master_motion 0
+settings put system motion_engine 0
+settings put system mcf_continuity 0
+settings put system adaptive_fast_charging 1
+settings put system p_battery_charging_efficiency 1
+settings put global sem_enhanced_cpu_responsiveness 0
+settings put global ram_expand_size 0
+settings put global restricted_device_performance 1,1
+settings put secure vibration_on 0
+settings put secure refresh_rate_mode 1
+settings put secure min_refresh_rate 10.0
+pm disable-user --user 0 com.samsung.android.game.gos
+pm disable-user --user 0 com.samsung.android.game.gamelab

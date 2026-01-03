@@ -10,7 +10,7 @@ R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
 die() { printf "%b[ERR]%b %s\n" "$R" "$X" "$*" >&2; cleanup; exit 1; }
 log() { printf "%b[INF]%b %s\n" "$B" "$X" "$*"; }
 warn() { printf "%b[WRN]%b %s\n" "$Y" "$X" "$*" >&2; }
-has() { command -v "$1" >/dev/null; }
+has() { command -v "$1" &>/dev/null; }
 cleanup() {
   set +e; [[ -n ${LOCK_FD:-} ]] && exec {LOCK_FD}>&-
   for d in "${MOUNTS[@]}"; do umount -lf "$d" 2>/dev/null; done
@@ -49,9 +49,10 @@ shrink_img() {
   local num; num=$(awk -F: 'END{print $1}' <<<"$p_out")
   LOOP=$(losetup -f --show -o "$start" "$IMG") || die "Loop setup failed"
   e2fsck -pf "$LOOP" || e2fsck -fy "$LOOP" || die "FS check failed"
-  local sz_blk sz_cur sz_min
-  read -r _ _ _ sz_blk < <(tune2fs -l "$LOOP" | grep "Block size")
-  read -r _ _ _ sz_cur < <(tune2fs -l "$LOOP" | grep "Block count")
+  local sz_blk sz_cur sz_min tune_out
+  tune_out=$(tune2fs -l "$LOOP")
+  read -r _ _ _ sz_blk < <(grep "Block size" <<<"$tune_out")
+  read -r _ _ _ sz_cur < <(grep "Block count" <<<"$tune_out")
   sz_min=$(resize2fs -P "$LOOP" 2>/dev/null | awk -F: '{print $2}')
   sz_min=$((sz_min + 5000)) # Safety buffer
   if ((sz_cur > sz_min)); then
@@ -98,8 +99,8 @@ clone() {
   log "Configuring boot..."
   local buuid; buuid=$(blkid -s PARTUUID -o value "$BP")
   local ruuid; ruuid=$(blkid -s PARTUUID -o value "$RP")
-  sed -i "s/root=[^ ]*/root=PARTUUID=$ruuid rootfstype=f2fs/" "$WD/t/b/cmdline.txt"
-  sed -i 's/init=.*init_resize.sh//' "$WD/t/b/cmdline.txt"
+  sed -i -e "s/root=[^ ]*/root=PARTUUID=$ruuid rootfstype=f2fs/" \
+         -e 's/init=.*init_resize.sh//' "$WD/t/b/cmdline.txt"
   echo -e "proc /proc proc defaults 0 0\nPARTUUID=$buuid /boot vfat defaults 0 2\nPARTUUID=$ruuid / f2fs defaults,noatime 0 1" > "$WD/t/r/etc/fstab"
   ((SSH)) && touch "$WD/t/b/ssh" && log "SSH enabled"
 }

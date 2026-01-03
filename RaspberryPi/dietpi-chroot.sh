@@ -106,7 +106,7 @@ shrink_image() {
   parted_out=$(parted -ms "$IMG_FILE" unit B print) || die "parted failed"
   partnum=$(awk -F: 'END{print $1}' <<<"$parted_out")
   partstart=$(awk -F: 'END{print $2}' <<<"$parted_out" | tr -d B)
-  if parted -s "$IMG_FILE" unit B print | grep -q "$partstart" | grep -q logical; then
+  if parted -s "$IMG_FILE" unit B print | grep -qE "${partstart}.*logical"; then
     parttype="logical"
   else
     parttype="primary"

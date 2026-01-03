@@ -5,7 +5,7 @@ export LC_ALL=C LANG=C
 
 # --- Config & Helpers ---
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' M=$'\e[35m' C=$'\e[36m' X=$'\e[0m'
-has() { command -v "$1" >/dev/null; }
+has() { command -v "$1" &>/dev/null; }
 try() { "$@" >/dev/null 2>&1 || true; }
 log() { printf "%b[+]%b %s\n" "$G" "$X" "$*"; }
 warn() { printf "%b[!]%b %s\n" "$Y" "$X" "$*" >&2; }
@@ -39,7 +39,12 @@ clean_pkgs() {
   
   if has snap; then
     log "Cleaning Snap..."
-    set +e; snap list --all | awk '/disabled/{print $1, $3}' | while read -r n v; do sudo snap remove "$n" --revision="$v"; done; set -e
+    local -a snaps
+    mapfile -t snaps < <(snap list --all | awk '/disabled/{print $1 "|" $3}')
+    for s in "${snaps[@]}"; do
+      IFS='|' read -r n v <<<"$s"
+      try sudo snap remove "$n" --revision="$v"
+    done
   fi
 }
 

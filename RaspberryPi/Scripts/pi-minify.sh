@@ -102,8 +102,8 @@ EOF
 }
 purge_docs() {
   log "Purging documentation, man pages, locales (keep en_US)"
-  run find /usr/share/doc/ -depth -type f ! -name copyright -delete 2>/dev/null || :
-  run find /usr/share/doc/ -name '*.gz' -o -name '*.pdf' -o -name '*.tex' -delete 2>/dev/null || :
+  # Single find pass: delete non-copyright files and compressed docs, then empty dirs
+  run find /usr/share/doc/ -depth \( -type f ! -name copyright \) -delete 2>/dev/null || :
   run find /usr/share/doc/ -type d -empty -delete 2>/dev/null || :
   sudo rm -rf /usr/share/{groff,info,lintian,linda,man}/* /var/cache/man/* 2>/dev/null || :
   local keep_locale=en_US
@@ -115,20 +115,19 @@ purge_packages() {
   log "Removing doc packages, localepurge install"
   has localepurge || sudo apt-get install -y localepurge
   run localepurge
-  local doc_pkgs
-  mapfile -t doc_pkgs < <(dpkg --list | awk '/-doc$/ {print $2}')
+  # Cache dpkg output once for multiple filters (avoid 3 separate dpkg calls)
+  local dpkg_out current_kernel doc_pkgs old_kernels orphaned
+  mapfile -t dpkg_out < <(dpkg -l)
+  mapfile -t doc_pkgs < <(printf '%s\n' "${dpkg_out[@]}" | awk '/-doc$/ {print $2}')
   ((${#doc_pkgs[@]} > 0)) && sudo apt-get purge -y "${doc_pkgs[@]}" || :
   sudo apt-get purge -y '*texlive*' 2>/dev/null || :
-  local current_kernel
   current_kernel=$(uname -r)
-  local old_kernels
-  mapfile -t old_kernels < <(dpkg --list | awk -v ck="$current_kernel" '$2 ~ /^linux-image-.*-generic$/ && $2 != ck {print $2}')
+  mapfile -t old_kernels < <(printf '%s\n' "${dpkg_out[@]}" | awk -v ck="$current_kernel" '$2 ~ /^linux-image-.*-generic$/ && $2 != ck {print $2}')
   ((${#old_kernels[@]} > 0)) && {
     log "Purging old kernels (keeping ${current_kernel})"
     sudo apt-get purge -y "${old_kernels[@]}"
   }
-  local orphaned
-  mapfile -t orphaned < <(dpkg -l | awk '/^rc/ {print $2}')
+  mapfile -t orphaned < <(printf '%s\n' "${dpkg_out[@]}" | awk '/^rc/ {print $2}')
   ((${#orphaned[@]} > 0)) && sudo apt-get purge -y "${orphaned[@]}" || :
 }
 purge_aggressive() {

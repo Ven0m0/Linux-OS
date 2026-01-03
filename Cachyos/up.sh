@@ -5,7 +5,7 @@ export LC_ALL=C LANG=C
 
 # --- Config & Helpers ---
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
-has() { command -v "$1" >/dev/null; }
+has() { command -v "$1" &>/dev/null; }
 try() { "$@" >/dev/null 2>&1 || true; }
 log() { printf "%b[+]%b %s\n" "$G" "$X" "$*"; }
 info() { printf "%b[*]%b %s\n" "$B" "$X" "$*"; }

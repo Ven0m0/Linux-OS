@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # rustbuild.sh - Optimized Rust Build & PGO/BOLT Orchestrator
-set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
 export LC_ALL=C LANG=C
 
 # --- Config & Helpers ---
@@ -10,7 +12,10 @@ ARGS=() CRATES=()
 
 R=$'\e[31m' G=$'\e[32m' B=$'\e[34m' X=$'\e[0m'
 log() { printf "%b[+]%b %s\n" "$B" "$X" "$*"; }
-die() { printf "%b[!]%b %s\n" "$R" "$X" "$*" >&2; exit 1; }
+die() {
+  printf "%b[!]%b %s\n" "$R" "$X" "$*" >&2
+  exit 1
+}
 has() { command -v "$1" >/dev/null; }
 run() { ((DRY)) && log "[DRY] $*" || "$@"; }
 
@@ -40,7 +45,7 @@ setup_flags() {
 build_pgo() {
   local stage=$1
   log "PGO Stage: $stage"
-  
+
   if [[ $stage == "instrument" ]]; then
     # Stage 1: Instrumentation
     run cargo pgo build "${ARGS[@]}"
@@ -48,11 +53,11 @@ build_pgo() {
   elif [[ $stage == "optimize" ]]; then
     # Stage 2: Optimization
     [[ -d "pgo-data" ]] || die "No PGO data found. Run stage 1 first."
-    
+
     # Merge profiles (handled by cargo-pgo, but explicit check is good)
     log "Optimizing with PGO data..."
     run cargo pgo build --merge "${ARGS[@]}"
-    
+
     if ((BOLT)); then
       log "Applying BOLT optimization..."
       has llvm-bolt || die "llvm-bolt missing"
@@ -83,24 +88,31 @@ EOF
 # --- Main ---
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -r|--release) ARGS+=("--release") ;;
-    --pgo) PGO="$2"; shift ;;
+    -r | --release) ARGS+=("--release") ;;
+    --pgo)
+      PGO="$2"
+      shift
+      ;;
     --bolt) BOLT=1 ;;
     --mold) MOLD=1 ;;
     --clean) CLEAN=1 ;;
     --dry) DRY=1 ;;
-    -h|--help) usage ;;
+    -h | --help) usage ;;
     -*) ARGS+=("$1") ;;
     *) CRATES+=("$1") ;;
-  esac; shift
+  esac
+  shift
 done
 
 main() {
   check_deps
   setup_flags
-  
-  ((CLEAN)) && { log "Cleaning..."; run cargo clean; }
-  
+
+  ((CLEAN)) && {
+    log "Cleaning..."
+    run cargo clean
+  }
+
   if ((PGO == 1)); then
     build_pgo "instrument"
   elif ((PGO == 2)); then
@@ -108,7 +120,7 @@ main() {
   else
     build_normal
   fi
-  
+
   log "Done."
 }
 

@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' X=$'\e[0m'
-has(){ command -v -- "$1" &>/dev/null; }
-log(){ printf '%b[*]%b %s\n' "$G" "$X" "$*"; }
-die(){ printf '%b[!]%b %s\n' "$R" "$X" "$*" >&2; exit "${2:-1}"; }
+has() { command -v -- "$1" &>/dev/null; }
+log() { printf '%b[*]%b %s\n' "$G" "$X" "$*"; }
+die() {
+  printf '%b[!]%b %s\n' "$R" "$X" "$*" >&2
+  exit "${2:-1}"
+}
 
 # Backend: Termux (rish) vs PC (adb)
 if [[ -d /data/data/com.termux ]]; then
@@ -16,9 +20,9 @@ else
   has adb || die "Install android-tools"
   ADB="adb shell"
 fi
-ash(){ $ADB "$@"; }
+ash() { $ADB "$@"; }
 
-cmd_compile(){
+cmd_compile() {
   local mode="${1:-speed-profile}" target="${2:-all}"
   log "Compiling ($target) mode=$mode..."
   case "$target" in
@@ -27,38 +31,45 @@ cmd_compile(){
     select)
       for app in com.android.chrome com.google.android.youtube com.twitter.android com.instagram.android; do
         ash cmd package compile -m speed -f "$app" &>/dev/null || true
-      done ;;
+      done
+      ;;
   esac
   log "Compilation complete"
 }
 
-cmd_clean(){
+cmd_clean() {
   log "Trimming caches..."
   ash pm trim-caches 999G
   local wa="/sdcard/Android/media/com.whatsapp/WhatsApp/Media"
-  ash "[ -d '$wa' ]" && { log "Cleaning WhatsApp (>30d)..."; ash "find '$wa' -type f -mtime +30 -delete" 2>/dev/null || true; }
+  ash "[ -d '$wa' ]" && {
+    log "Cleaning WhatsApp (>30d)..."
+    ash "find '$wa' -type f -mtime +30 -delete" 2>/dev/null || true
+  }
 }
 
-cmd_settings(){
+cmd_settings() {
   local file="${1:-android-settings.txt}" mode="${2:-safe}"
   [[ -f $file ]] || die "Settings file not found: $file"
   log "Applying settings from $file (mode=$mode)..."
-  
+
   local skip_aggressive=0
   [[ $mode == "safe" ]] && skip_aggressive=1
-  
+
   while IFS= read -r line; do
     [[ $line =~ ^# || -z $line ]] && continue
-    [[ $line =~ ^\[(aggressive|samsung)\] ]] && { [[ $skip_aggressive -eq 1 ]] && continue || { read -r line; continue; }; }
-    [[ $line =~ ^\[.*\] ]] && continue  # Skip section headers
-    
+    [[ $line =~ ^\[(aggressive|samsung)\] ]] && { [[ $skip_aggressive -eq 1 ]] && continue || {
+      read -r line
+      continue
+    }; }
+    [[ $line =~ ^\[.*\] ]] && continue # Skip section headers
+
     # Execute command directly
     ash "$line" 2>/dev/null || true
-  done < "$file"
+  done <"$file"
   log "Settings applied"
 }
 
-cmd_doze(){
+cmd_doze() {
   local mode="${1:-safe}"
   log "Optimizing Doze ($mode)..."
   local -A cfg=(
@@ -66,14 +77,17 @@ cmd_doze(){
     [light_idle_factor]=2 [light_max_idle_to]=60000 [sensing_to]=0
     [locating_to]=0 [motion_inactive_to]=0 [idle_after_inactive_to]=0
   )
-  [[ $mode == "aggressive" ]] && cfg[inactive_to]=15000 cfg[quick_doze_delay_to]=5000 || { cfg[inactive_to]=30000; cfg[quick_doze_delay_to]=10000; }
-  
+  [[ $mode == "aggressive" ]] && cfg[inactive_to]=15000 cfg[quick_doze_delay_to]=5000 || {
+    cfg[inactive_to]=30000
+    cfg[quick_doze_delay_to]=10000
+  }
+
   for k in "${!cfg[@]}"; do ash "device_config put device_idle $k ${cfg[$k]}"; done
   ash dumpsys deviceidle enable
   ash dumpsys deviceidle force-idle
 }
 
-usage(){
+usage() {
   cat <<'EOF'
 Usage: android-optimize.sh [COMMAND] [OPTIONS]
 Commands:

@@ -33,7 +33,7 @@ def main() -> None:
     words2 = process_file(filepath2)
     combined = sorted(words1 | words2)
 
-    valid_words = [w for w in combined if w and VALID_WORD_PATTERN.match(w)]
+    valid_words = combined
 
     Path(outputfile).write_text("\n".join(valid_words) + "\n", encoding="utf-8")
     print(f"✓ Wrote {len(valid_words)} unique words to {outputfile}")

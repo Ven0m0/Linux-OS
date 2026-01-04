@@ -1,9 +1,8 @@
 name: Claude PR Review
 on:
   pull_request: {types: [opened, synchronize]}
-
 jobs:
-  claude-review:
+  review:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -19,10 +18,11 @@ jobs:
           claude_code_oauth_token: ${{secrets.CLAUDE_CODE_OAUTH_TOKEN}}
           anthropic_api_key: ${{secrets.ANTHROPIC_API_KEY}}
           prompt: |
-            REPO: ${{github.repository}}
-            PR: ${{github.event.pull_request.number}}
+            Review PR#${{github.event.pull_request.number}} in ${{github.repository}}.
             Review: code quality, bugs, performance, security.
             Use CLAUDE.md for style. Comment via `gh pr comment`.
           claude_args: |
+            --agentic
+            --max-iterations 25
             --mcp-config '{"mcpServers":{"sequential-thinking":{"command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"]}}}'
             --allowed-tools "mcp__sequential-thinking__sequentialthinking,Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(npm install),Bash(npm run build),Bash(npm run lint),Bash(npm run test)"

@@ -4,7 +4,7 @@
 
 : "${XDG_CONFIG_HOME:=$HOME/.config}" "${XDG_DATA_HOME:=$HOME/.local/share}"
 VERSION="2.0" CONFIG="$XDG_CONFIG_HOME/profile-cleaner.conf"
-[[ -f "$CONFIG" ]] && . "$CONFIG"
+[[ -f $CONFIG ]] && . "$CONFIG"
 if [[ ${COLORS:-dark} == "dark" ]]; then
   BLD="\e[1m" RED="\e[1;31m" GRN="\e[1;32m" YLW="\e[1;33m" NRM="\e[0m"
 else

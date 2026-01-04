@@ -141,9 +141,9 @@ main() {
   local mode="all"
   while [[ $# -gt 0 ]]; do
     case $1 in
-      -s|--sys) mode="sys" ;; -a|--apps) mode="apps" ;;
-      -d|--dev) mode="dev" ;; -m|--maint) mode="maint" ;;
-      -h|--help) usage ;; *) die "Unknown arg: $1" ;;
+      -s | --sys) mode="sys" ;; -a | --apps) mode="apps" ;;
+      -d | --dev) mode="dev" ;; -m | --maint) mode="maint" ;;
+      -h | --help) usage ;; *) die "Unknown arg: $1" ;;
     esac
     shift
   done

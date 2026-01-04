@@ -40,7 +40,7 @@ select_dev() {
 prep_src() {
   WD=$(mktemp -d)
   IMG="$WD/src.img"
-  [[ "$SRC" == "dietpi" ]] && SRC="$DIETPI_URL"
+  [[ $SRC == "dietpi" ]] && SRC="$DIETPI_URL"
   if [[ $SRC =~ ^https?:// ]]; then
     # Security: Enforce HTTPS for remote downloads
     if [[ ! $SRC =~ ^https:// ]]; then

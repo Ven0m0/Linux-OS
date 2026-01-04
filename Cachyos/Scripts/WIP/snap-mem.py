@@ -22,6 +22,7 @@ import os
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -93,6 +94,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     p.add_argument(
         "--no-tui", action="store_true", help="Disable TUI prompts; require flags"
+    )
+    p.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Number of parallel download workers (default: 4)",
     )
     return p.parse_args(argv)
 
@@ -286,23 +293,30 @@ def main(argv: list[str]) -> int:
         return 0
     existing = {p.name for p in out_dir.iterdir() if p.is_file()}
     opener = build_opener()
-    ok, skipped, failed = 0, 0, 0
+
+    download_tasks = []
     for it in items:
         try:
             filename = build_filename(it.date_str, it.ext, existing)
         except ValueError as e:
-            failed += 1
             print(f"FAIL bad date '{it.date_str}': {e}", file=sys.stderr)
             continue
         dest = out_dir / filename
         if ns.skip_existing and dest.exists():
-            skipped += 1
             continue
-        if ns.dry_run:
+        existing.add(filename)
+        download_tasks.append((it, dest))
+
+    if ns.dry_run:
+        for it, dest in download_tasks:
             print(f"DRY {dest.name} <- {it.url}")
-            ok += 1
-            continue
-        print(f"GET  {dest.name}")
+        print(f"Done. Would download {len(download_tasks)} files.")
+        return 0
+
+    ok, failed = 0, 0
+
+    def download_item(task):
+        it, dest = task
         try:
             download_with_retries(
                 opener=opener,
@@ -313,12 +327,22 @@ def main(argv: list[str]) -> int:
                 retries=ns.retries,
                 backoff=ns.retry_backoff,
             )
-            existing.add(dest.name)
-            ok += 1
+            print(f"✓ {dest.name}")
+            return True
         except (HTTPError, URLError, TimeoutError, OSError) as e:
-            failed += 1
-            print(f"FAIL {dest.name}:  {e}", file=sys.stderr)
-    print(f"Done.  ok={ok} skipped={skipped} failed={failed}")
+            print(f"✗ {dest.name}: {e}", file=sys.stderr)
+            return False
+
+    with ThreadPoolExecutor(max_workers=ns.workers) as executor:
+        futures = {executor.submit(download_item, task): task for task in download_tasks}
+        for future in as_completed(futures):
+            if future.result():
+                ok += 1
+            else:
+                failed += 1
+
+    skipped = len(items) - len(download_tasks)
+    print(f"Done. ok={ok} skipped={skipped} failed={failed}")
     return 0 if failed == 0 else 2
 
 

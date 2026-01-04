@@ -1,57 +1,42 @@
-import io
 import re
-import string
 import sys
-import chardet
-import concurrent.futures
-from tqdm import tqdm
-from multiprocessing import Pool
+from pathlib import Path
+
+WORD_PATTERN = re.compile(r"[a-zA-Z0-9]+")
+VALID_WORD_PATTERN = re.compile(r"^[a-zA-Z0-9_.,!?@#$%^&*()-=+ ]+$")
 
 
-def process_file(filepath):
-    # Detect encoding and process in single pass (avoid double I/O)
-    with open(filepath, "rb") as f:
-        raw_data = f.read()
-    encoding = chardet.detect(raw_data)["encoding"]
+def detect_encoding(data: bytes) -> str:
+    try:
+        import chardet
+        result = chardet.detect(data)
+        return result["encoding"] or "utf-8"
+    except ImportError:
+        return "utf-8"
 
-    words = set()
-    # Process without tqdm per-line (batch progress instead)
+
+def process_file(filepath: str) -> set[str]:
+    raw_data = Path(filepath).read_bytes()
+    encoding = detect_encoding(raw_data)
     text = raw_data.decode(encoding, errors="ignore")
-    for line in text.splitlines():
-        # remove any punctuation from the file
-        line = line.translate(str.maketrans("", "", string.punctuation))
-        # split the contents into a list of words
-        words_in_line = re.findall(r"[a-zA-Z0-9]+", line)
-        words.update(words_in_line)
-    return words
+    return set(WORD_PATTERN.findall(text))
 
 
-def main():
+def main() -> None:
     if len(sys.argv) < 4:
-        print("Please specify the input and output file paths")
-        return
+        print("Usage: combine.py <file1> <file2> <output>", file=sys.stderr)
+        sys.exit(1)
 
-    # read the input file paths
-    filepath1 = sys.argv[1]
-    filepath2 = sys.argv[2]
+    filepath1, filepath2, outputfile = sys.argv[1], sys.argv[2], sys.argv[3]
 
-    # read the output file path
-    outputfile = sys.argv[3]
+    words1 = process_file(filepath1)
+    words2 = process_file(filepath2)
+    combined = sorted(words1 | words2)
 
-    with tqdm(total=2, desc="Processing...") as pbar:
-        with Pool() as pool:
-            # process the input files in parallel (use map for true parallelism)
-            results = pool.map(process_file, [filepath1, filepath2])
-        # combine the unique words from both files
-        words = sorted(results[0].union(results[1]))
-        pbar.update(2)
-    # write the processed words to a new file (filter during write, not after)
-    valid_pattern = re.compile(r"^[a-zA-Z0-9_.,!?@#$%^&*()-=+ ]*$")
-    with open(outputfile, "w", encoding="utf-8") as file:
-        for word in tqdm(words, desc="Writing to file"):
-            # Only write valid words (combine write + validation in single pass)
-            if word and valid_pattern.search(word):
-                file.write(word + "\n")
+    valid_words = [w for w in combined if w and VALID_WORD_PATTERN.match(w)]
+
+    Path(outputfile).write_text("\n".join(valid_words) + "\n", encoding="utf-8")
+    print(f"✓ Wrote {len(valid_words)} unique words to {outputfile}")
 
 
 if __name__ == "__main__":

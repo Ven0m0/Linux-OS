@@ -51,10 +51,21 @@ def parse_url(url: str) -> RepoSpec:
     raise ValueError(f"Unsupported platform: {u.netloc}")
 
 
+_opener_cache: urllib.request.OpenerDirector | None = None
+
+
+def get_opener() -> urllib.request.OpenerDirector:
+    """Get cached opener for connection reuse."""
+    global _opener_cache
+    if _opener_cache is None:
+        _opener_cache = urllib.request.build_opener()
+    return _opener_cache
+
+
 def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
     """Execute HTTP GET with optional headers."""
     req = urllib.request.Request(url, headers=headers or {})
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with get_opener().open(req, timeout=30) as resp:
         return resp.read()
 
 
@@ -102,12 +113,17 @@ def fetch_github(spec: RepoSpec, output: Path) -> None:
 
     # Parallel file downloads
     def download_file(url, path, item_path):
-        content = http_get(url, headers)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(content)
-        print(f"✓ {item_path}")
+        try:
+            content = http_get(url, headers)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+            print(f"✓ {item_path}")
+        except Exception as e:
+            print(f"✗ {item_path}: {e}")
+            raise
 
-    with ThreadPoolExecutor(max_workers=min(32, (os.cpu_count() or 1) + 4)) as executor:
+    max_workers = min(32, (os.cpu_count() or 1) * 4)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(download_file, url, path, item_path)
             for url, path, item_path in files_to_download
@@ -177,11 +193,16 @@ def fetch_gitlab(spec: RepoSpec, output: Path) -> None:
 
     # Parallel file downloads
     def download_file(url, path, item_path):
-        content = http_get(url, headers)
-        path.write_bytes(content)
-        print(f"✓ {item_path}")
+        try:
+            content = http_get(url, headers)
+            path.write_bytes(content)
+            print(f"✓ {item_path}")
+        except Exception as e:
+            print(f"✗ {item_path}: {e}")
+            raise
 
-    with ThreadPoolExecutor(max_workers=min(32, (os.cpu_count() or 1) + 4)) as executor:
+    max_workers = min(32, (os.cpu_count() or 1) * 4)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = [
             executor.submit(download_file, url, path, ip)
             for url, path, ip in files_to_download

@@ -129,7 +129,7 @@ clone() {
   local ruuid
   ruuid=$(blkid -s PARTUUID -o value "$RP")
   sed -i -e "s/root=[^ ]*/root=PARTUUID=$ruuid rootfstype=f2fs/" \
-    -e 's/init=.*init_resize.sh//' "$WD/t/b/cmdline.txt"
+    -e 's/init=[^ ]*init_resize.sh[^ ]*//' "$WD/t/b/cmdline.txt"
   echo -e "proc /proc proc defaults 0 0\nPARTUUID=$buuid /boot vfat defaults 0 2\nPARTUUID=$ruuid / f2fs defaults,noatime 0 1" >"$WD/t/r/etc/fstab"
   ((SSH)) && touch "$WD/t/b/ssh" && log "SSH enabled"
 }

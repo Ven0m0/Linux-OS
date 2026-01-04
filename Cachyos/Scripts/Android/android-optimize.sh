@@ -53,7 +53,7 @@ cmd_settings() {
   log "Applying settings from $file (mode=$mode)..."
 
   local skip_aggressive=0
-  [[ $mode == "safe" ]] && skip_aggressive=1
+  [[ "$mode" == "safe" ]] && skip_aggressive=1
 
   while IFS= read -r line; do
     [[ $line =~ ^# || -z $line ]] && continue

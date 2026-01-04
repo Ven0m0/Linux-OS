@@ -103,7 +103,7 @@ EOF
 purge_docs() {
   log "Purging documentation, man pages, locales (keep en_US)"
   # Single find pass: delete non-copyright files and compressed docs, then empty dirs
-  run find /usr/share/doc/ -depth \( -type f ! -name copyright \) -delete 2>/dev/null || :
+  run find /usr/share/doc/ -depth \( \( -type f ! -name 'copyright' \) -o -name '*.gz' -o -name '*.pdf' -o -name '*.tex' \) -delete 2>/dev/null || :
   run find /usr/share/doc/ -type d -empty -delete 2>/dev/null || :
   sudo rm -rf /usr/share/{groff,info,lintian,linda,man}/* /var/cache/man/* 2>/dev/null || :
   local keep_locale=en_US

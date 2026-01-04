@@ -42,9 +42,9 @@ clean_pkgs() {
   if has snap; then
     log "Cleaning Snap..."
     local -a snaps
-    mapfile -t snaps < <(snap list --all | awk '/disabled/{print $1 "|" $3}')
+    mapfile -t snaps < <(snap list --all | awk '/disabled/{print $1 "\t" $3}')
     for s in "${snaps[@]}"; do
-      IFS='|' read -r n v <<<"$s"
+      IFS=$'\t' read -r n v <<<"$s"
       try sudo snap remove "$n" --revision="$v"
     done
   fi

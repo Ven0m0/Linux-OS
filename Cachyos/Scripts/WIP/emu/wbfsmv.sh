@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # wbfsmv.sh - Optimized Wii Backup Manager
-set -euo pipefail
-shopt -s nullglob globstar
-IFS=$'\n\t'
-LC_ALL=C
+set -euo pipefail; shopt -s nullglob globstar
+IFS=$'\n\t' LC_ALL=C
 
 # --- Config & Args ---
 CONV=1 TRIM=1 DRY=0 VERB=0 REGION=${WBFSMV_REGION:-PAL}

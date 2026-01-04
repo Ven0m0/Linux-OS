@@ -117,7 +117,7 @@ purge_packages() {
   run localepurge
   # Cache dpkg output once for multiple filters (avoid 3 separate dpkg calls)
   local dpkg_out current_kernel doc_pkgs old_kernels orphaned
-  mapfile -t dpkg_out < <(dpkg -l)
+  mapfile -t dpkg_out < <(dpkg -l) || die "Failed to get package list from dpkg"
   mapfile -t doc_pkgs < <(printf '%s\n' "${dpkg_out[@]}" | awk '/-doc$/ {print $2}')
   ((${#doc_pkgs[@]} > 0)) && sudo apt-get purge -y "${doc_pkgs[@]}" || :
   sudo apt-get purge -y '*texlive*' 2>/dev/null || :

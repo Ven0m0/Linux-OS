@@ -42,6 +42,12 @@ prep_src() {
   IMG="$WD/src.img"
   [[ $SRC == "dietpi" ]] && SRC="$DIETPI_URL"
   if [[ $SRC =~ ^https?:// ]]; then
+    # Security: Enforce HTTPS for remote downloads
+    if [[ ! $SRC =~ ^https:// ]]; then
+      die "Insecure HTTP URL detected. Use HTTPS for secure downloads: $SRC"
+    fi
+    warn "Downloading from remote source without checksum verification"
+    warn "Ensure the URL is from a trusted source to prevent supply-chain attacks"
     log "Downloading $SRC..."
     curl -Lfs --progress-bar "$SRC" | { [[ $SRC == *.xz ]] && xz -dc || cat; } >"$IMG" || die "Download failed"
   elif [[ -f $SRC ]]; then
@@ -151,7 +157,18 @@ EOF
 # --- Main ---
 ((EUID == 0)) || die "Root required"
 while getopts "b:i:d:zsknhUF" o; do
-  case $o in b) BOOT_SIZE=$OPTARG ;; i) SRC=$OPTARG ;; d) TGT=$OPTARG ;; z) SHRINK=1 ;; s) SSH=1 ;; k) KEEP=1 ;; n) DRY=1 ;; U) NO_USB=1 ;; F) NO_SZ=1 ;; *) usage ;; esac
+  case $o in
+    b) BOOT_SIZE=$OPTARG ;;
+    i) SRC=$OPTARG ;;
+    d) TGT=$OPTARG ;;
+    z) SHRINK=1 ;;
+    s) SSH=1 ;;
+    k) KEEP=1 ;;
+    n) DRY=1 ;;
+    U) NO_USB=1 ;;
+    F) NO_SZ=1 ;;
+    *) usage ;;
+  esac
 done
 check_deps
 [[ -z ${SRC:-} ]] && SRC=$(find . -maxdepth 2 \( -name "*.img*" -o -name "*.xz" \) 2>/dev/null | fzf --prompt="Source> " --preview='ls -lh {}' | awk '{print $1}')

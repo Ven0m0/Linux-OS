@@ -40,7 +40,7 @@ select_dev() {
 prep_src() {
   WD=$(mktemp -d)
   IMG="$WD/src.img"
-  [[ $SRC == "dietpi" ]] && SRC="$DIETPI_URL"
+  [[ "$SRC" == "dietpi" ]] && SRC="$DIETPI_URL"
   if [[ $SRC =~ ^https?:// ]]; then
     log "Downloading $SRC..."
     curl -Lfs --progress-bar "$SRC" | { [[ $SRC == *.xz ]] && xz -dc || cat; } >"$IMG" || die "Download failed"

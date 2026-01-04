@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # clean.sh - Optimized System & Privacy Cleaner
-set -euo pipefail; shopt -s nullglob globstar; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob globstar
+IFS=$'\n\t'
 export LC_ALL=C LANG=C
 
 # --- Config & Helpers ---
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' M=$'\e[35m' C=$'\e[36m' X=$'\e[0m'
-has() { command -v "$1" >/dev/null; }
+has() { command -v "$1" &>/dev/null; }
 try() { "$@" >/dev/null 2>&1 || true; }
 log() { printf "%b[+]%b %s\n" "$G" "$X" "$*"; }
 warn() { printf "%b[!]%b %s\n" "$Y" "$X" "$*" >&2; }
@@ -30,25 +32,36 @@ clean_pkgs() {
   elif has zypper; then
     try sudo zypper clean --all
   fi
-  
+
   if has flatpak; then
     log "Cleaning Flatpak..."
     try flatpak uninstall --unused -y
     try rm -rf "$HOME/.var/app/*/cache/*"
   fi
-  
+
   if has snap; then
     log "Cleaning Snap..."
-    set +e; snap list --all | awk '/disabled/{print $1, $3}' | while read -r n v; do sudo snap remove "$n" --revision="$v"; done; set -e
+    local -a snaps
+    mapfile -t snaps < <(snap list --all | awk '/disabled/{print $1 "\t" $3}')
+    for s in "${snaps[@]}"; do
+      IFS=$'\t' read -r n v <<<"$s"
+      try sudo snap remove "$n" --revision="$v"
+    done
   fi
 }
 
 clean_dev() {
   log "Cleaning dev tools..."
-  has cargo-cache && { try cargo cache -efg; try cargo cache -ef trim --limit 1B; }
+  has cargo-cache && {
+    try cargo cache -efg
+    try cargo cache -ef trim --limit 1B
+  }
   has uv && try uv clean -q
   has bun && try bun pm cache rm
-  has pnpm && { try pnpm prune; try pnpm store prune; }
+  has pnpm && {
+    try pnpm prune
+    try pnpm store prune
+  }
   has go && try go clean -modcache
   has pip && try pip cache purge
   has npm && try npm cache clean --force
@@ -62,13 +75,13 @@ clean_sys() {
   try sudo journalctl --vacuum-time=2weeks
   try rm -rf ~/.cache/thumbnails ~/.cache/mozilla/firefox/*.default*/cache2
   try rm -rf ~/.local/share/Trash/*
-  
+
   if has bleachbit; then
     log "Running BleachBit..."
     try bleachbit -c --preset
     try sudo bleachbit -c --preset
   fi
-  
+
   has localepurge && try sudo localepurge
   try sudo fstrim -av
 }
@@ -83,21 +96,28 @@ privacy_config() {
 
 # --- Main ---
 main() {
-  [[ ${1:-} == "config" ]] && { banner; privacy_config; exit 0; }
-  
+  [[ ${1:-} == "config" ]] && {
+    banner
+    privacy_config
+    exit 0
+  }
+
   banner
-  local start_du; start_du=$(df -k / | awk 'NR==2 {print $3}')
-  
+  local start_du
+  start_du=$(df -k / | awk 'NR==2 {print $3}')
+
   # Sync and drop caches for accurate memory measurement/cleaning
-  sync; echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null
-  
+  sync
+  echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null
+
   clean_pkgs
   clean_dev
   clean_sys
-  
-  local end_du; end_du=$(df -k / | awk 'NR==2 {print $3}')
-  local freed=$(( (start_du - end_du) / 1024 ))
-  
+
+  local end_du
+  end_du=$(df -k / | awk 'NR==2 {print $3}')
+  local freed=$(((start_du - end_du) / 1024))
+
   printf "\n%bDone!%b Freed approx: %b%s MB%b\n" "$G" "$X" "$C" "$freed" "$X"
   printf "Current Disk: %s\n" "$(disk_usage)"
 }

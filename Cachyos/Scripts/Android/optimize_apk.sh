@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # optimize_apk.sh - Advanced APK Optimizer (Resources, Align, Sign)
-set -euo pipefail; shopt -s nullglob; IFS=$'\n\t'
+set -euo pipefail
+shopt -s nullglob
+IFS=$'\n\t'
 export LC_ALL=C LANG=C
 
 # --- Config ---
@@ -8,12 +10,16 @@ KEYSTORE_PATH="${KEYSTORE_PATH:-mykey.keystore}"
 KEY_ALIAS="${KEY_ALIAS:-myalias}"
 KEYSTORE_PASS="${KEYSTORE_PASS:-changeit}"
 KEY_PASS="${KEY_PASS:-changeit}"
-TMP_DIR=$(mktemp -d); trap 'rm -rf "$TMP_DIR"' EXIT
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 # --- Helpers ---
 R=$'\e[31m' G=$'\e[32m' B=$'\e[34m' X=$'\e[0m'
 log() { printf "%b[%s]%b %s\n" "$B" "$(date +%T)" "$X" "$*"; }
-die() { printf "%b[ERR]%b %s\n" "$R" "$X" "$*" >&2; exit 1; }
+die() {
+  printf "%b[ERR]%b %s\n" "$R" "$X" "$*" >&2
+  exit 1
+}
 has() { command -v "$1" >/dev/null; }
 req() { has "$1" || die "Missing dependency: $1"; }
 
@@ -21,7 +27,7 @@ req() { has "$1" || die "Missing dependency: $1"; }
 optimize_images() {
   local dir="$1"
   log "Optimizing assets (Parallel)..."
-  
+
   # PNG Optimization
   if has zopflipng; then
     find "$dir" -type f -name "*.png" -print0 | xargs -0 -P$(nproc) -I{} zopflipng -y -m --lossless --filters=01234mepb "{}" "{}" >/dev/null 2>&1
@@ -43,7 +49,8 @@ repack() {
   pushd "$src" >/dev/null
   # APKs must be standard ZIP (Deflate). 7z provides better compression ratios than 'zip'.
   # -mx9: Ultra compression, -mm=Deflate: Required for Android
-  req 7z; 7z a -tzip -mx=9 -mm=Deflate "$dst" . >/dev/null
+  req 7z
+  7z a -tzip -mx=9 -mm=Deflate "$dst" . >/dev/null
   popd >/dev/null
 }
 
@@ -53,7 +60,10 @@ main() {
   [[ -f $input ]] || die "Input not found: $input"
 
   # 1. Dependency Check
-  req unzip; req zipalign; req apksigner; req 7z
+  req unzip
+  req zipalign
+  req apksigner
+  req 7z
 
   # 2. Extract
   log "Extracting $input..."

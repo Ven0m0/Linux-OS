@@ -75,13 +75,11 @@ clean_sys() {
   try sudo journalctl --vacuum-time=2weeks
   try rm -rf ~/.cache/thumbnails ~/.cache/mozilla/firefox/*.default*/cache2
   try rm -rf ~/.local/share/Trash/*
-
   if has bleachbit; then
     log "Running BleachBit..."
     try bleachbit -c --preset
     try sudo bleachbit -c --preset
   fi
-
   has localepurge && try sudo localepurge
   try sudo fstrim -av
 }
@@ -109,6 +107,10 @@ main() {
   # Sync and drop caches for accurate memory measurement/cleaning
   sync
   echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null
+  # Optimize databases, IMPORTANT
+  find ~/ -type f -regextype posix-egrep -regex '.*\.(db|sqlite)' \
+        -exec bash -c '[ "$(file -b --mime-type {})" = "application/vnd.sqlite3" ] && sqlite3 {} "VACUUM; REINDEX;"' \; 2>/dev/null
+
 
   clean_pkgs
   clean_dev

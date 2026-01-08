@@ -1,27 +1,13 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail
-shopt -s nullglob globstar
+set -euo pipefail; shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
-
-has() { command -v -- "$1" &>/dev/null; }
-msg() { printf '%s\n' "$@"; }
-log() { printf '%s\n' "$@" >&2; }
-die() {
-  printf '%s\n' "$1" >&2
-  exit "${2:-1}"
-}
-write_sys() {
-  local val=$1 path=$2
-  [[ -e $path ]] || return 0
-  printf '%s\n' "$val" | sudo tee "$path" >/dev/null
-}
-write_many() {
-  local val=$1
-  shift
-  local p
-  for p in "$@"; do write_sys "$val" "$p"; done
-}
+has(){ command -v -- "$1" &>/dev/null; }
+msg(){ printf '%s\n' "$@"; }
+log(){ printf '%s\n' "$@" >&2; }
+die(){ printf '%s\n' "$1" >&2; exit "${2:-1}"; }
+write_sys(){ local val=$1 path=$2; [[ -e $path ]] || return 0; printf '%s\n' "$val" | sudo tee "$path" >/dev/null; }
+write_many(){ local val=$1; shift; local p; for p in "$@"; do write_sys "$val" "$p"; done; }
 
 main() {
   [[ ${EUID:-1} -eq 0 ]] && die "Run as user with sudo, not root."

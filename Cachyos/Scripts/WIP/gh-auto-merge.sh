@@ -52,39 +52,39 @@ PR_NUMBERS=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    --query)
-      QUERY=$2
-      shift 2
-      ;;
-    --pr-numbers)
-      PR_NUMBERS=$2
-      shift 2
-      ;;
-    --limit)
-      LIMIT=$2
-      shift 2
-      ;;
-    --skip-checks)
-      SKIP_CHECKS=true
-      shift
-      ;;
-    --squash)
-      SQUASH=true
-      shift
-      ;;
-    --title)
-      TITLE=$2
-      shift 2
-      ;;
-    --branch)
-      BRANCH=$2
-      shift 2
-      ;;
-    *) die "Unknown option: $1" ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  --query)
+    QUERY=$2
+    shift 2
+    ;;
+  --pr-numbers)
+    PR_NUMBERS=$2
+    shift 2
+    ;;
+  --limit)
+    LIMIT=$2
+    shift 2
+    ;;
+  --skip-checks)
+    SKIP_CHECKS=true
+    shift
+    ;;
+  --squash)
+    SQUASH=true
+    shift
+    ;;
+  --title)
+    TITLE=$2
+    shift 2
+    ;;
+  --branch)
+    BRANCH=$2
+    shift 2
+    ;;
+  *) die "Unknown option: $1" ;;
   esac
 done
 

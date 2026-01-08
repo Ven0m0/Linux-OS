@@ -66,22 +66,22 @@ EOF
 parse_args() {
   while (($#)); do
     case "$1" in
-      -y | --yes) cfg[interactive]=0 ;;
-      -d | --dry-run) cfg[dry_run]=1 ;;
-      -a | --aggressive) cfg[aggressive]=1 ;;
-      -h | --help)
-        usage
-        exit 0
-        ;;
-      --)
-        shift
-        break
-        ;;
-      -*)
-        usage
-        die "invalid option: $1"
-        ;;
-      *) break ;;
+    -y | --yes) cfg[interactive]=0 ;;
+    -d | --dry-run) cfg[dry_run]=1 ;;
+    -a | --aggressive) cfg[aggressive]=1 ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      usage
+      die "invalid option: $1"
+      ;;
+    *) break ;;
     esac
     shift
   done

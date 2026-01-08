@@ -22,56 +22,56 @@ cachie() {
   read -s cachiee
   while true; do
     case $cachiee in
-      1)
-        echo -ne "${G}Enter value:${F} "
-        read -s sys_storage_threshold_percentage
-        settings put global sys_storage_threshold_percentage $sys_storage_threshold_percentage
-        echo ""
-        echo "Done!"
-        ;;
-      2)
-        echo -ne "${G}Enter Value:${F} "
-        read -s sys_storage_threshold_max_bytes
-        settings put global sys_storage_threshold_max_bytes $sys_storage_threshold_max_bytes
-        echo ""
-        echo "Done!"
-        ;;
-      3)
-        echo -ne "${G}Enter Value:${F} "
-        read -s sys_storage_full_threshold_bytes
-        settings put global sys_storage_full_threshold_bytes $sys_storage_full_threshold_bytes
-        echo ""
-        echo "Done!"
-        ;;
-      4)
-        echo -ne "${G}Enter value:${F} "
-        read -s sys_storage_cache_percentage
-        settings put global sys_storage_cache_percentage $sys_storage_cache_percentage
-        echo ""
-        echo "Done!"
-        ;;
-      5)
-        echo -ne "${G}Enter value:${F} "
-        read -s sys_storage_cache_max_bytes
-        settings put global sys_storage_cache_max_bytes $sys_storage_cache_max_bytes
-        echo ""
-        echo "Done!"
-        ;;
-      6)
-        cachl() {
-          settings delete global sys_storage_threshold_percentage
-          settings delete global sys_storage_threshold_max_bytes
-          settings delete global sys_storage_full_threshold_bytes
-          settings delete global sys_storage_cache_percentage
-          settings delete global sys_storage_cache_max_bytes
-        }
-        cachl >/dev/null 2>&1
-        echo ""
-        echo "Done!"
-        ;;
-      *)
-        echo "Invalid option."
-        ;;
+    1)
+      echo -ne "${G}Enter value:${F} "
+      read -s sys_storage_threshold_percentage
+      settings put global sys_storage_threshold_percentage $sys_storage_threshold_percentage
+      echo ""
+      echo "Done!"
+      ;;
+    2)
+      echo -ne "${G}Enter Value:${F} "
+      read -s sys_storage_threshold_max_bytes
+      settings put global sys_storage_threshold_max_bytes $sys_storage_threshold_max_bytes
+      echo ""
+      echo "Done!"
+      ;;
+    3)
+      echo -ne "${G}Enter Value:${F} "
+      read -s sys_storage_full_threshold_bytes
+      settings put global sys_storage_full_threshold_bytes $sys_storage_full_threshold_bytes
+      echo ""
+      echo "Done!"
+      ;;
+    4)
+      echo -ne "${G}Enter value:${F} "
+      read -s sys_storage_cache_percentage
+      settings put global sys_storage_cache_percentage $sys_storage_cache_percentage
+      echo ""
+      echo "Done!"
+      ;;
+    5)
+      echo -ne "${G}Enter value:${F} "
+      read -s sys_storage_cache_max_bytes
+      settings put global sys_storage_cache_max_bytes $sys_storage_cache_max_bytes
+      echo ""
+      echo "Done!"
+      ;;
+    6)
+      cachl() {
+        settings delete global sys_storage_threshold_percentage
+        settings delete global sys_storage_threshold_max_bytes
+        settings delete global sys_storage_full_threshold_bytes
+        settings delete global sys_storage_cache_percentage
+        settings delete global sys_storage_cache_max_bytes
+      }
+      cachl >/dev/null 2>&1
+      echo ""
+      echo "Done!"
+      ;;
+    *)
+      echo "Invalid option."
+      ;;
     esac
     break
   done

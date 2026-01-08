@@ -53,26 +53,26 @@ EOF
 parse_args() {
   while (($#)); do
     case "$1" in
-      -d | --dry-run) cfg[dry_run]=1 ;;
-      -s | --skip-external) cfg[skip_external]=1 ;;
-      -m | --minimal) cfg[minimal]=1 ;;
-      -q | --quiet)
-        cfg[quiet]=1
-        exec >/dev/null
-        ;;
-      -h | --help)
-        usage
-        exit 0
-        ;;
-      --)
-        shift
-        break
-        ;;
-      -*)
-        usage
-        die "invalid option: $1"
-        ;;
-      *) break ;;
+    -d | --dry-run) cfg[dry_run]=1 ;;
+    -s | --skip-external) cfg[skip_external]=1 ;;
+    -m | --minimal) cfg[minimal]=1 ;;
+    -q | --quiet)
+      cfg[quiet]=1
+      exec >/dev/null
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      usage
+      die "invalid option: $1"
+      ;;
+    *) break ;;
     esac
     shift
   done

@@ -76,14 +76,14 @@ display_banner() {
 }
 # Parse arguments
 case "${1:-}" in
-  -h | --help)
-    usage
-    exit 0
-    ;;
-  --version)
-    printf 'update.sh 1.0.1\n'
-    exit 0
-    ;;
+-h | --help)
+  usage
+  exit 0
+  ;;
+--version)
+  printf 'update.sh 1.0.1\n'
+  exit 0
+  ;;
 esac
 # Banner
 banner=$(

@@ -66,38 +66,38 @@ scan_and_clean() {
   printf "\n${BLD}Total reduced by ${YLW}%s${NRM}${BLD} MB.${NRM}\n\n" "$(echo "scale=2; ($start-$end)/1048576" | bc)"
 }
 case "$1" in
-  B | b) scan_and_clean chrome "Brave" "$XDG_CONFIG_HOME/BraveSoftware" Brave-Browser{,-Dev,-Beta,-Nightly} ;;
-  C | c) scan_and_clean chrome "Chromium" "$XDG_CONFIG_HOME" chromium{,-beta,-dev} ;;
-  E | e) scan_and_clean chrome "Edge" "$XDG_CONFIG_HOME" microsoft-edge ;;
-  GC | gc) scan_and_clean chrome "Chrome" "$XDG_CONFIG_HOME" google-chrome{,-beta,-unstable} ;;
-  ix | IX) scan_and_clean chrome "Inox" "$XDG_CONFIG_HOME" inox ;;
-  O | o) scan_and_clean chrome "Opera" "$XDG_CONFIG_HOME" opera{,-next,-developer,-beta} ;;
-  V | v) scan_and_clean chrome "Vivaldi" "$XDG_CONFIG_HOME" vivaldi{,-snapshot} ;;
-  F | f) scan_and_clean mozilla "Firefox" "$HOME/.mozilla/firefox" ;;
-  H | h) scan_and_clean mozilla "Aurora" "$HOME/.mozilla/aurora" ;;
-  I | i) scan_and_clean mozilla "Icecat" "$HOME/.mozilla/icecat" ;;
-  ID | id) scan_and_clean mozilla "Icedove" "$HOME/.icedove" ;;
-  L | l) scan_and_clean mozilla "Librewolf" "$HOME/.librewolf" ;;
-  PM | pm) scan_and_clean mozilla "Pale Moon" "$HOME/.moonchild productions/pale moon" ;;
-  S | s) scan_and_clean mozilla "Seamonkey" "$HOME/.mozilla/seamonkey" ;;
-  T | t) scan_and_clean mozilla "Thunderbird" "$HOME/.thunderbird" ;;
-  CK | ck) scan_and_clean mozilla "Conkeror" "$HOME/.conkeror.mozdev.org/conkeror" ;;
-  FA | fa) scan_and_clean simple "Falkon" "$HOME/.config/falkon/profiles" ;;
-  M | m) scan_and_clean simple "Midori" "$XDG_CONFIG_HOME/midori" ;;
-  Q | q) scan_and_clean simple "QupZilla" "$HOME/.config/qupzilla/profiles" ;;
-  n | N)
-    nb="$HOME/.newsboat"
-    [[ -d "$XDG_DATA_HOME/newsboat" ]] && nb="$XDG_DATA_HOME/newsboat"
-    scan_and_clean simple "Newsboat" "$nb"
-    ;;
-  TO | to)
-    base="$HOME/.torbrowser/profile"
-    for l in de en es fr it ru; do [[ ! -d $base ]] && base="$HOME/.tor-browser-$l/INSTALL/Data/profile"; done
-    scan_and_clean simple "TorBrowser" "$base"
-    ;;
-  P | p)
-    shift
-    scan_and_clean path "Custom Paths" "$@"
-    ;;
-  *) echo -e "Usage: $0 {b|c|e|gc|o|v|ix|f|t|l|pm|s|i|fa|m|n|to|p}" && exit 0 ;;
+B | b) scan_and_clean chrome "Brave" "$XDG_CONFIG_HOME/BraveSoftware" Brave-Browser{,-Dev,-Beta,-Nightly} ;;
+C | c) scan_and_clean chrome "Chromium" "$XDG_CONFIG_HOME" chromium{,-beta,-dev} ;;
+E | e) scan_and_clean chrome "Edge" "$XDG_CONFIG_HOME" microsoft-edge ;;
+GC | gc) scan_and_clean chrome "Chrome" "$XDG_CONFIG_HOME" google-chrome{,-beta,-unstable} ;;
+ix | IX) scan_and_clean chrome "Inox" "$XDG_CONFIG_HOME" inox ;;
+O | o) scan_and_clean chrome "Opera" "$XDG_CONFIG_HOME" opera{,-next,-developer,-beta} ;;
+V | v) scan_and_clean chrome "Vivaldi" "$XDG_CONFIG_HOME" vivaldi{,-snapshot} ;;
+F | f) scan_and_clean mozilla "Firefox" "$HOME/.mozilla/firefox" ;;
+H | h) scan_and_clean mozilla "Aurora" "$HOME/.mozilla/aurora" ;;
+I | i) scan_and_clean mozilla "Icecat" "$HOME/.mozilla/icecat" ;;
+ID | id) scan_and_clean mozilla "Icedove" "$HOME/.icedove" ;;
+L | l) scan_and_clean mozilla "Librewolf" "$HOME/.librewolf" ;;
+PM | pm) scan_and_clean mozilla "Pale Moon" "$HOME/.moonchild productions/pale moon" ;;
+S | s) scan_and_clean mozilla "Seamonkey" "$HOME/.mozilla/seamonkey" ;;
+T | t) scan_and_clean mozilla "Thunderbird" "$HOME/.thunderbird" ;;
+CK | ck) scan_and_clean mozilla "Conkeror" "$HOME/.conkeror.mozdev.org/conkeror" ;;
+FA | fa) scan_and_clean simple "Falkon" "$HOME/.config/falkon/profiles" ;;
+M | m) scan_and_clean simple "Midori" "$XDG_CONFIG_HOME/midori" ;;
+Q | q) scan_and_clean simple "QupZilla" "$HOME/.config/qupzilla/profiles" ;;
+n | N)
+  nb="$HOME/.newsboat"
+  [[ -d "$XDG_DATA_HOME/newsboat" ]] && nb="$XDG_DATA_HOME/newsboat"
+  scan_and_clean simple "Newsboat" "$nb"
+  ;;
+TO | to)
+  base="$HOME/.torbrowser/profile"
+  for l in de en es fr it ru; do [[ ! -d $base ]] && base="$HOME/.tor-browser-$l/INSTALL/Data/profile"; done
+  scan_and_clean simple "TorBrowser" "$base"
+  ;;
+P | p)
+  shift
+  scan_and_clean path "Custom Paths" "$@"
+  ;;
+*) echo -e "Usage: $0 {b|c|e|gc|o|v|ix|f|t|l|pm|s|i|fa|m|n|to|p}" && exit 0 ;;
 esac

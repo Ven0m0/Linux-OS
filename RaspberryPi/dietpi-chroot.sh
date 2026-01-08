@@ -175,7 +175,7 @@ usage() {
 }
 while getopts "zh" opt; do
   case $opt in
-    z) SHRINK=1 ;; h) usage ;; *) usage ;;
+  z) SHRINK=1 ;; h) usage ;; *) usage ;;
   esac
 done
 shift $((OPTIND - 1))

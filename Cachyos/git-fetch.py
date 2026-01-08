@@ -25,8 +25,9 @@ def parse_url(url: str) -> RepoSpec:
     """Extract repo metadata from GitHub/GitLab URL."""
     u = urllib.parse.urlparse(url)
     parts = [p for p in u.path.strip("/").split("/") if p]
+    host = u.hostname or ""
 
-    if "github.com" in u.netloc:
+    if host == "github.com":
         if len(parts) < 2:
             raise ValueError(f"Invalid GitHub URL: {url}")
         owner, repo = parts[0], parts[1]
@@ -37,7 +38,7 @@ def parse_url(url: str) -> RepoSpec:
             path = "/".join(parts[4:]) if len(parts) > 4 else ""
         return RepoSpec("github", owner, repo, path, branch)
 
-    if "gitlab.com" in u.netloc:
+    if host == "gitlab.com":
         if len(parts) < 2:
             raise ValueError(f"Invalid GitLab URL: {url}")
         owner, repo = parts[0], parts[1]

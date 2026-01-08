@@ -25,33 +25,27 @@ up_sys() {
   elif has yay; then
     aur_helper="yay"
   else log "No AUR helper found, using pacman"; fi
-
   # Unlock database if stale lock exists
   if [[ -f /var/lib/pacman/db.lck ]]; then
     echo "Removing stale lock..."
     sudo rm -f /var/lib/pacman/db.lck
   fi
-
   if [[ -n $aur_helper ]]; then
     $aur_helper -Syu --noconfirm
   else
     sudo pacman -Syu --noconfirm
+  fi
+  if has topgrade; then
+    topgrade -y --cleanup --allow-root --disable-predefined-git-repos --no-retry --no-self-update --skip-notify --disable yadm --disable rustup --disable config_update --disable system
   fi
 }
 
 up_apps() {
   if has flatpak; then
     log "Flatpak Update"
-    flatpak update -y
-    try flatpak uninstall --unused -y
-  fi
-  if has snap; then
-    log "Snap Update"
-    sudo snap refresh
-  fi
-  if has bauh; then
-    log "Bauh Update"
-    bauh-cli update --system --no-confirm
+    flatpak update -y --noninteractive --appstream; sudo flatpak update -y --noninteractive --appstream
+    flatpak update -yu --noninteractive --force-remove; sudo flatpak update -y --noninteractive --force-remove
+    try flatpak uninstall --unused -y --noninteractive --force-remove
   fi
 }
 
@@ -61,9 +55,8 @@ up_dev() {
   if has rustup; then
     info "Rust"
     rustup update
-    has cargo-install-update && cargo install-update -a
+    has cargo-install-update && cargo install-update -ag
   fi
-
   # Python
   if has uv; then
     info "Python (uv)"
@@ -71,22 +64,15 @@ up_dev() {
     # Update system packages via uv if managing a venv or system-site-packages
     try uv pip install -U $(uv pip list --outdated --format=freeze 2>/dev/null | awk -F== '{print $1}')
   fi
-
   # Node / JS
-  if has npm; then
-    info "Node (npm)"
-    try npm update -g
-  fi
   if has bun; then
     info "Bun"
-    try bun upgrade
+    try bun update -g -r --latest --trust --linker=hoisted
+  elif has npm; then
+    try npm update -g --install-strategy hoisted
   fi
-
   # Go
-  has go && {
-    info "Go"
-    go clean -modcache
-  }
+  has go && { info "Go"; go clean -modcache; }
 }
 
 up_maint() {
@@ -95,17 +81,15 @@ up_maint() {
   try sudo fc-cache -f
   try sudo update-desktop-database
   has update-pciids && try sudo update-pciids
-
+  has update-ccache-links && sudo update-ccache-links
   # Firmware
   if has fwupdmgr; then
     info "Firmware"
     try sudo fwupdmgr refresh
     try sudo fwupdmgr update -y
   fi
-
   # Time Sync
   try sudo systemctl restart systemd-timesyncd
-
   # Bootloader / InitRAMFS
   info "Bootloader/InitRAMFS"
   if has sdboot-manage; then
@@ -113,11 +97,14 @@ up_maint() {
   elif has bootctl && [[ -d /sys/firmware/efi ]]; then
     sudo bootctl update
   fi
-
-  if has dracut; then
-    try sudo dracut --regenerate-all --force
+  if has limine-mkinitcpio; then
+    sudo limine-mkinitcpio
   elif has mkinitcpio; then
     try sudo mkinitcpio -P
+  elif has /usr/lib/booster/regenerate_images; then
+    sudo /usr/lib/booster/regenerate_images
+  elif has dracut-rebuild; then
+    sudo dracut-rebuild
   fi
 }
 
@@ -161,11 +148,9 @@ main() {
     up_maint
     ;;
   esac
-
   log "Update Complete!"
   if [[ -f /var/run/reboot-required ]]; then
     printf "%b[!] Reboot Required%b\n" "$Y" "$X"
   fi
 }
-
 main "$@"

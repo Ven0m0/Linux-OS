@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # wbfsmv.sh - Optimized Wii Backup Manager
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 
 # --- Config & Args ---

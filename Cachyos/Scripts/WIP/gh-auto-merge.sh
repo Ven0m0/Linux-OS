@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
-has(){ command -v -- "$1" &>/dev/null; }
-msg(){ printf '%s\n' "$@"; }
-log(){ printf '%s\n' "$@" >&2; }
-die(){ printf '%s\n' "$1" >&2; exit "${2:-1}"; }
+has() { command -v -- "$1" &>/dev/null; }
+msg() { printf '%s\n' "$@"; }
+log() { printf '%s\n' "$@" >&2; }
+die() {
+  printf '%s\n' "$1" >&2
+  exit "${2:-1}"
+}
 
-usage(){
-cat << 'EOF'
+usage() {
+  cat <<'EOF'
 Usage: gh merge-prs [OPTIONS]
 
 Combines multiple PRs into one, with auto-squash support.
@@ -31,7 +35,7 @@ Examples:
 EOF
 }
 
-confirm(){
+confirm() {
   local key
   read -rsn1 key
   [[ $key == $'\e' ]] && exit 0
@@ -48,14 +52,38 @@ PR_NUMBERS=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -h|--help) usage; exit 0 ;;
-    --query) QUERY=$2; shift 2 ;;
-    --pr-numbers) PR_NUMBERS=$2; shift 2 ;;
-    --limit) LIMIT=$2; shift 2 ;;
-    --skip-checks) SKIP_CHECKS=true; shift ;;
-    --squash) SQUASH=true; shift ;;
-    --title) TITLE=$2; shift 2 ;;
-    --branch) BRANCH=$2; shift 2 ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --query)
+      QUERY=$2
+      shift 2
+      ;;
+    --pr-numbers)
+      PR_NUMBERS=$2
+      shift 2
+      ;;
+    --limit)
+      LIMIT=$2
+      shift 2
+      ;;
+    --skip-checks)
+      SKIP_CHECKS=true
+      shift
+      ;;
+    --squash)
+      SQUASH=true
+      shift
+      ;;
+    --title)
+      TITLE=$2
+      shift 2
+      ;;
+    --branch)
+      BRANCH=$2
+      shift 2
+      ;;
     *) die "Unknown option: $1" ;;
   esac
 done
@@ -89,7 +117,7 @@ git branch -D "$BRANCH" &>/dev/null || true
 git checkout -b "$BRANCH"
 
 # Generate PR body header
-cat > "$BODY_FILE" << 'EOF'
+cat >"$BODY_FILE" <<'EOF'
 Combining multiple dependencies PRs into one.
 
 <details>
@@ -127,12 +155,15 @@ while IFS=$'\t' read -r number headref; do
 
   # Record merged PR
   desc=$(gh pr view "$number" --json title,author,number --template '{{.title}} (#{{.number}}) @{{.author.login}}')
-  printf '* %s\n' "$desc" >> "$BODY_FILE"
+  printf '* %s\n' "$desc" >>"$BODY_FILE"
   merged_prs+=("$number")
   log "✓ Merged PR #$number"
 
   ((++count))
-  [[ $count -eq $LIMIT ]] && { log "Hit limit of $LIMIT PRs"; break; }
+  [[ $count -eq $LIMIT ]] && {
+    log "Hit limit of $LIMIT PRs"
+    break
+  }
 done < <(gh pr list --search "$QUERY" --limit "$LIMIT" --json headRefName,number | jq -r "$JQ_FILTER | [.number,.headRefName] | @tsv")
 
 [[ $count -eq 0 ]] && die "No PRs were merged"

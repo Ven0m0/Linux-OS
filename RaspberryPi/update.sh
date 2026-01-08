@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash source-path=SCRIPTDIR
-# DESCRIPTION: Raspberry Pi system update script for Debian/Raspbian/DietPi
-#              Updates: APT packages, DietPi, Pi-hole, firmware (EEPROM/rpi-update)
+# DESCRIPTION:  Raspberry Pi system update script for Debian/Raspbian/DietPi
+#              Updates:  APT packages, DietPi, Pi-hole, Pi-Apps, firmware (EEPROM/rpi-update)
 set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 # Colors
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m'
+YLW=$'\e[1;33m' RED=$'\e[0;31m'
 # Core helper functions
-has() { command -v -- "$1" &>/dev/null; }
-usage() {
+has(){ command -v -- "$1" &>/dev/null; }
+usage(){
   cat <<'EOF'
 update.sh - Raspberry Pi system update automation
 
@@ -23,6 +24,7 @@ Updates:
   • APT packages (apt-fast/nala/apt-get with optimizations)
   • DietPi system (if installed)
   • Pi-hole (if installed)
+  • Pi-Apps (if installed)
   • Raspberry Pi firmware (EEPROM + rpi-update)
   • Automatic cleanup (cache, autoremove, autopurge)
 
@@ -37,24 +39,24 @@ Examples:
 EOF
 }
 # DietPi functions
-load_dietpi_globals() {
+load_dietpi_globals(){
   if [[ -f /boot/dietpi/func/dietpi-globals ]]; then
-    . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
+    .  "/boot/dietpi/func/dietpi-globals" &>/dev/null || : 
   fi
 }
 # APT functions
-clean_apt_cache() {
+clean_apt_cache(){
   sudo apt-get clean -y 2>/dev/null || :
   sudo apt-get autoclean -y 2>/dev/null || :
   sudo apt-get autoremove --purge -y 2>/dev/null || :
 }
-run_apt() {
+run_apt(){
   yes | sudo apt-get -y --allow-releaseinfo-change --no-install-recommends --no-install-suggests \
     -o Acquire::Languages=none -o APT::Get::Fix-Missing=true \
     -o APT::Get::Fix-Broken=true "$@"
 }
 # Display colorized banner with gradient effect
-display_banner() {
+display_banner(){
   local banner_text="$1"
   shift
   local -a flag_colors=("$@")
@@ -79,7 +81,7 @@ case "${1:-}" in
     exit 0
     ;;
   --version)
-    printf 'update.sh 1.0.0\n'
+    printf 'update.sh 1.0.1\n'
     exit 0
     ;;
 esac
@@ -130,6 +132,17 @@ elif [[ -x /boot/dietpi/dietpi-update ]]; then
 fi
 if command -v -- pihole &>/dev/null; then
   yes | sudo pihole -up
+fi
+# Pi-Apps update (if installed)
+if [[ -d "$HOME/pi-apps" ]]; then
+  if [[ "$(id -u)" -eq 0 ]]; then
+    printf '%b%s%b\n' "$RED" "Skipping Pi-Apps:  cannot run as root" "$DEF" >&2
+  elif [[ -x "$HOME/pi-apps/updater" ]]; then
+    "$HOME/pi-apps/updater" cli-yes
+    "$HOME/pi-apps/updater" set-status &>/dev/null || :
+  else
+    printf '%b%s%b\n' "$YLW" "Pi-Apps found but updater missing" "$DEF" >&2
+  fi
 fi
 if command -v -- rpi-eeprom-update &>/dev/null; then
   sudo rpi-eeprom-update -a

@@ -20,12 +20,12 @@ main() {
   export DXVK_NVAPI_DRS_NGX_DLSS_RR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_latest
   export DXVK_NVAPI_DRS_NGX_DLSS_SR_OVERRIDE_RENDER_PRESET_SELECTION=render_preset_latest
   export __GLX_VENDOR_LIBRARY_NAME=mesa
+  echo 8000 >/sys/module/usbhid/parameters/mousepoll # Dependent on mouse polling rate
   # Reset the latency timer for all PCI devices
   sudo setpci -v -s '*:*' latency_timer=20
   sudo setpci -v -s '0:0' latency_timer=0
   # Set latency timer for all sound cards
   sudo setpci -v -d "*:*:04xx" latency_timer=80
-
   sys_writes=(
     "always:/sys/kernel/mm/transparent_hugepage/enabled"
     "within_size:/sys/kernel/mm/transparent_hugepage/shmem_enabled"
@@ -64,9 +64,9 @@ main() {
   done
   governor_paths=(/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor)
   write_many performance "${governor_paths[@]}"
-  sudo powerprofilesctl set performance &>/dev/null || true
-  sudo cpupower frequency-set -g performance &>/dev/null || true
-  sudo systemctl stop bluetooth.service &>/dev/null || true
+  sudo powerprofilesctl set performance &>/dev/null || :
+  sudo cpupower frequency-set -g performance &>/dev/null || :
+  sudo systemctl stop bluetooth.service &>/dev/null || :
   for usb_device in /sys/bus/usb/devices/*/power/control; do
     [[ -e $usb_device ]] || continue
     printf 'auto\n' | sudo tee "$usb_device" >/dev/null
@@ -75,10 +75,8 @@ main() {
   write_sys 0 /sys/class/rtc/rtc0/wakealarm
   cleanup_shader_cache
   if has gamemoderun; then gamemoderun; fi
-  sync
-  write_sys 3 /proc/sys/vm/drop_caches
+  sync; write_sys 3 /proc/sys/vm/drop_caches
 }
-
 cleanup_shader_cache() {
   readonly XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
   readonly XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
@@ -87,26 +85,25 @@ cleanup_shader_cache() {
   elif [[ -d "$XDG_DATA_HOME/Steam" ]]; then
     steam_root="$XDG_DATA_HOME/Steam"
   else
-    log "Steam not found; skipping cache cleanup."
-    return 0
+    log "Steam not found; skipping cache cleanup."; return 0
   fi
   msg "Found Steam at: $steam_root"
   declare -A games=([730]="cs2:Counter-Strike Global Offensive:csgo")
   readonly kill_procs=(steam steamwebhelper cs2)
   msg "Stopping Steam processes..."
-  pkill -15 -x "${kill_procs[@]}" 2>/dev/null || true
+  pkill -15 -x "${kill_procs[@]}" 2>/dev/null || :
   for _ in {1..10}; do
     pgrep -x "${kill_procs[@]}" >/dev/null || break
     sleep 0.5
   done
-  pkill -9 -x "${kill_procs[@]}" 2>/dev/null || true
+  pkill -9 -x "${kill_procs[@]}" 2>/dev/null || :
   msg "Steam stopped."
   readonly logs=("$steam_root/logs" "$steam_root/dumps")
   msg "Cleaning Steam logs..."
   local dir
   for dir in "${logs[@]}"; do
     [[ -d $dir ]] || continue
-    rm -f "${dir:?}/"* 2>/dev/null || true
+    rm -f "${dir:?}/"* 2>/dev/null || :
   done
   msg "Cleaning game caches..."
   local appid exe gamedir mod game_path t_dir
@@ -115,14 +112,14 @@ cleanup_shader_cache() {
     game_path="$steam_root/steamapps/common/$gamedir"
     [[ -d $game_path ]] || continue
     msg "  -> Cleaning $gamedir ($appid)..."
-    find "$game_path" -type f -name '*.mdmp' -delete 2>/dev/null || true
+    find "$game_path" -type f -name '*.mdmp' -delete 2>/dev/null || :
     target_dirs=(
       "$game_path/game/$mod/shadercache"
       "$steam_root/steamapps/shadercache/$appid"
     )
     for t_dir in "${target_dirs[@]}"; do
       [[ -d $t_dir ]] || continue
-      rm -rf "${t_dir:?}/"* 2>/dev/null || true
+      rm -rf "${t_dir:?}/"* 2>/dev/null || :
     done
   done
   msg "Cleaning GPU caches..."
@@ -142,7 +139,7 @@ cleanup_shader_cache() {
   for dir in "${gpu_cache_dirs[@]}"; do
     [[ -d $dir ]] || continue
     msg "  -> Purging ${dir##*/}"
-    rm -rf "${dir:?}/"* 2>/dev/null || true
+    rm -rf "${dir:?}/"* 2>/dev/null || :
   done
   msg $'\n\033[32mCleanup complete!\033[0m'
 }

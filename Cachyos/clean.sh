@@ -109,8 +109,7 @@ main() {
   echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null
   # Optimize databases, IMPORTANT
   find ~/ -type f -regextype posix-egrep -regex '.*\.(db|sqlite)' \
-        -exec bash -c '[ "$(file -b --mime-type {})" = "application/vnd.sqlite3" ] && sqlite3 {} "VACUUM; REINDEX;"' \; 2>/dev/null
-
+    -exec bash -c '[ "$(file -b --mime-type {})" = "application/vnd.sqlite3" ] && sqlite3 {} "VACUUM; REINDEX;"' \; 2>/dev/null
 
   clean_pkgs
   clean_dev

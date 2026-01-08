@@ -26,13 +26,13 @@ cmd_compile() {
   local mode="${1:-speed-profile}" target="${2:-all}"
   log "Compiling ($target) mode=$mode..."
   case "$target" in
-    all) ash cmd package compile -m "$mode" -a ;;
-    system) ash pm list packages -s | cut -f2 -d: | xargs -n1 -P4 -I{} $ADB cmd package compile -m speed -f "{}" ;;
-    select)
-      for app in com.android.chrome com.google.android.youtube com.twitter.android com.instagram.android; do
-        ash cmd package compile -m speed -f "$app" &>/dev/null || true
-      done
-      ;;
+  all) ash cmd package compile -m "$mode" -a ;;
+  system) ash pm list packages -s | cut -f2 -d: | xargs -n1 -P4 -I{} $ADB cmd package compile -m speed -f "{}" ;;
+  select)
+    for app in com.android.chrome com.google.android.youtube com.twitter.android com.instagram.android; do
+      ash cmd package compile -m speed -f "$app" &>/dev/null || true
+    done
+    ;;
   esac
   log "Compilation complete"
 }
@@ -102,16 +102,16 @@ EOF
 
 [[ $# -eq 0 ]] && usage
 case "$1" in
-  all)
-    mode="${2:-safe}"
-    cmd_clean
-    cmd_compile speed-profile all
-    cmd_settings android-settings.txt "$mode"
-    cmd_doze "$mode"
-    ;;
-  compile) cmd_compile "${2:-speed-profile}" "${3:-all}" ;;
-  clean) cmd_clean ;;
-  settings) cmd_settings "${2:-android-settings.txt}" "${3:-safe}" ;;
-  doze) cmd_doze "${2:-safe}" ;;
-  *) usage ;;
+all)
+  mode="${2:-safe}"
+  cmd_clean
+  cmd_compile speed-profile all
+  cmd_settings android-settings.txt "$mode"
+  cmd_doze "$mode"
+  ;;
+compile) cmd_compile "${2:-speed-profile}" "${3:-all}" ;;
+clean) cmd_clean ;;
+settings) cmd_settings "${2:-android-settings.txt}" "${3:-safe}" ;;
+doze) cmd_doze "${2:-safe}" ;;
+*) usage ;;
 esac

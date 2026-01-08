@@ -88,18 +88,18 @@ EOF
 # --- Main ---
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -r | --release) ARGS+=("--release") ;;
-    --pgo)
-      PGO="$2"
-      shift
-      ;;
-    --bolt) BOLT=1 ;;
-    --mold) MOLD=1 ;;
-    --clean) CLEAN=1 ;;
-    --dry) DRY=1 ;;
-    -h | --help) usage ;;
-    -*) ARGS+=("$1") ;;
-    *) CRATES+=("$1") ;;
+  -r | --release) ARGS+=("--release") ;;
+  --pgo)
+    PGO="$2"
+    shift
+    ;;
+  --bolt) BOLT=1 ;;
+  --mold) MOLD=1 ;;
+  --clean) CLEAN=1 ;;
+  --dry) DRY=1 ;;
+  -h | --help) usage ;;
+  -*) ARGS+=("$1") ;;
+  *) CRATES+=("$1") ;;
   esac
   shift
 done

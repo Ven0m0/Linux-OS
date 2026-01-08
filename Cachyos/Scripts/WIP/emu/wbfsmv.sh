@@ -1,23 +1,24 @@
 #!/usr/bin/env bash
 # wbfsmv.sh - Optimized Wii Backup Manager
-set -euo pipefail; shopt -s nullglob globstar
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t' LC_ALL=C
 
 # --- Config & Args ---
 CONV=1 TRIM=1 DRY=0 VERB=0 REGION=${WBFSMV_REGION:-PAL}
 while [[ ${1:-} == -* ]]; do
   case $1 in
-    -c | --convert) CONV=1 ;; --no-convert) CONV=0 ;;
-    -t | --trim) TRIM=1 ;; --no-trim) TRIM=0 ;;
-    -n | --dry-run) DRY=1 ;; -v | --verbose) VERB=1 ;;
-    -h | --help)
-      echo "Usage: ${0##*/} [-c|-t|-n|-v] [DIR]"
-      exit 0
-      ;;
-    *)
-      echo "Err: $1" >&2
-      exit 2
-      ;;
+  -c | --convert) CONV=1 ;; --no-convert) CONV=0 ;;
+  -t | --trim) TRIM=1 ;; --no-trim) TRIM=0 ;;
+  -n | --dry-run) DRY=1 ;; -v | --verbose) VERB=1 ;;
+  -h | --help)
+    echo "Usage: ${0##*/} [-c|-t|-n|-v] [DIR]"
+    exit 0
+    ;;
+  *)
+    echo "Err: $1" >&2
+    exit 2
+    ;;
   esac
   shift
 done

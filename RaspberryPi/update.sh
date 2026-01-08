@@ -9,8 +9,8 @@ IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m'
 YLW=$'\e[1;33m' RED=$'\e[0;31m'
 # Core helper functions
-has(){ command -v -- "$1" &>/dev/null; }
-usage(){
+has() { command -v -- "$1" &>/dev/null; }
+usage() {
   cat <<'EOF'
 update.sh - Raspberry Pi system update automation
 
@@ -39,24 +39,24 @@ Examples:
 EOF
 }
 # DietPi functions
-load_dietpi_globals(){
+load_dietpi_globals() {
   if [[ -f /boot/dietpi/func/dietpi-globals ]]; then
-    .  "/boot/dietpi/func/dietpi-globals" &>/dev/null || : 
+    . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
   fi
 }
 # APT functions
-clean_apt_cache(){
+clean_apt_cache() {
   sudo apt-get clean -y 2>/dev/null || :
   sudo apt-get autoclean -y 2>/dev/null || :
   sudo apt-get autoremove --purge -y 2>/dev/null || :
 }
-run_apt(){
+run_apt() {
   yes | sudo apt-get -y --allow-releaseinfo-change --no-install-recommends --no-install-suggests \
     -o Acquire::Languages=none -o APT::Get::Fix-Missing=true \
     -o APT::Get::Fix-Broken=true "$@"
 }
 # Display colorized banner with gradient effect
-display_banner(){
+display_banner() {
   local banner_text="$1"
   shift
   local -a flag_colors=("$@")
@@ -76,14 +76,14 @@ display_banner(){
 }
 # Parse arguments
 case "${1:-}" in
-  -h | --help)
-    usage
-    exit 0
-    ;;
-  --version)
-    printf 'update.sh 1.0.1\n'
-    exit 0
-    ;;
+-h | --help)
+  usage
+  exit 0
+  ;;
+--version)
+  printf 'update.sh 1.0.1\n'
+  exit 0
+  ;;
 esac
 # Banner
 banner=$(

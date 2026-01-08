@@ -8,7 +8,7 @@ log(){ printf '%s\n' "$@" >&2; }
 die(){ printf '%s\n' "$1" >&2; exit "${2:-1}"; }
 
 usage(){
-cat << 'EOF'
+  cat <<'EOF'
 Usage: gh merge-prs [OPTIONS]
 
 Combines multiple PRs into one, with auto-squash support.

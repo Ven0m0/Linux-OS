@@ -57,16 +57,16 @@ main() {
     --separator=":" | cut -d: -f2)
   [[ -z $profile ]] && ydie "No profile selected"
   case "$profile" in
-    Desktop*)
-      opts="$OPT_DESKTOP"
-      optdesc="Desktop profile: balanced/safe defaults."
-      ;;
-    Server*)
-      opts="$OPT_SERVER"
-      optdesc="Server profile: more aggressive tuning."
-      ;;
-    Custom*) opts=$(yad --entry --title="Custom mount options" --width=600 --text="Enter F2FS mount options:") ;;
-    *) ydie "Invalid profile" ;;
+  Desktop*)
+    opts="$OPT_DESKTOP"
+    optdesc="Desktop profile: balanced/safe defaults."
+    ;;
+  Server*)
+    opts="$OPT_SERVER"
+    optdesc="Server profile: more aggressive tuning."
+    ;;
+  Custom*) opts=$(yad --entry --title="Custom mount options" --width=600 --text="Enter F2FS mount options:") ;;
+  *) ydie "Invalid profile" ;;
   esac
   [[ -z $opts ]] && ydie "No options entered"
   yad --text-info --title="Selected Options" --width=700 --height=130 --center --filename=<(printf "Tuning profile:\n%s\n\n%s" "$profile" "$opts")

@@ -158,16 +158,16 @@ EOF
 ((EUID == 0)) || die "Root required"
 while getopts "b:i:d:zsknhUF" o; do
   case $o in
-    b) BOOT_SIZE=$OPTARG ;;
-    i) SRC=$OPTARG ;;
-    d) TGT=$OPTARG ;;
-    z) SHRINK=1 ;;
-    s) SSH=1 ;;
-    k) KEEP=1 ;;
-    n) DRY=1 ;;
-    U) NO_USB=1 ;;
-    F) NO_SZ=1 ;;
-    *) usage ;;
+  b) BOOT_SIZE=$OPTARG ;;
+  i) SRC=$OPTARG ;;
+  d) TGT=$OPTARG ;;
+  z) SHRINK=1 ;;
+  s) SSH=1 ;;
+  k) KEEP=1 ;;
+  n) DRY=1 ;;
+  U) NO_USB=1 ;;
+  F) NO_SZ=1 ;;
+  *) usage ;;
   esac
 done
 check_deps

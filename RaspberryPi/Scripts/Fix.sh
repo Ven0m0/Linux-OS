@@ -33,10 +33,10 @@ find_with_fallback() {
   else
     local find_type_arg
     case "$ftype" in
-      f) find_type_arg="-type f" ;;
-      d) find_type_arg="-type d" ;;
-      l) find_type_arg="-type l" ;;
-      *) find_type_arg="-type f" ;;
+    f) find_type_arg="-type f" ;;
+    d) find_type_arg="-type d" ;;
+    l) find_type_arg="-type l" ;;
+    *) find_type_arg="-type f" ;;
     esac
     if [[ -n $action ]]; then
       find "$search_path" "$find_type_arg" -name "$pattern" "$action" "$@"
@@ -65,19 +65,19 @@ EOF
 parse_args() {
   while (($#)); do
     case "$1" in
-      -h | --help)
-        usage
-        exit 0
-        ;;
-      --)
-        shift
-        break
-        ;;
-      -*)
-        usage
-        die "invalid option: $1"
-        ;;
-      *) break ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      usage
+      die "invalid option: $1"
+      ;;
+    *) break ;;
     esac
     shift
   done

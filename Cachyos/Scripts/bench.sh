@@ -61,33 +61,33 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-    -p | --parallel)
-      RUN_PARALLEL=1
-      shift
-      ;;
-    -s | --sort)
-      RUN_SORT=1
-      shift
-      ;;
-    -c | --copy)
-      RUN_COPY=1
-      shift
-      ;;
-    -a | --all)
-      RUN_PARALLEL=1
-      RUN_SORT=1
-      RUN_COPY=1
-      shift
-      ;;
-    -j | --json)
-      EXPORT_JSON=1
-      shift
-      ;;
-    -h | --help) usage ;;
-    *)
-      log "${RED}Unknown option: $1${DEF}"
-      usage
-      ;;
+  -p | --parallel)
+    RUN_PARALLEL=1
+    shift
+    ;;
+  -s | --sort)
+    RUN_SORT=1
+    shift
+    ;;
+  -c | --copy)
+    RUN_COPY=1
+    shift
+    ;;
+  -a | --all)
+    RUN_PARALLEL=1
+    RUN_SORT=1
+    RUN_COPY=1
+    shift
+    ;;
+  -j | --json)
+    EXPORT_JSON=1
+    shift
+    ;;
+  -h | --help) usage ;;
+  *)
+    log "${RED}Unknown option: $1${DEF}"
+    usage
+    ;;
   esac
 done
 

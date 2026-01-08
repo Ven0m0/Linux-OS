@@ -52,13 +52,13 @@ EOF
 ASSUME_YES=0
 while (($#)); do
   case "$1" in
-    -b | --branch)
-      KERNEL_BRANCH=${2:?}
-      shift
-      ;;
-    -y | --yes) ASSUME_YES=1 ;;
-    -h | --help) usage ;;
-    *) die "Unknown option: $1" ;;
+  -b | --branch)
+    KERNEL_BRANCH=${2:?}
+    shift
+    ;;
+  -y | --yes) ASSUME_YES=1 ;;
+  -h | --help) usage ;;
+  *) die "Unknown option: $1" ;;
   esac
   shift
 done

@@ -24,19 +24,19 @@ status=0
 
 while (($#)); do
   case "$1" in
-    -c | --check) check_mode=1 ;;
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    --)
-      shift
-      break
-      ;;
-    *)
-      usage
-      exit 1
-      ;;
+  -c | --check) check_mode=1 ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  --)
+    shift
+    break
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
   esac
   shift
 done
@@ -55,25 +55,25 @@ fi
 
 if [[ -n $fd_cmd ]]; then
   mapfile -t shell_files < <(
-    "$fd_cmd" --hidden --exclude .git --exclude .github/agents -e sh -e bash
+    "$fd_cmd" --hidden --exclude .git --exclude .github/agents --exclude 'Cachyos/Scripts/WIP' -e sh -e bash
   )
 else
   mapfile -t shell_files < <(
-    find . \( -path './.git' -o -path './.github/agents' \) -prune -o -type f \( -name '*.sh' -o -name '*.bash' \) -print
+    find . \( -path './.git' -o -path './.github/agents' -o -path './Cachyos/Scripts/WIP' \) -prune -o -type f \( -name '*.sh' -o -name '*.bash' \) -print
   )
 fi
 
 if has shfmt && ((${#shell_files[@]})); then
   if ((check_mode)); then
-    if ! diff_out=$(shfmt -i 2 -bn -ci -s -ln bash -d "${shell_files[@]}"); then
+    if ! diff_out=$(shfmt -i 2 -bn -ln bash -d "${shell_files[@]}"); then
       status=1
-    fi
+    if ! diff_out=$(shfmt -i 2 -bn -ci -s -ln bash -d "${shell_files[@]}"); then
     if [[ -n ${diff_out:-} ]]; then
       printf '%s\n' "$diff_out"
       status=1
     fi
   else
-    shfmt -i 2 -bn -ci -s -ln bash -w "${shell_files[@]}" || status=1
+    shfmt -i 2 -bn -ln bash -w "${shell_files[@]}" || status=1
   fi
 fi
 

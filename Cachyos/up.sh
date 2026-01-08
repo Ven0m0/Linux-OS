@@ -141,25 +141,25 @@ main() {
   local mode="all"
   while [[ $# -gt 0 ]]; do
     case $1 in
-      -s | --sys) mode="sys" ;; -a | --apps) mode="apps" ;;
-      -d | --dev) mode="dev" ;; -m | --maint) mode="maint" ;;
-      -h | --help) usage ;; *) die "Unknown arg: $1" ;;
+    -s | --sys) mode="sys" ;; -a | --apps) mode="apps" ;;
+    -d | --dev) mode="dev" ;; -m | --maint) mode="maint" ;;
+    -h | --help) usage ;; *) die "Unknown arg: $1" ;;
     esac
     shift
   done
   # Sudo refresh upfront
   sudo -v
   case $mode in
-    sys) up_sys ;;
-    apps) up_apps ;;
-    dev) up_dev ;;
-    maint) up_maint ;;
-    all)
-      up_sys
-      up_apps
-      up_dev
-      up_maint
-      ;;
+  sys) up_sys ;;
+  apps) up_apps ;;
+  dev) up_dev ;;
+  maint) up_maint ;;
+  all)
+    up_sys
+    up_apps
+    up_dev
+    up_maint
+    ;;
   esac
 
   log "Update Complete!"

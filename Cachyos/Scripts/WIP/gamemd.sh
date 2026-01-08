@@ -161,10 +161,3 @@ cleanup_shader_cache() {
   msg $'\n\033[32mCleanup complete!\033[0m'
 }
 main "$@"
-
-# TODO:
-#if command -v powerprofilesctl &>/dev/null; then
-#  exec powerprofilesctl launch -p performance -r "Launched with optimizations" -- "$@"
-#else
-#  exec "$@"
-#fi

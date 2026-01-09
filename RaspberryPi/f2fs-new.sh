@@ -11,11 +11,12 @@ need(){ has "$1" || die "Missing dependency: $1"; }
 
 cleanup(){
   set +e
-  [[ -n "${MNT_OLD:-}" ]] && mountpoint -q "$MNT_OLD" && umount -R "$MNT_OLD"
-  [[ -n "${MNT_NEW:-}" ]] && mountpoint -q "$MNT_NEW" && umount -R "$MNT_NEW"
-  [[ -n "${MNT_BOOT:-}" ]] && mountpoint -q "$MNT_BOOT" && umount -R "$MNT_BOOT"
-  [[ -n "${LOOP_OLD:-}" ]] && losetup -d "$LOOP_OLD" &>/dev/null
-  [[ -n "${LOOP_NEW:-}" ]] && losetup -d "$LOOP_NEW" &>/dev/null
+  [[ -n "${SRC_MNT_ROOT:-}" ]] && mountpoint -q "$SRC_MNT_ROOT" && umount -R "$SRC_MNT_ROOT"
+  [[ -n "${SRC_MNT_BOOT:-}" ]] && mountpoint -q "$SRC_MNT_BOOT" && umount -R "$SRC_MNT_BOOT"
+  [[ -n "${DST_MNT_ROOT:-}" ]] && mountpoint -q "$DST_MNT_ROOT" && umount -R "$DST_MNT_ROOT"
+  [[ -n "${DST_MNT_BOOT:-}" ]] && mountpoint -q "$DST_MNT_BOOT" && umount -R "$DST_MNT_BOOT"
+  [[ -n "${LOOP_SRC:-}" ]] && losetup -d "$LOOP_SRC" &>/dev/null
+  [[ -n "${LOOP_DST:-}" ]] && losetup -d "$LOOP_DST" &>/dev/null
   [[ -n "${WORKDIR:-}" && -d "${WORKDIR:-}" ]] && rm -rf -- "$WORKDIR"
 }
 trap cleanup EXIT
@@ -23,29 +24,26 @@ trap cleanup EXIT
 usage(){
   cat <<'EOF'
 Usage:
-  dietpi-f2fs-image.sh --image-url URL [--out OUT.img] [--root-label LABEL] [--root-opts "opts"]
+  dietpi-trixie-f2fs.sh [--out OUT.img] [--root-label LABEL] [--root-opts "opts"]
+
+Defaults:
+  Source URL: https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz
+  OUT.img: ./DietPi_RPi234-ARMv8-Trixie_f2fs.img
+  LABEL: dietpi-root
+  rootflags: compress_algorithm=zstd,compress_chksum,atgc,gc_merge,background_gc=on,lazytime
 
 Example:
-  ./dietpi-f2fs-image.sh \
-    --image-url "https://dietpi.com/downloads/images/DietPi_RPi-ARMv8-Bookworm.img.xz" \
-    --out DietPi_RPi4_f2fs.img
-
-Notes:
-- /boot stays vfat.
-- Root partition becomes f2fs.
-- You should validate f2fs support on your kernel/boot path.
+  sudo ./dietpi-trixie-f2fs.sh --out /tmp/dietpi-f2fs.img
 EOF
 }
 
-IMAGE_URL=""
-OUT_IMG=""
+SRC_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
+OUT_IMG="./DietPi_RPi234-ARMv8-Trixie_f2fs.img"
 ROOT_LABEL="dietpi-root"
 ROOT_OPTS="compress_algorithm=zstd,compress_chksum,atgc,gc_merge,background_gc=on,lazytime"
-# ROOT_OPTS is conservative-ish; tune later.
 
 while (($#)); do
   case "$1" in
-    --image-url) IMAGE_URL="${2:-}"; shift 2;;
     --out) OUT_IMG="${2:-}"; shift 2;;
     --root-label) ROOT_LABEL="${2:-}"; shift 2;;
     --root-opts) ROOT_OPTS="${2:-}"; shift 2;;
@@ -54,10 +52,8 @@ while (($#)); do
   esac
 done
 
-[[ -n "$IMAGE_URL" ]] || { usage; die "Need --image-url"; }
-
-need git
 need curl
+need xz
 need losetup
 need parted
 need rsync
@@ -75,185 +71,141 @@ need awk
 WORKDIR="$(mktemp -d)"
 cd "$WORKDIR"
 
-fname_from_url(){ local u="$1"; printf '%s\n' "${u##*/}"; }
-SRC_ARCHIVE="$(fname_from_url "$IMAGE_URL")"
-log "Downloading: $IMAGE_URL\n"
-curl -fL --retry 5 --retry-delay 2 -o "$SRC_ARCHIVE" "$IMAGE_URL"
+src_archive="${SRC_URL##*/}"
+log "Downloading: $SRC_URL\n"
+curl -fL --retry 5 --retry-delay 2 -o "$src_archive" "$SRC_URL"
 
-IMG_SRC=""
-case "$SRC_ARCHIVE" in
-  *.img) IMG_SRC="$SRC_ARCHIVE";;
-  *.img.xz)
-    need xz
-    log "Decompressing xz...\n"
-    xz -dk "$SRC_ARCHIVE"
-    IMG_SRC="${SRC_ARCHIVE%.xz}"
-    ;;
-  *.img.gz)
-    need gzip
-    log "Decompressing gz...\n"
-    gzip -dk "$SRC_ARCHIVE"
-    IMG_SRC="${SRC_ARCHIVE%.gz}"
-    ;;
-  *)
-    die "Unsupported image type: $SRC_ARCHIVE (expect .img, .img.xz, .img.gz)"
-    ;;
-esac
+log "Decompressing xz...\n"
+xz -dk "$src_archive"
+SRC_IMG="${src_archive%.xz}"
+[[ -f "$SRC_IMG" ]] || die "Decompressed .img not found: $SRC_IMG"
 
-[[ -f "$IMG_SRC" ]] || die "Source image not found after decompress: $IMG_SRC"
+OUT_IMG="$(readlink -f -- "$OUT_IMG")"
+log "Copying to output image: $OUT_IMG\n"
+cp -f -- "$SRC_IMG" "$OUT_IMG"
 
-# Output image path
-if [[ -z "$OUT_IMG" ]]; then
-  OUT_IMG="$(pwd)/DietPi_f2fs.img"
-else
-  OUT_IMG="$(readlink -f -- "$OUT_IMG")"
-fi
+# Attach both images (source read-only, destination writable)
+LOOP_SRC="$(losetup --find --show --partscan --read-only "$SRC_IMG")"
+LOOP_DST="$(losetup --find --show --partscan "$OUT_IMG")"
+log "Source loop: $LOOP_SRC\n"
+log "Dest loop:   $LOOP_DST\n"
 
-log "Copying image to: $OUT_IMG\n"
-cp -f -- "$IMG_SRC" "$OUT_IMG"
+SRC_BOOT="${LOOP_SRC}p1"
+SRC_ROOT="${LOOP_SRC}p2"
+DST_BOOT="${LOOP_DST}p1"
+DST_ROOT="${LOOP_DST}p2"
+[[ -b "$SRC_BOOT" && -b "$SRC_ROOT" ]] || die "Source partitions missing (expected p1,p2)"
+[[ -b "$DST_BOOT" && -b "$DST_ROOT" ]] || die "Dest partitions missing (expected p1,p2)"
 
-# Attach loop for the working image
-LOOP_OLD="$(losetup --find --show --partscan "$OUT_IMG")"
-log "Loop device: $LOOP_OLD\n"
-
-# Detect partitions: assume p1=boot, p2=root (DietPi typical)
-BOOT_DEV="${LOOP_OLD}p1"
-ROOT_DEV="${LOOP_OLD}p2"
-[[ -b "$BOOT_DEV" && -b "$ROOT_DEV" ]] || die "Expected partitions not found: $BOOT_DEV and $ROOT_DEV"
-
-# Sanity: root must be ext4 currently
-root_fstype="$(blkid -o value -s TYPE "$ROOT_DEV" || true)"
-[[ "$root_fstype" == "ext4" ]] || die "Expected ext4 rootfs on $ROOT_DEV, got: ${root_fstype:-unknown}"
-
-# Reduce ext4 to make room for recreation? We will recreate partition in-place:
-# Steps:
-# - fsck ext4
-# - (optional) shrink ext4 to minimum? Not needed if we keep same start/end and just reformat.
-# We'll keep same geometry: record start/end sectors then recreate partition with same boundaries, then mkfs.f2fs.
+src_root_type="$(blkid -o value -s TYPE "$SRC_ROOT" || true)"
+dst_root_type="$(blkid -o value -s TYPE "$DST_ROOT" || true)"
+[[ "$src_root_type" == "ext4" ]] || die "Expected source rootfs ext4, got: ${src_root_type:-unknown}"
+[[ "$dst_root_type" == "ext4" ]] || die "Expected dest rootfs ext4 before conversion, got: ${dst_root_type:-unknown}"
 
 read_part_geom(){
-  local dev="$1" partnum="$2"
-  # Output: start end (sectors)
-  # parted -m: unit s ensures sectors
-  parted -m -s "$dev" unit s print | awk -F: -v p="$partnum" '$1==p {gsub(/s/,"",$2); gsub(/s/,"",$3); print $2, $3}'
+  local disk="$1" partnum="$2"
+  parted -m -s "$disk" unit s print | awk -F: -v p="$partnum" '$1==p {gsub(/s/,"",$2); gsub(/s/,"",$3); print $2, $3}'
 }
 
-# parted operates on the loop device (disk), not partition node
-DISK_DEV="$LOOP_OLD"
-geom="$(read_part_geom "$DISK_DEV" 2)"
-[[ -n "$geom" ]] || die "Failed to read partition 2 geometry"
+geom="$(read_part_geom "$LOOP_DST" 2)"
+[[ -n "$geom" ]] || die "Failed reading dest partition 2 geometry"
 read -r ROOT_START ROOT_END <<<"$geom"
+log "Dest root geometry (sectors): start=$ROOT_START end=$ROOT_END\n"
 
-log "Root partition geometry (sectors): start=$ROOT_START end=$ROOT_END\n"
+# Mount source partitions for later
+SRC_MNT_BOOT="$WORKDIR/src_boot"
+SRC_MNT_ROOT="$WORKDIR/src_root"
+mkdir -p "$SRC_MNT_BOOT" "$SRC_MNT_ROOT"
+mount "$SRC_BOOT" "$SRC_MNT_BOOT"
+mount -o ro "$SRC_ROOT" "$SRC_MNT_ROOT"
 
-log "Running e2fsck/resize2fs preflight...\n"
-e2fsck -fy "$ROOT_DEV" >/dev/null
-# Ensure ext4 is maximally compact (not strictly needed but reduces rsync time sometimes after boots)
-resize2fs -M "$ROOT_DEV" >/dev/null || true
+# Unmount dest root so we can delete/recreate p2
+# (It shouldn't be mounted, but make it explicit if user ran script twice)
+DST_MNT_ROOT="$WORKDIR/dst_root"
+DST_MNT_BOOT="$WORKDIR/dst_boot"
+mkdir -p "$DST_MNT_ROOT" "$DST_MNT_BOOT"
+mount "$DST_BOOT" "$DST_MNT_BOOT"
 
-# Mount old root and boot
-MNT_OLD="$WORKDIR/mnt_old"
-MNT_BOOT="$WORKDIR/mnt_boot"
-mkdir -p "$MNT_OLD" "$MNT_BOOT"
-mount -o ro "$ROOT_DEV" "$MNT_OLD"
-mount "$BOOT_DEV" "$MNT_BOOT"
+log "e2fsck/resize2fs preflight on dest ext4 root...\n"
+e2fsck -fy "$DST_ROOT" >/dev/null
+resize2fs -M "$DST_ROOT" >/dev/null || true
 
-# Unmount old root so we can delete/recreate partition 2 safely
-umount -R "$MNT_OLD"
+log "Recreating dest partition 2 as f2fs...\n"
+parted -s "$LOOP_DST" rm 2
+parted -s "$LOOP_DST" unit s mkpart primary "$ROOT_START" "$ROOT_END"
+partprobe "$LOOP_DST" || true
 
-log "Recreating partition 2 as f2fs...\n"
-parted -s "$DISK_DEV" rm 2
-parted -s "$DISK_DEV" unit s mkpart primary "$ROOT_START" "$ROOT_END"
-partprobe "$DISK_DEV" || true
-# loopdev partition nodes can lag; force re-scan
-losetup -d "$LOOP_OLD" &>/dev/null
-LOOP_NEW="$(losetup --find --show --partscan "$OUT_IMG")"
-LOOP_OLD="$LOOP_NEW"
-BOOT_DEV="${LOOP_OLD}p1"
-ROOT_DEV="${LOOP_OLD}p2"
+# Reattach dest loop to refresh partition nodes
+losetup -d "$LOOP_DST" &>/dev/null
+LOOP_DST="$(losetup --find --show --partscan "$OUT_IMG")"
+DST_BOOT="${LOOP_DST}p1"
+DST_ROOT="${LOOP_DST}p2"
+[[ -b "$DST_ROOT" ]] || die "Dest root partition missing after recreate: $DST_ROOT"
 
-[[ -b "$ROOT_DEV" ]] || die "Root partition device missing after recreate: $ROOT_DEV"
+log "Formatting dest root as f2fs (label=$ROOT_LABEL)...\n"
+mkfs.f2fs -f -l "$ROOT_LABEL" "$DST_ROOT" >/dev/null
 
-log "Formatting root as f2fs (label=$ROOT_LABEL)...\n"
-mkfs.f2fs -f -l "$ROOT_LABEL" "$ROOT_DEV" >/dev/null
+log "Mounting dest f2fs root...\n"
+mount "$DST_ROOT" "$DST_MNT_ROOT"
 
-# Mount new root and boot
-MNT_NEW="$WORKDIR/mnt_new"
-mkdir -p "$MNT_NEW"
-mount "$ROOT_DEV" "$MNT_NEW"
-mount "$BOOT_DEV" "$MNT_BOOT"
-
-# Re-mount original root (now gone), so we need source from image before we nuked it.
-# We already nuked it. So we must copy from a preserved snapshot.
-# Fix: Use a second loop attached to the original IMG_SRC as the source.
-log "Attaching source image for copy...\n"
-LOOP_SRC="$(losetup --find --show --partscan "$IMG_SRC")"
-SRC_ROOT="${LOOP_SRC}p2"
-SRC_BOOT="${LOOP_SRC}p1"
-[[ -b "$SRC_ROOT" ]] || die "Source root partition missing: $SRC_ROOT"
-SRC_MNT="$WORKDIR/mnt_src"
-mkdir -p "$SRC_MNT"
-mount -o ro "$SRC_ROOT" "$SRC_MNT"
-
-log "Copying rootfs to f2fs (rsync)...\n"
-# Keep numeric ids; preserve xattrs/acls if possible.
+log "Copying rootfs ext4 -> f2fs (rsync)...\n"
 rsync -aHAX --numeric-ids --info=progress2 \
   --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/run/*' --exclude='/tmp/*' \
-  "$SRC_MNT"/ "$MNT_NEW"/
+  "$SRC_MNT_ROOT"/ "$DST_MNT_ROOT"/
 
-umount -R "$SRC_MNT"
-losetup -d "$LOOP_SRC" &>/dev/null
-
-# Update /etc/fstab in new root
-FSTAB="$MNT_NEW/etc/fstab"
+# Patch fstab (minimal)
+FSTAB="$DST_MNT_ROOT/etc/fstab"
 if [[ -f "$FSTAB" ]]; then
-  log "Updating fstab...\n"
-  # Replace rootfs line to f2fs; keep boot line intact.
-  # DietPi fstab varies; do minimal surgery.
-  # If it uses UUID= for /, keep it but update fstype.
-  # If it uses /dev/mmcblk0p2, keep it but update fstype.
-  sed -i \
-    -e 's/[[:space:]]\+ext4[[:space:]]\+defaults[[:space:]]/ f2fs defaults /' \
-    -e 's/[[:space:]]\+ext4[[:space:]]\+/ f2fs /' \
-    "$FSTAB" || true
+  log "Patching /etc/fstab root fstype -> f2fs...\n"
+  # Change only the line that mounts /
+  # Works whether it’s UUID=..., PARTUUID=..., /dev/mmcblk0p2, etc.
+  # Replace the third column (fstype) for the / mount.
+  awk '
+    BEGIN{OFS="\t"}
+    $0 ~ /^[[:space:]]*#/ {print; next}
+    NF < 4 {print; next}
+    $2 == "/" {$3="f2fs"; print; next}
+    {print}
+  ' "$FSTAB" >"$FSTAB.tmp" && mv -f -- "$FSTAB.tmp" "$FSTAB"
 fi
 
-# Determine new root UUID
-ROOT_UUID="$(blkid -o value -s UUID "$ROOT_DEV")"
-[[ -n "$ROOT_UUID" ]] || die "Failed to read UUID from new f2fs root"
+# Patch cmdline.txt in dest /boot (Pi firmware reads /boot)
+CMDLINE="$DST_MNT_BOOT/cmdline.txt"
+[[ -f "$CMDLINE" ]] || die "Missing dest cmdline.txt: $CMDLINE"
 
-# Update /boot/cmdline.txt to rootfstype=f2fs and root=UUID=...
-CMDLINE="$MNT_BOOT/cmdline.txt"
-[[ -f "$CMDLINE" ]] || die "Missing $CMDLINE"
+ROOT_UUID="$(blkid -o value -s UUID "$DST_ROOT")"
+[[ -n "$ROOT_UUID" ]] || die "Failed to read UUID of dest f2fs root"
 
-log "Patching cmdline.txt...\n"
+log "Patching /boot/cmdline.txt root=UUID=..., rootfstype=f2fs, rootflags=...\n"
 cmd="$(<"$CMDLINE")"
-# Ensure single line
 cmd="${cmd//$'\n'/ }"
-# Replace root=... token
+
 cmd="$(sed -E "s/(^|[[:space:]])root=[^[:space:]]+/\1root=UUID=${ROOT_UUID}/" <<<"$cmd")"
-# Replace/add rootfstype=f2fs
 if grep -qE '(^|[[:space:]])rootfstype=' <<<"$cmd"; then
   cmd="$(sed -E 's/(^|[[:space:]])rootfstype=[^[:space:]]+/\1rootfstype=f2fs/' <<<"$cmd")"
 else
   cmd+=" rootfstype=f2fs"
 fi
-# Add rootflags if not present
-if ! grep -qE '(^|[[:space:]])rootflags=' <<<"$cmd"; then
+if grep -qE '(^|[[:space:]])rootflags=' <<<"$cmd"; then
+  cmd="$(sed -E "s/(^|[[:space:]])rootflags=[^[:space:]]+/\1rootflags=${ROOT_OPTS}/" <<<"$cmd")"
+else
   cmd+=" rootflags=${ROOT_OPTS}"
 fi
 
 printf '%s\n' "$cmd" >"$CMDLINE"
 
-# Optional: ensure f2fs tools exist in rootfs (DietPi usually can install on first boot, but root mount must succeed first)
-# We'll just verify /sbin/fsck.f2fs existence; if not, warn.
-if [[ ! -x "$MNT_NEW/sbin/fsck.f2fs" && ! -x "$MNT_NEW/usr/sbin/fsck.f2fs" ]]; then
-  log "WARN: fsck.f2fs not found in image rootfs. Not fatal for boot, but fsck on boot may fail.\n"
+# Basic warning: fsck.f2fs may not exist; not fatal for boot
+if [[ ! -x "$DST_MNT_ROOT/sbin/fsck.f2fs" && ! -x "$DST_MNT_ROOT/usr/sbin/fsck.f2fs" ]]; then
+  log "WARN: fsck.f2fs not found in rootfs. Boot should still work; fsck service (if any) may complain.\n"
 fi
 
 sync
-umount -R "$MNT_NEW"
-umount -R "$MNT_BOOT"
+umount -R "$DST_MNT_ROOT"
+umount -R "$DST_MNT_BOOT"
+umount -R "$SRC_MNT_ROOT"
+umount -R "$SRC_MNT_BOOT"
 
-log "Done.\nOutput image: $OUT_IMG\n"
-log "Flash it (example): sudo dd if='$OUT_IMG' of=/dev/sdX bs=4M conv=fsync status=progress\n"
+log "Done.\n"
+log "Output image: $OUT_IMG\n"
+log "Flash example: sudo dd if='$OUT_IMG' of=/dev/mmcblk0 bs=4M conv=fsync status=progress\n"
+log "First boot: have HDMI/serial. If it panics mounting root, your kernel/boot path lacks f2fs-at-boot support.\n"

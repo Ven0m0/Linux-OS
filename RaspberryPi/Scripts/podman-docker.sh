@@ -80,7 +80,10 @@ EOF
   echo "Enabling Docker service..."
   sudo systemctl enable --now docker
   echo "Adding user to docker group..."
+  sudo groupadd docker
   sudo usermod -aG docker "$USER"
+  sudo systemctl enable docker.service
+  sudo systemctl enable containerd.service
   echo "Configuring Docker systemd unit..."
   sudo mkdir -p /etc/systemd/system/docker.service.d
   sudo tee /etc/systemd/system/docker.service.d/no-block-boot.conf >/dev/null <<'EOF'

@@ -11,8 +11,8 @@ Features:
   - Optional filtering (video/image), dry-run, skip-existing
 
 Examples:
-  python3 -OO snap-mem.py --json /path/memories_history.json --out /path/out
-  python3 -OO snap-mem.py   # interactive TUI if TTY
+  python3 -O snap-mem.py --json /path/memories_history.json --out /path/out
+  python3 -O snap-mem.py   # interactive TUI if TTY
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ import os
 import re
 import shutil
 import sys
+import threading
 import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -39,7 +40,8 @@ if TYPE_CHECKING:
 
 DATE_FMT: Final[str] = "%Y-%m-%d %H:%M:%S UTC"
 JSON_NAME_RE: Final[re.Pattern[str]] = re.compile(r"memories_history\.json$", re.I)
-
+CHUNK_SIZE: Final[int] = 1048576
+MACOS_JUNK_RE: Final[re.Pattern[str]] = re.compile(r"^\._")
 
 @dataclass(frozen=True, slots=True)
 class Item:
@@ -47,17 +49,12 @@ class Item:
   url: str
   is_video: bool
 
-
 def die(msg: str, code: int = 1) -> None:
   print(msg, file=sys.stderr)
   raise SystemExit(code)
 
-
 def parse_args(argv: list[str]) -> argparse.Namespace:
-  p = argparse.ArgumentParser(
-    prog="snap-mem.py",
-    description="Download Snapchat Saved Media from memories_history.json (stdlib only).",
-  )
+  p = argparse.ArgumentParser(prog="snap-mem.py", description="Download Snapchat Saved Media from memories_history.json (stdlib only).")
   p.add_argument("--json", dest="json_path", default="", help="Path to memories_history.json")
   p.add_argument("--out", dest="out_dir", default="", help="Output directory for downloads")
   p.add_argument("--type", dest="media_type", default="all", choices=["all", "video", "image"], help="Filter media type")
@@ -71,19 +68,18 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
   p.add_argument("--workers", type=int, default=4, help="Number of parallel download workers (default: 4)")
   return p.parse_args(argv)
 
-
 def load_items(json_path: Path, media_type: str) -> list[Item]:
   try:
     raw = json_path.read_text(encoding="utf-8")
   except OSError as e:
-    die(f"Failed to read JSON file: {json_path}\n{e}")
+    die(f"Failed to read JSON: {json_path}\n{e}")
   try:
     data = json.loads(raw)
   except json.JSONDecodeError as e:
     die(f"Invalid JSON: {json_path}\n{e}")
   media_items = data.get("Saved Media", [])
   if not isinstance(media_items, list):
-    die('JSON does not contain expected list at key "Saved Media"')
+    die('JSON missing "Saved Media" list')
   out: list[Item] = []
   want_video, want_image = media_type == "video", media_type == "image"
   for obj in media_items:
@@ -91,9 +87,7 @@ def load_items(json_path: Path, media_type: str) -> list[Item]:
       continue
     mt = str(obj.get("Media Type", "")).lower()
     is_video = mt == "video"
-    if want_video and not is_video:
-      continue
-    if want_image and is_video:
+    if (want_video and not is_video) or (want_image and is_video):
       continue
     date_str, url = obj.get("Date"), obj.get("Media Download Url")
     if not isinstance(date_str, str) or not date_str:
@@ -103,43 +97,35 @@ def load_items(json_path: Path, media_type: str) -> list[Item]:
     out.append(Item(date_str=date_str, url=url, is_video=is_video))
   return out
 
-
 def build_base_name(date_str: str) -> str:
   dt = datetime.strptime(date_str, DATE_FMT)
   return dt.strftime("%Y-%m-%d_%H-%M-%S")
 
-
-def make_unique_name(base: str, suffix: str, existing: set[str]) -> str:
-  name = f"{base}{suffix}"
-  n = 1
-  while name in existing:
-    name = f"{base}_{n}{suffix}"
-    n += 1
-  return name
-
-
-def list_dir_entries(dirpath: Path) -> list[Path]:
-  try:
-    entries = [p for p in dirpath.iterdir() if not p.name.startswith(".")]
-  except OSError:
-    return []
-  entries.sort(key=lambda p: (not p.is_dir(), p.name.lower()))
-  return entries
-
+def make_unique_name(base: str, suffix: str, existing: set[str], lock: threading.Lock) -> str:
+  with lock:
+    name = f"{base}{suffix}"
+    n = 1
+    while name in existing:
+      name = f"{base}_{n}{suffix}"
+      n += 1
+    existing.add(name)
+    return name
 
 def tui_select_path(*, title: str, start: Path, mode: str) -> Path:
   if not sys.stdin.isatty() or not sys.stdout.isatty():
-    die("TUI requires a TTY. Provide --json/--out or use --no-tui.")
+    die("TUI requires TTY. Use --json/--out or --no-tui.")
   if mode not in ("file", "dir"):
     raise ValueError("mode must be 'file' or 'dir'")
   start = start.expanduser().resolve() if start.exists() else Path.cwd().resolve()
-
   def run(stdscr: CursesWindow) -> Path:
     curses.curs_set(0)
     stdscr.keypad(True)
     cwd, idx = start, 0
     while True:
-      entries = list_dir_entries(cwd)
+      try:
+        entries = sorted([p for p in cwd.iterdir() if not p.name.startswith(".")], key=lambda p: (not p.is_dir(), p.name.lower()))
+      except OSError:
+        entries = []
       shown: list[Path] = [cwd.parent, *entries]
       idx = min(idx, max(0, len(shown) - 1))
       stdscr.erase()
@@ -174,22 +160,18 @@ def tui_select_path(*, title: str, start: Path, mode: str) -> Path:
         elif mode == "file" and JSON_NAME_RE.search(pick.name):
           return pick
     return cwd
-
   try:
     return curses.wrapper(run)
   except KeyboardInterrupt:
     die("Aborted.")
 
-
 def download_to_path(*, opener: OpenerDirector, url: str, dest: Path, timeout: float, user_agent: str) -> None:
   tmp = dest.with_suffix(dest.suffix + ".part")
   req = Request(url, headers={"User-Agent": user_agent})
-  with opener.open(req, timeout=timeout) as r:
-    with open(tmp, "wb") as f:
-      while chunk := r.read(524288):
-        f.write(chunk)
+  with opener.open(req, timeout=timeout) as r, open(tmp, "wb") as f:
+    while chunk := r.read(CHUNK_SIZE):
+      f.write(chunk)
   os.replace(tmp, dest)
-
 
 def download_with_retries(*, opener: OpenerDirector, url: str, dest: Path, timeout: float, user_agent: str, retries: int, backoff: float) -> None:
   last_exc: Exception | None = None
@@ -205,8 +187,7 @@ def download_with_retries(*, opener: OpenerDirector, url: str, dest: Path, timeo
     raise last_exc
   raise RuntimeError("download failed")
 
-
-def extract_zip_atomically(zip_path: Path, base_name: str, out_dir: Path, existing: set[str]) -> list[str]:
+def extract_zip_atomically(zip_path: Path, base_name: str, out_dir: Path, existing: set[str], lock: threading.Lock) -> list[str]:
   extracted: list[str] = []
   temp_dir = zip_path.with_suffix(".unzip")
   try:
@@ -214,7 +195,7 @@ def extract_zip_atomically(zip_path: Path, base_name: str, out_dir: Path, existi
     with zipfile.ZipFile(zip_path, "r") as z:
       z.extractall(temp_dir)
     for item in temp_dir.iterdir():
-      if item.name.startswith("._"):
+      if MACOS_JUNK_RE.match(item.name):
         continue
       lname = item.name.lower()
       if lname.endswith(".png"):
@@ -225,44 +206,39 @@ def extract_zip_atomically(zip_path: Path, base_name: str, out_dir: Path, existi
         suffix = "_video.mp4"
       else:
         continue
-      final_name = make_unique_name(base_name, suffix, existing)
-      final_path = out_dir / final_name
-      os.replace(item, final_path)
-      existing.add(final_name)
+      final_name = make_unique_name(base_name, suffix, existing, lock)
+      os.replace(item, out_dir / final_name)
       extracted.append(final_name)
   finally:
     shutil.rmtree(temp_dir, ignore_errors=True)
     zip_path.unlink(missing_ok=True)
   return extracted
 
-
 def main(argv: list[str]) -> int:
   ns = parse_args(argv)
   json_path_s = ns.json_path.strip().strip('"\'')
   out_dir_s = ns.out_dir.strip().strip('"\'')
-  json_path: Path | None = None
-  out_dir: Path | None = None
-  if json_path_s:
-    json_path = Path(json_path_s)
-  elif not ns.no_tui:
+  json_path: Path | None = Path(json_path_s) if json_path_s else None
+  out_dir: Path | None = Path(out_dir_s) if out_dir_s else None
+  if json_path is None and not ns.no_tui:
     json_path = tui_select_path(title="Select memories_history.json", start=Path.cwd(), mode="file")
-  if out_dir_s:
-    out_dir = Path(out_dir_s)
-  elif not ns.no_tui:
+  if out_dir is None and not ns.no_tui:
     out_dir = tui_select_path(title="Select output directory", start=Path.cwd(), mode="dir")
   if json_path is None:
-    die("Missing --json (or enable TUI by omitting --no-tui).")
+    die("Missing --json (or omit --no-tui for TUI).")
   if out_dir is None:
-    die("Missing --out (or enable TUI by omitting --no-tui).")
+    die("Missing --out (or omit --no-tui for TUI).")
   json_path, out_dir = json_path.expanduser(), out_dir.expanduser()
   if not json_path.is_file():
-    die(f"JSON file does not exist: {json_path}")
+    die(f"JSON does not exist: {json_path}")
   out_dir.mkdir(parents=True, exist_ok=True)
   items = load_items(json_path, ns.media_type)
   if not items:
     print("No media items found.")
     return 0
   existing = {p.name for p in out_dir.iterdir() if p.is_file()}
+  existing_prefixes = {name.rsplit("_", 1)[0] if "_" in name else name.rsplit(".", 1)[0] for name in existing}
+  lock = threading.Lock()
   opener = build_opener()
   download_tasks: list[tuple[Item, str]] = []
   for it in items:
@@ -271,7 +247,7 @@ def main(argv: list[str]) -> int:
     except ValueError as e:
       print(f"FAIL bad date '{it.date_str}': {e}", file=sys.stderr)
       continue
-    if ns.skip_existing and any(f.startswith(base) for f in existing):
+    if ns.skip_existing and base in existing_prefixes:
       continue
     download_tasks.append((it, base))
   if ns.dry_run:
@@ -280,29 +256,25 @@ def main(argv: list[str]) -> int:
     print(f"Done. Would download {len(download_tasks)} files.")
     return 0
   ok, failed = 0, 0
-
   def download_item(task: tuple[Item, str]) -> bool:
     it, base = task
     zip_path = out_dir / f"{base}_memory.zip"
     try:
       download_with_retries(opener=opener, url=it.url, dest=zip_path, timeout=ns.timeout, user_agent=ns.user_agent, retries=ns.retries, backoff=ns.retry_backoff)
       if zipfile.is_zipfile(zip_path):
-        extracted = extract_zip_atomically(zip_path, base, out_dir, existing)
+        extracted = extract_zip_atomically(zip_path, base, out_dir, existing, lock)
         for name in extracted:
           print(f"✓ {name}")
       else:
         ext = ".mp4" if it.is_video else ".jpg"
-        final_name = make_unique_name(base, ext, existing)
-        final_path = out_dir / final_name
-        os.replace(zip_path, final_path)
-        existing.add(final_name)
+        final_name = make_unique_name(base, ext, existing, lock)
+        os.replace(zip_path, out_dir / final_name)
         print(f"✓ {final_name}")
       return True
     except (HTTPError, URLError, TimeoutError, OSError) as e:
       print(f"✗ {base}: {e}", file=sys.stderr)
       zip_path.unlink(missing_ok=True)
       return False
-
   with ThreadPoolExecutor(max_workers=ns.workers) as executor:
     futures = {executor.submit(download_item, task): task for task in download_tasks}
     for future in as_completed(futures):

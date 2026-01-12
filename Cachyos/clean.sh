@@ -2,8 +2,7 @@
 # clean.sh - Optimized System & Privacy Cleaner
 set -euo pipefail
 shopt -s nullglob globstar
-IFS=$'\n\t'
-export LC_ALL=C
+IFS=$'\n\t' LC_ALL=C
 
 # --- Config & Helpers ---
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' M=$'\e[35m' C=$'\e[36m' X=$'\e[0m'
@@ -22,10 +21,12 @@ banner() {
 clean_pkgs() {
   log "Cleaning package caches..."
   if has pacman; then
+    sudo find "/var/cache/pacman/pkg" -maxdepth 1 -type d -name "download-*" -exec rm -rf {} +
     # TODO: implement https://github.com/dusklinux/dusky/blob/main/user_scripts/arch_setup_scripts/scripts/065_cache_purge.sh
-    try sudo pacman -Sc --noconfirm
-    has paccache && try sudo paccache -rk1
-    try sudo pacman -Rns $(pacman -Qtdq) --noconfirm
+    yes | paru -Scc --noconfirm &>/dev/null || :
+    yes | sudo pacman -Scc --noconfirm &>/dev/null || :
+    has paccache && try sudo paccache -rk1 &>/dev/null || :
+    try sudo pacman -Rns $(pacman -Qtdq) --noconfirm || :
   elif has apt-get; then
     try sudo apt-get autoremove -y && try sudo apt-get clean
   elif has dnf; then

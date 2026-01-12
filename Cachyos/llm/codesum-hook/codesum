@@ -1,83 +1,31 @@
 #!/usr/bin/env bash
-# shellcheck enable=all shell=bash source-path=SCRIPTDIR
+# shellcheck enable=all shell=bash
 set -euo pipefail
-IFS=$'\n\t'
+shopt -s nullglob
 
-# codesum - Quick context generator for Claude Code
-# Usage: codesum [options] [directory]
+# Enhanced CodeSum CLI wrapper
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CODESUM_PY="${SCRIPT_DIR}/codesum.py"
+CODESUM="${SCRIPT_DIR}/codesum.py"
 
-show_help(){
-  cat <<'EOF'
-codesum - Optimized code context for Claude Code
+has(){ command -v -- "$1" &>/dev/null; }
+die(){ printf '%s\n' "$@" >&2; exit 1; }
 
-USAGE:
-  codesum [OPTIONS] [DIR]
+[[ -x "$CODESUM" ]] || die "Error: $CODESUM not executable"
+has python3 || die "Error: python3 not found"
 
-OPTIONS:
-  -c, --compress    Enable AI compression (requires OPENAI_API_KEY)
-  -q, --quiet       Suppress progress output
-  -o, --output FILE Custom output path
-  -h, --help        Show this help
-
-EXAMPLES:
-  # Generate context for current directory
-  codesum
-
-  # With AI compression
-  export OPENAI_API_KEY="sk-..."
-  codesum --compress
-
-  # Save to custom location
-  codesum --output context.md ~/projects/myapp
-
-  # Pipe directly to Claude Code
-  codesum --quiet | claude-code --context -
-
-INTEGRATION:
-  # Auto-generate on git commit
-  echo 'codesum --quiet &' >> .git/hooks/post-commit
-
-  # As Claude Code tool
-  ln -sf $(pwd)/codesum ~/.local/bin/codesum
-  claude-code --tool codesum .
-EOF
-}
-
-# Parse args
-COMPRESS=""
-QUIET=""
-OUTPUT=""
-DIR="."
-
-while (($#)); do
-  case "$1" in
-    -c|--compress) COMPRESS="--compress";;
-    -q|--quiet) QUIET="--quiet";;
-    -o|--output) OUTPUT="$2"; shift;;
-    -h|--help) show_help; exit 0;;
-    -*) echo "Unknown option: $1" >&2; exit 1;;
-    *) DIR="$1";;
-  esac
-  shift
-done
-
-# Build command
-CMD=(python3 "$CODESUM_PY" --all)
-[[ -n "$COMPRESS" ]] && CMD+=("$COMPRESS")
-CMD+=("$DIR")
-
-# Redirect stderr if quiet
-if [[ -n "$QUIET" ]]; then
-  "${CMD[@]}" 2>/dev/null
-else
-  "${CMD[@]}"
-fi
-
-# Copy to custom output if specified
-if [[ -n "$OUTPUT" ]]; then
-  SUMMARY="${DIR}/.summary_files/code_summary.md"
-  [[ -f "$SUMMARY" ]] && cp "$SUMMARY" "$OUTPUT"
-fi
+# Quick aliases
+case "${1:-}" in
+  openai|gpt) shift; exec python3 "$CODESUM" "${1:-.}" -c --llm openai "$@" ;;
+  gemini|gem) shift; exec python3 "$CODESUM" "${1:-.}" -c --llm gemini "$@" ;;
+  claude|ant) shift; exec python3 "$CODESUM" "${1:-.}" -c --llm claude "$@" ;;
+  trace|tb) shift; 
+    [[ -n "${1:-}" ]] || die "Usage: codesum trace <project> [traceback]"
+    PROJECT="$1"; shift
+    TB="${*:-$(cat)}"
+    exec python3 "$CODESUM" "$PROJECT" -t "$TB" ;;
+  repo|remote) shift;
+    [[ -n "${1:-}" ]] || die "Usage: codesum repo <github-url>"
+    exec python3 "$CODESUM" "$1" -c "${@:2}" ;;
+  *) exec python3 "$CODESUM" "$@" ;;
+esac

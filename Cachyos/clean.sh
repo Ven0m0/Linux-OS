@@ -39,16 +39,6 @@ clean_pkgs() {
     try flatpak uninstall --unused -y
     try rm -rf "$HOME/.var/app/*/cache/*"
   fi
-
-  if has snap; then
-    log "Cleaning Snap..."
-    local -a snaps
-    mapfile -t snaps < <(snap list --all | awk '/disabled/{print $1 "\t" $3}')
-    for s in "${snaps[@]}"; do
-      IFS=$'\t' read -r n v <<<"$s"
-      try sudo snap remove "$n" --revision="$v"
-    done
-  fi
 }
 
 clean_dev() {
@@ -82,7 +72,8 @@ clean_sys() {
     try sudo bleachbit -c --preset
   fi
   has localepurge && try sudo localepurge
-  try sudo fstrim -av
+  try sudo fstrim -a
+  try sudo xfs_scrub /
 }
 
 privacy_config() {

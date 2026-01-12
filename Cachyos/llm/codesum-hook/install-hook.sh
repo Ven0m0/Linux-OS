@@ -4,8 +4,8 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # Claude Code hook installer
-HOOKS_DIR="${HOME}/.config/claude-code/hooks"
-TOOLS_DIR="${HOME}/.config/claude-code/tools"
+HOOKS_DIR="${HOME}/.claude/hooks"
+TOOLS_DIR="${HOME}/.claude/tools"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 msg(){ printf '%s\n' "$@"; }

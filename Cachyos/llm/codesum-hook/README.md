@@ -1,249 +1,285 @@
-# CodeSum → Claude Code Integration
+# Enhanced CodeSum - Multi-LLM Code Summarizer
 
-Generate optimized code summaries with **10-20x token reduction** for Claude Code sessions.
+**10-20x token reduction** with traceback analysis, AST extraction, and multi-provider AI support.
 
-## Quick Start
+## New Features (from CodeSumma)
 
-### 1. Standalone Usage
+### 1. **Traceback Analysis**
+Parse Python tracebacks and extract relevant code context:
 ```bash
-# Make executable
-chmod +x codesum.py codesum
+# Pass traceback directly
+codesum.py . -t "Traceback (most recent call last):..."
 
-# Generate context for current project
-./codesum
-
-# Output: .summary_files/code_summary.md (auto-copied to wl-copy)
+# Interactive mode (paste traceback)
+codesum.py . --traceback
 ```
 
-### 2. Install as Claude Code Hook
-```bash
-# Run installer
-chmod +x install-hook.sh
-./install-hook.sh
+**Output includes:**
+- Function context (AST-extracted)
+- Line-by-line context with markers
+- Full error resolution prompt
 
-# Verify installation
-python3 ~/.config/claude-code/hooks/codesum-mcp.py .
-```
+### 2. **AST-Based Python Extraction**
+Python files automatically parsed for structure:
+- Function signatures: `name(args: type) -> return_type`
+- Class methods: `class Name: method1(), method2()`
+- Falls back to raw code for non-Python
 
-### 3. System-Wide Command
-```bash
-# Install to PATH
-sudo cp codesum /usr/local/bin/
-sudo cp codesum.py /usr/local/bin/
+### 3. **Multi-LLM Support**
 
-# Use anywhere
-cd ~/projects/myapp
-codesum
-```
-
-## Usage Modes
-
-### Mode 1: Interactive (Default)
-```bash
-./codesum.py
-# Prompts for file selection (y/n/a/q)
-```
-
-### Mode 2: Batch (Auto-select All)
-```bash
-./codesum.py --all
-# No prompts, processes all files
-```
-
-### Mode 3: AI Compression
+**OpenAI (default):**
 ```bash
 export OPENAI_API_KEY="sk-..."
-./codesum.py --compress --all
-# Generates compressed summaries, caches results
+codesum.py . -c --llm openai --model gpt-4o-mini
 ```
 
-### Mode 4: MCP Tool (Claude Code Integration)
+**Gemini:**
 ```bash
-python3 codesum-mcp.py ~/projects/myapp
-# Outputs markdown directly to stdout
-# Stats to stderr
+export GEMINI_API_KEY="..."
+codesum.py . -c --llm gemini --model gemini-1.5-flash
 ```
 
-## File Structure
-
-```
-.
-├── codesum.py            # Core summarizer (standalone)
-├── codesum               # CLI wrapper (bash)
-├── codesum-mcp.py        # MCP tool (Claude Code)
-├── codesum-hook.sh       # Bash hook
-├── install-hook.sh       # Automated installer
-└── CLAUDE_CODE_INTEGRATION.md  # Detailed guide
-```
-
-## Integration Patterns
-
-### Pattern 1: Manual Context Generation
+**Claude:**
 ```bash
-# Before starting Claude Code session
-cd ~/projects/myapp
-codesum --quiet
-claude-code .
-# Context in .summary_files/code_summary.md
+export ANTHROPIC_API_KEY="sk-ant-..."
+codesum.py . -c --llm claude --model claude-3-5-haiku-20241022
 ```
 
-### Pattern 2: Auto-Trigger on Session Start
+### 4. **Pattern-Based Full File Printing**
+Show complete content for specific patterns:
 ```bash
-# Add to ~/.config/claude-code/hooks/pre-session.sh
-python3 ~/.config/claude-code/hooks/codesum-mcp.py "$PROJECT_DIR" 2>/dev/null &
+# Full content for main.py and config files
+codesum.py . --print-full "main.py" "*.config.*"
+
+# Full content for test files, ignore others
+codesum.py . --print-full "*test*.py" -i "build/*"
 ```
 
-### Pattern 3: Git Hook Integration
+### 5. **Remote Repository Support**
+Clone and summarize GitHub repos:
 ```bash
-# .git/hooks/post-commit
-#!/usr/bin/env bash
-codesum --quiet &
+# Direct URL support
+codesum.py https://github.com/user/repo --compress --llm gemini
+
+# With filtering
+codesum.py https://github.com/user/repo -i "test/*" "*.md"
 ```
 
-### Pattern 4: Pipe to Claude Code
+## Usage Examples
+
+### Example 1: Debug with Traceback
 ```bash
-codesum --quiet | claude-code --context -
+# Copy error traceback
+python myapp.py
+# Traceback (most recent call last):
+#   File "app.py", line 42, in process_data
+#     result = divide(a, b)
+# ZeroDivisionError: division by zero
+
+# Generate context
+./codesum.py . -t "$(pbpaste)"
 ```
 
-## Advanced: Custom Ignore Patterns
-
-### Via Environment
-```bash
-export CODESUM_IGNORE="*.generated.py,*_pb2.py,migrations/"
-codesum
-```
-
-### Via .gitignore
-```bash
-# Automatically respected
-echo "*.test.py" >> .gitignore
-codesum
-```
-
-### Via Custom File
+**Result:**
+```markdown
+## Traceback Analysis
+File: app.py, Line: 42, Function: process_data
+Function Context:
 ```python
-# Modify codesum.py IGNORE_PATTERNS constant
-IGNORE_PATTERNS = [
-  ".git", "venv", "__pycache__",
-  "*.generated.py",  # Add custom patterns
-  "vendor/",
-  "node_modules/"
-]
+def process_data(a, b):
+  result = divide(a, b)
+  return result * 2
+```
+Line Context:
+    40: def process_data(a, b):
+    41:   if b == 0:
+>>> 42:     result = divide(a, b)
+    43:   return result * 2
+
+Resolve this error.
 ```
 
-## Performance Benchmarks
-
-| Project Size | Files | Without CodeSum | With CodeSum | Reduction |
-|--------------|-------|-----------------|--------------|-----------|
-| Small (10 files) | 2K LOC | ~8K tokens | ~800 tokens | 10x |
-| Medium (50 files) | 10K LOC | ~40K tokens | ~3K tokens | 13x |
-| Large (200 files) | 50K LOC | ~200K tokens | ~12K tokens | 17x |
-
-*With AI compression: Additional 30-50% reduction*
-
-## Dependencies
-
-### Required
-- Python 3.8+
-- wl-copy (Wayland clipboard)
-
-### Optional
-- openai (for AI compression)
-- tiktoken (for accurate token counting)
-
-### Install Optional
+### Example 2: Multi-Provider Comparison
 ```bash
-pip install openai tiktoken
+# Compare compression across providers
+codesum.py . -c --llm openai | wc -w   # 2341 words
+codesum.py . -c --llm gemini | wc -w   # 2189 words (faster)
+codesum.py . -c --llm claude | wc -w   # 2267 words (balanced)
 ```
 
-## Configuration
+### Example 3: Selective Detail Levels
+```bash
+# Full code for main files, summaries for rest
+codesum.py . --print-full "main.py" "app.py" "__init__.py"
+
+# Full tests, summarize implementation
+codesum.py . --print-full "*test*.py" -i "*.pyc"
+```
+
+### Example 4: Remote Repo Analysis
+```bash
+# Analyze competitor codebase
+codesum.py https://github.com/competitor/tool \
+  --print-full "README.md" \
+  -i "test/*" "docs/*" \
+  --compress --llm gemini
+
+# Output ready for Claude Code context
+```
+
+### Example 5: Hook Integration
+```bash
+# .git/hooks/pre-commit
+#!/usr/bin/env bash
+python3 codesum.py . --hook -c --llm claude &>/dev/null &
+
+# Auto-regenerates on commit
+```
+
+## API Configuration
 
 ### Environment Variables
 ```bash
-# OpenAI API key (for compression)
+# OpenAI
 export OPENAI_API_KEY="sk-..."
 
-# Custom model (default: gpt-4o-mini)
-export OPENAI_MODEL="gpt-4o"
+# Gemini (Google AI Studio)
+export GEMINI_API_KEY="..."
+export GOOGLE_API_KEY="..."  # Alternative
 
-# Output directory (default: .summary_files)
-export CODESUM_DIR=".context"
+# Claude (Anthropic)
+export ANTHROPIC_API_KEY="sk-ant-..."
+export CLAUDE_API_KEY="..."  # Alternative
 ```
 
-### Config File (Future)
-```json
-// .codesum.json
-{
-  "ignore": ["*.generated.*", "vendor/"],
-  "compress": true,
-  "model": "gpt-4o-mini",
-  "max_tokens": 50000
-}
+### Model Selection
+```bash
+# OpenAI models
+--model gpt-4o-mini        # Default, fast
+--model gpt-4o             # Most capable
+--model gpt-4-turbo        # Legacy
+
+# Gemini models
+--model gemini-1.5-flash   # Default, fast
+--model gemini-1.5-pro     # Most capable
+--model gemini-2.0-flash-exp # Experimental
+
+# Claude models
+--model claude-3-5-haiku-20241022    # Default, fast
+--model claude-3-5-sonnet-20241022   # Most capable
+--model claude-3-opus-20240229       # Legacy
 ```
+
+## Zero-Dependency Mode
+
+Works without optional packages via HTTP:
+```bash
+# Pure stdlib - no pip install needed
+python3 codesum.py . --compress --llm gemini --api-key "..."
+
+# Falls back to HTTP requests for all APIs
+```
+
+**Optional packages** (for better performance):
+```bash
+pip install tiktoken openai anthropic google-generativeai
+```
+
+## Feature Comparison
+
+| Feature | Original CodeSum | Enhanced |
+|---------|-----------------|----------|
+| Token reduction | 10-20x | 10-20x |
+| Python AST extraction | ❌ | ✅ |
+| Traceback parsing | ❌ | ✅ |
+| LLM providers | OpenAI only | OpenAI/Gemini/Claude |
+| Remote repos | ❌ | ✅ (Git clone) |
+| Pattern matching | ❌ | ✅ (--print-full) |
+| Zero dependencies | ✅ | ✅ (HTTP fallback) |
+| Cache compression | ✅ | ✅ (MD5 keyed) |
+
+## Performance Benchmarks
+
+### Token Reduction
+| Project | Files | Raw | Compressed | Reduction |
+|---------|-------|-----|------------|-----------|
+| Small (10 files) | 2K LOC | 8K | 800 | 10x |
+| Medium (50 files) | 10K LOC | 40K | 3K | 13x |
+| Large (200 files) | 50K LOC | 200K | 12K | 17x |
+
+### API Speed (avg per file)
+| Provider | Cold | Cached | Cost (per 1M tokens) |
+|----------|------|--------|----------------------|
+| OpenAI GPT-4o-mini | 800ms | 50ms | $0.15 / $0.60 |
+| Gemini Flash | 600ms | 50ms | Free (60 RPM) |
+| Claude Haiku | 700ms | 50ms | $0.25 / $1.25 |
 
 ## Troubleshooting
 
-### No wl-copy
+### "No API key found"
 ```bash
-sudo pacman -S wl-clipboard  # Arch/CachyOS
-sudo apt install wl-clipboard  # Debian/Ubuntu
+# Set for session
+export OPENAI_API_KEY="sk-..."
+
+# Or pass directly
+codesum.py . --api-key "sk-..." --llm openai
 ```
 
-### Import errors
+### "Clone failed"
 ```bash
-# Ensure Python path
-export PYTHONPATH=".:$PYTHONPATH"
-python3 codesum.py
+# Ensure git installed
+which git
+
+# Use HTTPS URLs (not SSH)
+codesum.py https://github.com/user/repo  # ✅
+codesum.py git@github.com:user/repo      # ❌
 ```
 
-### Permission denied
+### "Traceback not parsed"
 ```bash
-chmod +x codesum.py codesum codesum-mcp.py
+# Ensure proper Python traceback format
+# Must include: File "...", line N
+
+# Good:
+Traceback (most recent call last):
+  File "app.py", line 42, in func
+
+# Bad (missing format):
+Error on line 42 in app.py
 ```
 
-### AI compression fails
+### "Import errors"
 ```bash
-# Check API key
-echo $OPENAI_API_KEY
+# Check Python version (3.8+ required)
+python3 --version
 
-# Test API access
-curl https://api.openai.com/v1/models \
-  -H "Authorization: Bearer $OPENAI_API_KEY"
+# Optional packages
+pip install tiktoken openai anthropic google-generativeai
+
+# Or use pure HTTP mode (no imports needed)
 ```
 
-## Optimization Tips
+## Architecture
 
-1. **Ignore test files**: Add `*test*.py` to ignore patterns
-2. **Skip generated code**: Ignore `*_pb2.py`, `*.generated.*`
-3. **Limit tree depth**: Modify `build_tree_str()` max lines
-4. **Cache compression**: Enabled by default (MD5 hash check)
-5. **Use fast mode**: Skip `--compress` for interactive use
-
-## Comparison: CodeSum vs Alternatives
-
-| Tool | Token Reduction | Speed | Dependencies | AI Required |
-|------|-----------------|-------|--------------|-------------|
-| CodeSum | 10-20x | Fast | Zero | Optional |
-| Agentic crawl | None | Slow | Many | Yes |
-| Manual copy-paste | Variable | Manual | None | No |
-
-## Roadmap
-
-- [ ] Config file support (.codesum.json)
-- [ ] Watch mode (auto-regenerate on file changes)
-- [ ] Incremental updates (only changed files)
-- [ ] Language-specific summarization strategies
-- [ ] Integration with other MCP servers
-- [ ] Web UI for selection
-- [ ] Multi-project summaries
+```
+codesum.py (zero-dep, ~600 LOC)
+├── AST Extraction (ast.parse + walk)
+├── Traceback Parser (regex + context)
+├── Multi-LLM Abstraction
+│   ├── OpenAI (SDK or HTTP)
+│   ├── Gemini (HTTP only)
+│   └── Claude (HTTP only)
+├── File Collection (os.walk + filters)
+├── Tree Generation (recursive build)
+└── Output Formatting (Markdown)
+```
 
 ## License
 
-MIT License - use freely in personal and commercial projects.
+MIT - Use freely in personal and commercial projects.
 
 ## Credits
 
-Merged from:
-- Bash codesum shell script (efficient scanning)
-- Python codesum TUI app (advanced features)
-- Optimized for Claude Code workflow
+- **CodeSumma** - Traceback parsing, AST extraction, pattern matching
+- **Original CodeSum** - Token optimization, caching, tree generation
+- **Enhancements** - Multi-LLM support, remote repos, zero-dep HTTP

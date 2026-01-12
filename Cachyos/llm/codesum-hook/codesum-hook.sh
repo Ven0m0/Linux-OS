@@ -1,27 +1,31 @@
 #!/usr/bin/env bash
 # shellcheck enable=all shell=bash
-set -euo pipefail
-IFS=$'\n\t'
+# codesum-hook.sh: Generate code summary via unified python script.
 
-# Claude Code hook: Generate optimized code summary
-# Usage: codesum-hook.sh [project_dir]
+set -euo pipefail
+shopt -s nullglob globstar
+
+# --- Configuration ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CODESUM_PY="${SCRIPT_DIR}/codesum.py"
+
+# --- Helpers ---
+msg() { printf '%s\n' "$@"; }
+die() { printf '%s\n' "$@" >&2; exit 1; }
+has() { command -v -- "$1" &>/dev/null; }
+
+# --- Main ---
+[[ -x "$CODESUM_PY" ]] || die "Error: $CODESUM_PY not executable or found."
+has python3 || die "Error: python3 not found."
 
 PROJECT_DIR="${1:-.}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CODESUM="${SCRIPT_DIR}/codesum.py"
 
-# Verify codesum.py exists
-[[ -x "$CODESUM" ]] || { echo "Error: $CODESUM not found or not executable" >&2; exit 1; }
+# Execute in hook mode (silent generation, outputs path)
+SUMMARY_PATH=$(python3 "$CODESUM_PY" "$PROJECT_DIR" --hook)
 
-# Run in batch mode, output summary path
-cd "$PROJECT_DIR" || exit 1
-python3 "$CODESUM" --all 2>/dev/null
-
-# Output the summary file path for Claude Code to read
-SUMMARY_FILE="${PROJECT_DIR}/.summary_files/code_summary.md"
-if [[ -f "$SUMMARY_FILE" ]]; then
-  cat "$SUMMARY_FILE"
+if [[ -f "$SUMMARY_PATH" ]]; then
+  # Output content for consumption
+  cat "$SUMMARY_PATH"
 else
-  echo "Error: Summary generation failed" >&2
-  exit 1
+  die "Error: Summary generation failed at $PROJECT_DIR"
 fi

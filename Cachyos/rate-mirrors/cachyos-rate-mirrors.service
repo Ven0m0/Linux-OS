@@ -1,0 +1,13 @@
+[Unit]
+Description=CachyOS Mirror Ranking Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/cachyos-rate-mirrors
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

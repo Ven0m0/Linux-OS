@@ -1,0 +1,11 @@
+[Unit]
+Description=CachyOS Mirror Ranking Timer
+Requires=cachyos-rate-mirrors.service
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=12h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

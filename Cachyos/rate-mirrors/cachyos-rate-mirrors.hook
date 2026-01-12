@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = rate-mirrors
+
+[Action]
+Description = Updating CachyOS mirrors...
+When = PostTransaction
+Exec = /usr/bin/cachyos-rate-mirrors

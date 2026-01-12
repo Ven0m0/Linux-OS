@@ -283,25 +283,12 @@ def create_summary(cfg: Config, files: list[FileEntry]) -> str:
   return ''.join(parts)
 
 def copy_to_clipboard(text: str) -> bool:
-  """Cross-platform clipboard copy with fallbacks."""
-  methods = [
-    # macOS
-    lambda: subprocess.run(['pbcopy'], input=text.encode(), check=True),
-    # Linux X11
-    lambda: subprocess.run(['xclip', '-sel', 'clip'], input=text.encode(), check=True),
-    # Linux Wayland
-    lambda: subprocess.run(['wl-copy'], input=text.encode(), check=True),
-    # WSL
-    lambda: subprocess.run(['clip.exe'], input=text.encode(), check=True),
-  ]
-  
-  for method in methods:
-    try:
-      method()
-      return True
-    except (FileNotFoundError, subprocess.CalledProcessError):
-      continue
-  return False
+  """Copy to clipboard via wl-copy."""
+  try:
+    subprocess.run(['wl-copy'], input=text.encode(), check=True)
+    return True
+  except (FileNotFoundError, subprocess.CalledProcessError):
+    return False
 
 def main() -> int:
   parser = argparse.ArgumentParser(description="Generate optimized code summaries")
@@ -365,7 +352,7 @@ def main() -> int:
   if copy_to_clipboard(summary):
     print("✓ Copied to clipboard")
   else:
-    print("⚠ Clipboard copy failed (install xclip/wl-copy)", file=sys.stderr)
+    print("⚠ Clipboard copy failed (install wl-copy)", file=sys.stderr)
   
   # Stats
   total_tokens = sum(e.tokens for e in selected)

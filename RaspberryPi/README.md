@@ -63,18 +63,69 @@ wget -qO- https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edi
 
 <details>
 
-<summary><b>Raspberry pi os on f2fs</b></summary>
+<summary><b>DietPi/Raspberry Pi OS on F2FS</b></summary>
 
-- download an os image ([DietPi](https://dietpi.com) or [Raspberry Pi OS](https://www.raspberrypi.com/software))
-- use the [raspi-f2fs.sh](raspi-f2fs.sh) script to convert the image to F2FS
-- answer the prompts
-- success
+Convert DietPi or Raspberry Pi OS from ext4 to F2FS for better SD card performance and longevity.
 
-further links:
+### Quick Start
 
-- [https://github.com/aarontc/raspbian-f2fs](https://github.com/aarontc/raspbian-f2fs)
-- [https://github.com/d-a-v/raspbian-f2fs](https://github.com/d-a-v/raspbian-f2fs)
-- [https://github.com/timothybrown/raspbian-f2fs](https://github.com/timothybrown/raspbian-f2fs)
+**Interactive Mode (Easiest):**
+```bash
+cd RaspberryPi
+sudo ./f2fs-new.sh -i
+```
+
+**Direct Flash:**
+```bash
+# Download latest DietPi and flash to device
+sudo ./f2fs-new.sh --device /dev/mmcblk0
+
+# Use local image
+sudo ./f2fs-new.sh --src ~/DietPi.img.xz --device /dev/mmcblk0
+```
+
+**Create Image File:**
+```bash
+# Download and convert to F2FS image
+sudo ./f2fs-new.sh --out ~/dietpi-f2fs.img
+
+# Flash later
+sudo dd if=~/dietpi-f2fs.img of=/dev/mmcblk0 bs=4M conv=fsync status=progress
+```
+
+### Scripts
+
+| Script | Purpose | Best For |
+|--------|---------|----------|
+| `f2fs-new.sh` | Convert images to F2FS | Image creation, direct flashing |
+| `raspi-f2fs.sh` | Advanced F2FS flasher | Custom boot size, shrinking, SSH |
+| `dietpi-chroot.sh` | Post-conversion customization | Initramfs regen, package install |
+
+### Features
+
+✅ **DietPi Detection** - Auto-detects and handles DietPi-specific configs
+✅ **Interactive Mode** - fzf-based selection for source and destination
+✅ **F2FS Optimization** - Compression, ATGC, garbage collection
+✅ **Config Cleanup** - Removes ext4-specific settings automatically
+✅ **Verification** - Post-conversion checks ensure bootability
+
+### Documentation
+
+- **[Complete Guide](../DIETPI_F2FS_GUIDE.md)** - Full documentation with troubleshooting
+- **[Examples](EXAMPLES.md)** - Common use cases and workflows
+- **[PRD](../PRD.md)** - Product requirements and technical details
+
+### Requirements
+
+- Raspberry Pi 3, 4, or 5
+- Kernel with F2FS support (most modern kernels have this)
+- Tools: `mkfs.f2fs`, `losetup`, `rsync`, `fzf` (for interactive mode)
+
+### Further Reading
+
+- [DietPi Documentation](https://dietpi.com/docs)
+- [F2FS Kernel Docs](https://www.kernel.org/doc/html/latest/filesystems/f2fs.html)
+- Original implementations: [aarontc](https://github.com/aarontc/raspbian-f2fs), [d-a-v](https://github.com/d-a-v/raspbian-f2fs), [timothybrown](https://github.com/timothybrown/raspbian-f2fs)
 
 </details>
 

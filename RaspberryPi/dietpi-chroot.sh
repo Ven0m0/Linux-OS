@@ -75,9 +75,22 @@ setup_image() {
   BOOT_PART="${LOOP_DEV}p1"
   ROOT_PART="${LOOP_DEV}p2"
   [[ ! -b $ROOT_PART ]] && die "Could not find root partition ($ROOT_PART). Is this a valid PI image?"
+
+  # Detect filesystem type
+  local fstype
+  fstype=$(blkid -s TYPE -o value "$ROOT_PART" 2>/dev/null || echo "unknown")
+  log "Detected root filesystem: $fstype"
+
   mkdir -p "$MOUNT_DIR"
   log "Mounting root partition..."
-  mount "$ROOT_PART" "$MOUNT_DIR" || die "Failed to mount root"
+
+  # Mount with appropriate options based on filesystem type
+  if [[ $fstype == "f2fs" ]]; then
+    mount -t f2fs -o defaults,noatime "$ROOT_PART" "$MOUNT_DIR" || die "Failed to mount F2FS root"
+  else
+    mount "$ROOT_PART" "$MOUNT_DIR" || die "Failed to mount root"
+  fi
+
   log "Mounting boot partition..."
   mount "$BOOT_PART" "$MOUNT_DIR/boot" || die "Failed to mount boot"
 }
@@ -149,7 +162,19 @@ shrink_image() {
   truncate -s "$endresult" "$IMG_FILE" || die "truncate failed"
   msg "Image shrunk successfully"
 }
+run_postconvert_tasks() {
+  # Check if initramfs needs regeneration
+  if [[ -f "$MOUNT_DIR/.regenerate_initramfs" ]]; then
+    log "Regenerating initramfs for F2FS support..."
+    chroot "$MOUNT_DIR" /bin/bash -c "update-initramfs -u" || warn "Failed to regenerate initramfs"
+    rm -f "$MOUNT_DIR/.regenerate_initramfs"
+  fi
+}
+
 run_optimization() {
+  # Run post-conversion tasks if marker files exist
+  run_postconvert_tasks
+
   msg "Entering CHROOT environment (ARM64)..."
   printf '%s\n' "-----------------------------------------------------" \
     "  You are now inside the image." \

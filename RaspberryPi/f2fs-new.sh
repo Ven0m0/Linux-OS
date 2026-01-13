@@ -24,33 +24,122 @@ trap cleanup EXIT
 usage(){
   cat <<'EOF'
 Usage:
-  dietpi-trixie-f2fs.sh [--out OUT.img] [--root-label LABEL] [--root-opts "opts"]
+  f2fs-new.sh [OPTIONS]
+
+Options:
+  --src URL|FILE      Source image (URL or local file)
+  --out FILE          Output image path
+  --device DEV        Flash to device instead of creating image
+  --root-label LABEL  Root partition label (default: dietpi-root)
+  --root-opts "opts"  F2FS mount options
+  -i, --interactive   Interactive mode with fzf selection
+  -h, --help          Show this help
 
 Defaults:
-  Source URL: https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz
-  OUT.img: ./DietPi_RPi234-ARMv8-Trixie_f2fs.img
-  LABEL: dietpi-root
-  rootflags: compress_algorithm=zstd,compress_chksum,atgc,gc_merge,background_gc=on,lazytime
+  Source: https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz
+  Output: ./DietPi_RPi234-ARMv8-Trixie_f2fs.img
+  Label: dietpi-root
+  Options: compress_algorithm=zstd,compress_chksum,atgc,gc_merge,background_gc=on,lazytime
 
-Example:
-  sudo ./dietpi-trixie-f2fs.sh --out /tmp/dietpi-f2fs.img
+Examples:
+  # Download and convert DietPi (interactive)
+  sudo ./f2fs-new.sh -i
+
+  # Use local image file
+  sudo ./f2fs-new.sh --src ~/DietPi.img.xz --out ~/dietpi-f2fs.img
+
+  # Flash directly to device
+  sudo ./f2fs-new.sh --src ~/DietPi.img.xz --device /dev/mmcblk0
+
+  # Use custom F2FS options
+  sudo ./f2fs-new.sh --out ~/custom.img --root-opts "compress_algorithm=lz4"
 EOF
+}
+
+select_source(){
+  has fzf || die "fzf required for interactive mode. Install: sudo pacman -S fzf"
+
+  msg "Select source image:\n"
+  local -a choices=(
+    "1|Download DietPi Trixie (latest)"
+    "2|Local image file"
+    "3|Custom URL"
+  )
+
+  local choice
+  choice=$(printf '%s\n' "${choices[@]}" | fzf --height 10 --prompt="Source> " --with-nth=2 -d'|' | cut -d'|' -f1)
+
+  case "$choice" in
+    1) SRC_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz";;
+    2)
+      SRC_URL=$(find . -maxdepth 3 \( -name "*.img" -o -name "*.img.xz" \) 2>/dev/null \
+        | fzf --prompt="Select image> " --preview='ls -lh {}' || die "No image selected")
+      ;;
+    3)
+      printf 'Enter URL: '
+      read -r SRC_URL
+      [[ -n $SRC_URL ]] || die "No URL provided"
+      ;;
+    *) die "No source selected";;
+  esac
+
+  log "Source: $SRC_URL\n"
+}
+
+select_output(){
+  has fzf || die "fzf required for interactive mode"
+
+  msg "Select output:\n"
+  local -a choices=(
+    "1|Create image file"
+    "2|Flash to device"
+  )
+
+  local choice
+  choice=$(printf '%s\n' "${choices[@]}" | fzf --height 10 --prompt="Output> " --with-nth=2 -d'|' | cut -d'|' -f1)
+
+  case "$choice" in
+    1)
+      printf 'Output image path [%s]: ' "$OUT_IMG"
+      read -r user_out
+      [[ -n $user_out ]] && OUT_IMG="$user_out"
+      OUTPUT_DEVICE=""
+      ;;
+    2)
+      OUTPUT_DEVICE=$(lsblk -pndo NAME,MODEL,SIZE,TRAN,TYPE | awk 'tolower($0)~/disk/&&tolower($0)~/usb|mmc/' \
+        | fzf --prompt="Select device (DATA WILL BE ERASED)> " --preview='lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT {1}' \
+        | awk '{print $1}' || die "No device selected")
+      OUT_IMG=""
+      log "Device: $OUTPUT_DEVICE\n"
+      ;;
+    *) die "No output selected";;
+  esac
 }
 
 SRC_URL="https://dietpi.com/downloads/images/DietPi_RPi234-ARMv8-Trixie.img.xz"
 OUT_IMG="./DietPi_RPi234-ARMv8-Trixie_f2fs.img"
 ROOT_LABEL="dietpi-root"
 ROOT_OPTS="compress_algorithm=zstd,compress_chksum,atgc,gc_merge,background_gc=on,lazytime"
+INTERACTIVE=0
+OUTPUT_DEVICE=""
 
 while (($#)); do
   case "$1" in
+    --src) SRC_URL="${2:-}"; shift 2;;
     --out) OUT_IMG="${2:-}"; shift 2;;
+    --device) OUTPUT_DEVICE="${2:-}"; OUT_IMG=""; shift 2;;
     --root-label) ROOT_LABEL="${2:-}"; shift 2;;
     --root-opts) ROOT_OPTS="${2:-}"; shift 2;;
+    -i|--interactive) INTERACTIVE=1; shift;;
     -h|--help) usage; exit 0;;
     *) die "Unknown arg: $1";;
   esac
 done
+
+if ((INTERACTIVE)); then
+  select_source
+  select_output
+fi
 
 need curl
 need xz
@@ -68,21 +157,128 @@ need sed
 need grep
 need awk
 
+remove_ext4_configs(){
+  local root_mnt="$1"
+
+  log "Removing ext4-specific configs...\n"
+
+  # Remove ext4 journal settings from mke2fs.conf
+  local mke2fs_conf="$root_mnt/etc/mke2fs.conf"
+  if [[ -f "$mke2fs_conf" ]]; then
+    if grep -q "journal" "$mke2fs_conf" 2>/dev/null; then
+      log "Removed ext4 journal settings from mke2fs.conf\n"
+      sed -i '/journal/d' "$mke2fs_conf"
+    fi
+  fi
+
+  # Remove ext4-specific cron jobs
+  local cron_dir="$root_mnt/etc/cron.d"
+  if [[ -d "$cron_dir" ]]; then
+    for f in "$cron_dir"/*; do
+      [[ -f "$f" ]] || continue
+      if grep -qi "e2fsck\|tune2fs\|ext4" "$f" 2>/dev/null; then
+        log "Removed ext4-specific cron job: ${f##*/}\n"
+        rm -f "$f"
+      fi
+    done
+  fi
+
+  # Remove ext4-specific systemd timers
+  local systemd_dir="$root_mnt/etc/systemd/system"
+  if [[ -d "$systemd_dir" ]]; then
+    for f in "$systemd_dir"/*.timer; do
+      [[ -f "$f" ]] || continue
+      if grep -qi "e2fsck\|tune2fs\|ext4" "$f" 2>/dev/null; then
+        log "Removed ext4-specific systemd timer: ${f##*/}\n"
+        rm -f "$f"
+        rm -f "${f%.timer}.service" 2>/dev/null || :
+      fi
+    done
+  fi
+
+  log "ext4-specific configs removed\n"
+}
+
+add_f2fs_to_initramfs(){
+  local root_mnt="$1"
+
+  local initramfs_modules="$root_mnt/etc/initramfs-tools/modules"
+  local boot_dir="$root_mnt/boot"
+
+  # Check if system uses initramfs
+  if [[ ! -d "$root_mnt/etc/initramfs-tools" ]]; then
+    log "System does not use initramfs-tools, skipping F2FS module addition\n"
+    return 0
+  fi
+
+  # Check if initramfs exists in boot
+  local has_initramfs=0
+  if ls "$boot_dir"/initrd.img-* &>/dev/null || ls "$boot_dir"/initramfs-* &>/dev/null; then
+    has_initramfs=1
+  fi
+
+  if ((has_initramfs == 0)); then
+    log "No initramfs found in /boot, skipping F2FS module addition\n"
+    return 0
+  fi
+
+  log "Adding F2FS module to initramfs...\n"
+
+  # Add f2fs to modules if not already present
+  if [[ ! -f "$initramfs_modules" ]]; then
+    mkdir -p "$(dirname "$initramfs_modules")"
+    echo "f2fs" >"$initramfs_modules"
+    log "Created $initramfs_modules with F2FS module\n"
+  elif ! grep -q "^f2fs$" "$initramfs_modules" 2>/dev/null; then
+    echo "f2fs" >>"$initramfs_modules"
+    log "Added F2FS to existing $initramfs_modules\n"
+  else
+    log "F2FS module already present in initramfs modules\n"
+  fi
+
+  # Create marker for chroot script
+  touch "$root_mnt/.regenerate_initramfs"
+  log "Marked for initramfs regeneration (run dietpi-chroot.sh on the output image)\n"
+}
+
 WORKDIR="$(mktemp -d)"
 cd "$WORKDIR"
 
-src_archive="${SRC_URL##*/}"
-log "Downloading: $SRC_URL\n"
-curl -fL --retry 5 --retry-delay 2 -o "$src_archive" "$SRC_URL"
+# Handle source (URL or local file)
+if [[ $SRC_URL =~ ^https?:// ]]; then
+  src_archive="${SRC_URL##*/}"
+  log "Downloading: $SRC_URL\n"
+  curl -fL --retry 5 --retry-delay 2 -o "$src_archive" "$SRC_URL"
 
-log "Decompressing xz...\n"
-xz -dk "$src_archive"
-SRC_IMG="${src_archive%.xz}"
-[[ -f "$SRC_IMG" ]] || die "Decompressed .img not found: $SRC_IMG"
+  log "Decompressing xz...\n"
+  xz -dk "$src_archive"
+  SRC_IMG="${src_archive%.xz}"
+  [[ -f "$SRC_IMG" ]] || die "Decompressed .img not found: $SRC_IMG"
+elif [[ -f $SRC_URL ]]; then
+  log "Using local file: $SRC_URL\n"
+  if [[ $SRC_URL == *.xz ]]; then
+    log "Decompressing xz...\n"
+    xz -dc "$SRC_URL" > "source.img"
+    SRC_IMG="source.img"
+  else
+    SRC_IMG="$(readlink -f "$SRC_URL")"
+  fi
+else
+  die "Source not found: $SRC_URL"
+fi
 
-OUT_IMG="$(readlink -f -- "$OUT_IMG")"
-log "Copying to output image: $OUT_IMG\n"
-cp -f -- "$SRC_IMG" "$OUT_IMG"
+# Prepare output destination
+if [[ -n $OUTPUT_DEVICE ]]; then
+  # Flash to device mode
+  [[ -b $OUTPUT_DEVICE ]] || die "Device not found: $OUTPUT_DEVICE"
+  log "Will flash to device: $OUTPUT_DEVICE\n"
+  OUT_IMG="$OUTPUT_DEVICE"
+else
+  # Create image file mode
+  OUT_IMG="$(readlink -f -- "$OUT_IMG")"
+  log "Copying to output image: $OUT_IMG\n"
+  cp -f -- "$SRC_IMG" "$OUT_IMG"
+fi
 
 # Attach both images (source read-only, destination writable)
 LOOP_SRC="$(losetup --find --show --partscan --read-only "$SRC_IMG")"
@@ -153,6 +349,12 @@ rsync -aHAX --numeric-ids --info=progress2 \
   --exclude='/dev/*' --exclude='/proc/*' --exclude='/sys/*' --exclude='/run/*' --exclude='/tmp/*' \
   "$SRC_MNT_ROOT"/ "$DST_MNT_ROOT"/
 
+# Remove ext4-specific configs
+remove_ext4_configs "$DST_MNT_ROOT"
+
+# Add F2FS to initramfs
+add_f2fs_to_initramfs "$DST_MNT_ROOT"
+
 # Patch fstab (minimal)
 FSTAB="$DST_MNT_ROOT/etc/fstab"
 if [[ -f "$FSTAB" ]]; then
@@ -206,6 +408,22 @@ umount -R "$SRC_MNT_ROOT"
 umount -R "$SRC_MNT_BOOT"
 
 log "Done.\n"
-log "Output image: $OUT_IMG\n"
-log "Flash example: sudo dd if='$OUT_IMG' of=/dev/mmcblk0 bs=4M conv=fsync status=progress\n"
-log "First boot: have HDMI/serial. If it panics mounting root, your kernel/boot path lacks f2fs-at-boot support.\n"
+
+if [[ -n $OUTPUT_DEVICE ]]; then
+  log "Flashed to device: $OUTPUT_DEVICE\n"
+  log "Next steps:\n"
+  log "  1. Remove SD card and insert into Raspberry Pi\n"
+  log "  2. Optional: Run dietpi-chroot.sh on mounted card to regenerate initramfs\n"
+  log "  3. Boot with HDMI/serial console ready\n"
+else
+  log "Output image: $OUT_IMG\n"
+  log "Next steps:\n"
+  log "  1. Optional: sudo ./RaspberryPi/dietpi-chroot.sh '$OUT_IMG'\n"
+  log "  2. Flash: sudo dd if='$OUT_IMG' of=/dev/mmcblk0 bs=4M conv=fsync status=progress\n"
+  log "  3. Boot with HDMI/serial console ready\n"
+fi
+
+log "\nFirst boot notes:\n"
+log "  - Have HDMI/serial console ready for debugging\n"
+log "  - If kernel panic occurs, check F2FS module availability\n"
+log "  - Run 'lsmod | grep f2fs' after boot to verify module loaded\n"

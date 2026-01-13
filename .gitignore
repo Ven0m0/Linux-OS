@@ -258,3 +258,6 @@ github_conf
 
 .gemini/
 gha-creds-*.json
+.pair-programming-session.md
+.plugin-config/
+docs/sessions/

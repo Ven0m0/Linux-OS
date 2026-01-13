@@ -18,15 +18,37 @@ banner() {
 }
 
 # --- Core Logic ---
+get_cache_size() {
+  local dir=$1
+  [[ -d $dir ]] && sudo du -sm "$dir" 2>/dev/null | awk '{print $1}' || echo 0
+}
+
 clean_pkgs() {
   log "Cleaning package caches..."
   if has pacman; then
+    # Measure before cleanup
+    local pacman_before paru_before yay_before
+    pacman_before=$(get_cache_size "/var/cache/pacman/pkg")
+    paru_before=$(get_cache_size "$HOME/.cache/paru/clone")
+    yay_before=$(get_cache_size "$HOME/.cache/yay")
+
+    # Remove stuck download directories
     sudo find "/var/cache/pacman/pkg" -maxdepth 1 -type d -name "download-*" -exec rm -rf {} +
-    # TODO: implement https://github.com/dusklinux/dusky/blob/main/user_scripts/arch_setup_scripts/scripts/065_cache_purge.sh
+
+    # Aggressive cache purge
     yes | paru -Scc --noconfirm &>/dev/null || :
     yes | sudo pacman -Scc --noconfirm &>/dev/null || :
     has paccache && try sudo paccache -rk1 &>/dev/null || :
     try sudo pacman -Rns $(pacman -Qtdq) --noconfirm || :
+
+    # Measure after cleanup
+    local pacman_after paru_after yay_after total_freed
+    pacman_after=$(get_cache_size "/var/cache/pacman/pkg")
+    paru_after=$(get_cache_size "$HOME/.cache/paru/clone")
+    yay_after=$(get_cache_size "$HOME/.cache/yay")
+    total_freed=$(( (pacman_before - pacman_after) + (paru_before - paru_after) + (yay_before - yay_after) ))
+
+    [[ $total_freed -gt 0 ]] && log "Package cache freed: ${total_freed}MB"
   elif has apt-get; then
     try sudo apt-get autoremove -y && try sudo apt-get clean
   elif has dnf; then

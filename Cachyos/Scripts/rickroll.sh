@@ -9,8 +9,10 @@ LC_ALL=C IFS=$'\n\t'
 version='1.2'
 rick='https://keroserene.net/lol'
 video="$rick/astley80.full.bz2"
-# TODO: I'll let someone with mac or windows machine send a pull request
-# to get gsm going again :)
+# TODO: GSM audio playback on Mac/Windows needs testing
+# - macOS: afplay with .s16 works (line 71), but GSM format untested
+# - Windows/Cygwin: sox/play GSM support needs verification (line 77)
+# - Contributors with Mac/Windows: test and submit PR if GSM playback fails
 audio_gsm="$rick/roll.gsm"
 audio_raw="$rick/roll.s16"
 audpid=0

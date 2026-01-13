@@ -80,10 +80,10 @@ proc_file(){
   [[ -n $n ]] || n="Unknown"
   ndir="$TGT/$n [$id]"
   ext=${f##*.}; ext=${ext,,}
-  dst="$ndir/$id. wbfs"
+  dst="$ndir/$id.wbfs"
   [[ $ext == wbfs && $f -ef $dst ]] && { set_reg "$f"; return; }
   run mkdir -p "$ndir"
-  if ((CONV && HAS_WIT && ext != "wbfs")); then
+  if ((CONV && HAS_WIT)) && [[ $ext != wbfs ]]; then
     run wit copy --wbfs -q "$f" "$dst" && { set_reg "$dst"; run rm -f "$f"; } || { run mv -n "$f" "$ndir/$id.$ext"; set_reg "$ndir/$id.$ext"; }
   else
     run mv -n "$f" "$ndir/$id.$ext"
@@ -92,26 +92,26 @@ proc_file(){
 }
 
 proc_dir(){
-  local d=$1 base=${d##*/} id g t n ndir f gid
+  local dir=$1 base=${1##*/} id="" g="" t n ndir f gid
   [[ $base =~ \[[A-Z0-9]{6}\] ]] && return
-  for f in "$d"/*. {wbfs,iso,ciso,wia,wdf}; do
+  for f in "$dir"/*.{wbfs,iso,ciso,wia,wdf}; do
     [[ -f $f ]] || continue
     id=$(get_id "$f")
     [[ ${#id} -eq 6 ]] && { g=$f; break; }
   done
-  [[ -z ${g:-} ]] && return
+  [[ -z $g ]] && return
   t=$(get_title "$g")
   n=$(clean "${t:-$base}")
   [[ -n $n ]] || n="Unknown"
   ndir="$TGT/$n [$id]"
-  [[ -d $ndir && !  $d -ef $ndir ]] && return
-  [[ $d -ef $ndir ]] || { log "Dir: $d->$ndir"; run mv -n "$d" "$ndir"; }
+  [[ -d $ndir && !  "$dir" -ef "$ndir" ]] && return
+  [[ "$dir" -ef "$ndir" ]] || { log "Dir:  $dir->$ndir"; run mv -n "$dir" "$ndir"; }
   for f in "$ndir"/*.{wbfs,iso,ciso,wia,wdf}; do
     [[ -f $f ]] || continue
     gid=$(get_id "$f")
     [[ ${#gid} -eq 6 ]] || continue
-    local dst="$ndir/$gid. wbfs" ext=${f##*.}; ext=${ext,,}
-    if ((CONV && HAS_WIT && ext != "wbfs")); then
+    local dst="$ndir/$gid.wbfs" ext=${f##*.}; ext=${ext,,}
+    if ((CONV && HAS_WIT)) && [[ $ext != wbfs ]]; then
       run wit copy --wbfs -q "$f" "$dst" && { set_reg "$dst"; run rm -f "$f"; }
     elif [[ ${f##*/} != "$gid.$ext" ]]; then
       run mv -n "$f" "$ndir/$gid.$ext"

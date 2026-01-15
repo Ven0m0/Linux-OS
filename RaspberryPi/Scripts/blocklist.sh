@@ -53,7 +53,7 @@ main() {
   else
     echo "${YLW}⚠${DEF} hblock is not installed"
     echo "Downloading and running hblock temporarily..."
-    hblock_temp=$(mktemp /tmp/hblock.XXXXXX)
+    hblock_temp=$(mktemp -t hblock)
     if curl -fsSL "$hblock_url" -o "$hblock_temp"; then
       echo "${GRN}✓${DEF} Downloaded hblock successfully"
       chmod +x "$hblock_temp"

@@ -65,7 +65,8 @@ byte_to_human() {
 }
 # Index-based cache management
 _update_cache_index() {
-  local tmp=$(mktemp "${CACHE_INDEX}.XXXXXX")
+  local tmp
+  tmp=$(mktemp "${CACHE_INDEX}.XXXXXX")
   find_cache_files | xargs -0 -r stat -c '%n|%s|%Y' >"$tmp" 2>/dev/null || :
   mv -f "$tmp" "$CACHE_INDEX"
 }

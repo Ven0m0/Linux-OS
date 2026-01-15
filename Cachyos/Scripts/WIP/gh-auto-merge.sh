@@ -226,7 +226,7 @@ cmd_install(){
     -h|--help) usage_install; exit 0;;
   esac
   local tmp binpath="${GH_BINPATH:-$HOME/.local/bin}"
-  tmp=$(mktemp -d -t gh-install.XXXXXX)
+  tmp=$(mktemp -d -t gh-install)
   trap 'rm -rf "$tmp"' EXIT
   log "[repo] $repo"
   PS3="> Select version: "

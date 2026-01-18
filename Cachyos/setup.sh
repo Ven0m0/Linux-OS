@@ -1,19 +1,46 @@
 #!/usr/bin/env bash
 # setup.sh - Optimized System Setup
-set -euo pipefail
-shopt -s nullglob globstar
+set -Eeuo pipefail
+shopt -s nullglob globstar extglob dotglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C
 
+# --- Colors (trans palette) ---
+BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
+BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
+LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
+DEF=$'\e[0m' BLD=$'\e[1m'
+
 # --- Helpers ---
-R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
 has() { command -v "$1" &>/dev/null; }
 try() { "$@" >/dev/null 2>&1 || true; }
-log() { printf "%b[+]%b %s\n" "$G" "$X" "$*"; }
-die() {
-  printf "%b[!]%b %s\n" "$R" "$X" "$*" >&2
-  exit 1
+xecho() { printf '%b\n' "$*"; }
+log() { xecho "${GRN}[+]${DEF} $*"; }
+warn() { xecho "${YLW}[!]${DEF} $*"; }
+err() { xecho "${RED}[!]${DEF} $*" >&2; }
+die() { err "$*"; exit "${2:-1}"; }
+dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
+
+# --- Cleanup & Error Handling ---
+WORKDIR=$(mktemp -d)
+cleanup() {
+  set +e
+  [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
 }
+on_err() { err "failed at line ${1:-?}"; }
+trap 'cleanup' EXIT
+trap 'on_err $LINENO' ERR
+trap ':' INT TERM
+
+# --- Tool Detection ---
+pm_detect() {
+  if has paru; then printf 'paru'; return; fi
+  if has yay; then printf 'yay'; return; fi
+  if has pacman; then printf 'pacman'; return; fi
+  printf ''
+}
+PKG_MGR=${PKG_MGR:-$(pm_detect)}
+
 add_repo() {
   grep -q "\[$1\]" /etc/pacman.conf || printf "\n[%s]\nServer = %s\n" "$1" "$2" | sudo tee -a /etc/pacman.conf >/dev/null
 }
@@ -30,7 +57,7 @@ setup_repos() {
     sudo pacman-key --lsign-key 3056513887B78AEB
     sudo pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
       'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
-    echo -e "\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist" | sudo tee -a /etc/pacman.conf
+    printf "\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n" | sudo tee -a /etc/pacman.conf >/dev/null
   fi
 
   # Frogminer & Valve (Optional - uncomment if needed)
@@ -40,11 +67,9 @@ setup_repos() {
   sudo pacman -Sy --noconfirm
   has paru || {
     sudo pacman -S --needed --noconfirm base-devel git
-    git clone https://aur.archlinux.org/paru-bin.git
-    cd paru-bin
-    makepkg -si --noconfirm
-    cd ..
-    rm -rf paru-bin
+    git clone https://aur.archlinux.org/paru-bin.git "$WORKDIR/paru-bin"
+    (cd "$WORKDIR/paru-bin" && makepkg -si --noconfirm)
+    rm -rf "$WORKDIR/paru-bin"
   }
 }
 
@@ -72,10 +97,10 @@ setup_configs() {
   log "Applying configurations..."
 
   # VS Code Settings
-  if has code; then
+  if has code && has jq; then
     local vs_conf="$HOME/.config/Code/User/settings.json"
     mkdir -p "$(dirname "$vs_conf")"
-    [[ ! -f $vs_conf ]] && echo "{}" >"$vs_conf"
+    [[ ! -f $vs_conf ]] && printf '{}\n' >"$vs_conf"
 
     local -A settings=(
       ["telemetry.telemetryLevel"]="off"
@@ -90,6 +115,8 @@ setup_configs() {
     for k in "${!settings[@]}"; do
       jq --arg k "$k" --arg v "${settings[$k]}" '.[$k] = $v' "$vs_conf" >"$tmp" && mv "$tmp" "$vs_conf"
     done
+  elif has code; then
+    warn "jq not found, skipping VS Code settings configuration"
   fi
 
   # Shells
@@ -121,7 +148,11 @@ main() {
   setup_rust
 
   log "Cleanup..."
-  try sudo pacman -Rns $(pacman -Qdtq) --noconfirm
+  local -a orphans
+  mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || true)
+  if (( ${#orphans[@]} > 0 )); then
+    try sudo pacman -Rns --noconfirm "${orphans[@]}"
+  fi
   try sudo fstrim -av
 
   log "Setup complete! Reboot recommended."

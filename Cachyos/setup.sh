@@ -138,6 +138,10 @@ setup_rust() {
   }
 }
 
+setup_other(){
+  flatpak remote-add --if-not-exists --user cosmic https://apt.pop-os.org/cosmic/cosmic.flatpakrepo
+}
+
 # --- Main ---
 main() {
   [[ $EUID -eq 0 ]] && die "Run as user, not root."

@@ -64,11 +64,14 @@
 - **Tone:** Blunt, factual, precise, concise. Technical English.
 - **Format:** 2-space indent. No filler. Strip U+202F/U+200B/U+00AD.
 - **Output:** Result-first (`Result ∴ Cause`). Group by domain. Lists ≤7 items.
-- **Abbrev:** cfg, impl, deps, val, auth, opt, Δ.
+- **Abbrev:** cfg, impl, deps, val, auth, opt, arch, req, qual, sec, err, opts, Δ.
 
-### Symbols
+### Notation & Symbols
 
-→ leads to | ⇒ converts | « / » precedes/follows | ∴ / ∵ therefore/because | ✅ / ❌ success/fail | ⚡ performance | 🛡️ security | 🧪 testing | 📦 deployment | 🔍 analysis
+- **Flow:** → leads, ⇒ converts, ← rollback, ⇄ bidir, » then, & and, | or
+- **Logic:** ∴ therefore, ∵ because
+- **Status:** ✅ done, ❌ fail, ⚠️ warn, 🔄 active, ⏳ pending, 🚨 critical
+- **Domains:** ⚡ perf, 🔍 analysis, 🔧 cfg, 🛡️ sec, 📦 deploy, 🎨 UI, 🏗️ arch, 🗄️ DB, ⚙️ backend, 🧪 test
 
 ## Bash Standards
 
@@ -94,13 +97,26 @@ has(){ command -v "$1" &>/dev/null; }
 
 ### Quoting
 
-Always quote variables unless intentional glob/split.
+Always quote variables unless intentional glob/split. Exception: `$*` in printf format strings.
 
 ### Privilege & Packages
 
-- **Escalation:** `sudo-rs`→`sudo`→`doas` (store in `PRIV_CMD`)
-- **Install:** `paru`→`yay`→`pacman` (Arch); `apt` (Debian)
-- **Check first:** `pacman -Q`, `flatpak list`, `cargo install --list`
+- **Escalation:** Detect at runtime, never hardcode `sudo`
+
+```bash
+detect_priv(){
+  local cmd
+  for cmd in sudo-rs sudo doas; do
+    has "$cmd" && { printf '%s' "$cmd"; return 0; }
+  done
+  return 1
+}
+PRIV_CMD=$(detect_priv) || die "no privilege escalation tool found"
+```
+
+- **Install:** `paru`→`yay`→`pacman` (Arch); `apt-get` (Debian); prefer AUR helpers for -S operations
+- **Check before install:** `pacman -Q "$pkg" 2>/dev/null`, `flatpak list --app | grep -qF "$pkg"`, `cargo install --list | grep -qF "$pkg"`
+- **AUR flags:** `--needed --noconfirm --removemake --cleanafter --sudoloop --skipreview --batchinstall`
 
 ## Tool Hierarchy (Fallbacks Required)
 
@@ -140,10 +156,82 @@ BLD=$'\e[1m'          # Bold
 
 ## Performance
 
-**Measure first. Optimize hot paths.**
+**Measure first. Optimize hot paths.** Use `hyperfine` for benchmarking.
 
-- **General:** Batch I/O. Cache computed values. Early returns.
-- **Bash:** Minimize forks/subshells. Use builtins. Anchor regexes. Literal search (`grep -F`, `rg -F`).
+### Bash Optimization
+
+```bash
+# ✅ GOOD: Batch operations, single fork
+mapfile -t files < <(fd -t f -e sh)
+printf '%s\n' "${files[@]}" | xargs -r shellcheck
+
+# ❌ BAD: Loop with multiple forks
+for f in $(find . -name '*.sh'); do shellcheck "$f"; done
+
+# ✅ GOOD: Builtin pattern matching
+[[ $file == *.sh ]] && process "$file"
+
+# ❌ BAD: External command
+[[ $(basename "$file") =~ \.sh$ ]] && process "$file"
+
+# ✅ GOOD: Builtin string ops
+name=${file##*/}      # basename
+dir=${file%/*}        # dirname
+base=${file%.sh}      # remove extension
+
+# ❌ BAD: Subshells
+name=$(basename "$file")
+dir=$(dirname "$file")
+```
+
+### I/O Optimization
+
+```bash
+# ✅ GOOD: Single pass with mapfile
+mapfile -t lines < file.txt
+for line in "${lines[@]}"; do process "$line"; done
+
+# ❌ BAD: Multiple reads
+while IFS= read -r line; do
+  other_data=$(cat other_file)  # NEVER read in loop
+done < file.txt
+
+# ✅ GOOD: Redirect once
+{
+  log "starting"
+  process_data
+  log "done"
+} >> logfile
+
+# ❌ BAD: Multiple redirects
+log "starting" >> logfile
+process_data >> logfile
+log "done" >> logfile
+```
+
+### Parallel Processing
+
+```bash
+# ✅ GOOD: Parallel with xargs
+printf '%s\n' "${files[@]}" | xargs -r -P"$(nproc)" -I{} process {}
+
+# ✅ BETTER: rust-parallel (if available)
+printf '%s\n' "${files[@]}" | rust-parallel -j"$(nproc)" process
+
+# Pattern: Process large lists in parallel
+process_packages(){
+  local -a pkgs=("$@")
+  if has rust-parallel; then
+    printf '%s\n' "${pkgs[@]}" | rust-parallel -j"$(nproc)" pacman -Q
+  else
+    printf '%s\n' "${pkgs[@]}" | xargs -r -P"$(nproc)" -n1 pacman -Q
+  fi
+}
+```
+
+- **General:** Batch I/O. Cache computed values. Early returns. Avoid unnecessary forks.
+- **Bash:** Minimize subshells. Use builtins over external commands. Anchor regexes (`^$`). Literal search (`grep -F`, `rg -F`).
+- **Search:** `rg -F` for literals, `rg` for regex, `fd` over `find`.
 - **Frontend:** Minimize DOM Δ. Stable keys in lists. Lazy load assets/components.
 - **Backend:** Async I/O. Connection pooling. Avoid N+1 queries. Cache hot data (Redis).
 
@@ -288,18 +376,41 @@ export RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=native -Ccodegen-units=1 -Cstrip=sy
 command -v ld.lld &>/dev/null && export RUSTFLAGS="${RUSTFLAGS} -Clink-arg=-fuse-ld=lld"
 ```
 
-## AUR Helper Flags
-
-```bash
-AUR_FLAGS=(--needed --noconfirm --removemake --cleanafter --sudoloop --skipreview --batchinstall)
-```
-
 ## Network Operations
 
-- Use hardened curl: `curl -fsSL --proto '=https' --tlsv1.3`
-- Prefer retries/backoff for flaky endpoints
-- Avoid needless downloads
-- Update README curl snippets when entrypoints change
+### Hardened Fetch
+
+```bash
+# Prefer aria2c for speed, fallback chain for compatibility
+fetch_url(){
+  local url=${1:?} out=${2:?}
+  local -a curl_opts=(-fsSL --proto '=https' --tlsv1.3 --max-time 30 --retry 3 --retry-delay 2)
+  if has aria2c; then
+    aria2c -x16 -s16 --max-tries=3 --retry-wait=2 --max-connection-per-server=16 "$url" -o "$out"
+  elif has curl; then
+    curl "${curl_opts[@]}" -o "$out" "$url"
+  elif has wget2; then
+    wget2 --progress=bar --https-only --max-redirect=3 -O "$out" "$url"
+  else
+    wget --progress=bar --https-only --max-redirect=3 -O "$out" "$url"
+  fi
+}
+```
+
+### Git Operations
+
+```bash
+# Retry git operations with exponential backoff (network failures)
+git_push(){
+  local branch=${1:-$(git rev-parse --abbrev-ref HEAD)}
+  retry 4 2 git push -u origin "$branch"
+}
+
+git_fetch(){
+  local branch=${1:?}
+  retry 4 2 git fetch origin "$branch"
+}
+```
 
 ## Device Operations (Pi & Imaging)
 
@@ -327,16 +438,60 @@ is_pi(){ [[ $(uname -m) =~ ^(arm|aarch64) ]]; }
 
 ## Data Processing Patterns
 
-### Load filtered config/package lists
+### Load Filtered Config/Package Lists
 
 ```bash
-mapfile -t arr < <(grep -v '^\s*#' file.txt | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$')
+# Strip comments, trim whitespace, remove blank lines
+mapfile -t arr < <(grep -Ev '^\s*(#|$)' file.txt | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+# Alternative: Pure bash (slower but no deps)
+load_config(){
+  local -n out=$1
+  local file=${2:?}
+  local line
+  while IFS= read -r line; do
+    line=${line%%#*}  # Strip comments
+    line=${line#"${line%%[![:space:]]*}"}  # Trim leading
+    line=${line%"${line##*[![:space:]]}"}  # Trim trailing
+    [[ -n $line ]] && out+=("$line")
+  done < "$file"
+}
 ```
 
-### Install from list
+### Batch Package Operations
 
 ```bash
-printf '%s\n' "${arr[@]}" | paru -Sq --noconfirm
+# Install from list (prefer batching over loops)
+printf '%s\n' "${arr[@]}" | $PKG_MGR -Sq --noconfirm
+
+# Check installed with single invocation
+check_installed(){
+  local -n missing=$1
+  shift
+  local pkg
+  for pkg; do
+    pacman -Q "$pkg" &>/dev/null || missing+=("$pkg")
+  done
+}
+```
+
+### String Manipulation (Pure Bash)
+
+```bash
+# Upper/lowercase
+upper="${str^^}"
+lower="${str,,}"
+
+# Replace (first/all)
+new="${str/pattern/replacement}"     # First match
+new="${str//pattern/replacement}"    # All matches
+
+# Trim
+trim="${str#"${str%%[![:space:]]*}"}"  # Leading
+trim="${trim%"${trim##*[![:space:]]}"}"  # Trailing
+
+# Split on delimiter
+IFS=: read -ra parts <<< "$PATH"
 ```
 
 ## Testing Strategy
@@ -383,21 +538,90 @@ Located in `.shellcheckrc`:
 ```bash
 lock(){
   local key=${1:?}
-  exec {LOCK_FD}>"/run/lock/${key//[^[:alnum:]]/_}.lock" || die "lock fd"
-  flock -n "$LOCK_FD" || die "lock taken: $key"
+  local lockfile="/run/lock/${key//[^[:alnum:]]/_}.lock"
+  exec {LOCK_FD}>"$lockfile" || die "lock fd failed for $key"
+  flock -n "$LOCK_FD" || die "lock taken: $key (${lockfile})"
 }
 ```
 
-### Interactive selection with fzf
+### Retry with Exponential Backoff
+
+```bash
+retry(){
+  local -i max=${1:?}
+  local -i delay=${2:-2}
+  local -i attempt=0
+  shift 2
+  until "$@"; do
+    (( ++attempt >= max )) && die "failed after $max attempts: $*"
+    warn "attempt $attempt/$max failed, retrying in ${delay}s..."
+    sleep "$delay"
+    (( delay *= 2 ))
+  done
+}
+# Usage: retry 4 2 git push origin main
+```
+
+### Input Validation
+
+```bash
+validate_path(){
+  local path=${1:?}
+  [[ $path =~ ^[[:alnum:]/_.-]+$ ]] || die "invalid path: $path"
+  [[ ! $path =~ \.\. ]] || die "path traversal detected: $path"
+}
+
+validate_pkg(){
+  local pkg=${1:?}
+  [[ $pkg =~ ^[a-z0-9@._+-]+$ ]] || die "invalid package name: $pkg"
+}
+```
+
+### Interactive Selection with fzf
 
 ```bash
 select_file(){
   local -n result=$1
   local pattern=${2:-'.*'}
   if [[ -n $FD ]]; then
-    result=$("$FD" -H -t f "$pattern" | fzf --prompt="Select file: ")
+    result=$("$FD" -H -t f "$pattern" | fzf --prompt="Select file: " --preview 'bat --color=always {}')
   else
     result=$(find . -type f -name "*${pattern}*" | fzf --prompt="Select file: ")
+  fi
+  [[ -n $result ]] || die "no file selected"
+}
+```
+
+### Safe URL Fetching
+
+```bash
+fetch(){
+  local url=${1:?} out=${2:?}
+  validate_path "$out"
+  local -a curl_opts=(-fsSL --proto '=https' --tlsv1.3 --max-time 30)
+  if has aria2c; then
+    aria2c -x16 -s16 --max-tries=3 --retry-wait=2 "$url" -o "$out"
+  elif has curl; then
+    retry 3 2 curl "${curl_opts[@]}" -o "$out" "$url"
+  elif has wget2; then
+    retry 3 2 wget2 --progress=bar --max-redirect=3 -O "$out" "$url"
+  else
+    retry 3 2 wget --progress=bar --max-redirect=3 -O "$out" "$url"
+  fi
+}
+```
+
+### Parallel Execution
+
+```bash
+parallel_exec(){
+  local -a jobs=("$@")
+  if has rust-parallel; then
+    printf '%s\n' "${jobs[@]}" | rust-parallel -j"$(nproc)"
+  elif has parallel; then
+    printf '%s\n' "${jobs[@]}" | parallel -j"$(nproc)"
+  else
+    printf '%s\n' "${jobs[@]}" | xargs -r -P"$(nproc)" -I{} bash -c '{}'
   fi
 }
 ```
@@ -451,31 +675,203 @@ Kernel building automation for Raspberry Pi with optimized flags.
 - **CachyOS:** <https://cachyos.org/>
 - **Arch Wiki:** <https://wiki.archlinux.org/>
 
-## Token-Efficient Notation
+## Security Best Practices
 
-- **Symbols:** → leads, ⇒ converts, ← rollback, ⇄ bidir, & and, | or, » then, ∴ therefore, ∵ because
-- **Status:** ✅ done, ❌ fail, ⚠️ warn, 🔄 active, ⏳ pending, 🚨 critical
-- **Domains:** ⚡ perf, 🔍 analysis, 🔧 cfg, 🛡️ sec, 📦 deploy, 🎨 UI, 🏗️ arch, 🗄️ DB, ⚙️ backend, 🧪 test
-- **Abbrev:** cfg, impl, arch, req, deps, val, auth, qual, sec, err, opts
+### Command Injection Prevention
+
+```bash
+# ✅ GOOD: Array expansion
+local -a cmd=(pacman -S)
+cmd+=("$pkg")
+"${cmd[@]}"
+
+# ✅ GOOD: Validated input
+validate_pkg "$pkg"
+pacman -S -- "$pkg"
+
+# ❌ BAD: Direct expansion
+eval "pacman -S $pkg"  # NEVER
+```
+
+### Path Traversal Prevention
+
+```bash
+# Validate paths before use
+validate_path(){
+  local path=${1:?}
+  [[ $path =~ ^[[:alnum:]/_.-]+$ ]] || die "invalid chars in path: $path"
+  [[ ! $path =~ \.\. ]] || die "path traversal attempt: $path"
+  [[ $path != /* ]] || die "absolute path not allowed: $path"
+}
+```
+
+### Secure Temp Files
+
+```bash
+# ✅ GOOD: mktemp with proper permissions
+TMPFILE=$(mktemp) || die "mktemp failed"
+chmod 600 "$TMPFILE"
+
+# ✅ GOOD: Atomic writes
+printf '%s\n' "$content" > "${file}.tmp"
+chmod 644 "${file}.tmp"
+mv -f "${file}.tmp" "$file"
+
+# ❌ BAD: Predictable names
+TMPFILE="/tmp/script.$$"  # NEVER
+```
+
+### Privilege Escalation Safety
+
+```bash
+# ✅ GOOD: Minimize privileged operations
+prepare_files  # Run as user
+$PRIV_CMD install_system_files  # Only elevate when needed
+cleanup  # Back to user
+
+# ❌ BAD: Running entire script as root
+# sudo ./script.sh  # AVOID
+```
+
+## Error Handling Patterns
+
+### Trap-Based Cleanup
+
+```bash
+cleanup(){
+  set +e  # Don't exit on cleanup errors
+  local rc=$?
+  [[ -n ${LOCK_FD:-} ]] && exec {LOCK_FD}>&- 2>/dev/null || :
+  [[ -n ${LOOP_DEV:-} && -b ${LOOP_DEV} ]] && losetup -d "$LOOP_DEV" 2>/dev/null || :
+  [[ -n ${MNT_PT:-} ]] && mountpoint -q "$MNT_PT" && $PRIV_CMD umount -R "$MNT_PT" || :
+  [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
+  return "$rc"
+}
+trap cleanup EXIT
+trap 'err "interrupted"; exit 130' INT TERM
+trap 'err "failed at line $LINENO"' ERR
+```
+
+### Context-Rich Errors
+
+```bash
+# ✅ GOOD: Contextual errors
+pkg_install(){
+  local pkg=${1:?missing package name}
+  pacman -Q "$pkg" &>/dev/null && { warn "$pkg already installed"; return 0; }
+  $PKG_MGR -S --noconfirm "$pkg" || die "failed to install $pkg (exit: $?)"
+}
+
+# ❌ BAD: Generic errors
+pacman -S "$pkg" || die "install failed"
+```
 
 ## Review Checklist
 
 Before committing, verify:
 
+### Script Structure
 - [ ] Starts with `#!/usr/bin/env bash`
-- [ ] Has `set -Eeuo pipefail` and shopt flags
-- [ ] Uses arrays/mapfile/`[[...]]` and parameter expansion
-- [ ] Avoids parsing `ls`, using `eval`, backticks
-- [ ] Logging helpers present
-- [ ] Traps for cleanup and ERR with line numbers
-- [ ] Privilege via `sudo`; package manager detection
-- [ ] Arch/Debian paths handled
-- [ ] Rust tools preferred with fallbacks
-- [ ] Flags parsed via short options (`-q -v -y -o`)
-- [ ] Supports `--help`/`--version`
-- [ ] Linted (shfmt, shellcheck)
-- [ ] Minimal external calls
-- [ ] Parallelized safely
-- [ ] Tests pass (if applicable)
+- [ ] Has `set -Eeuo pipefail` and shopt flags (`nullglob globstar extglob dotglob`)
+- [ ] Sets `IFS=$'\n\t'` and `LC_ALL=C LANG=C`
+- [ ] Traps for `EXIT` (cleanup), `ERR` (line numbers), `INT TERM` (interrupts)
+- [ ] Cleanup function with `set +e` and proper resource release
+- [ ] Uses script template from this document
+
+### Best Practices
+- [ ] Uses arrays/mapfile/`[[ ... ]]` and parameter expansion
+- [ ] Avoids forbidden patterns: parsing `ls`, `eval`, backticks, `for x in $(cmd)`
+- [ ] Quotes all variables except intentional glob/split
+- [ ] Logging helpers present: `has()`, `log()`, `warn()`, `err()`, `die()`, `dbg()`
+- [ ] Color palette defined (trans flag colors)
+- [ ] Uses `printf` over `echo` for output
+- [ ] Namerefs for output parameters: `local -n result=$1`
+
+### Security & Safety
+- [ ] Input validation (paths, package names, URLs)
+- [ ] No command injection vulnerabilities
+- [ ] No path traversal vulnerabilities
+- [ ] Secure temp files with `mktemp` and proper permissions
+- [ ] Minimal privilege escalation (detect at runtime: `sudo-rs`→`sudo`→`doas`)
+- [ ] No hardcoded `sudo` or root assumptions
+
+### Tool & Compatibility
+- [ ] Package manager detection (`paru`→`yay`→`pacman` / `apt`)
+- [ ] Rust tools preferred with fallbacks (`fd`→`find`, `rg`→`grep`, `bat`→`cat`)
+- [ ] Arch/Debian paths handled where applicable
+- [ ] Network operations use retry logic for failures
+- [ ] Git operations use exponential backoff retry (4 attempts, 2s base)
+
+### Interface & UX
+- [ ] Flags parsed via short options (`-q -v -y -o -h`)
+- [ ] Supports `--help` and `--version`
+- [ ] Config as associative array: `declare -A cfg=([key]=val)`
+- [ ] Dry-run support: `run()` wrapper
+- [ ] Contextual error messages with exit codes
+
+### Performance
+- [ ] Batch operations over loops where possible
+- [ ] Minimal external calls (use builtins: `${var##*/}` not `basename`)
+- [ ] Parallelized safely with `xargs -P` or `rust-parallel`
+- [ ] No unnecessary forks/subshells
+- [ ] Anchored regexes: `^pattern$`
+- [ ] Literal search where possible: `grep -F`, `rg -F`
+
+### Quality
+- [ ] Linted with `shellcheck --severity=style` (zero warnings)
+- [ ] Formatted with `shfmt -i 2 -ci -sr`
+- [ ] Tests pass (if applicable): `bats-core` unit, integration
+- [ ] Benchmarked hot paths with `hyperfine` (if performance-critical)
 - [ ] No trailing whitespace
-- [ ] No hidden Unicode characters
+- [ ] No hidden Unicode characters (U+202F, U+200B, U+00AD)
+- [ ] Follows single responsibility principle
+- [ ] Clear intent (self-documenting code)
+
+## Quick Reference
+
+### Common Operations
+
+```bash
+# Check if package installed
+pacman -Q "$pkg" &>/dev/null || install_package "$pkg"
+
+# Batch install
+printf '%s\n' "${pkgs[@]}" | $PKG_MGR -Sq --noconfirm
+
+# Safe fetch with retry
+retry 3 2 curl -fsSL --proto '=https' --tlsv1.3 -o "$out" "$url"
+
+# Parallel execution
+printf '%s\n' "${items[@]}" | xargs -r -P"$(nproc)" -I{} process {}
+
+# Lock management
+exec {LOCK_FD}>"/run/lock/myapp.lock"
+flock -n "$LOCK_FD" || die "already running"
+
+# Input validation
+[[ $path =~ ^[[:alnum:]/_.-]+$ ]] || die "invalid path"
+[[ ! $path =~ \.\. ]] || die "path traversal detected"
+
+# Detect privilege cmd
+for cmd in sudo-rs sudo doas; do
+  has "$cmd" && { PRIV_CMD=$cmd; break; }
+done
+
+# String manipulation
+name=${file##*/}           # basename
+dir=${file%/*}             # dirname
+ext=${file##*.}            # extension
+base=${file%.*}            # remove extension
+upper=${str^^}             # uppercase
+lower=${str,,}             # lowercase
+```
+
+### Exit Codes
+
+- `0` - Success
+- `1` - General error
+- `2` - Misuse of shell builtins
+- `126` - Command cannot execute
+- `127` - Command not found
+- `130` - Script terminated by Ctrl+C
+- `255` - Exit status out of range

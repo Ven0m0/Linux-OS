@@ -83,7 +83,7 @@ clean_dev() {
     try cargo cache -ef trim --limit 1B
   }
   has uv && try uv cache clean
-  has bun && try bun pm cache rm
+  has bun && try bun -g pm cache rm
   has pnpm && {
     try pnpm prune
     try pnpm store prune
@@ -98,7 +98,7 @@ clean_dev() {
 clean_sys() {
   log "Cleaning system paths..."
   try sudo rm -rf /tmp/* /var/tmp/* /var/log/journal/*
-  try sudo journalctl --vacuum-time=2weeks
+  try sudo journalctl --vacuum-time=1sec --rotate
   try rm -rf ~/.cache/thumbnails ~/.cache/mozilla/firefox/*.default*/cache2
   try rm -rf ~/.local/share/Trash/*
   
@@ -129,7 +129,6 @@ privacy_config() {
 main() {
   # Refresh sudo credential cache
   sudo -v
-
   [[ ${1:-} == "config" ]] && {
     banner
     privacy_config

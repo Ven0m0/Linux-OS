@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 shopt -s nullglob globstar extglob dotglob
 IFS=$'\n\t'
-export LC_ALL=C LANG=C
+LC_ALL=C LANG=C PYTHONOPTIMIZE=1
 
 # --- Colors (trans palette) ---
 BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
@@ -50,7 +50,6 @@ setup_repos() {
   log "Configuring repositories..."
   # Enable Multilib
   sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
-
   # Chaotic AUR
   if ! grep -q "chaotic-aur" /etc/pacman.conf; then
     sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
@@ -59,10 +58,6 @@ setup_repos() {
       'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
     printf "\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n" | sudo tee -a /etc/pacman.conf >/dev/null
   fi
-
-  # Frogminer & Valve (Optional - uncomment if needed)
-  # add_repo "frogminer" "https://frogminer.dev/repo/\$arch"
-  # add_repo "valve-aur" "https://repo.steampowered.com/arch/valve-aur"
 
   sudo pacman -Sy --noconfirm
   has paru || {
@@ -144,8 +139,14 @@ setup_rust() {
   }
 }
 
-setup_other(){
-  flatpak remote-add --if-not-exists --user cosmic https://apt.pop-os.org/cosmic/cosmic.flatpakrepo
+setup_flatpak(){
+  flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+  flatpak install --system io.github.flattool.Warehouse -y
+}
+setup_am(){
+  am -i am-gui
+  am -i nix-portable
+  am -i auto-claude
 }
 
 export_pkgs() {

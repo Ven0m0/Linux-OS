@@ -23,28 +23,7 @@ die() {
   exit "${2:-1}"
 }
 # Find files/directories with fd/fdfind/find fallback
-find_with_fallback() {
-  local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
-  shift 4 2>/dev/null || shift $#
-  if has fd; then
-    fd -H -t "$ftype" "$pattern" "$search_path" "${action:+"$action"}" "$@"
-  elif has fdfind; then
-    fdfind -H -t "$ftype" "$pattern" "$search_path" "${action:+"$action"}" "$@"
-  else
-    local find_type_arg
-    case "$ftype" in
-    f) find_type_arg="-type f" ;;
-    d) find_type_arg="-type d" ;;
-    l) find_type_arg="-type l" ;;
-    *) find_type_arg="-type f" ;;
-    esac
-    if [[ -n $action ]]; then
-      find "$search_path" "$find_type_arg" -name "$pattern" "$action" "$@"
-    else
-      find "$search_path" "$find_type_arg" -name "$pattern"
-    fi
-  fi
-}
+# Simplified to just use find for reliability in fix scripts
 
 usage() {
   cat <<'EOF'
@@ -65,19 +44,19 @@ EOF
 parse_args() {
   while (($#)); do
     case "$1" in
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    --)
-      shift
-      break
-      ;;
-    -*)
-      usage
-      die "invalid option: $1"
-      ;;
-    *) break ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        usage
+        die "invalid option: $1"
+        ;;
+      *) break ;;
     esac
     shift
   done
@@ -110,9 +89,10 @@ fix_ca_certificates() {
 fix_ssh_permissions() {
   log "Fixing SSH permissions"
   if [[ -d ~/.ssh ]]; then
-    find_with_fallback f "*" ~/.ssh/ -exec chmod 600 {} +
-    find_with_fallback d "*" ~/.ssh/ -exec chmod 700 {} +
-    find_with_fallback f "*.pub" ~/.ssh/ -exec chmod 644 {} +
+    # Use standard find for reliability
+    find ~/.ssh -type f -exec chmod 600 {} +
+    find ~/.ssh -type d -exec chmod 700 {} +
+    find ~/.ssh -type f -name "*.pub" -exec chmod 644 {} +
     chmod 700 ~/.ssh
     log "SSH permissions fixed"
   else

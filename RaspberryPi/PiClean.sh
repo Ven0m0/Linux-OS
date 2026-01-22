@@ -12,6 +12,7 @@ cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 
 DONT_RESTART_DOCKER_ENGINE=0
 DONT_ASK_CONFIRMATION=0
+DROP_CACHES=0
 
 has() { command -v -- "$1" &>/dev/null; }
 
@@ -24,6 +25,7 @@ Usage: PiClean.sh [OPTIONS]
 Options:
   -y, --yes          Skip confirmation prompts
   --no-restart       Don't restart Docker engine after cleanup
+  --drop-caches      Drop kernel page cache (RAM) - usually not recommended
   -h, --help         Show this help message
   --version          Show version
 

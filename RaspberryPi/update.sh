@@ -17,15 +17,16 @@ update.sh - Raspberry Pi system update automation
 Usage: update.sh [OPTIONS]
 
 Options:
-  -h, --help     Show this help message
-  --version      Show version
+  -u, --unstable  Include rpi-update (bleeding edge firmware)
+  -h, --help      Show this help message
+  --version       Show version
 
 Updates:
   • APT packages (apt-fast/nala/apt-get with optimizations)
   • DietPi system (if installed)
   • Pi-hole (if installed)
   • Pi-Apps (if installed)
-  • Raspberry Pi firmware (EEPROM + rpi-update)
+  • Raspberry Pi firmware (EEPROM)
   • Automatic cleanup (cache, autoremove, autopurge)
 
 Supported Systems:
@@ -34,27 +35,32 @@ Supported Systems:
   • Debian-based distributions
 
 Examples:
-  update.sh              # Full system update
+  update.sh              # Standard stable update
+  update.sh -u           # Update with bleeding edge firmware
   curl -fsSL <URL> | bash  # One-liner update
 EOF
 }
+
 # DietPi functions
 load_dietpi_globals() {
   if [[ -f /boot/dietpi/func/dietpi-globals ]]; then
     . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :
   fi
 }
+
 # APT functions
 clean_apt_cache() {
   sudo apt-get clean -y 2>/dev/null || :
   sudo apt-get autoclean -y 2>/dev/null || :
   sudo apt-get autoremove --purge -y 2>/dev/null || :
 }
+
 run_apt() {
   yes | sudo apt-get -y --allow-releaseinfo-change --no-install-recommends --no-install-suggests \
     -o Acquire::Languages=none -o APT::Get::Fix-Missing=true \
     -o APT::Get::Fix-Broken=true "$@"
 }
+
 # Display colorized banner with gradient effect
 display_banner() {
   local banner_text="$1"
@@ -74,17 +80,61 @@ display_banner() {
     done
   fi
 }
+
+update_packages() {
+  # Try updating lists normally first; only nuke if it fails
+  if ! sudo apt-get update -y --allow-releaseinfo-change 2>/dev/null; then
+    printf '%s\n' "APT update failed. Cleaning lists and retrying..."
+    sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
+  fi
+
+  if command -v -- apt-fast &>/dev/null; then
+    set +e
+    # Combine apt operations (eliminate redundant package list re-reads)
+    yes | sudo apt-fast update -y --allow-releaseinfo-change --fix-missing &&
+      sudo apt-fast dist-upgrade -y --no-install-recommends
+    set -e
+    clean_apt_cache
+    sudo apt-fast autopurge -yq &>/dev/null || :
+  elif command -v -- nala &>/dev/null; then
+    yes | sudo nala upgrade --no-install-recommends || :
+    sudo nala clean
+    sudo nala autoremove
+    sudo nala autopurge
+  else
+    # Combine apt operations
+    yes | sudo apt-get update -y --fix-missing &&
+      sudo apt-get dist-upgrade -y --no-install-recommends --fix-broken || :
+    clean_apt_cache
+  fi
+
+  # Check's the broken packages and fix them (show errors if any)
+  sudo dpkg --configure -a || printf '%s\n' "dpkg configuration had issues (see above)" >&2
+}
+
 # Parse arguments
-case "${1:-}" in
--h | --help)
-  usage
-  exit 0
-  ;;
---version)
-  printf 'update.sh 1.0.1\n'
-  exit 0
-  ;;
-esac
+INCLUDE_RPI_UPDATE=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -u | --unstable)
+      INCLUDE_RPI_UPDATE=1
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --version)
+      printf 'update.sh 1.1.0\n'
+      exit 0
+      ;;
+    *)
+      # Keep unknown args for now or ignore? safest to ignore or warn.
+      shift
+      ;;
+  esac
+done
+
 # Banner
 banner=$(
   cat <<'EOF'
@@ -98,41 +148,29 @@ EOF
 )
 display_banner "$banner" "$LBLU" "$PNK" "$BWHT" "$PNK" "$LBLU"
 printf '%s\n' "Meow (> ^ <)"
-# Safety
+
+# Safety: Refresh sudo
+sudo -v || {
+  printf '%s\n' "Root privileges required." >&2
+  exit 1
+}
+
 load_dietpi_globals
 sync
-# Clean APT lists before update
-sudo rm -rf --preserve-root -- /var/lib/apt/lists/*
-if command -v -- apt-fast &>/dev/null; then
-  set +e
-  # Combine apt operations (eliminate redundant package list re-reads)
-  yes | sudo apt-fast update -y --allow-releaseinfo-change --fix-missing \
-    && sudo apt-fast dist-upgrade -y --no-install-recommends
-  set -e
-  clean_apt_cache
-  sudo apt-fast autopurge -yq &>/dev/null || :
-elif command -v -- nala &>/dev/null; then
-  yes | sudo nala upgrade --no-install-recommends || :
-  sudo nala clean
-  sudo nala autoremove
-  sudo nala autopurge
-else
-  # Combine apt operations
-  yes | sudo apt-get update -y --fix-missing \
-    && sudo apt-get dist-upgrade -y --no-install-recommends --fix-broken || :
-  clean_apt_cache
-fi
-# Check's the broken packages and fix them
-sudo dpkg --configure -a &>/dev/null
+
+update_packages
+
 # Other
 if command -v -- dietpi-update &>/dev/null; then
   sudo dietpi-update 1
 elif [[ -x /boot/dietpi/dietpi-update ]]; then
   sudo /boot/dietpi/dietpi-update 1
 fi
+
 if command -v -- pihole &>/dev/null; then
   yes | sudo pihole -up
 fi
+
 # Pi-Apps update (if installed)
 if [[ -d "$HOME/pi-apps" ]]; then
   if [[ "$(id -u)" -eq 0 ]]; then
@@ -144,10 +182,14 @@ if [[ -d "$HOME/pi-apps" ]]; then
     printf '%b%s%b\n' "$YLW" "Pi-Apps found but updater missing" "$DEF" >&2
   fi
 fi
+
 if command -v -- rpi-eeprom-update &>/dev/null; then
   sudo rpi-eeprom-update -a
 fi
-export PRUNE_MODULES=1 SKIP_VCLIBS=1 SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0
-if command -v -- rpi-update &>/dev/null; then
-  sudo rpi-update 2>/dev/null || :
+
+if [[ $INCLUDE_RPI_UPDATE -eq 1 ]]; then
+  export PRUNE_MODULES=1 SKIP_VCLIBS=1 SKIP_WARNING=1 RPI_UPDATE_UNSUPPORTED=0
+  if command -v -- rpi-update &>/dev/null; then
+    sudo rpi-update 2>/dev/null || :
+  fi
 fi

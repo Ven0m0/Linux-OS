@@ -10,19 +10,7 @@ cd "$SCRIPT_DIR" && SCRIPT_DIR="$(pwd -P)" || exit 1
 # Inlined common functions
 has() { command -v -- "$1" &>/dev/null; }
 load_dietpi_globals() { [[ -f /boot/dietpi/func/dietpi-globals ]] && . "/boot/dietpi/func/dietpi-globals" &>/dev/null || :; }
-find_with_fallback() {
-  local ftype="${1:--f}" pattern="${2:-*}" search_path="${3:-.}" action="${4:-}"
-  shift 4 2>/dev/null || shift $#
-  if has fdf; then
-    fdf -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
-  elif has fd; then
-    fd -H -t "$ftype" "$pattern" "$search_path" ${action:+"$action"} "$@"
-  else
-    local find_type_arg
-    case "$ftype" in f) find_type_arg="-type f" ;; d) find_type_arg="-type d" ;; l) find_type_arg="-type l" ;; *) find_type_arg="-type f" ;; esac
-    [[ -n $action ]] && find "$search_path" $find_type_arg -name "$pattern" "$action" "$@" || find "$search_path" $find_type_arg -name "$pattern"
-  fi
-}
+
 : "${XDG_CACHE_HOME:=${HOME}/.cache}"
 CACHE_DIR="${XDG_CACHE_HOME%/}/apkg"
 CACHE_INDEX="${CACHE_DIR}/.index"
@@ -145,19 +133,19 @@ run_mgr() {
   shift
   local -a pkgs=("$@") cmd=()
   case "$PRIMARY_MANAGER" in
-  nala)
-    case "$action" in update | upgrade | autoremove | clean) cmd=(nala "$action" -y) ;; *) cmd=(nala "$action" -y "${pkgs[@]}") ;; esac
-    ;;
-  apt-fast)
-    case "$action" in update | upgrade | autoremove | clean) cmd=(apt-fast "$action" -y) ;; *) cmd=(apt-fast "$action" -y "${pkgs[@]}") ;; esac
-    ;;
-  *)
-    case "$action" in
-    update | upgrade | autoremove | clean) cmd=(apt-get "$action" -y) ;;
-    install | remove | purge) cmd=(apt-get "$action" -y "${pkgs[@]}") ;;
-    *) cmd=(apt "$action" "${pkgs[@]}") ;;
-    esac
-    ;;
+    nala)
+      case "$action" in update | upgrade | autoremove | clean) cmd=(nala "$action" -y) ;; *) cmd=(nala "$action" -y "${pkgs[@]}") ;; esac
+      ;;
+    apt-fast)
+      case "$action" in update | upgrade | autoremove | clean) cmd=(apt-fast "$action" -y) ;; *) cmd=(apt-fast "$action" -y "${pkgs[@]}") ;; esac
+      ;;
+    *)
+      case "$action" in
+        update | upgrade | autoremove | clean) cmd=(apt-get "$action" -y) ;;
+        install | remove | purge) cmd=(apt-get "$action" -y "${pkgs[@]}") ;;
+        *) cmd=(apt "$action" "${pkgs[@]}") ;;
+      esac
+      ;;
   esac
   printf 'Running: sudo %s\n' "${cmd[*]}"
   sudo "${cmd[@]}"
@@ -180,11 +168,11 @@ action_menu_for_pkgs() {
   choice=$(printf '%s\n' "${actions[@]}" | fzf "${FINDER_OPTS[@]}" --height=12% --prompt="Action for ${#pkgs[@]} pkgs> ")
   [[ -z $choice ]] && return
   case "$choice" in
-  Install) run_mgr install "${pkgs[@]}" ;;
-  Remove) run_mgr remove "${pkgs[@]}" ;;
-  Purge) run_mgr purge "${pkgs[@]}" ;;
-  Changelog) for p in "${pkgs[@]}"; do apt-get changelog "$p" 2>/dev/null | less; done ;;
-  Cancel) return ;;
+    Install) run_mgr install "${pkgs[@]}" ;;
+    Remove) run_mgr remove "${pkgs[@]}" ;;
+    Purge) run_mgr purge "${pkgs[@]}" ;;
+    Changelog) for p in "${pkgs[@]}"; do apt-get changelog "$p" 2>/dev/null | less; done ;;
+    Cancel) return ;;
   esac
 }
 menu_search() {
@@ -239,11 +227,11 @@ menu_backup_restore() {
   choice=$(printf '%s\n' "${opts[@]}" | fzf "${FINDER_OPTS[@]}" --height=12% --prompt="Backup/Restore> " --header="$header")
   [[ -z $choice ]] && return
   case "$choice" in
-  "Backup installed packages") backup_installed ;;
-  "Restore from file")
-    read -r -p "Path: " f
-    [[ -n $f ]] && restore_from_file "$f"
-    ;;
+    "Backup installed packages") backup_installed ;;
+    "Restore from file")
+      read -r -p "Path: " f
+      [[ -n $f ]] && restore_from_file "$f"
+      ;;
   esac
 }
 menu_maintenance() {
@@ -252,8 +240,8 @@ menu_maintenance() {
   choice=$(printf '%s\n' "${opts[@]}" | fzf "${FINDER_OPTS[@]}" --height=18% --prompt="Maintenance> " --header="$header")
   [[ -z $choice ]] && return
   case "$choice" in
-  Update) run_mgr update ;; Upgrade) run_mgr upgrade ;; Autoremove) run_mgr autoremove ;;
-  Clean) run_mgr clean ;; "Choose manager") choose_manager ;;
+    Update) run_mgr update ;; Upgrade) run_mgr upgrade ;; Autoremove) run_mgr autoremove ;;
+    Clean) run_mgr clean ;; "Choose manager") choose_manager ;;
   esac
 }
 main_menu() {
@@ -264,8 +252,8 @@ main_menu() {
     choice=$(printf '%s\n' "${menu[@]}" | fzf "${FINDER_OPTS[@]}" --height=20% --prompt="apt-fuzz> " --header="$header")
     [[ -z $choice ]] && break
     case "$choice" in
-    "Search packages") menu_search ;; Installed) menu_installed ;; Upgradable) menu_upgradable ;;
-    "Backup/Restore") menu_backup_restore ;; Maintenance) menu_maintenance ;; "Choose manager") choose_manager ;; Quit) break ;;
+      "Search packages") menu_search ;; Installed) menu_installed ;; Upgradable) menu_upgradable ;;
+      "Backup/Restore") menu_backup_restore ;; Maintenance) menu_maintenance ;; "Choose manager") choose_manager ;; Quit) break ;;
     esac
   done
 }
@@ -299,36 +287,36 @@ _uninstall_self() {
 # Entry point
 if (($# > 0)); then
   case "$1" in
-  --install)
-    _install_self
-    exit 0
-    ;;
-  --uninstall)
-    _uninstall_self
-    exit 0
-    ;;
-  --preview)
-    [[ -z ${2:-} ]] && {
-      echo "usage: $0 --preview <pkg>" >&2
-      exit 2
-    }
-    _cached_preview_print "$2"
-    exit 0
-    ;;
-  install | remove | purge)
-    [[ $# -lt 2 ]] && {
-      echo "Usage: $0 $1 <pkgs...>" >&2
-      exit 2
-    }
-    action="$1"
-    shift
-    run_mgr "$action" "$@"
-    exit 0
-    ;;
-  help | -h | --help)
-    printf 'Usage: %s [--install|--uninstall] | [install|remove|purge <pkgs...>]\nRun without args for TUI.\n' "$0"
-    exit 0
-    ;;
+    --install)
+      _install_self
+      exit 0
+      ;;
+    --uninstall)
+      _uninstall_self
+      exit 0
+      ;;
+    --preview)
+      [[ -z ${2:-} ]] && {
+        echo "usage: $0 --preview <pkg>" >&2
+        exit 2
+      }
+      _cached_preview_print "$2"
+      exit 0
+      ;;
+    install | remove | purge)
+      [[ $# -lt 2 ]] && {
+        echo "Usage: $0 $1 <pkgs...>" >&2
+        exit 2
+      }
+      action="$1"
+      shift
+      run_mgr "$action" "$@"
+      exit 0
+      ;;
+    help | -h | --help)
+      printf 'Usage: %s [--install|--uninstall] | [install|remove|purge <pkgs...>]\nRun without args for TUI.\n' "$0"
+      exit 0
+      ;;
   esac
 fi
 cat <<'EOF'

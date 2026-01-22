@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
-"""Fetch files/folders from GitHub/GitLab using stdlib only."""
+"""Fetch files/folders from GitHub/GitLab using stdlib only.
 
+This script allows downloading files or directories from GitHub or GitLab
+repositories without requiring git to be installed, using only the
+standard library.
+
+Usage:
+    fetch.py <github-or-gitlab-url> [output-dir] [--token TOKEN]
+
+Environment Variables:
+    GITHUB_TOKEN - Optional auth token for GitHub
+    GITLAB_TOKEN - Optional auth token for GitLab
+"""
+
+import argparse
 import json
 import os
 import sys
 import urllib.parse
 import urllib.request
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
 
 
 @dataclass(slots=True)
 class RepoSpec:
+    """Repository specification parsed from URL."""
     platform: Literal["github", "gitlab"]
     owner: str
     repo: str
@@ -52,7 +67,7 @@ def parse_url(url: str) -> RepoSpec:
     raise ValueError(f"Unsupported platform: {u.netloc}")
 
 
-_opener_cache: urllib.request.OpenerDirector | None = None
+_opener_cache: Optional[urllib.request.OpenerDirector] = None
 
 
 def get_opener() -> urllib.request.OpenerDirector:
@@ -66,13 +81,17 @@ def get_opener() -> urllib.request.OpenerDirector:
 def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
     """Execute HTTP GET with optional headers."""
     req = urllib.request.Request(url, headers=headers or {})
-    with get_opener().open(req, timeout=30) as resp:
-        return resp.read()
+    try:
+        with get_opener().open(req, timeout=30) as resp:
+            return resp.read()
+    except urllib.error.URLError as e:
+        print(f"Error fetching {url}: {e}", file=sys.stderr)
+        raise
 
 
-def fetch_github(spec: RepoSpec, output: Path) -> None:
+def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
     """Download from GitHub using Contents API."""
-    token = os.getenv("GITHUB_TOKEN", "")
+    token = token or os.getenv("GITHUB_TOKEN", "")
     headers = {"Accept": "application/vnd.github.v3+json"}
     if token:
         headers["Authorization"] = f"token {token}"
@@ -84,9 +103,11 @@ def fetch_github(spec: RepoSpec, output: Path) -> None:
         api_url += f"?ref={spec.branch}"
 
     try:
-        data = json.loads(http_get(api_url, headers))
+        data_bytes = http_get(api_url, headers)
+        data = json.loads(data_bytes)
     except urllib.error.HTTPError as e:
         if e.code == 404:
+            # Fallback to raw file download if API fails (maybe it's a file, not dir)
             raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{spec.path}"
             content = http_get(raw_url, headers)
             output.parent.mkdir(parents=True, exist_ok=True)
@@ -130,19 +151,22 @@ def fetch_github(spec: RepoSpec, output: Path) -> None:
             for url, path, item_path in files_to_download
         ]
         for future in as_completed(futures):
-            future.result()  # Raise exceptions if any
+            try:
+                future.result()
+            except Exception:
+                pass # Already logged
 
     # Process directories recursively
     for item_path, local_path in dirs_to_process:
         sub_spec = RepoSpec(
             spec.platform, spec.owner, spec.repo, item_path, spec.branch
         )
-        fetch_github(sub_spec, local_path)
+        fetch_github(sub_spec, local_path, token)
 
 
-def fetch_gitlab(spec: RepoSpec, output: Path) -> None:
+def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
     """Download from GitLab using Repository API."""
-    token = os.getenv("GITLAB_TOKEN", "")
+    token = token or os.getenv("GITLAB_TOKEN", "")
     headers = {}
     if token:
         headers["PRIVATE-TOKEN"] = token
@@ -159,7 +183,8 @@ def fetch_gitlab(spec: RepoSpec, output: Path) -> None:
     full_url = f"{tree_url}?{urllib.parse.urlencode(params)}"
 
     try:
-        data = json.loads(http_get(full_url, headers))
+        data_bytes = http_get(full_url, headers)
+        data = json.loads(data_bytes)
     except urllib.error.HTTPError as e:
         if e.code == 404:
             file_path_enc = urllib.parse.quote(spec.path, safe="")
@@ -209,34 +234,26 @@ def fetch_gitlab(spec: RepoSpec, output: Path) -> None:
             for url, path, ip in files_to_download
         ]
         for future in as_completed(futures):
-            future.result()  # Raise exceptions if any
-
-
+            try:
+                future.result()
+            except Exception:
+                pass
 def main() -> int:
-    if len(sys.argv) < 2:
-        print("Usage: fetch.py <github-or-gitlab-url> [output-dir]", file=sys.stderr)
-        print("\nExamples:", file=sys.stderr)
-        print(
-            "  fetch.py https://github.com/owner/repo/tree/main/path", file=sys.stderr
-        )
-        print(
-            "  fetch.py https://gitlab.com/owner/repo/-/tree/main/path output/",
-            file=sys.stderr,
-        )
-        print("\nAuth: Set GITHUB_TOKEN or GITLAB_TOKEN env vars", file=sys.stderr)
-        return 1
-
-    url = sys.argv[1]
-    output_dir = Path(sys.argv[2] if len(sys.argv) > 2 else ".")
+    parser = argparse.ArgumentParser(description="Fetch files from GitHub/GitLab.")
+    parser.add_argument("url", help="GitHub or GitLab URL")
+    parser.add_argument("output_dir", nargs="?", default=".", help="Output directory")
+    parser.add_argument("--token", help="Auth token (overrides env vars)")
+    
+    args = parser.parse_args()
 
     try:
-        spec = parse_url(url)
-        output_path = output_dir / (Path(spec.path).name or spec.repo)
+        spec = parse_url(args.url)
+        output_path = Path(args.output_dir) / (Path(spec.path).name or spec.repo)
 
         if spec.platform == "github":
-            fetch_github(spec, output_path)
+            fetch_github(spec, output_path, args.token)
         else:
-            fetch_gitlab(spec, output_path)
+            fetch_gitlab(spec, output_path, args.token)
 
         print(f"\n✓ Downloaded to: {output_path}")
         return 0

@@ -89,6 +89,12 @@ install_pkgs() {
   )
   # Append packages from text files if they exist
   [[ -f steam.txt ]] && mapfile -t -O "${#pkgs[@]}" pkgs <steam.txt
+  
+  local pkg_file="$(dirname "$0")/packages.txt"
+  if [[ -f "$pkg_file" ]]; then
+    log "Including packages from $pkg_file"
+    mapfile -t -O "${#pkgs[@]}" pkgs < "$pkg_file"
+  fi
 
   paru -S --needed --noconfirm "${pkgs[@]}"
 }
@@ -142,11 +148,33 @@ setup_other(){
   flatpak remote-add --if-not-exists --user cosmic https://apt.pop-os.org/cosmic/cosmic.flatpakrepo
 }
 
+export_pkgs() {
+  log "Exporting packages to packages.txt..."
+  # Get explicitly installed packages (native + foreign/AUR)
+  pacman -Qqe > "$(dirname "$0")/packages.txt"
+  log "Export complete: $(dirname "$0")/packages.txt"
+}
+
 # --- Main ---
 main() {
+  if [[ "${1:-}" == "--export" ]]; then
+    export_pkgs
+    exit 0
+  fi
+
   [[ $EUID -eq 0 ]] && die "Run as user, not root."
 
   setup_repos
+  
+  # Check for packages.txt in the script's directory
+  local pkg_file="$(dirname "$0")/packages.txt"
+  if [[ -f "$pkg_file" ]]; then
+    log "Found packages.txt, installing from export..."
+    # If using packages.txt, we likely want to rely mostly on it, 
+    # but we can pass it to the install function or modify the logic there.
+    # For now, let's just make install_pkgs aware of it.
+  fi
+  
   install_pkgs
   setup_configs
   setup_rust

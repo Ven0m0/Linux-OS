@@ -16,10 +16,15 @@ def detect_encoding(data: bytes) -> str:
 
 
 def process_file(filepath: str) -> set[str]:
-    raw_data = Path(filepath).read_bytes()
-    encoding = detect_encoding(raw_data)
-    text = raw_data.decode(encoding, errors="ignore")
-    return set(WORD_PATTERN.findall(text))
+    with open(filepath, "rb") as f:
+        raw_head = f.read(65536)
+    encoding = detect_encoding(raw_head)
+
+    words = set()
+    with open(filepath, "r", encoding=encoding, errors="ignore") as f:
+        for line in f:
+            words.update(WORD_PATTERN.findall(line))
+    return words
 
 
 def main() -> None:

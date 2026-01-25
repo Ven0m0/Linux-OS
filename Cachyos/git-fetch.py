@@ -20,7 +20,7 @@ import sys
 import urllib.parse
 import urllib.request
 import urllib.error
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Optional
@@ -29,6 +29,7 @@ from typing import Literal, Optional
 @dataclass(slots=True)
 class RepoSpec:
     """Repository specification parsed from URL."""
+
     platform: Literal["github", "gitlab"]
     owner: str
     repo: str
@@ -96,42 +97,77 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
     if token:
         headers["Authorization"] = f"token {token}"
 
-    api_url = (
-        f"https://api.github.com/repos/{spec.owner}/{spec.repo}/contents/{spec.path}"
-    )
-    if spec.branch != "main":
-        api_url += f"?ref={spec.branch}"
-
-    try:
-        data_bytes = http_get(api_url, headers)
-        data = json.loads(data_bytes)
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            # Fallback to raw file download if API fails (maybe it's a file, not dir)
-            raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{spec.path}"
-            content = http_get(raw_url, headers)
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_bytes(content)
-            print(f"✓ {spec.path}")
-            return
-        raise
-
-    if isinstance(data, dict):
-        data = [data]
-
-    # Separate files and dirs for parallel processing
     files_to_download = []
-    dirs_to_process = []
 
-    for item in data:
-        item_path = item["path"]
-        local_path = output / Path(item_path).name
+    def process_node(current_spec: RepoSpec, current_output: Path):
+        api_url = f"https://api.github.com/repos/{current_spec.owner}/{current_spec.repo}/contents/{current_spec.path}"
+        if current_spec.branch != "main":
+            api_url += f"?ref={current_spec.branch}"
 
-        if item["type"] == "file":
-            files_to_download.append((item["download_url"], local_path, item_path))
-        elif item["type"] == "dir":
-            local_path.mkdir(parents=True, exist_ok=True)
-            dirs_to_process.append((item_path, local_path))
+        try:
+            data_bytes = http_get(api_url, headers)
+            data = json.loads(data_bytes)
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                # Fallback to raw file download if API fails (maybe it's a file, not dir)
+                raw_url = f"https://raw.githubusercontent.com/{current_spec.owner}/{current_spec.repo}/{current_spec.branch}/{current_spec.path}"
+                content = http_get(raw_url, headers)
+                current_output.parent.mkdir(parents=True, exist_ok=True)
+                current_output.write_bytes(content)
+                print(f"✓ {current_spec.path}")
+                return [], []
+            raise
+
+        if isinstance(data, dict):
+            data = [data]
+
+        local_files = []
+        local_dirs = []
+
+        for item in data:
+            item_path = item["path"]
+            local_path = current_output / Path(item_path).name
+
+            if item["type"] == "file":
+                local_files.append((item["download_url"], local_path, item_path))
+            elif item["type"] == "dir":
+                local_path.mkdir(parents=True, exist_ok=True)
+                local_dirs.append((item_path, local_path))
+
+        return local_files, local_dirs
+
+    max_workers = min(32, (os.cpu_count() or 1) * 4)
+
+    # Discovery phase
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {}
+
+        def submit_spec(s, o):
+            f = executor.submit(process_node, s, o)
+            futures[f] = (s, o)
+
+        submit_spec(spec, output)
+
+        while futures:
+            done, _ = wait(futures, return_when=FIRST_COMPLETED)
+            for future in done:
+                s, o = futures.pop(future)
+                try:
+                    f_list, d_list = future.result()
+                    files_to_download.extend(f_list)
+
+                    for item_path, local_path in d_list:
+                        sub_spec = RepoSpec(
+                            s.platform, s.owner, s.repo, item_path, s.branch
+                        )
+                        submit_spec(sub_spec, local_path)
+
+                except Exception as e:
+                    print(f"Error processing {s.path}: {e}", file=sys.stderr)
+                    raise
+
+    if not files_to_download:
+        return
 
     # Parallel file downloads
     def download_file(url, path, item_path):
@@ -144,24 +180,16 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
             print(f"✗ {item_path}: {e}")
             raise
 
-    max_workers = min(32, (os.cpu_count() or 1) * 4)
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = [
+        futures_dl = [
             executor.submit(download_file, url, path, item_path)
             for url, path, item_path in files_to_download
         ]
-        for future in as_completed(futures):
+        for future in as_completed(futures_dl):
             try:
                 future.result()
             except Exception:
-                pass # Already logged
-
-    # Process directories recursively
-    for item_path, local_path in dirs_to_process:
-        sub_spec = RepoSpec(
-            spec.platform, spec.owner, spec.repo, item_path, spec.branch
-        )
-        fetch_github(sub_spec, local_path, token)
+                pass  # Already logged
 
 
 def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
@@ -238,12 +266,14 @@ def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 future.result()
             except Exception:
                 pass
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch files from GitHub/GitLab.")
     parser.add_argument("url", help="GitHub or GitLab URL")
     parser.add_argument("output_dir", nargs="?", default=".", help="Output directory")
     parser.add_argument("--token", help="Auth token (overrides env vars)")
-    
+
     args = parser.parse_args()
 
     try:

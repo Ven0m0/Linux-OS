@@ -1,5 +1,5 @@
 ---
-applyTo: "*"
+applyTo: "**"
 description: "Performance optimization reference: frontend, backend, database best practices"
 ---
 

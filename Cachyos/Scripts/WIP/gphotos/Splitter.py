@@ -26,6 +26,9 @@ def group_photos(photos_folder, target_folder_size):
     group_number = 0
 
     for root, dirs, files in os.walk(photos_folder):
+        # Exclude generated group folders from os.walk
+        dirs[:] = [d for d in dirs if not d.startswith("Group_")]
+
         for file in files:
             file_path = os.path.join(root, file)
             file_size = os.path.getsize(file_path)

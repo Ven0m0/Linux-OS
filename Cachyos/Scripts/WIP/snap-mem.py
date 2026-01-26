@@ -70,13 +70,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def load_items(json_path: Path, media_type: str) -> list[Item]:
   try:
-    raw = json_path.read_text(encoding="utf-8")
+    with json_path.open("r", encoding="utf-8") as f:
+      try:
+        data = json.load(f)
+      except json.JSONDecodeError as e:
+        die(f"Invalid JSON: {json_path}\n{e}")
   except OSError as e:
     die(f"Failed to read JSON: {json_path}\n{e}")
-  try:
-    data = json.loads(raw)
-  except json.JSONDecodeError as e:
-    die(f"Invalid JSON: {json_path}\n{e}")
   media_items = data.get("Saved Media", [])
   if not isinstance(media_items, list):
     die('JSON missing "Saved Media" list')

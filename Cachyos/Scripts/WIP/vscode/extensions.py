@@ -3,6 +3,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 
@@ -59,8 +60,18 @@ def main() -> None:
         }
 
     if args.install:
-        for ext in sorted(extensions_from_file):
-            run_cmd(["code", "--install-extension", ext, "--force"])
+        with ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(
+                    run_cmd, ["code", "--install-extension", ext, "--force"]
+                )
+                for ext in sorted(extensions_from_file)
+            ]
+            for future in futures:
+                try:
+                    future.result()
+                except SystemExit:
+                    sys.exit(1)
         print(f"✓ Installed {len(extensions_from_file)} extensions")
 
     if args.update or args.overwrite:

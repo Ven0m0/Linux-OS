@@ -112,10 +112,6 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(spec.path)}"
                 try:
                     content = http_get(raw_url, headers)
-                    # output is likely constructed as dir/filename.
-                    # If spec.path is a file, output might be the directory to put it in?
-                    # In main(), output_path = output_dir / (Path(spec.path).name or spec.repo)
-                    # If spec.path is "foo/bar.txt", output_path is "output_dir/bar.txt".
                     output.parent.mkdir(parents=True, exist_ok=True)
                     output.write_bytes(content)
                     print(f"✓ {spec.path}")
@@ -133,14 +129,9 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
     files_to_download = []
 
     # Filter items based on spec.path
-    # spec.path can be empty (root), or a directory "foo/bar", or a file "foo.txt"
     target_path = spec.path.strip("/")
 
     found_any = False
-
-    # We need to determine the base directory in the tree that corresponds to 'output'.
-    # If spec.path is "foo/bar", and we match "foo/bar/baz.txt", we want to save it to output/"baz.txt".
-    # So we remove spec.path from the item path.
 
     for item in data.get("tree", []):
         item_path = item["path"]
@@ -170,18 +161,12 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         if item["type"] == "tree":
             local_path.mkdir(parents=True, exist_ok=True)
         elif item["type"] == "blob":
-            # Construct raw URL
-            # item['path'] is the full path in repo.
-            # We need to encode parts of the path.
             encoded_path = "/".join(urllib.parse.quote(p) for p in item_path.split("/"))
             raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{encoded_path}"
             files_to_download.append((raw_url, local_path, item_path))
 
     if not found_any:
-        # If we didn't find anything in the tree, but we have a target_path, it might be a 404
-        # OR it might be that the tree API missed it (truncated?) or something else.
-        # Original behavior was to try raw download if 404 on contents.
-        # Let's try raw download as a last resort if it looks like a file.
+        # If path not found in tree (or tree truncated), try raw download as fallback
         if target_path:
             raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(target_path)}"
             try:

@@ -12,9 +12,9 @@ log() { printf '%s\n' "$*"; }
 download_file() {
     local url="$1"
     local output="$2"
-    if has curl;
+    if has curl; then
         curl -fsSL "$url" -o "$output"
-    elif has wget;
+    elif has wget; then
         wget -qO "$output" "$url"
     else
         echo "Error: neither curl nor wget found" >&2
@@ -43,7 +43,7 @@ fix_mirrors() {
 fix_cache() {
   log "Cleaning pacman cache..."
   sudo rm -rf /var/cache/pacman/pkg/*
-  if has paru;
+  if has paru; then
       paru -Scc --noconfirm
   else
       sudo pacman -Scc --noconfirm
@@ -69,7 +69,7 @@ fix_keys() {
   sudo pacman -Sy --needed base-devel --noconfirm
   
   log "Importing wlogout GPG key..."
-  if download_file "https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F" /tmp/wlogout.asc;
+  if download_file "https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F" /tmp/wlogout.asc; then
       gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc
   else
       echo "Failed to download wlogout key"
@@ -150,7 +150,7 @@ main() {
                 fix_gpg_conf
                 fix_flatpak
                 fix_pam
-                ;;;
+                ;;
             -h|--help) usage ;;
             *) echo "Unknown option: $1"; usage ;;
         esac

@@ -17,7 +17,6 @@ import argparse
 import json
 import os
 import sys
-import threading
 import urllib.parse
 import urllib.request
 import urllib.error
@@ -170,21 +169,10 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
     if not files_to_download:
         return
 
-    created_dirs = set()
-    dirs_lock = threading.Lock()
-
     # Parallel file downloads
     def download_file(url, path, item_path):
         try:
             content = http_get(url, headers)
-
-            parent = str(path.parent)
-            if parent not in created_dirs:
-                with dirs_lock:
-                    if parent not in created_dirs:
-                        path.parent.mkdir(parents=True, exist_ok=True)
-                        created_dirs.add(parent)
-
             path.write_bytes(content)
             print(f"✓ {item_path}")
         except Exception as e:

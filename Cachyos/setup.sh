@@ -127,7 +127,7 @@ setup_rust() {
   export RUSTUP_HOME="$HOME/.rustup" CARGO_HOME="$HOME/.cargo"
   has rustup && {
     rustup default stable
-    rustup component add rust-analyzer
+    rustup component add rust-std-wasm32v1-none llvm-bitcode-linker llvm-tools rust-analyzer rust-src
   }
 }
 

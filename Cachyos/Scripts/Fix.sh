@@ -10,16 +10,16 @@ has() { command -v -- "$1" &>/dev/null; }
 log() { printf '%s\n' "$*"; }
 
 download_file() {
-    local url="$1"
-    local output="$2"
-    if has curl; then
-        curl -fsSL "$url" -o "$output"
-    elif has wget; then
-        wget -qO "$output" "$url"
-    else
-        echo "Error: neither curl nor wget found" >&2
-        return 1
-    fi
+  local url="$1"
+  local output="$2"
+  if has curl; then
+    curl -fsSL "$url" -o "$output"
+  elif has wget; then
+    wget -qO "$output" "$url"
+  else
+    echo "Error: neither curl nor wget found" >&2
+    return 1
+  fi
 }
 
 confirm() {
@@ -33,10 +33,10 @@ fix_mirrors() {
   log "Fixing mirrors..."
   has cachyos-rate-mirrors && sudo cachyos-rate-mirrors
   if [[ -f /etc/pacman.d/chaotic-mirrorlist ]]; then
-      sudo rate-mirrors --save "/etc/pacman.d/chaotic-mirrorlist" --allow-root --disable-comments --disable-comments-in-file --entry-country DE chaotic-aur || echo "Failed to update chaotic mirrors"
+    sudo rate-mirrors --save "/etc/pacman.d/chaotic-mirrorlist" --allow-root --disable-comments --disable-comments-in-file --entry-country DE chaotic-aur || echo "Failed to update chaotic mirrors"
   fi
   if [[ -f /etc/pacman.d/endeavouros-mirrorlist ]]; then
-      sudo rate-mirrors --save "/etc/pacman.d/endeavouros-mirrorlist" --allow-root --disable-comments --disable-comments-in-file --entry-country DE endeavouros || echo "Failed to update endeavouros mirrors"
+    sudo rate-mirrors --save "/etc/pacman.d/endeavouros-mirrorlist" --allow-root --disable-comments --disable-comments-in-file --entry-country DE endeavouros || echo "Failed to update endeavouros mirrors"
   fi
 }
 
@@ -44,35 +44,35 @@ fix_cache() {
   log "Cleaning pacman cache..."
   sudo rm -rf /var/cache/pacman/pkg/*
   if has paru; then
-      paru -Scc --noconfirm
+    paru -Scc --noconfirm
   else
-      sudo pacman -Scc --noconfirm
+    sudo pacman -Scc --noconfirm
   fi
 }
 
 fix_keys() {
   log "Fixing SSH/GPG permissions..."
   sudo chmod -R 700 ~/.{ssh,gnupg} 2>/dev/null || true
-  
+
   log "Fixing keyrings..."
   sudo rm -rf /etc/pacman.d/gnupg/ /var/lib/pacman/sync
   sudo pacman -Sy archlinux-keyring --noconfirm
   sudo pacman-key --init --populate
   sudo pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
   sudo pacman-key --lsign-key F3B607488DB35A47
-  
+
   # CachyOS keys
   sudo pacman-key --lsign cachyos || echo "Failed to lsign cachyos (maybe not present)"
   sudo pacman-key --refresh-keys || echo "Key refresh failed (network issue?)"
 
   log "Reinstalling base-devel..."
   sudo pacman -Sy --needed base-devel --noconfirm
-  
+
   log "Importing wlogout GPG key..."
   if download_file "https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F" /tmp/wlogout.asc; then
-      gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc
+    gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc
   else
-      echo "Failed to download wlogout key"
+    echo "Failed to download wlogout key"
   fi
 }
 
@@ -80,15 +80,15 @@ fix_gpg_conf() {
   log "Fixing GPG configuration..."
   sudo pacman -Syyu --noconfirm
   sudo mkdir -p /etc/gnupg
-  
+
   # Check if source exists before copying
   if [[ -f ~/.local/share/omarchy/default/gpg/dirmngr.conf ]]; then
-      sudo cp ~/.local/share/omarchy/default/gpg/dirmngr.conf /etc/gnupg/
-      sudo chmod 644 /etc/gnupg/dirmngr.conf
-      sudo gpgconf --kill dirmngr || :
-      sudo gpgconf --launch dirmngr || :
+    sudo cp ~/.local/share/omarchy/default/gpg/dirmngr.conf /etc/gnupg/
+    sudo chmod 644 /etc/gnupg/dirmngr.conf
+    sudo gpgconf --kill dirmngr || :
+    sudo gpgconf --launch dirmngr || :
   else
-      echo "Warning: ~/.local/share/omarchy/default/gpg/dirmngr.conf not found. Skipping config copy."
+    echo "Warning: ~/.local/share/omarchy/default/gpg/dirmngr.conf not found. Skipping config copy."
   fi
 }
 
@@ -103,12 +103,12 @@ fix_flatpak() {
 }
 
 fix_pam() {
-    log "Installing pam-reattach..."
-    sudo pacman -S --needed pam-reattach --noconfirm || echo "pam-reattach install failed"
+  log "Installing pam-reattach..."
+  sudo pacman -S --needed pam-reattach --noconfirm || echo "pam-reattach install failed"
 }
 
 usage() {
-    cat <<EOF
+  cat <<EOF
 Usage: ${0##*/} [OPTIONS]
 Options:
   --mirrors     Fix mirrors
@@ -120,42 +120,45 @@ Options:
   --all         Run all fixes
   -h, --help    Show help
 EOF
-    exit 0
+  exit 0
 }
 
 main() {
-    if [[ $# -eq 0 ]]; then
-        # Default behavior: run keys fix (matches original script intent?)
-        # Original script ran everything linearly. Let's default to usage or all?
-        # Let's run keys, gpg, flatpak, pam as per original flow.
+  if [[ $# -eq 0 ]]; then
+    # Default behavior: run keys fix (matches original script intent?)
+    # Original script ran everything linearly. Let's default to usage or all?
+    # Let's run keys, gpg, flatpak, pam as per original flow.
+    fix_keys
+    fix_gpg_conf
+    fix_flatpak
+    fix_pam
+    exit 0
+  fi
+
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --mirrors) fix_mirrors ;;
+      --cache) fix_cache ;;
+      --keys) fix_keys ;;
+      --gpg) fix_gpg_conf ;;
+      --flatpak) fix_flatpak ;;
+      --pam) fix_pam ;;
+      --all)
+        fix_mirrors
+        fix_cache
         fix_keys
         fix_gpg_conf
         fix_flatpak
         fix_pam
-        exit 0
-    fi
-
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            --mirrors) fix_mirrors ;;
-            --cache) fix_cache ;;
-            --keys) fix_keys ;;
-            --gpg) fix_gpg_conf ;;
-            --flatpak) fix_flatpak ;;
-            --pam) fix_pam ;;
-            --all)
-                fix_mirrors
-                fix_cache
-                fix_keys
-                fix_gpg_conf
-                fix_flatpak
-                fix_pam
-                ;;
-            -h|--help) usage ;;
-            *) echo "Unknown option: $1"; usage ;;
-        esac
-        shift
-    done
+        ;;
+      -h | --help) usage ;;
+      *)
+        echo "Unknown option: $1"
+        usage
+        ;;
+    esac
+    shift
+  done
 }
 
 main "$@"

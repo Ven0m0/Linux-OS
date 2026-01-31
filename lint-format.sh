@@ -24,19 +24,19 @@ status=0
 
 while (($#)); do
   case "$1" in
-  -c | --check) check_mode=1 ;;
-  -h | --help)
-    usage
-    exit 0
-    ;;
-  --)
-    shift
-    break
-    ;;
-  *)
-    usage
-    exit 1
-    ;;
+    -c | --check) check_mode=1 ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
   esac
   shift
 done

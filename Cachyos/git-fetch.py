@@ -211,7 +211,6 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
     def download_file(url, path, item_path):
         try:
             content = http_get(url, headers)
-            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
             print(f"✓ {item_path}")
         except Exception as e:
@@ -228,7 +227,6 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 future.result()
             except Exception:
                 pass  # Already logged
-
 
 def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
     """Download from GitLab using Repository API."""

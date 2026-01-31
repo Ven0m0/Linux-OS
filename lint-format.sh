@@ -65,15 +65,14 @@ fi
 
 if has shfmt && ((${#shell_files[@]})); then
   if ((check_mode)); then
-    if ! diff_out=$(shfmt -i 2 -bn -ln bash -d "${shell_files[@]}"); then
-      status=1
     if ! diff_out=$(shfmt -i 2 -bn -ci -s -ln bash -d "${shell_files[@]}"); then
-    if [[ -n ${diff_out:-} ]]; then
-      printf '%s\n' "$diff_out"
-      status=1
+      if [[ -n ${diff_out:-} ]]; then
+        printf '%s\n' "$diff_out"
+        status=1
+      fi
     fi
   else
-    shfmt -i 2 -bn -ln bash -w "${shell_files[@]}" || status=1
+    shfmt -i 2 -bn -ci -s -ln bash -w "${shell_files[@]}" || status=1
   fi
 fi
 

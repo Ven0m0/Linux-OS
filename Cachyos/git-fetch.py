@@ -98,7 +98,10 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         headers["Authorization"] = f"token {token}"
 
     # Fetch the entire tree recursively
-    api_url = f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/{spec.branch}?recursive=1"
+    api_url = (
+        f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/"
+        f"{urllib.parse.quote(spec.branch, safe='')}?recursive=1"
+    )
 
     try:
         data_bytes = http_get(api_url, headers)

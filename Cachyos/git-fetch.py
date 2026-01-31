@@ -123,8 +123,10 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
 
     if data.get("truncated"):
         print(
-            "Warning: Tree is truncated. Some files might be missing.", file=sys.stderr
+            "Error: GitHub Tree API response is truncated; aborting to avoid an incomplete download.",
+            file=sys.stderr,
         )
+        sys.exit(1)
 
     files_to_download = []
 

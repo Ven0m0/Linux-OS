@@ -150,8 +150,21 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         if target_path:
             # Relative path from target_path
             rel_path = item_path[len(target_path) :].lstrip("/")
-            if not rel_path and item["type"] == "blob":
-                # Use filename if we matched the file exactly
+            # Detect whether the user-supplied path was intended as a directory
+            requested_is_dir = spec.path.endswith("/")
+            if not rel_path and item_path == target_path:
+                # Exact match of the target path
+                if requested_is_dir and item["type"] != "tree":
+                    raise ValueError(
+                        f"Requested path {spec.path!r} is a directory, but repository "
+                        f"contains a {item['type']} at that path."
+                    )
+                if not requested_is_dir and item["type"] != "blob":
+                    raise ValueError(
+                        f"Requested path {spec.path!r} is a file, but repository "
+                        f"contains a {item['type']} at that path."
+                    )
+                # For an exact match with the expected type, use the output path directly.
                 local_path = output
             else:
                 local_path = output / rel_path

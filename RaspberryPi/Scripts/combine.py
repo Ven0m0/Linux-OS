@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 
 WORD_PATTERN = re.compile(r"[a-zA-Z0-9]+")
-VALID_WORD_PATTERN = re.compile(r"^[a-zA-Z0-9_.,!?@#$%^&*()-=+ ]+$")
 
 
 def detect_encoding(data: bytes) -> str:

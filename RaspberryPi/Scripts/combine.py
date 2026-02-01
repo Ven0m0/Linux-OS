@@ -16,7 +16,7 @@ def detect_encoding(data: bytes) -> str:
     Detects the encoding of the given byte data using chardet if available.
     Falls back to utf-8 if chardet is not installed or returns no encoding.
     """
-    if chardet:
+    if chardet is not None:
         result = chardet.detect(data)
         return result["encoding"] or "utf-8"
     return "utf-8"

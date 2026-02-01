@@ -100,9 +100,24 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
     files_to_download = []
 
     def process_node(current_spec: RepoSpec, current_output: Path):
-        api_url = f"https://api.github.com/repos/{current_spec.owner}/{current_spec.repo}/contents/{current_spec.path}"
+        encoded_path = "/".join(
+            urllib.parse.quote(part, safe="")
+            for part in current_spec.path.split("/")
+            if part
+        )
+        if encoded_path:
+            api_url = (
+                f"https://api.github.com/repos/"
+                f"{current_spec.owner}/{current_spec.repo}/contents/{encoded_path}"
+            )
+        else:
+            api_url = (
+                f"https://api.github.com/repos/"
+                f"{current_spec.owner}/{current_spec.repo}/contents"
+            )
         if current_spec.branch != "main":
-            api_url += f"?ref={current_spec.branch}"
+            ref_param = urllib.parse.quote(current_spec.branch, safe="")
+            api_url += f"?ref={ref_param}"
 
         try:
             data_bytes = http_get(api_url, headers)

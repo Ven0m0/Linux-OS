@@ -91,8 +91,8 @@ update_packages() {
   if command -v -- apt-fast &>/dev/null; then
     set +e
     # Combine apt operations (eliminate redundant package list re-reads)
-    yes | sudo apt-fast update -y --allow-releaseinfo-change --fix-missing &&
-      sudo apt-fast dist-upgrade -y --no-install-recommends
+    yes | sudo apt-fast update -y --allow-releaseinfo-change --fix-missing \
+      && sudo apt-fast dist-upgrade -y --no-install-recommends
     set -e
     clean_apt_cache
     sudo apt-fast autopurge -yq &>/dev/null || :
@@ -103,8 +103,8 @@ update_packages() {
     sudo nala autopurge
   else
     # Combine apt operations
-    yes | sudo apt-get update -y --fix-missing &&
-      sudo apt-get dist-upgrade -y --no-install-recommends --fix-broken || :
+    yes | sudo apt-get update -y --fix-missing \
+      && sudo apt-get dist-upgrade -y --no-install-recommends --fix-broken || :
     clean_apt_cache
   fi
 

@@ -125,13 +125,8 @@ EOF
 
 main() {
   if [[ $# -eq 0 ]]; then
-    # Default behavior: run keys fix (matches original script intent?)
-    # Original script ran everything linearly. Let's default to usage or all?
-    # Let's run keys, gpg, flatpak, pam as per original flow.
+    # Default behavior: run only the keys fix (matches --keys "default" help text).
     fix_keys
-    fix_gpg_conf
-    fix_flatpak
-    fix_pam
     exit 0
   fi
 

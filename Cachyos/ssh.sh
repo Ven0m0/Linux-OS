@@ -6,7 +6,7 @@ shopt -s nullglob globstar
 EMAIL="${GIT_AUTHOR_EMAIL:-$(git config get user.email)}"
 KEY_PATH="$HOME/.ssh/id_git"
 
-if [[ -z $EMAIL ]]; then
+if [[ -z "$EMAIL" ]]; then
   echo "Error: git user.email not set. Please set it or export GIT_AUTHOR_EMAIL."
   exit 1
 fi

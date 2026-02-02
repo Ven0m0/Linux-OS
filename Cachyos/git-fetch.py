@@ -20,7 +20,7 @@ import sys
 import urllib.parse
 import urllib.request
 import urllib.error
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Optional
@@ -91,126 +91,104 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
 
 
 def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
-    """Download from GitHub using Tree API (recursive)."""
+    """Download from GitHub using Contents API."""
     token = token or os.getenv("GITHUB_TOKEN", "")
     headers = {"Accept": "application/vnd.github.v3+json"}
     if token:
         headers["Authorization"] = f"token {token}"
 
-    # Fetch the entire tree recursively
-    api_url = (
-        f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/"
-        f"{urllib.parse.quote(spec.branch, safe='')}?recursive=1"
-    )
-
-    try:
-        data_bytes = http_get(api_url, headers)
-        data = json.loads(data_bytes)
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            # Fallback: maybe spec.path is a file and not in a tree or branch issue?
-            # Or the branch doesn't exist.
-            # We can try raw download if spec.path is set, similar to original fallback.
-            if spec.path:
-                raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(spec.path)}"
-                try:
-                    content = http_get(raw_url, headers)
-                    output.parent.mkdir(parents=True, exist_ok=True)
-                    output.write_bytes(content)
-                    print(f"✓ {spec.path}")
-                    return
-                except urllib.error.HTTPError:
-                    pass  # Original 404 was correct
-            raise
-        raise
-
-    if data.get("truncated"):
-        print(
-            "Error: GitHub Tree API response is truncated; aborting to avoid an incomplete download.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
     files_to_download = []
 
-    # Filter items based on spec.path
-    target_path = spec.path.strip("/")
-
-    found_any = False
-
-    for item in data.get("tree", []):
-        item_path = item["path"]
-
-        # Check if item matches target_path
-        if (
-            target_path
-            and item_path != target_path
-            and not item_path.startswith(target_path + "/")
-        ):
-            continue
-
-        found_any = True
-
-        # Determine local path
-        if target_path:
-            # Relative path from target_path
-            rel_path = item_path[len(target_path) :].lstrip("/")
-            # Detect whether the user-supplied path was intended as a directory
-            requested_is_dir = spec.path.endswith("/")
-            if not rel_path and item_path == target_path:
-                # Exact match of the target path
-                if requested_is_dir and item["type"] != "tree":
-                    raise ValueError(
-                        f"Requested path {spec.path!r} is a directory, but repository "
-                        f"contains a {item['type']} at that path."
-                    )
-                if not requested_is_dir and item["type"] != "blob":
-                    raise ValueError(
-                        f"Requested path {spec.path!r} is a file, but repository "
-                        f"contains a {item['type']} at that path."
-                    )
-                # For an exact match with the expected type, use the output path directly.
-                local_path = output
-            else:
-                local_path = output / rel_path
+    def process_node(current_spec: RepoSpec, current_output: Path):
+        encoded_path = "/".join(
+            urllib.parse.quote(part, safe="")
+            for part in current_spec.path.split("/")
+            if part
+        )
+        if encoded_path:
+            api_url = (
+                f"https://api.github.com/repos/"
+                f"{current_spec.owner}/{current_spec.repo}/contents/{encoded_path}"
+            )
         else:
-            local_path = output / item_path
+            api_url = (
+                f"https://api.github.com/repos/"
+                f"{current_spec.owner}/{current_spec.repo}/contents"
+            )
+        if current_spec.branch != "main":
+            ref_param = urllib.parse.quote(current_spec.branch, safe="")
+            api_url += f"?ref={ref_param}"
 
-        if item["type"] == "tree":
-            local_path.mkdir(parents=True, exist_ok=True)
-        elif item["type"] == "blob":
-            encoded_path = "/".join(urllib.parse.quote(p) for p in item_path.split("/"))
-            raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{encoded_path}"
-            files_to_download.append((raw_url, local_path, item_path))
-
-    if not found_any:
-        # If path not found in tree (or tree truncated), try raw download as fallback
-        if target_path:
-            raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(target_path)}"
-            try:
+        try:
+            data_bytes = http_get(api_url, headers)
+            data = json.loads(data_bytes)
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                # Fallback to raw file download if API fails (maybe it's a file, not dir)
+                raw_url = f"https://raw.githubusercontent.com/{current_spec.owner}/{current_spec.repo}/{current_spec.branch}/{current_spec.path}"
                 content = http_get(raw_url, headers)
-                output.parent.mkdir(parents=True, exist_ok=True)
-                output.write_bytes(content)
-                print(f"✓ {target_path}")
-                return
-            except urllib.error.HTTPError:
-                pass
+                current_output.parent.mkdir(parents=True, exist_ok=True)
+                current_output.write_bytes(content)
+                print(f"✓ {current_spec.path}")
+                return [], []
+            raise
 
-        print(f"✗ Path not found: {spec.path}", file=sys.stderr)
-        # We don't raise here to allow main to exit cleanly?
-        # But original code raised or returned empty.
-        # If we return, we print nothing else.
-        return
+        if isinstance(data, dict):
+            data = [data]
+
+        local_files = []
+        local_dirs = []
+
+        for item in data:
+            item_path = item["path"]
+            local_path = current_output / Path(item_path).name
+
+            if item["type"] == "file":
+                local_files.append((item["download_url"], local_path, item_path))
+            elif item["type"] == "dir":
+                local_path.mkdir(parents=True, exist_ok=True)
+                local_dirs.append((item_path, local_path))
+
+        return local_files, local_dirs
+
+    max_workers = min(32, (os.cpu_count() or 1) * 4)
+
+    # Discovery phase
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {}
+
+        def submit_spec(s, o):
+            f = executor.submit(process_node, s, o)
+            futures[f] = (s, o)
+
+        submit_spec(spec, output)
+
+        while futures:
+            done, _ = wait(futures, return_when=FIRST_COMPLETED)
+            for future in done:
+                s, o = futures.pop(future)
+                try:
+                    f_list, d_list = future.result()
+                    files_to_download.extend(f_list)
+
+                    for item_path, local_path in d_list:
+                        sub_spec = RepoSpec(
+                            s.platform, s.owner, s.repo, item_path, s.branch
+                        )
+                        submit_spec(sub_spec, local_path)
+
+                except Exception as e:
+                    print(f"Error processing {s.path}: {e}", file=sys.stderr)
+                    raise
 
     if not files_to_download:
         return
 
     # Parallel file downloads
-    max_workers = min(32, (os.cpu_count() or 1) * 4)
-
     def download_file(url, path, item_path):
         try:
             content = http_get(url, headers)
+            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(content)
             print(f"✓ {item_path}")
         except Exception as e:
@@ -227,6 +205,7 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 future.result()
             except Exception:
                 pass  # Already logged
+
 
 def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
     """Download from GitLab using Repository API."""

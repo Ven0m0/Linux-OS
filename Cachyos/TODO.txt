@@ -1,0 +1,2 @@
+rustflags:
+-Z no-unique-section-names=yes -Z  no-profiler-runtime=yes -Z no-implied-bounds-compat=yes -Z function-sections=yes -Z fewer-names=yes -Z dylib-lto=yes -Z checksum-hash-algorithm=blake3

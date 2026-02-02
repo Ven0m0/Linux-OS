@@ -113,21 +113,20 @@ Usage: ${0##*/} [OPTIONS]
 Options:
   --mirrors     Fix mirrors
   --cache       Clean cache
-  --keys        Fix keys/keyrings (default)
+  --keys        Fix keys/keyrings
   --gpg         Fix GPG config
   --flatpak     Fix Flatpak
   --pam         Fix PAM
   --all         Run all fixes
   -h, --help    Show help
+
+Default behavior (no arguments) runs: Keys, GPG, Flatpak, and PAM fixes.
 EOF
     exit 0
 }
 
 main() {
     if [[ $# -eq 0 ]]; then
-        # Default behavior: run keys fix (matches original script intent?)
-        # Original script ran everything linearly. Let's default to usage or all?
-        # Let's run keys, gpg, flatpak, pam as per original flow.
         fix_keys
         fix_gpg_conf
         fix_flatpak

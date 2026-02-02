@@ -44,7 +44,7 @@ clean_pkgs() {
     # Remove orphans
     local orphans
     orphans=$(pacman -Qtdq) || true
-    if [[ -n $orphans ]]; then
+    if [[ -n "$orphans" ]]; then
       try sudo pacman -Rns $orphans --noconfirm || :
     fi
 

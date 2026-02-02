@@ -402,7 +402,7 @@ CMDLINE="$DST_MNT_BOOT/cmdline.txt"
 [[ -f $CMDLINE ]] || die "Missing dest cmdline.txt: $CMDLINE"
 
 ROOT_UUID="$(blkid -o value -s UUID "$DST_ROOT")"
-[[ -n $ROOT_UUID ]] || die "Failed to read UUID of dest f2fs root"
+[[ -n "${ROOT_UUID:-}" ]] || die "Failed to read UUID of dest f2fs root"
 
 log "Patching /boot/cmdline.txt root=UUID=..., rootfstype=f2fs, rootflags=...\n"
 cmd="$(<"$CMDLINE")"

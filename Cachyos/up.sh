@@ -72,7 +72,7 @@ up_dev() {
     # Only if there are outdated packages
     local outdated
     outdated=$(uv pip list --outdated --format=freeze 2>/dev/null | awk -F== '{print $1}')
-    if [[ -n $outdated ]]; then
+    if [[ -n ${outdated:-} ]]; then
       try uv pip install -U $outdated
     fi
   fi

@@ -89,15 +89,15 @@ main() {
   platform=$(detect_platform)
   msg "Detected platform: $platform"
   case "$platform" in
-  arch)
-    debloat_arch
-    debloat_linux
-    ;;
-  debian)
-    debloat_debian
-    debloat_linux
-    ;;
-  *) debloat_linux ;;
+    arch)
+      debloat_arch
+      debloat_linux
+      ;;
+    debian)
+      debloat_debian
+      debloat_linux
+      ;;
+    *) debloat_linux ;;
   esac
   msg "\nDebloat complete!"
 }

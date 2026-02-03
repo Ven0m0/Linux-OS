@@ -126,7 +126,7 @@ def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> 
                     if resp.status == 200:
                         with open(local_path, "wb") as f:
                             while True:
-                                chunk = resp.read(16384)
+                                chunk = resp.read(65536)
                                 if not chunk:
                                     break
                                 f.write(chunk)

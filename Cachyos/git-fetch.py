@@ -243,8 +243,8 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                     and item["type"] != "tree"
                 ):
                     raise ValueError(
-                        f"Requested path {spec.path!r} is a file, but repository "
-                        f"contains a {item['type']} at that path."
+                        f"Requested path {spec.path!r} is a file or directory, but "
+                        f"repository contains a {item['type']} at that path."
                     )
                 local_path = output
             else:

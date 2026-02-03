@@ -108,20 +108,7 @@ has(){ command -v "$1" &>/dev/null; }
 
 Always quote variables unless intentional glob/split. Exception: `$*` in printf format strings.
 
-### Privilege & Packages
-
-- **Escalation:** Detect at runtime, never hardcode `sudo`
-
-```bash
-detect_priv(){
-  local cmd
-  for cmd in sudo-rs sudo doas; do
-    has "$cmd" && { printf '%s' "$cmd"; return 0; }
-  done
-  return 1
-}
-PRIV_CMD=$(detect_priv) || die "no privilege escalation tool found"
-```
+### Packages
 
 - **Install:** `paru`→`yay`→`pacman` (Arch); `apt-get` (Debian); prefer AUR helpers for -S operations
 - **Check before install:** `pacman -Q "$pkg" 2>/dev/null`, `flatpak list --app | grep -qF "$pkg"`, `cargo install --list | grep -qF "$pkg"`
@@ -649,20 +636,6 @@ mv -f "${file}.tmp" "$file"
 TMPFILE="/tmp/script.$$"  # NEVER
 ```
 
-### Privilege Escalation Safety
-
-```bash
-# ✅ GOOD: Minimize privileged operations
-prepare_files  # Run as user
-$PRIV_CMD install_system_files  # Only elevate when needed
-cleanup  # Back to user
-
-# ❌ BAD: Running entire script as root
-# sudo ./script.sh  # AVOID
-```
-
----
-
 ## Error Handling Patterns
 
 ### Trap-Based Cleanup
@@ -673,7 +646,7 @@ cleanup(){
   local rc=$?
   [[ -n ${LOCK_FD:-} ]] && exec {LOCK_FD}>&- 2>/dev/null || :
   [[ -n ${LOOP_DEV:-} && -b ${LOOP_DEV} ]] && losetup -d "$LOOP_DEV" 2>/dev/null || :
-  [[ -n ${MNT_PT:-} ]] && mountpoint -q "$MNT_PT" && $PRIV_CMD umount -R "$MNT_PT" || :
+  [[ -n ${MNT_PT:-} ]] && mountpoint -q "$MNT_PT" && sudo umount -R "$MNT_PT" || :
   [[ -d ${WORKDIR:-} ]] && rm -rf "$WORKDIR" || :
   return "$rc"
 }
@@ -875,7 +848,6 @@ Before committing, verify:
 - [ ] No command injection vulnerabilities
 - [ ] No path traversal vulnerabilities
 - [ ] Secure temp files with `mktemp` and proper permissions
-- [ ] Minimal privilege escalation (detect at runtime: `sudo-rs`→`sudo`→`doas`)
 - [ ] No hardcoded `sudo` or root assumptions
 
 ### Tool & Compatibility
@@ -940,11 +912,6 @@ flock -n "$LOCK_FD" || die "already running"
 # Input validation
 [[ $path =~ ^[[:alnum:]/_.-]+$ ]] || die "invalid path"
 [[ ! $path =~ \.\. ]] || die "path traversal detected"
-
-# Detect privilege cmd
-for cmd in sudo-rs sudo doas; do
-  has "$cmd" && { PRIV_CMD=$cmd; break; }
-done
 
 # String manipulation
 name=${file##*/}           # basename

@@ -57,7 +57,8 @@ def find_duplicate_photos(starting_path, output_file_path):
         for key, value in hash_dict.items():
             if len(value) > 1:
                 f.write(f"Duplicate Photos (Hash: {key}):\n")
-                f.write(f"{value[0]}\n")  # Save only the first path
+                for path in value:
+                    f.write(f"{path}\n")
                 f.write("\n")
 
 

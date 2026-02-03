@@ -95,6 +95,8 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
 
 def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> None:
     """Worker thread: process files from queue using a persistent connection."""
+    # Make a per-thread copy so we don't mutate a shared headers dict.
+    headers = dict(headers)
     if "User-Agent" not in headers:
         headers["User-Agent"] = "git-fetch.py"
 

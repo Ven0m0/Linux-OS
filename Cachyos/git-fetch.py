@@ -158,6 +158,20 @@ def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> 
                         if should_close:
                             conn.close()
                             conn = http.client.HTTPSConnection(host, timeout=30)
+
+                        # Non-retriable client errors: fail fast
+                        if resp.status in (401, 403, 404):
+                            break
+
+                        # Retry on transient server errors and rate limiting
+                        if 500 <= resp.status < 600 or resp.status == 429:
+                            retries -= 1
+                            if retries > 0:
+                                continue
+                            # Out of retries, give up
+                            break
+
+                        # Default: treat other statuses as non-retriable
                         break
                 except (http.client.HTTPException, OSError) as e:
                     # Connection might have been closed by server unexpectedly

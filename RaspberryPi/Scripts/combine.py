@@ -40,7 +40,10 @@ def main() -> None:
     valid_words = combined
 
     with open(outputfile, "w", encoding="utf-8") as f:
-        f.writelines(word + "\n" for word in valid_words)
+        if valid_words:
+            f.writelines(word + "\n" for word in valid_words)
+        else:
+            f.write("\n")
     print(f"✓ Wrote {len(valid_words)} unique words to {outputfile}")
 
 

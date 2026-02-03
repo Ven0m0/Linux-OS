@@ -581,7 +581,7 @@ def main() -> None:
                 result_cnt = future.result()
                 cnt += result_cnt
             except Exception as e:
-                logging.error(f"Task failed with exception: {e}")
+                logging.error("Task failed with exception: %s", e)
                 # Update error counts so failed tasks are reflected in statistics
                 if task_type == "3ds":
                     cnt.ds_err += 1

@@ -297,7 +297,7 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         file_q.put(f)
 
     max_workers = min(32, (os.cpu_count() or 1) * 4)
-    num_workers = min(max_workers, len(files_to_download))
+    num_workers = max(1, min(max_workers, len(files_to_download)))
 
     dl_headers = headers.copy()
     if "Connection" not in dl_headers:

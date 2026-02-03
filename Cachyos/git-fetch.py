@@ -110,80 +110,80 @@ def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> 
             except queue.Empty:
                 break
 
-            url_path, local_path, display_path = item
+            try:
+                url_path, local_path, display_path = item
 
-            # Process download
-            retries = 3
-            while retries > 0:
-                try:
-                    conn.request("GET", url_path, headers=headers)
-                    resp = conn.getresponse()
+                # Process download
+                retries = 3
+                while retries > 0:
+                    try:
+                        conn.request("GET", url_path, headers=headers)
+                        resp = conn.getresponse()
 
-                    # Check if the server wants to close the connection
-                    connection_header = resp.getheader("Connection", "").lower()
-                    should_close = connection_header == "close"
+                        # Check if the server wants to close the connection
+                        connection_header = resp.getheader("Connection", "").lower()
+                        should_close = connection_header == "close"
 
-                    if resp.status == 200:
-                        with open(local_path, "wb") as f:
-                            while True:
-                                chunk = resp.read(65536)
-                                if not chunk:
-                                    break
-                                f.write(chunk)
-                        print(f"✓ {display_path}")
+                        if resp.status == 200:
+                            with open(local_path, "wb") as f:
+                                while True:
+                                    chunk = resp.read(65536)
+                                    if not chunk:
+                                        break
+                                    f.write(chunk)
+                            print(f"✓ {display_path}")
 
-                        if should_close:
-                            conn.close()
-                            # Reconnect for the next file in the queue
-                            conn = http.client.HTTPSConnection(host, timeout=30)
+                            if should_close:
+                                conn.close()
+                                # Reconnect for the next file in the queue
+                                conn = http.client.HTTPSConnection(host, timeout=30)
 
-                        break
-                    elif resp.status in (301, 302, 307, 308):
-                        loc = resp.getheader("Location")
-                        resp.read()  # Consume body
-                        if loc:
-                            print(
-                                f"✗ {display_path}: Redirect to {loc} not handled in persistent mode"
-                            )
+                            break
+                        elif resp.status in (301, 302, 307, 308):
+                            loc = resp.getheader("Location")
+                            resp.read()  # Consume body
+                            if loc:
+                                print(
+                                    f"✗ {display_path}: Redirect to {loc} not handled in persistent mode"
+                                )
+                            else:
+                                print(f"✗ {display_path}: HTTP {resp.status}")
+
+                            if should_close:
+                                conn.close()
+                                conn = http.client.HTTPSConnection(host, timeout=30)
+                            break
                         else:
                             print(f"✗ {display_path}: HTTP {resp.status}")
+                            resp.read()  # Consume body
+                            if should_close:
+                                conn.close()
+                                conn = http.client.HTTPSConnection(host, timeout=30)
 
-                        if should_close:
-                            conn.close()
-                            conn = http.client.HTTPSConnection(host, timeout=30)
-                        break
-                    else:
-                        print(f"✗ {display_path}: HTTP {resp.status}")
-                        resp.read()  # Consume body
-                        if should_close:
-                            conn.close()
-                            conn = http.client.HTTPSConnection(host, timeout=30)
+                            # Non-retriable client errors: fail fast
+                            if resp.status in (401, 403, 404):
+                                break
 
-                        # Non-retriable client errors: fail fast
-                        if resp.status in (401, 403, 404):
+                            # Retry on transient server errors and rate limiting
+                            if 500 <= resp.status < 600 or resp.status == 429:
+                                retries -= 1
+                                if retries > 0:
+                                    continue
+                                # Out of retries, give up
+                                break
+
+                            # Default: treat other statuses as non-retriable
                             break
-
-                        # Retry on transient server errors and rate limiting
-                        if 500 <= resp.status < 600 or resp.status == 429:
-                            retries -= 1
-                            if retries > 0:
-                                continue
-                            # Out of retries, give up
-                            break
-
-                        # Default: treat other statuses as non-retriable
-                        break
-                except (http.client.HTTPException, OSError) as e:
-                    # Connection might have been closed by server unexpectedly
-                    conn.close()
-                    retries -= 1
-                    if retries > 0:
-                        conn = http.client.HTTPSConnection(host, timeout=30)
-                    else:
-                        print(f"✗ {display_path}: {e}")
-
-            file_q.task_done()
-
+                    except (http.client.HTTPException, OSError) as e:
+                        # Connection might have been closed by server unexpectedly
+                        conn.close()
+                        retries -= 1
+                        if retries > 0:
+                            conn = http.client.HTTPSConnection(host, timeout=30)
+                        else:
+                            print(f"✗ {display_path}: {e}")
+            finally:
+                file_q.task_done()
     finally:
         conn.close()
 

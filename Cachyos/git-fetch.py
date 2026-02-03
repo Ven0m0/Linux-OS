@@ -22,7 +22,7 @@ import sys
 import urllib.parse
 import urllib.request
 import urllib.error
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Optional
@@ -189,17 +189,13 @@ def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> 
 
 
 def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
-    """Download from GitHub using Tree API (recursive)."""
+    """Download from GitHub using Contents API."""
     token = token or os.getenv("GITHUB_TOKEN", "")
     headers = {"Accept": "application/vnd.github.v3+json"}
     if token:
         headers["Authorization"] = f"token {token}"
 
-    # Fetch the entire tree recursively
-    api_url = (
-        f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/"
-        f"{urllib.parse.quote(spec.branch, safe='')}?recursive=1"
-    )
+    files_to_download = []
 
     try:
         data_bytes = http_get(api_url, headers)
@@ -217,21 +213,15 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 except urllib.error.HTTPError:
                     pass
             raise
-        raise
 
-    if data.get("truncated"):
-        print(
-            "Error: GitHub Tree API response is truncated; aborting to avoid an incomplete download.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        if isinstance(data, dict):
+            data = [data]
 
     files_to_download = []
     target_path = spec.path.strip("/")
     found_any = False
 
-    for item in data.get("tree", []):
-        item_path = item["path"]
+        return local_files, local_dirs
 
         if (
             target_path
@@ -315,6 +305,7 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 future.result()
             except Exception as e:
                 print(f"Worker error: {e}", file=sys.stderr)
+
 
 
 def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:

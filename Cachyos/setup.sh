@@ -18,7 +18,10 @@ xecho() { printf '%b\n' "$*"; }
 log() { xecho "${GRN}[+]${DEF} $*"; }
 warn() { xecho "${YLW}[!]${DEF} $*"; }
 err() { xecho "${RED}[!]${DEF} $*" >&2; }
-die() { err "$*"; exit "${2:-1}"; }
+die() {
+  err "$*"
+  exit "${2:-1}"
+}
 dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
 
 # --- Cleanup & Error Handling ---
@@ -34,9 +37,18 @@ trap ':' INT TERM
 
 # --- Tool Detection ---
 pm_detect() {
-  if has paru; then printf 'paru'; return; fi
-  if has yay; then printf 'yay'; return; fi
-  if has pacman; then printf 'pacman'; return; fi
+  if has paru; then
+    printf 'paru'
+    return
+  fi
+  if has yay; then
+    printf 'yay'
+    return
+  fi
+  if has pacman; then
+    printf 'pacman'
+    return
+  fi
   printf ''
 }
 PKG_MGR=${PKG_MGR:-$(pm_detect)}
@@ -84,9 +96,9 @@ install_pkgs() {
   # Append packages from text files if they exist
   [[ -f steam.txt ]] && mapfile -t -O "${#pkgs[@]}" pkgs <steam.txt
   local pkg_file="$(dirname "$0")/packages.txt"
-  if [[ -f "$pkg_file" ]]; then
+  if [[ -f $pkg_file ]]; then
     log "Including packages from $pkg_file"
-    mapfile -t -O "${#pkgs[@]}" pkgs < "$pkg_file"
+    mapfile -t -O "${#pkgs[@]}" pkgs <"$pkg_file"
   fi
   paru -S --needed --noconfirm "${pkgs[@]}"
 }
@@ -126,16 +138,16 @@ setup_rust() {
   log "Setting up Rust..."
   export RUSTUP_HOME="$HOME/.rustup" CARGO_HOME="$HOME/.cargo"
   has rustup && {
-    rustup default stable
-    rustup component add rust-std-wasm32v1-none llvm-bitcode-linker llvm-tools rust-analyzer rust-src
+    rustup default stable; rustup target add wasm32-unknown-unknown
+    rustup component add rust-std-wasm32-unknown-unknown llvm-bitcode-linker llvm-tools rust-analyzer rust-src 
   }
 }
 
-setup_flatpak(){
+setup_flatpak() {
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
   flatpak install --system io.github.flattool.Warehouse -y
 }
-setup_am(){
+setup_am() {
   am -i am-gui
   am -i nix-portable
   am -i auto-claude
@@ -143,24 +155,24 @@ setup_am(){
 export_pkgs() {
   log "Exporting packages to packages.txt..."
   # Get explicitly installed packages (native + foreign/AUR)
-  pacman -Qqe > "$(dirname "$0")/packages.txt"
+  pacman -Qqe >"$(dirname "$0")/packages.txt"
   log "Export complete: $(dirname "$0")/packages.txt"
 }
 
 # Special permissions for SSH keys (keep private)
 if [ -d "$HOME/.ssh" ]; then
-    log "Checking SSH key permissions..."
-    find "$HOME/.ssh" -name "id_*" ! -name "*.pub" -exec chmod 600 {} \; 2>/dev/null || true
-    find "$HOME/.ssh" -name "*.pub" -exec chmod 644 {} \; 2>/dev/null || true
-    chmod 700 "$HOME/.ssh" 2>/dev/null || true
-    log "SSH key permissions verified"
+  log "Checking SSH key permissions..."
+  find "$HOME/.ssh" -name "id_*" ! -name "*.pub" -exec chmod 600 {} \; 2>/dev/null || true
+  find "$HOME/.ssh" -name "*.pub" -exec chmod 644 {} \; 2>/dev/null || true
+  chmod 700 "$HOME/.ssh" 2>/dev/null || true
+  log "SSH key permissions verified"
 fi
 # Special permissions for GPG keys (keep private)
 if [ -d "$HOME/.gnupg" ]; then
-    log "Checking GPG key permissions..."
-    chmod 700 "$HOME/.gnupg" 2>/dev/null || true
-    find "$HOME/.gnupg" -name "*.gpg" -exec chmod 600 {} \; 2>/dev/null || true
-    log "GPG key permissions verified"
+  log "Checking GPG key permissions..."
+  chmod 700 "$HOME/.gnupg" 2>/dev/null || true
+  find "$HOME/.gnupg" -name "*.gpg" -exec chmod 600 {} \; 2>/dev/null || true
+  log "GPG key permissions verified"
 fi
 # Fix scripts in .local/bin
 find "$HOME/.local/bin" -type f ! -executable -exec chmod +x {} \;
@@ -168,7 +180,7 @@ echo "✓ Fixed .local/bin scripts"
 
 # --- Main ---
 main() {
-  if [[ "${1:-}" == "--export" ]]; then
+  if [[ ${1:-} == "--export" ]]; then
     export_pkgs
     exit 0
   fi
@@ -176,9 +188,9 @@ main() {
   setup_repos
   # Check for packages.txt in the script's directory
   local pkg_file="$(dirname "$0")/packages.txt"
-  if [[ -f "$pkg_file" ]]; then
+  if [[ -f $pkg_file ]]; then
     log "Found packages.txt, installing from export..."
-    # If using packages.txt, we likely want to rely mostly on it, 
+    # If using packages.txt, we likely want to rely mostly on it,
     # but we can pass it to the install function or modify the logic there.
     # For now, let's just make install_pkgs aware of it.
   fi
@@ -188,7 +200,7 @@ main() {
   log "Cleanup..."
   local -a orphans
   mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || true)
-  if (( ${#orphans[@]} > 0 )); then
+  if ((${#orphans[@]} > 0)); then
     try sudo pacman -Rns --noconfirm "${orphans[@]}"
   fi
   try sudo fstrim -av

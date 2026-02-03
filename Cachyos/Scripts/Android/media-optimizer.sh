@@ -314,24 +314,24 @@ process_image() {
 
   # First try to optimize in original format
   case "$ext" in
-  jpg | jpeg)
-    optimize_jpeg "$file" "$tmpfile" "$MEDIA_OPT_WEBP_QUALITY"
-    result=$?
-    ;;
-  png)
-    optimize_png "$file" "$tmpfile" "$([[ $MEDIA_OPT_QUALITY == *"lossy"* ]] && echo 1 || echo 0)"
-    result=$?
-    ;;
-  gif | svg | webp)
-    # Just copy for now, we'll handle conversion to WebP next
-    cp "$file" "$tmpfile"
-    result=0
-    ;;
-  *)
-    log_err "Unsupported format: $ext"
-    rm -f "$tmpfile"
-    return 1
-    ;;
+    jpg | jpeg)
+      optimize_jpeg "$file" "$tmpfile" "$MEDIA_OPT_WEBP_QUALITY"
+      result=$?
+      ;;
+    png)
+      optimize_png "$file" "$tmpfile" "$([[ $MEDIA_OPT_QUALITY == *"lossy"* ]] && echo 1 || echo 0)"
+      result=$?
+      ;;
+    gif | svg | webp)
+      # Just copy for now, we'll handle conversion to WebP next
+      cp "$file" "$tmpfile"
+      result=0
+      ;;
+    *)
+      log_err "Unsupported format: $ext"
+      rm -f "$tmpfile"
+      return 1
+      ;;
   esac
 
   if [[ $result -ne 0 ]]; then
@@ -577,62 +577,62 @@ main() {
   # Parse command-line arguments
   while [[ $# -gt 0 ]]; do
     case "$1" in
-    -h | --help)
-      usage
-      ;;
-    -q | --quality)
-      MEDIA_OPT_QUALITY="$2"
-      shift 2
-      ;;
-    -j | --jobs)
-      MEDIA_OPT_THREADS="$2"
-      shift 2
-      ;;
-    -r | --recursive)
-      MEDIA_OPT_RECURSIVE=1
-      shift
-      ;;
-    -b | --backup)
-      MEDIA_OPT_BACKUP=1
-      shift
-      ;;
-    -n | --no-backup)
-      MEDIA_OPT_BACKUP=0
-      shift
-      ;;
-    -p | --replace)
-      MEDIA_OPT_REPLACE=1
-      shift
-      ;;
-    -w | --webp-quality)
-      MEDIA_OPT_WEBP_QUALITY="$2"
-      shift 2
-      ;;
-    -v | --video)
-      MEDIA_OPT_PROCESS_VIDEOS=1
-      shift
-      ;;
-    -d | --dedupe)
-      MEDIA_OPT_DEDUPE=1
-      shift
-      ;;
-    --debug)
-      MEDIA_OPT_DEBUG=1
-      shift
-      ;;
-    -*)
-      log_err "Unknown option: $1"
-      usage
-      ;;
-    *)
-      if [[ -z $target_dir ]]; then
-        target_dir="$1"
-      else
-        log_err "Multiple directories specified. Please specify only one directory."
+      -h | --help)
         usage
-      fi
-      shift
-      ;;
+        ;;
+      -q | --quality)
+        MEDIA_OPT_QUALITY="$2"
+        shift 2
+        ;;
+      -j | --jobs)
+        MEDIA_OPT_THREADS="$2"
+        shift 2
+        ;;
+      -r | --recursive)
+        MEDIA_OPT_RECURSIVE=1
+        shift
+        ;;
+      -b | --backup)
+        MEDIA_OPT_BACKUP=1
+        shift
+        ;;
+      -n | --no-backup)
+        MEDIA_OPT_BACKUP=0
+        shift
+        ;;
+      -p | --replace)
+        MEDIA_OPT_REPLACE=1
+        shift
+        ;;
+      -w | --webp-quality)
+        MEDIA_OPT_WEBP_QUALITY="$2"
+        shift 2
+        ;;
+      -v | --video)
+        MEDIA_OPT_PROCESS_VIDEOS=1
+        shift
+        ;;
+      -d | --dedupe)
+        MEDIA_OPT_DEDUPE=1
+        shift
+        ;;
+      --debug)
+        MEDIA_OPT_DEBUG=1
+        shift
+        ;;
+      -*)
+        log_err "Unknown option: $1"
+        usage
+        ;;
+      *)
+        if [[ -z $target_dir ]]; then
+          target_dir="$1"
+        else
+          log_err "Multiple directories specified. Please specify only one directory."
+          usage
+        fi
+        shift
+        ;;
     esac
   done
 

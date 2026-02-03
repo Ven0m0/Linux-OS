@@ -90,7 +90,7 @@ remove_ext4_configs() {
 
   # Remove ext4 mount options from fstab
   local fstab="$WD/t/r/etc/fstab"
-  if [[ -f "$fstab" ]]; then
+  if [[ -f $fstab ]]; then
     if grep -q "ext4" "$fstab"; then
       log "Found ext4 entries in fstab (will be updated later)"
     fi
@@ -98,7 +98,7 @@ remove_ext4_configs() {
 
   # Remove ext4 journal settings from mke2fs.conf
   local mke2fs_conf="$WD/t/r/etc/mke2fs.conf"
-  if [[ -f "$mke2fs_conf" ]]; then
+  if [[ -f $mke2fs_conf ]]; then
     if grep -q "journal" "$mke2fs_conf" 2>/dev/null; then
       log "Removed ext4 journal settings from mke2fs.conf"
       sed -i '/journal/d' "$mke2fs_conf"
@@ -107,9 +107,9 @@ remove_ext4_configs() {
 
   # Remove ext4-specific cron jobs
   local cron_dir="$WD/t/r/etc/cron.d"
-  if [[ -d "$cron_dir" ]]; then
+  if [[ -d $cron_dir ]]; then
     for f in "$cron_dir"/*; do
-      [[ -f "$f" ]] || continue
+      [[ -f $f ]] || continue
       if grep -qi "e2fsck\|tune2fs\|ext4" "$f" 2>/dev/null; then
         log "Removed ext4-specific cron job: ${f##*/}"
         rm -f "$f"
@@ -119,9 +119,9 @@ remove_ext4_configs() {
 
   # Remove ext4-specific systemd timers
   local systemd_dir="$WD/t/r/etc/systemd/system"
-  if [[ -d "$systemd_dir" ]]; then
+  if [[ -d $systemd_dir ]]; then
     for f in "$systemd_dir"/*.timer; do
-      [[ -f "$f" ]] || continue
+      [[ -f $f ]] || continue
       if grep -qi "e2fsck\|tune2fs\|ext4" "$f" 2>/dev/null; then
         log "Removed ext4-specific systemd timer: ${f##*/}"
         rm -f "$f"
@@ -139,7 +139,7 @@ update_fstab_f2fs() {
   local buuid="$1"
   local ruuid="$2"
 
-  if [[ -f "$fstab" ]] && ((IS_DIETPI)); then
+  if [[ -f $fstab ]] && ((IS_DIETPI)); then
     log "Updating existing fstab for F2FS..."
     # Update root partition fstype to f2fs and add optimal mount options
     sed -i -E \
@@ -160,7 +160,7 @@ update_cmdline_f2fs() {
   local cmdline="$WD/t/b/cmdline.txt"
   local ruuid="$1"
 
-  [[ -f "$cmdline" ]] || die "cmdline.txt not found: $cmdline"
+  [[ -f $cmdline ]] || die "cmdline.txt not found: $cmdline"
 
   log "Updating cmdline.txt for F2FS root..."
 
@@ -211,7 +211,7 @@ prepare_initramfs_f2fs() {
   log "Adding F2FS module to initramfs..."
 
   # Add f2fs to modules if not already present
-  if [[ ! -f "$initramfs_modules" ]]; then
+  if [[ ! -f $initramfs_modules ]]; then
     mkdir -p "$(dirname "$initramfs_modules")"
     echo "f2fs" >"$initramfs_modules"
     log "Created $initramfs_modules with F2FS module"
@@ -234,7 +234,7 @@ check_f2fs_support() {
   local modules_dir="$WD/t/r/lib/modules"
   local has_f2fs=0
 
-  if [[ -d "$modules_dir" ]]; then
+  if [[ -d $modules_dir ]]; then
     if find "$modules_dir" -name "f2fs.ko*" 2>/dev/null | grep -q .; then
       has_f2fs=1
       log "F2FS module found in kernel"
@@ -269,7 +269,7 @@ verify_conversion() {
 
   # Check fstab
   local fstab="$WD/t/r/etc/fstab"
-  if [[ -f "$fstab" ]]; then
+  if [[ -f $fstab ]]; then
     if grep -q "f2fs" "$fstab"; then
       log "✓ fstab contains F2FS root entry"
     else
@@ -283,7 +283,7 @@ verify_conversion() {
 
   # Check cmdline.txt
   local cmdline="$WD/t/b/cmdline.txt"
-  if [[ -f "$cmdline" ]]; then
+  if [[ -f $cmdline ]]; then
     if grep -q "rootfstype=f2fs" "$cmdline"; then
       log "✓ cmdline.txt has rootfstype=f2fs"
     else
@@ -476,16 +476,16 @@ EOF
 ((EUID == 0)) || die "Root required"
 while getopts "b:i:d:zsknhUF" o; do
   case $o in
-  b) BOOT_SIZE=$OPTARG ;;
-  i) SRC=$OPTARG ;;
-  d) TGT=$OPTARG ;;
-  z) SHRINK=1 ;;
-  s) SSH=1 ;;
-  k) KEEP=1 ;;
-  n) DRY=1 ;;
-  U) NO_USB=1 ;;
-  F) NO_SZ=1 ;;
-  *) usage ;;
+    b) BOOT_SIZE=$OPTARG ;;
+    i) SRC=$OPTARG ;;
+    d) TGT=$OPTARG ;;
+    z) SHRINK=1 ;;
+    s) SSH=1 ;;
+    k) KEEP=1 ;;
+    n) DRY=1 ;;
+    U) NO_USB=1 ;;
+    F) NO_SZ=1 ;;
+    *) usage ;;
   esac
 done
 check_deps

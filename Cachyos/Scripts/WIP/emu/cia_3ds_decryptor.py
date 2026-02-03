@@ -556,35 +556,38 @@ def main() -> None:
 
     tools_list = [ctrtool, decrypt, makerom]
 
-    futures = []
+    futures = {}
     with concurrent.futures.ThreadPoolExecutor() as executor:
         if cnt.count_3ds:
             logging.info("[i] Found %d 3DS file(s). Start decrypting...", cnt.count_3ds)
             for f in sorted(root.glob("*.3ds")):
-                futures.append(
-                    executor.submit(
-                        process_file_task, decrypt_3ds, root, f, tools_list, seeddb
-                    )
+                future = executor.submit(
+                    process_file_task, decrypt_3ds, root, f, tools_list, seeddb
                 )
+                futures[future] = "3ds"
 
         if cnt.count_cia:
             logging.info("[i] Found %d CIA file(s). Start decrypting...", cnt.count_cia)
             for f in sorted(root.glob("*.cia")):
-                futures.append(
-                    executor.submit(
-                        process_file_task, decrypt_cia, root, f, tools_list, seeddb
-                    )
+                future = executor.submit(
+                    process_file_task, decrypt_cia, root, f, tools_list, seeddb
                 )
+                futures[future] = "cia"
 
         # Wait for completion and accumulate results
         for future in concurrent.futures.as_completed(futures):
+            task_type = futures.get(future)
             try:
                 result_cnt = future.result()
                 cnt += result_cnt
             except Exception as e:
                 logging.error(f"Task failed with exception: {e}")
-                # Optionally update error counts here if we knew which type of file failed
-
+                # Update error counts so failed tasks are reflected in statistics
+                if task_type == "3ds":
+                    cnt.ds_err += 1
+                elif task_type == "cia":
+                    cnt.cia_err += 1
+                # If task_type is None or unrecognized, we intentionally do not guess
     if cnt.convert_to_cci:
         # This loop depends on decrypted files existing.
         # Since we waited for all futures, files should be ready.

@@ -120,7 +120,7 @@ Options:
   --all         Run all fixes
   -h, --help    Show help
 
-Default behavior (no arguments) runs: Keys, GPG, Flatpak, and PAM fixes.
+Default behavior (no arguments) is equivalent to running the '--keys', '--gpg', '--flatpak', and '--pam' options.
 EOF
     exit 0
 }

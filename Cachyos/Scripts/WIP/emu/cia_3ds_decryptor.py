@@ -526,8 +526,13 @@ def main() -> None:
             if new_name != f.name:
                 try:
                     f.rename(root / new_name)
-                except OSError:
-                    pass
+                except OSError as e:
+                    logging.warning(
+                        "[^] Failed to sanitize filename '%s' -> '%s': %s",
+                        f.name,
+                        new_name,
+                        e,
+                    )
     cnt = Counters()
     cnt.count_cia = sum(
         1 for f in root.glob("*.cia") if "-decrypted" not in f.stem.lower()

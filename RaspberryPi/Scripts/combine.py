@@ -2,16 +2,24 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    import chardet
+except ImportError:
+    chardet = None
+
 WORD_PATTERN = re.compile(r"[a-zA-Z0-9]+")
+VALID_WORD_PATTERN = re.compile(r"^[a-zA-Z0-9_.,!?@#$%^&*()-=+ ]+$")
 
 
 def detect_encoding(data: bytes) -> str:
-    try:
-        import chardet
+    """
+    Detects the encoding of the given byte data using chardet if available.
+    Falls back to utf-8 if chardet is not installed or returns no encoding.
+    """
+    if chardet is not None:
         result = chardet.detect(data)
         return result["encoding"] or "utf-8"
-    except ImportError:
-        return "utf-8"
+    return "utf-8"
 
 
 def process_file(filepath: str) -> set[str]:

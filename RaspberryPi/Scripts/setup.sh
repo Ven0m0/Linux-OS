@@ -39,7 +39,7 @@ write_conf() {
   local content="$2"
   local dir
   dir=$(dirname "$dest")
-  if [[ ! -d "$dir" ]]; then
+  if [[ ! -d $dir ]]; then
     log "Creating directory: $dir"
     sudo mkdir -p "$dir"
   fi
@@ -174,8 +174,8 @@ options usbhid mousepoll=20 kbpoll=20
 options usbcore autosuspend=10'
 
   # Batch I/O scheduler configuration (single sudo call)
-  printf '%s\n' /sys/block/sd*[!0-9]/queue/iosched/fifo_batch /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch 2>/dev/null |
-    xargs -r -I{} sudo bash -c '[[ -f {} ]] && echo 32 > {} || :'
+  printf '%s\n' /sys/block/sd*[!0-9]/queue/iosched/fifo_batch /sys/block/{mmcblk*,nvme[0-9]*}/queue/iosched/fifo_batch 2>/dev/null \
+    | xargs -r -I{} sudo bash -c '[[ -f {} ]] && echo 32 > {} || :'
   local root_dev home_dev
   root_dev=$(findmnt -n -o SOURCE /)
   home_dev=$(findmnt -n -o SOURCE /home 2>/dev/null || echo "$root_dev")
@@ -238,10 +238,10 @@ install_extended_tools() {
   log "Installing extended tooling suite"
   if ! has eza; then
     sudo mkdir -p /etc/apt/keyrings
-    wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc |
-      sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" |
-      sudo tee /etc/apt/sources.list.d/gierens.list >/dev/null
+    wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc \
+      | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" \
+      | sudo tee /etc/apt/sources.list.d/gierens.list >/dev/null
     sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
     sudo apt-get update
     sudo apt-get install -y eza
@@ -254,10 +254,10 @@ install_package_managers() {
   log "Installing alternative package managers"
   if ! has apt-fast; then
     sudo mkdir -p /etc/apt/keyrings /etc/apt/sources.list.d
-    curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBC5934FD3DEBD4DAEA544F791E2824A7F22B44BD" |
-      sudo gpg --dearmor -o /etc/apt/keyrings/apt-fast.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/apt-fast.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main" |
-      sudo tee /etc/apt/sources.list.d/apt-fast.list >/dev/null
+    curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBC5934FD3DEBD4DAEA544F791E2824A7F22B44BD" \
+      | sudo gpg --dearmor -o /etc/apt/keyrings/apt-fast.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/apt-fast.gpg] http://ppa.launchpad.net/apt-fast/stable/ubuntu focal main" \
+      | sudo tee /etc/apt/sources.list.d/apt-fast.list >/dev/null
     sudo apt-get update
     sudo apt-get install -y apt-fast
   fi

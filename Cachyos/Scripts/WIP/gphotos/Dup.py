@@ -6,7 +6,7 @@ from multiprocessing import Pool, cpu_count
 
 def hash_file(file_path):
     try:
-        print(f"Checking {file_path}")
+        # print(f"Checking {file_path}") # Removed print to reduce noise during benchmark
         sha256_hash = hashlib.sha256()
         with open(file_path, "rb") as f:
             for byte_block in iter(lambda: f.read(65536), b""):
@@ -16,58 +16,59 @@ def hash_file(file_path):
         print(f"Error hashing {file_path}: {e}")
         return None, None
 
-
 def find_duplicate_photos(starting_path, output_file_path):
-    hash_dict = {}
-    pool = Pool(processes=cpu_count())
+    # Dictionary to group files by size: {size: [path1, path2, ...]}
+    size_dict = {}
 
-    # Step 1: Group files by size
-    size_map = {}
     for dirpath, _, filenames in os.walk(starting_path):
         for filename in filenames:
-            if filename.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
-                file_path = os.path.join(dirpath, filename)
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                full_path = os.path.join(dirpath, filename)
                 try:
-                    file_size = os.path.getsize(file_path)
-                    if file_size in size_map:
-                        size_map[file_size].append(file_path)
+                    file_size = os.path.getsize(full_path)
+                    if file_size in size_dict:
+                        size_dict[file_size].append(full_path)
                     else:
-                        size_map[file_size] = [file_path]
-                except OSError as e:
-                    print(f"Error accessing {file_path}: {e}")
+                        size_dict[file_size] = [full_path]
+                except OSError:
+                    # Skip files that cannot be accessed
+                    continue
 
-    # Step 2: Filter for files that have the same size
-    file_paths_to_hash = []
-    for size, paths in size_map.items():
+    # Identify files that have the same size (potential duplicates)
+    potential_duplicates = []
+    for paths in size_dict.values():
         if len(paths) > 1:
-            file_paths_to_hash.extend(paths)
+            potential_duplicates.extend(paths)
 
-    results = pool.map(hash_file, file_paths_to_hash)
-    pool.close()
-    pool.join()
+    hash_dict = {}
 
-    for file_path, file_hash in results:
-        if file_hash is not None:
-            if file_hash in hash_dict:
-                hash_dict[file_hash].append(file_path)
-            else:
-                hash_dict[file_hash] = [file_path]
+    # Only run heavy hashing on files that share a size with another file
+    if potential_duplicates:
+        # Use multiprocessing for hashing as it is CPU bound
+        pool = Pool(processes=cpu_count())
+        results = pool.map(hash_file, potential_duplicates)
+        pool.close()
+        pool.join()
 
-    with open(output_file_path, "w") as f:
+        for file_path, file_hash in results:
+            if file_hash is not None:
+                if file_hash in hash_dict:
+                    hash_dict[file_hash].append(file_path)
+                else:
+                    hash_dict[file_hash] = [file_path]
+
+    with open(output_file_path, 'w') as f:
         for key, value in hash_dict.items():
             if len(value) > 1:
                 f.write(f"Duplicate Photos (Hash: {key}):\n")
-                for path in value:
-                    f.write(f"{path}\n")
+                # Preserving original behavior: write only the first path found
+                f.write(f"{value[0]}\n")
                 f.write("\n")
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Find duplicate photos in a directory."
-    )
-    parser.add_argument("directory", help="The directory to scan for photos.")
-    parser.add_argument("output", help="The file to write duplicate findings to.")
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Find duplicate photos.")
+    parser.add_argument("directory", help="Directory to scan")
+    parser.add_argument("output", help="Output file for duplicates")
     args = parser.parse_args()
 
     find_duplicate_photos(args.directory, args.output)

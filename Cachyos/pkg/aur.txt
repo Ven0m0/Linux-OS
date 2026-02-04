@@ -1,3 +1,4 @@
+# aur.txt
 aionui-bin
 antigravity
 beads-bin
@@ -23,8 +24,8 @@ opencode-desktop-bin
 opencode-gemini-auth
 opencode-optimal-model-temps
 opencode-pty
-oxfmt
-oxlint
+oxfmt-bin
+oxlint-bin
 plasma-splash-rem-git
 python-mashumaro
 ralph
@@ -32,6 +33,7 @@ repomix
 smithery-cli
 vscodium-all-marketplace
 vscodium-electron-features
+vscodium-marketplace
 vscodium-prod-patcher
 vscodium-xdg-dir-patch
 wallpaper-engine-kde-plugin-git

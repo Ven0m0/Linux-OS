@@ -62,7 +62,6 @@ def find_duplicate_photos(starting_path, output_file_path):
             if len(value) > 1:
                 f.write(f"Duplicate Photos (Hash: {key}):\n")
                 # Preserving original behavior: write only the first path found
-                # Note: A better implementation would likely list all duplicates or ask which to delete.
                 f.write(f"{value[0]}\n")
                 f.write("\n")
 

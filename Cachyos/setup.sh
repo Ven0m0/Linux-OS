@@ -138,8 +138,9 @@ setup_rust() {
   log "Setting up Rust..."
   export RUSTUP_HOME="$HOME/.rustup" CARGO_HOME="$HOME/.cargo"
   has rustup && {
-    rustup default stable; rustup target add wasm32-unknown-unknown
-    rustup component add rust-std-wasm32-unknown-unknown llvm-bitcode-linker llvm-tools rust-analyzer rust-src 
+    rustup default stable
+    rustup target add wasm32-unknown-unknown
+    rustup component add rust-std-wasm32-unknown-unknown llvm-bitcode-linker llvm-tools rust-analyzer rust-src
   }
 }
 

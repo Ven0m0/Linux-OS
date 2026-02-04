@@ -121,11 +121,15 @@ def tui_select_path(*, title: str, start: Path, mode: str) -> Path:
     curses.curs_set(0)
     stdscr.keypad(True)
     cwd, idx = start, 0
+    last_cwd: Path | None = None
+    entries: list[Path] = []
     while True:
-      try:
-        entries = sorted([p for p in cwd.iterdir() if not p.name.startswith(".")], key=lambda p: (not p.is_dir(), p.name.lower()))
-      except OSError:
-        entries = []
+      if cwd != last_cwd:
+        try:
+          entries = sorted([p for p in cwd.iterdir() if not p.name.startswith(".")], key=lambda p: (not p.is_dir(), p.name.lower()))
+        except OSError:
+          entries = []
+        last_cwd = cwd
       shown: list[Path] = [cwd.parent, *entries]
       idx = min(idx, max(0, len(shown) - 1))
       stdscr.erase()

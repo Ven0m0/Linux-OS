@@ -1,7 +1,7 @@
 # AI Agents Operating Manual
 
-> Unified guidelines for AI assistants working with the Linux-OS repository.
-> This file is the canonical source - @CLAUDE.md and @GEMINI.md are symlinks.
+> Canonical source for all AI assistants working with the Linux-OS repository.
+> CLAUDE.md and GEMINI.md are symlinks to this file.
 
 ---
 
@@ -32,36 +32,54 @@
 
 ```text
 /
-├── @Cachyos/                  # Arch/CachyOS-focused scripts
-│   ├── Scripts/               # AIO installers (curlable entrypoints)
-│   │   ├── bench.sh           # System benchmarking
-│   │   └── Android/           # Termux optimizers
-│   ├── up.sh                  # Comprehensive update orchestrator
-│   ├── clean.sh               # System cleanup & privacy hardening
-│   ├── setup.sh               # Automated system configuration
-│   ├── Rank.sh                # Mirror ranking & keyring updates
-│   ├── debloat.sh             # System debloating
-│   └── rustbuild.sh           # Rust compilation helpers
-├── @RaspberryPi/              # Raspberry Pi specific scripts
-│   ├── Scripts/               # Pi automation tooling
-│   │   ├── setup.sh           # Initial Pi setup & optimization
-│   │   ├── Kbuild.sh          # Kernel building automation
-│   │   ├── apkg.sh            # TUI package manager (fzf/skim)
-│   │   └── podman-docker.sh   # Container setup
-│   ├── raspi-f2fs.sh          # F2FS imaging orchestrator
-│   ├── update.sh              # Pi update script
-│   ├── PiClean.sh             # Pi cleanup automation
-│   └── dots/                  # Dotfiles and configs
-├── @.github/                  # GitHub configuration
-│   ├── workflows/             # CI/CD pipelines (10 active)
-│   ├── agents/                # AI agent personas (7 specialized)
-│   ├── instructions/          # Guidance documents (12 files)
-│   └── prompts/               # Task-specific prompts (6 files)
-├── @Shell-book.md             # Bash patterns & helpers
-├── @USEFUL.MD                 # Curated resources & snippets
-├── @DIETPI_F2FS_GUIDE.md      # F2FS imaging guide
-├── @.shellcheckrc             # ShellCheck configuration
-└── @.editorconfig             # Code formatting rules
+├── Cachyos/                     # Arch/CachyOS-focused scripts
+│   ├── up.sh                    # Update orchestrator (pacman, flatpak, rust, npm, firmware)
+│   ├── clean.sh                 # System cleanup & privacy hardening
+│   ├── setup.sh                 # Automated system configuration & package install
+│   ├── debloat.sh               # Debloating & telemetry removal
+│   ├── rustbuild.sh             # Rust PGO/BOLT build orchestrator
+│   ├── aur.sh                   # AUR helper utilities
+│   ├── ssh.sh                   # SSH configuration
+│   ├── pkg/                     # Package lists (pacman.txt, aur.txt, bun.txt, uv.txt)
+│   ├── rate-mirrors/            # Mirror ranking (PKGBUILD, systemd timer/service)
+│   ├── Scripts/
+│   │   ├── bench.sh             # System benchmarking
+│   │   ├── packages.sh          # Package management helpers
+│   │   ├── Fix.sh               # System repair utilities
+│   │   ├── Android/             # Termux/Android optimizers (6 scripts)
+│   │   └── WIP/                 # Work-in-progress scripts (excluded from linting)
+│   └── git-fetch.py             # Git fetch helper (Python)
+├── RaspberryPi/                 # Raspberry Pi & Debian scripts
+│   ├── raspi-f2fs.sh            # F2FS imaging orchestrator (loop devices, partitioning)
+│   ├── f2fs-new.sh              # Alternative F2FS converter
+│   ├── dietpi-chroot.sh         # Chroot environment for F2FS/initramfs
+│   ├── update.sh                # Pi-specific APT update (apt-fast/nala/apt-get)
+│   ├── PiClean.sh               # Comprehensive Pi cleanup (APT, Docker, DietPi)
+│   ├── Scripts/
+│   │   ├── setup.sh             # Pi system optimization & tooling
+│   │   ├── Kbuild.sh            # Kernel building automation
+│   │   ├── apkg.sh              # fzf/skim TUI package manager
+│   │   ├── podman-docker.sh     # Container setup
+│   │   ├── pi-minify.sh         # System minimization
+│   │   ├── blocklist.sh         # DNS blocklist management
+│   │   ├── pi_hole_updater.sh   # Pi-hole automation
+│   │   └── sqlite-tune.sh       # SQLite optimization
+│   ├── dots/                    # Dotfiles & configs
+│   └── docs/                    # Reference docs (commands, kernel, scheduler, etc.)
+├── .github/
+│   ├── workflows/               # CI/CD pipelines (10 active)
+│   ├── copilot-instructions.md  # GitHub Copilot guidelines
+│   ├── dependabot.yml           # Dependency updates (6 ecosystems)
+│   └── ISSUE_TEMPLATE/          # Bug report, feature request, custom templates
+├── docs/
+│   └── PERFORMANCE.md           # Shell script performance guidelines
+├── @Shell-book.md               # Bash patterns, snippets & color tables
+├── @.shellcheckrc               # ShellCheck configuration
+├── @.editorconfig               # Code formatting rules
+├── @DIETPI_F2FS_GUIDE.md        # F2FS imaging guide for DietPi
+├── USEFUL.MD                    # Curated resources & tool links
+├── lint-format.sh               # Local linting/formatting runner
+└── README.md                    # Repository overview
 ```
 
 ---
@@ -160,6 +178,17 @@ BLD=$'\e[1m'          # Bold
 
 **Measure first. Optimize hot paths.** Use `hyperfine` for benchmarking.
 
+### Command Costs (Relative)
+
+| Operation | Cost | Alternative | Cost |
+|:----------|:-----|:------------|:-----|
+| `$(command)` | 100x | `${var//pattern/}` | 1x |
+| `tr` | 50x | `${var,,}` | 1x |
+| `basename` | 30x | `${var##*/}` | 1x |
+| `dirname` | 30x | `${var%/*}` | 1x |
+| `cat file` | 20x | `$(<file)` | 1x |
+| `sudo sh -c` | 80x | `printf \| sudo tee` | 40x |
+
 ### Bash Optimization
 
 ```bash
@@ -170,12 +199,6 @@ printf '%s\n' "${files[@]}" | xargs -r shellcheck
 # ❌ BAD: Loop with multiple forks
 for f in $(find . -name '*.sh'); do shellcheck "$f"; done
 
-# ✅ GOOD: Builtin pattern matching
-[[ $file == *.sh ]] && process "$file"
-
-# ❌ BAD: External command
-[[ $(basename "$file") =~ \.sh$ ]] && process "$file"
-
 # ✅ GOOD: Builtin string ops
 name=${file##*/}      # basename
 dir=${file%/*}        # dirname
@@ -184,6 +207,16 @@ base=${file%.sh}      # remove extension
 # ❌ BAD: Subshells
 name=$(basename "$file")
 dir=$(dirname "$file")
+
+# ✅ GOOD: Cache command checks outside loops
+if has tool; then
+  for file in "${files[@]}"; do tool "$file"; done
+fi
+
+# ❌ BAD: Check every iteration
+for file in "${files[@]}"; do
+  has tool && tool "$file"
+done
 ```
 
 ### I/O Optimization
@@ -204,11 +237,6 @@ done < file.txt
   process_data
   log "done"
 } >> logfile
-
-# ❌ BAD: Multiple redirects
-log "starting" >> logfile
-process_data >> logfile
-log "done" >> logfile
 ```
 
 ### Parallel Processing
@@ -267,6 +295,14 @@ process_packages(){
 - **Hardening:** `shellharden --replace` (optional, selective)
 - **Testing:** `bats-core` (unit), integration tests (Arch/Debian)
 - **Performance:** `hyperfine` for critical paths
+
+### Local Linting
+
+Run `./lint-format.sh` before committing. Supports:
+- `-c` / `--check` for check-only mode (no writes)
+- Uses `fd`/`fdfind`/`find` for file discovery
+- Runs `shfmt -i 2 -bn -ci -s -ln bash` and `shellcheck --severity=error`
+- Excludes `.github/agents/` and `Cachyos/Scripts/WIP/` from linting
 
 ---
 
@@ -522,35 +558,29 @@ IFS=: read -ra parts <<< "$PATH"
 
 ## GitHub Infrastructure
 
-### Workflows (@.github/workflows/)
+### Workflows (.github/workflows/)
 
 | Workflow | Purpose | Trigger |
 |:---------|:--------|:--------|
-| `lint-format.yml` | ShellCheck, shfmt, Prettier, yamllint | Push/PR |
+| `lint-format.yml` | ShellCheck, shfmt, Prettier, yamllint; auto-commits fixes | Push/PR |
 | `claude.yml` | Claude Code integration (@claude mentions) | Issue/PR/comment |
-| `gemini-dispatch.yml` | Gemini API dispatch | PR/issue open |
-| `gemini-review.yml` | Gemini code review | PR review |
-| `deps.yml` | Dependabot dependency updates | Scheduled |
+| `claude-code-review.yml` | Claude Code PR review | Pull requests |
+| `gemini-dispatch.yml` | Gemini API dispatch & routing | PR/issue open, comments |
+| `gemini-invoke.yml` | Gemini task invocation | Manual + API-driven |
+| `gemini-review.yml` | Gemini code review | PR review comments |
+| `gemini-scheduled-triage.yml` | Scheduled issue/PR triage | Cron schedule |
+| `gemini-triage.yml` | Real-time issue/PR triage | Issue/PR open/edit |
+| `deps.yml` | Dependabot dependency updates (6 ecosystems) | Scheduled weekly |
+| `summary.yml` | Workflow summary generation | Manual trigger |
 
-### AI Agents (@.github/agents/)
+### Dependency Management (.github/dependabot.yml)
 
-| Agent | Purpose |
-|:------|:--------|
-| `bash.agent.md` | Bash expert (modern, secure, performant) |
-| `python.agent.md` | Production Python (strict typing, security) |
-| `critical-thinking.agent.md` | Socratic logic probe |
-| `github-issue-fixer.agent.md` | Issue resolution specialist |
-| `refactoring-expert.agent.md` | Tech debt assassin |
-| `repo-index.agent.md` | Repository indexing & briefing |
-| `4.1-Beast.agent.md` | Autonomous advanced agent |
-
-### Instructions (@.github/instructions/)
-
-Guidance documents for: bash, python, code-review, task-implementation, performance-optimization, actions, memory-bank, token-efficient, markdown, prompt engineering.
+Monitors 6 package ecosystems with weekly schedule and grouped updates:
+- `github-actions`, `gitsubmodule`, `pip`, `uv`, `npm`, `bun`
 
 ---
 
-## Architectural Analysis (Gemini Pattern)
+## Architectural Analysis
 
 ### Comparison Format
 
@@ -574,20 +604,6 @@ Recommendation: [Choice] ∵ [Key reason]
 - **Common case:** Optimize hot paths. Edge cases deprioritized.
 - **Decomposition:** Break complex problems into analyzable units.
 - **Constraint mapping:** Identify hard limits (latency, memory, cost).
-
-### Performance Analysis Framework
-
-**Backend:**
-
-- Query patterns → connection pooling, caching strategy
-- I/O bottlenecks → async, batch operations
-- Scaling constraints → horizontal vs vertical, stateless design
-
-**Infrastructure:**
-
-- Latency budget → CDN, edge compute, regional deployment
-- Cost structure → serverless vs containers vs VMs
-- Reliability → failure modes, circuit breakers, degradation
 
 ---
 
@@ -770,27 +786,29 @@ parallel_exec(){
 
 ## Key Scripts Reference
 
-### Cachyos/
+### Cachyos/ (Arch/CachyOS)
 
 | Script | Purpose |
 |:-------|:--------|
-| @Cachyos/up.sh | All-in-one update orchestrator (pacman, flatpak, rust, npm, etc.) |
-| @Cachyos/clean.sh | Comprehensive cleanup: cache, orphans, logs, browser data |
-| @Cachyos/setup.sh | Automated system configuration |
-| @Cachyos/Rank.sh | Mirror ranking + keyring updates |
-| @Cachyos/debloat.sh | Remove bloatware and services |
-| @Cachyos/rustbuild.sh | Rust compilation environment |
+| Cachyos/up.sh | All-in-one update orchestrator (pacman, flatpak, rust, npm, firmware, bootloader) |
+| Cachyos/clean.sh | Comprehensive cleanup: package cache, dev tools, system paths, SQLite VACUUM |
+| Cachyos/setup.sh | Automated system cfg: repos (Chaotic AUR), packages, VS Code, shells, services |
+| Cachyos/debloat.sh | Debloating: remove telemetry (pkgstats), disable services, fwupd P2P |
+| Cachyos/rustbuild.sh | Rust PGO/BOLT build orchestrator with mold linker support |
+| Cachyos/Scripts/bench.sh | System benchmarking |
+| Cachyos/Scripts/Android/ | Termux/Android optimization scripts (6 files) |
 
-### RaspberryPi/
+### RaspberryPi/ (Debian/Pi)
 
 | Script | Purpose |
 |:-------|:--------|
-| @RaspberryPi/raspi-f2fs.sh | F2FS imaging orchestrator (loop devices, partitioning) |
-| @RaspberryPi/update.sh | Pi-specific APT update |
-| @RaspberryPi/PiClean.sh | Pi cleanup automation |
-| @RaspberryPi/Scripts/setup.sh | Initial Pi setup & optimization |
-| @RaspberryPi/Scripts/Kbuild.sh | Kernel building automation |
-| @RaspberryPi/Scripts/apkg.sh | Interactive fzf/skim APT manager |
+| RaspberryPi/raspi-f2fs.sh | F2FS imaging: DietPi detection, partition, clone, fstab/cmdline update |
+| RaspberryPi/update.sh | Pi update: apt-fast/nala/apt-get, DietPi, Pi-hole, Pi-Apps, EEPROM |
+| RaspberryPi/PiClean.sh | Pi cleanup: APT, cache, trash, crash dumps, journal, Docker prune |
+| RaspberryPi/dietpi-chroot.sh | Chroot environment for F2FS conversion & initramfs regeneration |
+| RaspberryPi/Scripts/setup.sh | Pi optimization: APT cfg, dpkg nodoc, I/O tuning, SSH, modern tooling |
+| RaspberryPi/Scripts/Kbuild.sh | Kernel building: clone source, configure, build, install, reboot |
+| RaspberryPi/Scripts/apkg.sh | fzf TUI: fuzzy search APT packages, multi-select, cached previews |
 
 ---
 
@@ -801,7 +819,7 @@ Located in @.shellcheckrc:
 - Shell: bash
 - External sources enabled
 - Source path: SCRIPTDIR
-- Disabled checks: SC1079, SC1078, SC1073, SC1072, SC1083, SC2086, SC1090, SC1091, SC2002, SC2016, SC2034, SC2154, SC2155, SC2236, SC2250, SC2312
+- All checks enabled, with disabled: SC1079, SC1078, SC1073, SC1072, SC1083, SC2086, SC1090, SC1091, SC2002, SC2016, SC2034, SC2154, SC2155, SC2236, SC2250, SC2312
 
 ---
 
@@ -812,9 +830,10 @@ Located in @.editorconfig:
 - **Default indent:** 2 spaces
 - **Line endings:** LF
 - **Charset:** UTF-8
-- **Max line length:** 120 (general), 100 (Rust/C++), 88 (Python), 80 (Markdown)
+- **Max line length:** 120 (general), 100 (C/C++), 88 (Markdown)
 - **Shell scripts:** 2-space indent, bash variant
-- **Trailing whitespace:** Trimmed (except Markdown)
+- **Go:** Tabs, 4-wide
+- **Trailing whitespace:** Trimmed (except Markdown, rst, patch/diff)
 - **Final newline:** Required
 
 ---
@@ -957,5 +976,5 @@ lower=${str,,}             # lowercase
 
 ---
 
-*This document is the unified source for AI assistant guidelines.*
-*@CLAUDE.md and @GEMINI.md symlink here for compatibility.*
+*This document is the canonical source for AI assistant guidelines.*
+*CLAUDE.md and GEMINI.md are symlinks to this file.*

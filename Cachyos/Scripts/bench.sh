@@ -4,14 +4,14 @@ set -euo pipefail
 shopt -s nullglob globstar
 export LC_ALL=C
 IFS=$'\n\t'
-#============ Color & Effects ============ 
+#============ Color & Effects ============
 BLK=$'\e[30m' WHT=$'\e[37m' BWHT=$'\e[97m'
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
 BLU=$'\e[34m' CYN=$'\e[36m' LBLU=$'\e[38;5;117m'
 MGN=$'\e[35m' PNK=$'\e[38;5;218m'
 DEF=$'\e[0m' BLD=$'\e[1m'
 export BLK WHT BWHT RED GRN YLW BLU CYN LBLU MGN PNK DEF BLD
-#============ Core Helper Functions ============ 
+#============ Core Helper Functions ============
 has() { command -v -- "$1" &>/dev/null; }
 xecho() { printf '%b\n' "$*"; }
 log() { xecho "$*"; }
@@ -61,33 +61,33 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case $1 in
-  -p | --parallel)
-    RUN_PARALLEL=1
-    shift
-    ;; 
-  -s | --sort)
-    RUN_SORT=1
-    shift
-    ;; 
-  -c | --copy)
-    RUN_COPY=1
-    shift
-    ;; 
-  -a | --all)
-    RUN_PARALLEL=1
-    RUN_SORT=1
-    RUN_COPY=1
-    shift
-    ;; 
-  -j | --json)
-    EXPORT_JSON=1
-    shift
-    ;; 
-  -h | --help) usage ;; 
-  *)
-    log "${RED}Unknown option: $1${DEF}"
-    usage
-    ;; 
+    -p | --parallel)
+      RUN_PARALLEL=1
+      shift
+      ;;
+    -s | --sort)
+      RUN_SORT=1
+      shift
+      ;;
+    -c | --copy)
+      RUN_COPY=1
+      shift
+      ;;
+    -a | --all)
+      RUN_PARALLEL=1
+      RUN_SORT=1
+      RUN_COPY=1
+      shift
+      ;;
+    -j | --json)
+      EXPORT_JSON=1
+      shift
+      ;;
+    -h | --help) usage ;;
+    *)
+      log "${RED}Unknown option: $1${DEF}"
+      usage
+      ;;
   esac
 done
 
@@ -205,8 +205,7 @@ if [[ $RUN_COPY -eq 1 ]]; then
     has cp && benchmark_copy "cp" "cp cachyos.iso cachyos-cp.iso --no-preserve=all -x -f" || log "${YLW}⊘ cp not available${DEF}"
     has cpz && benchmark_copy "cpz" "cpz cachyos.iso cachyos-cpz.iso -f" || log "${YLW}⊘ cpz not available${DEF}"
 
-    if has xcp;
-      then
+    if has xcp; then
       benchmark_copy "xcp-w0" "xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w 0"
       benchmark_copy "xcp-w4" "xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms"
       benchmark_copy "xcp-w8" "xcp cachyos.iso cachyos-xcp.iso --no-progress -f --no-timestamps --no-perms -w8"

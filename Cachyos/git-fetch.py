@@ -14,8 +14,10 @@ Environment Variables:
 """
 
 import argparse
+import http.client
 import json
 import os
+import queue
 import sys
 import urllib.parse
 import urllib.request
@@ -76,6 +78,7 @@ def get_opener() -> urllib.request.OpenerDirector:
     global _opener_cache
     if _opener_cache is None:
         _opener_cache = urllib.request.build_opener()
+        _opener_cache.addheaders = [("User-Agent", "git-fetch.py")]
     return _opener_cache
 
 
@@ -90,6 +93,101 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
         raise
 
 
+def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> None:
+    """Worker thread: process files from queue using a persistent connection."""
+    # Make a per-thread copy so we don't mutate a shared headers dict.
+    headers = dict(headers)
+    if "User-Agent" not in headers:
+        headers["User-Agent"] = "git-fetch.py"
+
+    conn = http.client.HTTPSConnection(host, timeout=30)
+
+    try:
+        while True:
+            try:
+                # Get next file from queue
+                item = file_q.get_nowait()
+            except queue.Empty:
+                break
+
+            try:
+                url_path, local_path, display_path = item
+
+                # Process download
+                retries = 3
+                while retries > 0:
+                    try:
+                        conn.request("GET", url_path, headers=headers)
+                        resp = conn.getresponse()
+
+                        # Check if the server wants to close the connection
+                        connection_header = resp.getheader("Connection", "").lower()
+                        should_close = connection_header == "close"
+
+                        if resp.status == 200:
+                            with open(local_path, "wb") as f:
+                                while True:
+                                    chunk = resp.read(65536)
+                                    if not chunk:
+                                        break
+                                    f.write(chunk)
+                            print(f"✓ {display_path}")
+
+                            if should_close:
+                                conn.close()
+                                # Reconnect for the next file in the queue
+                                conn = http.client.HTTPSConnection(host, timeout=30)
+
+                            break
+                        elif resp.status in (301, 302, 307, 308):
+                            loc = resp.getheader("Location")
+                            resp.read()  # Consume body
+                            if loc:
+                                print(
+                                    f"✗ {display_path}: Redirect to {loc} not handled in persistent mode"
+                                )
+                            else:
+                                print(f"✗ {display_path}: HTTP {resp.status}")
+
+                            if should_close:
+                                conn.close()
+                                conn = http.client.HTTPSConnection(host, timeout=30)
+                            break
+                        else:
+                            print(f"✗ {display_path}: HTTP {resp.status}")
+                            resp.read()  # Consume body
+                            if should_close:
+                                conn.close()
+                                conn = http.client.HTTPSConnection(host, timeout=30)
+
+                            # Non-retriable client errors: fail fast
+                            if resp.status in (401, 403, 404):
+                                break
+
+                            # Retry on transient server errors and rate limiting
+                            if 500 <= resp.status < 600 or resp.status == 429:
+                                retries -= 1
+                                if retries > 0:
+                                    continue
+                                # Out of retries, give up
+                                break
+
+                            # Default: treat other statuses as non-retriable
+                            break
+                    except (http.client.HTTPException, OSError) as e:
+                        # Connection might have been closed by server unexpectedly
+                        conn.close()
+                        retries -= 1
+                        if retries > 0:
+                            conn = http.client.HTTPSConnection(host, timeout=30)
+                        else:
+                            print(f"✗ {display_path}: {e}")
+            finally:
+                file_q.task_done()
+    finally:
+        conn.close()
+
+
 def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
     """Download from GitHub using Contents API."""
     token = token or os.getenv("GITHUB_TOKEN", "")
@@ -99,97 +197,115 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
 
     files_to_download = []
 
-    def process_node(current_spec: RepoSpec, current_output: Path):
-        api_url = f"https://api.github.com/repos/{current_spec.owner}/{current_spec.repo}/contents/{current_spec.path}"
-        if current_spec.branch != "main":
-            api_url += f"?ref={current_spec.branch}"
-
-        try:
-            data_bytes = http_get(api_url, headers)
-            data = json.loads(data_bytes)
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                # Fallback to raw file download if API fails (maybe it's a file, not dir)
-                raw_url = f"https://raw.githubusercontent.com/{current_spec.owner}/{current_spec.repo}/{current_spec.branch}/{current_spec.path}"
-                content = http_get(raw_url, headers)
-                current_output.parent.mkdir(parents=True, exist_ok=True)
-                current_output.write_bytes(content)
-                print(f"✓ {current_spec.path}")
-                return [], []
+    try:
+        data_bytes = http_get(api_url, headers)
+        data = json.loads(data_bytes)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            if spec.path:
+                raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(spec.path)}"
+                try:
+                    content = http_get(raw_url, headers)
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    output.write_bytes(content)
+                    print(f"✓ {spec.path}")
+                    return
+                except urllib.error.HTTPError:
+                    pass
             raise
 
         if isinstance(data, dict):
             data = [data]
 
-        local_files = []
-        local_dirs = []
-
-        for item in data:
-            item_path = item["path"]
-            local_path = current_output / Path(item_path).name
-
-            if item["type"] == "file":
-                local_files.append((item["download_url"], local_path, item_path))
-            elif item["type"] == "dir":
-                local_path.mkdir(parents=True, exist_ok=True)
-                local_dirs.append((item_path, local_path))
+    files_to_download = []
+    target_path = spec.path.strip("/")
+    found_any = False
 
         return local_files, local_dirs
 
-    max_workers = min(32, (os.cpu_count() or 1) * 4)
+        if (
+            target_path
+            and item_path != target_path
+            and not item_path.startswith(target_path + "/")
+        ):
+            continue
 
-    # Discovery phase
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {}
+        found_any = True
 
-        def submit_spec(s, o):
-            f = executor.submit(process_node, s, o)
-            futures[f] = (s, o)
+        if target_path:
+            rel_path = item_path[len(target_path) :].lstrip("/")
+            requested_is_dir = spec.path.endswith("/")
+            if not rel_path and item_path == target_path:
+                if requested_is_dir and item["type"] != "tree":
+                    raise ValueError(
+                        f"Requested path {spec.path!r} is a directory, but repository "
+                        f"contains a {item['type']} at that path."
+                    )
+                if (
+                    not requested_is_dir
+                    and item["type"] != "blob"
+                    and item["type"] != "tree"
+                ):
+                    raise ValueError(
+                        f"Requested path {spec.path!r} is a file or directory, but "
+                        f"repository contains a {item['type']} at that path."
+                    )
+                local_path = output
+            else:
+                local_path = output / rel_path
+        else:
+            local_path = output / item_path
 
-        submit_spec(spec, output)
+        if item["type"] == "tree":
+            local_path.mkdir(parents=True, exist_ok=True)
+        elif item["type"] == "blob":
+            encoded_path = "/".join(urllib.parse.quote(p) for p in item_path.split("/"))
+            # Host: raw.githubusercontent.com
+            path_part = f"/{spec.owner}/{spec.repo}/{spec.branch}/{encoded_path}"
+            files_to_download.append((path_part, local_path, item_path))
 
-        while futures:
-            done, _ = wait(futures, return_when=FIRST_COMPLETED)
-            for future in done:
-                s, o = futures.pop(future)
-                try:
-                    f_list, d_list = future.result()
-                    files_to_download.extend(f_list)
-
-                    for item_path, local_path in d_list:
-                        sub_spec = RepoSpec(
-                            s.platform, s.owner, s.repo, item_path, s.branch
-                        )
-                        submit_spec(sub_spec, local_path)
-
-                except Exception as e:
-                    print(f"Error processing {s.path}: {e}", file=sys.stderr)
-                    raise
+    if not found_any:
+        if target_path:
+            raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(target_path)}"
+            try:
+                content = http_get(raw_url, headers)
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(content)
+                print(f"✓ {target_path}")
+                return
+            except urllib.error.HTTPError:
+                pass
+        print(f"✗ Path not found: {spec.path}", file=sys.stderr)
+        return
 
     if not files_to_download:
         return
 
-    # Parallel file downloads
-    def download_file(url, path, item_path):
-        try:
-            content = http_get(url, headers)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(content)
-            print(f"✓ {item_path}")
-        except Exception as e:
-            print(f"✗ {item_path}: {e}")
-            raise
+    # Use queue for dynamic load balancing among workers
+    file_q = queue.Queue()
+    for f in files_to_download:
+        file_q.put(f)
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures_dl = [
-            executor.submit(download_file, url, path, item_path)
-            for url, path, item_path in files_to_download
+    max_workers = min(32, (os.cpu_count() or 1) * 4)
+    num_workers = max(1, min(max_workers, len(files_to_download)))
+
+    dl_headers = headers.copy()
+    if "Connection" not in dl_headers:
+        dl_headers["Connection"] = "keep-alive"
+
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [
+            executor.submit(
+                download_worker, "raw.githubusercontent.com", file_q, dl_headers
+            )
+            for _ in range(num_workers)
         ]
-        for future in as_completed(futures_dl):
+        for future in as_completed(futures):
             try:
                 future.result()
-            except Exception:
-                pass  # Already logged
+            except Exception as e:
+                print(f"Worker error: {e}", file=sys.stderr)
+
 
 
 def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
@@ -227,7 +343,6 @@ def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
     dirs_created = set()
     files_to_download = []
 
-    # First pass: create directories and collect files
     for item in data:
         item_path = item["path"]
         rel_path = item_path[len(spec.path) :].lstrip("/") if spec.path else item_path
@@ -242,30 +357,33 @@ def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 dirs_created.add(str(local_path.parent))
 
             file_path_enc = urllib.parse.quote(item_path, safe="")
-            raw_url = f"https://gitlab.com/api/v4/projects/{project_id}/repository/files/{file_path_enc}/raw?ref={spec.branch}"
-            files_to_download.append((raw_url, local_path, item_path))
+            path_part = f"/api/v4/projects/{project_id}/repository/files/{file_path_enc}/raw?ref={spec.branch}"
+            files_to_download.append((path_part, local_path, item_path))
 
-    # Parallel file downloads
-    def download_file(url, path, item_path):
-        try:
-            content = http_get(url, headers)
-            path.write_bytes(content)
-            print(f"✓ {item_path}")
-        except Exception as e:
-            print(f"✗ {item_path}: {e}")
-            raise
+    if not files_to_download:
+        return
+
+    file_q = queue.Queue()
+    for f in files_to_download:
+        file_q.put(f)
 
     max_workers = min(32, (os.cpu_count() or 1) * 4)
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    num_workers = min(max_workers, len(files_to_download))
+
+    dl_headers = headers.copy()
+    if "Connection" not in dl_headers:
+        dl_headers["Connection"] = "keep-alive"
+
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
         futures = [
-            executor.submit(download_file, url, path, ip)
-            for url, path, ip in files_to_download
+            executor.submit(download_worker, "gitlab.com", file_q, dl_headers)
+            for _ in range(num_workers)
         ]
         for future in as_completed(futures):
             try:
                 future.result()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Worker error: {e}", file=sys.stderr)
 
 
 def main() -> int:

@@ -24,19 +24,19 @@ status=0
 
 while (($#)); do
   case "$1" in
-  -c | --check) check_mode=1 ;;
-  -h | --help)
-    usage
-    exit 0
-    ;;
-  --)
-    shift
-    break
-    ;;
-  *)
-    usage
-    exit 1
-    ;;
+    -c | --check) check_mode=1 ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
   esac
   shift
 done
@@ -66,10 +66,11 @@ fi
 if has shfmt && ((${#shell_files[@]})); then
   if ((check_mode)); then
     if ! diff_out=$(shfmt -i 2 -bn -ci -s -ln bash -d "${shell_files[@]}"); then
-      if [[ -n ${diff_out:-} ]]; then
-        printf '%s\n' "$diff_out"
-        status=1
-      fi
+      status=1
+    fi
+    if [[ -n ${diff_out:-} ]]; then
+      printf '%s\n' "$diff_out"
+      status=1
     fi
   else
     shfmt -i 2 -bn -ci -s -ln bash -w "${shell_files[@]}" || status=1

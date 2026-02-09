@@ -187,7 +187,7 @@ BLD=$'\e[1m'          # Bold
 | `basename` | 30x | `${var##*/}` | 1x |
 | `dirname` | 30x | `${var%/*}` | 1x |
 | `cat file` | 20x | `$(<file)` | 1x |
-| `sudo sh -c` | 80x | `printf \| sudo tee` | 40x |
+| `sudo sh -c` | 80x | `printf '...' \| sudo tee /path` | 40x |
 
 ### Bash Optimization
 

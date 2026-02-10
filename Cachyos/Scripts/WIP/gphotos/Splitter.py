@@ -152,7 +152,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not os.path.isdir(args.photos_folder):
-        print(f"Error: '{args.photos_folder}' is not a directory.")
-        exit(1)
+        import sys
+        print(f"Error: '{args.photos_folder}' is not a directory.", file=sys.stderr)
+        sys.exit(1)
 
     group_photos(args.photos_folder, args.size)

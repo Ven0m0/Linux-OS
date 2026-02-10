@@ -102,9 +102,7 @@ def group_photos(photos_folder, target_folder_size):
 
             # Move the file to the current group folder if it's not already there
             # We use absolute paths for comparison to be safe
-    """Helper to parse size strings like '15GB', '500MB'."""
-
-    units = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3, "TB": 1024**4}
+            abs_file_path = os.path.abspath(file_path)
             abs_group_folder = os.path.abspath(current_group_folder)
 
             if os.path.commonpath([abs_file_path, abs_group_folder]) != abs_group_folder:

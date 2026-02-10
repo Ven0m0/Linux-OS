@@ -25,36 +25,28 @@ def create_new_folder(root_folder, folder_name):
     return new_folder_path
 
 
-    """Finds the highest numbered Group_N folder and its size."""
-
-    max_group_num = 0
-    """Finds the highest numbered Group_N folder and its size."""
-    max_group_num = 0
-    if os.path.exists(photos_folder):
+def get_latest_group_info(photos_folder):
+    """Finds the highest numbered Group_N folder under photos_folder and its size."""
     GROUP_PREFIX = "Group_"
-    ...
-    if item.startswith(GROUP_PREFIX) and os.path.isdir(
-        os.path.join(photos_folder, item)
-    ):
-        try:
-            num = int(item.split(GROUP_PREFIX)[1])
-            if item.startswith("Group_") and os.path.isdir(
-                os.path.join(photos_folder, item)
-            ):
+    max_group_num = 0
+    latest_group_folder = None
+
+    if os.path.exists(photos_folder):
+        for item in os.listdir(photos_folder):
+            item_path = os.path.join(photos_folder, item)
+            if item.startswith(GROUP_PREFIX) and os.path.isdir(item_path):
                 try:
-                    num = int(item.split("_")[1])
+                    num = int(item[len(GROUP_PREFIX) :])
                     if num > max_group_num:
                         max_group_num = num
-                except (ValueError, IndexError):
+                        latest_group_folder = item_path
+                except ValueError:
                     continue
 
-    if max_group_num == 0:
+    if max_group_num == 0 or latest_group_folder is None:
         return 1, None, 0
 
-    group_folder = os.path.join(photos_folder, f"Group_{max_group_num}")
-    return max_group_num, group_folder, get_folder_size(group_folder)
-
-
+    return max_group_num, latest_group_folder, get_folder_size(latest_group_folder)
 # Main function
 def group_photos(photos_folder, target_folder_size):
     print(

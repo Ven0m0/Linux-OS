@@ -6,8 +6,12 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import os
+import concurrent.futures
 from dataclasses import dataclass
 from pathlib import Path
+from contextlib import contextmanager
 
 VERSION = "v2.0.1"
 IS_WIN = platform.system() == "Windows"
@@ -22,6 +26,20 @@ class Counters:
   cci_err: int = 0
   ds_err: int = 0
   convert_to_cci: bool = False
+
+  def __add__(self, other):
+    if not isinstance(other, Counters):
+      return NotImplemented
+    return Counters(
+      total=self.total + other.total,
+      final=self.final + other.final,
+      count_3ds=self.count_3ds + other.count_3ds,
+      count_cia=self.count_cia + other.count_cia,
+      cia_err=self.cia_err + other.cia_err,
+      cci_err=self.cci_err + other.cci_err,
+      ds_err=self.ds_err + other.ds_err,
+      convert_to_cci=self.convert_to_cci
+    )
 
 @dataclass(slots=True)
 class TitleInfo:
@@ -79,6 +97,31 @@ def run_tool(tool: Path, args: list[str], stdin: str = "", cwd: Path | None = No
   proc = subprocess.run(cmd, input=stdin. encode("utf-8") if stdin else None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=str(cwd) if cwd else None)
   return proc.returncode, proc. stdout.decode("utf-8", errors="replace")
 
+def link_or_copy(src: Path, dst: Path) -> None:
+  if IS_WIN:
+    shutil.copy2(src, dst)
+  else:
+    os.symlink(src.resolve(), dst)
+
+@contextmanager
+def prepare_task_env(tools: list[Path], seeddb: Path):
+  with tempfile.TemporaryDirectory() as tmp_dir:
+    task_bin_dir = Path(tmp_dir) / "bin"
+    task_bin_dir.mkdir()
+
+    # Link tools
+    new_tools = []
+    for tool in tools:
+      dst = task_bin_dir / tool.name
+      link_or_copy(tool, dst)
+      new_tools.append(dst)
+
+    # Link seeddb
+    new_seeddb = task_bin_dir / seeddb.name
+    link_or_copy(seeddb, new_seeddb)
+
+    yield task_bin_dir, new_tools, new_seeddb
+
 def sanitize_filename(name: str) -> str:
   out = name.translate(TRANSLATE_TABLE)
   return out if out else name
@@ -108,7 +151,7 @@ def parse_twl_ctrtool_output(text: str) -> TitleInfo:
 def clean_ncch_files(bin_dir:  Path) -> None:
   ncch = list(bin_dir.glob("*. ncch"))
   if ncch:
-    logging.info("[i] Found unused NCCH file(s). Deleting.")
+    # logging.info("[i] Found unused NCCH file(s). Deleting.")
     for f in ncch:
       f.unlink(missing_ok=True)
 
@@ -268,10 +311,21 @@ def convert_cia_to_cci(root: Path, cia_file: Path, makerom: Path, cnt: Counters)
     cia_file.unlink(missing_ok=True)
     cnt.cci_err += 1
 
+def process_file_task(func, root, file, tools_list, seeddb_path):
+  """
+  Wrapper to process a single file in an isolated environment.
+  """
+  with prepare_task_env(tools_list, seeddb_path) as (task_bin_dir, new_tools, new_seeddb):
+    ctrtool, decrypt, makerom = new_tools
+    local_cnt = Counters()
+    func(root, task_bin_dir, file, ctrtool, decrypt, makerom, new_seeddb, local_cnt)
+    return local_cnt
+
 def banner() -> None:
   print("  ############################################################")
   print("  ###                                                      ###")
-  print(f"  ###         CIA/3DS Decryptor Redux {VERSION: 8}         ###")
+  # Fixed syntax error: {VERSION: 8} -> {VERSION:8}
+  print(f"  ###         CIA/3DS Decryptor Redux {VERSION:8}         ###")
   print("  ###                                                      ###")
   print("  ############################################################\n")
 
@@ -318,14 +372,30 @@ def main() -> None:
     print()
   banner()
   print("  Decrypting.. .\n")
-  if cnt.count_3ds: 
-    logging.info("[i] Found %d 3DS file(s). Start decrypting...", cnt.count_3ds)
-    for f in sorted(root.glob("*.3ds")):
-      decrypt_3ds(root, bin_dir, f, ctrtool, decrypt, makerom, seeddb, cnt)
-  if cnt.count_cia:
-    logging. info("[i] Found %d CIA file(s). Start decrypting...", cnt.count_cia)
-    for f in sorted(root.glob("*.cia")):
-      decrypt_cia(root, bin_dir, f, ctrtool, decrypt, makerom, seeddb, cnt)
+
+  tools_list = [ctrtool, decrypt, makerom]
+
+  futures = []
+  with concurrent.futures.ThreadPoolExecutor() as executor:
+    if cnt.count_3ds:
+      logging.info("[i] Found %d 3DS file(s). Start decrypting...", cnt.count_3ds)
+      for f in sorted(root.glob("*.3ds")):
+        # decrypt_3ds(root, bin_dir, f, ctrtool, decrypt, makerom, seeddb, cnt)
+        futures.append(executor.submit(process_file_task, decrypt_3ds, root, f, tools_list, seeddb))
+
+    if cnt.count_cia:
+      logging. info("[i] Found %d CIA file(s). Start decrypting...", cnt.count_cia)
+      for f in sorted(root.glob("*.cia")):
+        # decrypt_cia(root, bin_dir, f, ctrtool, decrypt, makerom, seeddb, cnt)
+        futures.append(executor.submit(process_file_task, decrypt_cia, root, f, tools_list, seeddb))
+
+    for future in concurrent.futures.as_completed(futures):
+      try:
+        result_cnt = future.result()
+        cnt += result_cnt
+      except Exception as e:
+        logging.error(f"Task failed with exception: {e}")
+
   if cnt.convert_to_cci:
     for f in sorted(root.glob("*-decrypted.cia")):
       convert_cia_to_cci(root, f, makerom, cnt)

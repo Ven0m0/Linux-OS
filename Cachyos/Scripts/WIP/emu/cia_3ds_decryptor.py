@@ -500,17 +500,16 @@ def process_file_task(func, root, file, tools_list, seeddb_path):
 
 def process_conversion_task(root, cia_file, tools_list, seeddb_path):
     """
-    Wrapper to process a single conversion in an isolated environment.
+    Wrapper to process a single conversion.
+
+    For conversion we do not need a per-task temporary environment, so we
+    call convert_cia_to_cci directly with the existing makerom binary.
     """
-    with prepare_task_env(tools_list, seeddb_path) as (
-        _,
-        new_tools,
-        _,
-    ):
-        _, _, makerom = new_tools
-        local_cnt = Counters()
-        convert_cia_to_cci(root, cia_file, makerom, local_cnt)
-        return local_cnt
+    # tools_list is [ctrtool, decrypt, makerom]
+    makerom = tools_list[2]
+    local_cnt = Counters()
+    convert_cia_to_cci(root, cia_file, makerom, local_cnt)
+    return local_cnt
 
 
 def banner() -> None:

@@ -96,11 +96,13 @@ clean_sys() {
   try sudo journalctl --vacuum-time=1sec --rotate
   try rm -rf ~/.cache/thumbnails ~/.cache/mozilla/firefox/*.default*/cache2
   try rm -rf ~/.local/share/Trash/*
-  # TODO: add steam cleaning:
-  # ~/.steam/root/steamapps/shadercache ~/.steam/root/steamapps/temp ~/.steam/root/appcache/httpcache ~/.steam/root/appcache/librarycache ~/.steam/root/logs
-  # also integrate these
-  # dbus-update-activation-environment --systemd --all
-  # dbus-cleanup-sockets
+
+  # Steam cleaning
+  try rm -rf ~/.steam/root/{steamapps/{shadercache,temp},appcache/{httpcache,librarycache},logs}
+
+  # DBus integration
+  try dbus-update-activation-environment --systemd --all
+  try dbus-cleanup-sockets
 
   if has bleachbit; then
     log "Running BleachBit..."

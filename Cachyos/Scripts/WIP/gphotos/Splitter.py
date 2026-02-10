@@ -145,7 +145,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--size",
         type=parse_size,
-        default="15GB",
+        default=parse_size("15GB"),
         help="Target size for each group (e.g., 15GB, 500MB). Default is 15GB.",
     )
 

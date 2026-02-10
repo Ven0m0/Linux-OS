@@ -498,6 +498,21 @@ def process_file_task(func, root, file, tools_list, seeddb_path):
         return local_cnt
 
 
+def process_conversion_task(root, cia_file, tools_list, seeddb_path):
+    """
+    Wrapper to process a single conversion in an isolated environment.
+    """
+    with prepare_task_env(tools_list, seeddb_path) as (
+        _,
+        new_tools,
+        _,
+    ):
+        _, _, makerom = new_tools
+        local_cnt = Counters()
+        convert_cia_to_cci(root, cia_file, makerom, local_cnt)
+        return local_cnt
+
+
 def banner() -> None:
     print("  ############################################################")
     print("  ###                                                      ###")
@@ -594,24 +609,24 @@ def main() -> None:
                     cnt.cia_err += 1
                 # If task_type is None or unrecognized, we intentionally do not guess
     if cnt.convert_to_cci:
-        # This loop depends on decrypted files existing.
-        # Since we waited for all futures, files should be ready.
-        # Parallelizing this is also possible but requires isolation of 'makerom'.
-        # For now, let's keep it sequential or parallelize it separately.
-        # It calls convert_cia_to_cci.
-        # convert_cia_to_cci uses makerom.
-        # It reads cia_file and writes out_cci.
-        # It does NOT seem to use bin_dir side effects.
-        # "run_tool(makerom, ["-ciatocci", str(cia_file), "-o", str(out_cci)], cwd=root)"
-        # It runs in root.
-        # Makerom handles this conversion.
-        # Does makerom create temp files?
-        # Usually clean.
-        # Let's leave it sequential or simple parallel (thread pool without isolation if safe).
-        # But for safety, I'll leave it as is, or parallelize it using the same isolation just to be safe.
-        # Given the task focused on "Sequential Processing of CPU-Intensive Tasks" in the decrypt block, I've addressed the main part.
-        for f in sorted(root.glob("*-decrypted.cia")):
-            convert_cia_to_cci(root, f, makerom, cnt)
+        logging.info("[i] Starting parallel CCI conversion...")
+        conv_futures = {}
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for f in sorted(root.glob("*-decrypted.cia")):
+                future = executor.submit(
+                    process_conversion_task, root, f, tools_list, seeddb
+                )
+                conv_futures[future] = f.name
+
+            for future in concurrent.futures.as_completed(conv_futures):
+                try:
+                    result_cnt = future.result()
+                    cnt += result_cnt
+                except Exception as e:
+                    logging.error(
+                        "CCI conversion failed for %s: %s", conv_futures.get(future), e
+                    )
+                    cnt.cci_err += 1
 
     banner()
     if cnt.final == 0:

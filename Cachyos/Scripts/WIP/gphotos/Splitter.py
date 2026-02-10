@@ -25,7 +25,9 @@ def create_new_folder(root_folder, folder_name):
     return new_folder_path
 
 
-def get_latest_group_info(photos_folder):
+    """Finds the highest numbered Group_N folder and its size."""
+
+    max_group_num = 0
     """Finds the highest numbered Group_N folder and its size."""
     max_group_num = 0
     if os.path.exists(photos_folder):

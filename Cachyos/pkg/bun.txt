@@ -1,7 +1,7 @@
 zon-format
 ocx
 mcp-mode
-code-mode-too
+code-mode-toon
 @toon-format/toon
 @th0rgal/ralph-wiggum
 @programsmagic/toon-format

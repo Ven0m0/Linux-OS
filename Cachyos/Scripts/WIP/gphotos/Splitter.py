@@ -31,7 +31,13 @@ def create_new_folder(root_folder, folder_name):
     """Finds the highest numbered Group_N folder and its size."""
     max_group_num = 0
     if os.path.exists(photos_folder):
-        for item in os.listdir(photos_folder):
+    GROUP_PREFIX = "Group_"
+    ...
+    if item.startswith(GROUP_PREFIX) and os.path.isdir(
+        os.path.join(photos_folder, item)
+    ):
+        try:
+            num = int(item.split(GROUP_PREFIX)[1])
             if item.startswith("Group_") and os.path.isdir(
                 os.path.join(photos_folder, item)
             ):

@@ -107,7 +107,7 @@ def group_photos(photos_folder, target_folder_size):
     units = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3, "TB": 1024**4}
             abs_group_folder = os.path.abspath(current_group_folder)
 
-            if not abs_file_path.startswith(abs_group_folder):
+            if os.path.commonpath([abs_file_path, abs_group_folder]) != abs_group_folder:
                 try:
                     shutil.move(file_path, current_group_folder)
                     print(f"Moved photo '{file_path}' to '{current_group_folder}'")

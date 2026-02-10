@@ -16,6 +16,8 @@
 - [Bash Guide](https://guide.bash.academy) [Bash Guide old](https://mywiki.wooledge.org/BashGuide)
 - [Google's shellguide](https://google.github.io/styleguide/shellguide.html)
 - [Bash optimizations](https://www.reddit.com/r/bash/comments/1ky4r7l/stop_writing_slow_bash_scripts_performance)
+- [lifepipe](https://www.lifepipe.net)
+- [unofficial-bash-strict-mode](http://redsymbol.net/articles/unofficial-bash-strict-mode)
 - [Ascii flag color codes](https://www.flagcolorcodes.com)
 - [Bash prompt generator](https://bash-prompt-generator.org) [Ezprompt generator](https://ezprompt.net)
 

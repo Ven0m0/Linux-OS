@@ -44,7 +44,7 @@ clean_pkgs() {
     # Remove orphans
     local orphans
     orphans=$(pacman -Qtdq) || true
-    if [[ -n "$orphans" ]]; then
+    if [[ -n $orphans ]]; then
       try sudo pacman -Rns $orphans --noconfirm || :
     fi
 
@@ -96,6 +96,11 @@ clean_sys() {
   try sudo journalctl --vacuum-time=1sec --rotate
   try rm -rf ~/.cache/thumbnails ~/.cache/mozilla/firefox/*.default*/cache2
   try rm -rf ~/.local/share/Trash/*
+  # TODO: add steam cleaning:
+  # ~/.steam/root/steamapps/shadercache ~/.steam/root/steamapps/temp ~/.steam/root/appcache/httpcache ~/.steam/root/appcache/librarycache ~/.steam/root/logs
+  # also integrate these
+  # dbus-update-activation-environment --systemd --all
+  # dbus-cleanup-sockets
 
   if has bleachbit; then
     log "Running BleachBit..."
@@ -114,8 +119,8 @@ clean_sys() {
 
 privacy_config() {
   log "Applying privacy configurations..."
+  # TODO: add fish and put it in the general system cleanup
   try rm -f ~/.bash_history ~/.zsh_history ~/.lesshst ~/.wget-hsts
-  try ln -sf /dev/null ~/.bash_history
   log "Privacy steps applied."
 }
 

@@ -261,3 +261,4 @@ gha-creds-*.json
 .pair-programming-session.md
 .plugin-config/
 docs/sessions/
+bench_output/

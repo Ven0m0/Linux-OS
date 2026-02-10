@@ -8,7 +8,6 @@ except ImportError:
     chardet = None
 
 WORD_PATTERN = re.compile(r"[a-zA-Z0-9]+")
-VALID_WORD_PATTERN = re.compile(r"^[a-zA-Z0-9_.,!?@#$%^&*()-=+ ]+$")
 
 
 def detect_encoding(data: bytes) -> str:
@@ -47,7 +46,11 @@ def main() -> None:
 
     valid_words = combined
 
-    Path(outputfile).write_text("\n".join(valid_words) + "\n", encoding="utf-8")
+    with open(outputfile, "w", encoding="utf-8") as f:
+        if valid_words:
+            f.writelines(word + "\n" for word in valid_words)
+        else:
+            f.write("\n")
     print(f"✓ Wrote {len(valid_words)} unique words to {outputfile}")
 
 

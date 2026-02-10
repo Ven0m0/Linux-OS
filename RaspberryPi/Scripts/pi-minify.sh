@@ -163,7 +163,7 @@ clean_caches() {
   run rm -f ~/.{bash,python}_history 2>/dev/null || :
   sudo rm -f /root/.{bash,python}_history 2>/dev/null || :
   history -c 2>/dev/null || :
-  while IFS= read -r logfile; do sudo truncate -s 0 "$logfile" 2>/dev/null || sudo sh -c ":> \"$logfile\"" 2>/dev/null || :; done < <(find /var/log -type f)
+  find /var/log -type f -exec sudo truncate -s 0 {} + 2>/dev/null || :
 }
 # Privacy & Security Hardening
 clean_crash_dumps() {

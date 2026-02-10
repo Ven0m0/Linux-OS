@@ -32,15 +32,13 @@ def get_latest_group_info(photos_folder):
     latest_group_folder = None
 
     if os.path.exists(photos_folder):
-        for item in os.listdir(photos_folder):
-            item_path = os.path.join(photos_folder, item)
-            if item.startswith(GROUP_PREFIX) and os.path.isdir(item_path):
+        for entry in os.scandir(photos_folder):
+            if entry.name.startswith("Group_") and entry.is_dir():
                 try:
-                    num = int(item[len(GROUP_PREFIX) :])
+                    num = int(entry.name.split("_")[1])
                     if num > max_group_num:
                         max_group_num = num
-                        latest_group_folder = item_path
-                except ValueError:
+                except (ValueError, IndexError):
                     continue
 
     if max_group_num == 0 or latest_group_folder is None:

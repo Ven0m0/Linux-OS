@@ -79,7 +79,7 @@ class TestSplitter(unittest.TestCase):
         self.assertEqual(Splitter.parse_size("1KB"), 1024)
         self.assertEqual(Splitter.parse_size("1 MB"), 1024*1024)
         self.assertEqual(Splitter.parse_size("1.5GB"), int(1.5 * 1024*1024*1024))
-        with self.assertRaises(Exception):
+        with self.assertRaises(argparse.ArgumentTypeError):
             Splitter.parse_size("invalid")
 
     def test_skip_large_files(self):

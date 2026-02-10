@@ -59,14 +59,16 @@ class TestSplitter(unittest.TestCase):
         for i in range(5):
             self.create_dummy_file(f"p1_{i}.jpg", self.FILE_SIZE)
 
-        Splitter.group_photos(self.PHOTOS_DIR, self.TARGET_SIZE)
+        with redirect_stdout(io.StringIO()):
+            Splitter.group_photos(self.PHOTOS_DIR, self.TARGET_SIZE)
 
         self.assertEqual(Splitter.get_folder_size(os.path.join(self.PHOTOS_DIR, "Group_1")), self.TARGET_SIZE)
 
         # Add 1 more file
         self.create_dummy_file("p2_0.jpg", self.FILE_SIZE)
 
-        Splitter.group_photos(self.PHOTOS_DIR, self.TARGET_SIZE)
+        with redirect_stdout(io.StringIO()):
+            Splitter.group_photos(self.PHOTOS_DIR, self.TARGET_SIZE)
 
         # Group_1 should still be exactly 5MB, and p2_0 should be in Group_2
         self.assertEqual(Splitter.get_folder_size(os.path.join(self.PHOTOS_DIR, "Group_1")), self.TARGET_SIZE)

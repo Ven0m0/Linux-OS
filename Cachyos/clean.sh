@@ -98,11 +98,7 @@ clean_sys() {
   try rm -rf ~/.local/share/Trash/*
 
   # Steam cleaning
-  try rm -rf ~/.steam/root/steamapps/shadercache
-  try rm -rf ~/.steam/root/steamapps/temp
-  try rm -rf ~/.steam/root/appcache/httpcache
-  try rm -rf ~/.steam/root/appcache/librarycache
-  try rm -rf ~/.steam/root/logs
+  try rm -rf ~/.steam/root/{steamapps/{shadercache,temp},appcache/{httpcache,librarycache},logs}
 
   # DBus integration
   try dbus-update-activation-environment --systemd --all

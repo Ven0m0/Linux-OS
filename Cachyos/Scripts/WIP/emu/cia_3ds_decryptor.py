@@ -498,7 +498,7 @@ def process_file_task(func, root, file, tools_list, seeddb_path):
         return local_cnt
 
 
-def process_conversion_task(root, cia_file, tools_list, seeddb_path):
+def process_conversion_task(root: Path, cia_file: Path, tools_list: list[Path], seeddb_path: Path) -> Counters:
     """
     Wrapper to process a single conversion.
 

@@ -47,20 +47,6 @@ class Counters:
         )
 
 
-  def __add__(self, other):
-    if not isinstance(other, Counters):
-      return NotImplemented
-    return Counters(
-      total=self.total + other.total,
-      final=self.final + other.final,
-      count_3ds=self.count_3ds + other.count_3ds,
-      count_cia=self.count_cia + other.count_cia,
-      cia_err=self.cia_err + other.cia_err,
-      cci_err=self.cci_err + other.cci_err,
-      ds_err=self.ds_err + other.ds_err,
-      convert_to_cci=self.convert_to_cci
-    )
-
 @dataclass(slots=True)
 class TitleInfo:
     title_id: str = ""
@@ -164,31 +150,6 @@ def prepare_task_env(tools: list[Path], seeddb: Path):
 
         yield task_bin_dir, new_tools, new_seeddb
 
-
-def link_or_copy(src: Path, dst: Path) -> None:
-  if IS_WIN:
-    shutil.copy2(src, dst)
-  else:
-    os.symlink(src.resolve(), dst)
-
-@contextmanager
-def prepare_task_env(tools: list[Path], seeddb: Path):
-  with tempfile.TemporaryDirectory() as tmp_dir:
-    task_bin_dir = Path(tmp_dir) / "bin"
-    task_bin_dir.mkdir()
-
-    # Link tools
-    new_tools = []
-    for tool in tools:
-      dst = task_bin_dir / tool.name
-      link_or_copy(tool, dst)
-      new_tools.append(dst)
-
-    # Link seeddb
-    new_seeddb = task_bin_dir / seeddb.name
-    link_or_copy(seeddb, new_seeddb)
-
-    yield task_bin_dir, new_tools, new_seeddb
 
 def sanitize_filename(name: str) -> str:
     out = name.translate(TRANSLATE_TABLE)
@@ -549,16 +510,6 @@ def process_conversion_task(root: Path, cia_file: Path, tools_list: list[Path], 
     return local_cnt
 
 
-def process_file_task(func, root, file, tools_list, seeddb_path):
-  """
-  Wrapper to process a single file in an isolated environment.
-  """
-  with prepare_task_env(tools_list, seeddb_path) as (task_bin_dir, new_tools, new_seeddb):
-    ctrtool, decrypt, makerom = new_tools
-    local_cnt = Counters()
-    func(root, task_bin_dir, file, ctrtool, decrypt, makerom, new_seeddb, local_cnt)
-    return local_cnt
-
 def banner() -> None:
   print("  ############################################################")
   print("  ###                                                      ###")
@@ -675,56 +626,22 @@ def main() -> None:
                     cnt.cci_err += 1
 
     banner()
-    print(f"  {cnt.count_cia} CIA file(s) found. Convert to CCI?")
-    print("  (Not supported:  DLC, Demos, System, TWL, Updates)\n")
-    print("  [Y] Yes  [N] No\n")
-    choice = input("  Enter:  ").strip().lower()
-    if choice in ("y", "1"):
-      cnt.convert_to_cci = True
-    print()
-  banner()
-  print("  Decrypting.. .\n")
+    if cnt.final == 0:
+        print("  No files were decrypted!\n")
+        logging.warning("[^] No files where decrypted")
+    elif cnt.final == cnt.total:
+        print("  Decrypting finished!\n")
+        print(f"  Summary:\n  - {cnt.count_3ds} 3DS file(s) decrypted\n  - {cnt.count_cia} CIA file(s) decrypted\n")
+        logging.info("[i] Decrypting process succeeded")
+    else:
+        print("  Some files were not decrypted!\n")
+        print(
+            f"  Summary:\n  - {cnt.ds_err} from {cnt.count_3ds} 3DS failures\n  - {cnt.cia_err} from {cnt.count_cia} CIA failures\n  - {cnt.cci_err} CCI conversion failures\n"
+        )
+        logging.warning("[^] Some files where not decrypted")
+    print(f"  Review '{log_dir / 'programlog.txt'}' for details.\n")
+    logging.info("[i] Script execution ended")
 
-  tools_list = [ctrtool, decrypt, makerom]
 
-  futures = []
-  with concurrent.futures.ThreadPoolExecutor() as executor:
-    if cnt.count_3ds:
-      logging.info("[i] Found %d 3DS file(s). Start decrypting...", cnt.count_3ds)
-      for f in sorted(root.glob("*.3ds")):
-        # decrypt_3ds(root, bin_dir, f, ctrtool, decrypt, makerom, seeddb, cnt)
-        futures.append(executor.submit(process_file_task, decrypt_3ds, root, f, tools_list, seeddb))
-
-    if cnt.count_cia:
-      logging. info("[i] Found %d CIA file(s). Start decrypting...", cnt.count_cia)
-      for f in sorted(root.glob("*.cia")):
-        # decrypt_cia(root, bin_dir, f, ctrtool, decrypt, makerom, seeddb, cnt)
-        futures.append(executor.submit(process_file_task, decrypt_cia, root, f, tools_list, seeddb))
-
-    for future in concurrent.futures.as_completed(futures):
-      try:
-        result_cnt = future.result()
-        cnt += result_cnt
-      except Exception as e:
-        logging.error(f"Task failed with exception: {e}")
-
-  if cnt.convert_to_cci:
-    for f in sorted(root.glob("*-decrypted.cia")):
-      convert_cia_to_cci(root, f, makerom, cnt)
-  banner()
-  if cnt.final == 0:
-    print("  No files were decrypted!\n")
-    logging.warning("[^] No files where decrypted")
-  elif cnt.final == cnt.total:
-    print("  Decrypting finished!\n")
-    print(f"  Summary:\n  - {cnt.count_3ds} 3DS file(s) decrypted\n  - {cnt.count_cia} CIA file(s) decrypted\n")
-    logging.info("[i] Decrypting process succeeded")
-  else:
-    print("  Some files were not decrypted!\n")
-    print(f"  Summary:\n  - {cnt.ds_err} from {cnt.count_3ds} 3DS failures\n  - {cnt. cia_err} from {cnt. count_cia} CIA failures\n  - {cnt. cci_err} CCI conversion failures\n")
-    logging.warning("[^] Some files where not decrypted")
-  print(f"  Review '{log_dir / 'programlog.txt'}' for details.\n")
-  logging.info("[i] Script execution ended")
-
-if __name__ == "__main__": 
-  main()
+if __name__ == "__main__":
+    main()

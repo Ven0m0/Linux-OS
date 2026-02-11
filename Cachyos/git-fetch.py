@@ -22,7 +22,7 @@ import sys
 import urllib.parse
 import urllib.request
 import urllib.error
-from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Optional
@@ -195,7 +195,7 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
     if token:
         headers["Authorization"] = f"token {token}"
 
-    files_to_download = []
+    api_url = f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/{spec.branch}?recursive=1"
 
     try:
         data_bytes = http_get(api_url, headers)
@@ -213,43 +213,30 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 except urllib.error.HTTPError:
                     pass
             raise
-
-        if isinstance(data, dict):
-            data = [data]
+        raise
 
     files_to_download = []
     target_path = spec.path.strip("/")
     found_any = False
 
-        return local_files, local_dirs
+    tree = data.get("tree", [])
 
-        if (
-            target_path
-            and item_path != target_path
-            and not item_path.startswith(target_path + "/")
-        ):
-            continue
+    for item in tree:
+        item_path = item["path"]
+
+        if target_path:
+            if item_path == target_path:
+                pass
+            elif item_path.startswith(target_path + "/"):
+                pass
+            else:
+                continue
 
         found_any = True
 
         if target_path:
             rel_path = item_path[len(target_path) :].lstrip("/")
-            requested_is_dir = spec.path.endswith("/")
             if not rel_path and item_path == target_path:
-                if requested_is_dir and item["type"] != "tree":
-                    raise ValueError(
-                        f"Requested path {spec.path!r} is a directory, but repository "
-                        f"contains a {item['type']} at that path."
-                    )
-                if (
-                    not requested_is_dir
-                    and item["type"] != "blob"
-                    and item["type"] != "tree"
-                ):
-                    raise ValueError(
-                        f"Requested path {spec.path!r} is a file or directory, but "
-                        f"repository contains a {item['type']} at that path."
-                    )
                 local_path = output
             else:
                 local_path = output / rel_path

@@ -2,16 +2,23 @@ import re
 import sys
 from pathlib import Path
 
+try:
+    import chardet
+except ImportError:
+    chardet = None
+
 WORD_PATTERN = re.compile(r"[a-zA-Z0-9]+")
 
 
 def detect_encoding(data: bytes) -> str:
-    try:
-        import chardet
+    """
+    Detects the encoding of the given byte data using chardet if available.
+    Falls back to utf-8 if chardet is not installed or returns no encoding.
+    """
+    if chardet is not None:
         result = chardet.detect(data)
         return result["encoding"] or "utf-8"
-    except ImportError:
-        return "utf-8"
+    return "utf-8"
 
 
 def process_file(filepath: str) -> set[str]:
@@ -39,7 +46,11 @@ def main() -> None:
 
     valid_words = combined
 
-    Path(outputfile).write_text("\n".join(valid_words) + "\n", encoding="utf-8")
+    with open(outputfile, "w", encoding="utf-8") as f:
+        if valid_words:
+            f.writelines(word + "\n" for word in valid_words)
+        else:
+            f.write("\n")
     print(f"✓ Wrote {len(valid_words)} unique words to {outputfile}")
 
 

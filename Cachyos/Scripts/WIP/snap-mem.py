@@ -121,11 +121,15 @@ def tui_select_path(*, title: str, start: Path, mode: str) -> Path:
     curses.curs_set(0)
     stdscr.keypad(True)
     cwd, idx = start, 0
+    last_cwd: Path | None = None
+    entries: list[Path] = []
     while True:
-      try:
-        entries = sorted([p for p in cwd.iterdir() if not p.name.startswith(".")], key=lambda p: (not p.is_dir(), p.name.lower()))
-      except OSError:
-        entries = []
+      if cwd != last_cwd:
+        try:
+          entries = sorted([p for p in cwd.iterdir() if not p.name.startswith(".")], key=lambda p: (not p.is_dir(), p.name.lower()))
+        except OSError:
+          entries = []
+        last_cwd = cwd
       shown: list[Path] = [cwd.parent, *entries]
       idx = min(idx, max(0, len(shown) - 1))
       stdscr.erase()
@@ -189,28 +193,36 @@ def download_with_retries(*, opener: OpenerDirector, url: str, dest: Path, timeo
 
 def extract_zip_atomically(zip_path: Path, base_name: str, out_dir: Path, existing: set[str], lock: threading.Lock) -> list[str]:
   extracted: list[str] = []
-  temp_dir = zip_path.with_suffix(".unzip")
   try:
-    temp_dir.mkdir(exist_ok=True)
     with zipfile.ZipFile(zip_path, "r") as z:
-      z.extractall(temp_dir)
-    for item in temp_dir.iterdir():
-      if MACOS_JUNK_RE.match(item.name):
-        continue
-      lname = item.name.lower()
-      if lname.endswith(".png"):
-        suffix = "_caption.png"
-      elif lname.endswith(".jpg"):
-        suffix = "_image.jpg"
-      elif lname.endswith(".mp4"):
-        suffix = "_video.mp4"
-      else:
-        continue
-      final_name = make_unique_name(base_name, suffix, existing, lock)
-      os.replace(item, out_dir / final_name)
-      extracted.append(final_name)
+      for member in z.infolist():
+        # Skip directories and nested files to match original flat behavior
+        if member.is_dir() or '/' in member.filename or '\\' in member.filename:
+          continue
+        if MACOS_JUNK_RE.match(member.filename):
+          continue
+
+        lname = member.filename.lower()
+        if lname.endswith(".png"):
+          suffix = "_caption.png"
+        elif lname.endswith(".jpg"):
+          suffix = "_image.jpg"
+        elif lname.endswith(".mp4"):
+          suffix = "_video.mp4"
+        else:
+          continue
+
+        final_name = make_unique_name(base_name, suffix, existing, lock)
+        target_path = out_dir / final_name
+        # Use .part suffix for atomicity
+        temp_path = target_path.with_suffix(target_path.suffix + ".part")
+
+        with z.open(member) as source, open(temp_path, "wb") as target:
+          shutil.copyfileobj(source, target)
+
+        os.replace(temp_path, target_path)
+        extracted.append(final_name)
   finally:
-    shutil.rmtree(temp_dir, ignore_errors=True)
     zip_path.unlink(missing_ok=True)
   return extracted
 

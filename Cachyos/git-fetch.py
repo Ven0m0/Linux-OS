@@ -14,13 +14,15 @@ Environment Variables:
 """
 
 import argparse
+import http.client
 import json
 import os
+import queue
 import sys
 import urllib.parse
 import urllib.request
 import urllib.error
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Optional
@@ -76,6 +78,7 @@ def get_opener() -> urllib.request.OpenerDirector:
     global _opener_cache
     if _opener_cache is None:
         _opener_cache = urllib.request.build_opener()
+        _opener_cache.addheaders = [("User-Agent", "git-fetch.py")]
     return _opener_cache
 
 
@@ -90,27 +93,115 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
         raise
 
 
+def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> None:
+    """Worker thread: process files from queue using a persistent connection."""
+    # Make a per-thread copy so we don't mutate a shared headers dict.
+    headers = dict(headers)
+    if "User-Agent" not in headers:
+        headers["User-Agent"] = "git-fetch.py"
+
+    conn = http.client.HTTPSConnection(host, timeout=30)
+
+    try:
+        while True:
+            try:
+                # Get next file from queue
+                item = file_q.get_nowait()
+            except queue.Empty:
+                break
+
+            try:
+                url_path, local_path, display_path = item
+
+                # Process download
+                retries = 3
+                while retries > 0:
+                    try:
+                        conn.request("GET", url_path, headers=headers)
+                        resp = conn.getresponse()
+
+                        # Check if the server wants to close the connection
+                        connection_header = resp.getheader("Connection", "").lower()
+                        should_close = connection_header == "close"
+
+                        if resp.status == 200:
+                            with open(local_path, "wb") as f:
+                                while True:
+                                    chunk = resp.read(65536)
+                                    if not chunk:
+                                        break
+                                    f.write(chunk)
+                            print(f"✓ {display_path}")
+
+                            if should_close:
+                                conn.close()
+                                # Reconnect for the next file in the queue
+                                conn = http.client.HTTPSConnection(host, timeout=30)
+
+                            break
+                        elif resp.status in (301, 302, 307, 308):
+                            loc = resp.getheader("Location")
+                            resp.read()  # Consume body
+                            if loc:
+                                print(
+                                    f"✗ {display_path}: Redirect to {loc} not handled in persistent mode"
+                                )
+                            else:
+                                print(f"✗ {display_path}: HTTP {resp.status}")
+
+                            if should_close:
+                                conn.close()
+                                conn = http.client.HTTPSConnection(host, timeout=30)
+                            break
+                        else:
+                            print(f"✗ {display_path}: HTTP {resp.status}")
+                            resp.read()  # Consume body
+                            if should_close:
+                                conn.close()
+                                conn = http.client.HTTPSConnection(host, timeout=30)
+
+                            # Non-retriable client errors: fail fast
+                            if resp.status in (401, 403, 404):
+                                break
+
+                            # Retry on transient server errors and rate limiting
+                            if 500 <= resp.status < 600 or resp.status == 429:
+                                retries -= 1
+                                if retries > 0:
+                                    continue
+                                # Out of retries, give up
+                                break
+
+                            # Default: treat other statuses as non-retriable
+                            break
+                    except (http.client.HTTPException, OSError) as e:
+                        # Connection might have been closed by server unexpectedly
+                        conn.close()
+                        retries -= 1
+                        if retries > 0:
+                            conn = http.client.HTTPSConnection(host, timeout=30)
+                        else:
+                            print(f"✗ {display_path}: {e}")
+            finally:
+                file_q.task_done()
+    finally:
+        conn.close()
+
+
 def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
-    """Download from GitHub using Tree API (recursive)."""
+    """Download from GitHub using Contents API."""
     token = token or os.getenv("GITHUB_TOKEN", "")
     headers = {"Accept": "application/vnd.github.v3+json"}
     if token:
         headers["Authorization"] = f"token {token}"
 
-    # Fetch the entire tree recursively
-    api_url = (
-        f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/"
-        f"{urllib.parse.quote(spec.branch, safe='')}?recursive=1"
-    )
+    files_to_download = []
 
     try:
         data_bytes = http_get(api_url, headers)
         data = json.loads(data_bytes)
     except urllib.error.HTTPError as e:
         if e.code == 404:
-            # Fallback: maybe spec.path is a file and not in a tree or branch issue?
-            # Or the branch doesn't exist.
-            # We can try raw download if spec.path is set, similar to original fallback.
             if spec.path:
                 raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(spec.path)}"
                 try:
@@ -120,28 +211,18 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                     print(f"✓ {spec.path}")
                     return
                 except urllib.error.HTTPError:
-                    pass  # Original 404 was correct
+                    pass
             raise
-        raise
 
-    if data.get("truncated"):
-        print(
-            "Error: GitHub Tree API response is truncated; aborting to avoid an incomplete download.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        if isinstance(data, dict):
+            data = [data]
 
     files_to_download = []
-
-    # Filter items based on spec.path
     target_path = spec.path.strip("/")
-
     found_any = False
 
-    for item in data.get("tree", []):
-        item_path = item["path"]
+        return local_files, local_dirs
 
-        # Check if item matches target_path
         if (
             target_path
             and item_path != target_path
@@ -151,25 +232,24 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
 
         found_any = True
 
-        # Determine local path
         if target_path:
-            # Relative path from target_path
             rel_path = item_path[len(target_path) :].lstrip("/")
-            # Detect whether the user-supplied path was intended as a directory
             requested_is_dir = spec.path.endswith("/")
             if not rel_path and item_path == target_path:
-                # Exact match of the target path
                 if requested_is_dir and item["type"] != "tree":
                     raise ValueError(
                         f"Requested path {spec.path!r} is a directory, but repository "
                         f"contains a {item['type']} at that path."
                     )
-                if not requested_is_dir and item["type"] != "blob":
+                if (
+                    not requested_is_dir
+                    and item["type"] != "blob"
+                    and item["type"] != "tree"
+                ):
                     raise ValueError(
-                        f"Requested path {spec.path!r} is a file, but repository "
-                        f"contains a {item['type']} at that path."
+                        f"Requested path {spec.path!r} is a file or directory, but "
+                        f"repository contains a {item['type']} at that path."
                     )
-                # For an exact match with the expected type, use the output path directly.
                 local_path = output
             else:
                 local_path = output / rel_path
@@ -180,11 +260,11 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
             local_path.mkdir(parents=True, exist_ok=True)
         elif item["type"] == "blob":
             encoded_path = "/".join(urllib.parse.quote(p) for p in item_path.split("/"))
-            raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{encoded_path}"
-            files_to_download.append((raw_url, local_path, item_path))
+            # Host: raw.githubusercontent.com
+            path_part = f"/{spec.owner}/{spec.repo}/{spec.branch}/{encoded_path}"
+            files_to_download.append((path_part, local_path, item_path))
 
     if not found_any:
-        # If path not found in tree (or tree truncated), try raw download as fallback
         if target_path:
             raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(target_path)}"
             try:
@@ -195,38 +275,38 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 return
             except urllib.error.HTTPError:
                 pass
-
         print(f"✗ Path not found: {spec.path}", file=sys.stderr)
-        # We don't raise here to allow main to exit cleanly?
-        # But original code raised or returned empty.
-        # If we return, we print nothing else.
         return
 
     if not files_to_download:
         return
 
-    # Parallel file downloads
+    # Use queue for dynamic load balancing among workers
+    file_q = queue.Queue()
+    for f in files_to_download:
+        file_q.put(f)
+
     max_workers = min(32, (os.cpu_count() or 1) * 4)
+    num_workers = max(1, min(max_workers, len(files_to_download)))
 
-    def download_file(url, path, item_path):
-        try:
-            content = http_get(url, headers)
-            path.write_bytes(content)
-            print(f"✓ {item_path}")
-        except Exception as e:
-            print(f"✗ {item_path}: {e}")
-            raise
+    dl_headers = headers.copy()
+    if "Connection" not in dl_headers:
+        dl_headers["Connection"] = "keep-alive"
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures_dl = [
-            executor.submit(download_file, url, path, item_path)
-            for url, path, item_path in files_to_download
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [
+            executor.submit(
+                download_worker, "raw.githubusercontent.com", file_q, dl_headers
+            )
+            for _ in range(num_workers)
         ]
-        for future in as_completed(futures_dl):
+        for future in as_completed(futures):
             try:
                 future.result()
-            except Exception:
-                pass  # Already logged
+            except Exception as e:
+                print(f"Worker error: {e}", file=sys.stderr)
+
+
 
 def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
     """Download from GitLab using Repository API."""
@@ -263,7 +343,6 @@ def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
     dirs_created = set()
     files_to_download = []
 
-    # First pass: create directories and collect files
     for item in data:
         item_path = item["path"]
         rel_path = item_path[len(spec.path) :].lstrip("/") if spec.path else item_path
@@ -278,30 +357,33 @@ def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
                 dirs_created.add(str(local_path.parent))
 
             file_path_enc = urllib.parse.quote(item_path, safe="")
-            raw_url = f"https://gitlab.com/api/v4/projects/{project_id}/repository/files/{file_path_enc}/raw?ref={spec.branch}"
-            files_to_download.append((raw_url, local_path, item_path))
+            path_part = f"/api/v4/projects/{project_id}/repository/files/{file_path_enc}/raw?ref={spec.branch}"
+            files_to_download.append((path_part, local_path, item_path))
 
-    # Parallel file downloads
-    def download_file(url, path, item_path):
-        try:
-            content = http_get(url, headers)
-            path.write_bytes(content)
-            print(f"✓ {item_path}")
-        except Exception as e:
-            print(f"✗ {item_path}: {e}")
-            raise
+    if not files_to_download:
+        return
+
+    file_q = queue.Queue()
+    for f in files_to_download:
+        file_q.put(f)
 
     max_workers = min(32, (os.cpu_count() or 1) * 4)
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    num_workers = min(max_workers, len(files_to_download))
+
+    dl_headers = headers.copy()
+    if "Connection" not in dl_headers:
+        dl_headers["Connection"] = "keep-alive"
+
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
         futures = [
-            executor.submit(download_file, url, path, ip)
-            for url, path, ip in files_to_download
+            executor.submit(download_worker, "gitlab.com", file_q, dl_headers)
+            for _ in range(num_workers)
         ]
         for future in as_completed(futures):
             try:
                 future.result()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Worker error: {e}", file=sys.stderr)
 
 
 def main() -> int:

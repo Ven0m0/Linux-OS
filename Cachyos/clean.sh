@@ -26,8 +26,7 @@ get_cache_size() {
 
 clean_pkgs() {
   log "Cleaning package caches..."
-  if has pacman;
-    then
+  if has pacman; then
     # Measure before cleanup
     local pacman_before paru_before yay_before
     pacman_before=$(get_cache_size "/var/cache/pacman/pkg")
@@ -41,12 +40,12 @@ clean_pkgs() {
     if has paru; then yes | paru -Scc --noconfirm &>/dev/null || :; fi
     yes | sudo pacman -Scc --noconfirm &>/dev/null || :
     has paccache && try sudo paccache -rk1 &>/dev/null || :
-    
+
     # Remove orphans
     local orphans
     orphans=$(pacman -Qtdq) || true
-    if [[ -n "$orphans" ]]; then
-        try sudo pacman -Rns $orphans --noconfirm || :
+    if [[ -n $orphans ]]; then
+      try sudo pacman -Rns $orphans --noconfirm || :
     fi
 
     # Measure after cleanup
@@ -54,22 +53,18 @@ clean_pkgs() {
     pacman_after=$(get_cache_size "/var/cache/pacman/pkg")
     paru_after=$(get_cache_size "$HOME/.cache/paru/clone")
     yay_after=$(get_cache_size "$HOME/.cache/yay")
-    total_freed=$(( (pacman_before - pacman_after) + (paru_before - paru_after) + (yay_before - yay_after) ))
+    total_freed=$(((pacman_before - pacman_after) + (paru_before - paru_after) + (yay_before - yay_after)))
 
     [[ $total_freed -gt 0 ]] && log "Package cache freed: ${total_freed}MB"
-  elif has apt-get;
-    then
+  elif has apt-get; then
     try sudo apt-get autoremove -y && try sudo apt-get clean
-  elif has dnf;
-    then
+  elif has dnf; then
     try sudo dnf autoremove -y && try sudo dnf clean all
-  elif has zypper;
-    then
+  elif has zypper; then
     try sudo zypper clean --all
   fi
 
-  if has flatpak;
-    then
+  if has flatpak; then
     log "Cleaning Flatpak..."
     try flatpak uninstall --unused -y
     try rm -rf "$HOME/.var/app/*/cache/*"
@@ -101,27 +96,33 @@ clean_sys() {
   try sudo journalctl --vacuum-time=1sec --rotate
   try rm -rf ~/.cache/thumbnails ~/.cache/mozilla/firefox/*.default*/cache2
   try rm -rf ~/.local/share/Trash/*
-  
-  if has bleachbit;
-    then
+
+  # Steam cleaning
+  try rm -rf ~/.steam/root/{steamapps/{shadercache,temp},appcache/{httpcache,librarycache},logs}
+
+  # DBus integration
+  try dbus-update-activation-environment --systemd --all
+  try dbus-cleanup-sockets
+
+  if has bleachbit; then
     log "Running BleachBit..."
     try bleachbit -c --preset
     try sudo bleachbit -c --preset
   fi
-  
+
   has localepurge && try sudo localepurge
   try sudo fstrim -av
-  
+
   # Check only if xfs filesystem
   if [[ $(findmnt -n -o FSTYPE /) == "xfs" ]]; then
-      try sudo xfs_scrub /
+    try sudo xfs_scrub /
   fi
 }
 
 privacy_config() {
   log "Applying privacy configurations..."
+  # TODO: add fish and put it in the general system cleanup
   try rm -f ~/.bash_history ~/.zsh_history ~/.lesshst ~/.wget-hsts
-  try ln -sf /dev/null ~/.bash_history
   log "Privacy steps applied."
 }
 
@@ -142,7 +143,7 @@ main() {
   # Sync and drop caches
   sync
   echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null
-  
+
   # Optimize databases
   log "Optimizing SQLite databases..."
   find ~/ -type f -regextype posix-egrep -regex '.*\.(db|sqlite)' \

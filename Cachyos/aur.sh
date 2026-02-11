@@ -5,8 +5,8 @@ IFS=$'\n\t'
 
 # Check if already added
 if grep -q "chaotic-aur" /etc/pacman.conf; then
-    echo "Chaotic AUR is already configured in /etc/pacman.conf"
-    exit 0
+  echo "Chaotic AUR is already configured in /etc/pacman.conf"
+  exit 0
 fi
 
 echo "Adding Chaotic AUR keys..."
@@ -15,7 +15,7 @@ sudo pacman-key --lsign-key 3056513887B78AEB
 
 echo "Installing keyring and mirrorlist..."
 sudo pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
-    'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+  'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
 
 echo "Configuring pacman.conf..."
 # Append config if not present

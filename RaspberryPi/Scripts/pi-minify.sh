@@ -66,22 +66,22 @@ EOF
 parse_args() {
   while (($#)); do
     case "$1" in
-    -y | --yes) cfg[interactive]=0 ;;
-    -d | --dry-run) cfg[dry_run]=1 ;;
-    -a | --aggressive) cfg[aggressive]=1 ;;
-    -h | --help)
-      usage
-      exit 0
-      ;;
-    --)
-      shift
-      break
-      ;;
-    -*)
-      usage
-      die "invalid option: $1"
-      ;;
-    *) break ;;
+      -y | --yes) cfg[interactive]=0 ;;
+      -d | --dry-run) cfg[dry_run]=1 ;;
+      -a | --aggressive) cfg[aggressive]=1 ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        usage
+        die "invalid option: $1"
+        ;;
+      *) break ;;
     esac
     shift
   done
@@ -163,7 +163,11 @@ clean_caches() {
   run rm -f ~/.{bash,python}_history 2>/dev/null || :
   sudo rm -f /root/.{bash,python}_history 2>/dev/null || :
   history -c 2>/dev/null || :
-  while IFS= read -r logfile; do sudo truncate -s 0 "$logfile" 2>/dev/null || sudo sh -c ":> \"$logfile\"" 2>/dev/null || :; done < <(find /var/log -type f)
+  if has truncate; then
+    find /var/log -type f -exec sudo truncate -s 0 {} + 2>/dev/null || :
+  else
+    find /var/log -type f -exec sudo sh -c ':> "$1"' _ {} \; 2>/dev/null || :
+  fi
 }
 # Privacy & Security Hardening
 clean_crash_dumps() {

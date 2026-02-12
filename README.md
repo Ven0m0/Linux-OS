@@ -13,9 +13,6 @@ A curated collection of battle-tested automation scripts for system setup, optim
 | Arch Linux  | Debian        | Termux       |
 | CachyOS     | Raspbian      | EndeavourOS  |
 | Wayland     | Raspberry Pi OS | Gentoo     |
-|             |               | Nobara       |
-|             |               | SteamOS      |
-|             |               | Bazzite      |
 
 ---
 

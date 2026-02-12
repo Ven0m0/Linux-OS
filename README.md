@@ -11,8 +11,8 @@ A curated collection of battle-tested automation scripts for system setup, optim
 | **Primary** | **Secondary** | **Tertiary** |
 |:------------|:--------------|:-------------|
 | Arch Linux  | Debian        | Termux       |
-| CachyOS     | Raspbian      | EndeavourOS  |
-| Wayland     | Raspberry Pi OS | Gentoo     |
+| CachyOS     | DietPi        | Raspbian     |
+| Wayland     | Raspberry Pi OS |            |
 
 ---
 

@@ -26,7 +26,6 @@
 | Arch Linux  | Debian        | Termux       |
 | CachyOS     | Raspbian      | EndeavourOS  |
 | Wayland     | Raspberry Pi OS | Gentoo     |
-|             |               | Nobara, SteamOS, Bazzite |
 
 ### Repository Structure
 

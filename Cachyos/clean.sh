@@ -37,7 +37,10 @@ clean_pkgs() {
     sudo find "/var/cache/pacman/pkg" -maxdepth 1 -type d -name "download-*" -exec rm -rf {} +
 
     # Aggressive cache purge
-    if has paru; then yes | paru -Scc --noconfirm &>/dev/null || :; fi
+    if has paru; then 
+      paru -Scc --noconfirm &>/dev/null || :
+      paru -c --noconfirm &>/dev/null || :
+    fi
     yes | sudo pacman -Scc --noconfirm &>/dev/null || :
     has paccache && try sudo paccache -rk1 &>/dev/null || :
 

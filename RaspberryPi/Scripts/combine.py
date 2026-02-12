@@ -1,6 +1,5 @@
 import re
 import sys
-from pathlib import Path
 
 try:
     import chardet

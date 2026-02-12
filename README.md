@@ -22,14 +22,12 @@ A curated collection of battle-tested automation scripts for system setup, optim
 Linux-OS/
 ├── Cachyos/              # Arch/CachyOS system scripts
 │   ├── Scripts/          # Curlable AIO installers
-│   │   ├── bench.sh      # System benchmarking
 │   │   └── Android/      # Android/Termux optimizers
 │   ├── setup.sh          # Automated system configuration
 │   ├── up.sh             # Comprehensive update orchestrator
 │   ├── clean.sh          # System cleanup & privacy hardening
 │   ├── Rank.sh           # Mirror ranking & keyring updates
 │   ├── debloat.sh        # System debloating
-│   └── rustbuild.sh      # Rust compilation helpers
 ├── RaspberryPi/          # Raspberry Pi specific scripts
 │   ├── Scripts/          # Pi automation tooling
 │   │   ├── setup.sh      # Initial Pi setup & optimization

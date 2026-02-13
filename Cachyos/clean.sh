@@ -30,7 +30,7 @@ clean_pkgs() {
     # Remove stuck download directories
     sudo find "/var/cache/pacman/pkg" -maxdepth 1 -type d -name "download-*" -exec rm -rf {} +
     # Aggressive cache purge
-    if has paru; then 
+    if has paru; then
       paru -Scc --noconfirm &>/dev/null || :
       paru -c --noconfirm &>/dev/null || :
     fi
@@ -40,7 +40,7 @@ clean_pkgs() {
     local orphans
     orphans=$(pacman -Qtdq) || true
     if [[ -n $orphans ]]; then
-      try sudo pacman -Rns --noconfirm "$orphans"  || :
+      try sudo pacman -Rns --noconfirm "$orphans" || :
     fi
     # Measure after cleanup
     local pacman_after paru_after yay_after total_freed
@@ -65,10 +65,16 @@ clean_pkgs() {
 }
 clean_dev() {
   log "Cleaning dev tools..."
-  has cargo-cache && { try cargo cache -efg; try cargo cache -ef trim --limit 1B; }
+  has cargo-cache && {
+    try cargo cache -efg
+    try cargo cache -ef trim --limit 1B
+  }
   has uv && try uv cache clean --force
   has bun && try bun -g pm cache rm
-  has pnpm && { try pnpm prune; try pnpm store prune; }
+  has pnpm && {
+    try pnpm prune
+    try pnpm store prune
+  }
   has go && try go clean -modcache
   has pip && try pip cache purge
   has npm && try npm cache clean --force
@@ -88,7 +94,8 @@ clean_sys() {
   try dbus-cleanup-sockets
   if has bleachbit; then
     log "Running BleachBit..."
-    try bleachbit -c --preset; try sudo bleachbit -c --preset
+    try bleachbit -c --preset
+    try sudo bleachbit -c --preset
   fi
   has localepurge && try sudo localepurge
   try sudo fstrim -av
@@ -101,7 +108,10 @@ clean_sys() {
 main() {
   # Refresh sudo credential cache
   sudo -v
-  [[ ${1:-} == "config" ]] && { banner; exit 0; }
+  [[ ${1:-} == "config" ]] && {
+    banner
+    exit 0
+  }
   banner
   local start_du
   start_du=$(df -k / | awk 'NR==2 {print $3}')

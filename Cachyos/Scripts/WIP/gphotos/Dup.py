@@ -34,10 +34,9 @@ def hash_file(file_path):
         return None, None
 
 
-def find_duplicate_photos(starting_path, output_file_path):
-    # Dictionary to group files by size: {size: [path1, path2, ...]}
+def group_files_by_size(starting_path):
+    """Groups files by size."""
     size_dict = {}
-
     for dirpath, _, filenames in os.walk(starting_path):
         for filename in filenames:
             if filename.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
@@ -49,55 +48,67 @@ def find_duplicate_photos(starting_path, output_file_path):
                     else:
                         size_dict[file_size] = [full_path]
                 except OSError:
-                    # Skip files that cannot be accessed
                     continue
+    return size_dict
 
-    # Identify files that have the same size (potential duplicates)
-    potential_duplicates_by_size = []
+
+def get_candidates_from_size_groups(size_dict):
+    """Returns a flat list of files that share a size with at least one other file."""
+    candidates = []
     for paths in size_dict.values():
         if len(paths) > 1:
-            potential_duplicates_by_size.extend(paths)
+            candidates.extend(paths)
+    return candidates
 
-    hash_dict = {}
 
-    if potential_duplicates_by_size:
-        # Step 1: Partial hashing (Optimization)
-        # Group by partial hash to filter out files that are definitely different
-        # Use multiprocessing for hashing as it is CPU bound
-        partial_hash_dict = {}
-        with Pool(processes=cpu_count()) as pool:
-            partial_results = pool.map(hash_file_partial, potential_duplicates_by_size)
+def group_by_hash(file_list, hash_func):
+    """Groups files by hash using the provided hash function."""
+    hash_groups = {}
+    if not file_list:
+        return hash_groups
 
-        for file_path, p_hash in partial_results:
-            if p_hash is not None:
-                if p_hash in partial_hash_dict:
-                    partial_hash_dict[p_hash].append(file_path)
-                else:
-                    partial_hash_dict[p_hash] = [file_path]
+    with Pool(processes=cpu_count()) as pool:
+        results = pool.map(hash_func, file_list)
 
-        # Step 2: Full hashing
-        # Only process groups that still have potential duplicates after partial check
-        full_scan_candidates = []
-        for paths in partial_hash_dict.values():
-            if len(paths) > 1:
-                full_scan_candidates.extend(paths)
+    for file_path, file_hash in results:
+        if file_hash is not None:
+            if file_hash in hash_groups:
+                hash_groups[file_hash].append(file_path)
+            else:
+                hash_groups[file_hash] = [file_path]
+    return hash_groups
 
+
+def get_candidates_from_hash_groups(hash_groups):
+    """Returns a flat list of files that share a hash with at least one other file."""
+    candidates = []
+    for paths in hash_groups.values():
+        if len(paths) > 1:
+            candidates.extend(paths)
+    return candidates
+
+
+def find_duplicate_photos(starting_path, output_file_path):
+    # Step 1: Group by size
+    size_dict = group_files_by_size(starting_path)
+    potential_duplicates = get_candidates_from_size_groups(size_dict)
+
+    final_hash_dict = {}
+
+    if potential_duplicates:
+        # Step 2: Partial hashing
+        partial_hash_groups = group_by_hash(potential_duplicates, hash_file_partial)
+        full_scan_candidates = get_candidates_from_hash_groups(partial_hash_groups)
+
+        # Step 3: Full hashing
         if full_scan_candidates:
-            with Pool(processes=cpu_count()) as pool:
-                full_results = pool.map(hash_file, full_scan_candidates)
+            final_hash_dict = group_by_hash(full_scan_candidates, hash_file)
 
-            for file_path, file_hash in full_results:
-                if file_hash is not None:
-                    if file_hash in hash_dict:
-                        hash_dict[file_hash].append(file_path)
-                    else:
-                        hash_dict[file_hash] = [file_path]
-
+    # Output results
     with open(output_file_path, "w") as f:
-        for key, value in hash_dict.items():
+        for key, value in final_hash_dict.items():
             if len(value) > 1:
                 f.write(f"Duplicate Photos (Hash: {key}):\n")
-                # Preserving original behavior: write only the first path found
                 f.write(f"{value[0]}\n")
                 f.write("\n")
 

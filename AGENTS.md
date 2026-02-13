@@ -561,16 +561,12 @@ IFS=: read -ra parts <<< "$PATH"
 
 | Workflow | Purpose | Trigger |
 |:---------|:--------|:--------|
-| `lint-format.yml` | ShellCheck, shfmt, Prettier, yamllint; auto-commits fixes | Push/PR |
-| `claude.yml` | Claude Code integration (@claude mentions) | Issue/PR/comment |
-| `claude-code-review.yml` | Claude Code PR review | Pull requests |
-| `gemini-dispatch.yml` | Gemini API dispatch & routing | PR/issue open, comments |
-| `gemini-invoke.yml` | Gemini task invocation | Manual + API-driven |
-| `gemini-review.yml` | Gemini code review | PR review comments |
-| `gemini-scheduled-triage.yml` | Scheduled issue/PR triage | Cron schedule |
-| `gemini-triage.yml` | Real-time issue/PR triage | Issue/PR open/edit |
+| `lint-format.yml` | ShellCheck, shfmt, Prettier, yamllint, ruff; auto-commits fixes | Push/PR to main/master/claude/** |
 | `deps.yml` | Dependabot dependency updates (6 ecosystems) | Scheduled weekly |
 | `summary.yml` | Workflow summary generation | Manual trigger |
+| `dependabot-automerge.yml` | Auto-merge dependency PRs (minor updates) | Dependabot/Renovate PRs |
+| `jules-performance-improver.yml` | Daily performance optimization analysis (Jules agent) | Daily at 4 AM UTC |
+| `jules-weekly-cleanup.yml` | Weekly codebase cleanup (dead code, duplication) | Weekly on Monday at 2 AM UTC |
 
 ### Dependency Management (.github/dependabot.yml)
 

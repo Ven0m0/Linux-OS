@@ -29,10 +29,8 @@ def hash_file_partial(file_path):
         return None, None
 
 
-def find_duplicate_photos(starting_path, output_file_path):
-    # Dictionary to group files by size: {size: [path1, path2, ...]}
+def get_files_by_size(starting_path):
     size_dict = {}
-
     for dirpath, _, filenames in os.walk(starting_path):
         for filename in filenames:
             if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
@@ -44,8 +42,25 @@ def find_duplicate_photos(starting_path, output_file_path):
                     else:
                         size_dict[file_size] = [full_path]
                 except OSError:
-                    # Skip files that cannot be accessed
                     continue
+    return size_dict
+
+
+def get_hash_groups(file_list, hash_func, pool):
+    results = pool.map(hash_func, file_list)
+    hash_dict = {}
+    for file_path, file_hash in results:
+        if file_hash is not None:
+            if file_hash in hash_dict:
+                hash_dict[file_hash].append(file_path)
+            else:
+                hash_dict[file_hash] = [file_path]
+    return hash_dict
+
+
+def find_duplicate_photos(starting_path, output_file_path):
+    # Dictionary to group files by size: {size: [path1, path2, ...]}
+    size_dict = get_files_by_size(starting_path)
 
     # Identify files that have the same size (potential duplicates)
     potential_duplicates = []
@@ -53,51 +68,38 @@ def find_duplicate_photos(starting_path, output_file_path):
         if len(paths) > 1:
             potential_duplicates.extend(paths)
 
-    hash_dict = {}
+    final_duplicates = {}
 
     # Only run heavy hashing on files that share a size with another file
     if potential_duplicates:
         # Use multiprocessing for hashing as it is CPU bound
         pool = Pool(processes=cpu_count())
+        try:
+            # Phase 1: Partial Hash (first 64KB) to filter candidates
+            partial_hash_dict = get_hash_groups(potential_duplicates, hash_file_partial, pool)
 
-        # Phase 1: Partial Hash (first 64KB) to filter candidates
-        partial_results = pool.map(hash_file_partial, potential_duplicates)
+            # Identify files that have same partial hash
+            full_hash_candidates = []
+            for paths in partial_hash_dict.values():
+                if len(paths) > 1:
+                    full_hash_candidates.extend(paths)
 
-        partial_hash_dict = {}
-        for file_path, partial_hash in partial_results:
-            if partial_hash is not None:
-                if partial_hash in partial_hash_dict:
-                    partial_hash_dict[partial_hash].append(file_path)
-                else:
-                    partial_hash_dict[partial_hash] = [file_path]
-
-        # Identify files that have same partial hash
-        full_hash_candidates = []
-        for paths in partial_hash_dict.values():
-            if len(paths) > 1:
-                full_hash_candidates.extend(paths)
-
-        # Phase 2: Full Hash on remaining candidates
-        if full_hash_candidates:
-            full_results = pool.map(hash_file, full_hash_candidates)
-
-            for file_path, file_hash in full_results:
-                if file_hash is not None:
-                    if file_hash in hash_dict:
-                        hash_dict[file_hash].append(file_path)
-                    else:
-                        hash_dict[file_hash] = [file_path]
-
-        pool.close()
-        pool.join()
+            # Phase 2: Full Hash on remaining candidates
+            if full_hash_candidates:
+                full_hash_dict = get_hash_groups(full_hash_candidates, hash_file, pool)
+                final_duplicates = full_hash_dict
+        finally:
+            pool.close()
+            pool.join()
 
     with open(output_file_path, 'w') as f:
-        for key, value in hash_dict.items():
+        for key, value in final_duplicates.items():
             if len(value) > 1:
                 f.write(f"Duplicate Photos (Hash: {key}):\n")
                 # Preserving original behavior: write only the first path found
                 f.write(f"{value[0]}\n")
                 f.write("\n")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Find duplicate photos.")

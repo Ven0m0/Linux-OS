@@ -24,7 +24,7 @@ def hash_file_partial(file_path):
             byte_block = f.read(65536)
             sha256_hash.update(byte_block)
         return file_path, sha256_hash.hexdigest()
-    except Exception as e:
+    except OSError as e:
         print(f"Error partial hashing {file_path}: {e}")
         return None, None
 

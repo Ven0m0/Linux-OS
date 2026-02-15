@@ -112,7 +112,7 @@ main() {
   echo 3 | sudo tee /proc/sys/vm/drop_caches &>/dev/null
   # Optimize databases
   log "Optimizing SQLite databases..."
-  if has sqlite3; then
+  if command -v sqlite3 &>/dev/null; then
     find "$HOME" \
       -type d \( -name .git -o -name node_modules -o -name .npm -o -name .cargo -o -name .go -o -name .vscode -o -name Library -o -name __pycache__ \) -prune \
       -o -type f \( -name "*.db" -o -name "*.sqlite" \) -print0 |

@@ -4,19 +4,17 @@ import argparse
 from multiprocessing import Pool, cpu_count
 
 
-def hash_file_partial(file_path):
+def hash_file_partial(file_path, chunk_size=65536):
     """
     Computes a partial hash of the file (first 64KB) to quickly filter non-duplicates.
     """
     try:
         sha256_hash = hashlib.sha256()
         with open(file_path, "rb") as f:
-            chunk = f.read(65536)
-            if not chunk:
-                return None, None
+            chunk = f.read(chunk_size)
             sha256_hash.update(chunk)
         return file_path, sha256_hash.hexdigest()
-    except Exception as e:
+    except (IOError, OSError) as e:
         print(f"Error partial hashing {file_path}: {e}")
         return None, None
 

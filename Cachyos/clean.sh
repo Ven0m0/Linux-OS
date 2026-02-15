@@ -6,7 +6,7 @@ IFS=$'\n\t'
 # --- Config & Helpers ---
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' M=$'\e[35m' C=$'\e[36m' X=$'\e[0m'
 has() { command -v "$1" &>/dev/null; }
-try() { "$@" >/dev/null 2>&1 || true; }
+try() { "$@" >/dev/null 2>&1 || :; }
 log() { printf "%b[+]%b %s\n" "$G" "$X" "$*"; }
 warn() { printf "%b[!]%b %s\n" "$Y" "$X" "$*" >&2; }
 disk_usage() { df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}'; }
@@ -33,12 +33,12 @@ clean_pkgs() {
     if has paru; then
       paru -Scc --noconfirm &>/dev/null || :
       paru -c --noconfirm &>/dev/null || :
+    else
+      sudo pacman -Scc --noconfirm &>/dev/null || :
     fi
-    yes | sudo pacman -Scc --noconfirm &>/dev/null || :
-    has paccache && try sudo paccache -rk1 &>/dev/null || :
     # Remove orphans
     local orphans
-    orphans=$(pacman -Qtdq) || true
+    orphans=$(pacman -Qtdq) || :
     if [[ -n $orphans ]]; then
       try sudo pacman -Rns --noconfirm "$orphans" || :
     fi
@@ -48,38 +48,30 @@ clean_pkgs() {
     paru_after=$(get_cache_size "${HOME}/.cache/paru/clone")
     yay_after=$(get_cache_size "${HOME}/.cache/yay")
     total_freed=$(((pacman_before - pacman_after) + (paru_before - paru_after) + (yay_before - yay_after)))
-
     [[ $total_freed -gt 0 ]] && log "Package cache freed: ${total_freed}MB"
   elif has apt-get; then
-    try sudo apt-get autoremove -y && try sudo apt-get clean
-  elif has dnf; then
-    try sudo dnf autoremove -y && try sudo dnf clean all
-  elif has zypper; then
-    try sudo zypper clean --all
+    sudo apt-get autoremove -y --purge
+    sudo apt-get clean -y; sudo apt-get autoclean -y
   fi
   if has flatpak; then
     log "Cleaning Flatpak..."
-    try flatpak uninstall --unused -y
+    try flatpak uninstall --unused -y; sudo flatpak uninstall --unused -y
     try rm -rf "${HOME}/.var/app/*/cache/*"
   fi
 }
 clean_dev() {
   log "Cleaning dev tools..."
   has cargo-cache && {
-    try cargo cache -efg
-    try cargo cache -ef trim --limit 1B
+    try cargo cache -efg; try cargo cache -ef trim --limit 1B
   }
   has uv && try uv cache clean --force
   has bun && try bun -g pm cache rm
-  has pnpm && {
-    try pnpm prune
-    try pnpm store prune
-  }
+  has pnpm && try pnpm store prune
   has go && try go clean -modcache
   has pip && try pip cache purge
   has npm && try npm cache clean --force
   has yarn && try yarn cache clean
-  rm -rf ~/.cache/{pip,pipenv,poetry,node-gyp,npm,yarn} 2>/dev/null || true
+  rm -rf ~/.cache/{pip,pipenv,poetry,node-gyp,npm,yarn} 2>/dev/null || :
 }
 clean_sys() {
   log "Cleaning system paths..."

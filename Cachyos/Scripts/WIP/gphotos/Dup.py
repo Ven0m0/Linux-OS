@@ -4,6 +4,21 @@ import argparse
 from multiprocessing import Pool, cpu_count
 
 
+def hash_file_partial(file_path, chunk_size=65536):
+    """
+    Computes a partial hash of the file (first 64KB) to quickly filter non-duplicates.
+    """
+    try:
+        sha256_hash = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            chunk = f.read(chunk_size)
+            sha256_hash.update(chunk)
+        return file_path, sha256_hash.hexdigest()
+    except (IOError, OSError) as e:
+        print(f"Error partial hashing {file_path}: {e}")
+        return None, None
+
+
 def hash_file(file_path):
     try:
         # print(f"Checking {file_path}") # Removed print to reduce noise during benchmark
@@ -17,23 +32,12 @@ def hash_file(file_path):
         return None, None
 
 
-def hash_file_partial(file_path):
-    try:
-        sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            byte_block = f.read(65536)
-            sha256_hash.update(byte_block)
-        return file_path, sha256_hash.hexdigest()
-    except OSError as e:
-        print(f"Error partial hashing {file_path}: {e}")
-        return None, None
-
-
-def get_files_by_size(starting_path):
+def group_files_by_size(starting_path):
+    """Groups files by size."""
     size_dict = {}
     for dirpath, _, filenames in os.walk(starting_path):
         for filename in filenames:
-            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+            if filename.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
                 full_path = os.path.join(dirpath, filename)
                 try:
                     file_size = os.path.getsize(full_path)
@@ -46,62 +50,68 @@ def get_files_by_size(starting_path):
     return size_dict
 
 
-def get_hash_groups(file_list, hash_func, pool):
-    results = pool.map(hash_func, file_list)
-    hash_dict = {}
+def get_candidates_from_size_groups(size_dict):
+    """Returns a flat list of files that share a size with at least one other file."""
+    candidates = []
+    for paths in size_dict.values():
+        if len(paths) > 1:
+            candidates.extend(paths)
+    return candidates
+
+
+def group_by_hash(file_list, hash_func):
+    """Groups files by hash using the provided hash function."""
+    hash_groups = {}
+    if not file_list:
+        return hash_groups
+
+    with Pool(processes=cpu_count()) as pool:
+        results = pool.map(hash_func, file_list)
+
     for file_path, file_hash in results:
         if file_hash is not None:
-            if file_hash in hash_dict:
-                hash_dict[file_hash].append(file_path)
+            if file_hash in hash_groups:
+                hash_groups[file_hash].append(file_path)
             else:
-                hash_dict[file_hash] = [file_path]
-    return hash_dict
+                hash_groups[file_hash] = [file_path]
+    return hash_groups
+
+
+def get_candidates_from_hash_groups(hash_groups):
+    """Returns a flat list of files that share a hash with at least one other file."""
+    candidates = []
+    for paths in hash_groups.values():
+        if len(paths) > 1:
+            candidates.extend(paths)
+    return candidates
 
 
 def find_duplicate_photos(starting_path, output_file_path):
-    # Dictionary to group files by size: {size: [path1, path2, ...]}
-    size_dict = get_files_by_size(starting_path)
+    # Step 1: Group by size
+    size_dict = group_files_by_size(starting_path)
+    potential_duplicates = get_candidates_from_size_groups(size_dict)
 
-    # Identify files that have the same size (potential duplicates)
-    potential_duplicates = []
-    for paths in size_dict.values():
-        if len(paths) > 1:
-            potential_duplicates.extend(paths)
+    final_hash_dict = {}
 
-    final_duplicates = {}
-
-    # Only run heavy hashing on files that share a size with another file
     if potential_duplicates:
-        # Use multiprocessing for hashing as it is CPU bound
-        pool = Pool(processes=cpu_count())
-        try:
-            # Phase 1: Partial Hash (first 64KB) to filter candidates
-            partial_hash_dict = get_hash_groups(potential_duplicates, hash_file_partial, pool)
+        # Step 2: Partial hashing
+        partial_hash_groups = group_by_hash(potential_duplicates, hash_file_partial)
+        full_scan_candidates = get_candidates_from_hash_groups(partial_hash_groups)
 
-            # Identify files that have same partial hash
-            full_hash_candidates = []
-            for paths in partial_hash_dict.values():
-                if len(paths) > 1:
-                    full_hash_candidates.extend(paths)
+        # Step 3: Full hashing
+        if full_scan_candidates:
+            final_hash_dict = group_by_hash(full_scan_candidates, hash_file)
 
-            # Phase 2: Full Hash on remaining candidates
-            if full_hash_candidates:
-                full_hash_dict = get_hash_groups(full_hash_candidates, hash_file, pool)
-                final_duplicates = full_hash_dict
-        finally:
-            pool.close()
-            pool.join()
-
-    with open(output_file_path, 'w') as f:
-        for key, value in final_duplicates.items():
+    # Output results
+    with open(output_file_path, "w") as f:
+        for key, value in final_hash_dict.items():
             if len(value) > 1:
                 f.write(f"Duplicate Photos (Hash: {key}):\n")
-                # Preserving original behavior: write only the first path found
                 f.write(f"{value[0]}\n")
                 f.write("\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Find duplicate photos.")
     parser.add_argument("directory", help="Directory to scan")
     parser.add_argument("output", help="Output file for duplicates")

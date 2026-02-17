@@ -21,7 +21,6 @@ def hash_file_partial(file_path, chunk_size=65536):
 
 def hash_file(file_path):
     try:
-        # print(f"Checking {file_path}") # Removed print to reduce noise during benchmark
         sha256_hash = hashlib.sha256()
         with open(file_path, "rb") as f:
             for byte_block in iter(lambda: f.read(65536), b""):
@@ -50,23 +49,26 @@ def group_files_by_size(starting_path):
     return size_dict
 
 
-def get_candidates_from_size_groups(size_dict):
-    """Returns a flat list of files that share a size with at least one other file."""
+def get_candidates(groups):
+    """Returns a flat list of files that share a key with at least one other file."""
     candidates = []
-    for paths in size_dict.values():
+    for paths in groups.values():
         if len(paths) > 1:
             candidates.extend(paths)
     return candidates
 
 
-def group_by_hash(file_list, hash_func):
+def group_by_hash(file_list, hash_func, pool=None):
     """Groups files by hash using the provided hash function."""
     hash_groups = {}
     if not file_list:
         return hash_groups
 
-    with Pool(processes=cpu_count()) as pool:
+    if pool:
         results = pool.map(hash_func, file_list)
+    else:
+        with Pool(processes=cpu_count()) as p:
+            results = p.map(hash_func, file_list)
 
     for file_path, file_hash in results:
         if file_hash is not None:
@@ -77,37 +79,30 @@ def group_by_hash(file_list, hash_func):
     return hash_groups
 
 
-def get_candidates_from_hash_groups(hash_groups):
-    """Returns a flat list of files that share a hash with at least one other file."""
-    candidates = []
-    for paths in hash_groups.values():
-        if len(paths) > 1:
-            candidates.extend(paths)
-    return candidates
-
-
 def find_duplicate_photos(starting_path, output_file_path):
     # Step 1: Group by size
     size_dict = group_files_by_size(starting_path)
-    potential_duplicates = get_candidates_from_size_groups(size_dict)
+    potential_duplicates = get_candidates(size_dict)
 
     final_hash_dict = {}
 
     if potential_duplicates:
-        # Step 2: Partial hashing
-        partial_hash_groups = group_by_hash(potential_duplicates, hash_file_partial)
-        full_scan_candidates = get_candidates_from_hash_groups(partial_hash_groups)
+        with Pool(processes=cpu_count()) as pool:
+            # Step 2: Partial hashing
+            partial_hash_groups = group_by_hash(potential_duplicates, hash_file_partial, pool=pool)
+            full_scan_candidates = get_candidates(partial_hash_groups)
 
-        # Step 3: Full hashing
-        if full_scan_candidates:
-            final_hash_dict = group_by_hash(full_scan_candidates, hash_file)
+            # Step 3: Full hashing
+            if full_scan_candidates:
+                final_hash_dict = group_by_hash(full_scan_candidates, hash_file, pool=pool)
 
     # Output results
     with open(output_file_path, "w") as f:
         for key, value in final_hash_dict.items():
             if len(value) > 1:
                 f.write(f"Duplicate Photos (Hash: {key}):\n")
-                f.write(f"{value[0]}\n")
+                for file_path in value:
+                    f.write(f"{file_path}\n")
                 f.write("\n")
 
 

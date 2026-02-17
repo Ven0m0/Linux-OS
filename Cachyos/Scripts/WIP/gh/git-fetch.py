@@ -188,6 +188,43 @@ def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> 
         conn.close()
 
 
+def process_downloads(
+    files_to_download: list[tuple[str, Path, str]],
+    headers: dict[str, str],
+    host: str,
+) -> None:
+    """Execute concurrent downloads using a thread pool."""
+    if not files_to_download:
+        return
+
+    # Use queue for dynamic load balancing among workers
+    file_q = queue.Queue()
+    for f in files_to_download:
+        file_q.put(f)
+
+    max_workers = min(32, (os.cpu_count() or 1) * 4)
+    num_workers = max(1, min(max_workers, len(files_to_download)))
+
+    dl_headers = headers.copy()
+    if "Connection" not in dl_headers:
+        dl_headers["Connection"] = "keep-alive"
+
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = [
+            executor.submit(download_worker, host, file_q, dl_headers)
+            for _ in range(num_workers)
+        ]
+        errors = []
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"Worker error: {e}", file=sys.stderr)
+                errors.append(e)
+        if errors:
+            raise Exception(f"{len(errors)} download worker(s) failed.")
+
+
 def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
     """Download from GitHub using Contents API."""
     token = token or os.getenv("GITHUB_TOKEN", "")
@@ -265,34 +302,8 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         print(f"✗ Path not found: {spec.path}", file=sys.stderr)
         return
 
-    if not files_to_download:
-        return
-
-    # Use queue for dynamic load balancing among workers
-    file_q = queue.Queue()
-    for f in files_to_download:
-        file_q.put(f)
-
-    max_workers = min(32, (os.cpu_count() or 1) * 4)
-    num_workers = max(1, min(max_workers, len(files_to_download)))
-
-    dl_headers = headers.copy()
-    if "Connection" not in dl_headers:
-        dl_headers["Connection"] = "keep-alive"
-
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        futures = [
-            executor.submit(
-                download_worker, "raw.githubusercontent.com", file_q, dl_headers
-            )
-            for _ in range(num_workers)
-        ]
-        for future in as_completed(futures):
-            try:
-                future.result()
-            except Exception as e:
-                print(f"Worker error: {e}", file=sys.stderr)
-
+    output.mkdir(parents=True, exist_ok=True)
+    process_downloads(files_to_download, headers, "raw.githubusercontent.com")
 
 
 def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
@@ -347,30 +358,7 @@ def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
             path_part = f"/api/v4/projects/{project_id}/repository/files/{file_path_enc}/raw?ref={spec.branch}"
             files_to_download.append((path_part, local_path, item_path))
 
-    if not files_to_download:
-        return
-
-    file_q = queue.Queue()
-    for f in files_to_download:
-        file_q.put(f)
-
-    max_workers = min(32, (os.cpu_count() or 1) * 4)
-    num_workers = min(max_workers, len(files_to_download))
-
-    dl_headers = headers.copy()
-    if "Connection" not in dl_headers:
-        dl_headers["Connection"] = "keep-alive"
-
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
-        futures = [
-            executor.submit(download_worker, "gitlab.com", file_q, dl_headers)
-            for _ in range(num_workers)
-        ]
-        for future in as_completed(futures):
-            try:
-                future.result()
-            except Exception as e:
-                print(f"Worker error: {e}", file=sys.stderr)
+    process_downloads(files_to_download, headers, "gitlab.com")
 
 
 def main() -> int:

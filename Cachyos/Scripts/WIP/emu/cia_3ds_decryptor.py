@@ -176,7 +176,7 @@ def parse_twl_ctrtool_output(text: str) -> TitleInfo:
     if not info.title_version and (m := TITLE_VERSION_RE.search(line)):
       info.title_version = m.group(1)
     if not info.crypto_key and (m := TWL_ENCRYPTED_RE.search(line)):
-      info.crypto_key = m. group(1)
+      info.crypto_key = m.group(1)
   return info
 
 def clean_ncch_files(bin_dir:  Path) -> None:

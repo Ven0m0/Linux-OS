@@ -214,11 +214,15 @@ def process_downloads(
             executor.submit(download_worker, host, file_q, dl_headers)
             for _ in range(num_workers)
         ]
+        errors = []
         for future in as_completed(futures):
             try:
                 future.result()
             except Exception as e:
                 print(f"Worker error: {e}", file=sys.stderr)
+                errors.append(e)
+        if errors:
+            raise Exception(f"{len(errors)} download worker(s) failed.")
 
 
 def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:

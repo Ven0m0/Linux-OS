@@ -1,209 +1,204 @@
 #!/usr/bin/env bash
-# setup.sh - Optimized System Setup
+# setup.sh - CachyOS fresh install setup
 set -Eeuo pipefail
-shopt -s nullglob globstar extglob dotglob
+shopt -s nullglob globstar extglob
 IFS=$'\n\t'
-LC_ALL=C LANG=C PYTHONOPTIMIZE=1
+export LC_ALL=C PYTHONOPTIMIZE=1
+
+# When running via curl-pipe, set REPO_RAW to your raw content URL, e.g.:
+# curl -fsSL https://raw.githubusercontent.com/USER/REPO/main/setup.sh | REPO_RAW=https://raw.githubusercontent.com/USER/REPO/main bash
+REPO_RAW="${REPO_RAW:-}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-/dev/null}")" 2>/dev/null && pwd || echo "")"
 
 # --- Colors ---
-BLK=$'\e[30m' RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m'
-BLU=$'\e[34m' MGN=$'\e[35m' CYN=$'\e[36m' WHT=$'\e[37m'
-LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
-DEF=$'\e[0m' BLD=$'\e[1m'
+RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 
 # --- Helpers ---
-has() { command -v "$1" &>/dev/null; }
-try() { "$@" >/dev/null 2>&1 || true; }
-xecho() { printf '%b\n' "$*"; }
-log() { xecho "${GRN}[+]${DEF} $*"; }
-warn() { xecho "${YLW}[!]${DEF} $*"; }
-err() { xecho "${RED}[!]${DEF} $*" >&2; }
-die() {
-  err "$*"
-  exit "${2:-1}"
-}
-dbg() { [[ ${DEBUG:-0} -eq 1 ]] && xecho "[DBG] $*" || :; }
+has()  { command -v "$1" &>/dev/null; }
+try()  { "$@" >/dev/null 2>&1 || true; }
+log()  { printf '%b\n' "${GRN}[+]${DEF} $*"; }
+warn() { printf '%b\n' "${YLW}[!]${DEF} $*"; }
+err()  { printf '%b\n' "${RED}[!]${DEF} $*" >&2; }
+die()  { err "$*"; exit "${2:-1}"; }
 
-# --- Cleanup & Error Handling ---
 WORKDIR=$(mktemp -d)
-cleanup() {
-  set +e
-  [[ -d ${WORKDIR:-} ]] && rm -rf "${WORKDIR}" || :
-}
-on_err() { err "failed at line ${1:-?}"; }
+cleanup() { set +e; rm -rf "${WORKDIR:-}"; }
 trap 'cleanup' EXIT
-trap 'on_err $LINENO' ERR
+trap 'err "failed at line $LINENO"' ERR
 trap ':' INT TERM
 
-# --- Tool Detection ---
+# --- Package list loader ---
+# Reads a pkg file: strips blank lines, comments (#), trims whitespace
+read_pkgfile() {
+  local content="$1"
+  while IFS= read -r line; do
+    line="${line%%#*}"       # strip inline comments
+    line="${line//[[:space:]]/}"
+    [[ -n $line ]] && printf '%s\n' "$line"
+  done <<< "$content"
+}
+
+fetch_pkgfile() {
+  local name="$1"  # e.g. "pacman" -> pkg/pacman.txt
+  local path="pkg/${name}.txt"
+
+  if [[ -n $SCRIPT_DIR && -f "$SCRIPT_DIR/$path" ]]; then
+    cat "$SCRIPT_DIR/$path"
+  elif [[ -n $REPO_RAW ]]; then
+    curl -fsSL "${REPO_RAW%/}/$path"
+  else
+    warn "pkg/${name}.txt not found and REPO_RAW not set, skipping"
+    return 0
+  fi
+}
+
+load_pkgs() {
+  local name="$1"
+  local content
+  content="$(fetch_pkgfile "$name")" || return 0
+  read_pkgfile "$content"
+}
+
+# --- Repo & AUR helper setup ---
 pm_detect() {
-  if has paru; then
-    printf 'paru'
-    return
-  fi
-  if has yay; then
-    printf 'yay'
-    return
-  fi
-  if has pacman; then
-    printf 'pacman'
-    return
-  fi
-  printf ''
+  for pm in paru yay pacman; do
+    has "$pm" && printf '%s' "$pm" && return
+  done
 }
-PKG_MGR=${PKG_MGR:-$(pm_detect)}
+PKG_MGR="${PKG_MGR:-$(pm_detect)}"
 
-add_repo() {
-  grep -q "\[$1\]" /etc/pacman.conf || printf "\n[%s]\nServer = %s\n" "$1" "$2" | sudo tee -a /etc/pacman.conf &>/dev/null
-}
-
-# --- Core Logic ---
 setup_repos() {
   log "Configuring repositories..."
-  # Enable Multilib
+
   sudo sed -i "/\[multilib\]/,/Include/"'s/^#//' /etc/pacman.conf
-  # Chaotic AUR
+
   if ! grep -q "chaotic-aur" /etc/pacman.conf; then
     sudo pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
     sudo pacman-key --lsign-key 3056513887B78AEB
-    sudo pacman -U --noconfirm 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
+    sudo pacman -U --noconfirm \
+      'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' \
       'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
-    printf "\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n" | sudo tee -a /etc/pacman.conf >/dev/null
+    printf '\n[chaotic-aur]\nInclude = /etc/pacman.d/chaotic-mirrorlist\n' \
+      | sudo tee -a /etc/pacman.conf >/dev/null
   fi
+
   sudo pacman -Sy --noconfirm
+
   has paru || {
     sudo pacman -S --needed --noconfirm base-devel git
     git clone https://aur.archlinux.org/paru-bin.git "$WORKDIR/paru-bin"
     (cd "$WORKDIR/paru-bin" && makepkg -si --noconfirm)
-    rm -rf "$WORKDIR/paru-bin"
   }
+  PKG_MGR=paru
 }
 
 install_pkgs() {
-  log "Installing packages..."
-  local -a pkgs=(
-    # --- System ---
-    base-devel linux-zen linux-zen-headers linux-firmware intel-ucode
-    btrfs-progs networkmanager bluez bluez-utils pipewire pipewire-pulse
-    # --- Tools ---
-    git fish zsh neovim starship bat eza fzf ripgrep fd zoxide
-    unzip p7zip unrar wget curl htop btop fastfetch
-    # --- Desktop ---
-    plasma-meta konsole dolphin ark spectacle gwenview kcalc
-    # --- Dev ---
-    code rustup go nodejs npm python python-pip docker docker-compose
-  )
-  # Append packages from text files if they exist
-  [[ -f steam.txt ]] && mapfile -t -O "${#pkgs[@]}" pkgs <steam.txt
-  local pkg_file="$(dirname "$0")/packages.txt"
-  if [[ -f $pkg_file ]]; then
-    log "Including packages from $pkg_file"
-    mapfile -t -O "${#pkgs[@]}" pkgs <"$pkg_file"
+  log "Installing pacman packages..."
+  local -a pacman_pkgs
+  mapfile -t pacman_pkgs < <(load_pkgs pacman)
+  if (( ${#pacman_pkgs[@]} > 0 )); then
+    paru -S --needed --noconfirm "${pacman_pkgs[@]}" || warn "Some pacman packages failed"
   fi
-  paru -S --needed --noconfirm "${pkgs[@]}"
+
+  log "Installing AUR packages..."
+  local -a aur_pkgs
+  mapfile -t aur_pkgs < <(load_pkgs aur)
+  if (( ${#aur_pkgs[@]} > 0 )); then
+    paru -S --needed --noconfirm "${aur_pkgs[@]}" || warn "Some AUR packages failed"
+  fi
 }
 
-setup_configs() {
-  log "Applying configurations..."
-  # VS Code Settings
-  if has code && has jq; then
-    local vs_conf="$HOME/.config/Code/User/settings.json"
-    mkdir -p "$(dirname "$vs_conf")"
-    [[ ! -f $vs_conf ]] && printf '{}\n' >"$vs_conf"
-    local -A settings=(
-      ["telemetry.telemetryLevel"]="off"
-      ["update.mode"]="none"
-      ["git.autofetch"]="false"
-      ["extensions.autoUpdate"]="false"
-      ["workbench.startupEditor"]="none"
-    )
-    local tmp
-    tmp=$(mktemp)
-    for k in "${!settings[@]}"; do
-      jq --arg k "$k" --arg v "${settings[$k]}" '.[$k] = $v' "$vs_conf" >"$tmp" && mv "$tmp" "$vs_conf"
-    done
-  elif has code; then
-    warn "jq not found, skipping VS Code settings configuration"
-  fi
-  # Shells
-  for shell in bash fish zsh; do
-    [[ -d "Home/.config/$shell" ]] && cp -r "Home/.config/$shell" "$HOME/.config/"
-  done
-  # Services
-  local svcs=(NetworkManager bluetooth sshd docker)
-  for s in "${svcs[@]}"; do try sudo systemctl enable --now "$s"; done
+install_bun_pkgs() {
+  has bun || { warn "bun not found, skipping bun packages"; return 0; }
+  log "Installing bun packages..."
+  local -a bun_pkgs
+  mapfile -t bun_pkgs < <(load_pkgs bun)
+  (( ${#bun_pkgs[@]} > 0 )) && bun install -g "${bun_pkgs[@]}" || warn "Some bun packages failed"
+}
+
+install_uv_pkgs() {
+  has uv || { warn "uv not found, skipping uv packages"; return 0; }
+  log "Installing uv/pip packages..."
+  local -a uv_pkgs
+  mapfile -t uv_pkgs < <(load_pkgs uv)
+  (( ${#uv_pkgs[@]} > 0 )) && uv tool install "${uv_pkgs[@]}" || warn "Some uv packages failed"
 }
 
 setup_rust() {
+  has rustup || { warn "rustup not found, skipping"; return 0; }
   log "Setting up Rust..."
-  export RUSTUP_HOME="$HOME/.rustup" CARGO_HOME="$HOME/.cargo"
-  has rustup && {
-    rustup default stable
-    rustup target add wasm32-unknown-unknown
-    rustup component add rust-std-wasm32-unknown-unknown llvm-bitcode-linker llvm-tools rust-analyzer rust-src
-  }
+  rustup default stable
+  rustup target add wasm32-unknown-unknown
+  rustup component add rust-std-wasm32-unknown-unknown llvm-bitcode-linker llvm-tools rust-analyzer rust-src
 }
 
 setup_flatpak() {
+  has flatpak || return 0
+  log "Setting up Flatpak..."
   flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-  flatpak install --system io.github.flattool.Warehouse -y
-}
-setup_am() {
-  am -i am-gui
-  am -i nix-portable
-  am -i auto-claude
-}
-export_pkgs() {
-  log "Exporting packages to packages.txt..."
-  # Get explicitly installed packages (native + foreign/AUR)
-  pacman -Qqe >"$(dirname "$0")/packages.txt"
-  log "Export complete: $(dirname "$0")/packages.txt"
+  flatpak install --system -y io.github.flattool.Warehouse || true
 }
 
-# Special permissions for SSH keys (keep private)
-if [ -d "$HOME/.ssh" ]; then
-  log "Checking SSH key permissions..."
-  find "$HOME/.ssh" -name "id_*" ! -name "*.pub" -exec chmod 600 {} \; 2>/dev/null || true
-  find "$HOME/.ssh" -name "*.pub" -exec chmod 644 {} \; 2>/dev/null || true
-  chmod 700 "$HOME/.ssh" 2>/dev/null || true
-  log "SSH key permissions verified"
-fi
-# Special permissions for GPG keys (keep private)
-if [ -d "$HOME/.gnupg" ]; then
-  log "Checking GPG key permissions..."
-  chmod 700 "$HOME/.gnupg" 2>/dev/null || true
-  find "$HOME/.gnupg" -name "*.gpg" -exec chmod 600 {} \; 2>/dev/null || true
-  log "GPG key permissions verified"
-fi
-# Fix scripts in .local/bin
-find "$HOME/.local/bin" -type f ! -executable -exec chmod +x {} \;
-echo "✓ Fixed .local/bin scripts"
+setup_services() {
+  log "Enabling services..."
+  local svcs=(NetworkManager bluetooth sshd)
+  for s in "${svcs[@]}"; do try sudo systemctl enable --now "$s"; done
+}
+
+fix_permissions() {
+  log "Fixing permissions..."
+  if [[ -d $HOME/.ssh ]]; then
+    chmod 700 "$HOME/.ssh"
+    find "$HOME/.ssh" -name "id_*" ! -name "*.pub" -exec chmod 600 {} +
+    find "$HOME/.ssh" -name "*.pub"                 -exec chmod 644 {} +
+  fi
+  if [[ -d $HOME/.gnupg ]]; then
+    chmod 700 "$HOME/.gnupg"
+    find "$HOME/.gnupg" -name "*.gpg" -exec chmod 600 {} +
+  fi
+  if [[ -d $HOME/.local/bin ]]; then
+    find "$HOME/.local/bin" -type f ! -executable -exec chmod +x {} +
+  fi
+}
+
+export_pkgs() {
+  log "Exporting installed packages..."
+  local out="${SCRIPT_DIR:-.}/packages.txt"
+  pacman -Qqe > "$out"
+  log "Exported to $out"
+}
+
+cleanup_orphans() {
+  local -a orphans
+  mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || true)
+  if (( ${#orphans[@]} > 0 )); then
+    log "Removing ${#orphans[@]} orphans..."
+    try sudo pacman -Rns --noconfirm "${orphans[@]}"
+  fi
+}
 
 # --- Main ---
 main() {
-  if [[ ${1:-} == "--export" ]]; then
-    export_pkgs
-    exit 0
-  fi
+  case "${1:-}" in
+    --export) export_pkgs; return 0 ;;
+    --help)
+      printf 'Usage: %s [--export]\n' "${BASH_SOURCE[0]}"
+      printf '  REPO_RAW=URL  fetch pkg/*.txt from remote (for curl-pipe mode)\n'
+      return 0 ;;
+  esac
+
   [[ $EUID -eq 0 ]] && die "Run as user, not root."
+
   setup_repos
-  # Check for packages.txt in the script's directory
-  local pkg_file="$(dirname "$0")/packages.txt"
-  if [[ -f $pkg_file ]]; then
-    log "Found packages.txt, installing from export..."
-    # If using packages.txt, we likely want to rely mostly on it,
-    # but we can pass it to the install function or modify the logic there.
-    # For now, let's just make install_pkgs aware of it.
-  fi
   install_pkgs
-  setup_configs
+  install_bun_pkgs
+  install_uv_pkgs
   setup_rust
-  log "Cleanup..."
-  local -a orphans
-  mapfile -t orphans < <(pacman -Qdtq 2>/dev/null || true)
-  if ((${#orphans[@]} > 0)); then
-    try sudo pacman -Rns --noconfirm "${orphans[@]}"
-  fi
+  setup_flatpak
+  setup_services
+  fix_permissions
+  cleanup_orphans
+
   try sudo fstrim -av
   log "Setup complete! Reboot recommended."
 }

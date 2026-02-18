@@ -200,7 +200,7 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         # We clean the path to remove leading/trailing slashes.
         clean_path = spec.path.strip("/")
         ref = f"{spec.branch}:{clean_path}"
-        encoded_ref = urllib.parse.quote(ref)
+        encoded_ref = urllib.parse.quote(ref, safe=":")
         api_url = f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/{encoded_ref}?recursive=1"
     else:
         # Root fetch

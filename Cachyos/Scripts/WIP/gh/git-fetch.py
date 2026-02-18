@@ -241,8 +241,8 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         elif item["type"] == "blob":
             # Determine full path for URL construction
             if using_subtree:
-                # Prepend spec.path because item_path is relative to the subtree
-                full_path = f"{spec.path.strip('/')}/{item_path}"
+                # Prepend cleaned path because item_path is relative to the subtree
+                full_path = f"{clean_path}/{item_path}"
             else:
                 full_path = item_path
 

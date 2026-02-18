@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # setup.sh - CachyOS fresh install setup
-set -Eeuo pipefail
-shopt -s nullglob globstar extglob
+set -euo pipefail
+shopt -s nullglob globstar
 IFS=$'\n\t'
-export LC_ALL=C LANG=C PYTHONOPTIMIZE=1
+export LC_ALL=C PYTHONOPTIMIZE=1
 
 # When running via curl-pipe, set REPO_RAW to your raw content URL, e.g.:
 # curl -fsSL https://raw.githubusercontent.com/USER/REPO/main/setup.sh | REPO_RAW=https://raw.githubusercontent.com/USER/REPO/main bash
@@ -141,6 +141,81 @@ setup_git() {
   log "Git configured for $name <$email>"
 }
 
+readonly DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/Ven0m0/dotfiles.git}"
+readonly YADM_DIR="${HOME}/.local/share/yadm/repo.git"
+
+setup_dotfiles() {
+  has yadm || { warn "yadm not found, skipping dotfiles"; return 0; }
+  if [[ ! -d $YADM_DIR ]]; then
+    log "Cloning dotfiles via yadm..."
+    # --bootstrap triggers Home/.config/yadm/bootstrap automatically
+    yadm clone --bootstrap "$DOTFILES_REPO" || die "yadm clone failed"
+  else
+    log "Dotfiles already cloned, pulling..."
+    yadm pull || warn "yadm pull failed"
+    yadm bootstrap || warn "yadm bootstrap failed"
+  fi
+}
+
+# Called standalone if yadm bootstrap was skipped
+deploy_home() {
+  local worktree
+  worktree="$(yadm config core.worktree 2>/dev/null || printf '%s' "$HOME")"
+  local home_dir="${worktree}/Home"
+  [[ -d $home_dir ]] || { warn "Home/ not found at $home_dir"; return 0; }
+  log "Deploying Home/ → $HOME/..."
+  rsync -a --delete --exclude='.git' --exclude='.gitignore' "${home_dir}/" "${HOME}/"
+}
+
+configure_shell() {
+  log "Configuring shell..."
+  mkdir -p "${HOME}/.config" "${HOME}/.local/bin"
+  if has zsh; then
+    local zsh_path; zsh_path="$(command -v zsh)"
+    [[ ${SHELL:-} != "$zsh_path" ]] && \
+      chsh -s "$zsh_path" "$USER" 2>/dev/null || warn "chsh failed; run: chsh -s $zsh_path"
+  fi
+  if has starship && [[ ! -f ${HOME}/.config/starship.toml ]]; then
+    starship preset nerd-font-symbols -o "${HOME}/.config/starship.toml"
+  fi
+}
+
+link_system_configs() {
+  local worktree
+  worktree="$(yadm config core.worktree 2>/dev/null || printf '%s' "$HOME")"
+  local hooks_file="${worktree}/hooks.toml"
+  if has tuckr; then
+    log "Linking system configs via tuckr..."
+    for pkg in etc usr; do
+      [[ -d ${worktree}/${pkg} ]] || continue
+      local cmd=(sudo tuckr link -d "$worktree" -t / "$pkg")
+      [[ -f $hooks_file ]] && cmd+=(-H "$hooks_file")
+      "${cmd[@]}" || warn "tuckr failed for $pkg"
+    done
+  elif has stow; then
+    log "Linking system configs via stow (fallback)..."
+    for pkg in etc usr; do
+      [[ -d ${worktree}/${pkg} ]] || continue
+      (cd "$worktree" && sudo stow -t / -d . "$pkg") || warn "stow failed for $pkg"
+    done
+  else
+    warn "Neither tuckr nor stow found; skipping system config deployment"
+  fi
+}
+
+apply_konsave_profile() {
+  has konsave || return 0
+  local worktree
+  worktree="$(yadm config core.worktree 2>/dev/null || printf '%s' "$HOME")"
+  local profile_file="${worktree}/main.knsv"
+  [[ -f $profile_file ]] || { warn "main.knsv not found in $worktree"; return 0; }
+  local profile_name="main"
+  if ! konsave -l 2>/dev/null | grep -qF "$profile_name"; then
+    konsave -i "$profile_file" || { warn "konsave import failed"; return 0; }
+  fi
+  konsave -a "$profile_name" || warn "konsave apply failed"
+}
+
 setup_am() {
   if has am; then
     log "am already installed, updating..."
@@ -223,7 +298,12 @@ main() {
 
   setup_repos
   setup_git
-  install_pkgs
+  install_pkgs        # pacman + AUR from pkg/*.txt — includes yadm, tuckr/stow, konsave
+  setup_dotfiles      # yadm clone --bootstrap → triggers yadm/bootstrap (Home/, tuckr, konsave)
+  # These are no-ops if bootstrap already ran them, safe to call again as idempotent fallbacks:
+  configure_shell
+  link_system_configs
+  apply_konsave_profile
   install_bun_pkgs
   install_uv_pkgs
   setup_rust

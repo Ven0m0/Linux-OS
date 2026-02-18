@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 shopt -s nullglob globstar extglob
 IFS=$'\n\t'
-export LC_ALL=C PYTHONOPTIMIZE=1
+export LC_ALL=C LANG=C PYTHONOPTIMIZE=1
 
 # When running via curl-pipe, set REPO_RAW to your raw content URL, e.g.:
 # curl -fsSL https://raw.githubusercontent.com/USER/REPO/main/setup.sh | REPO_RAW=https://raw.githubusercontent.com/USER/REPO/main bash
@@ -124,6 +124,38 @@ install_uv_pkgs() {
   (( ${#uv_pkgs[@]} > 0 )) && uv tool install "${uv_pkgs[@]}" || warn "Some uv packages failed"
 }
 
+setup_git() {
+  local name="${GIT_NAME:-}"
+  local email="${GIT_EMAIL:-}"
+
+  if [[ -z $name ]]; then
+    read -rp "Git username: " name
+  fi
+  if [[ -z $email ]]; then
+    read -rp "Git email: " email
+  fi
+
+  git config --global user.name  "$name"
+  git config --global user.email "$email"
+  git config --global init.defaultBranch main
+  log "Git configured for $name <$email>"
+}
+
+setup_am() {
+  if has am; then
+    log "am already installed, updating..."
+    am --update am
+    return 0
+  fi
+  log "Installing AM (appman)..."
+  curl -fsSL "https://raw.githubusercontent.com/ivan-hc/AM/main/INSTALL" \
+    | AGREE=y bash >/dev/null
+  has am || die "AM installation failed"
+  log "Installing AM apps..."
+  # Add your apps here, e.g.:
+  # am -i am-gui nix-portable
+}
+
 setup_rust() {
   has rustup || { warn "rustup not found, skipping"; return 0; }
   log "Setting up Rust..."
@@ -149,15 +181,15 @@ fix_permissions() {
   log "Fixing permissions..."
   if [[ -d $HOME/.ssh ]]; then
     chmod 700 "$HOME/.ssh"
-    find "$HOME/.ssh" -name "id_*" ! -name "*.pub" -exec chmod 600 {} +
-    find "$HOME/.ssh" -name "*.pub"                 -exec chmod 644 {} +
+    fd -t f 'id_.*[^.pub]$' "$HOME/.ssh" -x chmod 600
+    fd -t f '\.pub$'        "$HOME/.ssh" -x chmod 644
   fi
   if [[ -d $HOME/.gnupg ]]; then
     chmod 700 "$HOME/.gnupg"
-    find "$HOME/.gnupg" -name "*.gpg" -exec chmod 600 {} +
+    fd -t f '\.gpg$' "$HOME/.gnupg" -x chmod 600
   fi
   if [[ -d $HOME/.local/bin ]]; then
-    find "$HOME/.local/bin" -type f ! -executable -exec chmod +x {} +
+    fd -t f . "$HOME/.local/bin" --no-ignore -x bash -c '[[ -x "$1" ]] || chmod +x "$1"' _ {}
   fi
 }
 
@@ -190,10 +222,12 @@ main() {
   [[ $EUID -eq 0 ]] && die "Run as user, not root."
 
   setup_repos
+  setup_git
   install_pkgs
   install_bun_pkgs
   install_uv_pkgs
   setup_rust
+  setup_am
   setup_flatpak
   setup_services
   fix_permissions

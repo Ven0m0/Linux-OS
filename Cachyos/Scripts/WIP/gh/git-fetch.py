@@ -89,8 +89,7 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
         with get_opener().open(req, timeout=30) as resp:
             return resp.read()
     except urllib.error.URLError as e:
-        print(f"Error fetching {url}: {e}", file=sys.stderr)
-        raise
+        raise urllib.error.URLError(f"{e} (url: {url})") from e
 
 
 def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> None:
@@ -226,20 +225,33 @@ def process_downloads(
 
 
 def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
-    """Download from GitHub using Contents API."""
+    """Download from GitHub using Contents/Trees API."""
     token = token or os.getenv("GITHUB_TOKEN", "")
     headers = {"Accept": "application/vnd.github.v3+json"}
     if token:
         headers["Authorization"] = f"token {token}"
 
-    api_url = f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/{spec.branch}?recursive=1"
+    using_subtree = bool(spec.path)
+    if using_subtree:
+        # Use subtree fetch: git/trees/REF:PATH
+        # We clean the path to remove leading/trailing slashes.
+        clean_path = spec.path.strip("/")
+        ref = f"{spec.branch}:{clean_path}"
+        encoded_ref = urllib.parse.quote(ref, safe=":")
+        api_url = f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/{encoded_ref}?recursive=1"
+    else:
+        # Root fetch
+        api_url = f"https://api.github.com/repos/{spec.owner}/{spec.repo}/git/trees/{spec.branch}?recursive=1"
 
     try:
         data_bytes = http_get(api_url, headers)
         data = json.loads(data_bytes)
     except urllib.error.HTTPError as e:
-        if e.code == 404:
+        # 404: Not found (or private repo without token)
+        # 422: Unprocessable Entity (e.g. path is a blob, not a tree)
+        if e.code == 404 or e.code == 422:
             if spec.path:
+                # Fallback to single file download attempt
                 raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(spec.path)}"
                 try:
                     content = http_get(raw_url, headers)
@@ -253,54 +265,28 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         raise
 
     files_to_download = []
-    target_path = spec.path.strip("/")
-    found_any = False
-
     tree = data.get("tree", [])
 
     for item in tree:
         item_path = item["path"]
 
-        if target_path:
-            if item_path == target_path:
-                pass
-            elif item_path.startswith(target_path + "/"):
-                pass
-            else:
-                continue
-
-        found_any = True
-
-        if target_path:
-            rel_path = item_path[len(target_path) :].lstrip("/")
-            if not rel_path and item_path == target_path:
-                local_path = output
-            else:
-                local_path = output / rel_path
-        else:
-            local_path = output / item_path
+        # local_path is always relative to output dir using the item's relative path from the fetch root
+        local_path = output / item_path
 
         if item["type"] == "tree":
             local_path.mkdir(parents=True, exist_ok=True)
         elif item["type"] == "blob":
-            encoded_path = "/".join(urllib.parse.quote(p) for p in item_path.split("/"))
-            # Host: raw.githubusercontent.com
-            path_part = f"/{spec.owner}/{spec.repo}/{spec.branch}/{encoded_path}"
-            files_to_download.append((path_part, local_path, item_path))
+            # Determine full path for URL construction
+            if using_subtree:
+                # Prepend cleaned path because item_path is relative to the subtree
+                full_path = f"{clean_path}/{item_path}"
+            else:
+                full_path = item_path
 
-    if not found_any:
-        if target_path:
-            raw_url = f"https://raw.githubusercontent.com/{spec.owner}/{spec.repo}/{spec.branch}/{urllib.parse.quote(target_path)}"
-            try:
-                content = http_get(raw_url, headers)
-                output.parent.mkdir(parents=True, exist_ok=True)
-                output.write_bytes(content)
-                print(f"✓ {target_path}")
-                return
-            except urllib.error.HTTPError:
-                pass
-        print(f"✗ Path not found: {spec.path}", file=sys.stderr)
-        return
+            encoded_path = "/".join(urllib.parse.quote(p) for p in full_path.split("/"))
+            path_part = f"/{spec.owner}/{spec.repo}/{spec.branch}/{encoded_path}"
+            # Store full_path for display
+            files_to_download.append((path_part, local_path, full_path))
 
     output.mkdir(parents=True, exist_ok=True)
     process_downloads(files_to_download, headers, "raw.githubusercontent.com")
@@ -331,11 +317,14 @@ def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
         if e.code == 404:
             file_path_enc = urllib.parse.quote(spec.path, safe="")
             raw_url = f"https://gitlab.com/api/v4/projects/{project_id}/repository/files/{file_path_enc}/raw?ref={spec.branch}"
-            content = http_get(raw_url, headers)
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_bytes(content)
-            print(f"✓ {spec.path}")
-            return
+            try:
+                content = http_get(raw_url, headers)
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(content)
+                print(f"✓ {spec.path}")
+                return
+            except urllib.error.HTTPError:
+                pass
         raise
 
     dirs_created = set()
@@ -343,6 +332,7 @@ def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
 
     for item in data:
         item_path = item["path"]
+        # GitLab returns full path even with path filter
         rel_path = item_path[len(spec.path) :].lstrip("/") if spec.path else item_path
         local_path = output / rel_path
 

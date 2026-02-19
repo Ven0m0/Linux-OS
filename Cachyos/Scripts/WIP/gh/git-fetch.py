@@ -88,8 +88,8 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
     try:
         with get_opener().open(req, timeout=30) as resp:
             return resp.read()
-    except urllib.error.URLError:
-        raise
+    except urllib.error.URLError as e:
+        raise urllib.error.URLError(f"{e} (url: {url})") from e
 
 
 def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> None:

@@ -1,3 +1,4 @@
+import concurrent.futures
 import re
 import sys
 
@@ -39,9 +40,20 @@ def main() -> None:
 
     filepath1, filepath2, outputfile = sys.argv[1], sys.argv[2], sys.argv[3]
 
-    words1 = process_file(filepath1)
-    words2 = process_file(filepath2)
-    combined = sorted(words1 | words2)
+    # Process files in parallel to utilize multiple cores and bypass GIL
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        f1 = executor.submit(process_file, filepath1)
+        f2 = executor.submit(process_file, filepath2)
+        words1 = f1.result()
+        words2 = f2.result()
+
+    # Optimization: In-place update of the larger set to avoid creating a third set
+    if len(words1) >= len(words2):
+        words1.update(words2)
+        combined = sorted(words1)
+    else:
+        words2.update(words1)
+        combined = sorted(words2)
 
     valid_words = combined
 

@@ -17,18 +17,26 @@ banner() {
 # --- Core Logic ---
 get_cache_size() {
   local dir=$1
-  [[ -d $dir ]] && sudo du -sm "$dir" 2>/dev/null | awk '{print $1}' || echo 0
+  if [[ -d $dir ]]; then
+    sudo du -sm "$dir" 2>/dev/null | awk '{print $1}' || echo 0
+  else
+    echo 0
+  fi
 }
 clean_pkgs() {
   log "Cleaning package caches..."
   if has pacman; then
     # Measure before cleanup
     local pacman_before paru_before yay_before
+    local pacman_after paru_after yay_after total_freed
+
     pacman_before=$(get_cache_size "/var/cache/pacman/pkg")
     paru_before=$(get_cache_size "${HOME}/.cache/paru/clone")
     yay_before=$(get_cache_size "${HOME}/.cache/yay")
+
     # Remove stuck download directories
     sudo find "/var/cache/pacman/pkg" -maxdepth 1 -type d -name "download-*" -exec rm -rf {} +
+
     # Aggressive cache purge
     if has paru; then
       paru -Scc --noconfirm &>/dev/null || :
@@ -36,17 +44,19 @@ clean_pkgs() {
     else
       sudo pacman -Scc --noconfirm &>/dev/null || :
     fi
+
     # Remove orphans
     local orphans
     orphans=$(pacman -Qtdq) || :
     if [[ -n $orphans ]]; then
       try sudo pacman -Rns --noconfirm "$orphans" || :
     fi
+
     # Measure after cleanup
-    local pacman_after paru_after yay_after total_freed
     pacman_after=$(get_cache_size "/var/cache/pacman/pkg")
     paru_after=$(get_cache_size "${HOME}/.cache/paru/clone")
     yay_after=$(get_cache_size "${HOME}/.cache/yay")
+
     total_freed=$(((pacman_before - pacman_after) + (paru_before - paru_after) + (yay_before - yay_after)))
     [[ $total_freed -gt 0 ]] && log "Package cache freed: ${total_freed}MB"
   elif has apt-get; then
@@ -113,10 +123,12 @@ main() {
   # Optimize databases
   log "Optimizing SQLite databases..."
   if command -v sqlite3 &>/dev/null; then
+    local jobs
+    jobs=$(nproc 2>/dev/null || echo 4)
     find "$HOME" \
       -type d \( -name .git -o -name node_modules -o -name .npm -o -name .cargo -o -name .go -o -name .vscode -o -name Library -o -name __pycache__ \) -prune \
       -o -type f \( -name "*.db" -o -name "*.sqlite" \) -print0 |
-      xargs -0 -P 4 -I {} bash -c '
+      xargs -0 -P "$jobs" -I {} bash -c '
         if [[ "$(head -c 15 "$1")" == "SQLite format 3" ]]; then
           sqlite3 "$1" "VACUUM; REINDEX;"
         fi

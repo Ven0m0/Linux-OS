@@ -179,8 +179,8 @@ def parse_twl_ctrtool_output(text: str) -> TitleInfo:
       info.crypto_key = m.group(1)
   return info
 
-def clean_ncch_files(bin_dir:  Path) -> None:
-  ncch = list(bin_dir.glob("*. ncch"))
+def clean_ncch_files(bin_dir: Path) -> None:
+  ncch = list(bin_dir.glob("*.ncch"))
   if ncch:
     # logging.info("[i] Found unused NCCH file(s). Deleting.")
     for f in ncch:
@@ -569,7 +569,7 @@ def main() -> None:
             cnt.convert_to_cci = True
         print()
     banner()
-    print("  Decrypting.. .\n")
+    print("  Decrypting...\n")
 
     tools_list = [ctrtool, decrypt, makerom]
 

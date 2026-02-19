@@ -180,7 +180,7 @@ def parse_twl_ctrtool_output(text: str) -> TitleInfo:
   return info
 
 def clean_ncch_files(bin_dir:  Path) -> None:
-  ncch = list(bin_dir.glob("*. ncch"))
+  ncch = list(bin_dir.glob("*.ncch"))
   if ncch:
     # logging.info("[i] Found unused NCCH file(s). Deleting.")
     for f in ncch:

@@ -1,0 +1,4 @@
+I have fixed a typo in .
+The issue was  instead of .
+I have verified the fix with a temporary script and ensured linting passes.
+The user requested not to add permanent tests.

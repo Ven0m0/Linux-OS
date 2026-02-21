@@ -22,9 +22,32 @@ die() {
   exit "${2:-1}"
 }
 # Config flags
-declare -A cfg=([dry_run]=0 [skip_external]=0 [minimal]=0 [quiet]=0)
+declare -A cfg=([dry_run]=0 [skip_external]=0 [minimal]=0 [quiet]=0 [insecure_ssh]=0)
 run() { ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
 # Safe cleanup workspace
+run_url() {
+  local url="$1"
+  shift
+  if ((cfg[dry_run])); then
+    log "[DRY] Run (user): $url $*"
+    return 0
+  fi
+  local tmp="$WORKDIR/$(basename "$url")"
+  curl -sSfL -o "$tmp" "$url" || { err "Failed to download $url"; return 1; }
+  bash "$tmp" "$@"
+}
+
+run_url_sudo() {
+  local url="$1"
+  shift
+  if ((cfg[dry_run])); then
+    log "[DRY] Run (root): $url $*"
+    return 0
+  fi
+  local tmp="$WORKDIR/$(basename "$url")"
+  curl -sSfL -o "$tmp" "$url" || { err "Failed to download $url"; return 1; }
+  sudo bash "$tmp" "$@"
+}
 WORKDIR=$(mktemp -d)
 cleanup() {
   set +e
@@ -59,6 +82,7 @@ Options:
   -d, --dry-run        Show actions without executing
   -s, --skip-external  Skip external installers (Pi-hole, PiKISS)
   -m, --minimal        Core optimizations only (no extra tooling)
+  -i, --insecure-ssh   Enable insecure SSH (root login + password auth)
   -q, --quiet          Suppress non-error output
   -h, --help           Show this help
 Performs:
@@ -75,6 +99,7 @@ parse_args() {
       -d | --dry-run) cfg[dry_run]=1 ;;
       -s | --skip-external) cfg[skip_external]=1 ;;
       -m | --minimal) cfg[minimal]=1 ;;
+      -i | --insecure-ssh) cfg[insecure_ssh]=1 ;;
       -q | --quiet)
         cfg[quiet]=1
         exec >/dev/null
@@ -217,10 +242,16 @@ kernel.hung_task_timeout_secs=0'
 configure_ssh() {
   log "Configuring SSH/Dropbear"
   [[ -f /etc/default/dropbear ]] && sudo sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
-  [[ -f /etc/ssh/sshd_config ]] && {
-    sudo sed -i -E 's/#?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
-    sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-  }
+
+  if ((cfg[insecure_ssh])); then
+    warn "Enabling INSECURE SSH settings (Root Login + Password Auth)"
+    [[ -f /etc/ssh/sshd_config ]] && {
+      sudo sed -i -E 's/#?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
+      sudo sed -i -E 's/#?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    }
+  else
+    log "Skipping insecure SSH configuration (use --insecure-ssh to override)"
+  fi
 }
 # Modern Tooling Installation
 install_core_tools() {
@@ -246,7 +277,7 @@ install_extended_tools() {
     sudo apt-get update
     sudo apt-get install -y eza
   fi
-  ! has zoxide && curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | run bash
+  ! has zoxide && run_url "https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh"
 }
 # External Package Managers
 install_package_managers() {
@@ -263,16 +294,16 @@ install_package_managers() {
   fi
   if ! has deb-get; then
     sudo apt-get install -y curl lsb-release wget
-    curl -sL https://raw.githubusercontent.com/wimpysworld/deb-get/main/deb-get | sudo bash -s install deb-get
+    run_url_sudo "https://raw.githubusercontent.com/wimpysworld/deb-get/main/deb-get" "install" "deb-get"
   fi
   if ! has eget; then
-    curl -s https://zyedidia.github.io/eget.sh | run bash
+    run_url "https://zyedidia.github.io/eget.sh"
     [[ -f ./eget ]] && {
       mkdir -p "$HOME/.local/bin"
       mv ./eget "$HOME/.local/bin/"
     }
   fi
-  ! has pacstall && sudo bash -c "$(curl -fsSL https://pacstall.dev/q/install)"
+  ! has pacstall && run_url_sudo "https://pacstall.dev/q/install"
 }
 # External Installers (Pi-hole, PiKISS, PiApps)
 install_external() {
@@ -280,10 +311,10 @@ install_external() {
   log "Running external installers (interactive)"
   if ! has pihole; then
     warn "Pi-hole installer is interactive - proceeding"
-    curl -sSL https://install.pi-hole.net | sudo bash
+    run_url_sudo "https://install.pi-hole.net"
   fi
   if ! has pi-apps; then
-    curl -sSfL https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh | run bash
+    run_url "https://raw.githubusercontent.com/Itai-Nelken/PiApps-terminal_bash-edition/main/install.sh"
     has pi-apps && run pi-apps update -y
   fi
   warn "PiKISS is fully interactive - skipping automated install"

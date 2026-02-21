@@ -224,7 +224,7 @@ configure_ssh() {
     warn "Enabling INSECURE SSH settings (Root Login + Password Auth)"
     [[ -f /etc/ssh/sshd_config ]] && {
       sudo sed -i -E 's/#?PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config
-      sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+      sudo sed -i -E 's/#?PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config
     }
   else
     log "Skipping insecure SSH configuration (use --insecure-ssh to override)"

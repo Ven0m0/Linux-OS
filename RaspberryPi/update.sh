@@ -103,8 +103,7 @@ update_packages() {
     sudo nala autopurge
   else
     # Combine apt operations
-    yes | sudo apt-get update -y --fix-missing \
-      && sudo apt-get dist-upgrade -y --no-install-recommends --fix-broken || :
+    run_apt update && run_apt dist-upgrade || :
     clean_apt_cache
   fi
 

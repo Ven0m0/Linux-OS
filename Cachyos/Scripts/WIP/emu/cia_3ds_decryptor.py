@@ -640,16 +640,16 @@ def main() -> None:
     print(f"  - {cnt.converted_cnt} file(s) converted to CCI")
 
   if cnt.ds_err > 0 or cnt.cia_err > 0 or cnt.cci_err > 0:
-     print("\n  Failures:")
-     if cnt.ds_err > 0:
-       print(f"  - {cnt.ds_err} 3DS decryption failures")
-     if cnt.cia_err > 0:
-       print(f"  - {cnt.cia_err} CIA decryption failures")
-     if cnt.cci_err > 0:
-       print(f"  - {cnt.cci_err} CCI conversion failures")
-     logging.warning("[^] Some files were not decrypted/converted correctly")
+    print("\n  Failures:")
+    if cnt.ds_err > 0:
+      print(f"  - {cnt.ds_err} 3DS decryption failures")
+    if cnt.cia_err > 0:
+      print(f"  - {cnt.cia_err} CIA decryption failures")
+    if cnt.cci_err > 0:
+      print(f"  - {cnt.cci_err} CCI conversion failures")
+    logging.warning("[^] Some files were not decrypted/converted correctly")
   else:
-     logging.info("[i] Decrypting process succeeded")
+    logging.info("[i] Decrypting process succeeded")
 
   print(f"\n  Review '{log_dir / 'programlog.txt'}' for details.\n")
   logging.info("[i] Script execution ended")

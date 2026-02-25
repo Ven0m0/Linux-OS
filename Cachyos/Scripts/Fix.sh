@@ -22,13 +22,6 @@ download_file() {
   fi
 }
 
-confirm() {
-  local msg="$1"
-  printf '%s [y/N]: ' "$msg" >&2
-  read -r ans
-  [[ $ans == [Yy]* ]]
-}
-
 fix_mirrors() {
   log "Fixing mirrors..."
   has cachyos-rate-mirrors && sudo cachyos-rate-mirrors
@@ -69,10 +62,13 @@ fix_keys() {
   sudo pacman -Sy --needed base-devel --noconfirm
 
   log "Importing wlogout GPG key..."
-  if download_file "https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F" /tmp/wlogout.asc; then
-    gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc
+  local keyfile
+  keyfile=$(mktemp)
+  if download_file "https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F" "$keyfile"; then
+    gpg --import "$keyfile" && rm -f "$keyfile"
   else
     echo "Failed to download wlogout key"
+    rm -f "$keyfile"
   fi
 }
 

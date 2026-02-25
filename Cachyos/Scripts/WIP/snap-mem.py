@@ -43,30 +43,49 @@ JSON_NAME_RE: Final[re.Pattern[str]] = re.compile(r"memories_history\.json$", re
 CHUNK_SIZE: Final[int] = 1048576
 MACOS_JUNK_RE: Final[re.Pattern[str]] = re.compile(r"^\._")
 
+
 @dataclass(frozen=True, slots=True)
 class Item:
   date_str: str
   url: str
   is_video: bool
 
+
 def die(msg: str, code: int = 1) -> None:
   print(msg, file=sys.stderr)
   raise SystemExit(code)
 
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
-  p = argparse.ArgumentParser(prog="snap-mem.py", description="Download Snapchat Saved Media from memories_history.json (stdlib only).")
+  p = argparse.ArgumentParser(
+    prog="snap-mem.py",
+    description="Download Snapchat Saved Media from memories_history.json (stdlib only).",
+  )
   p.add_argument("--json", dest="json_path", default="", help="Path to memories_history.json")
   p.add_argument("--out", dest="out_dir", default="", help="Output directory for downloads")
-  p.add_argument("--type", dest="media_type", default="all", choices=["all", "video", "image"], help="Filter media type")
+  p.add_argument(
+    "--type",
+    dest="media_type",
+    default="all",
+    choices=["all", "video", "image"],
+    help="Filter media type",
+  )
   p.add_argument("--dry-run", action="store_true", help="List what would be downloaded")
   p.add_argument("--skip-existing", action="store_true", help="Skip if target file already exists")
   p.add_argument("--timeout", type=float, default=30.0, help="HTTP timeout seconds")
   p.add_argument("--retries", type=int, default=3, help="Retries per file")
   p.add_argument("--retry-backoff", type=float, default=1.0, help="Base backoff seconds")
-  p.add_argument("--user-agent", default="Mozilla/5.0 (SnapchatMemoryDownloader; +stdlib)", help="User-Agent header")
+  p.add_argument(
+    "--user-agent",
+    default="Mozilla/5.0 (SnapchatMemoryDownloader; +stdlib)",
+    help="User-Agent header",
+  )
   p.add_argument("--no-tui", action="store_true", help="Disable TUI prompts; require flags")
-  p.add_argument("--workers", type=int, default=4, help="Number of parallel download workers (default: 4)")
+  p.add_argument(
+    "--workers", type=int, default=4, help="Number of parallel download workers (default: 4)"
+  )
   return p.parse_args(argv)
+
 
 def load_items(json_path: Path, media_type: str) -> list[Item]:
   try:
@@ -97,9 +116,11 @@ def load_items(json_path: Path, media_type: str) -> list[Item]:
     out.append(Item(date_str=date_str, url=url, is_video=is_video))
   return out
 
+
 def build_base_name(date_str: str) -> str:
   dt = datetime.strptime(date_str, DATE_FMT)
   return dt.strftime("%Y-%m-%d_%H-%M-%S")
+
 
 def make_unique_name(base: str, suffix: str, existing: set[str], lock: threading.Lock) -> str:
   with lock:
@@ -111,12 +132,14 @@ def make_unique_name(base: str, suffix: str, existing: set[str], lock: threading
     existing.add(name)
     return name
 
+
 def tui_select_path(*, title: str, start: Path, mode: str) -> Path:
   if not sys.stdin.isatty() or not sys.stdout.isatty():
     die("TUI requires TTY. Use --json/--out or --no-tui.")
   if mode not in ("file", "dir"):
     raise ValueError("mode must be 'file' or 'dir'")
   start = start.expanduser().resolve() if start.exists() else Path.cwd().resolve()
+
   def run(stdscr: CursesWindow) -> Path:
     curses.curs_set(0)
     stdscr.keypad(True)
@@ -126,7 +149,10 @@ def tui_select_path(*, title: str, start: Path, mode: str) -> Path:
     while True:
       if cwd != last_cwd:
         try:
-          entries = sorted([p for p in cwd.iterdir() if not p.name.startswith(".")], key=lambda p: (not p.is_dir(), p.name.lower()))
+          entries = sorted(
+            [p for p in cwd.iterdir() if not p.name.startswith(".")],
+            key=lambda p: (not p.is_dir(), p.name.lower()),
+          )
         except OSError:
           entries = []
         last_cwd = cwd
@@ -164,12 +190,16 @@ def tui_select_path(*, title: str, start: Path, mode: str) -> Path:
         elif mode == "file" and JSON_NAME_RE.search(pick.name):
           return pick
     return cwd
+
   try:
     return curses.wrapper(run)
   except KeyboardInterrupt:
     die("Aborted.")
 
-def download_to_path(*, opener: OpenerDirector, url: str, dest: Path, timeout: float, user_agent: str) -> None:
+
+def download_to_path(
+  *, opener: OpenerDirector, url: str, dest: Path, timeout: float, user_agent: str
+) -> None:
   tmp = dest.with_suffix(dest.suffix + ".part")
   req = Request(url, headers={"User-Agent": user_agent})
   with opener.open(req, timeout=timeout) as r, open(tmp, "wb") as f:
@@ -177,11 +207,23 @@ def download_to_path(*, opener: OpenerDirector, url: str, dest: Path, timeout: f
       f.write(chunk)
   os.replace(tmp, dest)
 
-def download_with_retries(*, opener: OpenerDirector, url: str, dest: Path, timeout: float, user_agent: str, retries: int, backoff: float) -> None:
+
+def download_with_retries(
+  *,
+  opener: OpenerDirector,
+  url: str,
+  dest: Path,
+  timeout: float,
+  user_agent: str,
+  retries: int,
+  backoff: float,
+) -> None:
   last_exc: Exception | None = None
   for attempt in range(retries + 1):
     try:
-      download_to_path(opener=opener, url=url, dest=dest, timeout=timeout, user_agent=user_agent)
+      download_to_path(
+        opener=opener, url=url, dest=dest, timeout=timeout, user_agent=user_agent
+      )
       return
     except (HTTPError, URLError, TimeoutError, OSError) as e:
       last_exc = e
@@ -191,13 +233,16 @@ def download_with_retries(*, opener: OpenerDirector, url: str, dest: Path, timeo
     raise last_exc
   raise RuntimeError("download failed")
 
-def extract_zip_atomically(zip_path: Path, base_name: str, out_dir: Path, existing: set[str], lock: threading.Lock) -> list[str]:
+
+def extract_zip_atomically(
+  zip_path: Path, base_name: str, out_dir: Path, existing: set[str], lock: threading.Lock
+) -> list[str]:
   extracted: list[str] = []
   try:
     with zipfile.ZipFile(zip_path, "r") as z:
       for member in z.infolist():
         # Skip directories and nested files to match original flat behavior
-        if member.is_dir() or '/' in member.filename or '\\' in member.filename:
+        if member.is_dir() or "/" in member.filename or "\\" in member.filename:
           continue
         if MACOS_JUNK_RE.match(member.filename):
           continue
@@ -226,6 +271,7 @@ def extract_zip_atomically(zip_path: Path, base_name: str, out_dir: Path, existi
     zip_path.unlink(missing_ok=True)
   return extracted
 
+
 def main(argv: list[str]) -> int:
   ns = parse_args(argv)
   json_path_s = ns.json_path.strip().strip('"\'')
@@ -233,7 +279,9 @@ def main(argv: list[str]) -> int:
   json_path: Path | None = Path(json_path_s) if json_path_s else None
   out_dir: Path | None = Path(out_dir_s) if out_dir_s else None
   if json_path is None and not ns.no_tui:
-    json_path = tui_select_path(title="Select memories_history.json", start=Path.cwd(), mode="file")
+    json_path = tui_select_path(
+      title="Select memories_history.json", start=Path.cwd(), mode="file"
+    )
   if out_dir is None and not ns.no_tui:
     out_dir = tui_select_path(title="Select output directory", start=Path.cwd(), mode="dir")
   if json_path is None:
@@ -249,30 +297,54 @@ def main(argv: list[str]) -> int:
     print("No media items found.")
     return 0
   existing = {p.name for p in out_dir.iterdir() if p.is_file()}
-  existing_prefixes = {name.rsplit("_", 1)[0] if "_" in name else name.rsplit(".", 1)[0] for name in existing}
+  existing_prefixes = {
+    name.rsplit("_", 1)[0] if "_" in name else name.rsplit(".", 1)[0] for name in existing
+  }
   lock = threading.Lock()
   opener = build_opener()
+
   download_tasks: list[tuple[Item, str]] = []
+  seen_bases = {}
+
   for it in items:
     try:
-      base = build_base_name(it.date_str)
+      base_orig = build_base_name(it.date_str)
     except ValueError as e:
       print(f"FAIL bad date '{it.date_str}': {e}", file=sys.stderr)
       continue
+
+    if base_orig in seen_bases:
+      seen_bases[base_orig] += 1
+      base = f"{base_orig}-dup-{seen_bases[base_orig]}"
+    else:
+      seen_bases[base_orig] = 0
+      base = base_orig
+
     if ns.skip_existing and base in existing_prefixes:
       continue
     download_tasks.append((it, base))
+
   if ns.dry_run:
     for it, base in download_tasks:
       print(f"DRY {base} <- {it.url}")
     print(f"Done. Would download {len(download_tasks)} files.")
     return 0
+
   ok, failed = 0, 0
+
   def download_item(task: tuple[Item, str]) -> bool:
     it, base = task
     zip_path = out_dir / f"{base}_memory.zip"
     try:
-      download_with_retries(opener=opener, url=it.url, dest=zip_path, timeout=ns.timeout, user_agent=ns.user_agent, retries=ns.retries, backoff=ns.retry_backoff)
+      download_with_retries(
+        opener=opener,
+        url=it.url,
+        dest=zip_path,
+        timeout=ns.timeout,
+        user_agent=ns.user_agent,
+        retries=ns.retries,
+        backoff=ns.retry_backoff,
+      )
       if zipfile.is_zipfile(zip_path):
         extracted = extract_zip_atomically(zip_path, base, out_dir, existing, lock)
         for name in extracted:
@@ -287,6 +359,7 @@ def main(argv: list[str]) -> int:
       print(f"✗ {base}: {e}", file=sys.stderr)
       zip_path.unlink(missing_ok=True)
       return False
+
   with ThreadPoolExecutor(max_workers=ns.workers) as executor:
     futures = {executor.submit(download_item, task): task for task in download_tasks}
     for future in as_completed(futures):
@@ -297,6 +370,7 @@ def main(argv: list[str]) -> int:
   skipped = len(items) - len(download_tasks)
   print(f"Done. ok={ok} skipped={skipped} failed={failed}")
   return 0 if failed == 0 else 2
+
 
 if __name__ == "__main__":
   raise SystemExit(main(sys.argv[1:]))

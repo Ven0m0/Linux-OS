@@ -315,7 +315,7 @@ def main(argv: list[str]) -> int:
 
     if base_orig in seen_bases:
       seen_bases[base_orig] += 1
-      base = f"{base_orig}_{seen_bases[base_orig]}"
+      base = f"{base_orig}-dup-{seen_bases[base_orig]}"
     else:
       seen_bases[base_orig] = 0
       base = base_orig

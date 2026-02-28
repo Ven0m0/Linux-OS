@@ -65,12 +65,11 @@ load_cache(){
   [[ -f ${CACHE_DB} ]]
 }
 lookup_gametdb(){
-  local id=$1 key val
+  local id=$1 val
   load_cache || return 1
-  while IFS='=' read -r key val; do
-    [[ ${key^^} == "${id^^}" ]] && { printf '%s\n' "$val"; return 0; }
-  done <"$CACHE_DB"
-  return 1
+  val=$(grep -im1 "^${id}=" "$CACHE_DB") || return 1
+  printf '%s\n' "${val#*=}"
+  return 0
 }
 get_id(){
   local f=$1 id="" skip=0

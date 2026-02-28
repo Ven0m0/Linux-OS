@@ -69,11 +69,14 @@ fix_keys() {
   sudo pacman -Sy --needed base-devel --noconfirm
 
   log "Importing wlogout GPG key..."
-  if download_file "https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F" /tmp/wlogout.asc; then
-    gpg --import /tmp/wlogout.asc && rm /tmp/wlogout.asc
+  local tmp_key
+  tmp_key=$(mktemp --suffix=.asc)
+  if download_file "https://keys.openpgp.org/vks/v1/by-fingerprint/F4FDB18A9937358364B276E9E25D679AF73C6D2F" "$tmp_key"; then
+    gpg --import "$tmp_key"
   else
     echo "Failed to download wlogout key"
   fi
+  rm -f "$tmp_key"
 }
 
 fix_gpg_conf() {

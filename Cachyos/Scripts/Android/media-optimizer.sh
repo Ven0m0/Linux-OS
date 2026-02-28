@@ -671,4 +671,6 @@ main() {
 }
 
 # Run the main function with all arguments
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

@@ -408,7 +408,7 @@ install_packages() {
   if [ -s "$to_install_aur" ]; then
     aur_count=$(wc -l <"$to_install_aur")
     print_status "Installing $aur_count AUR packages:"
-    cat "$to_install_aur" | sed 's/^/  - /'
+    sed 's/^/  - /' "$to_install_aur"
 
     local count=0
     local total="$aur_count"
@@ -447,7 +447,7 @@ install_packages() {
 
   if [ -s "$failed_packages" ]; then
     print_error "Failed to install these packages:"
-    cat "$failed_packages" | sed 's/^/    - /'
+    sed 's/^/    - /' "$failed_packages"
     print_warning "Check $LOG_FILE for details and install manually."
   fi
 

@@ -1,12 +1,24 @@
 zon-format
 # ocx
 # mcp-mode
-code-mode-toon
+# code-mode-toon
 @toon-format/toon
-@th0rgal/ralph-wiggum
-@programsmagic/toon-format
-@programsmagic/toon-core
+@toon-format/cli
+
+# @programsmagic/toon-format
+# @programsmagic/toon-core
+
 @blowmage/cursor-agent-acp
+@zed-industries/claude-code-acp
 # @skills-server/mc
 
 @twsxtd/hapi
+happy-coder
+@github/copilot
+
+@openchamber/web
+
+fish-lsp
+pm2
+@th0rgal/ralph-wiggum
+

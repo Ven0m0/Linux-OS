@@ -21,4 +21,4 @@ happy-coder
 fish-lsp
 pm2
 @th0rgal/ralph-wiggum
-
+rulesync

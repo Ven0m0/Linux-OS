@@ -126,8 +126,8 @@ fix_nextcloud() {
 
   log "Fixing Nextcloud /tmp permissions"
   if sudo docker exec nextcloud ls -ld /tmp &>/dev/null; then
-    sudo docker exec nextcloud chown -R www-data:www-data /tmp || warn "Failed to chown /tmp in nextcloud"
-    sudo docker exec nextcloud chmod -R 755 /tmp || warn "Failed to chmod /tmp in nextcloud"
+    sudo docker exec nextcloud chown root:root /tmp || warn "Failed to chown /tmp in nextcloud"
+    sudo docker exec nextcloud chmod 1777 /tmp || warn "Failed to chmod /tmp in nextcloud"
     log "Nextcloud permissions fixed"
   else
     warn "Failed to access /tmp in nextcloud container"

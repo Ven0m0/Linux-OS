@@ -129,8 +129,29 @@ set_reg(){
   run wit edit --region "$WREG" -q -- "$f"
 }
 is_game(){ [[ ${1,,} =~ \.(wbfs|iso|ciso|wia|wdf)$ ]]; }
+move_or_convert(){
+  local f=$1 ndir=$2 id=$3 ext dst final_path
+  ext=${f##*.}; ext=${ext,,}
+  dst="${ndir}/${id}.wbfs"
+  final_path="${ndir}/${id}.${ext}"
+
+  if ((CONV && HAS_WIT)) && [[ ${ext} != wbfs ]]; then
+    if run wit copy --wbfs -q -- "$f" "$dst"; then
+      set_reg "$dst"
+      run rm -f "$f"
+      return 0
+    fi
+  fi
+
+  if [[ "$f" != "$final_path" ]]; then
+    run mv -n -- "$f" "$final_path"
+    set_reg "$final_path"
+  else
+    set_reg "$f"
+  fi
+}
 proc_file(){
-  local f=$1 id t name ndir ext dst
+  local f=$1 id t name ndir
   is_game "$f" || return 0
   id=$(get_id "$f")
   [[ ${#id} -ge 4 ]] || { log "Skip (no ID): ${f}"; return 0; }
@@ -139,8 +160,8 @@ proc_file(){
   name=$(clean "$t")
   if [[ -z ${name} ]]; then name="Unknown"; fi
   ndir="${TGT}/${name} [${id}]"
-  ext=${f##*.}; ext=${ext,,}
-  dst="${ndir}/${id}.wbfs"
+  local ext=${f##*.}
+  ext=${ext,,}
   # Already in place?
   if [[ ${ext} == wbfs && -d ${ndir} && ${f##*/} == "${id}.wbfs" ]]; then
     local cwd_ndir cwd_fdir
@@ -149,19 +170,10 @@ proc_file(){
     if [[ ${cwd_ndir} == "$cwd_fdir" ]]; then set_reg "$f"; return 0; fi
   fi
   run mkdir -p "$ndir"
-  if ((CONV && HAS_WIT)) && [[ ${ext} != wbfs ]]; then
-    if run wit copy --wbfs -q -- "$f" "$dst"; then
-      set_reg "$dst"; run rm -f "$f"
-    else
-      run mv -n -- "$f" "${ndir}/${id}.${ext}"; set_reg "${ndir}/${id}.${ext}"
-    fi
-  else
-    run mv -n -- "$f" "${ndir}/${id}.${ext}"
-    set_reg "${ndir}/${id}.${ext}"
-  fi
+  move_or_convert "$f" "$ndir" "$id"
 }
 proc_dir(){
-  local dir=$1 base=${1##*/} id="" t name ndir f gid ext dst
+  local dir=$1 base=${1##*/} id="" t name ndir f gid
   if [[ ${base} =~ \[([A-Z0-9]{4,6})\]$ ]]; then
     id=${BASH_REMATCH[1]}
     t=$(clean "${base%% \[*}")
@@ -184,18 +196,7 @@ proc_dir(){
     [[ -f ${f} ]] || continue
     gid=$(get_id "$f")
     [[ ${#gid} -ge 4 ]] || { log "Skip (no ID): ${f}"; continue; }
-    ext=${f##*.}; ext=${ext,,}
-    dst="${dir}/${gid}.wbfs"
-    if ((CONV && HAS_WIT)) && [[ ${ext} != wbfs ]]; then
-      if run wit copy --wbfs -q -- "$f" "$dst"; then
-        set_reg "$dst"; run rm -f "$f"
-      fi
-    elif [[ ${f##*/} != "${gid}.${ext}" ]]; then
-      run mv -n -- "$f" "${dir}/${gid}.${ext}"
-      set_reg "${dir}/${gid}.${ext}"
-    else
-      set_reg "$f"
-    fi
+    move_or_convert "$f" "$dir" "$gid"
   done
 }
 main(){

@@ -163,10 +163,18 @@ clean_caches() {
   run rm -f ~/.{bash,python}_history 2>/dev/null || :
   sudo rm -f /root/.{bash,python}_history 2>/dev/null || :
   history -c 2>/dev/null || :
-  if has truncate; then
-    find /var/log -type f -exec sudo truncate -s 0 {} + 2>/dev/null || :
+  if has python3; then
+    find /var/log -type f -exec sudo python3 -c '
+import os, sys
+for f in sys.argv[1:]:
+    try:
+        fd = os.open(f, os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW)
+        os.close(fd)
+    except Exception:
+        pass
+' {} + 2>/dev/null || :
   else
-    find /var/log -type f -exec sudo sh -c ':> "$1"' _ {} \; 2>/dev/null || :
+    find /var/log -type f -exec sudo sh -c 'for f in "$@"; do dd if=/dev/null of="$f" oflag=nofollow status=none 2>/dev/null || :; done' _ {} + 2>/dev/null || :
   fi
 }
 # Privacy & Security Hardening

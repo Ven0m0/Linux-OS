@@ -1,12 +1,7 @@
-# pacman.txt
 7zip
-accountsservice
 adaptivemm
 adriconf
 alacritty
-alsa-firmware
-alsa-plugins
-alsa-utils
 appmenu-glib-translator
 appmenu-gtk-module
 appimagepool-appimage

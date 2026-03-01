@@ -128,11 +128,8 @@ main() {
     find "$HOME" \
       -type d \( -name .git -o -name node_modules -o -name .npm -o -name .cargo -o -name .go -o -name .vscode -o -name Library -o -name __pycache__ \) -prune \
       -o -type f \( -name "*.db" -o -name "*.sqlite" \) -print0 |
-      xargs -0 -P "$jobs" -I {} bash -c '
-        if [[ "$(head -c 15 "$1")" == "SQLite format 3" ]]; then
-          sqlite3 "$1" "VACUUM; REINDEX;"
-        fi
-      ' _ {} 2>/dev/null
+      xargs -0 grep -a -l -Z -m 1 "^SQLite format 3" 2>/dev/null |
+      xargs -0 -P "$jobs" -I {} sqlite3 {} "VACUUM; REINDEX;" 2>/dev/null
   fi
   clean_pkgs
   clean_dev

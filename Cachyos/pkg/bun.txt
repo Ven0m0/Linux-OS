@@ -8,3 +8,5 @@ code-mode-toon
 @programsmagic/toon-core
 @blowmage/cursor-agent-acp
 # @skills-server/mc
+
+@twsxtd/hapi

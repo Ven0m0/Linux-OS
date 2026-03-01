@@ -22,13 +22,6 @@ download_file() {
   fi
 }
 
-confirm() {
-  local msg="$1"
-  printf '%s [y/N]: ' "$msg" >&2
-  read -r ans
-  [[ $ans == [Yy]* ]]
-}
-
 fix_mirrors() {
   log "Fixing mirrors..."
   has cachyos-rate-mirrors && sudo cachyos-rate-mirrors
@@ -75,6 +68,7 @@ fix_keys() {
     gpg --import "$tmp_key"
   else
     echo "Failed to download wlogout key"
+    rm -f "$keyfile"
   fi
   rm -f "$tmp_key"
 }

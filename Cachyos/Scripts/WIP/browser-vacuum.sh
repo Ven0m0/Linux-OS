@@ -29,25 +29,28 @@ spinner() {
 run_cleaner() {
     # for each file that is a sqlite database, vacuum and reindex
     local _format="$(tput cr)$(tput cuf 46)"
-    while read -r db; do
-        echo -en "${GRN} Cleaning${RST}  ${db##'./'}"
-        # record size of each file before and after vacuuming
-        s_old=$(stat -c%s "$db" 2>/dev/null) || s_old=4096
-        (   trap '' INT TERM
-            sqlite3 "$db" "VACUUM;" && sqlite3 "$db" "REINDEX;"
-        ) & spinner $!
-        s_new=$(stat -c%s "$db")
-        # convert to kilobytes
-        diff=$(((s_old - s_new) / 1024))
+
+    while IFS='|' read -r db diff; do
+        [[ -z "$db" ]] && continue
+        echo -en "${GRN} Cleaning${RST}  ${db}"
         total=$((diff + total))
-        if (( diff > 0 ))
-            then diff="\e[01;33m- ${diff}${RST} KB"
-        elif (( diff < 0 ))
-            then diff="\e[01;30m+ $((diff * -1)) KB${RST}"
-            else diff="\e[00;33m∘${RST}"
+        if (( diff > 0 )); then
+            diff="\e[01;33m- ${diff}${RST} KB"
+        elif (( diff < 0 )); then
+            diff="\e[01;30m+ $((diff * -1)) KB${RST}"
+        else
+            diff="\e[00;33m∘${RST}"
         fi
         echo -e "${_format} ${GRN}done ${diff}"
-    done < <(find . -maxdepth 1 -type f -print0 |xargs -0 file -e ascii |sed -n "s/:.*SQLite.*//p")
+    done < <(find . -maxdepth 1 -type f -print0 | xargs -0 file -e ascii | sed -n "s/:.*SQLite.*//p" | \
+        xargs -d '\n' -P "$(nproc)" -I {} bash -c '
+            db="$1"
+            s_old=$(stat -c%s "$db" 2>/dev/null) || s_old=4096
+            sqlite3 "$db" "VACUUM;" && sqlite3 "$db" "REINDEX;"
+            s_new=$(stat -c%s "$db")
+            diff=$(((s_old - s_new) / 1024))
+            echo "${db##./}|$diff"
+        ' _ "{}")
     echo
 }
 

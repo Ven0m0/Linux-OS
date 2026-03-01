@@ -1,24 +1,22 @@
 zon-format
-# ocx
-# mcp-mode
-# code-mode-toon
 @toon-format/toon
 @toon-format/cli
-
-# @programsmagic/toon-format
-# @programsmagic/toon-core
-
+@anthropic-ai/sdk
+@modelcontextprotocol/sdk
 @blowmage/cursor-agent-acp
 @zed-industries/claude-code-acp
-# @skills-server/mc
-
-@twsxtd/hapi
-happy-coder
+@smithery/cli
 @github/copilot
-
+@google/gemini-cli
+happy-coder
+@twsxtd/hapi
 @openchamber/web
-
-fish-lsp
-pm2
-@th0rgal/ralph-wiggum
+openportal
+tweakgc
 rulesync
+@th0rgal/ralph-wiggum
+9router
+@kaitranntt/ccs
+code-executor-mcp
+pm2
+fish-lsp

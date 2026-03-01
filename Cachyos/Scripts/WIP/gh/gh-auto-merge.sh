@@ -34,11 +34,11 @@ main(){
   while [[ $# -gt 0 ]]; do
     case $1 in
       -h|--help) usage; exit 0;;
-      -q|--query) QUERY=$2; shift 2;;
-      -n|--limit) LIMIT=$2; shift 2;;
-      -b|--branch) BRANCH=$2; shift 2;;
-      -t|--title) TITLE=$2; shift 2;;
-      --prs) prs=$2; shift 2;;
+      -q|--query) [[ -n ${2:-} ]] || die "Missing argument for $1"; QUERY=$2; shift 2;;
+      -n|--limit) [[ -n ${2:-} ]] || die "Missing argument for $1"; LIMIT=$2; shift 2;;
+      -b|--branch) [[ -n ${2:-} ]] || die "Missing argument for $1"; BRANCH=$2; shift 2;;
+      -t|--title) [[ -n ${2:-} ]] || die "Missing argument for $1"; TITLE=$2; shift 2;;
+      --prs) [[ -n ${2:-} ]] || die "Missing argument for $1"; prs=$2; shift 2;;
       --skip-checks) skip_checks=true; shift;;
       --dry-run) dry_run=true; shift;;
       *) die "Unknown: $1";;

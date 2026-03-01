@@ -410,19 +410,33 @@ install_packages() {
     print_status "Installing $aur_count AUR packages:"
     sed 's/^/  - /' "$to_install_aur"
 
-    local count=0
-    local total="$aur_count"
+    # Try batch installation first
+    mapfile -t package_list < "$to_install_aur"
+    wait_for_pacman
 
-    while IFS= read -r package; do
-      count=$((count + 1))
-      echo -e "${BLUE}[PROGRESS]${NC} AUR Package $count/$total: $package"
+    echo -ne "${BLUE}[PROGRESS]${NC} Installing $aur_count AUR packages in batch... "
+    if $AUR_HELPER -S --needed --noconfirm "${package_list[@]}" &>>"$LOG_FILE"; then
+      echo -e "${GREEN}SUCCESS${NC}"
+      print_success "All AUR packages installed successfully in batch mode"
+      cat "$to_install_aur" >>/tmp/succeeded_packages
+    else
+      echo -e "${RED}FAILED${NC}"
+      print_warning "Batch installation failed. Falling back to individual installation."
 
-      if install_aur_package "$package"; then
-        echo "$package" >>/tmp/succeeded_packages
-      else
-        echo "$package" >>"$failed_packages"
-      fi
-    done <"$to_install_aur"
+      local count=0
+      local total="$aur_count"
+
+      while IFS= read -r package; do
+        count=$((count + 1))
+        echo -e "${BLUE}[PROGRESS]${NC} AUR Package $count/$total: $package"
+
+        if install_aur_package "$package"; then
+          echo "$package" >>/tmp/succeeded_packages
+        else
+          echo "$package" >>"$failed_packages"
+        fi
+      done <"$to_install_aur"
+    fi
   fi
 
   # Add unknown packages to failed list

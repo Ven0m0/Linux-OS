@@ -1,1 +1,2 @@
-curl -fsSL https://app.factory.ai/cli | sh
+curl -fsSL https://app.factory.ai/cli | bash
+curl -fsSL https://zerobrew.rs/install | bash

@@ -386,3 +386,5 @@ ydotool
 zed
 zoxide
 zsh-autocomplete
+mdformat
+mdformat-tables

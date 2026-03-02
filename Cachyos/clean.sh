@@ -29,14 +29,11 @@ clean_pkgs() {
     # Measure before cleanup
     local pacman_before paru_before yay_before
     local pacman_after paru_after yay_after total_freed
-
     pacman_before=$(get_cache_size "/var/cache/pacman/pkg")
     paru_before=$(get_cache_size "${HOME}/.cache/paru/clone")
     yay_before=$(get_cache_size "${HOME}/.cache/yay")
-
     # Remove stuck download directories
     sudo find "/var/cache/pacman/pkg" -maxdepth 1 -type d -name "download-*" -exec rm -rf {} +
-
     # Aggressive cache purge
     if has paru; then
       paru -Scc --noconfirm &>/dev/null || :
@@ -44,19 +41,16 @@ clean_pkgs() {
     else
       sudo pacman -Scc --noconfirm &>/dev/null || :
     fi
-
     # Remove orphans
     local orphans
     orphans=$(pacman -Qtdq) || :
     if [[ -n $orphans ]]; then
       try sudo pacman -Rns --noconfirm "$orphans" || :
     fi
-
     # Measure after cleanup
     pacman_after=$(get_cache_size "/var/cache/pacman/pkg")
     paru_after=$(get_cache_size "${HOME}/.cache/paru/clone")
     yay_after=$(get_cache_size "${HOME}/.cache/yay")
-
     total_freed=$(((pacman_before - pacman_after) + (paru_before - paru_after) + (yay_before - yay_after)))
     [[ $total_freed -gt 0 ]] && log "Package cache freed: ${total_freed}MB"
   elif has apt-get; then
@@ -100,7 +94,7 @@ clean_sys() {
     try sudo bleachbit -c --preset
   fi
   has localepurge && try sudo localepurge
-  try sudo fstrim -av
+  try sudo fstrim -a
   # Check only if xfs filesystem
   if [[ $(findmnt -n -o FSTYPE /) == "xfs" ]]; then
     try sudo xfs_scrub /

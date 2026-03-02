@@ -37,3 +37,4 @@ wallpaper-engine-kde-plugin-git
 docker-language-server
 vtsls
 basedpyright
+mdformat-gfm-git

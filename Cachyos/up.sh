@@ -3,22 +3,22 @@
 set -euo pipefail
 shopt -s nullglob globstar
 IFS=$'\n\t'
-export LC_ALL=C LANG=C
+LC_ALL=C
 
 # --- Config & Helpers ---
 R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[34m' X=$'\e[0m'
-has() { command -v "$1" &>/dev/null; }
-try() { "$@" >/dev/null 2>&1 || true; }
-log() { printf "%b[+]%b %s\n" "$G" "$X" "$*"; }
-info() { printf "%b[*]%b %s\n" "$B" "$X" "$*"; }
-warn() { printf "%b[!]%b %s\n" "$Y" "$X" "$*" >&2; }
-die() {
+has(){ command -v "$1" &>/dev/null; }
+try(){ "$@" >/dev/null 2>&1 || true; }
+log(){ printf "%b[+]%b %s\n" "$G" "$X" "$*"; }
+info(){ printf "%b[*]%b %s\n" "$B" "$X" "$*"; }
+warn(){ printf "%b[!]%b %s\n" "$Y" "$X" "$*" >&2; }
+die(){
   printf "%b[!]%b %s\n" "$R" "$X" "$*" >&2
   exit 1
 }
 
 # --- Update Functions ---
-up_sys() {
+up_sys(){
   log "System Update (Arch)"
   local aur_helper=""
   if has paru; then
@@ -26,26 +26,23 @@ up_sys() {
   elif has yay; then
     aur_helper="yay"
   else log "No AUR helper found, using pacman"; fi
-
   # Unlock database if stale lock exists
   if [[ -f /var/lib/pacman/db.lck ]]; then
     warn "Removing stale pacman lock..."
     sudo rm -f /var/lib/pacman/db.lck
   fi
-
   if [[ -n $aur_helper ]]; then
     $aur_helper -Syu --noconfirm
   else
     sudo pacman -Syu --noconfirm
   fi
-
   if has topgrade; then
     log "Running topgrade..."
     topgrade -y --cleanup --allow-root --disable-predefined-git-repos --no-retry --no-self-update --skip-notify --disable yadm --disable rustup --disable config_update --disable system
   fi
 }
 
-up_apps() {
+up_apps(){
   if has flatpak; then
     log "Flatpak Update"
     flatpak update -y --noninteractive --appstream
@@ -56,7 +53,7 @@ up_apps() {
   fi
 }
 
-up_dev() {
+up_dev(){
   log "Dev Tools Update"
   # Rust
   if has rustup; then
@@ -69,12 +66,8 @@ up_dev() {
     info "Python (uv)"
     uv tool upgrade --all
     # Update system packages via uv if managing a venv or system-site-packages
-    # Only if there are outdated packages
-    local outdated
-    outdated=$(uv pip list --outdated --format=freeze 2>/dev/null | awk -F== '{print $1}')
-    if [[ -n ${outdated:-} ]]; then
-      try uv pip install -U $outdated
-    fi
+    readarray -t pkgs < <(uv pip list --outdated --format=json 2>/dev/null | jq -r '.[].name')
+    [[ ${#pkgs[@]} -eq 0 ]] || uv pip install -U "${pkgs[@]}" &>/dev/null || :
   fi
   # Node / JS
   if has bun; then
@@ -90,24 +83,23 @@ up_dev() {
   }
 }
 
-up_maint() {
+up_maint(){
   log "System Maintenance"
   # Refresh caches & DBs
   try sudo fc-cache -f
   try sudo update-desktop-database
-  has update-pciids && try sudo update-pciids
-  has update-ccache-links && sudo update-ccache-links
-
+  try sudo updatedb
+  try sudo update-pciids
+  try sudo update-smart-drivedb
+  try sudo update-ccache-links
   # Firmware
   if has fwupdmgr; then
     info "Firmware"
     try sudo fwupdmgr refresh
     try sudo fwupdmgr update -y
   fi
-
   # Time Sync
   try sudo systemctl restart systemd-timesyncd
-
   # Bootloader / InitRAMFS
   info "Bootloader/InitRAMFS"
   if has sdboot-manage; then
@@ -115,7 +107,6 @@ up_maint() {
   elif has bootctl && [[ -d /sys/firmware/efi ]]; then
     sudo bootctl update
   fi
-
   if has limine-mkinitcpio; then
     sudo limine-mkinitcpio
   elif has mkinitcpio; then
@@ -127,7 +118,7 @@ up_maint() {
   fi
 }
 
-usage() {
+usage(){
   cat <<EOF
 up.sh - System Updater
 Usage: ${0##*/} [OPTIONS]
@@ -141,9 +132,8 @@ No args runs ALL updates.
 EOF
   exit 0
 }
-
 # --- Main ---
-main() {
+main(){
   local mode="all"
   while [[ $# -gt 0 ]]; do
     case $1 in
@@ -153,10 +143,8 @@ main() {
     esac
     shift
   done
-
   # Sudo refresh upfront
   sudo -v
-
   case $mode in
     sys) up_sys ;;
     apps) up_apps ;;
@@ -166,14 +154,11 @@ main() {
       up_sys
       up_apps
       up_dev
-      up_maint
-      ;;
+      up_maint ;;
   esac
-
   log "Update Complete!"
   if [[ -f /var/run/reboot-required ]]; then
     printf "%b[!] Reboot Required%b\n" "$Y" "$X"
   fi
 }
-
 main "$@"

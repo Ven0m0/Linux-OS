@@ -4,7 +4,7 @@
 #              Updates:  APT packages, DietPi, Pi-hole, Pi-Apps, firmware (EEPROM/rpi-update)
 set -euo pipefail
 shopt -s nullglob globstar
-IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive
+IFS=$'\n\t' LC_ALL=C DEBIAN_FRONTEND=noninteractive DEBCONF_NOWARNINGS=yes
 # Colors
 LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m' DEF=$'\e[0m'
 YLW=$'\e[1;33m' RED=$'\e[0;31m'

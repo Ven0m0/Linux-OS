@@ -3,3 +3,4 @@ superclaude
 mdminify
 claudelint
 json-repair
+mdformat-shfmt

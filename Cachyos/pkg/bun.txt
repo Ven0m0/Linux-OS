@@ -29,3 +29,5 @@ skills
 @modelcontextprotocol/sdk
 dotenv
 fast-filesystem-mcp
+@mariozechner/pi-coding-agent
+pi-acp

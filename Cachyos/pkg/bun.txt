@@ -7,7 +7,7 @@ zon-format
 @zed-industries/claude-code-acp
 @smithery/cli
 @github/copilot
-@google/gemini-cli
+@google/gemini-cli@preview
 happy-coder
 @twsxtd/hapi
 @openchamber/web
@@ -18,5 +18,14 @@ rulesync
 9router
 @kaitranntt/ccs
 code-executor-mcp
+@notprolands/ast-grep-mcp
 pm2
 fish-lsp
+@autohandai/autohand-acp
+droid
+opencode-studio-server
+skills
+@anthropic-ai/sdk
+@modelcontextprotocol/sdk
+dotenv
+fast-filesystem-mcp

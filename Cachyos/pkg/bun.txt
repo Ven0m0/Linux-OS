@@ -31,4 +31,4 @@ dotenv
 fast-filesystem-mcp
 @mariozechner/pi-coding-agent
 pi-acp
-cline
+cline@latest

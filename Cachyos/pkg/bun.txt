@@ -32,3 +32,4 @@ fast-filesystem-mcp@latest
 pi-acp@latest
 cline@latest
 @google/jules@latest
+@termly-dev/cli

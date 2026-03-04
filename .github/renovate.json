@@ -1,0 +1,54 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:recommended",
+		":configMigration",
+		":dependencyDashboard",
+		":maintainLockFilesWeekly",
+		":semanticPrefixFixDepsChoreOthers",
+		":preserveSemverRanges",
+		":ignoreModulesAndTests",
+		"abandonments:recommended",
+		"group:all",
+		"helpers:githubDigestChangelogs",
+		"helpers:goXPackagesChangelogLink",
+		"helpers:goXPackagesNameLink",
+		"mergeConfidence:age-confidence-badges",
+		"packages:eslint",
+		"packages:linters",
+		"replacements:all",
+		"schedule:weekly",
+		"workarounds:all"
+	],
+	"automerge": true,
+	"automergeType": "branch",
+	"pinDigests": false,
+	"separateMajorMinor": false,
+	"lockFileMaintenance": {
+		"enabled": true,
+		"automerge": true,
+		"commitMessageAction": "Update"
+	},
+	"packageRules": [
+		{
+			"description": "Automerge all stable (non-0.x) updates via branch",
+			"matchCurrentVersion": "!/^0/",
+			"automerge": true,
+			"automergeType": "branch"
+		},
+		{
+			"description": "Require dashboard approval for 0.x major bumps",
+			"matchCurrentVersion": "/^0/",
+			"matchUpdateTypes": ["major"],
+			"dependencyDashboardApproval": true,
+			"automerge": false
+		},
+		{
+			"description": "Automerge linters and formatters aggressively",
+			"matchCategories": ["linters"],
+			"automerge": true,
+			"automergeType": "branch",
+			"schedule": ["at any time"]
+		}
+	]
+}

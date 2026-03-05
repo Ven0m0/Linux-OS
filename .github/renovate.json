@@ -1,54 +1,118 @@
 {
-	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": [
-		"config:recommended",
-		":configMigration",
-		":dependencyDashboard",
-		":maintainLockFilesWeekly",
-		":semanticPrefixFixDepsChoreOthers",
-		":preserveSemverRanges",
-		":ignoreModulesAndTests",
-		"abandonments:recommended",
-		"group:all",
-		"helpers:githubDigestChangelogs",
-		"helpers:goXPackagesChangelogLink",
-		"helpers:goXPackagesNameLink",
-		"mergeConfidence:age-confidence-badges",
-		"packages:eslint",
-		"packages:linters",
-		"replacements:all",
-		"schedule:weekly",
-		"workarounds:all"
-	],
-	"automerge": true,
-	"automergeType": "branch",
-	"pinDigests": false,
-	"separateMajorMinor": false,
-	"lockFileMaintenance": {
-		"enabled": true,
-		"automerge": true,
-		"commitMessageAction": "Update"
-	},
-	"packageRules": [
-		{
-			"description": "Automerge all stable (non-0.x) updates via branch",
-			"matchCurrentVersion": "!/^0/",
-			"automerge": true,
-			"automergeType": "branch"
-		},
-		{
-			"description": "Require dashboard approval for 0.x major bumps",
-			"matchCurrentVersion": "/^0/",
-			"matchUpdateTypes": ["major"],
-			"dependencyDashboardApproval": true,
-			"automerge": false
-		},
-		{
-			"description": "Automerge linters and formatters aggressively",
-			"matchCategories": ["linters"],
-			"automerge": true,
-			"automergeType": "branch",
-			"schedule": ["at any time"]
-		}
-	]
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":configMigration",
+    ":dependencyDashboard",
+    ":maintainLockFilesWeekly",
+    ":semanticPrefixFixDepsChoreOthers",
+    ":preserveSemverRanges",
+    ":ignoreModulesAndTests",
+    "abandonments:recommended",
+    "group:all",
+    "helpers:githubDigestChangelogs",
+    "helpers:goXPackagesChangelogLink",
+    "helpers:goXPackagesNameLink",
+    "mergeConfidence:age-confidence-badges",
+    "packages:eslint",
+    "packages:linters",
+    "replacements:all",
+    "schedule:weekly",
+    "workarounds:all"
+  ],
+  "enabled": true,
+  "automerge": true,
+  "automergeType": "branch",
+  "ignoreTests": true,
+  "pinDigests": false,
+  "separateMajorMinor": false,
+  "separateMinorPatch": false,
+  "configMigration": true,
+  "dependencyDashboard": true,
+  "ignoreUnstable": true,
+  "prConcurrentLimit": 10,
+  "respectLatest": true,
+  "abandonmentThreshold": "2 years",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true,
+    "commitMessageAction": "Update",
+    "extends": ["schedule:monthly"]
+  },
+  "labels": ["dependencies"],
+  "timezone": "Europe/Berlin",
+  "pre-commit": {
+    "enabled": true
+  },
+  "npm": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Automerge all stable (non-0.x) updates via branch",
+      "matchCurrentVersion": "!/^0/",
+      "automerge": true,
+      "automergeType": "branch",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "description": "Require dashboard approval for 0.x major bumps",
+      "matchCurrentVersion": "/^0/",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "automerge": false
+    },
+    {
+      "description": "Automerge linters and formatters aggressively",
+      "matchCategories": ["linters"],
+      "automerge": true,
+      "automergeType": "branch",
+      "schedule": ["at any time"]
+    },
+    {
+      "description": "Group arg1 packages into same branch/PR",
+      "extends": ["arg0"],
+      "groupName": "arg1"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "jsonata",
+      "datasourceTemplate": "npm",
+      "depNameTemplate": "@biomejs/biome",
+      "fileFormat": "json",
+      "managerFilePatterns": ["**/biome.{json,jsonc}"],
+      "matchStrings": ["{\"currentValue\": $split($.\"$schema\",(\"/\"))[-2]}"]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "**/[Dd]ockerfile*",
+        "**/[Cc]ontainerfile*",
+        "**/*.[Dd]ockerfile*",
+        "**/*.[Cc]ontainerfile*"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-zA-Z0-9-._]+?) depName=(?<depName>[^\\s]+?)(?: (lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s(?:ENV|ARG)\\s+[A-Za-z0-9_]+?_VERSION[ =][\"']?(?<currentValue>.+?)[\"']?\\s"
+      ]
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$/",
+        "/(^|/)action\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-zA-Z0-9-._]+?) depName=(?<depName>[^\\s]+?)(?: (?:lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s+[A-Za-z0-9_]+?_VERSION\\s*:\\s*[\"']?(?<currentValue>.+?)[\"']?\\s"
+      ]
+    },
+    {
+      "autoReplaceStringTemplate": "\"@tsconfig/node{{{major}}}/tsconfig.json\"",
+      "currentValueTemplate": "{{{major}}}",
+      "customType": "regex",
+      "datasourceTemplate": "npm",
+      "managerFilePatterns": ["**/{j,t}sconfig.json", "**/{j,t}sconfig.*.json"],
+      "matchStrings": ["\"(?<depName>@tsconfig/node(?<major>\\d+))/tsconfig\\.json\""]
+    }
+  ]
 }

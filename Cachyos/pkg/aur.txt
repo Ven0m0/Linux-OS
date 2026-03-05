@@ -24,3 +24,4 @@ docker-language-server
 vtsls
 basedpyright
 mdformat-gfm-git
+github-actions-bin

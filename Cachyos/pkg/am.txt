@@ -1,1 +1,5 @@
+am
 am-gui
+bauh
+cursor-cli
+github-store

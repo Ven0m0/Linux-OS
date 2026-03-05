@@ -1,34 +1,20 @@
 # aur.txt
-aionui-bin
 antigravity
-claude-code-acp
 claude-desktop-bin
 # crush-bin
-cursor-appimage
-cursor-cli
+cursor-bin
+
 duckdns-ipv6
 dyad-git
-factory-cli-bin
 firefox-omni-tweaks-git
-# github-copilot-cli
 gtk-sharp-2
-# happy-cli
 libappindicator-gtk2
 libayatana-appindicator-glib
 noip
-# opencode-antigravity-auth
-# opencode-cursor-auth
-# opencode-desktop-bin
-# opencode-gemini-auth
-# opencode-optimal-model-temps
-# opencode-pty
-oxfmt-bin
-oxlint-bin
+
 plasma-splash-rem-git
 python-mashumaro
 ralph
-repomix
-smithery-cli
 vscodium-all-marketplace
 vscodium-electron-features
 vscodium-prod-patcher

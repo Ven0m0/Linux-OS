@@ -25,7 +25,7 @@ import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 
 @dataclass(slots=True)
@@ -70,7 +70,7 @@ def parse_url(url: str) -> RepoSpec:
   raise ValueError(f"Unsupported platform: {u.netloc}")
 
 
-_opener_cache: Optional[urllib.request.OpenerDirector] = None
+_opener_cache: urllib.request.OpenerDirector | None = None
 
 
 def get_opener() -> urllib.request.OpenerDirector:
@@ -226,7 +226,7 @@ def process_downloads(
       raise Exception(f"{len(errors)} download worker(s) failed.")
 
 
-def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
+def fetch_github(spec: RepoSpec, output: Path, token: str | None = None) -> None:
   """Download from GitHub using Contents/Trees API."""
   token = token or os.getenv("GITHUB_TOKEN", "")
   headers = {"Accept": "application/vnd.github.v3+json"}
@@ -294,7 +294,7 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
   process_downloads(files_to_download, headers, "raw.githubusercontent.com")
 
 
-def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
+def fetch_gitlab(spec: RepoSpec, output: Path, token: str | None = None) -> None:
   """Download from GitLab using Repository API."""
   token = token or os.getenv("GITLAB_TOKEN", "")
   headers = {}
@@ -358,6 +358,7 @@ def main() -> int:
   parser.add_argument("url", help="GitHub or GitLab URL")
   parser.add_argument("output_dir", nargs="?", default=".", help="Output directory")
   parser.add_argument("--token", help="Auth token (overrides env vars)")
+  parser.add_argument("--version", action="version", version="git-fetch.py 2.0.0")
 
   args = parser.parse_args()
 
@@ -372,6 +373,18 @@ def main() -> int:
 
     print(f"\n✓ Downloaded to: {output_path}")
     return 0
+  except KeyboardInterrupt:
+    print("\nInterrupted.", file=sys.stderr)
+    return 130
+  except ValueError as e:
+    print(f"✗ Invalid input: {e}", file=sys.stderr)
+    return 2
+  except urllib.error.HTTPError as e:
+    print(f"✗ HTTP {e.code}: {e.reason} — {e.url}", file=sys.stderr)
+    return 1
+  except urllib.error.URLError as e:
+    print(f"✗ Network error: {e.reason}", file=sys.stderr)
+    return 1
   except Exception as e:
     print(f"✗ Error: {e}", file=sys.stderr)
     return 1

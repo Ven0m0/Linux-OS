@@ -295,23 +295,60 @@ EOF
 
   msg "Health-checking mirrors..." "$BLU"
   local healthcheck_results=$(
-    echo "$mirrors" \
-      | __xargs -i -P "$(echo "$mirrors" | wc -l)" bash -c \
-        'set -o pipefail
-      headers=$(curl --max-time 3 -sSIL "{}'"$last_modified_path"'" 2>/dev/null || echo "CURL_ERROR")
-      http_status=$(printf "%s\n" "$headers" | awk '"'"'toupper($1) ~ /^HTTP\// { code=$2 } END { print code }'"'"')
-      last_modified=0; status="error"
-      if [[ "$headers" == "CURL_ERROR" || -z "$http_status" ]]; then status="error"
-      elif [[ "$http_status" == "404" ]]; then status="missing"
-      else
-        last_mod_line=$(printf "%s\n" "$headers" | grep -i "last-modified" | cut -d" " -f2- | head -n1)
-        if [[ -n "$last_mod_line" ]]; then
-          last_modified=$(LANG=C date -f- -u +%s <<<"$last_mod_line" 2>/dev/null || echo 0)
-          [[ "$last_modified" != 0 ]] && status="ok" || status="nolastmod"
-        else status="nolastmod"; fi
+    local curl_tmpdir
+    curl_tmpdir=$(mktemp -d)
+    local curl_config="$curl_tmpdir/config"
+    local idx=0
+    local mirror_list=()
+
+    while IFS= read -r mirror; do
+      [[ -z "$mirror" ]] && continue
+      mirror_list+=("$mirror")
+      echo "url=\"${mirror}${last_modified_path}\"" >> "$curl_config"
+      echo "dump-header=\"$curl_tmpdir/$idx\"" >> "$curl_config"
+      echo "output=/dev/null" >> "$curl_config"
+      idx=$((idx + 1))
+    done <<< "$mirrors"
+
+    curl -sSIL --parallel --parallel-immediate --parallel-max "${#mirror_list[@]}" --max-time 3 -K "$curl_config" > /dev/null 2>&1 || true
+
+    local i
+    for ((i=0; i<${#mirror_list[@]}; i++)); do
+      local mirror="${mirror_list[i]}"
+      local status="error"
+      local last_modified=0
+      local http_status=""
+      local last_mod_line=""
+
+      if [[ -s "$curl_tmpdir/$i" ]]; then
+        while IFS= read -r line; do
+          line="${line%$'\r'}" # Remove trailing CR
+          if [[ "${line^^}" =~ ^HTTP/ ]]; then
+            http_status="${line#* }"
+            http_status="${http_status%% *}"
+          elif [[ "${line^^}" =~ ^LAST-MODIFIED: ]]; then
+            last_mod_line="${line#*: }"
+          fi
+        done < "$curl_tmpdir/$i"
+
+        if [[ -n "$http_status" ]]; then
+          if [[ "$http_status" == "404" ]]; then
+            status="missing"
+          else
+            if [[ -n "$last_mod_line" ]]; then
+              last_modified=$(LANG=C date -f- -u +%s <<<"$last_mod_line" 2>/dev/null || echo 0)
+              [[ "$last_modified" != 0 ]] && status="ok" || status="nolastmod"
+            else
+              status="nolastmod"
+            fi
+          fi
+        fi
       fi
-      echo "$last_modified $status {}"
->&2 printf "."'
+      echo "$last_modified $status $mirror"
+      >&2 printf "."
+    done
+    rm -rf "$curl_tmpdir"
+
   )
   msg " ✓ done" "$GRN"
 

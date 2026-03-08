@@ -68,11 +68,6 @@
       "automerge": true,
       "automergeType": "branch",
       "schedule": ["at any time"]
-    },
-    {
-      "description": "Group arg1 packages into same branch/PR",
-      "extends": ["arg0"],
-      "groupName": "arg1"
     }
   ],
   "customManagers": [

@@ -17,6 +17,7 @@ happy-coder@latest
 openportal@latest
 opencode-plugin-auto-update@latest
 claude-code-lint
+agnix
 firecrawl-cli@latest
 @th0rgal/ralph-wiggum@latest
 fish-lsp@latest

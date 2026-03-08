@@ -304,7 +304,9 @@ EOF
     while IFS= read -r mirror; do
       [[ -z "$mirror" ]] && continue
       mirror_list+=("$mirror")
-      echo "url=\"${mirror}${last_modified_path}\"" >> "$curl_config"
+      local escaped_mirror="${mirror//\\/\\\\}"
+      escaped_mirror="${escaped_mirror//\"/\\\"}"
+      echo "url=\"${escaped_mirror}${last_modified_path}\"" >> "$curl_config"
       echo "dump-header=\"$curl_tmpdir/$idx\"" >> "$curl_config"
       echo "output=/dev/null" >> "$curl_config"
       idx=$((idx + 1))

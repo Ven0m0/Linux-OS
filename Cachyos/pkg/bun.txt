@@ -18,6 +18,7 @@ openportal@latest
 opencode-plugin-auto-update@latest
 claude-code-lint
 agnix
+@nicepkg/vsync
 firecrawl-cli@latest
 @th0rgal/ralph-wiggum@latest
 fish-lsp@latest

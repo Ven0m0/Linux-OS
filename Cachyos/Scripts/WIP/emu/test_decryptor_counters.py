@@ -3,7 +3,6 @@ import importlib.util
 import unittest
 import sys
 from pathlib import Path
-from dataclasses import dataclass
 
 # Dynamically import cia_3ds_decryptor.py
 file_path = Path(__file__).parent / "cia_3ds_decryptor.py"
@@ -13,6 +12,7 @@ if spec is None:
 decryptor = importlib.util.module_from_spec(spec)
 sys.modules["cia_3ds_decryptor"] = decryptor
 spec.loader.exec_module(decryptor)
+
 
 class TestCounters(unittest.TestCase):
     def test_counters_addition(self):
@@ -30,6 +30,7 @@ class TestCounters(unittest.TestCase):
         c = decryptor.Counters()
         self.assertEqual(c.total, 0)
         self.assertFalse(c.convert_to_cci)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -45,6 +45,8 @@ def get_latest_group_info(photos_folder):
         return 1, None, 0
 
     return max_group_num, latest_group_folder, get_folder_size(latest_group_folder)
+
+
 # Main function
 def group_photos(photos_folder, target_folder_size):
     print(
@@ -81,14 +83,8 @@ def group_photos(photos_folder, target_folder_size):
             # Check if current group is full, and move to next until we find one with space or create new
             while current_group_size + file_size > target_folder_size:
                 current_group_num += 1
-                current_group_folder = os.path.join(
-                    photos_folder, f"Group_{current_group_num}"
-                )
-                if os.path.exists(current_group_folder):
-                    current_group_size = get_folder_size(current_group_folder)
-                else:
-                    create_new_folder(photos_folder, f"Group_{current_group_num}")
-                    current_group_size = 0
+                current_group_folder = create_new_folder(photos_folder, f"Group_{current_group_num}")
+                current_group_size = get_folder_size(current_group_folder)
 
             # Move the file to the current group folder if it's not already there
             # We use absolute paths for comparison to be safe

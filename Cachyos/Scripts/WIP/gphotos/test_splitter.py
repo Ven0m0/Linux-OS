@@ -6,11 +6,12 @@ import argparse
 from contextlib import redirect_stdout
 import Splitter
 
+
 class TestSplitter(unittest.TestCase):
     TEST_DIR = "test_photos_env_unit"
     PHOTOS_DIR = os.path.join(TEST_DIR, "photos")
-    TARGET_SIZE = 1024 * 1024 * 5 # 5 MB
-    FILE_SIZE = 1024 * 1024 * 1 # 1 MB
+    TARGET_SIZE = 1024 * 1024 * 5  # 5 MB
+    FILE_SIZE = 1024 * 1024 * 1  # 1 MB
 
     def setUp(self):
         if os.path.exists(self.TEST_DIR):
@@ -78,8 +79,8 @@ class TestSplitter(unittest.TestCase):
     def test_parse_size(self):
         self.assertEqual(Splitter.parse_size("100"), 100)
         self.assertEqual(Splitter.parse_size("1KB"), 1024)
-        self.assertEqual(Splitter.parse_size("1 MB"), 1024*1024)
-        self.assertEqual(Splitter.parse_size("1.5GB"), int(1.5 * 1024*1024*1024))
+        self.assertEqual(Splitter.parse_size("1 MB"), 1024 * 1024)
+        self.assertEqual(Splitter.parse_size("1.5GB"), int(1.5 * 1024 * 1024 * 1024))
         with self.assertRaises(argparse.ArgumentTypeError):
             Splitter.parse_size("invalid")
 
@@ -94,6 +95,7 @@ class TestSplitter(unittest.TestCase):
 
         self.assertIn("Skipping photo", output)
         self.assertTrue(os.path.exists(os.path.join(self.PHOTOS_DIR, "huge.jpg")))
+
 
 if __name__ == '__main__':
     unittest.main()

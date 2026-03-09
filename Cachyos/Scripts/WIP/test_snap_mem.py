@@ -10,6 +10,7 @@ snap_mem = importlib.util.module_from_spec(spec)
 sys.modules["snap_mem"] = snap_mem
 spec.loader.exec_module(snap_mem)
 
+
 class TestSnapMem(unittest.TestCase):
     def test_build_base_name_valid(self):
         # Format: %Y-%m-%d %H:%M:%S UTC
@@ -36,6 +37,7 @@ class TestSnapMem(unittest.TestCase):
     def test_build_base_name_empty(self):
         with self.assertRaises(ValueError):
             snap_mem.build_base_name("")
+
 
 if __name__ == '__main__':
     unittest.main()

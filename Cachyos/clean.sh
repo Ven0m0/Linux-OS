@@ -27,11 +27,12 @@ clean_pkgs() {
   log "Cleaning package caches..."
   if has pacman; then
     # Measure before cleanup
-    local pacman_before paru_before yay_before
-    local pacman_after paru_after yay_after total_freed
-    pacman_before=$(get_cache_size "/var/cache/pacman/pkg")
-    paru_before=$(get_cache_size "${HOME}/.cache/paru/clone")
-    yay_before=$(get_cache_size "${HOME}/.cache/yay")
+    local total_freed
+    local -a cache_dirs=("/var/cache/pacman/pkg" "${HOME}/.cache/paru/clone" "${HOME}/.cache/yay")
+    local -i total_before=0 total_after=0
+    for d in "${cache_dirs[@]}"; do
+      (( total_before += $(get_cache_size "$d") ))
+    done
     # Remove stuck download directories
     sudo find "/var/cache/pacman/pkg" -maxdepth 1 -type d -name "download-*" -exec rm -rf {} +
     # Aggressive cache purge
@@ -48,10 +49,10 @@ clean_pkgs() {
       try sudo pacman -Rns --noconfirm "$orphans" || :
     fi
     # Measure after cleanup
-    pacman_after=$(get_cache_size "/var/cache/pacman/pkg")
-    paru_after=$(get_cache_size "${HOME}/.cache/paru/clone")
-    yay_after=$(get_cache_size "${HOME}/.cache/yay")
-    total_freed=$(((pacman_before - pacman_after) + (paru_before - paru_after) + (yay_before - yay_after)))
+    for d in "${cache_dirs[@]}"; do
+      (( total_after += $(get_cache_size "$d") ))
+    done
+    total_freed=$(( total_before - total_after ))
     [[ $total_freed -gt 0 ]] && log "Package cache freed: ${total_freed}MB"
   elif has apt-get; then
     sudo apt-get autoremove -y --purge

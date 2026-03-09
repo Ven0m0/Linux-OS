@@ -20,6 +20,17 @@ log()  { printf '%b\n' "${GRN}[+]${DEF} $*"; }
 warn() { printf '%b\n' "${YLW}[!]${DEF} $*"; }
 err()  { printf '%b\n' "${RED}[!]${DEF} $*" >&2; }
 die()  { err "$*"; exit "${2:-1}"; }
+run_url() {
+  local url="$1"
+  shift
+  local name="${url##*/}"
+  [[ $name =~ ^[[:alnum:]._-]+$ ]] || die "Invalid installer filename from URL: $url"
+  local tmp="$WORKDIR/$name"
+  curl --proto '=https' --tlsv1.3 -fsSL --retry 3 --retry-delay 2 "$url" -o "$tmp" \
+    || die "Failed to download $url"
+  [[ -s $tmp ]] || die "Downloaded installer is empty: $url"
+  bash "$tmp" "$@"
+}
 
 WORKDIR=$(mktemp -d)
 cleanup() { set +e; rm -rf "${WORKDIR:-}"; }
@@ -122,6 +133,18 @@ install_uv_pkgs() {
   local -a uv_pkgs
   mapfile -t uv_pkgs < <(load_pkgs uv)
   (( ${#uv_pkgs[@]} > 0 )) && uv tool install "${uv_pkgs[@]}" || warn "Some uv packages failed"
+}
+
+install_zerobrew() {
+  if has zb; then
+    log "zerobrew already installed, skipping"
+    return 0
+  fi
+  log "Installing zerobrew..."
+  if ! has curl || ! has git; then
+    sudo pacman -S --needed --noconfirm curl git
+  fi
+  run_url "https://zerobrew.rs/install" --no-modify-path
 }
 
 setup_git() {
@@ -306,6 +329,7 @@ main() {
   apply_konsave_profile
   install_bun_pkgs
   install_uv_pkgs
+  install_zerobrew
   setup_rust
   setup_am
   setup_flatpak

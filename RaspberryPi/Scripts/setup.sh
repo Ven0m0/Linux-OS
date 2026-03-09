@@ -89,7 +89,7 @@ Performs:
   • APT configuration (parallel downloads, compression, auto-upgrade)
   • dpkg nodoc configuration + cleanup
   • System optimization (I/O, power, journald, caching)
-  • Modern tooling (fd, rg, bat, eza, zoxide, navi, yt-dlp)
+  • Modern tooling (bat, eza, fd, rg, zerobrew, zoxide)
   • Optional: Pi-hole, PiKISS, PiApps, apt-fast, deb-get, pacstall
 EOF
 }
@@ -256,7 +256,7 @@ configure_ssh() {
 # Modern Tooling Installation
 install_core_tools() {
   log "Installing core modern CLI tools"
-  local tools=(fd-find ripgrep bat fzf zstd curl wget gpg btrfs-progs)
+  local tools=(bat btrfs-progs curl fd-find fzf gpg ripgrep wget zstd)
   sudo apt-get update
   sudo apt-get install -y "${tools[@]}"
   [[ -f /usr/bin/fdfind && ! -f "$HOME/.local/bin/fd" ]] && {
@@ -279,6 +279,15 @@ install_extended_tools() {
   fi
   ! has zoxide && run_url "https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh"
 }
+
+install_zerobrew() {
+  ((cfg[minimal] || cfg[skip_external])) && return 0
+  has zb && return 0
+  log "Installing zerobrew"
+  sudo apt-get install -y curl git
+  run_url "https://zerobrew.rs/install" --no-modify-path
+}
+
 # External Package Managers
 install_package_managers() {
   ((cfg[minimal] || cfg[skip_external])) && return 0
@@ -334,6 +343,7 @@ main() {
   configure_ssh
   install_core_tools
   install_extended_tools
+  install_zerobrew
   install_package_managers
   install_external
   sudo apt-get autoremove -y

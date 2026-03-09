@@ -11,6 +11,8 @@ IFS=$'\n\t' LC_ALL=C
 # - Deduplication to save storage space
 # - Multi-threaded processing for performance
 # - Intelligent format selection based on content
+# Reference: dolphin-compress-media has useful target-size/two-pass ffmpeg and Dolphin servicemenu ideas,
+# but this script already covers the core CLI image/video encoding flow and has no KDE integration point yet.
 
 # Configuration (overridable via environment variables)
 : "${MEDIA_OPT_QUALITY:=auto}"     # auto, lossless, lossy-low, lossy-medium, lossy-high

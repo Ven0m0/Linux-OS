@@ -124,6 +124,19 @@ install_uv_pkgs() {
   (( ${#uv_pkgs[@]} > 0 )) && uv tool install "${uv_pkgs[@]}" || warn "Some uv packages failed"
 }
 
+install_zerobrew() {
+  if has zb; then
+    log "zerobrew already installed, skipping"
+    return 0
+  fi
+  log "Installing zerobrew..."
+  sudo pacman -S --needed --noconfirm curl git
+  local installer_url="https://zerobrew.rs/install"
+  local installer="$WORKDIR/zerobrew-install.sh"
+  curl -fsSL "$installer_url" -o "$installer"
+  bash "$installer" --no-modify-path
+}
+
 setup_git() {
   local name="${GIT_NAME:-}"
   local email="${GIT_EMAIL:-}"
@@ -306,6 +319,7 @@ main() {
   apply_konsave_profile
   install_bun_pkgs
   install_uv_pkgs
+  install_zerobrew
   setup_rust
   setup_am
   setup_flatpak

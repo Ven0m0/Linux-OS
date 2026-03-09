@@ -32,8 +32,12 @@ run_url() {
     log "[DRY] Run (user): $url $*"
     return 0
   fi
-  local tmp="$WORKDIR/$(basename "$url")"
-  curl -sSfL -o "$tmp" "$url" || { err "Failed to download $url"; return 1; }
+  local name="${url##*/}"
+  [[ $name =~ ^[[:alnum:]._-]+$ ]] || { err "Invalid installer filename from URL: $url"; return 1; }
+  local tmp="$WORKDIR/$name"
+  curl --proto '=https' --tlsv1.3 -fsSL --retry 3 --retry-delay 2 -o "$tmp" "$url" \
+    || { err "Failed to download $url"; return 1; }
+  [[ -s $tmp ]] || { err "Downloaded installer is empty: $url"; return 1; }
   bash "$tmp" "$@"
 }
 
@@ -44,8 +48,12 @@ run_url_sudo() {
     log "[DRY] Run (root): $url $*"
     return 0
   fi
-  local tmp="$WORKDIR/$(basename "$url")"
-  curl -sSfL -o "$tmp" "$url" || { err "Failed to download $url"; return 1; }
+  local name="${url##*/}"
+  [[ $name =~ ^[[:alnum:]._-]+$ ]] || { err "Invalid installer filename from URL: $url"; return 1; }
+  local tmp="$WORKDIR/$name"
+  curl --proto '=https' --tlsv1.3 -fsSL --retry 3 --retry-delay 2 -o "$tmp" "$url" \
+    || { err "Failed to download $url"; return 1; }
+  [[ -s $tmp ]] || { err "Downloaded installer is empty: $url"; return 1; }
   sudo bash "$tmp" "$@"
 }
 WORKDIR=$(mktemp -d)
@@ -284,7 +292,9 @@ install_zerobrew() {
   ((cfg[minimal] || cfg[skip_external])) && return 0
   has zb && return 0
   log "Installing zerobrew"
-  sudo apt-get install -y curl git
+  if ! has curl || ! has git; then
+    sudo apt-get install -y curl git
+  fi
   run_url "https://zerobrew.rs/install" --no-modify-path
 }
 

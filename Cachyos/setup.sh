@@ -20,6 +20,17 @@ log()  { printf '%b\n' "${GRN}[+]${DEF} $*"; }
 warn() { printf '%b\n' "${YLW}[!]${DEF} $*"; }
 err()  { printf '%b\n' "${RED}[!]${DEF} $*" >&2; }
 die()  { err "$*"; exit "${2:-1}"; }
+run_url() {
+  local url="$1"
+  shift
+  local name="${url##*/}"
+  [[ $name =~ ^[[:alnum:]._-]+$ ]] || die "Invalid installer filename from URL: $url"
+  local tmp="$WORKDIR/$name"
+  curl --proto '=https' --tlsv1.3 -fsSL --retry 3 --retry-delay 2 "$url" -o "$tmp" \
+    || die "Failed to download $url"
+  [[ -s $tmp ]] || die "Downloaded installer is empty: $url"
+  bash "$tmp" "$@"
+}
 
 WORKDIR=$(mktemp -d)
 cleanup() { set +e; rm -rf "${WORKDIR:-}"; }
@@ -130,11 +141,10 @@ install_zerobrew() {
     return 0
   fi
   log "Installing zerobrew..."
-  sudo pacman -S --needed --noconfirm curl git
-  local installer_url="https://zerobrew.rs/install"
-  local installer="$WORKDIR/zerobrew-install.sh"
-  curl -fsSL "$installer_url" -o "$installer"
-  bash "$installer" --no-modify-path
+  if ! has curl || ! has git; then
+    sudo pacman -S --needed --noconfirm curl git
+  fi
+  run_url "https://zerobrew.rs/install" --no-modify-path
 }
 
 setup_git() {

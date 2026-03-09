@@ -27,7 +27,7 @@ def process_file(filepath: str) -> set[str]:
     encoding = detect_encoding(raw_head)
 
     words = set()
-    with open(filepath, "r", encoding=encoding, errors="ignore") as f:
+    with open(filepath, encoding=encoding, errors="ignore") as f:
         for line in f:
             words.update(WORD_PATTERN.findall(line))
     return words

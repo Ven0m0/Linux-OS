@@ -4,7 +4,7 @@ import unittest
 import sys
 import importlib.util
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 # Dynamically import git-fetch.py
 file_path = Path(__file__).parent / "git-fetch.py"
@@ -12,6 +12,7 @@ spec = importlib.util.spec_from_file_location("git_fetch", file_path)
 git_fetch = importlib.util.module_from_spec(spec)
 sys.modules["git_fetch"] = git_fetch
 spec.loader.exec_module(git_fetch)
+
 
 class TestGitFetch(unittest.TestCase):
     def test_fetch_github_calls(self):
@@ -54,6 +55,7 @@ class TestGitFetch(unittest.TestCase):
             }
             actual_paths = {f[0] for f in files_to_download}
             self.assertEqual(expected_paths, actual_paths)
+
 
 if __name__ == '__main__':
     unittest.main()

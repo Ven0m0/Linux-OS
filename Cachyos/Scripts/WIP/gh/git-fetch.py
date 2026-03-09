@@ -25,7 +25,7 @@ import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 
 @dataclass(slots=True)
@@ -70,7 +70,7 @@ def parse_url(url: str) -> RepoSpec:
   raise ValueError(f"Unsupported platform: {u.netloc}")
 
 
-_opener_cache: Optional[urllib.request.OpenerDirector] = None
+_opener_cache: urllib.request.OpenerDirector | None = None
 
 
 def get_opener() -> urllib.request.OpenerDirector:
@@ -226,7 +226,7 @@ def process_downloads(
       raise Exception(f"{len(errors)} download worker(s) failed.")
 
 
-def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
+def fetch_github(spec: RepoSpec, output: Path, token: str | None = None) -> None:
   """Download from GitHub using Contents/Trees API."""
   token = token or os.getenv("GITHUB_TOKEN", "")
   headers = {"Accept": "application/vnd.github.v3+json"}
@@ -294,7 +294,7 @@ def fetch_github(spec: RepoSpec, output: Path, token: Optional[str] = None) -> N
   process_downloads(files_to_download, headers, "raw.githubusercontent.com")
 
 
-def fetch_gitlab(spec: RepoSpec, output: Path, token: Optional[str] = None) -> None:
+def fetch_gitlab(spec: RepoSpec, output: Path, token: str | None = None) -> None:
   """Download from GitLab using Repository API."""
   token = token or os.getenv("GITLAB_TOKEN", "")
   headers = {}

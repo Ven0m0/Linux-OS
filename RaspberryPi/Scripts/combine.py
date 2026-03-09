@@ -55,14 +55,12 @@ def main() -> None:
         words2.update(words1)
         combined = sorted(words2)
 
-    valid_words = combined
-
     with open(outputfile, "w", encoding="utf-8") as f:
-        if valid_words:
-            f.writelines(word + "\n" for word in valid_words)
+        if combined:
+            f.writelines(word + "\n" for word in combined)
         else:
             f.write("\n")
-    print(f"✓ Wrote {len(valid_words)} unique words to {outputfile}")
+    print(f"✓ Wrote {len(combined)} unique words to {outputfile}")
 
 
 if __name__ == "__main__":

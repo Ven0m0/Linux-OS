@@ -17,8 +17,9 @@ python-mashumaro
 ralph
 vscodium-all-marketplace
 vscodium-electron-features
+vscodium-electron
 vscodium-prod-patcher
-vscodium-xdg-dir-patch
+vscode-xdg-patch-hook
 wallpaper-engine-kde-plugin-git
 docker-language-server
 vtsls

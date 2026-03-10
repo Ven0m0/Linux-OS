@@ -7,7 +7,7 @@ msg(){ printf '%s\n' "$@"; }
 log(){ printf '%s\n' "$@" >&2; }
 die(){ printf '%s\n' "$1" >&2; exit "${2:-1}"; }
 write_sys(){ local val=$1 path=$2; [[ -e $path ]] || return 0; printf '%s\n' "$val" | sudo tee "$path" >/dev/null; }
-write_many(){ local val=$1; shift; local p; for p in "$@"; do write_sys "$val" "$p"; done; }
+write_many(){ local val=$1; shift; local valid=() p; for p in "$@"; do [[ -e $p ]] && valid+=("$p"); done; (( ${#valid[@]} == 0 )) || printf "%s\n" "$val" | sudo tee "${valid[@]}" >/dev/null; }
 
 main() {
   [[ ${EUID:-1} -eq 0 ]] && die "Run as user with sudo, not root."

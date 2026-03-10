@@ -13,7 +13,6 @@ decryptor = importlib.util.module_from_spec(spec)
 sys.modules["cia_3ds_decryptor"] = decryptor
 spec.loader.exec_module(decryptor)
 
-
 class TestCounters(unittest.TestCase):
     def test_counters_addition(self):
         # Updated to use new fields
@@ -30,7 +29,6 @@ class TestCounters(unittest.TestCase):
         c = decryptor.Counters()
         self.assertEqual(c.total, 0)
         self.assertFalse(c.convert_to_cci)
-
 
 if __name__ == '__main__':
     unittest.main()

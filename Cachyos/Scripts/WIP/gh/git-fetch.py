@@ -358,6 +358,7 @@ def main() -> int:
   parser.add_argument("url", help="GitHub or GitLab URL")
   parser.add_argument("output_dir", nargs="?", default=".", help="Output directory")
   parser.add_argument("--token", help="Auth token (overrides env vars)")
+  parser.add_argument("--version", action="version", version="git-fetch.py 2.0.0")
 
   args = parser.parse_args()
 
@@ -372,6 +373,18 @@ def main() -> int:
 
     print(f"\n✓ Downloaded to: {output_path}")
     return 0
+  except KeyboardInterrupt:
+    print("\nInterrupted.", file=sys.stderr)
+    return 130
+  except ValueError as e:
+    print(f"✗ Invalid input: {e}", file=sys.stderr)
+    return 2
+  except urllib.error.HTTPError as e:
+    print(f"✗ HTTP {e.code}: {e.reason} — {e.url}", file=sys.stderr)
+    return 1
+  except urllib.error.URLError as e:
+    print(f"✗ Network error: {e.reason}", file=sys.stderr)
+    return 1
   except Exception as e:
     print(f"✗ Error: {e}", file=sys.stderr)
     return 1

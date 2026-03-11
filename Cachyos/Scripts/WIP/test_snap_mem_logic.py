@@ -4,6 +4,7 @@ import unittest
 import sys
 import threading
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 # Dynamically import snap-mem.py
 file_path = Path(__file__).parent / "snap-mem.py"
@@ -13,7 +14,6 @@ if spec is None:
 snap_mem = importlib.util.module_from_spec(spec)
 sys.modules["snap_mem"] = snap_mem
 spec.loader.exec_module(snap_mem)
-
 
 class TestSnapMem(unittest.TestCase):
     def test_make_unique_name(self):
@@ -36,7 +36,6 @@ class TestSnapMem(unittest.TestCase):
         name2 = snap_mem.make_unique_name("base", ".jpg", existing, lock)
         self.assertEqual(name2, "base_3.jpg")
         self.assertIn("base_3.jpg", existing)
-
 
 if __name__ == '__main__':
     unittest.main()

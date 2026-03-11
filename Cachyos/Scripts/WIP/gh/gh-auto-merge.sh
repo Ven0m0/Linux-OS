@@ -1,15 +1,25 @@
 #!/usr/bin/env bash
-set -euo pipefail
-shopt -s nullglob
+set -Eeuo pipefail
+shopt -s nullglob globstar extglob dotglob
+IFS=$'\n\t'
+export LC_ALL=C LANG=C
 
-# Config
-QUERY="${GH_MERGE_QUERY:-author:app/dependabot}"
-LIMIT="${GH_MERGE_LIMIT:-50}"
-BRANCH="${GH_MERGE_BRANCH:-combined-deps}"
-TITLE="${GH_MERGE_TITLE:-chore(deps): combined dependency updates}"
+# Colors (trans palette)
+LBLU=$'\e[38;5;117m' PNK=$'\e[38;5;218m' BWHT=$'\e[97m'
+YLW=$'\e[33m' RED=$'\e[31m' GRN=$'\e[32m' DEF=$'\e[0m' BLD=$'\e[1m'
 
-die(){ printf '%s\n' "$1" >&2; exit 1; }
-log(){ printf ':: %s\n' "$@" >&2; }
+has(){ command -v "$1" &>/dev/null; }
+log(){ printf "${LBLU}:: %s${DEF}\n" "$*" >&2; }
+warn(){ printf "${YLW}⚠ %s${DEF}\n" "$*" >&2; }
+err(){ printf "${RED}ERROR: %s${DEF}\n" "$*" >&2; }
+die(){ err "$*"; exit 1; }
+success(){ printf "${GRN}✓ %s${DEF}\n" "$*" >&2; }
+
+# Config (override via env)
+QUERY=${GH_MERGE_QUERY:-author:app/dependabot}
+LIMIT=${GH_MERGE_LIMIT:-50}
+BRANCH=${GH_MERGE_BRANCH:-combined-deps}
+TITLE=${GH_MERGE_TITLE:-chore(deps): combined dependency updates}
 
 usage(){
   cat <<EOF
@@ -19,130 +29,124 @@ Combine multiple PRs into one clean squashed PR.
 
 Options:
   -q, --query QUERY    PR search query (default: "$QUERY")
-  -n, --limit N        Max PRs (default: $LIMIT)
-  -b, --branch NAME    Branch name (default: $BRANCH)
-  -t, --title TITLE    PR title
-  --prs N1,N2,...      Specific PR numbers
-  --skip-checks        Ignore failing checks
-  --dry-run            Show what would be done
+  -n, --limit N        Max PRs to evaluate (default: $LIMIT)
+  -b, --branch NAME    Target branch name (default: $BRANCH)
+  -t, --title TITLE    PR title (default: "$TITLE")
+  --prs N1,N2,...      Combine only these specific PR numbers
+  --skip-checks        Ignore failing CI checks
+  --dry-run            Show what would be done without making changes
   -h, --help           Show this help
+  --version            Show version
 EOF
 }
 
 main(){
   local prs="" skip_checks=false dry_run=false
-  while [[ $# -gt 0 ]]; do
+
+  while (( $# )); do
     case $1 in
-      -h|--help) usage; exit 0;;
-      -q|--query) [[ -n ${2:-} ]] || die "Missing argument for $1"; QUERY=$2; shift 2;;
-      -n|--limit) [[ -n ${2:-} ]] || die "Missing argument for $1"; LIMIT=$2; shift 2;;
-      -b|--branch) [[ -n ${2:-} ]] || die "Missing argument for $1"; BRANCH=$2; shift 2;;
-      -t|--title) [[ -n ${2:-} ]] || die "Missing argument for $1"; TITLE=$2; shift 2;;
-      --prs) [[ -n ${2:-} ]] || die "Missing argument for $1"; prs=$2; shift 2;;
+      -h|--help)    usage; exit 0;;
+      --version)    printf 'gh-auto-merge 2.0.0\n'; exit 0;;
+      -q|--query)   QUERY=${2:?missing query}; shift 2;;
+      -n|--limit)   LIMIT=${2:?missing limit}; shift 2;;
+      -b|--branch)  BRANCH=${2:?missing branch}; shift 2;;
+      -t|--title)   TITLE=${2:?missing title}; shift 2;;
+      --prs)        prs=${2:?missing PR numbers}; shift 2;;
       --skip-checks) skip_checks=true; shift;;
-      --dry-run) dry_run=true; shift;;
-      *) die "Unknown: $1";;
+      --dry-run)    dry_run=true; shift;;
+      *) die "Unknown option: $1. Use -h for help.";;
     esac
   done
 
-  command -v gh &>/dev/null || die "gh CLI required"
-  git rev-parse --git-dir &>/dev/null || die "Not a git repo"
+  has gh  || die "gh CLI required"
+  has git || die "git required"
+  git rev-parse --git-dir &>/dev/null || die "Not a git repository"
 
   local base
   base=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)
   log "Base branch: $base"
 
-  # Build jq filter for specific PRs
+  # Build jq filter: all mergeable PRs, or a specific set by number
   local jq_filter='.[] | select(.mergeable == "MERGEABLE")'
-  [[ -n $prs ]] && jq_filter=".[] | select(.number | IN(${prs//,/,}))"
+  if [[ -n $prs ]]; then
+    jq_filter=".[] | select(.number | IN(${prs}))"
+  fi
 
-  # Fetch eligible PRs
   local -a pr_data
   mapfile -t pr_data < <(
     gh pr list --search "$QUERY" --limit "$LIMIT" \
-      --json number,headRefName,title,author \
+      --json number,headRefName,title,author,mergeable \
       --jq "$jq_filter | [.number, .headRefName, .title, .author.login] | @tsv"
   )
-  [[ ${#pr_data[@]} -eq 0 ]] && die "No eligible PRs found"
+  (( ${#pr_data[@]} > 0 )) || die "No eligible PRs found"
 
-  log "Found ${#pr_data[@]} PRs:"
+  log "Found ${#pr_data[@]} eligible PR(s):"
   printf '  %s\n' "${pr_data[@]}" >&2
 
   if [[ $dry_run == true ]]; then
-    log "[dry-run] Would combine ${#pr_data[@]} PRs into $BRANCH"
+    log "[dry-run] Would combine ${#pr_data[@]} PR(s) into $BRANCH"
     return 0
   fi
 
-  # Prep workspace
+  # Prepare workspace: delete existing branch if present
   git fetch --all --prune -q
   git checkout -q "$base"
   git pull --ff-only -q
-  git branch -D "$BRANCH" 2>/dev/null || true
+  git branch -D "$BRANCH" 2>/dev/null || :
   git checkout -q -b "$BRANCH"
 
-  # Process each PR
-  local body="" count=0 merged=()
-  local num ref title author
+  local body="" count=0 num ref title author merge_base
+  local -a merged=()
+
   for line in "${pr_data[@]}"; do
     IFS=$'\t' read -r num ref title author <<<"$line"
 
-    # Check status unless skipped
     if [[ $skip_checks == false ]]; then
       if ! gh pr checks "$num" --fail-fast 2>/dev/null; then
-        log "⊘ #$num checks failing, skip"
+        log "⊘ #$num: checks failing — skipping"
         continue
       fi
     fi
 
-    log "→ Cherry-picking #$num ($ref)..."
-    
-    # Get merge-base and cherry-pick range
-    local merge_base
+    log "Cherry-picking #$num ($ref)..."
     merge_base=$(git merge-base "origin/$base" "origin/$ref" 2>/dev/null) || {
-      log "⊘ #$num no common ancestor, skip"
+      log "⊘ #$num: no common ancestor — skipping"
       continue
     }
 
     if ! git cherry-pick --no-commit "$merge_base..origin/$ref" 2>/dev/null; then
-      log "⊘ #$num conflict, skip"
+      log "⊘ #$num: conflict — skipping"
       git cherry-pick --abort 2>/dev/null || git reset --hard HEAD
       continue
     fi
 
-    # Stage and commit with fixup marker for autosquash
     if [[ -n $(git diff --cached --name-only) ]]; then
       git commit -q -m "fixup! $TITLE" -m "PR #$num: $title @$author"
       merged+=("$num")
       body+=$'\n'"- $title (#$num) @$author"
-      ((++count))
-      log "✓ #$num merged"
+      (( ++count ))
+      success "#$num merged"
     else
-      log "⊘ #$num no changes"
+      log "⊘ #$num: no net changes — skipping"
     fi
   done
 
-  [[ $count -eq 0 ]] && die "No PRs merged"
+  (( count > 0 )) || die "No PRs could be merged"
 
-  # Squash all commits
-  log "Squashing $count commits..."
-  git reset --soft "$base"
+  # Squash all fixup commits into one
+  log "Squashing $count commit(s)..."
+  git reset --soft "origin/$base"
   git commit -m "$TITLE" -m "Combined PRs:$body"
 
-  # Push and create PR
+  # Force-push is required: this branch may have been pushed before
   log "Pushing $BRANCH..."
-  git push -f -u origin "$BRANCH"
+  git push --force-with-lease -u origin "$BRANCH"
 
   local pr_body
-  pr_body=$(cat <<EOF
-Combined dependency updates into single PR.
+  pr_body=$(printf 'Combined dependency updates into a single PR.\n\n## Merged PRs\n%s\n\n---\n<sub>Auto-generated by gh-auto-merge</sub>\n' "$body")
 
-## Merged PRs
-$body
-
----
-<sub>Auto-generated by gh-merge-prs</sub>
-EOF
-)
+  # Create label if it doesn't exist yet (ignore error if unsupported)
+  gh label create dependencies --color 0075ca --description "Dependency updates" 2>/dev/null || :
 
   gh pr create \
     --title "$TITLE" \
@@ -151,8 +155,8 @@ EOF
     --base "$base" \
     --head "$BRANCH"
 
-  log "✓ Created combined PR with $count updates"
-  log "  Merged: ${merged[*]}"
+  success "Created combined PR with $count update(s)"
+  log "Merged PRs: ${merged[*]}"
 }
 
 main "$@"

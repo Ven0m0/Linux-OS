@@ -15,7 +15,7 @@ def hash_file_partial(file_path, chunk_size=65536):
       chunk = f.read(chunk_size)
       sha256_hash.update(chunk)
     return file_path, sha256_hash.hexdigest()
-  except OSError as e:
+  except (IOError, OSError) as e:
     print(f"Error partial hashing {file_path}: {e}")
     return file_path, None
 

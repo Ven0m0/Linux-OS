@@ -517,8 +517,8 @@ def banner() -> None:
   print("  ############################################################\n")
 
 
-def main() -> None:
-  root = Path.cwd()
+def initialize_tools(root: Path) -> tuple[list[Path], Path, Path]:
+  """Initializes tools, logging, and cleans up old NCCH files."""
   bin_dir = root / "bin"
   log_dir = root / "log"
   setup_logging(log_dir)
@@ -531,6 +531,11 @@ def main() -> None:
   if not seeddb.is_file():
     die("Missing seeddb.bin in bin/")
   clean_ncch_files(bin_dir)
+  return [ctrtool, decrypt, makerom], seeddb, log_dir
+
+
+def sanitize_filenames(root: Path) -> None:
+  """Sanitizes all filenames in the root directory."""
   for f in root.glob("*"):
     if f.is_file():
       new_name = sanitize_filename(f.name)
@@ -544,6 +549,10 @@ def main() -> None:
             new_name,
             e,
           )
+
+
+def get_file_counts(root: Path) -> Counters:
+  """Counts CIA and 3DS files and returns a Counters object."""
   cnt = Counters()
   cnt.count_cia = sum(
     1 for f in root.glob("*.cia") if "-decrypted" not in f.stem.lower()
@@ -552,32 +561,33 @@ def main() -> None:
     1 for f in root.glob("*.3ds") if "-decrypted" not in f.stem.lower()
   )
   cnt.total = cnt.count_cia + cnt.count_3ds
-  if cnt.total == 0:
-    banner()
-    print("  No CIA or 3DS files found!\n")
-    logging.warning("[^] No CIA or 3DS were found")
-    logging.info("[i] Script execution ended")
-    return
+  return cnt
+
+
+def ask_for_conversion(cnt: Counters) -> bool:
+  """Prompts the user if they want to convert CIA files to CCI."""
   if cnt.count_cia >= 1:
     banner()
     print(f"  {cnt.count_cia} CIA file(s) found. Convert to CCI?")
     print("  (Not supported:  DLC, Demos, System, TWL, Updates)\n")
     print("  [Y] Yes  [N] No\n")
     choice = input("  Enter:  ").strip().lower()
-    if choice in ("y", "1"):
-      cnt.convert_to_cci = True
     print()
+    if choice in ("y", "1"):
+      return True
+  return False
+
+
+def run_decryption(
+  root: Path, cnt: Counters, tools_list: list[Path], seeddb: Path
+) -> Counters:
+  """Runs the decryption tasks in parallel."""
   banner()
   print("  Decrypting...\n")
-
-  tools_list = [ctrtool, decrypt, makerom]
-
   futures = {}
   with concurrent.futures.ThreadPoolExecutor() as executor:
     if cnt.count_3ds:
-      logging.info(
-        "[i] Found %d 3DS file(s). Start decrypting...", cnt.count_3ds
-      )
+      logging.info("[i] Found %d 3DS file(s). Start decrypting...", cnt.count_3ds)
       for f in sorted(root.glob("*.3ds")):
         future = executor.submit(
           process_file_task, decrypt_3ds, root, f, tools_list, seeddb
@@ -585,16 +595,13 @@ def main() -> None:
         futures[future] = "3ds"
 
     if cnt.count_cia:
-      logging.info(
-        "[i] Found %d CIA file(s). Start decrypting...", cnt.count_cia
-      )
+      logging.info("[i] Found %d CIA file(s). Start decrypting...", cnt.count_cia)
       for f in sorted(root.glob("*.cia")):
         future = executor.submit(
           process_file_task, decrypt_cia, root, f, tools_list, seeddb
         )
         futures[future] = "cia"
 
-    # Wait for completion and accumulate results
     for future in concurrent.futures.as_completed(futures):
       task_type = futures.get(future)
       try:
@@ -602,35 +609,41 @@ def main() -> None:
         cnt += result_cnt
       except Exception as e:
         logging.error("Task failed with exception: %s", e)
-        # Update error counts so failed tasks are reflected in statistics
         if task_type == "3ds":
           cnt.ds_err += 1
         elif task_type == "cia":
           cnt.cia_err += 1
-        # If task_type is None or unrecognized, we intentionally do not guess
-  if cnt.convert_to_cci:
-    logging.info("[i] Starting parallel CCI conversion...")
-    conv_futures = {}
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-      for f in sorted(root.glob("*-decrypted.cia")):
-        future = executor.submit(
-          process_conversion_task, root, f, tools_list, seeddb
+  return cnt
+
+
+def run_conversion(
+  root: Path, cnt: Counters, tools_list: list[Path], seeddb: Path
+) -> Counters:
+  """Runs the CCI conversion tasks in parallel."""
+  logging.info("[i] Starting parallel CCI conversion...")
+  conv_futures = {}
+  with concurrent.futures.ThreadPoolExecutor() as executor:
+    for f in sorted(root.glob("*-decrypted.cia")):
+      future = executor.submit(
+        process_conversion_task, root, f, tools_list, seeddb
+      )
+      conv_futures[future] = f.name
+
+    for future in concurrent.futures.as_completed(conv_futures):
+      try:
+        result_cnt = future.result()
+        cnt += result_cnt
+      except Exception as e:
+        logging.error(
+          "CCI conversion failed for %s: %s", conv_futures.get(future), e
         )
-        conv_futures[future] = f.name
+        cnt.cci_err += 1
+  return cnt
 
-      for future in concurrent.futures.as_completed(conv_futures):
-        try:
-          result_cnt = future.result()
-          cnt += result_cnt
-        except Exception as e:
-          logging.error(
-            "CCI conversion failed for %s: %s", conv_futures.get(future), e
-          )
-          cnt.cci_err += 1
 
+def display_summary(cnt: Counters, log_dir: Path) -> None:
+  """Displays the final summary of the decryption and conversion process."""
   banner()
-
-  # Summary Logic
   print("  Decrypting finished!\n")
   print("  Summary:")
   print(f"  - {cnt.count_3ds} 3DS file(s) found")
@@ -653,6 +666,28 @@ def main() -> None:
 
   print(f"\n  Review '{log_dir / 'programlog.txt'}' for details.\n")
   logging.info("[i] Script execution ended")
+
+
+def main() -> None:
+  root = Path.cwd()
+  tools_list, seeddb, log_dir = initialize_tools(root)
+  sanitize_filenames(root)
+
+  cnt = get_file_counts(root)
+  if cnt.total == 0:
+    banner()
+    print("  No CIA or 3DS files found!\n")
+    logging.warning("[^] No CIA or 3DS were found")
+    logging.info("[i] Script execution ended")
+    return
+
+  cnt.convert_to_cci = ask_for_conversion(cnt)
+  cnt = run_decryption(root, cnt, tools_list, seeddb)
+
+  if cnt.convert_to_cci:
+    cnt = run_conversion(root, cnt, tools_list, seeddb)
+
+  display_summary(cnt, log_dir)
 
 
 if __name__ == "__main__":

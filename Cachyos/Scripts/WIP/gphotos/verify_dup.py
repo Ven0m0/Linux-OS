@@ -3,7 +3,6 @@ import os
 import shutil
 import tempfile
 import unittest
-from pathlib import Path
 from Dup import find_duplicate_photos
 
 class TestDup(unittest.TestCase):

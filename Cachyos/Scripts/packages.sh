@@ -31,15 +31,14 @@ print_warning() {
 
 # Ensure log file is writable
 ensure_log_file() {
-  if [ ! -f "$LOG_FILE" ]; then
+  if [[ ! -f "$LOG_FILE" ]]; then
     sudo touch "$LOG_FILE" 2>/dev/null || touch "$LOG_FILE" 2>/dev/null
   fi
-  sudo chmod 666 "$LOG_FILE" 2>/dev/null || chmod 666 "$LOG_FILE" 2>/dev/null
+  sudo chmod 644 "$LOG_FILE" 2>/dev/null || chmod 644 "$LOG_FILE" 2>/dev/null
 
-  if [ ! -w "$LOG_FILE" ]; then
+  if [[ ! -w "$LOG_FILE" ]]; then
     echo "Warning: Cannot write to log file at $LOG_FILE, using temporary log"
-    LOG_FILE="/tmp/pkg-install-$(date +%s).log"
-    touch "$LOG_FILE"
+    LOG_FILE=$(mktemp /tmp/pkg-install-XXXXXX.log)
   fi
 }
 

@@ -60,6 +60,8 @@ def group_photos(photos_folder, target_folder_size):
             photos_folder, f"Group_{current_group_num}"
         )
 
+    abs_group_folder = os.path.abspath(current_group_folder)
+
     for root, dirs, files in os.walk(photos_folder):
         # Exclude generated group folders from os.walk
         dirs[:] = [d for d in dirs if not d.startswith("Group_")]
@@ -90,10 +92,11 @@ def group_photos(photos_folder, target_folder_size):
                     create_new_folder(photos_folder, f"Group_{current_group_num}")
                     current_group_size = 0
 
+                abs_group_folder = os.path.abspath(current_group_folder)
+
             # Move the file to the current group folder if it's not already there
             # We use absolute paths for comparison to be safe
             abs_file_path = os.path.abspath(file_path)
-            abs_group_folder = os.path.abspath(current_group_folder)
 
             if os.path.commonpath([abs_file_path, abs_group_folder]) != abs_group_folder:
                 try:

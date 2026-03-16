@@ -7,7 +7,7 @@ import unittest
 import sys
 import importlib.util
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 # Dynamically load git-fetch.py (hyphen in name prevents normal import)
 _file_path = Path(__file__).parent / "git-fetch.py"

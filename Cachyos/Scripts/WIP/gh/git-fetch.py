@@ -92,6 +92,86 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
     raise urllib.error.URLError(f"{e} (url: {url})") from e
 
 
+def process_single_download(
+  conn: http.client.HTTPSConnection,
+  host: str,
+  url_path: str,
+  local_path: Path,
+  display_path: str,
+  headers: dict[str, str],
+) -> http.client.HTTPSConnection:
+  """Process a single file download with retries."""
+  retries = 3
+  while retries > 0:
+    try:
+      conn.request("GET", url_path, headers=headers)
+      resp = conn.getresponse()
+
+      # Check if the server wants to close the connection
+      connection_header = resp.getheader("Connection", "").lower()
+      should_close = connection_header == "close"
+
+      if resp.status == 200:
+        # Create parent directory to avoid FileNotFoundError
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(local_path, "wb") as f:
+          while True:
+            chunk = resp.read(65536)
+            if not chunk:
+              break
+            f.write(chunk)
+        print(f"✓ {display_path}")
+
+        if should_close:
+          conn.close()
+          conn = http.client.HTTPSConnection(host, timeout=30)
+
+        break
+      elif resp.status in (301, 302, 307, 308):
+        loc = resp.getheader("Location")
+        resp.read()  # Consume body
+        if loc:
+          print(f"✗ {display_path}: Redirect to {loc} not handled in persistent mode")
+        else:
+          print(f"✗ {display_path}: HTTP {resp.status}")
+
+        if should_close:
+          conn.close()
+          conn = http.client.HTTPSConnection(host, timeout=30)
+        break
+      else:
+        print(f"✗ {display_path}: HTTP {resp.status}")
+        resp.read()  # Consume body
+        if should_close:
+          conn.close()
+          conn = http.client.HTTPSConnection(host, timeout=30)
+
+        # Non-retriable client errors: fail fast
+        if resp.status in (401, 403, 404):
+          break
+
+        # Retry on transient server errors and rate limiting
+        if 500 <= resp.status < 600 or resp.status == 429:
+          retries -= 1
+          if retries > 0:
+            continue
+          # Out of retries, give up
+          break
+
+        # Default: treat other statuses as non-retriable
+        break
+    except (http.client.HTTPException, OSError) as e:
+      # Connection might have been closed by server unexpectedly
+      conn.close()
+      retries -= 1
+      if retries > 0:
+        conn = http.client.HTTPSConnection(host, timeout=30)
+      else:
+        print(f"✗ {display_path}: {e}")
+
+  return conn
+
+
 def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> None:
   """Worker thread: process files from queue using a persistent connection."""
   # Make a per-thread copy so we don't mutate a shared headers dict.
@@ -111,78 +191,9 @@ def download_worker(host: str, file_q: queue.Queue, headers: dict[str, str]) -> 
 
       try:
         url_path, local_path, display_path = item
-
-        # Process download
-        retries = 3
-        while retries > 0:
-          try:
-            conn.request("GET", url_path, headers=headers)
-            resp = conn.getresponse()
-
-            # Check if the server wants to close the connection
-            connection_header = resp.getheader("Connection", "").lower()
-            should_close = connection_header == "close"
-
-            if resp.status == 200:
-              # Create parent directory to avoid FileNotFoundError
-              local_path.parent.mkdir(parents=True, exist_ok=True)
-              with open(local_path, "wb") as f:
-                while True:
-                  chunk = resp.read(65536)
-                  if not chunk:
-                    break
-                  f.write(chunk)
-              print(f"✓ {display_path}")
-
-              if should_close:
-                conn.close()
-                # Reconnect for the next file in the queue
-                conn = http.client.HTTPSConnection(host, timeout=30)
-
-              break
-            elif resp.status in (301, 302, 307, 308):
-              loc = resp.getheader("Location")
-              resp.read()  # Consume body
-              if loc:
-                print(
-                  f"✗ {display_path}: Redirect to {loc} not handled in persistent mode"
-                )
-              else:
-                print(f"✗ {display_path}: HTTP {resp.status}")
-
-              if should_close:
-                conn.close()
-                conn = http.client.HTTPSConnection(host, timeout=30)
-              break
-            else:
-              print(f"✗ {display_path}: HTTP {resp.status}")
-              resp.read()  # Consume body
-              if should_close:
-                conn.close()
-                conn = http.client.HTTPSConnection(host, timeout=30)
-
-              # Non-retriable client errors: fail fast
-              if resp.status in (401, 403, 404):
-                break
-
-              # Retry on transient server errors and rate limiting
-              if 500 <= resp.status < 600 or resp.status == 429:
-                retries -= 1
-                if retries > 0:
-                  continue
-                # Out of retries, give up
-                break
-
-              # Default: treat other statuses as non-retriable
-              break
-          except (http.client.HTTPException, OSError) as e:
-            # Connection might have been closed by server unexpectedly
-            conn.close()
-            retries -= 1
-            if retries > 0:
-              conn = http.client.HTTPSConnection(host, timeout=30)
-            else:
-              print(f"✗ {display_path}: {e}")
+        conn = process_single_download(
+          conn, host, url_path, local_path, display_path, headers
+        )
       finally:
         file_q.task_done()
   finally:

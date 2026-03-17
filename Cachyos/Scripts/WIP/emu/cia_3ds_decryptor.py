@@ -286,100 +286,90 @@ def decrypt_3ds(
     cnt.ds_err += 1
 
 
-def decrypt_cia(
+def _handle_twl_cia(
   root: Path,
   bin_dir: Path,
   file: Path,
   ctrtool: Path,
-  decrypt: Path,
   makerom: Path,
-  seeddb: Path,
   cnt: Counters,
+  stem: str,
+  txt: str,
+  tid: str,
 ) -> None:
-  stem = sanitize_filename(file.stem)
-  if "-decrypted" in stem.lower():
-    return
-  tmp_content = bin_dir / "CTR_Content.txt"
-  _, txt = run_tool(ctrtool, ["--seeddb", str(seeddb), str(file)], cwd=root)
-  tmp_content.write_text(txt, encoding="utf-8", errors="replace")
-  if "ERROR" in txt:
-    logging.error("[^! ] CIA is invalid [%s]", file.name)
+  twl_info = parse_twl_ctrtool_output(txt)
+  if twl_info.crypto_key.upper() == "NO":
+    logging.warning(
+      "[^] TWL CIA file '%s' [%s v%s] is already decrypted",
+      file.name,
+      twl_info.title_id,
+      twl_info.title_version,
+    )
     cnt.cia_err += 1
     return
-  info = parse_ctrtool_output(txt)
-  tid = info.title_id.upper()
-  if "Secure" not in info.crypto_key:
-    if not tid.startswith("00048"):
-      if "None" in info.crypto_key:
-        logging.warning(
-          "[^] CIA file '%s' [%s v%s] is already decrypted",
-          file.name,
-          info.title_id,
-          info.title_version,
-        )
-        cnt.cia_err += 1
-      return
-    twl_info = parse_twl_ctrtool_output(txt)
-    if twl_info.crypto_key.upper() == "NO":
-      logging.warning(
-        "[^] TWL CIA file '%s' [%s v%s] is already decrypted",
-        file.name,
+  if twl_info.crypto_key.upper() == "YES" and tid.startswith("00048"):
+    logging.info(
+      "[i] CIA file '%s' [%s v%s] is a TWL title",
+      file.name,
+      twl_info.title_id,
+      twl_info.title_version,
+    )
+    run_tool(
+      ctrtool,
+      [
+        f"--contents={bin_dir}/00000000.app",
+        f"--meta={bin_dir}/00000000.app",
+        str(file),
+      ],
+      cwd=root,
+    )
+    app_file = bin_dir / "00000000.app.0000.00000000"
+    if app_file.exists():
+      app_file.rename(bin_dir / "00000000.app")
+    out_cia = root / f"{stem} TWL-decrypted.cia"
+    makerom_args = [
+      "-srl",
+      str(bin_dir / "00000000.app"),
+      "-f",
+      "cia",
+      "-ignoresign",
+      "-target",
+      "p",
+      "-o",
+      str(out_cia),
+      "-ver",
+      twl_info.title_version,
+    ]
+    run_tool(makerom, makerom_args, cwd=root)
+    (bin_dir / "00000000.app").unlink(missing_ok=True)
+    if out_cia.exists():
+      logging.info(
+        "[i] Decrypting succeeded [%s v%s]",
+        twl_info.title_id,
+        twl_info.title_version,
+      )
+      cnt.decrypted_cnt += 1
+    else:
+      logging.error(
+        "[^!] Decrypting failed [%s v%s]",
         twl_info.title_id,
         twl_info.title_version,
       )
       cnt.cia_err += 1
-      return
-    if twl_info.crypto_key.upper() == "YES" and tid.startswith("00048"):
-      logging.info(
-        "[i] CIA file '%s' [%s v%s] is a TWL title",
-        file.name,
-        twl_info.title_id,
-        twl_info.title_version,
-      )
-      run_tool(
-        ctrtool,
-        [
-          f"--contents={bin_dir}/00000000.app",
-          f"--meta={bin_dir}/00000000.app",
-          str(file),
-        ],
-        cwd=root,
-      )
-      app_file = bin_dir / "00000000.app.0000.00000000"
-      if app_file.exists():
-        app_file.rename(bin_dir / "00000000.app")
-      out_cia = root / f"{stem} TWL-decrypted.cia"
-      makerom_args = [
-        "-srl",
-        str(bin_dir / "00000000.app"),
-        "-f",
-        "cia",
-        "-ignoresign",
-        "-target",
-        "p",
-        "-o",
-        str(out_cia),
-        "-ver",
-        twl_info.title_version,
-      ]
-      run_tool(makerom, makerom_args, cwd=root)
-      (bin_dir / "00000000.app").unlink(missing_ok=True)
-      if out_cia.exists():
-        logging.info(
-          "[i] Decrypting succeeded [%s v%s]",
-          twl_info.title_id,
-          twl_info.title_version,
-        )
-        cnt.decrypted_cnt += 1
-      else:
-        logging.error(
-          "[^!] Decrypting failed [%s v%s]",
-          twl_info.title_id,
-          twl_info.title_version,
-        )
-        cnt.cia_err += 1
-      return
-    return
+
+
+def _handle_standard_cia(
+  root: Path,
+  bin_dir: Path,
+  file: Path,
+  decrypt: Path,
+  makerom: Path,
+  cnt: Counters,
+  stem: str,
+  tmp_content: Path,
+  info: TitleInfo,
+  tid: str,
+) -> None:
   cia_type = ""
   for name, pattern in [
     ("Game", CIA_GAME_RE),
@@ -442,6 +432,44 @@ def decrypt_cia(
       "[^!] Decrypting failed [%s v%s]", info.title_id, info.title_version
     )
     cnt.cia_err += 1
+
+
+def decrypt_cia(
+  root: Path,
+  bin_dir: Path,
+  file: Path,
+  ctrtool: Path,
+  decrypt: Path,
+  makerom: Path,
+  seeddb: Path,
+  cnt: Counters,
+) -> None:
+  stem = sanitize_filename(file.stem)
+  if "-decrypted" in stem.lower():
+    return
+  tmp_content = bin_dir / "CTR_Content.txt"
+  _, txt = run_tool(ctrtool, ["--seeddb", str(seeddb), str(file)], cwd=root)
+  tmp_content.write_text(txt, encoding="utf-8", errors="replace")
+  if "ERROR" in txt:
+    logging.error("[^! ] CIA is invalid [%s]", file.name)
+    cnt.cia_err += 1
+    return
+  info = parse_ctrtool_output(txt)
+  tid = info.title_id.upper()
+  if "Secure" not in info.crypto_key:
+    if not tid.startswith("00048"):
+      if "None" in info.crypto_key:
+        logging.warning(
+          "[^] CIA file '%s' [%s v%s] is already decrypted",
+          file.name,
+          info.title_id,
+          info.title_version,
+        )
+        cnt.cia_err += 1
+      return
+    _handle_twl_cia(root, bin_dir, file, ctrtool, makerom, cnt, stem, txt, tid)
+    return
+  _handle_standard_cia(root, bin_dir, file, decrypt, makerom, cnt, stem, tmp_content, info, tid)
 
 
 def convert_cia_to_cci(

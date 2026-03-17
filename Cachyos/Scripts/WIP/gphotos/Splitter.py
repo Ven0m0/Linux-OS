@@ -1,6 +1,7 @@
 import os
 import shutil
 import argparse
+import sys
 
 
 # Function to calculate folder size recursively
@@ -140,7 +141,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not os.path.isdir(args.photos_folder):
-        import sys
         print(f"Error: '{args.photos_folder}' is not a directory.", file=sys.stderr)
         sys.exit(1)
 

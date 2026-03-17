@@ -217,14 +217,22 @@ def build_ncch_args_sequential(bin_dir: Path) -> str:
   )
 
 
-def build_ncch_args_contentid(bin_dir: Path, content_txt: Path) -> str:
+def _extract_content_ids(content_txt: Path) -> list[int]:
+  if not content_txt.exists():
+    return []
+
   content_ids = []
-  if content_txt.exists():
-    for line in content_txt.read_text(errors="replace").splitlines():
-      if "ContentId:" in line:
-        cid = line.split("ContentId:")[1].strip()[:8]
-        if cid:
-          content_ids.append(int(cid, 16))
+  for line in content_txt.read_text(errors="replace").splitlines():
+    if "ContentId:" not in line:
+      continue
+    cid = line.split("ContentId:")[1].strip()[:8]
+    if cid:
+      content_ids.append(int(cid, 16))
+  return content_ids
+
+
+def build_ncch_args_contentid(bin_dir: Path, content_txt: Path) -> str:
+  content_ids = _extract_content_ids(content_txt)
   ncch_files = sorted(bin_dir.glob("tmp.*.ncch"))
   parts = [
     f'-i "{ncch}:{i}:{content_ids[i] if i < len(content_ids) else i}"'

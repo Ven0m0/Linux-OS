@@ -27,19 +27,22 @@ def create_new_folder(root_folder, folder_name):
 
 def get_latest_group_info(photos_folder):
     """Finds the highest numbered Group_N folder under photos_folder and its size."""
+    if not os.path.exists(photos_folder):
+        return 1, None, 0
+
     max_group_num = 0
     latest_group_folder = None
 
-    if os.path.exists(photos_folder):
-        for entry in os.scandir(photos_folder):
-            if entry.name.startswith("Group_") and entry.is_dir():
-                try:
-                    num = int(entry.name.split("_")[1])
-                    if num > max_group_num:
-                        max_group_num = num
-                        latest_group_folder = entry.path
-                except (ValueError, IndexError):
-                    continue
+    for entry in os.scandir(photos_folder):
+        if not (entry.name.startswith("Group_") and entry.is_dir()):
+            continue
+        try:
+            num = int(entry.name.split("_")[1])
+            if num > max_group_num:
+                max_group_num = num
+                latest_group_folder = entry.path
+        except (ValueError, IndexError):
+            continue
 
     if max_group_num == 0 or latest_group_folder is None:
         return 1, None, 0

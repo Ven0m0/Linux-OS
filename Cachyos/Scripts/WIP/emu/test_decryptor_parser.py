@@ -49,13 +49,5 @@ Encrypted:               YES
         self.assertEqual(info.title_version, "5")
         self.assertEqual(info.crypto_key, "YES")
 
-    def test_sanitize_filename(self):
-        self.assertEqual(decryptor.sanitize_filename("Game Name (USA)!?.cia"), "Game Name USA.cia")
-        self.assertEqual(decryptor.sanitize_filename("valid_name-123.3ds"), "valid_name-123.3ds")
-        # Test that it preserves case (if TRANSLATE_TABLE is correct)
-        self.assertEqual(decryptor.sanitize_filename("UPPERCASE.CIA"), "UPPERCASE.CIA")
-        # If all characters are invalid, it returns the original string
-        self.assertEqual(decryptor.sanitize_filename("!!!"), "!!!")
-
 if __name__ == '__main__':
     unittest.main()

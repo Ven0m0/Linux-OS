@@ -156,26 +156,30 @@ def sanitize_filename(name: str) -> str:
 
 
 def parse_ctrtool_output(text: str) -> TitleInfo:
-  info = TitleInfo()
+  info = TitleInfo(title_version="")
   for line in text.splitlines():
     if not info.title_id and (m := TITLE_ID_RE.search(line)):
       info.title_id = m.group(1)
-    if (m := TITLE_VERSION_RE.search(line)):
+    if not info.title_version and (m := TITLE_VERSION_RE.search(line)):
       info.title_version = m.group(1)
     if not info.crypto_key and "Crypto Key" in line:
       info.crypto_key = line.strip()
+  if not info.title_version:
+    info.title_version = "0"
   return info
 
 
 def parse_twl_ctrtool_output(text: str) -> TitleInfo:
-  info = TitleInfo()
+  info = TitleInfo(title_version="")
   for line in text.splitlines():
     if not info.title_id and (m := TWL_TITLE_ID_RE.search(line)):
       info.title_id = m.group(1)
-    if (m := TITLE_VERSION_RE.search(line)):
+    if not info.title_version and (m := TITLE_VERSION_RE.search(line)):
       info.title_version = m.group(1)
     if not info.crypto_key and (m := TWL_ENCRYPTED_RE.search(line)):
       info.crypto_key = m.group(1)
+  if not info.title_version:
+    info.title_version = "0"
   return info
 
 

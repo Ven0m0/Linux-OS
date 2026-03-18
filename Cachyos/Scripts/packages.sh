@@ -38,7 +38,7 @@ ensure_log_file() {
 
   if [[ ! -w "$LOG_FILE" ]]; then
     echo "Warning: Cannot write to log file at $LOG_FILE, using temporary log"
-    LOG_FILE=$(mktemp /tmp/pkg-install-XXXXXX.log)
+    LOG_FILE=$(mktemp /tmp/pkg-install.XXXXXX.log)
   fi
 }
 

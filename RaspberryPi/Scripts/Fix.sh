@@ -125,23 +125,23 @@ fix_nextcloud() {
   fi
 
   log "Fixing Nextcloud /tmp permissions"
-  if sudo docker exec nextcloud ls -ld /tmp &>/dev/null; then
-    local perms_ok=1
-    if ! sudo docker exec nextcloud chown root:root /tmp; then
-      warn "Failed to chown /tmp in nextcloud"
-      perms_ok=0
+  if ! sudo docker exec nextcloud sh -c '
+    set -eu
+    if [ -L /tmp ]; then
+      rm -f /tmp
     fi
-    if ! sudo docker exec nextcloud chmod 1777 /tmp; then
-      warn "Failed to chmod /tmp in nextcloud"
-      perms_ok=0
-    fi
-    if (( perms_ok )); then
-      log "Nextcloud permissions fixed"
+    mkdir -p /tmp
+    if getent group www-data >/dev/null 2>&1; then
+      chown root:www-data /tmp
+      chmod 1770 /tmp
     else
-      warn "Nextcloud permission fix incomplete"
+      chown root:root /tmp
+      chmod 1777 /tmp
     fi
+  '; then
+    warn "Failed to fix /tmp permissions in nextcloud"
   else
-    warn "Failed to access /tmp in nextcloud container"
+    log "Nextcloud permissions fixed"
   fi
 }
 

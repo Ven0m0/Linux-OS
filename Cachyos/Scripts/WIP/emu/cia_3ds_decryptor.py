@@ -160,7 +160,7 @@ def parse_ctrtool_output(text: str) -> TitleInfo:
   for line in text.splitlines():
     if not info.title_id and (m := TITLE_ID_RE.search(line)):
       info.title_id = m.group(1)
-    if not info.title_version and (m := TITLE_VERSION_RE.search(line)):
+    if (m := TITLE_VERSION_RE.search(line)):
       info.title_version = m.group(1)
     if not info.crypto_key and "Crypto Key" in line:
       info.crypto_key = line.strip()
@@ -172,7 +172,7 @@ def parse_twl_ctrtool_output(text: str) -> TitleInfo:
   for line in text.splitlines():
     if not info.title_id and (m := TWL_TITLE_ID_RE.search(line)):
       info.title_id = m.group(1)
-    if not info.title_version and (m := TITLE_VERSION_RE.search(line)):
+    if (m := TITLE_VERSION_RE.search(line)):
       info.title_version = m.group(1)
     if not info.crypto_key and (m := TWL_ENCRYPTED_RE.search(line)):
       info.crypto_key = m.group(1)
@@ -217,14 +217,22 @@ def build_ncch_args_sequential(bin_dir: Path) -> str:
   )
 
 
-def build_ncch_args_contentid(bin_dir: Path, content_txt: Path) -> str:
+def _extract_content_ids(content_txt: Path) -> list[int]:
+  if not content_txt.exists():
+    return []
+
   content_ids = []
-  if content_txt.exists():
-    for line in content_txt.read_text(errors="replace").splitlines():
-      if "ContentId:" in line:
-        cid = line.split("ContentId:")[1].strip()[:8]
-        if cid:
-          content_ids.append(int(cid, 16))
+  for line in content_txt.read_text(errors="replace").splitlines():
+    if "ContentId:" not in line:
+      continue
+    cid = line.split("ContentId:")[1].strip()[:8]
+    if cid:
+      content_ids.append(int(cid, 16))
+  return content_ids
+
+
+def build_ncch_args_contentid(bin_dir: Path, content_txt: Path) -> str:
+  content_ids = _extract_content_ids(content_txt)
   ncch_files = sorted(bin_dir.glob("tmp.*.ncch"))
   parts = [
     f'-i "{ncch}:{i}:{content_ids[i] if i < len(content_ids) else i}"'
@@ -286,100 +294,90 @@ def decrypt_3ds(
     cnt.ds_err += 1
 
 
-def decrypt_cia(
+def _handle_twl_cia(
   root: Path,
   bin_dir: Path,
   file: Path,
   ctrtool: Path,
-  decrypt: Path,
   makerom: Path,
-  seeddb: Path,
   cnt: Counters,
+  stem: str,
+  txt: str,
+  tid: str,
 ) -> None:
-  stem = sanitize_filename(file.stem)
-  if "-decrypted" in stem.lower():
-    return
-  tmp_content = bin_dir / "CTR_Content.txt"
-  _, txt = run_tool(ctrtool, ["--seeddb", str(seeddb), str(file)], cwd=root)
-  tmp_content.write_text(txt, encoding="utf-8", errors="replace")
-  if "ERROR" in txt:
-    logging.error("[^! ] CIA is invalid [%s]", file.name)
+  twl_info = parse_twl_ctrtool_output(txt)
+  if twl_info.crypto_key.upper() == "NO":
+    logging.warning(
+      "[^] TWL CIA file '%s' [%s v%s] is already decrypted",
+      file.name,
+      twl_info.title_id,
+      twl_info.title_version,
+    )
     cnt.cia_err += 1
     return
-  info = parse_ctrtool_output(txt)
-  tid = info.title_id.upper()
-  if "Secure" not in info.crypto_key:
-    if not tid.startswith("00048"):
-      if "None" in info.crypto_key:
-        logging.warning(
-          "[^] CIA file '%s' [%s v%s] is already decrypted",
-          file.name,
-          info.title_id,
-          info.title_version,
-        )
-        cnt.cia_err += 1
-      return
-    twl_info = parse_twl_ctrtool_output(txt)
-    if twl_info.crypto_key.upper() == "NO":
-      logging.warning(
-        "[^] TWL CIA file '%s' [%s v%s] is already decrypted",
-        file.name,
+  if twl_info.crypto_key.upper() == "YES" and tid.startswith("00048"):
+    logging.info(
+      "[i] CIA file '%s' [%s v%s] is a TWL title",
+      file.name,
+      twl_info.title_id,
+      twl_info.title_version,
+    )
+    run_tool(
+      ctrtool,
+      [
+        f"--contents={bin_dir}/00000000.app",
+        f"--meta={bin_dir}/00000000.app",
+        str(file),
+      ],
+      cwd=root,
+    )
+    app_file = bin_dir / "00000000.app.0000.00000000"
+    if app_file.exists():
+      app_file.rename(bin_dir / "00000000.app")
+    out_cia = root / f"{stem} TWL-decrypted.cia"
+    makerom_args = [
+      "-srl",
+      str(bin_dir / "00000000.app"),
+      "-f",
+      "cia",
+      "-ignoresign",
+      "-target",
+      "p",
+      "-o",
+      str(out_cia),
+      "-ver",
+      twl_info.title_version,
+    ]
+    run_tool(makerom, makerom_args, cwd=root)
+    (bin_dir / "00000000.app").unlink(missing_ok=True)
+    if out_cia.exists():
+      logging.info(
+        "[i] Decrypting succeeded [%s v%s]",
+        twl_info.title_id,
+        twl_info.title_version,
+      )
+      cnt.decrypted_cnt += 1
+    else:
+      logging.error(
+        "[^!] Decrypting failed [%s v%s]",
         twl_info.title_id,
         twl_info.title_version,
       )
       cnt.cia_err += 1
-      return
-    if twl_info.crypto_key.upper() == "YES" and tid.startswith("00048"):
-      logging.info(
-        "[i] CIA file '%s' [%s v%s] is a TWL title",
-        file.name,
-        twl_info.title_id,
-        twl_info.title_version,
-      )
-      run_tool(
-        ctrtool,
-        [
-          f"--contents={bin_dir}/00000000.app",
-          f"--meta={bin_dir}/00000000.app",
-          str(file),
-        ],
-        cwd=root,
-      )
-      app_file = bin_dir / "00000000.app.0000.00000000"
-      if app_file.exists():
-        app_file.rename(bin_dir / "00000000.app")
-      out_cia = root / f"{stem} TWL-decrypted.cia"
-      makerom_args = [
-        "-srl",
-        str(bin_dir / "00000000.app"),
-        "-f",
-        "cia",
-        "-ignoresign",
-        "-target",
-        "p",
-        "-o",
-        str(out_cia),
-        "-ver",
-        twl_info.title_version,
-      ]
-      run_tool(makerom, makerom_args, cwd=root)
-      (bin_dir / "00000000.app").unlink(missing_ok=True)
-      if out_cia.exists():
-        logging.info(
-          "[i] Decrypting succeeded [%s v%s]",
-          twl_info.title_id,
-          twl_info.title_version,
-        )
-        cnt.decrypted_cnt += 1
-      else:
-        logging.error(
-          "[^!] Decrypting failed [%s v%s]",
-          twl_info.title_id,
-          twl_info.title_version,
-        )
-        cnt.cia_err += 1
-      return
-    return
+
+
+def _handle_standard_cia(
+  root: Path,
+  bin_dir: Path,
+  file: Path,
+  decrypt: Path,
+  makerom: Path,
+  cnt: Counters,
+  stem: str,
+  tmp_content: Path,
+  info: TitleInfo,
+  tid: str,
+) -> None:
   cia_type = ""
   for name, pattern in [
     ("Game", CIA_GAME_RE),
@@ -442,6 +440,44 @@ def decrypt_cia(
       "[^!] Decrypting failed [%s v%s]", info.title_id, info.title_version
     )
     cnt.cia_err += 1
+
+
+def decrypt_cia(
+  root: Path,
+  bin_dir: Path,
+  file: Path,
+  ctrtool: Path,
+  decrypt: Path,
+  makerom: Path,
+  seeddb: Path,
+  cnt: Counters,
+) -> None:
+  stem = sanitize_filename(file.stem)
+  if "-decrypted" in stem.lower():
+    return
+  tmp_content = bin_dir / "CTR_Content.txt"
+  _, txt = run_tool(ctrtool, ["--seeddb", str(seeddb), str(file)], cwd=root)
+  tmp_content.write_text(txt, encoding="utf-8", errors="replace")
+  if "ERROR" in txt:
+    logging.error("[^! ] CIA is invalid [%s]", file.name)
+    cnt.cia_err += 1
+    return
+  info = parse_ctrtool_output(txt)
+  tid = info.title_id.upper()
+  if "Secure" not in info.crypto_key:
+    if not tid.startswith("00048"):
+      if "None" in info.crypto_key:
+        logging.warning(
+          "[^] CIA file '%s' [%s v%s] is already decrypted",
+          file.name,
+          info.title_id,
+          info.title_version,
+        )
+        cnt.cia_err += 1
+      return
+    _handle_twl_cia(root, bin_dir, file, ctrtool, makerom, cnt, stem, txt, tid)
+    return
+  _handle_standard_cia(root, bin_dir, file, decrypt, makerom, cnt, stem, tmp_content, info, tid)
 
 
 def convert_cia_to_cci(
@@ -517,8 +553,8 @@ def banner() -> None:
   print("  ############################################################\n")
 
 
-def main() -> None:
-  root = Path.cwd()
+def initialize_tools(root: Path) -> tuple[list[Path], Path, Path]:
+  """Initializes tools, logging, and cleans up old NCCH files."""
   bin_dir = root / "bin"
   log_dir = root / "log"
   setup_logging(log_dir)
@@ -531,6 +567,11 @@ def main() -> None:
   if not seeddb.is_file():
     die("Missing seeddb.bin in bin/")
   clean_ncch_files(bin_dir)
+  return [ctrtool, decrypt, makerom], seeddb, log_dir
+
+
+def sanitize_filenames(root: Path) -> None:
+  """Sanitizes all filenames in the root directory."""
   for f in root.glob("*"):
     if f.is_file():
       new_name = sanitize_filename(f.name)
@@ -544,6 +585,10 @@ def main() -> None:
             new_name,
             e,
           )
+
+
+def get_file_counts(root: Path) -> Counters:
+  """Counts CIA and 3DS files and returns a Counters object."""
   cnt = Counters()
   cnt.count_cia = sum(
     1 for f in root.glob("*.cia") if "-decrypted" not in f.stem.lower()
@@ -552,32 +597,33 @@ def main() -> None:
     1 for f in root.glob("*.3ds") if "-decrypted" not in f.stem.lower()
   )
   cnt.total = cnt.count_cia + cnt.count_3ds
-  if cnt.total == 0:
-    banner()
-    print("  No CIA or 3DS files found!\n")
-    logging.warning("[^] No CIA or 3DS were found")
-    logging.info("[i] Script execution ended")
-    return
+  return cnt
+
+
+def ask_for_conversion(cnt: Counters) -> bool:
+  """Prompts the user if they want to convert CIA files to CCI."""
   if cnt.count_cia >= 1:
     banner()
     print(f"  {cnt.count_cia} CIA file(s) found. Convert to CCI?")
     print("  (Not supported:  DLC, Demos, System, TWL, Updates)\n")
     print("  [Y] Yes  [N] No\n")
     choice = input("  Enter:  ").strip().lower()
-    if choice in ("y", "1"):
-      cnt.convert_to_cci = True
     print()
+    if choice in ("y", "1"):
+      return True
+  return False
+
+
+def run_decryption(
+  root: Path, cnt: Counters, tools_list: list[Path], seeddb: Path
+) -> Counters:
+  """Runs the decryption tasks in parallel."""
   banner()
   print("  Decrypting...\n")
-
-  tools_list = [ctrtool, decrypt, makerom]
-
   futures = {}
   with concurrent.futures.ThreadPoolExecutor() as executor:
     if cnt.count_3ds:
-      logging.info(
-        "[i] Found %d 3DS file(s). Start decrypting...", cnt.count_3ds
-      )
+      logging.info("[i] Found %d 3DS file(s). Start decrypting...", cnt.count_3ds)
       for f in sorted(root.glob("*.3ds")):
         future = executor.submit(
           process_file_task, decrypt_3ds, root, f, tools_list, seeddb
@@ -585,16 +631,13 @@ def main() -> None:
         futures[future] = "3ds"
 
     if cnt.count_cia:
-      logging.info(
-        "[i] Found %d CIA file(s). Start decrypting...", cnt.count_cia
-      )
+      logging.info("[i] Found %d CIA file(s). Start decrypting...", cnt.count_cia)
       for f in sorted(root.glob("*.cia")):
         future = executor.submit(
           process_file_task, decrypt_cia, root, f, tools_list, seeddb
         )
         futures[future] = "cia"
 
-    # Wait for completion and accumulate results
     for future in concurrent.futures.as_completed(futures):
       task_type = futures.get(future)
       try:
@@ -602,35 +645,41 @@ def main() -> None:
         cnt += result_cnt
       except Exception as e:
         logging.error("Task failed with exception: %s", e)
-        # Update error counts so failed tasks are reflected in statistics
         if task_type == "3ds":
           cnt.ds_err += 1
         elif task_type == "cia":
           cnt.cia_err += 1
-        # If task_type is None or unrecognized, we intentionally do not guess
-  if cnt.convert_to_cci:
-    logging.info("[i] Starting parallel CCI conversion...")
-    conv_futures = {}
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-      for f in sorted(root.glob("*-decrypted.cia")):
-        future = executor.submit(
-          process_conversion_task, root, f, tools_list, seeddb
+  return cnt
+
+
+def run_conversion(
+  root: Path, cnt: Counters, tools_list: list[Path], seeddb: Path
+) -> Counters:
+  """Runs the CCI conversion tasks in parallel."""
+  logging.info("[i] Starting parallel CCI conversion...")
+  conv_futures = {}
+  with concurrent.futures.ThreadPoolExecutor() as executor:
+    for f in sorted(root.glob("*-decrypted.cia")):
+      future = executor.submit(
+        process_conversion_task, root, f, tools_list, seeddb
+      )
+      conv_futures[future] = f.name
+
+    for future in concurrent.futures.as_completed(conv_futures):
+      try:
+        result_cnt = future.result()
+        cnt += result_cnt
+      except Exception as e:
+        logging.error(
+          "CCI conversion failed for %s: %s", conv_futures.get(future), e
         )
-        conv_futures[future] = f.name
+        cnt.cci_err += 1
+  return cnt
 
-      for future in concurrent.futures.as_completed(conv_futures):
-        try:
-          result_cnt = future.result()
-          cnt += result_cnt
-        except Exception as e:
-          logging.error(
-            "CCI conversion failed for %s: %s", conv_futures.get(future), e
-          )
-          cnt.cci_err += 1
 
+def display_summary(cnt: Counters, log_dir: Path) -> None:
+  """Displays the final summary of the decryption and conversion process."""
   banner()
-
-  # Summary Logic
   print("  Decrypting finished!\n")
   print("  Summary:")
   print(f"  - {cnt.count_3ds} 3DS file(s) found")
@@ -653,6 +702,28 @@ def main() -> None:
 
   print(f"\n  Review '{log_dir / 'programlog.txt'}' for details.\n")
   logging.info("[i] Script execution ended")
+
+
+def main() -> None:
+  root = Path.cwd()
+  tools_list, seeddb, log_dir = initialize_tools(root)
+  sanitize_filenames(root)
+
+  cnt = get_file_counts(root)
+  if cnt.total == 0:
+    banner()
+    print("  No CIA or 3DS files found!\n")
+    logging.warning("[^] No CIA or 3DS were found")
+    logging.info("[i] Script execution ended")
+    return
+
+  cnt.convert_to_cci = ask_for_conversion(cnt)
+  cnt = run_decryption(root, cnt, tools_list, seeddb)
+
+  if cnt.convert_to_cci:
+    cnt = run_conversion(root, cnt, tools_list, seeddb)
+
+  display_summary(cnt, log_dir)
 
 
 if __name__ == "__main__":

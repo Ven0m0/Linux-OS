@@ -4,6 +4,7 @@ import shutil
 import io
 import argparse
 from contextlib import redirect_stdout
+from unittest.mock import patch
 import Splitter
 
 class TestSplitter(unittest.TestCase):
@@ -94,6 +95,25 @@ class TestSplitter(unittest.TestCase):
 
         self.assertIn("Skipping photo", output)
         self.assertTrue(os.path.exists(os.path.join(self.PHOTOS_DIR, "huge.jpg")))
+
+    def test_get_folder_size(self):
+        # Create files in main folder and subfolder
+        self.create_dummy_file("file1.txt", 100)
+        self.create_dummy_file("file2.txt", 200, subfolder="sub")
+
+        # Test normal calculation
+        self.assertEqual(Splitter.get_folder_size(self.PHOTOS_DIR), 300)
+
+        # Test error handling path (OSError)
+        with patch("os.path.getsize") as mocked_getsize:
+            def side_effect(path):
+                if "file1.txt" in path:
+                    raise OSError("Mocked error")
+                return 100 if "file1.txt" in path else 200
+
+            mocked_getsize.side_effect = side_effect
+            # Should skip file1.txt and only count file2.txt
+            self.assertEqual(Splitter.get_folder_size(self.PHOTOS_DIR), 200)
 
 if __name__ == '__main__':
     unittest.main()

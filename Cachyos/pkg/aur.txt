@@ -25,3 +25,5 @@ vtsls
 basedpyright
 mdformat-gfm-git
 github-actions-bin
+
+kilo-acp

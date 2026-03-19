@@ -19,6 +19,9 @@ import json
 import os
 import queue
 import sys
+import tempfile
+import unittest
+from unittest import mock
 import urllib.parse
 import urllib.request
 import urllib.error
@@ -90,6 +93,125 @@ def http_get(url: str, headers: dict[str, str] | None = None) -> bytes:
       return resp.read()
   except urllib.error.URLError as e:
     raise urllib.error.URLError(f"{e} (url: {url})") from e
+
+
+class _FakeResponse:
+  """Test helper: minimal fake HTTPResponse for process_single_download tests."""
+
+  def __init__(
+    self,
+    status: int,
+    body: bytes = b"",
+    headers: dict[str, str] | None = None,
+    chunks: list[bytes] | None = None,
+  ) -> None:
+    self.status = status
+    self._headers = {k.lower(): v for k, v in (headers or {}).items()}
+    if chunks is not None:
+      self._chunks: list[bytes] = list(chunks)
+    else:
+      self._chunks = [body] if body else [b""]
+
+  def getheader(self, name: str, default: str | None = None) -> str | None:
+    return self._headers.get(name.lower(), default)
+
+  def read(self, _: int = -1) -> bytes:
+    if not self._chunks:
+      return b""
+    return self._chunks.pop(0)
+
+
+class _FakeConnection:
+  """Test helper: minimal fake HTTPSConnection for process_single_download tests."""
+
+  def __init__(self, responses: list[_FakeResponse]) -> None:
+    self._responses: list[_FakeResponse] = list(responses)
+    self.request_calls: list[tuple[str, str, dict[str, str] | None]] = []
+    self.closed = False
+
+  def request(self, method: str, url: str, headers: dict[str, str] | None = None) -> None:
+    self.request_calls.append((method, url, headers))
+
+  def getresponse(self) -> _FakeResponse:
+    return self._responses.pop(0)
+
+  def close(self) -> None:
+    self.closed = True
+
+
+class ProcessSingleDownloadTests(unittest.TestCase):
+  """Unit tests for process_single_download retry and connection handling."""
+
+  def test_200_writes_file(self) -> None:
+    data = b"hello world"
+    resp = _FakeResponse(200, chunks=[data, b""])
+    conn = _FakeConnection([resp])
+    with tempfile.TemporaryDirectory() as tmpdir:
+      local_path = Path(tmpdir) / "file.txt"
+      result_conn = process_single_download(
+        conn=conn,
+        host="example.com",
+        url_path="/path",
+        local_path=local_path,
+        display_path="file.txt",
+        headers={},
+      )
+      self.assertTrue(local_path.exists())
+      self.assertEqual(local_path.read_bytes(), data)
+      # Connection should be reused for 200 without Connection: close
+      self.assertIs(result_conn, conn)
+
+  def test_5xx_and_429_retries_then_succeeds(self) -> None:
+    # First 500, then 429, then 200 with body.
+    resp1 = _FakeResponse(500, chunks=[b"", b""])
+    resp2 = _FakeResponse(429, chunks=[b"", b""])
+    data = b"ok"
+    resp3 = _FakeResponse(200, chunks=[data, b""])
+    conn = _FakeConnection([resp1, resp2, resp3])
+    with tempfile.TemporaryDirectory() as tmpdir:
+      local_path = Path(tmpdir) / "file.txt"
+      result_conn = process_single_download(
+        conn=conn,
+        host="example.com",
+        url_path="/retry",
+        local_path=local_path,
+        display_path="file.txt",
+        headers={},
+      )
+      self.assertTrue(local_path.exists())
+      self.assertEqual(local_path.read_bytes(), data)
+      # Should have issued three requests due to retries on 500 and 429.
+      self.assertEqual(len(conn.request_calls), 3)
+      self.assertIs(result_conn, conn)
+
+  def test_connection_close_triggers_new_httpsconnection(self) -> None:
+    data = b"data"
+    resp = _FakeResponse(
+      200,
+      chunks=[data, b""],
+      headers={"Connection": "close"},
+    )
+    initial_conn = _FakeConnection([resp])
+    with tempfile.TemporaryDirectory() as tmpdir:
+      local_path = Path(tmpdir) / "file.txt"
+      with mock.patch("http.client.HTTPSConnection") as MockHTTPSConnection:
+        new_conn_instance = mock.Mock(spec=http.client.HTTPSConnection)
+        MockHTTPSConnection.return_value = new_conn_instance
+        result_conn = process_single_download(
+          conn=initial_conn,
+          host="example.com",
+          url_path="/close",
+          local_path=local_path,
+          display_path="file.txt",
+          headers={},
+        )
+        # File should be written correctly.
+        self.assertTrue(local_path.exists())
+        self.assertEqual(local_path.read_bytes(), data)
+        # Initial connection should be closed, and a new HTTPSConnection created.
+        self.assertTrue(initial_conn.closed)
+        MockHTTPSConnection.assert_called_once_with("example.com", timeout=30)
+        self.assertIs(result_conn, new_conn_instance)
 
 
 def process_single_download(

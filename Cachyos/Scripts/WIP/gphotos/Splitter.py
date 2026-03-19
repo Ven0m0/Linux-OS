@@ -45,6 +45,82 @@ def get_latest_group_info(photos_folder):
         return 1, None, 0
 
     return max_group_num, latest_group_folder, get_folder_size(latest_group_folder)
+
+
+def move_file_to_group(file_path, group_folder):
+    """Moves a file to a group folder and returns true if moved."""
+    abs_file_path = os.path.abspath(file_path)
+    abs_group_folder = os.path.abspath(group_folder)
+
+    if os.path.commonpath([abs_file_path, abs_group_folder]) != abs_group_folder:
+        try:
+            shutil.move(file_path, group_folder)
+            print(f"Moved photo '{file_path}' to '{group_folder}'")
+            return True
+        except Exception as e:
+            print(f"Failed to move photo '{file_path}': {e}")
+            return False
+    return False
+
+
+def ensure_space_in_group(
+    photos_folder,
+    file_size,
+    target_folder_size,
+    group_info,
+    group_size_cache
+):
+    """Ensures there is space in the current group for the given file size."""
+    num, folder, size = group_info
+
+    while size + file_size > target_folder_size:
+        num += 1
+        folder = os.path.join(photos_folder, f"Group_{num}")
+        if folder in group_size_cache:
+            size = group_size_cache[folder]
+        elif os.path.exists(folder):
+            size = get_folder_size(folder)
+            group_size_cache[folder] = size
+        else:
+            create_new_folder(photos_folder, f"Group_{num}")
+            size = 0
+            group_size_cache[folder] = size
+
+    return num, folder, size
+
+
+def process_file(
+    file_path,
+    photos_folder,
+    target_folder_size,
+    group_info,
+    group_size_cache
+):
+    """Processes a single file, ensuring it fits into a group folder."""
+    try:
+        file_size = os.path.getsize(file_path)
+    except OSError:
+        return group_info
+
+    # Skip moving files larger than target group size
+    if file_size > target_folder_size:
+        print(
+            f"Skipping photo '{file_path}' because it's larger than the target group size."
+        )
+        return group_info
+
+    # Check and update group info if current group is full
+    num, folder, size = ensure_space_in_group(
+        photos_folder, file_size, target_folder_size, group_info, group_size_cache
+    )
+
+    if move_file_to_group(file_path, folder):
+        size += file_size
+        group_size_cache[folder] = size
+
+    return num, folder, size
+
+
 # Main function
 def group_photos(photos_folder, target_folder_size):
     print(
@@ -60,48 +136,23 @@ def group_photos(photos_folder, target_folder_size):
             photos_folder, f"Group_{current_group_num}"
         )
 
+    # Initialize cache with the current group's size
+    group_size_cache = {current_group_folder: current_group_size}
+    current_group_info = (current_group_num, current_group_folder, current_group_size)
+
     for root, dirs, files in os.walk(photos_folder):
         # Exclude generated group folders from os.walk
         dirs[:] = [d for d in dirs if not d.startswith("Group_")]
 
         for file in files:
             file_path = os.path.join(root, file)
-            try:
-                file_size = os.path.getsize(file_path)
-            except OSError:
-                continue
-
-            # Skip moving files larger than target group size
-            if file_size > target_folder_size:
-                print(
-                    f"Skipping photo '{file_path}' because it's larger than the target group size."
-                )
-                continue
-
-            # Check if current group is full, and move to next until we find one with space or create new
-            while current_group_size + file_size > target_folder_size:
-                current_group_num += 1
-                current_group_folder = os.path.join(
-                    photos_folder, f"Group_{current_group_num}"
-                )
-                if os.path.exists(current_group_folder):
-                    current_group_size = get_folder_size(current_group_folder)
-                else:
-                    create_new_folder(photos_folder, f"Group_{current_group_num}")
-                    current_group_size = 0
-
-            # Move the file to the current group folder if it's not already there
-            # We use absolute paths for comparison to be safe
-            abs_file_path = os.path.abspath(file_path)
-            abs_group_folder = os.path.abspath(current_group_folder)
-
-            if os.path.commonpath([abs_file_path, abs_group_folder]) != abs_group_folder:
-                try:
-                    shutil.move(file_path, current_group_folder)
-                    print(f"Moved photo '{file_path}' to '{current_group_folder}'")
-                    current_group_size += file_size
-                except Exception as e:
-                    print(f"Failed to move photo '{file_path}': {e}")
+            current_group_info = process_file(
+                file_path,
+                photos_folder,
+                target_folder_size,
+                current_group_info,
+                group_size_cache
+            )
 
     print("Grouping completed.")
 

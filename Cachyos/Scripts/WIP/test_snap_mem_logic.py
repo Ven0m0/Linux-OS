@@ -4,7 +4,6 @@ import unittest
 import sys
 import threading
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 # Dynamically import snap-mem.py
 file_path = Path(__file__).parent / "snap-mem.py"

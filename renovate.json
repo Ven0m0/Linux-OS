@@ -3,58 +3,35 @@
   "extends": [
     "config:recommended",
     ":configMigration",
-    ":dependencyDashboard",
-    ":maintainLockFilesWeekly",
-    ":semanticPrefixFixDepsChoreOthers",
     ":preserveSemverRanges",
-    ":ignoreModulesAndTests",
     "abandonments:recommended",
     "group:all",
-    "helpers:githubDigestChangelogs",
-    "helpers:goXPackagesChangelogLink",
-    "helpers:goXPackagesNameLink",
-    "mergeConfidence:age-confidence-badges",
-    "packages:eslint",
     "packages:linters",
-    "replacements:all",
     "schedule:weekly",
-    "workarounds:all"
+    ":dependencyDashboard",
+    ":automergeBranch",
+    ":automergeMinor",
+    ":ignoreModulesAndTests",
+    "docker:enableMajor",
+    "preview:dockerCompose",
+    ":enablePreCommit"
   ],
-  "enabled": true,
   "automerge": true,
-  "automergeType": "branch",
+  "forkProcessing": "enabled",
   "ignoreTests": true,
-  "pinDigests": false,
-  "separateMajorMinor": false,
-  "separateMinorPatch": false,
-  "configMigration": true,
-  "dependencyDashboard": true,
-  "ignoreUnstable": true,
-  "prConcurrentLimit": 10,
-  "respectLatest": true,
   "abandonmentThreshold": "2 years",
   "lockFileMaintenance": {
     "enabled": true,
     "automerge": true,
-    "commitMessageAction": "Update",
     "extends": ["schedule:monthly"]
   },
   "labels": ["dependencies"],
   "timezone": "Europe/Berlin",
-  "pre-commit": {
-    "enabled": true
+  "cargo": {
+    "rangeStrategy": "update-lockfile"
   },
-  "npm": {
-    "enabled": true
-  },
+  "postUpdateOptions": ["yarnDedupeHighest", "gomodTidy", "pnpmDedupe"],
   "packageRules": [
-    {
-      "description": "Automerge all stable (non-0.x) updates via branch",
-      "matchCurrentVersion": "!/^0/",
-      "automerge": true,
-      "automergeType": "branch",
-      "matchUpdateTypes": ["minor", "patch"]
-    },
     {
       "description": "Require dashboard approval for 0.x major bumps",
       "matchCurrentVersion": "/^0/",
@@ -63,10 +40,8 @@
       "automerge": false
     },
     {
-      "description": "Automerge linters and formatters aggressively",
+      "description": "Automerge linters at any time, bypassing weekly schedule",
       "matchCategories": ["linters"],
-      "automerge": true,
-      "automergeType": "branch",
       "schedule": ["at any time"]
     }
   ],
@@ -97,6 +72,7 @@
         "/(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$/",
         "/(^|/)action\\.ya?ml$/"
       ],
+      "datasourceTemplate": "github-tags",
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[a-zA-Z0-9-._]+?) depName=(?<depName>[^\\s]+?)(?: (?:lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s+[A-Za-z0-9_]+?_VERSION\\s*:\\s*[\"']?(?<currentValue>.+?)[\"']?\\s"
       ]

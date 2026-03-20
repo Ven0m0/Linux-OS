@@ -1,8 +1,9 @@
 # aur.txt
 antigravity
 claude-desktop-bin
+claude-cowork-service
 # crush-bin
-cursor-bin
+# cursor-bin
 
 duckdns-ipv6
 dyad-git
@@ -17,12 +18,13 @@ python-mashumaro
 ralph
 vscodium-all-marketplace
 vscodium-electron-features
-vscodium-electron
 vscodium-prod-patcher
-vscode-xdg-patch-hook
+vscodium-xdg-dir-patch
 wallpaper-engine-kde-plugin-git
 docker-language-server
 vtsls
 basedpyright
 mdformat-gfm-git
 github-actions-bin
+
+kilo-acp

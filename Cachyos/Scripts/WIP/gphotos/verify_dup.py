@@ -50,7 +50,7 @@ class TestDup(unittest.TestCase):
 
         find_duplicate_photos(self.test_dir, self.output_file)
 
-        with open(self.output_file) as f:
+        with open(self.output_file, "r") as f:
             output = f.read()
 
         # dup1 and dup2 should be in output

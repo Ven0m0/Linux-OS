@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+# Steam Game Optimizer - Clean caches, optimize images, minify JSON
+# Usage: steam-optimizer [OPTIONS]
+#   --steam-dir DIR      Steam directory (default: ~/.local/share/Steam)
+#   --no-shader          Skip shader cache cleanup
+#   --no-images          Skip image optimization
+#   --no-json            Skip JSON minification
+#   --extras             Remove game extras (soundtracks, artbooks)
+#   --dry-run            Preview without changes
+#   -v, --verbose        Verbose output
+#   -h, --help           Show help
+
+set -euo pipefail
+STEAM_DIR="$HOME/.local/share/Steam"
+NO_SHADER=false NO_IMAGES=false NO_JSON=false EXTRAS=false DRY_RUN=false VERBOSE=false
+TOTAL_SAVED=0
+
+# Colors
+R='\033[91m' G='\033[92m' Y='\033[93m' B='\033[94m' N='\033[0m' BLD='\033[1m'
+
+info() { printf "${B}[INFO]${N} %s\n" "$*"; }
+warn() { printf "${Y}[WARN]${N} %s\n" "$*"; }
+succ() { printf "${G}[OK]${N} %s\n" "$*"; }
+err() { printf "${R}[ERR]${N} %s\n" "$*" >&2; }
+
+size() {
+  local b=$1 u=0 U=(B KB MB GB TB)
+  while ((b > 1024 && u < 4)); do ((b/=1024, u++)); done
+  echo "${b} ${U[$u]}"
+}
+
+dsz() { du -sb "$1" 2>/dev/null | cut -f1 || echo 0; }
+
+usage() {
+  cat << EOF
+Steam Game Optimizer - Clean caches and optimize game files
+
+Usage: $(basename "$0") [OPTIONS]
+
+Options:
+  --steam-dir DIR      Steam directory (default: ~/.local/share/Steam)
+  --no-shader          Skip shader cache cleanup
+  --no-images          Skip image optimization
+  --no-json            Skip JSON minification
+  --extras             Remove game extras (soundtracks, artbooks)
+  --dry-run            Preview without making changes
+  -v, --verbose        Verbose output
+  -h, --help           Show this help
+
+Examples:
+  $(basename "$0")                  # Run all optimizations
+  $(basename "$0") --dry-run        # Preview changes
+  $(basename "$0") --extras         # Remove game extras
+EOF
+}
+
+parse() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --steam-dir) STEAM_DIR="$2"; shift 2 ;;
+      --no-shader) NO_SHADER=true; shift ;;
+      --no-images) NO_IMAGES=true; shift ;;
+      --no-json) NO_JSON=true; shift ;;
+      --extras) EXTRAS=true; shift ;;
+      --dry-run) DRY_RUN=true; shift ;;
+      -v|--verbose) VERBOSE=true; shift ;;
+      -h|--help) usage; exit 0 ;;
+      *) err "Unknown: $1"; usage; exit 1 ;;
+    esac
+  done
+}
+
+clean_shader() {
+  local c="$STEAM_DIR/steamapps/shadercache" s
+  [[ -d "$c" ]] || return 0
+  s=$(dsz "$c")
+  (( s == 0 )) && { info "Shader cache empty"; return 0; }
+  info "Shader cache: $(size "$s")"
+  $DRY_RUN && { warn "Would delete shader cache"; ((TOTAL_SAVED+=s)); return 0; }
+  rm -rf "${c:?}"/*
+  succ "Freed $(size "$s")"; ((TOTAL_SAVED+=s))
+}
+
+opt_imgs() {
+  local c="$STEAM_DIR/steamapps/common" opt
+  $NO_IMAGES && return 0
+  opt=$(command -v image-optimizer 2>/dev/null) || opt="$HOME/.cargo/bin/image-optimizer"
+  [[ -x "$opt" ]] || { err "image-optimizer not found. Install: cargo install image-optimizer"; return 0; }
+  
+  local n bf af sv
+  n=$(find "$c" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.webp" \) 2>/dev/null | wc -l)
+  (( n == 0 )) && { info "No images found"; return 0; }
+  bf=$(find "$c" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.webp" \) -exec du -bc {} + 2>/dev/null | tail -1 | cut -f1)
+  info "Found $n images ($(size "$bf"))"
+  $DRY_RUN && { warn "Would optimize $n images"; return 0; }
+  
+  info "Running image-optimizer..."
+  timeout 300 "$opt" -i "$c" -r --png-optimization-level max --jpeg-quality 90 &>/dev/null || true
+  af=$(find "$c" -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.webp" \) -exec du -bc {} + 2>/dev/null | tail -1 | cut -f1)
+  ((sv=bf-af, sv>0)) && { succ "Saved $(size "$sv")"; ((TOTAL_SAVED+=sv)); }
+}
+
+min_json() {
+  local c="$STEAM_DIR/steamapps/common" n=0 sv=0 bf af
+  $NO_JSON && return 0
+  n=$(find "$c" -type f -name "*.json" 2>/dev/null | wc -l)
+  (( n == 0 )) && { info "No JSON files"; return 0; }
+  info "Found $n JSON files"
+  $DRY_RUN && { warn "Would minify $n files"; return 0; }
+  
+  while IFS= read -r -d '' f; do
+    bf=$(stat -c%s "$f" 2>/dev/null) || continue
+    python3 -c "import json;d=json.load(open('$f'));open('$f','w').write(json.dumps(d,separators=(',',':')))" 2>/dev/null || continue
+    af=$(stat -c%s "$f" 2>/dev/null) || continue
+    ((sv+=bf-af))
+    $VERBOSE && printf "  %s\n" "$(basename "$f")"
+  done < <(find "$c" -type f -name "*.json" -print0 2>/dev/null)
+  (( sv > 0 )) && { succ "Minified $n files, saved $(size "$sv")"; ((TOTAL_SAVED+=sv)); }
+}
+
+rm_extras() {
+  local c="$STEAM_DIR/steamapps/common" sv=0 s
+  $EXTRAS || return 0
+  
+  local w="$c/The Witcher 3" e
+  [[ -d "$w" ]] && for e in ARTBOOK SOUNDTRACK "Blood and Wine extras" "Hearts of Stone extras" WALLPAPERS ARTWORK MANUAL; do
+    [[ -e "$w/$e" ]] || continue
+    s=$(dsz "$w/$e")
+    info "The Witcher 3/$e: $(size "$s")"
+    $DRY_RUN && warn "Would delete: $e" || { rm -rf "$w/$e"; succ "Removed $e"; }
+    ((sv+=s))
+  done
+  (( sv > 0 )) && { succ "Freed $(size "$sv") from extras"; ((TOTAL_SAVED+=sv)); }
+}
+
+clean_logs() {
+  local l="$STEAM_DIR/logs" sv=0 s
+  [[ -d "$l" ]] || return 0
+  for f in "$l"/*.log; do
+    [[ -f "$f" ]] || continue
+    s=$(stat -c%s "$f" 2>/dev/null) || continue
+    $DRY_RUN && warn "Would delete: $(basename "$f") ($(size "$s"))" || rm -f "$f"
+    ((sv+=s))
+  done
+  (( sv > 0 )) && { succ "Cleaned logs: $(size "$sv")"; ((TOTAL_SAVED+=sv)); }
+}
+
+clean_dl() {
+  local d="$STEAM_DIR/steamapps/downloading" sv=0 s
+  [[ -d "$d" ]] || return 0
+  for p in "$d"/*/; do
+    [[ -d "$p" ]] || continue
+    s=$(dsz "$p")
+    (( s > 0 )) || continue
+    info "Stale: $(basename "$p") ($(size "$s"))"
+    $DRY_RUN && warn "Would delete: $p" || rm -rf "$p"
+    ((sv+=s))
+  done
+  (( sv > 0 )) && { succ "Cleaned downloads: $(size "$sv")"; ((TOTAL_SAVED+=sv)); }
+}
+
+list_games() {
+  local c="$STEAM_DIR/steamapps/common"
+  printf "\n${BLD}Installed Games:${N}\n"
+  du -sh "$c"/*/ 2>/dev/null | grep -v "SteamLinuxRuntime" | sort -hr | while read -r s p; do
+    printf "  %-25s %s\n" "$(basename "$p")" "$s"
+  done
+}
+
+main() {
+  parse "$@"
+  STEAM_DIR=$(cd "$STEAM_DIR" 2>/dev/null || { err "Steam dir not found"; exit 1; } && pwd)
+  local c="$STEAM_DIR/steamapps/common"
+  [[ -d "$c" ]] || { err "Games dir not found"; exit 1; }
+  
+  printf "\n${BLD}=== Steam Game Optimizer ===${N}\n\n"
+  printf "Steam: %s\n" "$STEAM_DIR"
+  $DRY_RUN && warn "DRY RUN - No changes"
+  
+  list_games
+  printf "\n${BLD}Optimizing:${N}\n\n"
+  
+  clean_shader
+  opt_imgs
+  min_json
+  rm_extras
+  clean_logs
+  clean_dl
+  
+  printf "\n${BLD}%s${N}\n" "$(printf '%.0s=' {1..40})"
+  $DRY_RUN && warn "Would free: $(size "$TOTAL_SAVED")" || succ "Freed: $(size "$TOTAL_SAVED")"
+  printf "${BLD}%s${N}\n\n" "$(printf '%.0s=' {1..40})"
+}
+
+main "$@"

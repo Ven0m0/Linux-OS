@@ -1,8 +1,9 @@
 # aur.txt
 antigravity
 claude-desktop-bin
+claude-cowork-service
 # crush-bin
-cursor-bin
+# cursor-bin
 
 duckdns-ipv6
 dyad-git
@@ -25,3 +26,5 @@ vtsls
 basedpyright
 mdformat-gfm-git
 github-actions-bin
+
+kilo-acp

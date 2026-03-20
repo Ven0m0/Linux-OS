@@ -1,6 +1,7 @@
 import os
 import shutil
 import argparse
+import sys
 
 
 # Function to calculate folder size recursively
@@ -27,25 +28,115 @@ def create_new_folder(root_folder, folder_name):
 
 def get_latest_group_info(photos_folder):
     """Finds the highest numbered Group_N folder under photos_folder and its size."""
+    if not os.path.exists(photos_folder):
+        return 1, None, 0
+
     max_group_num = 0
     latest_group_folder = None
 
-    if os.path.exists(photos_folder):
-        for entry in os.scandir(photos_folder):
-            if entry.name.startswith("Group_") and entry.is_dir():
-                try:
-                    num = int(entry.name.split("_")[1])
-                    if num > max_group_num:
-                        max_group_num = num
-                        latest_group_folder = entry.path
-                except (ValueError, IndexError):
-                    continue
+    for entry in os.scandir(photos_folder):
+        if not (entry.name.startswith("Group_") and entry.is_dir()):
+            continue
+        try:
+            num = int(entry.name.split("_")[1])
+            if num > max_group_num:
+                max_group_num = num
+                latest_group_folder = entry.path
+        except (ValueError, IndexError):
+            continue
 
     if max_group_num == 0 or latest_group_folder is None:
         return 1, None, 0
 
     return max_group_num, latest_group_folder, get_folder_size(latest_group_folder)
 # Main function
+
+
+def process_file(
+    file_path,
+    target_folder_size,
+    photos_folder,
+    current_group_num,
+    current_group_folder,
+    current_group_size,
+    abs_group_folder,
+):
+    try:
+        file_size = os.path.getsize(file_path)
+    except OSError:
+        return current_group_num, current_group_folder, current_group_size, abs_group_folder
+
+    # Skip moving files larger than target group size
+    if file_size > target_folder_size:
+        print(
+            f"Skipping photo '{file_path}' because it's larger than the target group size."
+        )
+        return current_group_num, current_group_folder, current_group_size, abs_group_folder
+
+    (
+        current_group_num,
+        current_group_folder,
+        current_group_size,
+        abs_group_folder,
+    ) = ensure_space_in_group(
+        photos_folder,
+        current_group_num,
+        current_group_folder,
+        current_group_size,
+        file_size,
+        target_folder_size,
+        abs_group_folder,
+    )
+
+    current_group_size = move_file_to_group(
+        file_path,
+        current_group_folder,
+        abs_group_folder,
+        file_size,
+        current_group_size,
+    )
+
+    return current_group_num, current_group_folder, current_group_size, abs_group_folder
+
+
+def move_file_to_group(
+    file_path, current_group_folder, abs_group_folder, file_size, current_group_size
+):
+    """Moves the file to the current group folder if it's not already there."""
+    abs_file_path = os.path.abspath(file_path)
+
+    if os.path.commonpath([abs_file_path, abs_group_folder]) != abs_group_folder:
+        try:
+            shutil.move(file_path, current_group_folder)
+            print(f"Moved photo '{file_path}' to '{current_group_folder}'")
+            return current_group_size + file_size
+        except Exception as e:
+            print(f"Failed to move photo '{file_path}': {e}")
+    return current_group_size
+
+
+def ensure_space_in_group(
+    photos_folder,
+    current_group_num,
+    current_group_folder,
+    current_group_size,
+    file_size,
+    target_folder_size,
+    abs_group_folder,
+):
+    """Checks if current group is full, and moves to next until we find one with space or create new."""
+    while current_group_size + file_size > target_folder_size:
+        current_group_num += 1
+        current_group_folder = os.path.join(photos_folder, f"Group_{current_group_num}")
+        if os.path.exists(current_group_folder):
+            current_group_size = get_folder_size(current_group_folder)
+        else:
+            create_new_folder(photos_folder, f"Group_{current_group_num}")
+            current_group_size = 0
+        abs_group_folder = os.path.abspath(current_group_folder)
+    return current_group_num, current_group_folder, current_group_size, abs_group_folder
+
+
 def group_photos(photos_folder, target_folder_size):
     print(
         f"Grouping photos in '{photos_folder}' with target size {target_folder_size} bytes..."
@@ -143,7 +234,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not os.path.isdir(args.photos_folder):
-        import sys
         print(f"Error: '{args.photos_folder}' is not a directory.", file=sys.stderr)
         sys.exit(1)
 

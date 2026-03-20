@@ -6,7 +6,7 @@ Tracked feature requests and future work items.
 
 | Priority | Description | Complexity |
 |----------|-------------|------------|
-| Medium | Fork and optimize [charwasp/modify](https://github.com/charwasp/modify/) — merge into a single Python script and add GraphicsMagick support | Complex |
+| Medium | Fork and optimize [charwasp/modify](https://github.com/charwasp/modify/) — merge into a single Python script<br>and add GraphicsMagick support | Complex |
 
 ## Resources to Explore
 

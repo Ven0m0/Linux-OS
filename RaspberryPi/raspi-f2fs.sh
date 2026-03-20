@@ -111,7 +111,7 @@ remove_ext4_configs() {
     while IFS= read -r -d '' f; do
       log "Removed ext4-specific cron job: ${f##*/}"
       rm -f "$f"
-    done < <(grep -liZ "e2fsck\|tune2fs\|ext4" "$cron_dir"/* 2>/dev/null || true)
+    done < <(grep -liZE "e2fsck|tune2fs|ext4" "$cron_dir"/* 2>/dev/null || true)
   fi
 
   # Remove ext4-specific systemd timers

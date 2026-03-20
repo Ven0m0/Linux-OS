@@ -122,7 +122,7 @@ remove_ext4_configs() {
       rm -f "$f"
       # Remove corresponding service file
       rm -f "${f%.timer}.service" 2>/dev/null || :
-    done < <(grep -liZ "e2fsck\|tune2fs\|ext4" "$systemd_dir"/*.timer 2>/dev/null || true)
+    done < <(grep -liZE "e2fsck|tune2fs|ext4" "$systemd_dir"/*.timer 2>/dev/null || true)
   fi
 
   log "ext4-specific configs removed"

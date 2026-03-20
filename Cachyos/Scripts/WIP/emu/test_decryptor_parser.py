@@ -57,5 +57,20 @@ Encrypted:               YES
         # If all characters are invalid, it returns the original string
         self.assertEqual(decryptor.sanitize_filename("!!!"), "!!!")
 
+    def test_version_parsing_uses_last_value(self):
+        text_with_multiple_versions = """
+Title id:                0004000000000100
+TitleVersion:            1
+TitleVersion:            10
+Crypto Key:              Secure
+"""
+        # Test standard parser
+        info = decryptor.parse_ctrtool_output(text_with_multiple_versions)
+        self.assertEqual(info.title_version, "10")
+
+        # Test TWL parser
+        info_twl = decryptor.parse_twl_ctrtool_output(text_with_multiple_versions)
+        self.assertEqual(info_twl.title_version, "10")
+
 if __name__ == '__main__':
     unittest.main()

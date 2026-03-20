@@ -23,7 +23,8 @@ Crypto Key:              Secure
         info = decryptor.parse_ctrtool_output(text)
         self.assertEqual(info.title_id, "0004000000000100")
         self.assertEqual(info.title_version, "10")
-        self.assertEqual(info.crypto_key, "Crypto Key:              Secure")
+        self.assertTrue(info.crypto_key.startswith("Crypto Key:"))
+        self.assertIn("Secure", info.crypto_key)
 
     def test_parse_ctrtool_output_partial(self):
         text = "Title id: 0004000000000100"

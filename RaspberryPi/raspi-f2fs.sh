@@ -108,27 +108,21 @@ remove_ext4_configs() {
   # Remove ext4-specific cron jobs
   local cron_dir="$WD/t/r/etc/cron.d"
   if [[ -d $cron_dir ]]; then
-    for f in "$cron_dir"/*; do
-      [[ -f $f ]] || continue
-      if grep -qi "e2fsck\|tune2fs\|ext4" "$f" 2>/dev/null; then
-        log "Removed ext4-specific cron job: ${f##*/}"
-        rm -f "$f"
-      fi
-    done
+    while IFS= read -r -d '' f; do
+      log "Removed ext4-specific cron job: ${f##*/}"
+      rm -f "$f"
+    done < <(grep -liZE "e2fsck|tune2fs|ext4" "$cron_dir"/* 2>/dev/null || true)
   fi
 
   # Remove ext4-specific systemd timers
   local systemd_dir="$WD/t/r/etc/systemd/system"
   if [[ -d $systemd_dir ]]; then
-    for f in "$systemd_dir"/*.timer; do
-      [[ -f $f ]] || continue
-      if grep -qi "e2fsck\|tune2fs\|ext4" "$f" 2>/dev/null; then
-        log "Removed ext4-specific systemd timer: ${f##*/}"
-        rm -f "$f"
-        # Remove corresponding service file
-        rm -f "${f%.timer}.service" 2>/dev/null || :
-      fi
-    done
+    while IFS= read -r -d '' f; do
+      log "Removed ext4-specific systemd timer: ${f##*/}"
+      rm -f "$f"
+      # Remove corresponding service file
+      rm -f "${f%.timer}.service" 2>/dev/null || :
+    done < <(grep -liZE "e2fsck|tune2fs|ext4" "$systemd_dir"/*.timer 2>/dev/null || true)
   fi
 
   log "ext4-specific configs removed"

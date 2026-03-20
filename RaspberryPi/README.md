@@ -13,7 +13,7 @@ RaspberryPi/
 │   ├── dietpi.txt     # DietPi configuration notes
 │   ├── pihole.txt     # Pi-hole configuration
 │   ├── sqlite-reference.txt  # SQLite optimization tips
-│   └── TODO.md        # Task list and notes
+│   └── REFERENCES.md  # Reference notes and tool links
 ├── Scripts/           # Executable scripts
 │   ├── Setup.sh       # System setup automation
 │   ├── Docker-clean.sh # Docker cleanup

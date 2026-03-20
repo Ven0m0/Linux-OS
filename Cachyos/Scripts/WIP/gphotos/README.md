@@ -30,6 +30,12 @@ The **Photo Splitter** is a Python script designed to organize photos within a s
 
 ---
 
+## References
+
+- [google-photos-takeout-scripts](https://github.com/m1rkwood/google-photos-takeout-scripts)
+
+---
+
 # Duplicate Photo Finder
 
 ## Overview

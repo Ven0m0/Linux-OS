@@ -1,5 +1,5 @@
 am
 am-gui
 bauh
-cursor-cli
+# cursor-cli
 github-store

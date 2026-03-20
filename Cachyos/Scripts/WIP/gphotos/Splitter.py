@@ -88,7 +88,7 @@ def process_file(
     return current_group_num, current_group_folder, current_group_size
 
 
-def move_file_to_group(file_path, current_group_folder, file_size, current_group_size):
+def move_file_to_group(file_path, current_group_folder):
     """Moves the file to the current group folder if it's not already there."""
     abs_file_path = os.path.abspath(file_path)
     abs_group_folder = os.path.abspath(current_group_folder)
@@ -97,10 +97,10 @@ def move_file_to_group(file_path, current_group_folder, file_size, current_group
         try:
             shutil.move(file_path, current_group_folder)
             print(f"Moved photo '{file_path}' to '{current_group_folder}'")
-            return current_group_size + file_size
-        except Exception as e:
+            return True
+        except (shutil.Error, OSError) as e:
             print(f"Failed to move photo '{file_path}': {e}")
-    return current_group_size
+    return False
 
 
 def ensure_space_in_group(

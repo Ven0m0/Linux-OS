@@ -26,15 +26,6 @@ declare -A cfg=([dry_run]=0 [skip_external]=0 [minimal]=0 [quiet]=0 [insecure_ss
 run() { ((cfg[dry_run])) && log "[DRY] $*" || "$@"; }
 # Safe cleanup workspace
 
-download_and_install() {
-  local url="$1"
-  local dest="$2"
-  local tmp="$WORKDIR/${url##*/}"
-  curl -fsSL "$url" -o "$tmp"
-  sudo mv "$tmp" "$dest"
-  sudo chmod +x "$dest"
-}
-
 run_url() {
   local url="$1"
   shift

@@ -14,7 +14,6 @@ snap_mem = importlib.util.module_from_spec(spec)
 sys.modules["snap_mem"] = snap_mem
 spec.loader.exec_module(snap_mem)
 
-
 class TestSnapMem(unittest.TestCase):
     def test_make_unique_name(self):
         # make_unique_name updates the 'existing' set in-place
@@ -36,7 +35,6 @@ class TestSnapMem(unittest.TestCase):
         name2 = snap_mem.make_unique_name("base", ".jpg", existing, lock)
         self.assertEqual(name2, "base_3.jpg")
         self.assertIn("base_3.jpg", existing)
-
 
 if __name__ == '__main__':
     unittest.main()

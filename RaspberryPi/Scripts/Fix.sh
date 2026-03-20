@@ -127,8 +127,8 @@ fix_nextcloud() {
   log "Fixing Nextcloud /tmp permissions"
   if ! sudo docker exec nextcloud sh -c '
     set -eu
-    if [ -L /tmp ]; then
-      rm /tmp
+    if [ -e /tmp ] && [ ! -d /tmp ]; then
+      rm -f /tmp
     fi
     mkdir -p /tmp
     if getent group www-data >/dev/null 2>&1; then

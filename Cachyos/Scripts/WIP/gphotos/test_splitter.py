@@ -83,6 +83,12 @@ class TestSplitter(unittest.TestCase):
         with self.assertRaises(argparse.ArgumentTypeError):
             Splitter.parse_size("invalid")
 
+    def test_get_latest_group_info_missing_directory(self):
+        self.assertEqual(
+            Splitter.get_latest_group_info(os.path.join(self.TEST_DIR, "missing")),
+            (1, None, 0),
+        )
+
     def test_skip_large_files(self):
         # Create a file larger than target size
         self.create_dummy_file("huge.jpg", self.TARGET_SIZE + 1)

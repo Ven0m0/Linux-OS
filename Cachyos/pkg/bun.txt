@@ -2,23 +2,18 @@
 @modelcontextprotocol/sdk@latest
 @ai-sdk/openai-compatible@latest
 node-lief@latest
-@blowmage/cursor-agent-acp@latest
-@zed-industries/claude-code-acp@latest
-@autohandai/autohand-acp@latest
-@github/copilot@latest
-@google/gemini-cli@preview
-droid@latest@latest
-happy-coder@latest
+# droid@latest@latest
+# happy-coder@latest
 @twsxtd/hapi@latest
 @google/jules@latest
-@mariozechner/pi-coding-agent@latest
-@termly-dev/cli@latest
-@openchamber/web@latest
-openportal@latest
-opencode-plugin-auto-update@latest
+# @mariozechner/pi-coding-agent@latest
+# @termly-dev/cli@latest
+# @openchamber/web@latest
+# openportal@latest
+# opencode-plugin-auto-update@latest
 claude-code-lint
 firecrawl-cli@latest
-@th0rgal/ralph-wiggum@latest
+# @th0rgal/ralph-wiggum@latest
 fish-lsp@latest
 oxfmt@latest
 oxlint@latest

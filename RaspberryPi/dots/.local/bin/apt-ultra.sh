@@ -296,10 +296,11 @@ EOF
   msg "Health-checking mirrors..." "$BLU"
   local healthcheck_results=$(
     echo "$mirrors" \
-      | __xargs -i -P "$(echo "$mirrors" | wc -l)" bash -c \
+      | __xargs -P "$(echo "$mirrors" | wc -l)" -I{} bash -c \
         'set -o pipefail
-      headers=$(curl --max-time 3 -sSIL "{}'"$last_modified_path"'" 2>/dev/null || echo "CURL_ERROR")
-      http_status=$(printf "%s\n" "$headers" | awk '"'"'toupper($1) ~ /^HTTP\// { code=$2 } END { print code }'"'"')
+      mirror="$1"; last_modified_path="$2"
+      headers=$(curl --max-time 3 -sSIL "${mirror}${last_modified_path}" 2>/dev/null || echo "CURL_ERROR")
+      http_status=$(printf "%s\n" "$headers" | awk '\''toupper($1) ~ /^HTTP\// { code=$2 } END { print code }'\'')
       last_modified=0; status="error"
       if [[ "$headers" == "CURL_ERROR" || -z "$http_status" ]]; then status="error"
       elif [[ "$http_status" == "404" ]]; then status="missing"
@@ -310,8 +311,8 @@ EOF
           [[ "$last_modified" != 0 ]] && status="ok" || status="nolastmod"
         else status="nolastmod"; fi
       fi
-      echo "$last_modified $status {}"
->&2 printf "."'
+      echo "$last_modified $status $mirror"
+>&2 printf "."' _ {} "$last_modified_path"
   )
   msg " ✓ done" "$GRN"
 
@@ -346,7 +347,9 @@ EOF
     echo "$speedtest_mirrors" \
       | grep -v '^[[:space:]]*$' \
       | __xargs -P "$parallel" -I{} bash -c \
-        "printf '%s\t%s\n' \"\$(curl -r 0-$sample_bytes --max-time $sample_secs -sS -w '%{speed_download}' -o /dev/null \"\${1}ls-lR.gz\" 2>/dev/null || echo 0)\" \"\$1\";>&2 printf '.'" _ {} \
+        'speed=$(curl -r 0-"$2" --max-time "$3" -sS -w "%{speed_download}" -o /dev/null "$1"ls-lR.gz 2>/dev/null || echo 0)
+         printf "%s\t%s\n" "$speed" "$1"
+         >&2 printf "."' _ {} "$sample_bytes" "$sample_secs" \
       | awk -F'\t' '$1 ~ /^[0-9.]+$/ && $2 ~ /^https?:\/\// { print }' \
       | sort -rg
   )

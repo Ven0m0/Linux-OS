@@ -3,8 +3,8 @@ import os
 import shutil
 import tempfile
 import unittest
-from pathlib import Path
 from Dup import find_duplicate_photos
+
 
 class TestDup(unittest.TestCase):
     def setUp(self):
@@ -68,6 +68,7 @@ class TestDup(unittest.TestCase):
         # partial collision should not be in output
         self.assertNotIn("partial_collision1.jpg", output)
         self.assertNotIn("partial_collision2.jpg", output)
+
 
 if __name__ == "__main__":
     unittest.main()

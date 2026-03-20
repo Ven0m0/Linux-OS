@@ -31,17 +31,13 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Final
 from urllib.error import HTTPError, URLError
 from urllib.request import OpenerDirector, Request, build_opener
 
-if TYPE_CHECKING:
-  from curses import window as CursesWindow
-
-DATE_FMT: Final[str] = "%Y-%m-%d %H:%M:%S UTC"
-JSON_NAME_RE: Final[re.Pattern[str]] = re.compile(r"memories_history\.json$", re.I)
-CHUNK_SIZE: Final[int] = 1048576
-MACOS_JUNK_RE: Final[re.Pattern[str]] = re.compile(r"^\._")
+DATE_FMT: str = "%Y-%m-%d %H:%M:%S UTC"
+JSON_NAME_RE: re.Pattern[str] = re.compile(r"memories_history\.json$", re.I)
+CHUNK_SIZE: int = 1048576
+MACOS_JUNK_RE: re.Pattern[str] = re.compile(r"^\._")
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,7 +136,7 @@ def tui_select_path(*, title: str, start: Path, mode: str) -> Path:
     raise ValueError("mode must be 'file' or 'dir'")
   start = start.expanduser().resolve() if start.exists() else Path.cwd().resolve()
 
-  def run(stdscr: CursesWindow) -> Path:
+  def run(stdscr: curses.window) -> Path:
     curses.curs_set(0)
     stdscr.keypad(True)
     cwd, idx = start, 0

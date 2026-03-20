@@ -133,7 +133,7 @@ fix_nextcloud() {
     mkdir -p /tmp
     if getent group www-data >/dev/null 2>&1; then
       chown root:www-data /tmp
-      chmod 1770 /tmp
+      chmod 2770 /tmp
     else
       chown root:root /tmp
       chmod 1777 /tmp

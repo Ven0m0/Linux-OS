@@ -5,13 +5,9 @@ claude-cowork-service
 # crush-bin
 # cursor-bin
 
-duckdns-ipv6
-dyad-git
-firefox-omni-tweaks-git
 gtk-sharp-2
 libappindicator-gtk2
 libayatana-appindicator-glib
-noip
 
 plasma-splash-rem-git
 python-mashumaro
@@ -22,9 +18,10 @@ vscodium-prod-patcher
 vscodium-xdg-dir-patch
 wallpaper-engine-kde-plugin-git
 docker-language-server
-vtsls
+vtsls  
 basedpyright
 mdformat-gfm-git
 github-actions-bin
 
-kilo-acp
+github-copilot-cli
+kilocode-cli-bin

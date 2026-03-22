@@ -14,12 +14,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-/dev/null}")" 2>/dev/null && pwd 
 RED=$'\e[31m' GRN=$'\e[32m' YLW=$'\e[33m' DEF=$'\e[0m'
 
 # --- Helpers ---
-has()  { command -v "$1" &>/dev/null; }
-try()  { "$@" >/dev/null 2>&1 || true; }
-log()  { printf '%b\n' "${GRN}[+]${DEF} $*"; }
-warn() { printf '%b\n' "${YLW}[!]${DEF} $*"; }
-err()  { printf '%b\n' "${RED}[!]${DEF} $*" >&2; }
-die()  { err "$*"; exit "${2:-1}"; }
+has(){ command -v "$1" &>/dev/null; }
+try(){ "$@" >/dev/null 2>&1 || true; }
+log(){ printf '%b\n' "${GRN}[+]${DEF} $*"; }
+warn(){ printf '%b\n' "${YLW}[!]${DEF} $*"; }
+err(){ printf '%b\n' "${RED}[!]${DEF} $*" >&2; }
+die(){ err "$*"; exit "${2:-1}"; }
 
 WORKDIR=$(mktemp -d)
 cleanup() { set +e; rm -rf "${WORKDIR:-}"; }
@@ -214,6 +214,9 @@ apply_konsave_profile() {
     konsave -i "$profile_file" || { warn "konsave import failed"; return 0; }
   fi
   konsave -a "$profile_name" || warn "konsave apply failed"
+  # TODO: kde config:
+  kwriteconfig6 --file kdeglobals --group QtQuickRendererSettings --key renderLoop threaded
+  kwriteconfig6 --file kdeglobals --group QtQuickRendererSettings --key coreProfile true
 }
 
 setup_am() {

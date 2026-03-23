@@ -47,8 +47,6 @@ SWAP_SIZE="0"                         # 0 = no swap partition, "auto" = match RA
 BTRFS_SUBVOLUMES="default"            # "default" | "custom" (define CUSTOM_SUBVOLS below)
 CUSTOM_SUBVOLS=()                     # ("/@snapshots:/.snapshots" "/@docker:/var/lib/docker")
 MOUNT_OPTS=""                         # e.g. "compress=zstd:3,noatime" (empty = installer defaults)
-LUKS_ENCRYPT=false                    # true = LUKS2 encryption on root
-LUKS_PASSWORD=""                      # required if LUKS_ENCRYPT=true
 
 # System
 HOSTNAME="cachyos"
@@ -114,7 +112,6 @@ COLOR_OUTPUT=true
 - `FILESYSTEM` is in allowed set
 - `BOOTLOADER` compatible with firmware type (systemd-boot/refind/limine require UEFI)
 - `USER_NAME` and `USER_PASS` are non-empty
-- `LUKS_ENCRYPT=true` requires non-empty `LUKS_PASSWORD`
 - `DESKTOP` is in known set or empty
 - `KERNEL` entries are valid package names
 - `POST_INSTALL_SCRIPT` URL is reachable if set
@@ -267,64 +264,49 @@ exit_code=${PIPESTATUS[0]}
 
 ---
 
-### Phase 5: LUKS Encryption Support (M)
+### Phase 5: Remote Config Support (S)
 
-**T5.1** — When `LUKS_ENCRYPT=true`:
-- Create LUKS2 container on root partition before filesystem creation
-- Open container: `cryptsetup luksFormat --type luks2 /dev/XXXpN <<< "$LUKS_PASSWORD"`
-- Open: `cryptsetup open /dev/XXXpN cryptroot`
-- Modify partition entries in settings.json to use `/dev/mapper/cryptroot`
-- **Note:** The CLI installer's headless mode may not natively support LUKS. If not, LUKS is Strategy B-only or requires pre-formatting before invoking the installer.
-
-**T5.2** — Validate that `LUKS_ENCRYPT=true` forces Strategy B if CLI installer lacks LUKS headless support.
-
-**T5.3** — Post-install: ensure `encrypt` hook in `/etc/mkinitcpio.conf` HOOKS, regenerate initramfs, configure bootloader with `cryptdevice=` parameter.
-
----
-
-### Phase 6: Remote Config Support (S)
-
-**T6.1** — `--config <url>` flag: fetch a remote bash file that overrides config variables.
+**T5.1** — `--config <url>` flag: fetch a remote bash file that overrides config variables.
 ```bash
 if [ -n "$CONFIG_URL" ]; then
     source <(curl -fsSL "$CONFIG_URL")
 fi
 ```
 
-**T6.2** — Config file format: identical to the config block at the script top. Users maintain per-machine configs in their repo (e.g., `configs/desktop.conf`, `configs/server.conf`).
+**T5.2** — Config file format: identical to the config block at the script top. Users maintain per-machine configs in their repo (e.g., `configs/desktop.conf`, `configs/server.conf`).
 
-**T6.3** — Allow `--config` to also be a local file path for USB-based configs.
-
----
-
-### Phase 7: Testing & Validation (L)
-
-**T7.1** — VM test matrix (QEMU/libvirt):
-
-| Test Case | UEFI | BIOS | FS | DE | Bootloader | LUKS |
-|---|---|---|---|---|---|---|
-| Minimal desktop | ✓ | | btrfs | kde | systemd-boot | no |
-| Server headless | ✓ | | ext4 | (none) | systemd-boot | no |
-| Full custom | ✓ | | btrfs | hyprland | grub | yes |
-| BIOS legacy | | ✓ | ext4 | xfce | grub | no |
-| Dry run | ✓ | | btrfs | kde | systemd-boot | no |
-| Multi-kernel | ✓ | | xfs | gnome | refind | no |
-
-**T7.2** — Automated smoke test: `--dry-run` mode validates JSON output against a JSON schema.
-
-**T7.3** — Shellcheck + shfmt enforcement in CI.
-
-**T7.4** — Test `--config <url>` with GitHub raw URLs.
+**T5.3** — Allow `--config` to also be a local file path for USB-based configs.
 
 ---
 
-### Phase 8: Documentation & Repo Setup (S)
+### Phase 6: Testing & Validation (L)
 
-**T8.1** — README.md: one-liner usage, config reference table, examples for common setups (gaming desktop, dev workstation, headless server).
+**T6.1** — VM test matrix (QEMU/libvirt):
 
-**T8.2** — Example config files in `configs/` directory.
+| Test Case | UEFI | BIOS | FS | DE | Bootloader |
+|---|---|---|---|---|---|
+| Minimal desktop | ✓ | | btrfs | kde | systemd-boot |
+| Server headless | ✓ | | ext4 | (none) | systemd-boot |
+| Full custom | ✓ | | btrfs | hyprland | grub |
+| BIOS legacy | | ✓ | ext4 | xfce | grub |
+| Dry run | ✓ | | btrfs | kde | systemd-boot |
+| Multi-kernel | ✓ | | xfs | gnome | refind |
 
-**T8.3** — GitHub Actions: shellcheck, shfmt, dry-run test on push.
+**T6.2** — Automated smoke test: `--dry-run` mode validates JSON output against a JSON schema.
+
+**T6.3** — Shellcheck + shfmt enforcement in CI.
+
+**T6.4** — Test `--config <url>` with GitHub raw URLs.
+
+---
+
+### Phase 7: Documentation & Repo Setup (S)
+
+**T7.1** — README.md: one-liner usage, config reference table, examples for common setups (gaming desktop, dev workstation, headless server).
+
+**T7.2** — Example config files in `configs/` directory.
+
+**T7.3** — GitHub Actions: shellcheck, shfmt, dry-run test on push.
 
 ---
 
@@ -338,10 +320,9 @@ T0.1 (config schema)
   ├→ T3.1 (post-install gen) → T3.2 (wire up)
   └→ T4.1 (summary) → T4.2 (confirm) → T4.3 (execute A) / T4.4 (execute B)
 
-T5.* (LUKS) branches from T2.1, feeds into T4.4
-T6.* (remote config) branches from T0.3
-T7.* (testing) depends on all above
-T8.* (docs) parallel with T7.*
+T5.* (remote config) branches from T0.3
+T6.* (testing) depends on all above
+T7.* (docs) parallel with T6.*
 ```
 
 **Critical path:** T0.1 → T2.3 → T3.1 → T4.3 — the fastest path to a working installer is: config schema → JSON generation → post-install hooks → execute.
@@ -353,13 +334,12 @@ T8.* (docs) parallel with T7.*
 | # | Risk | Impact | Likelihood | Mitigation |
 |---|---|---|---|---|
 | R1 | CLI installer headless mode has undocumented field requirements or breaks on edge cases | Install fails | Medium | Strategy B fallback; test all field combos in VM |
-| R2 | CLI installer doesn't support LUKS in headless mode | LUKS users blocked | High | Force Strategy B for LUKS; document clearly |
-| R3 | Partition naming logic wrong for unusual devices (mmcblk, nvme vs sda) | Wrong partitions written | Medium | Comprehensive device name → partition name mapping function; test with multiple device types |
-| R4 | CachyOS updates installer JSON schema | Script generates invalid JSON | Low | Pin to known-good schema; monitor upstream releases |
-| R5 | `curl \| bash` executed without reviewing config → data loss | User loses data | Medium | Default `CONFIRM_BEFORE_INSTALL=true`; big red warning in README |
-| R6 | Post-install chroot environment missing expected binaries | Post-install hooks fail | Low | Check for each binary before use; skip gracefully with warning |
-| R7 | btrfs subvolume naming diverges from CachyOS default layout | Broken snapper/timeshift | Medium | Pull default subvol list from installer source; keep in sync |
-| R8 | ZFS support requires DKMS + headers during install | ZFS install may fail | Medium | Ensure `linux-cachyos-headers` is pulled alongside kernel for ZFS |
+| R2 | Partition naming logic wrong for unusual devices (mmcblk, nvme vs sda) | Wrong partitions written | Medium | Comprehensive device name → partition name mapping function; test with multiple device types |
+| R3 | CachyOS updates installer JSON schema | Script generates invalid JSON | Low | Pin to known-good schema; monitor upstream releases |
+| R4 | `curl \| bash` executed without reviewing config → data loss | User loses data | Medium | Default `CONFIRM_BEFORE_INSTALL=true`; big red warning in README |
+| R5 | Post-install chroot environment missing expected binaries | Post-install hooks fail | Low | Check for each binary before use; skip gracefully with warning |
+| R6 | btrfs subvolume naming diverges from CachyOS default layout | Broken snapper/timeshift | Medium | Pull default subvol list from installer source; keep in sync |
+| R7 | ZFS support requires DKMS + headers during install | ZFS install may fail | Medium | Ensure `linux-cachyos-headers` is pulled alongside kernel for ZFS |
 
 ---
 
@@ -372,11 +352,10 @@ T8.* (docs) parallel with T7.*
 | P2: JSON Generation | M | 3-4 hrs | Partition plan builder is the hard part |
 | P3: Post-Install Hooks | L | 4-6 hrs | AUR helper + dotfiles + chroot edge cases |
 | P4: Installer Execution | S | 2-3 hrs | Strategy A simple; B is the fallback |
-| P5: LUKS | M | 3-4 hrs | Strategy B only likely; initramfs config |
-| P6: Remote Config | S | 1 hr | Simple source + curl |
-| P7: Testing | L | 6-8 hrs | VM matrix across all combos |
-| P8: Docs | S | 1-2 hrs | README + examples |
-| **Total** | | **~25-35 hrs** | |
+| P5: Remote Config | S | 1 hr | Simple source + curl |
+| P6: Testing | L | 6-8 hrs | VM matrix across all combos |
+| P7: Docs | S | 1-2 hrs | README + examples |
+| **Total** | | **~22-31 hrs** | |
 
 ---
 
@@ -387,11 +366,10 @@ T8.* (docs) parallel with T7.*
 3. **P1** — Preflight validation (catches errors before destructive ops)
 4. **P4.3** — Strategy A execution (first working end-to-end in VM)
 5. **P3** — Post-install hooks (the "like the GUI but better" differentiator)
-6. **P6** — Remote config (enables multi-machine workflows)
-7. **P5** — LUKS support (Strategy B path)
-8. **P4.4** — Strategy B raw install (fallback completeness)
-9. **P7** — Full test matrix
-10. **P8** — Docs + CI
+6. **P5** — Remote config (enables multi-machine workflows)
+7. **P4.4** — Strategy B raw install (fallback completeness)
+8. **P6** — Full test matrix
+9. **P7** — Docs + CI
 
 **MVP (phases 0+2+1+4.3):** ~10-14 hrs → working headless CachyOS install from curl pipe.
 

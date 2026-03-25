@@ -2,6 +2,8 @@
 
 > Canonical source for all AI assistants working with the Linux-OS repository.
 > CLAUDE.md and GEMINI.md are symlinks to this file.
+>
+> **Consuming agents:** Claude Code (`CLAUDE.md`), Gemini (`GEMINI.md`), GitHub Copilot (`.github/copilot-instructions.md`), Codex, Jules.
 
 ---
 
@@ -105,7 +107,7 @@
 
 ```bash
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
 shopt -s nullglob globstar extglob dotglob
 IFS=$'\n\t'
 export LC_ALL=C LANG=C HOME="/home/${SUDO_USER:-$USER}"
@@ -556,6 +558,17 @@ IFS=: read -ra parts <<< "$PATH"
 ---
 
 ## GitHub Infrastructure
+
+### Branch Naming Conventions
+
+| Agent | Branch Pattern |
+|:------|:--------------|
+| Claude Code | `claude/<slug>` |
+| Jules | `jules/<slug>` |
+| Codex | `codex/<slug>` |
+| Human | `feat/<slug>`, `fix/<slug>`, `chore/<slug>` |
+
+CI triggers on `main`, `master`, and `claude/**` branches by default.
 
 ### Workflows (.github/workflows/)
 

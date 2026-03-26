@@ -55,10 +55,7 @@ def find_duplicate_photos(starting_path, output_file_path):
   size_dict = group_files_by_size(starting_path)
 
   # Collect all candidates for partial hashing (any file that shares a size with another)
-  all_candidates = []
-  for paths in size_dict.values():
-    if len(paths) > 1:
-      all_candidates.extend(paths)
+  all_candidates = [p for paths in size_dict.values() if len(paths) > 1 for p in paths]
 
   if not all_candidates:
     return

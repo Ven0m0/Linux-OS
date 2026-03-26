@@ -37,7 +37,7 @@ def group_files_by_size(starting_path):
   size_dict = {}
   for dirpath, _, filenames in os.walk(starting_path):
     for filename in filenames:
-      if filename[-5:].lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
+      if filename.endswith((".jpg", ".jpeg", ".png", ".gif", ".JPG", ".JPEG", ".PNG", ".GIF")):
         full_path = os.path.join(dirpath, filename)
         try:
           file_size = os.path.getsize(full_path)

@@ -23,26 +23,25 @@ class TestDecryptorContentId(unittest.TestCase):
     def tearDown(self):
         self.temp_dir.cleanup()
 
-    def test_extract_content_ids_no_file(self):
-        self.assertEqual(decryptor._extract_content_ids(self.content_txt), [])
+    def test_extract_content_ids_no_text(self):
+        self.assertEqual(decryptor._extract_content_ids(""), [])
 
-    def test_extract_content_ids_valid_file(self):
-        content = (
+    def test_extract_content_ids_valid_text(self):
+        text = (
             "ContentId: 00000001\n"
             "Some other line\n"
             "ContentId:  00000002 \n"
             "ContentId:\n"  # Invalid, empty after split
         )
-        self.content_txt.write_text(content)
         expected = [1, 2]
-        self.assertEqual(decryptor._extract_content_ids(self.content_txt), expected)
+        self.assertEqual(decryptor._extract_content_ids(text), expected)
 
     def test_build_ncch_args_contentid(self):
-        content = (
+        text = (
             "ContentId: 0000000A\n"
             "ContentId: 0000000B\n"
         )
-        self.content_txt.write_text(content)
+        content_ids = decryptor._extract_content_ids(text)
 
         # Create some fake ncch files
         (self.bin_dir / "tmp.0.ncch").touch()
@@ -53,7 +52,9 @@ class TestDecryptorContentId(unittest.TestCase):
         ncch1 = self.bin_dir / "tmp.1.ncch"
         ncch2 = self.bin_dir / "tmp.2.ncch"
 
-        args = decryptor.build_ncch_args_contentid(self.bin_dir, self.content_txt)
+        ncch_files = [ncch0, ncch1, ncch2]
+
+        args = decryptor.build_ncch_args_contentid(ncch_files, content_ids)
 
         # Expect content ids 10 and 11, and fallback to 2 for the last one
         expected_parts = [

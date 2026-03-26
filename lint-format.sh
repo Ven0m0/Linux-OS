@@ -1,52 +1,42 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
-# Recreated lint-format.sh
-CHECK_MODE=0
-if [[ "$1" == "-c" ]]; then
-  CHECK_MODE=1
+CHECK_ONLY=0
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -c|--check) CHECK_ONLY=1 ;;
+        *) echo "Unknown parameter passed: $1"; false ;;
+    esac
+    shift
+done
+
+FD=${FD:-fdfind}
+
+if ! command -v $FD >/dev/null 2>&1; then
+  if command -v fd >/dev/null 2>&1; then
+    FD=fd
+  else
+    FD="find . -type f -name '*.sh'"
+  fi
 fi
 
-FD="${FD:-fd}"
-if ! command -v "$FD" >/dev/null 2>&1; then
-  FD="fdfind"
-fi
-
-echo "Using FD tool: $FD"
-
-if [[ "$CHECK_MODE" -eq 1 ]]; then
-  echo "Running in check mode..."
-  # ShellCheck
-  if command -v "$FD" >/dev/null 2>&1 && command -v shellcheck >/dev/null 2>&1; then
-      "$FD" -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=error
-  fi
-  # shfmt
-  if command -v "$FD" >/dev/null 2>&1 && command -v shfmt >/dev/null 2>&1; then
-      "$FD" -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -l
-  fi
-
-  # Ruff
-  if command -v ruff >/dev/null 2>&1; then
-      ruff check .
-      ruff format --check .
-  fi
-
+if [[ "$FD" == "find"* ]]; then
+    if [ $CHECK_ONLY -eq 1 ]; then
+        eval "$FD" | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=error
+        eval "$FD" | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -l
+    else
+        eval "$FD" | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=style || true
+        eval "$FD" | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -w
+    fi
 else
-  echo "Running in format mode..."
-  # ShellCheck
-  if command -v "$FD" >/dev/null 2>&1 && command -v shellcheck >/dev/null 2>&1; then
-      "$FD" -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=style || true
-  fi
-  # shfmt format
-  if command -v "$FD" >/dev/null 2>&1 && command -v shfmt >/dev/null 2>&1; then
-      "$FD" -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -w -i 2 -ci -sr || true
-  fi
-
-  # Ruff format
-  if command -v ruff >/dev/null 2>&1; then
-      ruff check --fix . || true
-      ruff format . || true
-  fi
+    if [ $CHECK_ONLY -eq 1 ]; then
+        $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=error
+        $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -l
+    else
+        $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=style || true
+        $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -w
+    fi
 fi
 
 echo "Lint and format complete."

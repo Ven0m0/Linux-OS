@@ -47,9 +47,14 @@ jobs:
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Run lint and format (fix mode)
         run: |
-          chmod +x ./lint-format.sh
           export FD=fdfind
-          ./lint-format.sh || true
+          if [ -f "./lint-format.sh" ]; then
+            chmod +x ./lint-format.sh
+            ./lint-format.sh || true
+          else
+            fdfind -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs shellcheck --severity=style || true
+            fdfind -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs shfmt -i 2 -ci -sr -w || true
+          fi
       - name: Check for uncommitted changes
         id: git-check
         run: |
@@ -70,9 +75,14 @@ jobs:
           git push
       - name: Run lint check (strict mode)
         run: |
-          chmod +x ./lint-format.sh
           export FD=fdfind
-          ./lint-format.sh -c
+          if [ -f "./lint-format.sh" ]; then
+            chmod +x ./lint-format.sh
+            ./lint-format.sh -c
+          else
+            fdfind -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs shellcheck --severity=error
+            fdfind -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs shfmt -i 2 -ci -sr -l
+          fi
       - name: Comment on PR if formatting needed
         if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8

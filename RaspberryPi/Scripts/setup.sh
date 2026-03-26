@@ -33,8 +33,11 @@ run_url() {
     log "[DRY] Run (user): $url $*"
     return 0
   fi
-  local tmp="$WORKDIR/$(basename "$url")"
-  curl -sSfL -o "$tmp" "$url" || { err "Failed to download $url"; return 1; }
+  local tmp="$WORKDIR/${url##*/}"
+  curl -fsSL --proto '=https' --tlsv1.3 --max-time 300 -o "$tmp" "$url" || {
+    err "Failed to download $url"
+    return 1
+  }
   bash "$tmp" "$@"
 }
 
@@ -45,9 +48,17 @@ run_url_sudo() {
     log "[DRY] Run (root): $url $*"
     return 0
   fi
-  local tmp="$WORKDIR/$(basename "$url")"
-  curl -sSfL -o "$tmp" "$url" || { err "Failed to download $url"; return 1; }
-  sudo bash "$tmp" "$@"
+  (
+    local tmp_dir
+    tmp_dir=$(sudo mktemp -d -p /tmp run_url_sudo-XXXXXX)
+    trap 'sudo rm -rf "$tmp_dir"' EXIT
+    local tmp="$tmp_dir/${url##*/}"
+    curl -fsSL --proto '=https' --tlsv1.3 --max-time 300 "$url" | sudo tee "$tmp" >/dev/null || {
+      err "Failed to download $url"
+      return 1
+    }
+    sudo bash "$tmp" "$@"
+  )
 }
 WORKDIR=$(mktemp -d)
 cleanup() {

@@ -59,6 +59,7 @@ def process_file(
     current_group_num,
     current_group_folder,
     current_group_size,
+    group_size_cache,
 ):
     try:
         file_size = os.path.getsize(file_path)
@@ -83,16 +84,18 @@ def process_file(
         current_group_size,
         file_size,
         target_folder_size,
+        group_size_cache,
     )
 
     current_group_size = move_file_to_group(
         file_path, current_group_folder, file_size, current_group_size
     )
+    group_size_cache[current_group_folder] = current_group_size
 
     return current_group_num, current_group_folder, current_group_size
 
 
-def move_file_to_group(file_path, current_group_folder):
+def move_file_to_group(file_path, current_group_folder, file_size, current_group_size):
     """Moves the file to the current group folder if it's not already there."""
     abs_file_path = os.path.abspath(file_path)
     abs_group_folder = os.path.abspath(current_group_folder)
@@ -101,10 +104,10 @@ def move_file_to_group(file_path, current_group_folder):
         try:
             shutil.move(file_path, current_group_folder)
             print(f"Moved photo '{file_path}' to '{current_group_folder}'")
-            return True
+            return current_group_size + file_size
         except (shutil.Error, OSError) as e:
             print(f"Failed to move photo '{file_path}': {e}")
-    return False
+    return current_group_size
 
 
 def ensure_space_in_group(
@@ -114,16 +117,20 @@ def ensure_space_in_group(
     current_group_size,
     file_size,
     target_folder_size,
+    group_size_cache,
 ):
     """Checks if current group is full, and moves to next until we find one with space or create new."""
     while current_group_size + file_size > target_folder_size:
         current_group_num += 1
         current_group_folder = os.path.join(photos_folder, f"Group_{current_group_num}")
         if os.path.exists(current_group_folder):
-            current_group_size = get_folder_size(current_group_folder)
+            if current_group_folder not in group_size_cache:
+                group_size_cache[current_group_folder] = get_folder_size(current_group_folder)
+            current_group_size = group_size_cache[current_group_folder]
         else:
             create_new_folder(photos_folder, f"Group_{current_group_num}")
             current_group_size = 0
+            group_size_cache[current_group_folder] = 0
     return current_group_num, current_group_folder, current_group_size
 
 
@@ -136,12 +143,15 @@ def group_photos(photos_folder, target_folder_size):
         photos_folder
     )
 
+    group_size_cache = {}
+    if current_group_folder is not None:
+        group_size_cache[current_group_folder] = current_group_size
+
     if current_group_folder is None:
         current_group_folder = create_new_folder(
             photos_folder, f"Group_{current_group_num}"
         )
-
-    abs_group_folder = os.path.abspath(current_group_folder)
+        group_size_cache[current_group_folder] = 0
 
     for root, dirs, files in os.walk(photos_folder):
         # Exclude generated group folders from os.walk
@@ -160,6 +170,7 @@ def group_photos(photos_folder, target_folder_size):
                 current_group_num,
                 current_group_folder,
                 current_group_size,
+                group_size_cache,
             )
 
     print("Grouping completed.")

@@ -52,7 +52,7 @@ def group_files_by_size(starting_path):
               else:
                 size_dict[file_size] = [entry.path]
           except OSError as e:
-            logging.warning(f"Skipping file/entry {entry.path} due to OSError: {e}")
+import logging
     except OSError as e:
       logging.warning(f"Skipping directory {current_dir} due to OSError: {e}")
   return size_dict

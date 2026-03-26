@@ -33,21 +33,21 @@ def hash_file(file_path):
 
 
 def group_files_by_size(starting_path):
-    """Groups files by size."""
-    size_dict = {}
-    for dirpath, _, filenames in os.walk(starting_path):
-        for filename in filenames:
-            if filename.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
-                full_path = os.path.join(dirpath, filename)
-                try:
-                    file_size = os.path.getsize(full_path)
-                    if file_size in size_dict:
-                        size_dict[file_size].append(full_path)
-                    else:
-                        size_dict[file_size] = [full_path]
-                except OSError:
-                    continue
-    return size_dict
+  """Groups files by size."""
+  size_dict = {}
+  for dirpath, _, filenames in os.walk(starting_path):
+    for filename in filenames:
+      if filename.endswith((".jpg", ".jpeg", ".png", ".gif", ".JPG", ".JPEG", ".PNG", ".GIF")):
+        full_path = os.path.join(dirpath, filename)
+        try:
+          file_size = os.path.getsize(full_path)
+          if file_size in size_dict:
+            size_dict[file_size].append(full_path)
+          else:
+            size_dict[file_size] = [full_path]
+        except OSError:
+          continue
+  return size_dict
 
 
 def find_duplicate_photos(starting_path, output_file_path):

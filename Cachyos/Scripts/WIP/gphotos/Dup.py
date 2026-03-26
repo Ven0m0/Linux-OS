@@ -44,8 +44,8 @@ def group_files_by_size(starting_path):
           try:
             if entry.is_dir(follow_symlinks=False):
               stack.append(entry.path)
-            elif entry.is_file(follow_symlinks=False) and entry.name.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
-              file_size = entry.stat(follow_symlinks=False).st_size
+            elif entry.is_file() and entry.name.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
+              file_size = entry.stat().st_size
               if file_size in size_dict:
                 size_dict[file_size].append(entry.path)
               else:

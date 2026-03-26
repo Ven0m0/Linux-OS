@@ -190,13 +190,19 @@ def clean_ncch_files(bin_dir: Path) -> None:
       f.unlink(missing_ok=True)
 
 
-def rename_ncch_to_tmp(bin_dir: Path) -> None:
+def rename_ncch_to_tmp(bin_dir: Path) -> list[Path]:
+  ncch_files = []
   for f in bin_dir.glob("*.ncch"):
     if not f.name.startswith("tmp."):
-      f.rename(bin_dir / f"tmp.{f.stem}.ncch")
+      new_path = bin_dir / f"tmp.{f.stem}.ncch"
+      f.rename(new_path)
+      ncch_files.append(new_path)
+    else:
+      ncch_files.append(f)
+  return sorted(ncch_files)
 
 
-def build_ncch_args(bin_dir: Path) -> str:
+def build_ncch_args(ncch_files: list[Path]) -> str:
   mapping = {
     "tmp.Main.ncch": 0,
     "tmp.Manual.ncch": 1,
@@ -209,24 +215,24 @@ def build_ncch_args(bin_dir: Path) -> str:
   }
   parts = [
     f'-i "{ncch}:{mapping.get(ncch.name, 0)}:{mapping.get(ncch.name, 0)}"'
-    for ncch in sorted(bin_dir.glob("tmp.*.ncch"))
+    for ncch in ncch_files
   ]
   return " ".join(parts)
 
 
-def build_ncch_args_sequential(bin_dir: Path) -> str:
+def build_ncch_args_sequential(ncch_files: list[Path]) -> str:
   return " ".join(
     f'-i "{ncch}:{i}:{i}"'
-    for i, ncch in enumerate(sorted(bin_dir.glob("tmp.*.ncch")))
+    for i, ncch in enumerate(ncch_files)
   )
 
 
-def _extract_content_ids(content_txt: Path) -> list[int]:
-  if not content_txt.exists():
+def _extract_content_ids(text: str) -> list[int]:
+  if not text:
     return []
 
   content_ids = []
-  for line in content_txt.read_text(errors="replace").splitlines():
+  for line in text.splitlines():
     if "ContentId:" not in line:
       continue
     cid = line.split("ContentId:")[1].strip()[:8]
@@ -235,9 +241,7 @@ def _extract_content_ids(content_txt: Path) -> list[int]:
   return content_ids
 
 
-def build_ncch_args_contentid(bin_dir: Path, content_txt: Path) -> str:
-  content_ids = _extract_content_ids(content_txt)
-  ncch_files = sorted(bin_dir.glob("tmp.*.ncch"))
+def build_ncch_args_contentid(ncch_files: list[Path], content_ids: list[int]) -> str:
   parts = [
     f'-i "{ncch}:{i}:{content_ids[i] if i < len(content_ids) else i}"'
     for i, ncch in enumerate(ncch_files)
@@ -277,8 +281,8 @@ def decrypt_3ds(
     cnt.ds_err += 1
     return
   run_tool(decrypt, [str(file)], stdin="\n", cwd=root)
-  rename_ncch_to_tmp(bin_dir)
-  arg_str = build_ncch_args(bin_dir)
+  ncch_files = rename_ncch_to_tmp(bin_dir)
+  arg_str = build_ncch_args(ncch_files)
   cmd = [
     "-f",
     "cci",
@@ -378,7 +382,7 @@ def _handle_standard_cia(
   makerom: Path,
   cnt: Counters,
   stem: str,
-  tmp_content: Path,
+  txt: str,
   info: TitleInfo,
   tid: str,
 ) -> None:
@@ -416,12 +420,12 @@ def _handle_standard_cia(
     cnt.decrypted_cnt += 1
     return
   run_tool(decrypt, [str(file)], stdin="\n", cwd=root)
-  rename_ncch_to_tmp(bin_dir)
-  arg_str = (
-    build_ncch_args_contentid(bin_dir, tmp_content)
-    if cia_type in ("Patch", "DLC")
-    else build_ncch_args_sequential(bin_dir)
-  )
+  ncch_files = rename_ncch_to_tmp(bin_dir)
+  if cia_type in ("Patch", "DLC"):
+    content_ids = _extract_content_ids(txt)
+    arg_str = build_ncch_args_contentid(ncch_files, content_ids)
+  else:
+    arg_str = build_ncch_args_sequential(ncch_files)
   cmd = ["-f", "cia", "-ignoresign", "-target", "p", "-o", str(out_cia)]
   if cia_type == "DLC":
     cmd.append("-dlc")
@@ -481,7 +485,7 @@ def decrypt_cia(
       return
     _handle_twl_cia(root, bin_dir, file, ctrtool, makerom, cnt, stem, txt, tid)
     return
-  _handle_standard_cia(root, bin_dir, file, decrypt, makerom, cnt, stem, tmp_content, info, tid)
+  _handle_standard_cia(root, bin_dir, file, decrypt, makerom, cnt, stem, txt, info, tid)
 
 
 def convert_cia_to_cci(

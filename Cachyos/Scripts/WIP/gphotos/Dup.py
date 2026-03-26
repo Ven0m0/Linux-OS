@@ -35,18 +35,25 @@ def hash_file(file_path):
 def group_files_by_size(starting_path):
   """Groups files by size."""
   size_dict = {}
-  for dirpath, _, filenames in os.walk(starting_path):
-    for filename in filenames:
-      if filename.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
-        full_path = os.path.join(dirpath, filename)
-        try:
-          file_size = os.path.getsize(full_path)
-          if file_size in size_dict:
-            size_dict[file_size].append(full_path)
-          else:
-            size_dict[file_size] = [full_path]
-        except OSError:
-          continue
+  stack = [starting_path]
+  while stack:
+    current_dir = stack.pop()
+    try:
+      with os.scandir(current_dir) as it:
+        for entry in it:
+          try:
+            if entry.is_dir(follow_symlinks=False):
+              stack.append(entry.path)
+            elif entry.is_file(follow_symlinks=False) and entry.name.lower().endswith((".jpg", ".jpeg", ".png", ".gif")):
+              file_size = entry.stat(follow_symlinks=False).st_size
+              if file_size in size_dict:
+                size_dict[file_size].append(entry.path)
+              else:
+                size_dict[file_size] = [entry.path]
+          except OSError:
+            continue
+    except OSError:
+      continue
   return size_dict
 
 

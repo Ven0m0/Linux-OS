@@ -21,36 +21,22 @@ if ! command -v $FD >/dev/null 2>&1; then
   fi
 fi
 
-# Find all shell scripts excluding the WIP directory
 if [[ "$FD" == "find"* ]]; then
-    SCRIPTS=$( eval "$FD" | grep -v 'Cachyos/Scripts/WIP' || true )
-else
-    SCRIPTS=$( $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' || true )
-fi
-
-if [ -z "$SCRIPTS" ]; then
-    echo "No shell scripts found to lint."
+    if [ $CHECK_ONLY -eq 1 ]; then
+        eval "$FD" | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=error
+        eval "$FD" | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -l
+    else
+        eval "$FD" | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=style || true
+        eval "$FD" | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -w
+    fi
 else
     if [ $CHECK_ONLY -eq 1 ]; then
-        if command -v shellcheck >/dev/null 2>&1; then
-            echo "Running shellcheck in check mode..."
-            echo "$SCRIPTS" | xargs shellcheck --severity=error
-        fi
-
-        if command -v shfmt >/dev/null 2>&1; then
-            echo "Running shfmt in check mode..."
-            echo "$SCRIPTS" | xargs shfmt -i 2 -ci -sr -l
-        fi
+        $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=error
+        $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -l
     else
-        if command -v shellcheck >/dev/null 2>&1; then
-            echo "Running shellcheck..."
-            echo "$SCRIPTS" | xargs shellcheck --severity=style || true
-        fi
-
-        if command -v shfmt >/dev/null 2>&1; then
-            echo "Running shfmt to format..."
-            echo "$SCRIPTS" | xargs shfmt -i 2 -ci -sr -w
-        fi
+        $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shellcheck --severity=style || true
+        $FD -t f -e sh . | grep -v 'Cachyos/Scripts/WIP' | xargs -r shfmt -i 2 -ci -sr -w
     fi
 fi
+
 echo "Lint and format complete."

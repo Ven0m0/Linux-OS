@@ -1,0 +1,15 @@
+# .ignore — ripgrep ignore file consumed by opencode's grep/glob/list tools
+# .gitignore already excludes most build outputs, secrets, and OS cruft.
+# This file un-ignores paths that opencode SHOULD discover despite being in .gitignore,
+# and excludes a few repo-specific dirs that add no search value.
+
+# Un-ignore: these are gitignored but opencode should be able to find them
+!.shellcheckrc
+!.editorconfig
+!.github/
+!renovate.json
+
+# Exclude: large generated/binary dirs with no useful text content
+bench_output/
+megalinter-reports/
+docs/sessions/

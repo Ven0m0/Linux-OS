@@ -1,0 +1,94 @@
+# .kilocodeignore — paths Kilo Code MUST NOT access via any tool
+# (read_file, write_to_file, apply_diff, delete_file, execute_command, list_files)
+# Syntax: gitignore patterns
+
+#######################
+# Secrets / credentials
+#######################
+.gnupg/
+.ssh/id_*
+*.key
+*.pem
+*.crt
+*.credentials
+*.secret
+*.password
+*token*
+apikeys.txt
+.config/gh/hosts.yml
+gha-creds-*.json
+.env
+.env.*
+
+# Keep these accessible (safe examples / public config)
+!.ssh/config
+!.env.example
+
+#######################
+# Build outputs / generated
+#######################
+target/
+dist/
+build/
+out/
+bin/
+obj/
+__pycache__/
+*.pyc
+*$py.class
+.pytest_cache/
+.ruff_cache/
+node_modules/
+.next/
+coverage/
+*.min.js
+*.min.css
+megalinter-reports/
+**/megalinter-reports/
+github-step-summary.md
+
+#######################
+# Lock files (binary/generated — read package.json/PKGBUILD instead)
+#######################
+*.lock
+composer.lock
+
+#######################
+# Large binaries / media
+#######################
+*.iso
+*.img
+*.dmg
+*.deb
+*.rpm
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+
+#######################
+# OS cruft
+#######################
+.DS_Store
+Thumbs.db
+Desktop.ini
+.Trashes
+.fuse_hidden*
+*~
+
+#######################
+# Runtime artifacts
+#######################
+*.log
+*.log.*
+*.pid
+tmp/
+bench_output/
+nohup.out
+
+# execute_command restriction
+# The following shell commands MUST NOT be run against blocked paths above,
+# as execute_command bypasses read_file restrictions:
+#   cat, grep, head, tail, sed, awk, less, strings, xxd, od, hexdump
+# Example blocked: `cat .gnupg/private-keys-v1.d/*`
+# Example blocked: `grep -r password .ssh/`

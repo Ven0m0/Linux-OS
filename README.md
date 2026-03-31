@@ -1,5 +1,7 @@
 # Linux-OS
 
+[![Maintainability](https://qlty.sh/gh/Ven0m0/projects/Linux-OS/maintainability.svg)](https://qlty.sh/gh/Ven0m0/projects/Linux-OS)
+
 > **Production-grade shell scripts for Arch Linux, CachyOS, and Raspberry Pi systems**
 
 A curated collection of battle-tested automation scripts for system setup, optimization, maintenance, and customization. Designed for power users who value performance, reproducibility, and minimal bloat.

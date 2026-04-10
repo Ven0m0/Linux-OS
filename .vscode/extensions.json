@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "biomejs.biome", 
+    "oxc.oxc-vscode",
+    "detachhead.basedpyright",
+    "mads-hartmann.bash-ide-vscode",
+    "timonwong.shellcheck",
+    "redhat.vscode-yaml",
+    "tombi-toml.tombi",
+    "davidanson.vscode-markdownlint",
+    "github.vscode-github-actions",
+    "oven.bun-vscode",
+    "hverlin.mise-vscode",
+    "the0807.uv-toolkit",
+    "ast-grep.ast-grep-vscode"
+  ]
+}

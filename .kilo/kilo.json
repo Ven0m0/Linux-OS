@@ -1,0 +1,147 @@
+{
+	"$schema": "https://app.kilo.ai/config.json",
+	"instructions": [".kilo/rules/*.md", "AGENTS.md"],
+	"skills": { "paths": [".kilo/skills", ".claude/skills"] },
+	"permission": {
+		"*": "allow",
+		"read": { "*.env": "deny", "*.lock": "deny", "*": "allow" },
+		"edit": { "*.lock": "deny", "*": "allow" },
+		"sudo *": "deny",
+		"rm -rf /": "deny",
+		"rm -rf /*": "deny",
+		"rm -rf ~": "deny",
+		"rm -rf ~/*": "deny",
+		":(){:|:&};:": "deny",
+		"doom_loop": "deny"
+	},
+	"provider": {
+		"openai": {
+			"options": { "apiKey": "{env:OPENAI_API_KEY}" }
+		},
+		"anthropic": { 
+      "options": { "apiKey": "{env:ANTHROPIC_API_KEY}" }
+		}
+	},
+	"disabled_providers": ["openai", "google", "anthropic"],
+	"plugin": [
+		"opencode-ignore@1.1.0",
+    "@bastiangx/opencode-unmoji",
+		"@gotgenes/opencode-agent-identity@3.0.1",
+		"@nick-vi/opencode-type-inject@1.1.2",
+    "@openspoon/subtask2@0.3.9",
+		"@tarquinen/opencode-dcp@3.1.9",
+		"openslimedit@1.0.4",
+    "opencode-agent-memory@0.2.0",
+    "superpowers@git+https://github.com/obra/superpowers.git"
+	],
+	"formatter": {
+		"biome": {
+			"command": ["npx", "-y", "@biomejs/biome", "check", "--write", "--format-with-errors=true", "$FILE"],
+			"extensions": [".json", ".jsonc", ".js", ".ts"]
+		},
+		"ruff": {
+			"command": ["ruff", "format", "$FILE"],
+			"extensions": [".py", ".pyi",".pyc"]
+		}
+	},
+	"watcher": {
+		"ignore": ["node_modules/**", "dist/**", ".git/**", ".venv/**", "__pycache__/**", ".ruff_cache/**"]
+	},
+	"mcp": {
+		"ref-tools": {
+			"type": "remote",
+			"url": "https://api.ref.tools/mcp",
+			"enabled": true
+		},
+		"github": {
+			"type": "remote",
+			"url": "https://api.githubcopilot.com/mcp/",
+			"enabled": true
+		},
+		"exa": {
+			"type": "remote",
+			"url": "https://mcp.exa.ai/mcp?tools=web_search_exa,web_search_advanced_exa,get_code_context_exa,crawling_exa",
+			"enabled": true,
+			"headers": { "x-api-key": "{env:EXA_API_KEY}" }
+		},
+		"serena": {
+			"type": "local",
+			"command": [
+				"uvx", "--from",
+				"git+https://github.com/oraios/serena",
+				"serena", "start-mcp-server",
+				"--context", "ide", "--project-from-cwd"
+			],
+			"enabled": true
+		},
+		"octocode": {
+			"type": "local",
+			"command": ["npx", "-y", "octocode-mcp@latest"],
+			"enabled": true
+		},
+    "morph-mcp": {
+      "type": "local",
+      "command": ["npx", "-y", "@morphllm/morphmcp"],
+      "environment": { "MORPH_API_KEY": "{env:MORPH_API_KEY}" },
+      "enabled": true
+    }
+	},
+	"lsp": {
+		"basedpyright": {
+			"command": ["basedpyright-langserver", "--stdio"],
+			"extensions": [".py", ".pyw", ".pyi"]
+		},
+		"bash": {
+			"command": ["bash-language-server", "start"],
+			"extensions": [".sh", ".bash", ".zsh"]
+		},
+		"vtsls": {
+      "command": ["vtsls", "--stdio"],
+      "extensions": [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".mts", ".cts"],
+      "initialization": { "preferences": { "importModuleSpecifierPreference": "relative" } }
+		},
+    "rust": {
+      "command": ["rust-analyzer"],
+      "extensions": [".rs"]
+    },
+		"yaml-ls": {
+			"command": ["yaml-language-server", "--stdio"],
+			"extensions": [".yaml", ".yml"]
+		},
+		"json-ls": {
+			"command": ["vscode-json-language-server", "--stdio"],
+			"extensions": [".json", ".jsonc"]
+		},
+		"tombi": {
+			"command": ["tombi", "lsp"],
+			"extensions": [".toml"]
+		},
+    "dockerfile-ls": {
+      "command": ["docker-langserver", "--stdio"],
+      "extensions": [".dockerfile"]
+    },
+    "html-ls": {
+      "command": ["vscode-html-language-server", "--stdio"],
+      "extensions": [".html", ".htm"]
+    },
+    "css-ls": {
+      "command": ["vscode-css-language-server", "--stdio"],
+      "extensions": [".css", ".scss", ".less"]
+    },
+		"powershell": {
+			"command": [
+				"pwsh", "-NoLogo", "-NoProfile", "-Command",
+				"$module = Get-Module -ListAvailable PowerShellEditorServices | Sort-Object Version -Descending | Select-Object -First 1; if (-not $module) { throw 'PowerShellEditorServices is not installed. Run: Install-Module -Name PowerShellEditorServices -Scope CurrentUser' }; Import-Module $module.Path; Start-EditorServices -HostName 'Claude Code' -HostProfileId 'ClaudeCode' -HostVersion '1.0.0' -Stdio -BundledModulesPath (Split-Path $module.Path) -LogPath '/dev/null' -LogLevel 'None' -EnableConsoleRepl"
+			],
+			"extensions": [".ps1", ".psm1", ".psd1"]
+		}
+	},
+	"compaction": { "auto": true, "prune": true },
+	"experimental": {
+		"continue_loop_on_deny": false,
+		"codebase_search": true,
+		"mcp_timeout": 30000,
+		"openTelemetry": false,
+		"batch_tool": true
+	}
+}

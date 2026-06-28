@@ -214,7 +214,7 @@ apply_konsave_profile() {
     konsave -i "$profile_file" || { warn "konsave import failed"; return 0; }
   fi
   konsave -a "$profile_name" || warn "konsave apply failed"
-  # TODO: kde config:
+  # KDE configuration:
   kwriteconfig6 --file kdeglobals --group QtQuickRendererSettings --key renderLoop threaded
   kwriteconfig6 --file kdeglobals --group QtQuickRendererSettings --key coreProfile true
 }

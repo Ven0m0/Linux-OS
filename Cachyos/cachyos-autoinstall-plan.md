@@ -10,17 +10,17 @@ Two deployment strategies are planned: **Strategy A** (recommended) wraps the ex
 
 ## Architecture Decision: Wrapper vs Raw Install
 
-| Criterion | A: CLI Installer Wrapper | B: Raw Pacstrap |
-|---|---|---|
-| Complexity | Low — generate JSON, run binary | High — replicate installer logic |
-| Maintenance | Low — tracks upstream installer | High — must track pacman/repo changes |
-| Partition handling | Handled by installer | Must implement sgdisk/mkfs/mount |
-| Package selection | Installer knows DE metapackages | Must maintain package lists per DE |
-| CachyOS repo setup | Handled by installer | Must run `cachyos-repo.sh` manually |
-| Kernel selection | Handled by installer | Must install + mkinitcpio manually |
-| Bootloader | Handled by installer | Must configure systemd-boot/grub |
-| Failure risk | Installer tested upstream | Any pacstrap step can diverge |
-| Availability | Always on CachyOS live USB | Works on any Arch live USB too |
+| Criterion          | A: CLI Installer Wrapper        | B: Raw Pacstrap                       |
+| ------------------ | ------------------------------- | ------------------------------------- |
+| Complexity         | Low — generate JSON, run binary | High — replicate installer logic      |
+| Maintenance        | Low — tracks upstream installer | High — must track pacman/repo changes |
+| Partition handling | Handled by installer            | Must implement sgdisk/mkfs/mount      |
+| Package selection  | Installer knows DE metapackages | Must maintain package lists per DE    |
+| CachyOS repo setup | Handled by installer            | Must run `cachyos-repo.sh` manually   |
+| Kernel selection   | Handled by installer            | Must install + mkinitcpio manually    |
+| Bootloader         | Handled by installer            | Must configure systemd-boot/grub      |
+| Failure risk       | Installer tested upstream       | Any pacstrap step can diverge         |
+| Availability       | Always on CachyOS live USB      | Works on any Arch live USB too        |
 
 **Decision: Strategy A primary, Strategy B as opt-in fallback flag (`--raw`).**
 
@@ -101,6 +101,7 @@ COLOR_OUTPUT=true
 ### Phase 1: Preflight Validation (M)
 
 **T1.1** — Environment checks:
+
 - Running as root (or auto-elevate with sudo)
 - Running from live USB (check `/run/archiso` or `lsblk` for ISO9660)
 - Internet connectivity (`ping -c1 -W3 cachyos.org`)
@@ -108,6 +109,7 @@ COLOR_OUTPUT=true
 - UEFI vs BIOS detection (`[ -d /sys/firmware/efi ]`) — restrict bootloader choices accordingly
 
 **T1.2** — Config validation function `validate_config()`:
+
 - `DEVICE` exists as block device or auto-detect succeeds
 - `FILESYSTEM` is in allowed set
 - `BOOTLOADER` compatible with firmware type (systemd-boot/refind/limine require UEFI)
@@ -118,11 +120,13 @@ COLOR_OUTPUT=true
 - All partition sizes parseable
 
 **T1.3** — Device auto-detection when `DEVICE=""`:
+
 - `lsblk -dnpo NAME,SIZE,TYPE,TRAN` → filter `type=disk`, exclude `tran=usb`
 - Pick largest remaining disk
 - Print detected device, require confirmation unless `--yes`
 
 **T1.4** — Disk safety gate:
+
 - Show current partition table of target device
 - Warn if device has existing partitions / filesystems
 - Require explicit confirmation (bypass with `--yes`)
@@ -133,6 +137,7 @@ COLOR_OUTPUT=true
 ### Phase 2: settings.json Generation (M)
 
 **T2.1** — Partition plan builder function `build_partitions()`:
+
 - UEFI: create boot partition entry (`/boot`, `$BOOT_SIZE`, `vfat`, `type: "boot"`)
 - Optional swap partition if `SWAP_SIZE != "0"` (calculate from `free -b` if `"auto"`)
 - Root partition: remaining space, `$FILESYSTEM`, `type: "root"`
@@ -140,11 +145,13 @@ COLOR_OUTPUT=true
 - BIOS: no EFI partition, add `bios_boot` 1M partition for grub
 
 **T2.2** — Subvolume resolution:
+
 - `"default"` → standard CachyOS btrfs layout: `/@`, `/@home`, `/@root`, `/@srv`, `/@cache`, `/@tmp`, `/@log`
 - `"custom"` → parse `CUSTOM_SUBVOLS` array into JSON array of `{"subvolume": "/@x", "mountpoint": "/x"}` objects
 - Only applies when `FILESYSTEM="btrfs"`
 
 **T2.3** — JSON assembly function `generate_settings_json()`:
+
 - Use heredoc with variable interpolation (no jq dependency needed for generation, but validate with `python3 -m json.tool` or `jq -e .` if available)
 - Map all config vars to the settings.json schema:
 
@@ -242,6 +249,7 @@ fi
 **T4.2** — Confirmation gate (unless `--yes`): "This will ERASE $DEVICE. Continue? [y/N]"
 
 **T4.3** — Strategy A execution:
+
 ```bash
 cd /root
 # settings.json is already here from Phase 2
@@ -250,6 +258,7 @@ exit_code=${PIPESTATUS[0]}
 ```
 
 **T4.4** — Strategy B execution (if `--raw` or installer missing):
+
 - `sgdisk --zap-all "$DEVICE"`
 - Create partitions via `sgdisk`
 - `mkfs.*` per partition
@@ -267,6 +276,7 @@ exit_code=${PIPESTATUS[0]}
 ### Phase 5: Remote Config Support (S)
 
 **T5.1** — `--config <url>` flag: fetch a remote bash file that overrides config variables.
+
 ```bash
 if [ -n "$CONFIG_URL" ]; then
     source <(curl -fsSL "$CONFIG_URL")
@@ -283,14 +293,14 @@ fi
 
 **T6.1** — VM test matrix (QEMU/libvirt):
 
-| Test Case | UEFI | BIOS | FS | DE | Bootloader |
-|---|---|---|---|---|---|
-| Minimal desktop | ✓ | | btrfs | kde | systemd-boot |
-| Server headless | ✓ | | ext4 | (none) | systemd-boot |
-| Full custom | ✓ | | btrfs | hyprland | grub |
-| BIOS legacy | | ✓ | ext4 | xfce | grub |
-| Dry run | ✓ | | btrfs | kde | systemd-boot |
-| Multi-kernel | ✓ | | xfs | gnome | refind |
+| Test Case       | UEFI | BIOS | FS    | DE       | Bootloader   |
+| --------------- | ---- | ---- | ----- | -------- | ------------ |
+| Minimal desktop | ✓    |      | btrfs | kde      | systemd-boot |
+| Server headless | ✓    |      | ext4  | (none)   | systemd-boot |
+| Full custom     | ✓    |      | btrfs | hyprland | grub         |
+| BIOS legacy     |      | ✓    | ext4  | xfce     | grub         |
+| Dry run         | ✓    |      | btrfs | kde      | systemd-boot |
+| Multi-kernel    | ✓    |      | xfs   | gnome    | refind       |
 
 **T6.2** — Automated smoke test: `--dry-run` mode validates JSON output against a JSON schema.
 
@@ -331,31 +341,31 @@ T7.* (docs) parallel with T6.*
 
 ## Risk Register
 
-| # | Risk | Impact | Likelihood | Mitigation |
-|---|---|---|---|---|
-| R1 | CLI installer headless mode has undocumented field requirements or breaks on edge cases | Install fails | Medium | Strategy B fallback; test all field combos in VM |
-| R2 | Partition naming logic wrong for unusual devices (mmcblk, nvme vs sda) | Wrong partitions written | Medium | Comprehensive device name → partition name mapping function; test with multiple device types |
-| R3 | CachyOS updates installer JSON schema | Script generates invalid JSON | Low | Pin to known-good schema; monitor upstream releases |
-| R4 | `curl \| bash` executed without reviewing config → data loss | User loses data | Medium | Default `CONFIRM_BEFORE_INSTALL=true`; big red warning in README |
-| R5 | Post-install chroot environment missing expected binaries | Post-install hooks fail | Low | Check for each binary before use; skip gracefully with warning |
-| R6 | btrfs subvolume naming diverges from CachyOS default layout | Broken snapper/timeshift | Medium | Pull default subvol list from installer source; keep in sync |
-| R7 | ZFS support requires DKMS + headers during install | ZFS install may fail | Medium | Ensure `linux-cachyos-headers` is pulled alongside kernel for ZFS |
+| #   | Risk                                                                                    | Impact                        | Likelihood | Mitigation                                                                                   |
+| --- | --------------------------------------------------------------------------------------- | ----------------------------- | ---------- | -------------------------------------------------------------------------------------------- |
+| R1  | CLI installer headless mode has undocumented field requirements or breaks on edge cases | Install fails                 | Medium     | Strategy B fallback; test all field combos in VM                                             |
+| R2  | Partition naming logic wrong for unusual devices (mmcblk, nvme vs sda)                  | Wrong partitions written      | Medium     | Comprehensive device name → partition name mapping function; test with multiple device types |
+| R3  | CachyOS updates installer JSON schema                                                   | Script generates invalid JSON | Low        | Pin to known-good schema; monitor upstream releases                                          |
+| R4  | `curl \| bash` executed without reviewing config → data loss                            | User loses data               | Medium     | Default `CONFIRM_BEFORE_INSTALL=true`; big red warning in README                             |
+| R5  | Post-install chroot environment missing expected binaries                               | Post-install hooks fail       | Low        | Check for each binary before use; skip gracefully with warning                               |
+| R6  | btrfs subvolume naming diverges from CachyOS default layout                             | Broken snapper/timeshift      | Medium     | Pull default subvol list from installer source; keep in sync                                 |
+| R7  | ZFS support requires DKMS + headers during install                                      | ZFS install may fail          | Medium     | Ensure `linux-cachyos-headers` is pulled alongside kernel for ZFS                            |
 
 ---
 
 ## Effort Estimates
 
-| Phase | Size | Estimate | Notes |
-|---|---|---|---|
-| P0: Skeleton + Config | S | 2-3 hrs | Mostly boilerplate |
-| P1: Preflight | M | 3-4 hrs | Device detection logic needs care |
-| P2: JSON Generation | M | 3-4 hrs | Partition plan builder is the hard part |
-| P3: Post-Install Hooks | L | 4-6 hrs | AUR helper + dotfiles + chroot edge cases |
-| P4: Installer Execution | S | 2-3 hrs | Strategy A simple; B is the fallback |
-| P5: Remote Config | S | 1 hr | Simple source + curl |
-| P6: Testing | L | 6-8 hrs | VM matrix across all combos |
-| P7: Docs | S | 1-2 hrs | README + examples |
-| **Total** | | **~22-31 hrs** | |
+| Phase                   | Size | Estimate       | Notes                                     |
+| ----------------------- | ---- | -------------- | ----------------------------------------- |
+| P0: Skeleton + Config   | S    | 2-3 hrs        | Mostly boilerplate                        |
+| P1: Preflight           | M    | 3-4 hrs        | Device detection logic needs care         |
+| P2: JSON Generation     | M    | 3-4 hrs        | Partition plan builder is the hard part   |
+| P3: Post-Install Hooks  | L    | 4-6 hrs        | AUR helper + dotfiles + chroot edge cases |
+| P4: Installer Execution | S    | 2-3 hrs        | Strategy A simple; B is the fallback      |
+| P5: Remote Config       | S    | 1 hr           | Simple source + curl                      |
+| P6: Testing             | L    | 6-8 hrs        | VM matrix across all combos               |
+| P7: Docs                | S    | 1-2 hrs        | README + examples                         |
+| **Total**               |      | **~22-31 hrs** |                                           |
 
 ---
 
@@ -401,21 +411,25 @@ cachyos-autoinstall/
 ## Usage Examples
 
 **Minimal (interactive device selection):**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/cachyos-autoinstall/main/cachyos-autoinstall.sh | bash
 ```
 
 **Fully unattended with remote config:**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ven0m0/cachyos-autoinstall/main/cachyos-autoinstall.sh | bash -s -- --config https://raw.githubusercontent.com/Ven0m0/cachyos-autoinstall/main/configs/desktop-kde.conf --yes
 ```
 
 **Dry run (validate config, print JSON, no install):**
+
 ```bash
 curl -fsSL ... | bash -s -- --config ... --dry-run
 ```
 
 **Local config from USB:**
+
 ```bash
 curl -fsSL ... | bash -s -- --config /run/media/liveuser/USB/my-config.conf --yes
 ```

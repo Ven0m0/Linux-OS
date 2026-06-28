@@ -70,12 +70,14 @@ Convert DietPi or Raspberry Pi OS from ext4 to F2FS for better SD card performan
 ### Quick Start
 
 **Interactive Mode (Easiest):**
+
 ```bash
 cd RaspberryPi
 sudo ./f2fs-new.sh -i
 ```
 
 **Direct Flash:**
+
 ```bash
 # Download latest DietPi and flash to device
 sudo ./f2fs-new.sh --device /dev/mmcblk0
@@ -85,6 +87,7 @@ sudo ./f2fs-new.sh --src ~/DietPi.img.xz --device /dev/mmcblk0
 ```
 
 **Create Image File:**
+
 ```bash
 # Download and convert to F2FS image
 sudo ./f2fs-new.sh --out ~/dietpi-f2fs.img
@@ -95,10 +98,10 @@ sudo dd if=~/dietpi-f2fs.img of=/dev/mmcblk0 bs=4M conv=fsync status=progress
 
 ### Scripts
 
-| Script | Purpose | Best For |
-|--------|---------|----------|
-| `f2fs-new.sh` | Convert images to F2FS | Image creation, direct flashing |
-| `raspi-f2fs.sh` | Advanced F2FS flasher | Custom boot size, shrinking, SSH |
+| Script             | Purpose                       | Best For                         |
+| ------------------ | ----------------------------- | -------------------------------- |
+| `f2fs-new.sh`      | Convert images to F2FS        | Image creation, direct flashing  |
+| `raspi-f2fs.sh`    | Advanced F2FS flasher         | Custom boot size, shrinking, SSH |
 | `dietpi-chroot.sh` | Post-conversion customization | Initramfs regen, package install |
 
 ### Features

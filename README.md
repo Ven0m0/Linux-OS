@@ -8,11 +8,11 @@ A curated collection of battle-tested automation scripts for system setup, optim
 
 ## 🎯 Target Systems
 
-| **Primary** | **Secondary** | **Tertiary** |
-|:------------|:--------------|:-------------|
-| Arch Linux  | Debian        | Termux       |
-| CachyOS     | DietPi        | Raspbian     |
-| Wayland     | Raspberry Pi OS |            |
+| **Primary** | **Secondary**   | **Tertiary** |
+| :---------- | :-------------- | :----------- |
+| Arch Linux  | Debian          | Termux       |
+| CachyOS     | DietPi          | Raspbian     |
+| Wayland     | Raspberry Pi OS |              |
 
 ---
 
@@ -95,32 +95,32 @@ sudo ./raspi-f2fs.sh -i dietpi -d /dev/sdX -s
 
 ### Cachyos/
 
-| Script | Description | Usage |
-|:-------|:------------|:------|
-| **up.sh** | All-in-one update orchestrator (system, flatpak, rust, python, npm, mise, etc.) | `curl -fsSL <URL> \| bash` |
-| **clean.sh** | Comprehensive cleanup: pacman cache, orphans, logs, browser data, privacy hardening | `curl -fsSL <URL> \| bash` |
-| **setup.sh** | Automated system configuration: repositories, sysctl tuning, service setup | `./setup.sh` |
-| **Rank.sh** | Mirror ranking for optimal download speeds + keyring updates | `curl -fsSL <URL> \| bash` |
-| **debloat.sh** | Remove bloatware and unnecessary services | `./debloat.sh` |
-| **rustbuild.sh** | Rust compilation environment with optimized flags | `./rustbuild.sh` |
+| Script           | Description                                                                         | Usage                      |
+| :--------------- | :---------------------------------------------------------------------------------- | :------------------------- |
+| **up.sh**        | All-in-one update orchestrator (system, flatpak, rust, python, npm, mise, etc.)     | `curl -fsSL <URL> \| bash` |
+| **clean.sh**     | Comprehensive cleanup: pacman cache, orphans, logs, browser data, privacy hardening | `curl -fsSL <URL> \| bash` |
+| **setup.sh**     | Automated system configuration: repositories, sysctl tuning, service setup          | `./setup.sh`               |
+| **Rank.sh**      | Mirror ranking for optimal download speeds + keyring updates                        | `curl -fsSL <URL> \| bash` |
+| **debloat.sh**   | Remove bloatware and unnecessary services                                           | `./debloat.sh`             |
+| **rustbuild.sh** | Rust compilation environment with optimized flags                                   | `./rustbuild.sh`           |
 
 ### RaspberryPi/
 
-| Script | Description | Usage |
-|:-------|:------------|:------|
-| **setup.sh** | Pi optimization: APT config, modern tooling (fd, rg, bat, eza), optional Pi-hole | `./Scripts/setup.sh --help` |
-| **raspi-f2fs.sh** | Flash images to SD/USB with F2FS root (better flash longevity) | `sudo ./raspi-f2fs.sh -h` |
-| **update.sh** | Pi-specific update script with APT optimization | `curl -fsSL <URL> \| bash` |
-| **PiClean.sh** | Pi cleanup: APT cache, logs, temp files | `curl -fsSL <URL> \| bash` |
-| **Kbuild.sh** | Raspberry Pi kernel building with optimization flags | `./Scripts/Kbuild.sh` |
-| **apkg.sh** | Interactive APT package manager using fzf/skim | `apkg --install` |
+| Script            | Description                                                                      | Usage                       |
+| :---------------- | :------------------------------------------------------------------------------- | :-------------------------- |
+| **setup.sh**      | Pi optimization: APT config, modern tooling (fd, rg, bat, eza), optional Pi-hole | `./Scripts/setup.sh --help` |
+| **raspi-f2fs.sh** | Flash images to SD/USB with F2FS root (better flash longevity)                   | `sudo ./raspi-f2fs.sh -h`   |
+| **update.sh**     | Pi-specific update script with APT optimization                                  | `curl -fsSL <URL> \| bash`  |
+| **PiClean.sh**    | Pi cleanup: APT cache, logs, temp files                                          | `curl -fsSL <URL> \| bash`  |
+| **Kbuild.sh**     | Raspberry Pi kernel building with optimization flags                             | `./Scripts/Kbuild.sh`       |
+| **apkg.sh**       | Interactive APT package manager using fzf/skim                                   | `apkg --install`            |
 
 ### Scripts/Android/
 
-| Script | Description | Usage |
-|:-------|:------------|:------|
-| **android-optimize.sh** | Termux/Android system optimization | `./android-optimize.sh` |
-| **optimize_apk.sh** | APK size reduction & optimization | `./optimize_apk.sh app.apk` |
+| Script                  | Description                        | Usage                       |
+| :---------------------- | :--------------------------------- | :-------------------------- |
+| **android-optimize.sh** | Termux/Android system optimization | `./android-optimize.sh`     |
+| **optimize_apk.sh**     | APK size reduction & optimization  | `./optimize_apk.sh app.apk` |
 
 ---
 
@@ -262,14 +262,14 @@ All scripts include standardized helpers (from [Shell-book.md](Shell-book.md)):
 
 ### Tool Hierarchy (with fallbacks)
 
-| Task | Primary | Fallback Chain |
-|:-----|:--------|:---------------|
-| Find | `fd` | `fdfind` → `find` |
-| Grep | `rg` | `grep -E` |
-| View | `bat` | `cat` |
-| Edit | `sd` | `sed -E` |
-| Web | `aria2c` | `curl` → `wget` |
-| JSON | `jaq` | `jq` |
+| Task     | Primary         | Fallback Chain          |
+| :------- | :-------------- | :---------------------- |
+| Find     | `fd`            | `fdfind` → `find`       |
+| Grep     | `rg`            | `grep -E`               |
+| View     | `bat`           | `cat`                   |
+| Edit     | `sd`            | `sed -E`                |
+| Web      | `aria2c`        | `curl` → `wget`         |
+| JSON     | `jaq`           | `jq`                    |
 | Parallel | `rust-parallel` | `parallel` → `xargs -P` |
 
 ---

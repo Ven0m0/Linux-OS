@@ -5,9 +5,11 @@ A collection of unified, deduplicated scripts for Android device optimization, A
 ## 🚀 Main Scripts
 
 ### `android-optimize.sh` - Unified Android Optimizer
+
 The primary tool for device optimization with a CLI interface. This script combines multiple optimization workflows into one unified tool.
 
 **Commands:**
+
 ```bash
 # Full device optimization pipeline
 ./android-optimize.sh device-all
@@ -29,6 +31,7 @@ The primary tool for device optimization with a CLI interface. This script combi
 ```
 
 **What `device-all` does:**
+
 - Device maintenance (fstrim, cleanup, cache trimming)
 - Filesystem cleanup (removes temp files, logs, backups)
 - ART optimization (dex compilation with speed-profile + speed modes)
@@ -44,6 +47,7 @@ The primary tool for device optimization with a CLI interface. This script combi
 ---
 
 ### `adb-experimental-tweaks.sh` - Experimental System Tweaks
+
 **⚠️ WARNING: Very aggressive experimental tweaks. Use at your own risk!**
 
 This script contains 1000+ system property and settings changes. It's comprehensive but potentially unstable. Only use if you understand the implications.
@@ -55,6 +59,7 @@ This script contains 1000+ system property and settings changes. It's comprehens
 ---
 
 ### `optimize_apk.sh` - Comprehensive APK Optimization
+
 Full APK optimization pipeline with resource stripping, bytecode optimization, and repackaging.
 
 **Requirements:** apktool, redex, dex2jar, proguard/R8, zipalign, apksigner, pngcrush, jpegoptim, 7z
@@ -64,6 +69,7 @@ Full APK optimization pipeline with resource stripping, bytecode optimization, a
 ```
 
 **Process:**
+
 1. Decode APK with apktool
 2. Strip unused resources (extra densities, raw files, assets)
 3. Rebuild stripped APK
@@ -78,6 +84,7 @@ Full APK optimization pipeline with resource stripping, bytecode optimization, a
 ---
 
 ### `termux-butler.sh` - Termux Environment Maintenance
+
 Interactive maintenance tool for Termux environments.
 
 ```bash
@@ -85,6 +92,7 @@ Interactive maintenance tool for Termux environments.
 ```
 
 **Features:**
+
 - Package updates and cache cleaning
 - Application cache cleanup (pip, npm, user cache)
 - Filesystem hygiene (remove empty files/dirs)
@@ -96,14 +104,17 @@ Interactive maintenance tool for Termux environments.
 ## 🔧 Utility Scripts
 
 ### `setup.sh` - Quick Shizuku Permission Grant
+
 ```bash
 ./setup.sh
 ```
+
 Grants WRITE_SECURE_SETTINGS permission to Shizuku API.
 
 ---
 
 ### `Shizuku-rish.sh` - Shizuku Setup
+
 Sets up Shizuku and Rish (root shell) in Termux.
 
 **Requirements:** nmap, Shizuku app, wireless debugging enabled
@@ -113,21 +124,25 @@ Sets up Shizuku and Rish (root shell) in Termux.
 ```
 
 Creates:
+
 - `/data/data/com.termux/files/usr/bin/shizuku` - Shizuku launcher
 - `/data/data/com.termux/files/usr/bin/rish` - Root shell command
 
 ---
 
 ### `mkshrc.sh` - Enhanced Shell Configuration
+
 Shell configuration for mksh (Android's default shell).
 
 **Features:**
+
 - Enhanced keybindings (Ctrl+arrows, history search)
 - Useful aliases for package manager, logcat, navigation
 - Custom functions (current_activity, myip, man replacement)
 - Colorized prompt with exit status indicator
 
 **Usage:**
+
 ```bash
 # Copy to your shell RC file
 cat mkshrc.sh >> ~/.mkshrc
@@ -139,19 +154,23 @@ source ~/.mkshrc
 ## 📚 Additional Resources
 
 ### Better 'adb shell'
+
 - https://github.com/matan-h/adb-shell
 - [mkshrc configuration](mkshrc.sh)
 - https://github.com/trinhnv1205/optimize
 
 ### WebView & Browser Flags
+
 - [WebView flags](https://github.com/celenityy/configs/blob/pages/android/webview-flags.md)
 - [Chromium flags](https://gist.github.com/ibLeDy/1495735312943b9dd646fd9ddf618513)
 
 ### Debloating Tools
+
 - [Adbloat](https://github.com/YurinDoctrine/adbloat)
 - [UAD-NG](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation)
 
 ### Other Tools
+
 - https://github.com/Parsa307/split_optimizer
 - [Termux SSH Setup](https://github.com/tomhiggins/TermuxSSHDsetup)
 
@@ -160,6 +179,7 @@ source ~/.mkshrc
 ## 🎮 Quick Tips
 
 ### Game Mode
+
 ```bash
 # Enable fixed performance mode (game on)
 adb shell cmd power set-fixed-performance-mode-enabled true
@@ -169,11 +189,13 @@ adb shell cmd power set-fixed-performance-mode-enabled false
 ```
 
 ### Write Stats to Disk
+
 ```bash
 adb shell cmd stats write-to-disk
 ```
 
 ### Remote Install (index guard)
+
 ```bash
 curl -sSfL https://raw.githubusercontent.com/Ven0m0/Linux-OS/refs/heads/main/Cachyos/Scripts/Android/android-optimize.sh | bash -s index-nomedia
 ```

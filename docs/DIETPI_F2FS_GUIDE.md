@@ -110,21 +110,25 @@ sudo ./RaspberryPi/raspi-f2fs.sh -i dietpi -d /dev/mmcblk0 -s
 ## Features
 
 ### DietPi Detection
+
 - Automatically detects DietPi installations
 - Identifies Pi model (3/4/5) and DietPi version
 - Applies DietPi-specific optimizations
 
 ### Config Management
+
 - **Backed up:** `/boot/dietpi/.installed`, `dietpi.txt`, network configs, hostname
 - **Removed:** ext4 journal settings, ext4-specific cron jobs/systemd timers
 - **Updated:** fstab with F2FS mount options, cmdline.txt with rootfstype=f2fs
 
 ### F2FS Optimization
+
 - Compression enabled: `compress_algorithm=zstd`
 - Advanced features: `compress_chksum,atgc,gc_merge`
 - Optimal mount options for SD card longevity
 
 ### Safety Features
+
 - Pre-conversion verification of F2FS kernel support
 - Post-conversion verification (fstab, cmdline, mountability)
 - Detailed summary with warnings and next steps
@@ -138,6 +142,7 @@ sudo ./RaspberryPi/raspi-f2fs.sh -i dietpi -d /dev/mmcblk0 -s
    - If kernel panic occurs, check F2FS module availability
 
 2. **Verify F2FS:**
+
    ```bash
    # Check root filesystem type
    mount | grep "on / "
@@ -153,6 +158,7 @@ sudo ./RaspberryPi/raspi-f2fs.sh -i dietpi -d /dev/mmcblk0 -s
    ```
 
 3. **Optional: Regenerate Initramfs (if boot issues occur):**
+
    ```bash
    # On the Pi (if it boots)
    sudo update-initramfs -u
@@ -164,39 +170,47 @@ sudo ./RaspberryPi/raspi-f2fs.sh -i dietpi -d /dev/mmcblk0 -s
 ## Troubleshooting
 
 ### Boot Fails with Kernel Panic
+
 - **Cause:** Kernel missing F2FS support
 - **Fix:** Use a kernel with CONFIG_F2FS_FS=y or CONFIG_F2FS_FS=m
 
 ### Root Partition Won't Mount
+
 - **Cause:** Missing f2fs module in initramfs
 - **Fix:** Run `dietpi-chroot.sh` on the image and regenerate initramfs
 
 ### Compression Not Working
+
 - **Cause:** Kernel older than 5.6 or missing CONFIG_F2FS_FS_COMPRESSION=y
 - **Fix:** Upgrade kernel or remove compression options from fstab mount options
 
 ### Performance Issues
+
 - **Check:** Verify compression is enabled: `cat /proc/fs/f2fs/*/compress_extension`
 - **Tune:** Adjust mount options in `/etc/fstab`
 
 ## Script Reference
 
-| Script | Purpose | Usage |
-|--------|---------|-------|
-| `raspi-f2fs.sh` | Flash images to devices with F2FS | Device-to-device conversion |
-| `f2fs-new.sh` | Create F2FS images from ext4 | Image creation/conversion |
-| `dietpi-chroot.sh` | Chroot into Pi images | Post-conversion tasks, initramfs regen |
+| Script             | Purpose                           | Usage                                  |
+| ------------------ | --------------------------------- | -------------------------------------- |
+| `raspi-f2fs.sh`    | Flash images to devices with F2FS | Device-to-device conversion            |
+| `f2fs-new.sh`      | Create F2FS images from ext4      | Image creation/conversion              |
+| `dietpi-chroot.sh` | Chroot into Pi images             | Post-conversion tasks, initramfs regen |
 
 ## Advanced Options
 
 ### Custom F2FS Options
+
 Edit `f2fs-new.sh` and modify the `ROOT_OPTS` variable:
+
 ```bash
 ROOT_OPTS="compress_algorithm=lz4,compress_chksum,atgc"  # Use LZ4 instead of zstd
 ```
 
 ### Custom Image Source
+
 Both scripts support:
+
 - URLs: `https://example.com/image.img.xz`
 - Local files: `/path/to/image.img` or `image.img.xz`
 - Shortcut: `dietpi` (downloads latest DietPi Trixie)
@@ -204,6 +218,7 @@ Both scripts support:
 ## Performance Benefits
 
 F2FS provides:
+
 - **Better SD card longevity:** Optimized for flash storage
 - **Compression:** Saves space and reduces writes (if enabled)
 - **Faster random I/O:** Better than ext4 on SD cards
@@ -219,6 +234,7 @@ F2FS provides:
 ## Support
 
 For issues, see:
+
 - F2FS documentation: https://www.kernel.org/doc/html/latest/filesystems/f2fs.html
 - DietPi forums: https://dietpi.com/forum/
 - Project repo: https://github.com/yourusername/Linux-OS

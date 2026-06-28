@@ -1,7 +1,9 @@
 # Implementation Plan
+
 _Generated: 2026-03-21 · 4 tasks · Est. S–L LOC delta_
 
 ## Legend
+
 <!-- severity: 🔴 critical 🟠 high 🟡 medium 🔵 low -->
 <!-- category: bug perf refactor feature security debt docs -->
 
@@ -11,23 +13,25 @@ The codebase is in good shape overall — recent commits have resolved prior TOD
 
 ## Task Index (topological order)
 
-| # | ID | Title | Sev | Cat | Size | Blocks |
-|---|-----|-------|-----|-----|------|--------|
-| 1 | T001 | Fix `move_file_to_group` arity mismatch in Splitter.py | 🔴 | bug | S | — |
-| 2 | T002 | Bring packages.sh up to project Bash standards | 🟠 | debt | L | — |
-| 3 | T003 | Resolve "Settings todo" placeholder in RaspberryPi README | 🔵 | docs | S | — |
-| 4 | T004 | Implement Android charwasp/modify fork with GraphicsMagick | 🟡 | feature | XL | — |
+| #   | ID   | Title                                                      | Sev | Cat     | Size | Blocks |
+| --- | ---- | ---------------------------------------------------------- | --- | ------- | ---- | ------ |
+| 1   | T001 | Fix `move_file_to_group` arity mismatch in Splitter.py     | 🔴  | bug     | S    | —      |
+| 2   | T002 | Bring packages.sh up to project Bash standards             | 🟠  | debt    | L    | —      |
+| 3   | T003 | Resolve "Settings todo" placeholder in RaspberryPi README  | 🔵  | docs    | S    | —      |
+| 4   | T004 | Implement Android charwasp/modify fork with GraphicsMagick | 🟡  | feature | XL   | —      |
 
 ---
 
 ## Tasks
 
 ### T001 · Fix `move_file_to_group` arity mismatch in Splitter.py
+
 **File:** `Cachyos/Scripts/WIP/gphotos/Splitter.py:88`
 **Severity:** critical · **Category:** bug · **Size:** S
 **Blocks:** — **Blocked by:** —
 
 **Context:**
+
 > Call-site at line 88 passes 4 args and assigns the return value as the new size:
 > `current_group_size = move_file_to_group(file_path, current_group_folder, file_size, current_group_size)`
 > Definition at line 95 only accepts 2 params and returns `bool`, not `int`:
@@ -36,6 +40,7 @@ The codebase is in good shape overall — recent commits have resolved prior TOD
 **Intent:** After refactor commit #239 (`group_photos` complexity reduction), the call-site still passes `file_size` and `current_group_size` as positional args and uses the bool return value as the new group size. This raises `TypeError: move_file_to_group() takes 2 positional arguments but 4 were given` on the first file processed.
 
 **Acceptance criteria:**
+
 - [ ] `process_file()` does not raise `TypeError` when processing a directory with at least one file smaller than `target_folder_size`.
 - [ ] `current_group_size` is updated correctly (incremented by `file_size`) after a successful move.
 - [ ] `move_file_to_group` signature and call-site are consistent — no argument count mismatch.
@@ -43,6 +48,7 @@ The codebase is in good shape overall — recent commits have resolved prior TOD
 
 **Implementation:**
 Option A — restore 4-param signature returning updated size:
+
 ```python
 def move_file_to_group(file_path, current_group_folder, file_size, current_group_size):
     abs_file_path = os.path.abspath(file_path)
@@ -56,7 +62,9 @@ def move_file_to_group(file_path, current_group_folder, file_size, current_group
             print(f"Failed to move photo '{file_path}': {e}")
     return current_group_size
 ```
+
 Option B — keep 2-param bool version, fix call-site in `process_file`:
+
 ```python
 moved = move_file_to_group(file_path, current_group_folder)
 if moved:
@@ -66,16 +74,19 @@ if moved:
 ---
 
 ### T002 · Bring packages.sh up to project Bash standards
+
 **File:** `Cachyos/Scripts/packages.sh:1`
 **Severity:** high · **Category:** debt · **Size:** L
 **Blocks:** — **Blocked by:** —
 
 **Context:**
+
 > File begins with `#!/bin/bash` (not `#!/usr/bin/env bash`), has no `set -euo pipefail`, no `shopt`, no `IFS=$'\n\t'`, uses `echo -e` throughout, predictable `/tmp/filtered_packages.txt` and `/tmp/succeeded_packages` paths, unquoted `$package_list` expansion in `sudo pacman -S ... $package_list`, and `local start_time=$(date +%s)` which masks the return code. Uses `cd /tmp/paru || exit 1` without restoring cwd.
 
 **Intent:** This script predates the current project template and was never migrated to match the Bash standards defined in CLAUDE.md.
 
 **Acceptance criteria:**
+
 - [ ] Shebang updated to `#!/usr/bin/env bash`.
 - [ ] `set -Eeuo pipefail` + `shopt -s nullglob globstar extglob dotglob` + `IFS=$'\n\t'` present at top.
 - [ ] All `echo -e` replaced with `printf`.
@@ -91,17 +102,20 @@ Apply CLAUDE.md script template: `#!/usr/bin/env bash`, `set -Eeuo pipefail`, tr
 ---
 
 ### T003 · Resolve "Settings todo" placeholder in RaspberryPi README
+
 **File:** `RaspberryPi/README.md:43`
 **Severity:** low · **Category:** docs · **Size:** S
 **Blocks:** — **Blocked by:** —
 
 **Context:**
+
 > `### Settings todo`
 > Followed by a raw markdown code block containing `net.ipv4.ip_forward=1` and an unformatted nala URL — no explanation, no context.
 
 **Intent:** Author intended to document recommended sysctl settings for Pi networking and link the nala mirror-fetch docs but left it as a raw placeholder.
 
 **Acceptance criteria:**
+
 - [ ] Section heading no longer contains "todo".
 - [ ] `net.ipv4.ip_forward=1` explained with a one-line use case (router/VPN/container bridging).
 - [ ] The nala link rendered as a proper Markdown hyperlink with a descriptive label.
@@ -109,7 +123,8 @@ Apply CLAUDE.md script template: `#!/usr/bin/env bash`, `set -Eeuo pipefail`, tr
 
 **Implementation:**
 Replace the section at line 43–48 with:
-```markdown
+
+````markdown
 ### Recommended sysctl settings
 
 Enable IP forwarding when using the Pi as a router, VPN gateway, or container host:
@@ -121,9 +136,11 @@ net.ipv4.ip_forward=1
 # Apply immediately
 sudo sysctl -p
 ```
+````
 
 For fast APT mirror selection see the [nala fetch mirror docs](https://gitlab.com/volian/nala/-/blob/main/docs/nala-fetch.8.rst?ref_type=heads).
-```
+
+````
 
 ---
 
@@ -160,7 +177,8 @@ def run_image_cmd(*args: str) -> None:
         subprocess.run(["convert", *args], check=True)
     else:
         raise RuntimeError("Neither GraphicsMagick (gm) nor ImageMagick (convert) found in PATH")
-```
+````
+
 Use `argparse` subparsers: `resize`, `patch-manifest`, `repack`. Reference the charwasp/modify source for per-operation logic.
 
 ---

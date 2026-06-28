@@ -80,24 +80,26 @@ git-fetch add cli/cli config.yml --force -m "config: Update from upstream"
 
 ## Options Reference
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-b, --branch <name>` | Branch name to fetch from | Repo's default branch |
-| `-c, --commit <hash>` | Commit hash to fetch from | - |
-| `-o, --output <dir>` | Output directory (download mode) | `.` |
-| `-m, --message <msg>` | Commit message (add mode) | Auto-generated |
-| `--no-commit` | Skip auto-commit in add mode | Auto-commit enabled |
-| `--force` | Overwrite existing files | Skip existing files |
-| `-h, --help` | Show help message | - |
+| Option                | Description                      | Default               |
+| --------------------- | -------------------------------- | --------------------- |
+| `-b, --branch <name>` | Branch name to fetch from        | Repo's default branch |
+| `-c, --commit <hash>` | Commit hash to fetch from        | -                     |
+| `-o, --output <dir>`  | Output directory (download mode) | `.`                   |
+| `-m, --message <msg>` | Commit message (add mode)        | Auto-generated        |
+| `--no-commit`         | Skip auto-commit in add mode     | Auto-commit enabled   |
+| `--force`             | Overwrite existing files         | Skip existing files   |
+| `-h, --help`          | Show help message                | -                     |
 
 ## File Conflict Handling
 
 **Default Behavior**: Never overwrite existing files
+
 - Existing files are skipped
 - Warning message shows skipped files
 - Suggests using `--force` if overwrite intended
 
 **With `--force` flag**: Overwrite all files
+
 - All existing files are replaced
 - No confirmation prompt (use carefully!)
 
@@ -120,6 +122,7 @@ git-fetch cli/cli README.md --force
 In `add` mode, files are automatically committed by default:
 
 **Default auto-commit message**:
+
 ```
 Add fetched files from GitHub
 
@@ -131,11 +134,13 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
 
 **Custom commit message**:
+
 ```bash
 git-fetch add cli/cli docs/ -m "docs: Sync documentation from upstream"
 ```
 
 **Skip auto-commit**:
+
 ```bash
 git-fetch add cli/cli config.yml --no-commit
 # Files are staged, you commit manually when ready
@@ -178,18 +183,18 @@ git-fetch https://github.com/torvalds/linux/tree/master/kernel
 
 ## Comparison with Original Scripts
 
-| Feature | git-fetch | gh-download.sh | gh-cp.sh | git-fetch.py | gh-tools.sh |
-|---------|-----------|----------------|----------|--------------|-------------|
-| Download files | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Add to git repo | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Auto-commit | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Parallel downloads | ✅ | ✅ | ❌ | ✅ | ❌ |
-| URL parsing | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Branch support | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Commit support | ✅ | ❌ | ✅ | ✅ | ❌ |
-| Force overwrite | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Skip existing | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Color output | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Feature            | git-fetch | gh-download.sh | gh-cp.sh | git-fetch.py | gh-tools.sh |
+| ------------------ | --------- | -------------- | -------- | ------------ | ----------- |
+| Download files     | ✅        | ✅             | ✅       | ✅           | ❌          |
+| Add to git repo    | ✅        | ❌             | ❌       | ❌           | ❌          |
+| Auto-commit        | ✅        | ❌             | ❌       | ❌           | ❌          |
+| Parallel downloads | ✅        | ✅             | ❌       | ✅           | ❌          |
+| URL parsing        | ✅        | ✅             | ❌       | ✅           | ❌          |
+| Branch support     | ✅        | ✅             | ✅       | ✅           | ❌          |
+| Commit support     | ✅        | ❌             | ✅       | ✅           | ❌          |
+| Force overwrite    | ✅        | ❌             | ❌       | ❌           | ❌          |
+| Skip existing      | ✅        | ❌             | ❌       | ❌           | ❌          |
+| Color output       | ✅        | ❌             | ❌       | ❌           | ✅          |
 
 ## Migration Guide
 
@@ -228,6 +233,7 @@ git-fetch https://github.com/owner/repo/tree/main/src -o ./output
 ### "No GitHub token. Run: gh auth login"
 
 **Solution**: Authenticate with GitHub CLI
+
 ```bash
 gh auth login
 ```
@@ -235,6 +241,7 @@ gh auth login
 ### "Not a git repository. Run: git init"
 
 **Solution**: Initialize git repo or use download mode
+
 ```bash
 git init  # To initialize repo
 # OR
@@ -244,11 +251,13 @@ git-fetch download owner/repo file.txt  # Use download mode instead
 ### "Failed to fetch folder contents"
 
 **Possible causes**:
+
 - Repository doesn't exist or is private
 - Branch name is incorrect
 - Path doesn't exist in repository
 
 **Solution**: Verify repo/branch/path exist
+
 ```bash
 # Check repository exists
 gh repo view owner/repo
@@ -260,6 +269,7 @@ gh api repos/owner/repo/branches --jq '.[].name'
 ### Parallel downloads failing
 
 **Solution**: Disable parallel mode (future enhancement)
+
 ```bash
 # Currently parallel is always enabled
 # Future: Add --no-parallel flag

@@ -14,7 +14,7 @@ adb shell am start -a "com.android.webview.SHOW_DEV_UI"
 
 `GMSCoreEmoji` -> `Disabled`
 
-`AutofillEnableLoyaltyCardsFilling` -> `Disabled` *(This uses Google Wallet)*
+`AutofillEnableLoyaltyCardsFilling` -> `Disabled` _(This uses Google Wallet)_
 
 `AutofillUKMExperimentalFields` -> `Disabled`
 
@@ -110,9 +110,9 @@ adb shell am start -a "com.android.webview.SHOW_DEV_UI"
 
 `HttpCacheNoVarySearch` -> `Disabled`
 
-`PartitionAllocWithAdvancedChecks` -> `Enabled` *([some info](https://groups.google.com/a/chromium.org/g/ios-reviews/c/BY-Xq_Zeds8)*
+`PartitionAllocWithAdvancedChecks` -> `Enabled` _([some info](https://groups.google.com/a/chromium.org/g/ios-reviews/c/BY-Xq_Zeds8)_
 
-`SensitiveContent` -> `Enabled` *([info](https://source.chromium.org/chromium/chromium/src/+/main:components/sensitive_content/))*
+`SensitiveContent` -> `Enabled` _([info](https://source.chromium.org/chromium/chromium/src/+/main:components/sensitive_content/))_
 
 `RestrictAbusePortsOnLocalhost` -> `Enabled`
 

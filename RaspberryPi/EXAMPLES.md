@@ -19,6 +19,7 @@ sudo ./f2fs-new.sh -i
 ```
 
 **What happens:**
+
 - Downloads latest DietPi Trixie image
 - Converts to F2FS
 - Flashes directly to SD card
@@ -37,6 +38,7 @@ sudo dd if=~/Images/dietpi-f2fs-20260113.img of=/dev/mmcblk0 bs=4M conv=fsync st
 ```
 
 **What happens:**
+
 - Downloads DietPi image
 - Converts to F2FS
 - Saves as timestamped image file
@@ -57,6 +59,7 @@ sudo ./f2fs-new.sh -i
 ```
 
 **What happens:**
+
 - Uses local image (no download needed)
 - Converts to F2FS
 - Saves to specified path
@@ -85,6 +88,7 @@ sudo ./f2fs-new.sh \
 ```
 
 **What happens:**
+
 - Customizes F2FS mount options in fstab
 - Different trade-offs: performance vs. compression vs. compatibility
 
@@ -104,6 +108,7 @@ done
 ```
 
 **What happens:**
+
 - Creates one master image
 - Reuses it for multiple devices
 - Saves download/conversion time
@@ -127,6 +132,7 @@ sudo ./raspi-f2fs.sh -i ~/dietpi.img.xz -d /dev/mmcblk0 -s -z -b 512M
 ```
 
 **Options:**
+
 - `-s`: Enable SSH on first boot
 - `-z`: Shrink image before flashing
 - `-b SIZE`: Set boot partition size
@@ -154,6 +160,7 @@ sudo dd if=~/dietpi-f2fs.img of=/dev/mmcblk0 bs=4M conv=fsync status=progress
 ```
 
 **What happens:**
+
 - Creates F2FS image
 - Chroots for customization
 - Automatically regenerates initramfs
@@ -175,6 +182,7 @@ done
 ```
 
 **What happens:**
+
 - Finds all compressed images
 - Converts each to F2FS
 - Outputs with `_f2fs` suffix
@@ -196,6 +204,7 @@ sudo ./f2fs-new.sh -i
 ```
 
 **What happens:**
+
 - Downloads from custom URL
 - Converts to F2FS
 - Flashes directly to device
@@ -229,6 +238,7 @@ sudo dd if=/tmp/test-f2fs.img of=/dev/mmcblk0 bs=4M conv=fsync status=progress
 ```
 
 **What happens:**
+
 - Creates test image
 - Verifies F2FS configuration
 - Checks all required components
@@ -383,11 +393,11 @@ wait
 
 ## Script Comparison
 
-| Use Case | Script | Command |
-|----------|--------|---------|
-| Interactive conversion | f2fs-new.sh | `sudo ./f2fs-new.sh -i` |
-| Create image file | f2fs-new.sh | `sudo ./f2fs-new.sh --out image.img` |
-| Flash to device | f2fs-new.sh | `sudo ./f2fs-new.sh --device /dev/mmcblk0` |
-| Advanced flashing | raspi-f2fs.sh | `sudo ./raspi-f2fs.sh -i dietpi -d /dev/mmcblk0` |
-| Post-conversion | dietpi-chroot.sh | `sudo ./dietpi-chroot.sh image.img` |
-| Shrink + SSH | raspi-f2fs.sh | `sudo ./raspi-f2fs.sh -i dietpi -d /dev/mmcblk0 -z -s` |
+| Use Case               | Script           | Command                                                |
+| ---------------------- | ---------------- | ------------------------------------------------------ |
+| Interactive conversion | f2fs-new.sh      | `sudo ./f2fs-new.sh -i`                                |
+| Create image file      | f2fs-new.sh      | `sudo ./f2fs-new.sh --out image.img`                   |
+| Flash to device        | f2fs-new.sh      | `sudo ./f2fs-new.sh --device /dev/mmcblk0`             |
+| Advanced flashing      | raspi-f2fs.sh    | `sudo ./raspi-f2fs.sh -i dietpi -d /dev/mmcblk0`       |
+| Post-conversion        | dietpi-chroot.sh | `sudo ./dietpi-chroot.sh image.img`                    |
+| Shrink + SSH           | raspi-f2fs.sh    | `sudo ./raspi-f2fs.sh -i dietpi -d /dev/mmcblk0 -z -s` |

@@ -21,11 +21,11 @@
 
 ### Target Systems
 
-| **Primary** | **Secondary** | **Tertiary** |
-|:------------|:--------------|:-------------|
-| Arch Linux  | Debian        | Termux       |
-| CachyOS     | Raspbian      | EndeavourOS  |
-| Wayland     | Raspberry Pi OS | Gentoo     |
+| **Primary** | **Secondary**   | **Tertiary** |
+| :---------- | :-------------- | :----------- |
+| Arch Linux  | Debian          | Termux       |
+| CachyOS     | Raspbian        | EndeavourOS  |
+| Wayland     | Raspberry Pi OS | Gentoo       |
 
 ### Repository Structure
 
@@ -135,16 +135,16 @@ Always quote variables unless intentional glob/split. Exception: `$*` in printf 
 
 ## Tool Hierarchy (Fallbacks Required)
 
-| Task | Primary | Fallback Chain |
-|:-----|:--------|:---------------|
-| Find | `fd` | `fdfind`→`find` |
-| Grep | `rg` | `grep -E` (prefer `-F` for literals) |
-| View | `bat` | `cat` |
-| Edit | `sd` | `sed -E` |
-| Nav | `zoxide` | `cd` |
-| Web | `aria2c` | `curl`→`wget2`→`wget` |
-| JSON | `jaq` | `jq` |
-| Parallel | `rust-parallel` | `parallel`→`xargs -r -P$(nproc)` |
+| Task     | Primary         | Fallback Chain                       |
+| :------- | :-------------- | :----------------------------------- |
+| Find     | `fd`            | `fdfind`→`find`                      |
+| Grep     | `rg`            | `grep -E` (prefer `-F` for literals) |
+| View     | `bat`           | `cat`                                |
+| Edit     | `sd`            | `sed -E`                             |
+| Nav      | `zoxide`        | `cd`                                 |
+| Web      | `aria2c`        | `curl`→`wget2`→`wget`                |
+| JSON     | `jaq`           | `jq`                                 |
+| Parallel | `rust-parallel` | `parallel`→`xargs -r -P$(nproc)`     |
 
 ---
 
@@ -179,14 +179,14 @@ BLD=$'\e[1m'          # Bold
 
 ### Command Costs (Relative)
 
-| Operation | Cost | Alternative | Cost |
-|:----------|:-----|:------------|:-----|
-| `$(command)` | 100x | `${var//pattern/}` | 1x |
-| `tr` | 50x | `${var,,}` | 1x |
-| `basename` | 30x | `${var##*/}` | 1x |
-| `dirname` | 30x | `${var%/*}` | 1x |
-| `cat file` | 20x | `$(<file)` | 1x |
-| `sudo sh -c` | 80x | `printf '...' \| sudo tee /path` | 40x |
+| Operation    | Cost | Alternative                      | Cost |
+| :----------- | :--- | :------------------------------- | :--- |
+| `$(command)` | 100x | `${var//pattern/}`               | 1x   |
+| `tr`         | 50x  | `${var,,}`                       | 1x   |
+| `basename`   | 30x  | `${var##*/}`                     | 1x   |
+| `dirname`    | 30x  | `${var%/*}`                      | 1x   |
+| `cat file`   | 20x  | `$(<file)`                       | 1x   |
+| `sudo sh -c` | 80x  | `printf '...' \| sudo tee /path` | 40x  |
 
 ### Bash Optimization
 
@@ -298,6 +298,7 @@ process_packages(){
 ### Local Linting
 
 Run `./lint-format.sh` before committing. Supports:
+
 - `-c` / `--check` for check-only mode (no writes)
 - Uses `fd`/`fdfind`/`find` for file discovery
 - Runs `shfmt -i 2 -bn -ci -s -ln bash` and `shellcheck --severity=error`
@@ -559,18 +560,19 @@ IFS=: read -ra parts <<< "$PATH"
 
 ### Workflows (.github/workflows/)
 
-| Workflow | Purpose | Trigger |
-|:---------|:--------|:--------|
-| `lint-format.yml` | ShellCheck, shfmt, Prettier, yamllint, ruff; auto-commits fixes | Push/PR to main/master/claude/** |
-| `deps.yml` | Dependabot dependency updates (6 ecosystems) | Scheduled weekly |
-| `summary.yml` | Workflow summary generation | Manual trigger |
-| `dependabot-automerge.yml` | Auto-merge dependency PRs (minor updates) | Dependabot/Renovate PRs |
-| `jules-performance-improver.yml` | Daily performance optimization analysis (Jules agent) | Daily at 4 AM UTC |
-| `jules-weekly-cleanup.yml` | Weekly codebase cleanup (dead code, duplication) | Weekly on Monday at 2 AM UTC |
+| Workflow                         | Purpose                                                         | Trigger                            |
+| :------------------------------- | :-------------------------------------------------------------- | :--------------------------------- |
+| `lint-format.yml`                | ShellCheck, shfmt, Prettier, yamllint, ruff; auto-commits fixes | Push/PR to main/master/claude/\*\* |
+| `deps.yml`                       | Dependabot dependency updates (6 ecosystems)                    | Scheduled weekly                   |
+| `summary.yml`                    | Workflow summary generation                                     | Manual trigger                     |
+| `dependabot-automerge.yml`       | Auto-merge dependency PRs (minor updates)                       | Dependabot/Renovate PRs            |
+| `jules-performance-improver.yml` | Daily performance optimization analysis (Jules agent)           | Daily at 4 AM UTC                  |
+| `jules-weekly-cleanup.yml`       | Weekly codebase cleanup (dead code, duplication)                | Weekly on Monday at 2 AM UTC       |
 
 ### Dependency Management (.github/dependabot.yml)
 
 Monitors 6 package ecosystems with weekly schedule and grouped updates:
+
 - `github-actions`, `gitsubmodule`, `pip`, `uv`, `npm`, `bun`
 
 ---
@@ -783,27 +785,27 @@ parallel_exec(){
 
 ### Cachyos/ (Arch/CachyOS)
 
-| Script | Purpose |
-|:-------|:--------|
-| Cachyos/up.sh | All-in-one update orchestrator (pacman, flatpak, rust, npm, firmware, bootloader) |
-| Cachyos/clean.sh | Comprehensive cleanup: package cache, dev tools, system paths, SQLite VACUUM |
-| Cachyos/setup.sh | Automated system cfg: repos (Chaotic AUR), packages, VS Code, shells, services |
-| Cachyos/debloat.sh | Debloating: remove telemetry (pkgstats), disable services, fwupd P2P |
-| Cachyos/rustbuild.sh | Rust PGO/BOLT build orchestrator with mold linker support |
-| Cachyos/Scripts/bench.sh | System benchmarking |
-| Cachyos/Scripts/Android/ | Termux/Android optimization scripts (6 files) |
+| Script                   | Purpose                                                                           |
+| :----------------------- | :-------------------------------------------------------------------------------- |
+| Cachyos/up.sh            | All-in-one update orchestrator (pacman, flatpak, rust, npm, firmware, bootloader) |
+| Cachyos/clean.sh         | Comprehensive cleanup: package cache, dev tools, system paths, SQLite VACUUM      |
+| Cachyos/setup.sh         | Automated system cfg: repos (Chaotic AUR), packages, VS Code, shells, services    |
+| Cachyos/debloat.sh       | Debloating: remove telemetry (pkgstats), disable services, fwupd P2P              |
+| Cachyos/rustbuild.sh     | Rust PGO/BOLT build orchestrator with mold linker support                         |
+| Cachyos/Scripts/bench.sh | System benchmarking                                                               |
+| Cachyos/Scripts/Android/ | Termux/Android optimization scripts (6 files)                                     |
 
 ### RaspberryPi/ (Debian/Pi)
 
-| Script | Purpose |
-|:-------|:--------|
-| RaspberryPi/raspi-f2fs.sh | F2FS imaging: DietPi detection, partition, clone, fstab/cmdline update |
-| RaspberryPi/update.sh | Pi update: apt-fast/nala/apt-get, DietPi, Pi-hole, Pi-Apps, EEPROM |
-| RaspberryPi/PiClean.sh | Pi cleanup: APT, cache, trash, crash dumps, journal, Docker prune |
-| RaspberryPi/dietpi-chroot.sh | Chroot environment for F2FS conversion & initramfs regeneration |
-| RaspberryPi/Scripts/setup.sh | Pi optimization: APT cfg, dpkg nodoc, I/O tuning, SSH, modern tooling |
-| RaspberryPi/Scripts/Kbuild.sh | Kernel building: clone source, configure, build, install, reboot |
-| RaspberryPi/Scripts/apkg.sh | fzf TUI: fuzzy search APT packages, multi-select, cached previews |
+| Script                        | Purpose                                                                |
+| :---------------------------- | :--------------------------------------------------------------------- |
+| RaspberryPi/raspi-f2fs.sh     | F2FS imaging: DietPi detection, partition, clone, fstab/cmdline update |
+| RaspberryPi/update.sh         | Pi update: apt-fast/nala/apt-get, DietPi, Pi-hole, Pi-Apps, EEPROM     |
+| RaspberryPi/PiClean.sh        | Pi cleanup: APT, cache, trash, crash dumps, journal, Docker prune      |
+| RaspberryPi/dietpi-chroot.sh  | Chroot environment for F2FS conversion & initramfs regeneration        |
+| RaspberryPi/Scripts/setup.sh  | Pi optimization: APT cfg, dpkg nodoc, I/O tuning, SSH, modern tooling  |
+| RaspberryPi/Scripts/Kbuild.sh | Kernel building: clone source, configure, build, install, reboot       |
+| RaspberryPi/Scripts/apkg.sh   | fzf TUI: fuzzy search APT packages, multi-select, cached previews      |
 
 ---
 
@@ -971,5 +973,5 @@ lower=${str,,}             # lowercase
 
 ---
 
-*This document is the canonical source for AI assistant guidelines.*
-*CLAUDE.md and GEMINI.md are symlinks to this file.*
+_This document is the canonical source for AI assistant guidelines._
+_CLAUDE.md and GEMINI.md are symlinks to this file._

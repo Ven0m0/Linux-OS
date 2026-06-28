@@ -65,6 +65,7 @@ makepkg -si
 ```
 
 Update checksums:
+
 ```bash
 sha256sum cachyos-rate-mirrors cachyos-rate-mirrors.{service,timer,hook}
 ```

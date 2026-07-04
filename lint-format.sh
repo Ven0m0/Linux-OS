@@ -26,9 +26,9 @@ if has shellcheck || has shfmt; then
     if has shfmt; then
       OPTS=(-i 2 -bn -ci -s -ln bash)
       (( CHECK )) && OPTS+=(-d) || OPTS+=(-w)
-      "$FD" -t f -e sh --exclude "WIP" --exclude ".github/agents" -x shfmt "${OPTS[@]}"
+      "$FD" -t f -e sh --exclude "WIP" --exclude ".github/agents" -X shfmt "${OPTS[@]}"
     fi
-    has shellcheck && "$FD" -t f -e sh --exclude "WIP" --exclude ".github/agents" -x shellcheck --severity=style
+    has shellcheck && "$FD" -t f -e sh --exclude "WIP" --exclude ".github/agents" -X shellcheck --severity=style
   else
     while IFS= read -r f; do
       [[ $f == *"WIP"* || $f == *".github/agents"* ]] && continue

@@ -66,7 +66,7 @@ if has prettier; then
   log "🎨 Formatting with Prettier..."
   P_OPTS=$([[ $CHECK -eq 1 ]] && echo "--check" || echo "--write")
   if [[ -n "$FD" ]]; then
-    "$FD" -t f -e md -e json -e yml -e yaml --exclude "WIP" --exclude ".github/agents" -x prettier "$P_OPTS"
+    "$FD" -t f -e md -e json -e yml -e yaml --exclude "WIP" --exclude ".github/agents" -X prettier "$P_OPTS"
   else
     prettier "$P_OPTS" --ignore-path .gitignore .
   fi

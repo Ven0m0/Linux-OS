@@ -496,9 +496,9 @@ process_directory() {
 
   if [[ ${#image_files[@]} -gt 0 ]]; then
     # Process using xargs for parallelization
-    printf '%s\0' "${image_files[@]}" | xargs -0 -P "$MEDIA_OPT_THREADS" -I{} bash -c '
+    printf '%s\0' "${image_files[@]}" | xargs -0 -P "$MEDIA_OPT_THREADS" -n 1 bash -c '
       source "$0"
-      process_image "{}"
+      process_image "$1"
     ' "$0"
 
     # Run deduplication if enabled

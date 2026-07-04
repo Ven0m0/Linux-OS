@@ -30,11 +30,21 @@ if has shellcheck || has shfmt; then
     fi
     has shellcheck && "$FD" -t f -e sh --exclude "WIP" --exclude ".github/agents" -X shellcheck --severity=style
   else
+    local -a files=()
     while IFS= read -r f; do
       [[ $f == *"WIP"* || $f == *".github/agents"* ]] && continue
-      has shfmt && ( [[ $CHECK -eq 0 ]] && shfmt -i 2 -bn -ci -s -ln bash -w "$f" || shfmt -i 2 -bn -ci -s -ln bash -d "$f" )
-      has shellcheck && shellcheck --severity=style "$f"
+      files+=("$f")
     done < <(find . -type f -name "*.sh")
+    if (( ${#files[@]} > 0 )); then
+      if has shfmt; then
+        if [[ $CHECK -eq 0 ]]; then
+          shfmt -i 2 -bn -ci -s -ln bash -w "${files[@]}"
+        else
+          shfmt -i 2 -bn -ci -s -ln bash -d "${files[@]}"
+        fi
+      fi
+      has shellcheck && shellcheck --severity=style "${files[@]}"
+    fi
   fi
 fi
 
